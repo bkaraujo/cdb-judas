@@ -63,7 +63,9 @@ public class GlobalExceptionHandler {
             return pd;
         }
 
-        Logger.error(Strings.orEmpty(ex.getMessage()));
+        val message = Strings.orEmpty(ex.getMessage());
+        if (!message.contains("favicon.ico"))
+            Logger.error(message);
         val cause = ex.getCause();
         if (cause != null) { Logger.error(Strings.orEmpty(cause.getMessage())); }
 

@@ -24,16 +24,16 @@ public class RequestLoggingFilter extends OncePerRequestFilter {
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
-//        val isApi = request.getRequestURI().startsWith("/api/");
-//        if (!isApi) { filterChain.doFilter(request, response); return; }
-
         val wrappedRequest = new ContentCachingRequestWrapper(request, 1024 * 1024);
         val requestBody = wrappedRequest.getContentAsByteArray();
 
         var bodyString = Strings.EMPTY;
         if (requestBody.length > 0) { bodyString = new String(requestBody, StandardCharsets.UTF_8); }
 
-        Logger.debug("%s %s => %s", request.getMethod(), request.getRequestURI(), bodyString.isEmpty() ? "none" : bodyString);
+        if (!request.getRequestURI().contains("favicon")) {
+            Logger.debug("%s %s => %s", request.getMethod(), request.getRequestURI(), bodyString.isEmpty() ? "none" : bodyString);
+        }
+
         filterChain.doFilter(wrappedRequest, response);
     }
 }
