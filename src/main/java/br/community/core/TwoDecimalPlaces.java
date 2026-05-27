@@ -1,0 +1,18 @@
+package br.community.core;
+
+import jakarta.validation.Constraint;
+import jakarta.validation.Payload;
+import org.jspecify.annotations.NullMarked;
+
+import java.lang.annotation.*;
+
+@NullMarked
+@Documented
+@Constraint(validatedBy = TwoDecimalPlacesValidator.class)
+@Target({ElementType.FIELD, ElementType.PARAMETER})
+@Retention(RetentionPolicy.RUNTIME)
+public @interface TwoDecimalPlaces {
+    String message() default "must have at most 2 decimal places";
+    Class<?>[] groups() default {};
+    Class<? extends Payload>[] payload() default {};
+}

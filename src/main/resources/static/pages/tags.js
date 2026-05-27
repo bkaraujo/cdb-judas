@@ -1,0 +1,323 @@
+/* pages/tags.js — Tags (CRUD em chips). */
+(function () {
+  window.Pages = window.Pages || {};
+
+  const DEFAULT_COLOR = '#6366F1';
+  const DEFAULT_COLORS = [
+    '#6366F1', '#10B981', '#F43F5E', '#F59E0B',
+    '#38BDF8', '#A78BFA', '#820AD1', '#FB923C'
+  ];
+
+  let state = null;
+
+  function resetState() {
+    state = {
+      tags: [],
+      $root: null,
+    };
+  }
+
+  // Tags live in the App.CacheStore (hydrated at login, kept fresh via SSE).
+  // Pages must read from cache only — never refetch the list here.
+  function syncFromCache() {
+    state.tags = window.App.CacheStore.tags().slice();
+  }
+
+
+  function findTag(id) {
+    for (let i = 0; i < state.tags.length; i++) {
+      if (String(state.tags[i].id) === String(id)) return state.tags[i];
+    }
+    return null;
+  }
+
+  // ── Render ────────────────────────────────────────────────
+  function render() {
+    const $root = state.$root;
+    if (!$root) return;
+
+    const $header = $(
+      '<div class="page-header">' +
+        '<h1>Tags</h1>' +
+        '<div class="page-header-actions" data-region="actions"></div>' +
+      '</div>'
+    );
+    $header.find('[data-region=actions]').append(
+      window.btn({
+        variant: 'primary', size: 'md', icon: 'plus', label: 'Nova Tag',
+        attrs: 'data-act="new"'
+      })
+    );
+
+    let $body;
+    if (!state.tags.length) {
+      $body = $(window.emptyState({
+        icon: 'tag',
+        title: 'Nenhuma tag cadastrada',
+        desc: 'Clique em "Nova Tag" para começar.'
+      }));
+    } else {
+      const sorted = state.tags.slice().sort(window.sortByName);
+      const $card = $('<div class="card"></div>');
+      const $chips = $(
+        '<div data-region="chips" style="display:flex;flex-wrap:wrap;gap:10px;"></div>'
+      );
+      sorted.forEach(function (t) { $chips.append(renderChip(t)); });
+      $card.append($chips);
+      $body = $card;
+    }
+
+    $root.empty().append($header).append($body);
+  }
+
+  function renderChip(t) {
+    const hasColor = !!t.color;
+    const color = hasColor ? t.color : '';
+    // Muted variant when no color set.
+    const dotStyle = hasColor
+      ? 'background:' + esc(color) + ';'
+      : 'background:var(--text-muted);';
+    const chipStyle = hasColor
+      ? 'border:1px solid var(--border);background:var(--bg-card);'
+      : 'border:1px solid var(--border);background:var(--bg-hover);';
+    const nameColor = hasColor ? 'var(--text-primary)' : 'var(--text-secondary)';
+
+    const $chip = $(
+      '<div class="tag-chip" data-id="' + esc(t.id) + '" ' +
+        (hasColor ? 'data-color="' + esc(color) + '" ' : '') +
+        'style="display:inline-flex;align-items:center;gap:10px;' +
+        'padding:8px 14px;border-radius:40px;' + chipStyle +
+        'cursor:default;transition:all var(--transition);">' +
+        '<span style="width:10px;height:10px;border-radius:50%;flex-shrink:0;' + dotStyle + '"></span>' +
+        '<span style="font-size:13px;font-weight:700;color:' + nameColor + ';">#' + esc(t.name) + '</span>' +
+        '<span data-region="row-actions" style="display:none;align-items:center;gap:2px;margin-left:2px;"></span>' +
+      '</div>'
+    );
+
+    $chip.find('[data-region=row-actions]')
+      .append(chipActionBtn('edit',  'Editar',  t.id))
+      .append(chipActionBtn('trash', 'Excluir', t.id, true));
+
+    // Hover reveals actions; if colored, tint border/background.
+    $chip.on('mouseenter', function () {
+      $chip.find('[data-region=row-actions]').css('display', 'inline-flex');
+      if (hasColor) {
+        $chip.css('border-color', color);
+        $chip.css('background', color + '18');
+      } else {
+        $chip.css('background', 'var(--bg-card)');
+      }
+    });
+    $chip.on('mouseleave', function () {
+      $chip.find('[data-region=row-actions]').css('display', 'none');
+      if (hasColor) {
+        $chip.css('border-color', 'var(--border)');
+        $chip.css('background', 'var(--bg-card)');
+      } else {
+        $chip.css('background', 'var(--bg-hover)');
+      }
+    });
+
+    return $chip;
+  }
+
+  function chipActionBtn(iconName, title, id, danger) {
+    const color = danger ? 'var(--expense)' : 'var(--text-secondary)';
+    return $(
+      '<button type="button" class="icon-btn" title="' + esc(title) + '" ' +
+        'data-act="' + esc(iconName) + '" data-id="' + esc(id) + '" ' +
+        'style="width:22px;height:22px;color:' + color + ';">' +
+        window.icon(iconName, 12) +
+      '</button>'
+    );
+  }
+
+  // ── Modal: create / edit ──────────────────────────────────
+  function openFormModal(existing) {
+    const isEdit = !!existing;
+    const uniq = Date.now();
+    const ids = {
+      name: 'tag-name-' + uniq,
+      color: 'tag-color-' + uniq,
+    };
+    const initial = {
+      name: isEdit ? (existing.name || '') : '',
+      color: isEdit ? (existing.color || DEFAULT_COLOR) : DEFAULT_COLOR,
+    };
+
+    const swatchesHtml = DEFAULT_COLORS.map(function (c) {
+      const isSel = c.toLowerCase() === String(initial.color).toLowerCase();
+      return '<button type="button" data-swatch="' + esc(c) + '" ' +
+        'style="width:22px;height:22px;border-radius:50%;cursor:pointer;' +
+        'border:' + (isSel ? '2px solid var(--text-primary)' : '1px solid var(--border)') + ';' +
+        'background:' + esc(c) + ';padding:0;flex-shrink:0;" title="' + esc(c) + '"></button>';
+    }).join('');
+
+    const bodyHtml =
+      '<form data-form="tag" autocomplete="off">' +
+        '<div class="form-grid">' +
+          '<div class="form-group full">' +
+            '<label class="form-label" for="' + ids.name + '">Nome</label>' +
+            '<div style="display:flex;align-items:center;gap:10px;">' +
+              '<input id="' + ids.color + '" name="color" type="color" ' +
+                'value="' + esc(initial.color) + '" ' +
+                'style="width:40px;height:40px;border:1px solid var(--border);' +
+                'border-radius:50%;padding:0;background:transparent;cursor:pointer;flex-shrink:0;" />' +
+              '<input id="' + ids.name + '" name="name" type="text" required ' +
+                'placeholder="Ex: mensal, fixo..." value="' + esc(initial.name) + '" />' +
+            '</div>' +
+            '<div data-region="swatches" style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap;">' +
+              swatchesHtml +
+            '</div>' +
+          '</div>' +
+        '</div>' +
+      '</form>';
+
+    const $cancel = window.btn({
+      variant: 'secondary', size: 'md', label: 'Cancelar',
+      attrs: 'data-modal-close="1" type="button"'
+    });
+    const $save = window.btn({
+      variant: 'primary', size: 'md', label: 'Salvar',
+      attrs: 'data-act="save" type="submit"'
+    });
+    const $footer = $('<div style="display:flex;gap:10px;"></div>').append($cancel).append($save);
+
+    const m = window.modal({
+      title: isEdit ? 'Editar Tag' : 'Nova Tag',
+      body: bodyHtml,
+      footer: $footer,
+    });
+    m.open();
+
+    const $form = m.$body.find('form[data-form=tag]');
+    const $color = $form.find('input[name=color]');
+    const $name  = $form.find('input[name=name]');
+
+    function paintSwatches(activeHex) {
+      m.$body.find('[data-region=swatches] [data-swatch]').each(function () {
+        const c = $(this).attr('data-swatch');
+        const on = c && c.toLowerCase() === String(activeHex).toLowerCase();
+        $(this).css('border', on ? '2px solid var(--text-primary)' : '1px solid var(--border)');
+      });
+    }
+    m.$body.on('click', '[data-swatch]', function (e) {
+      e.preventDefault();
+      const c = $(this).attr('data-swatch');
+      $color.val(c);
+      paintSwatches(c);
+    });
+    $color.on('input change', function () { paintSwatches($color.val()); });
+
+    setTimeout(function () { $name.trigger('focus'); }, 0);
+
+    function submit(e) {
+      if (e) e.preventDefault();
+      const name = ($name.val() || '').trim();
+      if (!name) { $name.trigger('focus'); return; }
+      const payload = {
+        name: name,
+        color: $color.val() || DEFAULT_COLOR,
+      };
+
+      const $btn = m.$el.find('[data-act=save]');
+      $btn.prop('disabled', true);
+
+      const p = isEdit
+        ? window.App.TagService.update(existing.id, payload)
+        : window.App.TagService.create(payload);
+
+      p.then(function () {
+        m.close();
+        window.toast(isEdit ? 'Tag atualizada' : 'Tag criada', 'success');
+        // SSE UPSERT will refresh CacheStore → TagService.onChange → re-render.
+      }).catch(function (err) {
+        $btn.prop('disabled', false);
+        window.toast(err && err.message ? err.message : 'Falha ao salvar tag', 'error');
+      });
+    }
+
+    $form.on('submit', submit);
+    m.$el.on('click', '[data-act=save]', submit);
+  }
+
+  // ── Modal: confirm delete ─────────────────────────────────
+  function openDeleteModal(target) {
+    const nameHtml = '<strong>#' + esc(target.name) + '</strong>';
+    const bodyHtml =
+      '<p style="font-size:13px;color:var(--text-secondary);line-height:1.5;">' +
+        'Tem certeza que deseja excluir a tag ' + nameHtml + '? ' +
+        'Esta ação não pode ser desfeita.' +
+      '</p>';
+
+    const $cancel = window.btn({
+      variant: 'secondary', size: 'md', label: 'Cancelar',
+      attrs: 'data-modal-close="1" type="button"'
+    });
+    const $confirm = window.btn({
+      variant: 'danger', size: 'md', icon: 'trash', label: 'Excluir',
+      attrs: 'data-act="confirm-delete" type="button"'
+    });
+    const $footer = $('<div style="display:flex;gap:10px;"></div>').append($cancel).append($confirm);
+
+    const m = window.modal({
+      title: 'Excluir Tag',
+      body: bodyHtml,
+      footer: $footer,
+    });
+    m.open();
+
+    m.$el.on('click', '[data-act=confirm-delete]', function () {
+      const $b = $(this).prop('disabled', true);
+      window.App.TagService.remove(target.id).then(function () {
+        m.close();
+        window.toast('Tag removida', 'success');
+        // SSE DELETE will refresh CacheStore → TagService.onChange → re-render.
+      }).catch(function (err) {
+        $b.prop('disabled', false);
+        window.toast(err && err.message ? err.message : 'Falha ao excluir tag', 'error');
+      });
+    });
+  }
+
+  // ── Event delegation on $root ─────────────────────────────
+  function bindRoot($root) {
+    $root.on('click.tags', '[data-act=new]', function () {
+      openFormModal(null);
+    });
+    $root.on('click.tags', '[data-act=edit]', function (e) {
+      e.stopPropagation();
+      const id = $(this).attr('data-id');
+      const t = findTag(id);
+      if (t) openFormModal(t);
+    });
+    $root.on('click.tags', '[data-act=trash]', function (e) {
+      e.stopPropagation();
+      const id = $(this).attr('data-id');
+      const t = findTag(id);
+      if (t) openDeleteModal(t);
+    });
+  }
+
+  // ── Lifecycle ─────────────────────────────────────────────
+  window.Pages['tags'] = {
+    mount: function ($root) {
+      resetState();
+      state.$root = $root;
+      bindRoot($root);
+      syncFromCache();
+      render();
+      state.unsubscribe = window.App.TagService.onChange(function () {
+        syncFromCache();
+        render();
+      });
+    },
+    unmount: function () {
+      if (state && state.$root) {
+        state.$root.off('.tags');
+      }
+      if (state && state.unsubscribe) state.unsubscribe();
+      state = null;
+    }
+  };
+})();

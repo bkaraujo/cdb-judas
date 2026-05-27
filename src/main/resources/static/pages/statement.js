@@ -1,0 +1,235 @@
+/* pages/statement.js — Extrato de Contas.
+ * Layout 280px / 1fr: lista de contas (esquerda) + Card de lançamentos com saldo corrente (direita).
+ * Conta selecionável; período navegável (mês/ano). Backend: API.statement.list(accountId, month, year)
+ * retorna StatementItem[] = { date, description, amount, status, runningBal, balance? }.
+ * Status 'balance' => linha "Saldo anterior" (sem amount, runningBal = balance).
+ */
+(function () {
+  window.Pages = window.Pages || {};
+
+  let state = null;
+
+  function resetState() {
+    const now = new Date();
+    state = {
+      $root: null,
+      accountId: null,
+      month: now.getMonth() + 1, // 1-12 (backend usa 1-based)
+      year: now.getFullYear(),
+      items: [],
+      loading: false,
+    };
+  }
+
+  // ── Helpers ───────────────────────────────────────────────
+
+
+  function checkingAccounts() {
+    return window.App.CacheStore.accounts()
+      .filter(window.Domain.Account.isCash)
+      .slice()
+      .sort(window.sortByName);
+  }
+
+  function selectedAccount() {
+    const list = checkingAccounts();
+    for (let i = 0; i < list.length; i++) {
+      if (String(list[i].id) === String(state.accountId)) return list[i];
+    }
+    return null;
+  }
+
+  // ── Fetch ─────────────────────────────────────────────────
+  function loadStatement() {
+    if (!state.accountId) {
+      state.items = [];
+      state.loading = false;
+      render();
+      return Promise.resolve();
+    }
+    state.loading = true;
+    render();
+    return window.App.StatementService.load(
+        state.accountId,
+        window.Domain.Period.create(state.month, state.year)
+      )
+      .then(function (list) {
+        state.items = Array.isArray(list) ? list : [];
+        state.loading = false;
+        render();
+      })
+      .catch(function (err) {
+        state.items = [];
+        state.loading = false;
+        render();
+        window.toast((err && err.message) || 'Falha ao carregar extrato', 'error');
+      });
+  }
+
+  // ── Render ────────────────────────────────────────────────
+  function render() {
+    const $root = state.$root;
+    if (!$root) return;
+
+    const $page = $('<div class="fade-in"></div>');
+
+    // Header
+    const $header = $(
+      '<div class="page-header">' +
+        '<h1>Extrato de Contas</h1>' +
+        '<div class="page-header-actions" data-region="head-actions"></div>' +
+      '</div>'
+    );
+    const $periodNav = window.periodNav({
+      label: window.monthLabel(state.month, state.year),
+      onPrev: function () {
+        if (--state.month < 1) { state.month = 12; state.year--; }
+        loadStatement();
+      },
+      onNext: function () {
+        if (++state.month > 12) { state.month = 1; state.year++; }
+        loadStatement();
+      },
+    });
+    $header.find('[data-region=head-actions]').append($periodNav);
+    $page.append($header);
+
+    // Grid 280px / 1fr
+    const $grid = $('<div style="display:grid;grid-template-columns:280px 1fr;gap:16px;"></div>');
+
+    // Left column: accounts list
+    const $left = $('<div style="display:flex;flex-direction:column;gap:12px;"></div>');
+    const accs = checkingAccounts();
+    if (accs.length === 0) {
+      $left.append(
+        '<div style="font-size:13px;color:var(--text-muted);padding:14px 16px;' +
+        'background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);">' +
+          'Nenhuma conta disponível.' +
+        '</div>'
+      );
+    } else {
+      accs.forEach(function (a) {
+        const active = String(a.id) === String(state.accountId);
+        const bal = Number(a.balance) || 0;
+        const btnStyle =
+          'padding:14px 16px;border-radius:var(--radius);text-align:left;' +
+          'background:' + (active ? 'var(--accent-light)' : 'var(--bg-card)') + ';' +
+          'border:1px solid ' + (active ? 'var(--accent)' : 'var(--border)') + ';' +
+          'color:' + (active ? 'var(--accent)' : 'var(--text-primary)') + ';' +
+          'cursor:pointer;font-weight:' + (active ? '700' : '400') + ';font-size:13px;' +
+          'transition:all var(--transition);display:flex;flex-direction:column;gap:4px;';
+        const balColor = window.valueColor(bal);
+        $left.append(
+          '<button type="button" class="stm" data-act="select-account" ' +
+            'data-id="' + esc(a.id) + '" style="' + btnStyle + '">' +
+            '<span>' + esc(a.name) + '</span>' +
+            '<span style="font-size:11px;color:' + balColor + ';font-weight:' +
+              (active ? '700' : '500') + ';">' + esc(fmt(bal)) + '</span>' +
+          '</button>'
+        );
+      });
+    }
+    $grid.append($left);
+
+    // Right column: statement card
+    const $card = $('<div class="card" style="padding:0;overflow:hidden;"></div>');
+
+    if (!state.accountId) {
+      $card.append(window.emptyState({
+        icon: 'bookOpen',
+        title: 'Selecione uma conta',
+        desc: 'Escolha uma conta à esquerda para visualizar o extrato.'
+      }));
+    } else if (state.loading) {
+      $card.append(window.emptyState({ icon: 'bookOpen', title: 'Carregando…' }));
+    } else if (state.items.length === 0) {
+      $card.append(window.emptyState({
+        icon: 'bookOpen',
+        title: 'Nenhum lançamento neste período',
+        desc: 'Tente outro mês ou selecione outra conta.'
+      }));
+    } else {
+      const items = state.items;
+      items.forEach(function (tx, i) {
+        const isLast = i === items.length - 1;
+        const isBalance = window.Domain.StatementItem.isBalanceHeader(tx);
+        const amt = Number(tx.amount) || 0;
+        const amtColor = window.valueColor(amt);
+        const dotColor =
+          tx.status === 'confirmed' ? 'var(--income)' :
+          isBalance ? 'var(--text-muted)' : 'var(--warning)';
+        const runningBal = window.Domain.StatementItem.runningBalance(tx);
+
+        const rowStyle =
+          'display:flex;align-items:center;gap:16px;padding:11px 20px;' +
+          (isLast ? '' : 'border-bottom:1px solid var(--border-light);') +
+          'background:' + (isBalance ? 'var(--bg-hover)' : 'transparent') + ';' +
+          'transition:background var(--transition);';
+
+        const descStyle =
+          'flex:1;font-size:13px;font-weight:' + (isBalance ? '700' : '500') + ';' +
+          'color:' + (isBalance ? 'var(--text-secondary)' : 'var(--text-primary)') + ';' +
+          'overflow:hidden;text-overflow:ellipsis;white-space:nowrap;';
+
+        const amountHtml = (!isBalance && amt !== 0)
+          ? '<span style="font-size:13px;font-weight:700;color:' + amtColor + ';">' +
+              esc(fmt(amt)) +
+            '</span>'
+          : '';
+
+        $card.append(
+          '<div style="' + rowStyle + '">' +
+            '<span style="font-size:12px;color:var(--text-muted);min-width:56px;">' +
+              esc(fmtDate(tx.date)) +
+            '</span>' +
+            '<span style="' + descStyle + '">' + esc(tx.description || '—') + '</span>' +
+            amountHtml +
+            '<span style="font-size:13px;font-weight:700;color:' + window.valueColor(runningBal) + ';min-width:100px;text-align:right;">' +
+              esc(fmt(runningBal)) +
+            '</span>' +
+            '<div style="width:8px;height:8px;border-radius:50%;flex-shrink:0;background:' + dotColor + ';"></div>' +
+          '</div>'
+        );
+      });
+    }
+
+    $grid.append($card);
+    $page.append($grid);
+
+    $root.empty().append($page);
+  }
+
+  // ── Event delegation ──────────────────────────────────────
+  function bindRoot($root) {
+    $root.on('click.stm', '[data-act=select-account]', function () {
+      const id = $(this).attr('data-id');
+      if (id && String(id) !== String(state.accountId)) {
+        state.accountId = id;
+        loadStatement();
+      }
+    });
+  }
+
+  // ── Lifecycle ─────────────────────────────────────────────
+  window.Pages['statement'] = {
+    mount: function ($root) {
+      resetState();
+      state.$root = $root;
+      bindRoot($root);
+
+      // Default-select first checking account if available.
+      const accs = checkingAccounts();
+      if (accs.length > 0) {
+        state.accountId = String(accs[0].id);
+      }
+      render();
+      if (state.accountId) loadStatement();
+    },
+    unmount: function () {
+      if (state && state.$root) {
+        state.$root.off('.stm');
+      }
+      state = null;
+    }
+  };
+})();

@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="pt-BR" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CBD Finance</title>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/app.css">
+</head>
+<body>
+  <div id="app"></div>
+
+  <!-- jQuery 4 beta (stable 4.x not yet released). TODO: swap to GA when available. -->
+  <script src="https://code.jquery.com/jquery-4.0.0.js"></script>
+
+  <!-- API base URL — same-origin (servido pelo Spring Boot). Sobrescrever só p/ dev cross-origin. -->
+  <script>window.API_BASE_URL = '/api';</script>
+
+  <!-- ── Layer barrels (each loads its individual files dynamically, async=false preserves order) ── -->
+  <script src="js/_1_domain.js"></script>
+  <script src="js/_3_infrastructure.js"></script>
+  <script src="js/_2_application.js"></script>
+  <script src="js/pages.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>

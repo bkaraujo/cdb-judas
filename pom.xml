@@ -1,0 +1,247 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <groupId>br.community</groupId>
+    <artifactId>cdb-judas</artifactId>
+    <packaging>jar</packaging>
+
+    <version>0.1.0</version>
+
+    <properties>
+        <!-- ######################################################### -->
+        <!-- Configurações do Java e Maven -->
+        <!-- ######################################################### -->
+        <maven.compiler.target>25</maven.compiler.target>
+        <maven.compiler.source>25</maven.compiler.source>
+        <maven.resources.encoding>UTF-8</maven.resources.encoding>
+        <maven.surefire.skipTest>false</maven.surefire.skipTest>
+        <!-- ######################################################### -->
+        <!-- Versões dos plugins Maven -->
+        <!-- ######################################################### -->
+        <maven.plugin.clean>3.5.0</maven.plugin.clean>
+        <maven.plugin.resources>3.5.0</maven.plugin.resources>
+        <maven.plugin.dependency>3.10.0</maven.plugin.dependency>
+        <maven.plugin.compile>3.15.0</maven.plugin.compile>
+        <maven.plugin.jar>3.5.0</maven.plugin.jar>
+        <maven.plugin.shade>3.6.2</maven.plugin.shade>
+        <maven.plugin.site>3.21.0</maven.plugin.site>
+        <maven.plugin.exec>3.6.3</maven.plugin.exec>
+        <maven.plugin.surefire>3.5.5</maven.plugin.surefire>
+        <maven.plugin.aspectj>1.13.1</maven.plugin.aspectj>
+        <maven.plugin.enforcer>3.6.2</maven.plugin.enforcer>
+        <maven.plugin.jacoco>0.8.14</maven.plugin.jacoco>
+        <maven.plugin.springboot>4.0.6</maven.plugin.springboot>
+        <maven.plugin.versions>2.21.0</maven.plugin.versions>
+        <maven.plugin.antrun>3.2.0</maven.plugin.antrun>
+        <!-- ######################################################### -->
+        <!-- Dependências Técnicas -->
+        <!-- ######################################################### -->
+        <dependency.runtime.lombok>1.18.42</dependency.runtime.lombok>
+        <dependency.test.archunit>1.4.1</dependency.test.archunit>
+        <dependency.runtime.juniversalchardet>1.0.3</dependency.runtime.juniversalchardet>
+        <dependency.runtime.pdfbox>3.0.5</dependency.runtime.pdfbox>
+        <!-- NullAway + ErrorProne para verificação de null-safety em tempo de compilação -->
+        <dependency.nullaway>0.13.4</dependency.nullaway>
+        <dependency.errorprone>2.48.0</dependency.errorprone>
+    </properties>
+
+    <dependencyManagement>
+        <dependencies>
+            <!-- Spring Boot BOM -->
+            <dependency>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-dependencies</artifactId>
+                <version>4.0.2</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
+
+    <dependencies>
+        <dependency><groupId>org.slf4j</groupId><artifactId>slf4j-api</artifactId></dependency>
+        <dependency><groupId>org.jspecify</groupId><artifactId>jspecify</artifactId></dependency>
+        <dependency><groupId>org.projectlombok</groupId><artifactId>lombok</artifactId></dependency>
+
+        <dependency>
+            <groupId>org.springframework.boot</groupId><artifactId>spring-boot-starter-web</artifactId>
+            <exclusions><exclusion><groupId>org.springframework.boot</groupId><artifactId>spring-boot-starter-logging</artifactId></exclusion></exclusions>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId><artifactId>spring-boot-starter-actuator</artifactId>
+            <exclusions><exclusion><groupId>org.springframework.boot</groupId><artifactId>spring-boot-starter-logging</artifactId></exclusion></exclusions>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId><artifactId>spring-boot-starter-validation</artifactId>
+            <exclusions><exclusion><groupId>org.springframework.boot</groupId><artifactId>spring-boot-starter-logging</artifactId></exclusion></exclusions>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId><artifactId>spring-boot-starter-security</artifactId>
+            <exclusions><exclusion><groupId>org.springframework.boot</groupId><artifactId>spring-boot-starter-logging</artifactId></exclusion></exclusions>
+        </dependency>
+
+        <dependency><groupId>com.fasterxml.jackson.dataformat</groupId><artifactId>jackson-dataformat-yaml</artifactId></dependency>
+        <dependency><groupId>com.fasterxml.jackson.datatype</groupId><artifactId>jackson-datatype-jsr310</artifactId></dependency>
+        <dependency><groupId>com.googlecode.juniversalchardet</groupId><artifactId>juniversalchardet</artifactId><version>${dependency.runtime.juniversalchardet}</version></dependency>
+        <dependency><groupId>org.apache.pdfbox</groupId><artifactId>pdfbox</artifactId><version>${dependency.runtime.pdfbox}</version></dependency>
+
+
+        <dependency><groupId>org.junit.jupiter</groupId><artifactId>junit-jupiter-engine</artifactId><scope>test</scope></dependency>
+        <dependency><groupId>org.junit.jupiter</groupId><artifactId>junit-jupiter-params</artifactId><scope>test</scope></dependency>
+        <dependency><groupId>com.tngtech.archunit</groupId><artifactId>archunit-junit5</artifactId><version>${dependency.test.archunit}</version><scope>test</scope></dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId><artifactId>spring-boot-starter-test</artifactId><scope>test</scope>
+            <exclusions><exclusion><groupId>org.springframework.boot</groupId><artifactId>spring-boot-starter-logging</artifactId></exclusion></exclusions>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <pluginManagement>
+            <plugins>
+                <plugin><groupId>org.jacoco</groupId><artifactId>jacoco-maven-plugin</artifactId><version>${maven.plugin.jacoco}</version></plugin>
+                <plugin><groupId>org.codehaus.mojo</groupId><artifactId>exec-maven-plugin</artifactId><version>${maven.plugin.exec}</version></plugin>
+                <plugin><groupId>org.codehaus.mojo</groupId><artifactId>versions-maven-plugin</artifactId><version>${maven.plugin.versions}</version></plugin>
+                <plugin><groupId>org.apache.maven.plugins</groupId><artifactId>maven-clean-plugin</artifactId><version>${maven.plugin.clean}</version></plugin>
+                <plugin><groupId>org.apache.maven.plugins</groupId><artifactId>maven-resources-plugin</artifactId><version>${maven.plugin.resources}</version></plugin>
+                <plugin><groupId>org.apache.maven.plugins</groupId><artifactId>maven-dependency-plugin</artifactId><version>${maven.plugin.dependency}</version></plugin>
+                <plugin><groupId>org.apache.maven.plugins</groupId><artifactId>maven-compiler-plugin</artifactId><version>${maven.plugin.compile}</version></plugin>
+                <plugin><groupId>org.apache.maven.plugins</groupId><artifactId>maven-surefire-plugin</artifactId><version>${maven.plugin.surefire}</version></plugin>
+                <plugin><groupId>org.apache.maven.plugins</groupId><artifactId>maven-jar-plugin</artifactId><version>${maven.plugin.jar}</version></plugin>
+                <plugin><groupId>org.apache.maven.plugins</groupId><artifactId>maven-shade-plugin</artifactId><version>${maven.plugin.shade}</version></plugin>
+                <plugin><groupId>org.apache.maven.plugins</groupId><artifactId>maven-site-plugin</artifactId><version>${maven.plugin.site}</version></plugin>
+                <plugin><groupId>org.apache.maven.plugins</groupId><artifactId>maven-enforcer-plugin</artifactId><version>${maven.plugin.enforcer}</version></plugin>
+                <plugin><groupId>org.apache.maven.plugins</groupId><artifactId>maven-antrun-plugin</artifactId><version>${maven.plugin.antrun}</version></plugin>
+                <plugin><groupId>org.springframework.boot</groupId><artifactId>spring-boot-maven-plugin</artifactId><version>${maven.plugin.springboot}</version></plugin>
+            </plugins>
+        </pluginManagement>
+
+        <plugins>
+            <!-- ############################################################## -->
+            <!-- Versions Plugin                                                -->
+            <!-- ############################################################## -->
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>versions-maven-plugin</artifactId>
+            </plugin>
+            <!-- ############################################################## -->
+            <!-- Maven enforcer configurations                                  -->
+            <!-- ############################################################## -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-enforcer-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>enforce-versions</id>
+                        <goals><goal>enforce</goal></goals>
+                        <configuration>
+                            <rules>
+                                <requireMavenVersion><version>3.9</version></requireMavenVersion>
+                                <requireJavaVersion><version>${maven.compiler.target}</version></requireJavaVersion>
+                                <banDuplicatePomDependencyVersions />
+                            </rules>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+            <!-- ############################################################## -->
+            <!-- Maven compiler configurations                                  -->
+            <!-- ############################################################## -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <configuration>
+                    <source>${maven.compiler.source}</source>
+                    <target>${maven.compiler.target}</target>
+                    <encoding>${maven.resources.encoding}</encoding>
+                    <parameters>true</parameters>
+                    <compilerArgs>
+                        <arg>--enable-preview</arg>
+                        <arg>-parameters</arg>
+                        <arg>-XDcompilePolicy=simple</arg>
+                        <arg>--should-stop=ifError=FLOW</arg>
+
+                        <arg>-Xplugin:ErrorProne -XepExcludedPaths:.*/test/java/.* -Xep:NullAway:WARN -XepOpt:NullAway:AnnotatedPackages=br.community,br.commons -XepOpt:NullAway:ExcludedFieldAnnotations=lombok.Getter</arg>
+                    </compilerArgs>
+                    <annotationProcessorPaths>
+                        <path>
+                            <groupId>org.projectlombok</groupId>
+                            <artifactId>lombok</artifactId>
+                            <version>${dependency.runtime.lombok}</version>
+                        </path>
+                        <path>
+                            <groupId>com.uber.nullaway</groupId>
+                            <artifactId>nullaway</artifactId>
+                            <version>${dependency.nullaway}</version>
+                        </path>
+                        <path>
+                            <groupId>com.google.errorprone</groupId>
+                            <artifactId>error_prone_core</artifactId>
+                            <version>${dependency.errorprone}</version>
+                        </path>
+                    </annotationProcessorPaths>
+                </configuration>
+            </plugin>
+            <!-- ############################################################## -->
+            <!-- Maven test configurations                                      -->
+            <!-- ############################################################## -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <configuration>
+                    <skipTests>${maven.surefire.skipTest}</skipTests>
+                    <includes>
+                        <include>**/*Test.java</include>
+                    </includes>
+                    <argLine>--enable-preview</argLine>
+                </configuration>
+            </plugin>
+            <!-- ############################################################## -->
+            <!-- Maven resources configurations                                 -->
+            <!-- ############################################################## -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-resources-plugin</artifactId>
+                <configuration>
+                    <encoding>${maven.resources.encoding}</encoding>
+                </configuration>
+            </plugin>
+            <!-- ############################################################## -->
+            <!-- Maven site configurations                                      -->
+            <!-- ############################################################## -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-site-plugin</artifactId>
+                <configuration>
+                    <outputEncoding>${maven.resources.encoding}</outputEncoding>
+                </configuration>
+            </plugin>
+            <!-- ############################################################## -->
+            <!-- Spring Boot packaging                                          -->
+            <!-- ############################################################## -->
+            <plugin>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-maven-plugin</artifactId>
+                <configuration>
+                    <mainClass>br.community.Application</mainClass>
+                    <jvmArguments>--enable-preview</jvmArguments>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>repackage</id>
+                        <goals>
+                            <goal>repackage</goal>
+                        </goals>
+                    </execution>
+                    <execution>
+                        <goals>
+                            <goal>build-info</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
+</project>

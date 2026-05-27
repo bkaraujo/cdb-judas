@@ -1,0 +1,366 @@
+Olá, Fulano! Esta é a fatura do seu cartão SANTANDER
+UNIQUE MASTERCARD contendo compras e pagamentos
+realizados até 04/05.
+Opções de Pagamento até a Data de Vencimento 
+1 Pagamento Total  R$15.773,30
+Sempre a sua MELHOR opção!  
+No caso de pagamentos após a data de vencimento você tem alguns custos
+adicionais por conta do atraso: Juros: 15,19% a.m. + Juros por atraso: 1,00% a.m.
++ IOF: 0,246% a.m. + IOF adicional de 0,38% + Multa de 2,00%.
+2 Pagamento Mínimo R$1.577,33
+O valor mínimo que deve ser pago para evitar o atraso da fatura.
+Pagando esse valor, a diferença entre o pagamento mínimo e pagamento total da
+fatura será lançada na próxima fatura com o acréscimo de juros no valor de R$
+14.195,97. Juros: 15,19% a.m. + IOF: 0,246% a.m. + IOF adicional: 0,38% (CET:
+514,18% a.a.).
+FULANO DE TAL EXEMPLO - 5480 XXXX XXXX 4628  
+Total a Pagar
+R$ 15.773,30
+Vencimento
+10/05/2026
+Seu limte é
+R$54.081,00
+Limite utilizado
+R$18.016,45
+Limite Disponível:
+R$36.064,55
+Melhor dia para 
+compras
+03/06/2026
+Histórico de Faturas Pagamento Período das compras 
+MAR.  R$ 11.135,25 R$11.135,27 04/02/26 a 03/03/26
+ABR.  R$ 12.677,38 R$13.176,80 04/03/26 a 02/04/26
+MAI.  R$ 15.773,30 Esta Fatura 03/04/26 a 04/05/26
+JUN.  R$ 1.095,40 Fatura Aberta 05/05/26 a 02/06/26
+SuperCrédito Saque à crédito
+Limite total R$0,00 Limite total R$5.408,10
+Limite utilizado R$0,00
+Limite disponível R$0,00
+ANUIDADE Entenda como é calculada
+Cartão Parcela Redução Mês Vigente Valor a pagar
+FULANO S T EXEMPL 4628 R$96,25 100,00% por receber o salário no Santander R$0,00
+TOTAL R$0,00
+Orientações para Pagamento:
+O código de barras pode ser utilizado para pagamento de qualquer valor desejado.
+Seu limite será reestabelecido logo após o pagamento da fatura quando realizado em nossos canais digitais. Pagamentos realizados em outros bancos ou lotéricas seu limite será reestabelecido em até 3 dias úteis.
+Beneficiária
+Banco Santander (Brasil) S.A. - CNPJ: 90.400.888/0001-42 Avenida Presidente Juscelino Kubitschek, 2041 e 2235 Bloco A - Vila Olímpia - São Paulo - SP - cep 04543-011
+Agência / Código. Beneficiária
+000 00 00000 0 
+Autenticação Mecânica
+- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
+000-0 00000.00000 00000.000000.00000 000000 0 00000000000000
+Agência Recebedora
+Pagável preferencialmente no banco Santander
+Vencimento
+10/05/2026
+Beneficiário
+Banco Santander (Brasil) S.A. - CNPJ: 90.400.888/0001-42
+Avenida Presidente Juscelino Kubitschek, 2041 e 2235 Bloco A - Vila Olímpia - São Paulo - SP - cep 04543-011
+Agência/Cód. Beneficiário
+000 00 00000 0 
+Data Documento
+04/05/2026
+Número do Documento
+0000000000000000
+Espécie
+FT-CI
+Aceite
+N
+Data Process
+04/05/2026
+Nosso Número
+0000000000000
+Uso Banco
+CENTRAL
+Carteira
+COB
+Espécie
+R$
+Quantidade Valor Valor do documento
+Instruções PREENCHER O VALOR A SER PAGO NO CAMPO <VALOR DO DOCUMENTO>
+FATURAS PAGAS APOS O VENCIMENTO TERÃO ACRESCIMO E ENCARGOS, CALCULADOS A PARTIR DA DATA DO VENCIMENTO 
+E INCLUIDOS NA SUA PROXIMA FATURA MENSAL. APOS 30/05/2026, PAGAR SOMENTE NAS AGENCIAS DO SANTANDER.
+Número do Cartão
+5480 XXXX XXXX 4628
+Nosso Número
+0000000000000
+Vencimento
+10/05/2026
+Total desta Fatura R$
+15.773,30
+Pagamento Mínimo R$
+1.577,33
+Valor Pago R$
+CPF/CNPJ
+000.000.000-00
+RECIBO DO CLIENTE
+Autenticação no verso
+[AUTENTICACAO-OMITIDA]
+Escaneie para 
+pagar via PIX
+[CODBARRAS-OMITIDO]
+ 0000000000000000
+Pagador
+Autenticação Mecânica
+Ficha de Compensação
+FULANO DE TAL EXEMPLO
+RUA EXEMPLO 00
+AP 000 BAIRRO EXEMPLO
+00000-000 CIDADE UF
+1/5
+2/5
+Explore descontos de até 50% e opções para juntar e trocar pontos
+para comprar, viajar e curtir.
+Acesse o site esfera.com.vc e descubra mais!
+O VALOR DA SUA ANUIDADE MUDARA NO FINAL DO SEU CICLO ATUAL. MAS NAO SE
+PREOCUPE CASO TENHA UM BENEFICIO DE ISENCAO VIGENTE,MANTEREMOS A
+CONDICAO COMBINADA. CONHECA AS CONDICOES DO SEU CARTAO, REGRAS DE
+DESCONTO NA ANUIDADE E TABELA COMPLETA DE SERVICOS EM:
+WWW.SANTANDER.COM.BR/CARTOES
+Detalhamento da Fatura
+FULANO S T EXEMPLO - 5480 XXXX XXXX 4628
+Parcelamentos
+Compra Data Descrição Parcela R$ US$
+3 02/05 SKECHERS DO BRASIL CAL 01/03 168,34
+Despesas
+Compra Data Descrição Parcela R$ US$
+2 24/04 SEM PARAR 20,00
+3 25/04 BARBEARIA AMERICA 90,00
+3 25/04 PARK SHOPPING 6,00
+3 25/04 HOTZONE PKS 203,00
+3 25/04 TAGUATINGA 113,20
+3 25/04 CINE PARK SHOPPING 193,50
+3 25/04 IFD*QUINTAL BAR 109,23
+ 25/04 SEM PARAR 100,00
+3 25/04 POSTO GARZZO TAGUACENT 235,65
+3 25/04 PARKSHOPPING 31,00
+3 26/04 MP *GIRLENEMARIA 12,00
+3 26/04 JOAOPAULODOS 11,00
+3 26/04 BELINI 131,38
+3 27/04 PANELA MINEIRA 18,12
+3 27/04 MP *ESPETINHO 60,00
+3 28/04 MP *ESPETINHO 32,00
+3 28/04 PAODERIA 21,01
+3 28/04 AVENIDA NORTE COMERCI 13,49
+3 29/04 TERMINAL DE BRASILIA 5,78
+3 29/04 TAGUATINGA 81,40
+3 29/04 RODO FARMA 35,00
+3 29/04 PANELA MINEIRA 71,40
+3 30/04 PONTODAESFIHA 87,97
+3 30/04 AVENIDA NORTE COMERCI 25,01
+3 01/05 JECA TATU SHOPPING INT 53,70
+3 01/05 PONTODAESFIHA 62,13
+3 02/05 PONTODAESFIHA 97,88
+3 02/05 DUD - DUTRA DRIVE 12,00
+ 04/05 ANUIDADE DIFERENCIADA 0,00
+VALOR TOTAL 2.101,19 0,00
+FULANO S T EXEMPLO - 5201 XXXX XXXX 1258
+Pagamento e Demais Créditos
+Compra Data Descrição Parcela R$ US$
+ 17/03 DL*GOOGLE GOOGLE -14,51
+ 10/04 PAGAMENTO DE FATURA -12.662,87
+Parcelamentos
+Compra Data Descrição Parcela R$ US$
+3 03/08 DECATHLON 09/10 111,98
+ 10/01 AIRBNB * HMQK4B8WQH 04/06 135,41
+3 13/02 037 - DF TAGUATINGA CT 03/03 231,79
+3 12/03 LOJA TAGUATINGA - DF 02/10 50,90
+3 12/03 CALIFE COMERCIO DE CA 02/02 134,90
+3 31/03 MEGAMUSIC 02/02 165,00
+3 13/04 DROGASIL 3344 01/02 265,83
+3 18/04 VITORIA TOYS 01/04 124,75
+2 19/04 AMAZON BR 01/03 61,64
+Despesas
+Compra Data Descrição Parcela R$ US$
+3 01/04 SAMS AGUAS CLARAS 4953 461,82
+3 01/04 PANELA MINEIRA 53,31
+3 02/04 MEGAMUSIC 169,00
+3 02/04 BELEZA PURA VARIEDADES 69,18
+3 02/04 VAREJAO ARAUJO 58,98
+3 02/04 CONFEITARIA DELICIAS A 67,29
+ 02/04 IFD*PIZZARIA DOIS IRMA 143,77
+3 03/04 JOSEDESOUSA 22,00
+3 03/04 REDE AQUI 165,22
+3 03/04 BRAS GEL SERVICOS 23,00
+3 03/04 ANTONIOLUIZ 25,00
+3 04/04 COMERCIAL EMPORIO 50,99
+3 05/04 DISTRIBUIDORA BAHIA 15,98
+3 05/04 F&E GELATOS LTDA 60,90
+ 05/04 IFD*ARCOS DOURADOS COM 83,79
+2 06/04 CIANO*PJBANK 1.100,52
+3 06/04 PANELA MINEIRA 62,41
+3 06/04 BELINI 109,67
+3 06/04 SUPER ADEGA 56,33
+ 06/04 NETFLIX COM 72,80
+3 06/04 VAREJAO DA FARTURA 24,98
+3 06/04 MARIAGORETEARAUJO 76,00
+3 07/04 MP *ESPETINHO 54,00
+3/5
+Detalhamento da Fatura
+Despesas
+Compra Data Descrição Parcela R$ US$
+3 07/04 F&E GELATOS LTDA 54,91
+3 07/04 PANELA MINEIRA 35,19
+3 07/04 PAODERIA 24,05
+3 08/04 KIKOOKIES 20,00
+3 08/04 MIKAMI PRODUTOS JAPON 87,87
+3 08/04 VALERIA SOUZA CONFEIT 23,50
+3 08/04 SAMS AGUAS CLARAS 4953 466,00
+3 08/04 AUTO POSTO FENIX ODJ L 190,96
+3 08/04 PANELA MINEIRA 44,60
+3 09/04 VAREJAO ARAUJO 16,98
+3 09/04 SUPREMA PAPELARIA 91,00
+3 09/04 FIA SALAO DE BELEZA 290,00
+3 09/04 QDELICIA 41,57
+3 09/04 VAREJAO DA FARTURA 31,81
+3 09/04 CONFEITARIA DELICIAS A 61,43
+3 09/04 61 116 105 MARIA GORE 17,50
+3 09/04 PANELA MINEIRA 37,09
+3 10/04 CONJUNTO NACIONAL BRAS 3,00
+3 10/04 BRIZOLIM 23,00
+3 10/04 BRASIL 21 EVENTOS E HO 27,04
+3 10/04 DROGARIASAOJOSE 31,99
+3 10/04 PAODERIA 42,64
+3 10/04 CREPE SOBERANO 75,80
+3 10/04 BRB MOBILIDA*BUS 2000 5,50
+ 10/04 CONTA VIVO 64,00
+3 10/04 FABIO MEDINA BATISTA 41,44
+3 10/04 LANCHES 16,50
+3 10/04 BRB MOBILIDA*BUS 1001 5,50
+3 11/04 F&E GELATOS LTDA 61,86
+3 11/04 SAMS AGUAS CLARAS 4953 403,73
+3 11/04 JFARESTAURANTEE 89,86
+3 11/04 MP *ESPETINHO 54,00
+3 12/04 JFARESTAURANTEE 61,57
+3 12/04 SUPER ADEGA 175,53
+3 12/04 BRASILIA 02 - DF - TAG 41,17
+3 12/04 IFD*HELENA NOLLETO CON 45,00
+3 12/04 ALINEDESOUSA 7,00
+ 12/04 IFD*ARCOS DOURADOS COM 89,79
+3 13/04 A MUNDIAL 91,98
+3 13/04 SUMMERMULTIMARCAS 49,90
+3 13/04 VITORIA TOYS 5,00
+3 13/04 VAREJAO DA FARTURA 97,61
+3 13/04 ATACADAODAPRACA 10,65
+3 14/04 SAMS AGUAS CLARAS 4953 212,40
+3 14/04 BIO MUNDO 184,99
+3 14/04 DROGASIL 2272 6,29
+3 15/04 ARMARINHO RODRIGUES 185,00
+3 15/04 PANELA MINEIRA 54,26
+3 15/04 IFD*HELENA NOLLETO CON 186,82
+3 16/04 ESTACAO DO PAO 21,00
+3 16/04 SAMS AGUAS CLARAS 4953 288,76
+3 16/04 MEG AUTO PECAS 110,00
+3 16/04 POSTO GARZZO TAGUACENT 234,42
+3 17/04 BRASILIA 02 - DF - TAG 43,06
+3 17/04 PANELA MINEIRA 34,00
+3 17/04 TAGUATINGA 117,90
+3 18/04 PADARIA BELISSIMA 76,68
+3 18/04 QUIOSQUE DO NENEM 35,00
+3 18/04 JOSEDESOUSA 20,00
+3 18/04 HIPER MIAMI COMERCIO 90,78
+3 18/04 CICLISTA TAGUANORTE 50,00
+3 18/04 SAMS AGUAS CLARAS 4953 48,14
+3 18/04 PEGA-PEGA ATACAREJO 13,60
+3 18/04 DISKMAQMAQUINASDE 17,00
+3 18/04 DORIVALRIBEIRODOS 18,00
+2 18/04 AMAZONMKTPLC*REPSTOREL 209,90
+3 19/04 SAMS AGUAS CLARAS 4953 95,20
+3 19/04 NOBRE DISTRIBUIDORA 74,00
+3 19/04 NOBRE DISTRIBUIDORA 8,50
+3 19/04 LINDOMAR CARNE DE SOL 140,00
+3 20/04 PADARIA BELISSIMA 87,74
+3 20/04 WEDERSONPEREIRA 12,00
+3 20/04 BRASILIA NOVIDADES 269,97
+3 20/04 SUPER ADEGA 338,84
+3 20/04 PANELA MINEIRA 41,44
+3 20/04 Y Y CONFECCOES LTDA 37,99
+3 20/04 SUMMERMULTIMARCAS 39,90
+ 20/04 VIKI COM 40,19 7,63
+COTAÇÃO DOLAR R$ 5,2673
+IOF DESPESA NO EXTERIOR 1,41
+3 20/04 MP *CLAMYKIDS 88,00
+3 20/04 DROGASIL 4570 16,27
+3 21/04 CANOAS BAR 434,34
+3 21/04 TAGUATINGA 120,30
+2 21/04 AMAZON BR 116,90
+3 21/04 POSTOBRASILIA PIONEI 153,09
+ 21/04 BUS SERVICOS*CLICKBUS 499,42
+ 21/04 BUS SERVICOS*CLICKBUS -499,42
+3 22/04 ALLPARK EMPREENDIMENTO 15,00
+3 22/04 LUIGI RISTORANTE 44,02
+3 22/04 PAODERIA 17,63
+2 22/04 AMAZONMKTPLC*BATRAVESS 39,90
+3 22/04 SAMS AGUAS CLARAS 4953 242,31
+3 22/04 PANELA MINEIRA 41,68
+3 23/04 PANELA MINEIRA 26,92
+3 23/04 CONFEITARIA DELICIAS A 77,05
+VALOR TOTAL 12.842,67 7,63
+@ FULANO S T EXEMPLO - 5201 XXXX XXXX 2884
+Despesas
+Compra Data Descrição Parcela R$ US$
+ 06/04 CONTA VIVO 64,00
+ 18/04 IFD*IFOOD CLUB 7,95
+VALOR TOTAL 71,95 0,00
+@ FULANO S T EXEMPLO - 5480 XXXX XXXX 1922
+Despesas
+Compra Data Descrição Parcela R$ US$
+3 24/04 IFD*RESTESPDAMA3453495 113,79
+ 26/04 EASYJET MOBILIDADE LTD 10,00
+ 26/04 EASYJET MOBILIDADE LTD 6,05
+ 26/04 EASYJET MOBILIDADE LTD 8,94
+ 26/04 EASYJET MOBILIDADE LTD 3,68
+ 26/04 EASYJET MOBILIDADE LTD 8,15
+ 26/04 EASYJET MOBILIDADE LTD 10,00
+2 27/04 PG *FOCO RADICAL 56,72
+VALOR TOTAL 217,33 0,00
+BELTRANA D T EXEMPLO - 5228 XXXX XXXX 8376
+4/5
+Detalhamento da Fatura
+Parcelamentos
+Compra Data Descrição Parcela R$ US$
+3 25/04 ANA CAPRI 01/03 176,57
+Despesas
+Compra Data Descrição Parcela R$ US$
+3 24/04 SUPER ADEGA 117,80
+3 25/04 PARK SHOPPING 2,00
+3 25/04 DROGASIL 1365 106,44
+3 25/04 MP *THARCYNAILSMAKEUP 100,00
+3 26/04 JOSEDESOUSA 20,00
+3 26/04 BELINI 10,43
+3 26/04 OREIDOPAO 98,15
+3 28/04 RAZAK COMERCIO VAREJIS 17,99
+3 28/04 PANELA MINEIRA 55,96
+3 29/04 BIG BOX ASA SUL 44,39
+3 29/04 DROGASIL 2272 172,43
+3 30/04 HUDSON BRASILIA T2 RES 6,90
+3 01/05 SONEDA PERFUMARIA 00 21,98
+3 01/05 DIVINO FOGAO-COMIDA D 42,60
+3 02/05 AUTO POSTO MANCINI LTD 45,94
+VALOR TOTAL 1.039,58 0,00
+Resumo da Fatura
+Descrição R$ US$
+Saldo Anterior 12.677,38
+(+) Total Despesas/Débitos no Brasil 16.232,53
+(+) Total Despesas/Débitos no Exterior 40,19 7,63
+(-) Total de pagamentos 12.662,87
+(-) Total de créditos 513,93
+(=) Saldo Desta Fatura 15.773,30
+Saldo total consolidado de obrigações futuras
+Descrição R$ US$
+Compras parceladas com e sem juros: operações de
+crédito e tarifas
+2.243,15
+5/5
+DECLARAÇÃO ANUAL DE QUITAÇÃO DE DÉBITO: Não constam débitos referentes às faturas vencidas em 2025. Esta declaração substitui comprovantes dos anos anteriores. Exclui-se desta declaração transações
+parceladas a vencer e despesas contestadas em análise.
+Juros e Custo Efetivo Total (CET) para o próximo período
+Atenção Correntista: caso o pagamento da fatura não ocorra até o vencimento, o Santander está autorizado, nos termos do contrato, a realizar o débito em sua Conta Corrente no valor mínimo da fatura, desde que haja saldo suficiente. O
+titular pode cancelar esta autorização através da Central de Atendimento Santander. Crédito Rotativo: Juros: 15,19% a.m. e 445,72% a.a. CET: 514,18% a.a. | Saldo no Rotativo após o pagamento mínimo ou após a contratação do
+Parcelamento Automático: R$ 14.195,97 (85,96% do CET) Juros: R$ 2.228,25 (13,49% do CET) IOF: R$ 90,03 (0,55% do CET) | Juros Moratórios: 1,00% a.m. | Multa de 2,00% | Parcelamento de Fatura: Juros: 15,29% a.m. e 451,44% a.a.
+CET: 774,30% a.a. Seguro Prestamista 4,10% (Valor Parcelado: R$ 15.773,30 (77,67% do CET) Juros: R$ 3.764,79 (18,54% do CET) IOF: R$ 123,33 (0,61% do CET) Seguro: R$ 646,70(3,18% do CET) |Saque à vista: 15,19% a.m. Tarifa R$
+18,80 | IOF Crédito: 0,246% a.m., IOF Adicional 0,38% | Parcelado Emissor: 5,65% a.m. e 93,39 % a.a CET: 107,48% a.a. | Parcelamento de Compras Nacional: 4,55% a.m. e 70,56% a.a. CET: 82,64% a.a. | Parcelamento de Compras
+Internacional: 4,09% a.m. e 61,77% a.a. CET 83,98% a.a. | Crediário: 5,15% a.m. e 82,68% a.a. CET 108,22% a.a. | Pagamento de Contas: Tarifa de 3,49% do valor total do boleto, CET 62,40% a.a. Os valores de CET consideram as condições
+apresentadas na fatura e a contratação de Seguro Prestamista para os produtos que possuem essa opção. Lembre-se: A contratação do Seguro Prestamista é opcional. Consulte demais opções e condições em nossos canais de contratação.
+Caso você queira antecipar o parcelado contratado, entre em contato com a nossa Central de Atendimento.

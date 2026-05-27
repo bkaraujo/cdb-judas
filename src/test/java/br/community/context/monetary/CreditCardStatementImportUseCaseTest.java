@@ -1,0 +1,567 @@
+package br.community.context.monetary;
+
+import br.commons.MessageBus;
+import br.commons.Result;
+import br.commons.framework.message.MessageListener;
+import br.commons.framework.message.MessageResult;
+import br.community.context.monetary._0_domain.event.MonetaryEvent;
+import br.community.context.monetary._0_domain.model.AccountType;
+import br.community.context.monetary._0_domain.model.ChargeKind;
+import br.community.context.monetary._0_domain.model.ImportError;
+import br.community.context.monetary._0_domain.model.ImportPreview;
+import br.community.context.monetary._0_domain.model.ImportResult;
+import br.community.context.monetary._0_domain.model.Issuer;
+import br.community.context.monetary._0_domain.model.MonetaryAccount;
+import br.community.context.monetary._0_domain.model.MonetaryTransaction;
+import br.community.context.monetary._0_domain.model.ParsedStatementLine;
+import br.community.context.monetary._0_domain.port.CreditCardStatementTextExtractor;
+import br.community.context.monetary._0_domain.port.ExtractionFailure;
+import br.community.context.monetary._1_application.command.ImportConfirmCommand;
+import br.community.context.monetary._1_application.service.AccountService;
+import br.community.context.monetary._1_application.service.BtgCreditCardStatementParser;
+import br.community.context.monetary._1_application.service.CardMatcher;
+import br.community.context.monetary._1_application.service.CategoryGuesser;
+import br.community.context.monetary._1_application.service.CategoryService;
+import br.community.context.monetary._1_application.service.CreditCardStatementParserRegistry;
+import br.community.context.monetary._1_application.service.GroupSignature;
+import br.community.context.monetary._1_application.service.InstallmentExpander;
+import br.community.context.monetary._1_application.service.IssuerDetector;
+import br.community.context.monetary._1_application.service.SantanderCreditCardStatementParser;
+import br.community.context.monetary._1_application.service.TransactionService;
+import org.junit.jupiter.api.Test;
+
+import java.math.BigDecimal;
+import java.time.Clock;
+import java.time.Instant;
+import java.time.LocalDate;
+import java.time.MonthDay;
+import java.time.ZoneOffset;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.atomic.AtomicInteger;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+class CreditCardStatementImportUseCaseTest {
+
+    private static final long MAX_BYTES = 4096;
+
+    // Fixed "today" → 2025-07-15, so the BTG fixtures' "15 Jul" anchors deterministically.
+    private static final Clock CLOCK = Clock.fixed(Instant.parse("2025-07-15T12:00:00Z"), ZoneOffset.UTC);
+
+    private static final CreditCardStatementParserRegistry PARSERS = new CreditCardStatementParserRegistry(
+            new SantanderCreditCardStatementParser(), new BtgCreditCardStatementParser());
+
+    private CreditCardStatementImportUseCase useCaseWith(CreditCardStatementTextExtractor extractor) {
+        return useCaseWith(extractor, new InMemoryRepositories.Accounts());
+    }
+
+    private CreditCardStatementImportUseCase useCaseWith(
+            CreditCardStatementTextExtractor extractor, InMemoryRepositories.Accounts accounts) {
+        return useCaseWith(extractor, accounts, new InMemoryRepositories.Transactions());
+    }
+
+    private CreditCardStatementImportUseCase useCaseWith(
+            CreditCardStatementTextExtractor extractor,
+            InMemoryRepositories.Accounts accounts,
+            InMemoryRepositories.Transactions transactions) {
+        return useCaseWith(extractor, accounts, transactions, new InMemoryRepositories.Categories());
+    }
+
+    private CreditCardStatementImportUseCase useCaseWith(
+            CreditCardStatementTextExtractor extractor,
+            InMemoryRepositories.Accounts accounts,
+            InMemoryRepositories.Transactions transactions,
+            InMemoryRepositories.Categories categories) {
+        final GroupSignature groupSignature = new GroupSignature();
+        return new CreditCardStatementImportUseCase(
+                extractor, new IssuerDetector(), PARSERS,
+                new AccountService(accounts), new CardMatcher(),
+                new InstallmentExpander(groupSignature), groupSignature,
+                new TransactionService(transactions), new CategoryGuesser(),
+                new CategoryService(categories), CLOCK, MAX_BYTES);
+    }
+
+    private static MonetaryAccount creditCard(String name, String last4) {
+        return new MonetaryAccount(
+                UUID.randomUUID(), name, BigDecimal.ZERO, AccountType.CREDIT_CARD,
+                "#000", true, null, Map.of("last4", last4));
+    }
+
+    private static MonetaryAccount creditCardLinkedTo(String name, String last4, UUID linkedAccountId) {
+        return new MonetaryAccount(
+                UUID.randomUUID(), name, BigDecimal.ZERO, AccountType.CREDIT_CARD,
+                "#000", true, linkedAccountId, Map.of("last4", last4));
+    }
+
+    private static MonetaryAccount checking(String name) {
+        return new MonetaryAccount(
+                UUID.randomUUID(), name, BigDecimal.ZERO, AccountType.CHECKING,
+                "#000", true, null, Map.of());
+    }
+
+    private static final CreditCardStatementTextExtractor NOOP_EXTRACTOR =
+            (bytes, password) -> Result.success("unused");
+
+    @Test
+    void rejectsOversizedFileBeforeExtracting() {
+        var useCase = useCaseWith((bytes, password) -> Result.success("BTG Pactual 30.306.294/0001-45"));
+        var result = useCase.preview(new byte[(int) MAX_BYTES + 1], null);
+        var error = assertInstanceOf(Result.Failure.class, result).error();
+        assertInstanceOf(ImportError.FileTooLarge.class, error);
+    }
+
+    @Test
+    void mapsEncryptedToPasswordRequired() {
+        var useCase = useCaseWith((bytes, password) -> new Result.Failure<>(new ExtractionFailure.Encrypted()));
+        var result = useCase.preview(new byte[1], null);
+        var error = assertInstanceOf(Result.Failure.class, result).error();
+        assertInstanceOf(ImportError.PasswordRequired.class, error);
+    }
+
+    @Test
+    void mapsTooManyPagesPreservingCounts() {
+        var useCase = useCaseWith((bytes, password) -> new Result.Failure<>(new ExtractionFailure.TooManyPages(99, 50)));
+        var result = useCase.preview(new byte[1], null);
+        var error = assertInstanceOf(Result.Failure.class, result).error();
+        var tooMany = assertInstanceOf(ImportError.TooManyPages.class, error);
+        assertEquals(99, tooMany.pages());
+        assertEquals(50, tooMany.maxPages());
+    }
+
+    @Test
+    void rejectsUnknownIssuer() {
+        var useCase = useCaseWith((bytes, password) -> Result.success("texto qualquer sem banco"));
+        var result = useCase.preview(new byte[1], null);
+        var error = assertInstanceOf(Result.Failure.class, result).error();
+        assertInstanceOf(ImportError.UnknownIssuer.class, error);
+    }
+
+    @Test
+    void buildsPreviewWithParsedRowsForRecognizedIssuer() {
+        var text = """
+                BTG Pactual S.A CNPJ 30.306.294/0001-45
+                Lançamentos do cartão físico | Fulano | Final 0020 Total do cartão: R$ 72,99
+                Total de compras e despesas
+                R$ 72,99Amazonmktplc Megabytem (9/10)15 Jul
+                R$ 72,99
+                """;
+        var useCase = useCaseWith((bytes, password) -> Result.success(text));
+
+        var preview = (ImportPreview) assertInstanceOf(Result.Success.class, useCase.preview(new byte[1], null)).value();
+
+        assertEquals(Issuer.BTG, preview.issuer());
+        assertEquals(java.util.List.of("0020"), preview.statement().last4s());
+        assertEquals(1, preview.statement().lines().size());
+
+        ParsedStatementLine row = preview.statement().lines().getFirst();
+        assertEquals("Amazonmktplc Megabytem", row.description());
+        assertEquals(0, row.amount().compareTo(new BigDecimal("72.99")));
+        assertEquals(MonthDay.of(7, 15), row.purchaseDate());
+        assertEquals(9, row.installmentNumber());
+        assertEquals(10, row.installmentTotal());
+    }
+
+    @Test
+    void matchesRegisteredCardByLast4AndExposesCandidates() {
+        var text = """
+                BTG Pactual S.A CNPJ 30.306.294/0001-45
+                Lançamentos do cartão físico | Fulano | Final 0020 Total do cartão: R$ 72,99
+                Total de compras e despesas
+                R$ 72,99Amazonmktplc Megabytem (9/10)15 Jul
+                R$ 72,99
+                """;
+        var accounts = new InMemoryRepositories.Accounts();
+        var matchingCard = creditCard("Cartão BTG", "0020");
+        var otherCard = creditCard("Cartão Santander", "9999");
+        accounts.save(matchingCard);
+        accounts.save(otherCard);
+        var useCase = useCaseWith((bytes, password) -> Result.success(text), accounts);
+
+        var preview = (ImportPreview) assertInstanceOf(Result.Success.class, useCase.preview(new byte[1], null)).value();
+
+        assertEquals(matchingCard, preview.matchedCard());
+        assertEquals(java.util.List.of(matchingCard, otherCard), preview.candidateCards());
+    }
+
+    @Test
+    void aVistaRowCarriesNoInstallment() {
+        var text = """
+                BTG Pactual S.A CNPJ 30.306.294/0001-45
+                Lançamentos do cartão físico | Fulano | Final 0020 Total do cartão: R$ 60,00
+                Total de compras e despesas
+                R$ 60,00Microsoft09 Mar
+                R$ 60,00
+                """;
+        var useCase = useCaseWith((bytes, password) -> Result.success(text));
+
+        var preview = (ImportPreview) assertInstanceOf(Result.Success.class, useCase.preview(new byte[1], null)).value();
+        ParsedStatementLine row = preview.statement().lines().getFirst();
+        assertNull(row.installmentNumber());
+        assertNull(row.installmentTotal());
+    }
+
+    @Test
+    void previewRowsAreExpandedInstallmentSchedule() {
+        var text = """
+                BTG Pactual S.A CNPJ 30.306.294/0001-45
+                Lançamentos do cartão físico | Fulano | Final 0020 Total do cartão: R$ 72,99
+                Total de compras e despesas
+                R$ 72,99Amazonmktplc Megabytem (9/10)15 Jul
+                R$ 72,99
+                """;
+        var useCase = useCaseWith((bytes, password) -> Result.success(text));
+
+        var preview = (ImportPreview) assertInstanceOf(Result.Success.class, useCase.preview(new byte[1], null)).value();
+
+        // The raw statement still carries the single printed line.
+        assertEquals(1, preview.statement().lines().size());
+        // The expanded schedule is all N=10 installments.
+        assertEquals(10, preview.rows().size());
+        assertEquals(1, preview.rows().getFirst().draft().installmentNumber());
+        assertEquals(10, preview.rows().getLast().draft().installmentNumber());
+        assertEquals(java.util.List.of(1, 2, 3, 4, 5, 6, 7, 8, 9, 10),
+                preview.rows().stream().map(r -> r.draft().installmentNumber()).toList());
+    }
+
+    @Test
+    void flagsDuplicateRowWhenExistingTransactionShareGroupId() {
+        var text = """
+                BTG Pactual S.A CNPJ 30.306.294/0001-45
+                Lançamentos do cartão físico | Fulano | Final 0020 Total do cartão: R$ 72,99
+                Total de compras e despesas
+                R$ 72,99Amazonmktplc Megabytem (9/10)15 Jul
+                R$ 72,99
+                """;
+        var accounts = new InMemoryRepositories.Accounts();
+        var card = creditCard("Cartão BTG", "0020"); // no linkedAccountId → drafts use card.id()
+        accounts.save(card);
+
+        // Pre-compute the parcelado group id the expander will assign: originalDate 2024-07-15, N=10.
+        var groupId = new GroupSignature().groupId(card.id(), LocalDate.of(2024, 7, 15), 10, "Amazonmktplc Megabytem");
+        var transactions = new InMemoryRepositories.Transactions();
+        transactions.save(new MonetaryTransaction(
+                UUID.randomUUID(), "Amazonmktplc Megabytem", new BigDecimal("72.99"),
+                LocalDate.of(2024, 7, 15), UUID.randomUUID(), card.id(),
+                "confirmed", "expense", null, groupId, 1, 10));
+
+        var useCase = useCaseWith((bytes, password) -> Result.success(text), accounts, transactions);
+        var preview = (ImportPreview) assertInstanceOf(Result.Success.class, useCase.preview(new byte[1], null)).value();
+
+        assertEquals(10, preview.rows().size());
+        assertTrue(preview.rows().stream().allMatch(r -> r.duplicate()),
+                "every installment of the same group should be flagged duplicate");
+    }
+
+    @Test
+    void flagsDuplicateRowForAvistaKeyMatch() {
+        var text = """
+                BTG Pactual S.A CNPJ 30.306.294/0001-45
+                Lançamentos do cartão físico | Fulano | Final 0020 Total do cartão: R$ 60,00
+                Total de compras e despesas
+                R$ 60,00Microsoft09 Mar
+                R$ 60,00
+                """;
+        var accounts = new InMemoryRepositories.Accounts();
+        var card = creditCard("Cartão BTG", "0020");
+        accounts.save(card);
+
+        // à-vista "09 Mar" with today 2025-07-15 → anchor 2025-07, diff 3-7=-4 → year 2025 → 2025-03-09.
+        var transactions = new InMemoryRepositories.Transactions();
+        transactions.save(new MonetaryTransaction(
+                UUID.randomUUID(), "MICROSOFT", new BigDecimal("-60.00"),
+                LocalDate.of(2025, 3, 9), UUID.randomUUID(), card.id(),
+                "confirmed", "expense", null, null, null, null));
+
+        var useCase = useCaseWith((bytes, password) -> Result.success(text), accounts, transactions);
+        var preview = (ImportPreview) assertInstanceOf(Result.Success.class, useCase.preview(new byte[1], null)).value();
+
+        assertEquals(1, preview.rows().size());
+        assertTrue(preview.rows().getFirst().duplicate(),
+                "à-vista row matching account+date+amount+normalized-description should be a duplicate");
+    }
+
+    @Test
+    void everyPreviewRowCarriesFallbackCategoryWhenNoHistory() {
+        var text = """
+                BTG Pactual S.A CNPJ 30.306.294/0001-45
+                Lançamentos do cartão físico | Fulano | Final 0020 Total do cartão: R$ 72,99
+                Total de compras e despesas
+                R$ 72,99Amazonmktplc Megabytem (9/10)15 Jul
+                R$ 72,99
+                """;
+        var useCase = useCaseWith((bytes, password) -> Result.success(text));
+
+        var preview = (ImportPreview) assertInstanceOf(Result.Success.class, useCase.preview(new byte[1], null)).value();
+
+        assertEquals(10, preview.rows().size());
+        assertTrue(preview.rows().stream().allMatch(r -> r.categoryId() != null),
+                "with no history every row should fall back to the 'Sem categoria' id");
+        // All fall back to the same single find-or-created category.
+        assertEquals(1L, preview.rows().stream().map(r -> r.categoryId()).distinct().count());
+    }
+
+    @Test
+    void guessesCategoryFromMatchingHistory() {
+        var text = """
+                BTG Pactual S.A CNPJ 30.306.294/0001-45
+                Lançamentos do cartão físico | Fulano | Final 0020 Total do cartão: R$ 72,99
+                Total de compras e despesas
+                R$ 72,99Amazonmktplc Megabytem (9/10)15 Jul
+                R$ 72,99
+                """;
+        var accounts = new InMemoryRepositories.Accounts();
+        var card = creditCard("Cartão BTG", "0020"); // no linkedAccountId → drafts use card.id()
+        accounts.save(card);
+
+        var categoryC = UUID.randomUUID();
+        var transactions = new InMemoryRepositories.Transactions();
+        transactions.save(new MonetaryTransaction(
+                UUID.randomUUID(), "AMAZONMKTPLC MEGABYTEM", new BigDecimal("-99.90"),
+                LocalDate.of(2024, 1, 10), categoryC, card.id(),
+                "confirmed", "expense", null, null, null, null));
+
+        var useCase = useCaseWith((bytes, password) -> Result.success(text), accounts, transactions);
+        var preview = (ImportPreview) assertInstanceOf(Result.Success.class, useCase.preview(new byte[1], null)).value();
+
+        assertEquals(10, preview.rows().size());
+        assertTrue(preview.rows().stream().allMatch(r -> categoryC.equals(r.categoryId())),
+                "every installment of the matched line should inherit the historical category C");
+    }
+
+    @Test
+    void rowsNotFlaggedDuplicateWhenNoCardMatched() {
+        var text = """
+                BTG Pactual S.A CNPJ 30.306.294/0001-45
+                Lançamentos do cartão físico | Fulano | Final 0020 Total do cartão: R$ 60,00
+                Total de compras e despesas
+                R$ 60,00Microsoft09 Mar
+                R$ 60,00
+                """;
+        var useCase = useCaseWith((bytes, password) -> Result.success(text));
+        var preview = (ImportPreview) assertInstanceOf(Result.Success.class, useCase.preview(new byte[1], null)).value();
+
+        assertNull(preview.matchedCard());
+        assertEquals(1, preview.rows().size());
+        assertFalse(preview.rows().getFirst().duplicate());
+        assertEquals(ChargeKind.PURCHASE, preview.rows().getFirst().draft().kind());
+    }
+
+    // ── confirm ────────────────────────────────────────────────────────────────
+
+    @Test
+    void confirmPersistsAvistaAndParceladoRowsOnLinkedAccount() {
+        var accounts = new InMemoryRepositories.Accounts();
+        var account = checking("Conta");
+        var card = creditCardLinkedTo("Cartão BTG", "0020", account.id());
+        accounts.save(account);
+        accounts.save(card);
+
+        var transactions = new InMemoryRepositories.Transactions();
+        var useCase = useCaseWith(NOOP_EXTRACTOR, accounts, transactions);
+        var categoryId = UUID.randomUUID();
+
+        // Two à-vista rows + one parcelado purchase expanded into 2 installment rows.
+        var avistaConfirmed = new ImportConfirmCommand.Row(
+                "Mercado", new BigDecimal("80.00"), LocalDate.of(2025, 7, 10), LocalDate.of(2025, 7, 10),
+                null, null, categoryId);
+        var avistaScheduled = new ImportConfirmCommand.Row(
+                "Streaming", new BigDecimal("30.00"), LocalDate.of(2025, 9, 5), LocalDate.of(2025, 9, 5),
+                null, null, categoryId);
+        var parc1 = new ImportConfirmCommand.Row(
+                "Geladeira", new BigDecimal("100.00"), LocalDate.of(2025, 7, 15), LocalDate.of(2025, 7, 15),
+                1, 2, categoryId);
+        var parc2 = new ImportConfirmCommand.Row(
+                "Geladeira", new BigDecimal("100.00"), LocalDate.of(2025, 8, 15), LocalDate.of(2025, 7, 15),
+                2, 2, categoryId);
+
+        // preview persists nothing — nothing exists before confirm.
+        assertTrue(transactions.findAll().isEmpty());
+
+        var cmd = new ImportConfirmCommand(card.id(), List.of(avistaConfirmed, avistaScheduled, parc1, parc2));
+        var result = (ImportResult) assertInstanceOf(Result.Success.class, useCase.confirm(cmd)).value();
+
+        assertEquals(4, result.created());
+        assertEquals(0, result.skipped());
+
+        var saved = transactions.findAll();
+        assertEquals(4, saved.size());
+        // All land on the card's linkedAccountId, are expenses with negative amounts.
+        assertTrue(saved.stream().allMatch(t -> account.id().equals(t.accountId())));
+        assertTrue(saved.stream().allMatch(t -> "expense".equals(t.type())));
+        assertTrue(saved.stream().allMatch(t -> t.amount().signum() < 0));
+
+        // Status computed by date against fixed today 2025-07-15.
+        var mercado = saved.stream().filter(t -> t.description().equals("Mercado")).findFirst().orElseThrow();
+        assertEquals("confirmed", mercado.status());
+        var streaming = saved.stream().filter(t -> t.description().equals("Streaming")).findFirst().orElseThrow();
+        assertEquals("scheduled", streaming.status());
+
+        // The two parcelado rows share one groupId with their installment numbers/total.
+        var parcelas = saved.stream().filter(t -> t.description().equals("Geladeira")).toList();
+        assertEquals(2, parcelas.size());
+        assertEquals(1L, parcelas.stream().map(MonetaryTransaction::groupId).distinct().count());
+        assertTrue(parcelas.stream().allMatch(t -> t.groupId() != null));
+        assertEquals(List.of(1, 2),
+                parcelas.stream().map(MonetaryTransaction::installmentNumber).sorted().toList());
+        assertTrue(parcelas.stream().allMatch(t -> Integer.valueOf(2).equals(t.totalInstallments())));
+        var parcelaConfirmed = parcelas.stream().filter(t -> Integer.valueOf(1).equals(t.installmentNumber())).findFirst().orElseThrow();
+        assertEquals("confirmed", parcelaConfirmed.status());
+        var parcelaScheduled = parcelas.stream().filter(t -> Integer.valueOf(2).equals(t.installmentNumber())).findFirst().orElseThrow();
+        assertEquals("scheduled", parcelaScheduled.status());
+    }
+
+    @Test
+    void confirmEmitsOneTransactionCreatedEventPerCreatedRow() {
+        var accounts = new InMemoryRepositories.Accounts();
+        var account = checking("Conta");
+        var card = creditCardLinkedTo("Cartão", "0020", account.id());
+        accounts.save(account);
+        accounts.save(card);
+
+        var transactions = new InMemoryRepositories.Transactions();
+        var useCase = useCaseWith(NOOP_EXTRACTOR, accounts, transactions);
+        var categoryId = UUID.randomUUID();
+
+        var counter = new AtomicInteger(0);
+        MessageBus.subscribe(new Object() {
+            @MessageListener
+            public MessageResult on(MonetaryEvent.TransactionCreated event) {
+                counter.incrementAndGet();
+                return MessageResult.AVAILABLE;
+            }
+        });
+
+        var row1 = new ImportConfirmCommand.Row(
+                "Padaria", new BigDecimal("12.00"), LocalDate.of(2025, 7, 1), LocalDate.of(2025, 7, 1),
+                null, null, categoryId);
+        var row2 = new ImportConfirmCommand.Row(
+                "Farmácia", new BigDecimal("45.00"), LocalDate.of(2025, 7, 2), LocalDate.of(2025, 7, 2),
+                null, null, categoryId);
+
+        int before = counter.get();
+        var result = (ImportResult) assertInstanceOf(Result.Success.class,
+                useCase.confirm(new ImportConfirmCommand(card.id(), List.of(row1, row2)))).value();
+
+        assertEquals(2, result.created());
+        // One TransactionCreated per created row (delta, robust against other subscribers/state).
+        assertEquals(2, counter.get() - before);
+    }
+
+    @Test
+    void confirmIsIdempotentOnReimportOfSameCommand() {
+        var accounts = new InMemoryRepositories.Accounts();
+        var account = checking("Conta");
+        var card = creditCardLinkedTo("Cartão", "0020", account.id());
+        accounts.save(account);
+        accounts.save(card);
+
+        var transactions = new InMemoryRepositories.Transactions();
+        var useCase = useCaseWith(NOOP_EXTRACTOR, accounts, transactions);
+        var categoryId = UUID.randomUUID();
+
+        var avista = new ImportConfirmCommand.Row(
+                "Uber", new BigDecimal("25.00"), LocalDate.of(2025, 7, 8), LocalDate.of(2025, 7, 8),
+                null, null, categoryId);
+        var parc1 = new ImportConfirmCommand.Row(
+                "Notebook", new BigDecimal("200.00"), LocalDate.of(2025, 7, 15), LocalDate.of(2025, 7, 15),
+                3, 4, categoryId);
+        var parc2 = new ImportConfirmCommand.Row(
+                "Notebook", new BigDecimal("200.00"), LocalDate.of(2025, 8, 15), LocalDate.of(2025, 7, 15),
+                4, 4, categoryId);
+        var cmd = new ImportConfirmCommand(card.id(), List.of(avista, parc1, parc2));
+
+        var first = (ImportResult) assertInstanceOf(Result.Success.class, useCase.confirm(cmd)).value();
+        assertEquals(3, first.created());
+        assertEquals(0, first.skipped());
+        assertEquals(3, transactions.findAll().size());
+
+        // Same command again → recognized by groupId (parcelado) + à-vista key, nothing re-expanded.
+        var second = (ImportResult) assertInstanceOf(Result.Success.class, useCase.confirm(cmd)).value();
+        assertEquals(0, second.created());
+        assertEquals(cmd.rows().size(), second.skipped());
+        assertEquals(3, transactions.findAll().size());
+    }
+
+    @Test
+    void confirmSkipsAvistaDuplicateAgainstExistingTransaction() {
+        var accounts = new InMemoryRepositories.Accounts();
+        var account = checking("Conta");
+        var card = creditCardLinkedTo("Cartão", "0020", account.id());
+        accounts.save(account);
+        accounts.save(card);
+
+        var transactions = new InMemoryRepositories.Transactions();
+        // Pre-existing à-vista tx on the linked account: same date/amount/normalized-description.
+        transactions.save(new MonetaryTransaction(
+                UUID.randomUUID(), "MERCADO LIVRE", new BigDecimal("-90.00"),
+                LocalDate.of(2025, 7, 4), UUID.randomUUID(), account.id(),
+                "confirmed", "expense", null, null, null, null));
+
+        var useCase = useCaseWith(NOOP_EXTRACTOR, accounts, transactions);
+
+        var row = new ImportConfirmCommand.Row(
+                "Mercado Livre", new BigDecimal("90.00"), LocalDate.of(2025, 7, 4), LocalDate.of(2025, 7, 4),
+                null, null, UUID.randomUUID());
+        var result = (ImportResult) assertInstanceOf(Result.Success.class,
+                useCase.confirm(new ImportConfirmCommand(card.id(), List.of(row)))).value();
+
+        assertEquals(0, result.created());
+        assertEquals(1, result.skipped());
+        assertEquals(1, transactions.findAll().size());
+    }
+
+    @Test
+    void confirmFailsWhenCardNotFound() {
+        var useCase = useCaseWith(NOOP_EXTRACTOR);
+        var cmd = new ImportConfirmCommand(UUID.randomUUID(), List.of());
+        var error = assertInstanceOf(Result.Failure.class, useCase.confirm(cmd)).error();
+        assertInstanceOf(br.community.context.shared._0_domain.model.DomainError.NotFound.class, error);
+    }
+
+    @Test
+    void confirmIsBestEffortWhenOneRowFailsToPersist() {
+        var accounts = new InMemoryRepositories.Accounts();
+        var account = checking("Conta");
+        var card = creditCardLinkedTo("Cartão", "0020", account.id());
+        accounts.save(account);
+        accounts.save(card);
+
+        // A transactions double whose save throws on the "BOOM" row but persists the others.
+        var transactions = new InMemoryRepositories.Transactions() {
+            @Override
+            public MonetaryTransaction save(MonetaryTransaction e) {
+                if ("BOOM".equals(e.description())) throw new RuntimeException("simulated save failure");
+                return super.save(e);
+            }
+        };
+        var useCase = useCaseWith(NOOP_EXTRACTOR, accounts, transactions);
+        var categoryId = UUID.randomUUID();
+
+        var ok1 = new ImportConfirmCommand.Row(
+                "Antes", new BigDecimal("10.00"), LocalDate.of(2025, 7, 1), LocalDate.of(2025, 7, 1),
+                null, null, categoryId);
+        var boom = new ImportConfirmCommand.Row(
+                "BOOM", new BigDecimal("20.00"), LocalDate.of(2025, 7, 2), LocalDate.of(2025, 7, 2),
+                null, null, categoryId);
+        var ok2 = new ImportConfirmCommand.Row(
+                "Depois", new BigDecimal("30.00"), LocalDate.of(2025, 7, 3), LocalDate.of(2025, 7, 3),
+                null, null, categoryId);
+
+        var result = (ImportResult) assertInstanceOf(Result.Success.class,
+                useCase.confirm(new ImportConfirmCommand(card.id(), List.of(ok1, boom, ok2)))).value();
+
+        // The failing row is swallowed; the rows around it persist and stand.
+        assertEquals(2, result.created());
+        var saved = transactions.findAll();
+        assertEquals(2, saved.size());
+        assertTrue(saved.stream().anyMatch(t -> t.description().equals("Antes")));
+        assertTrue(saved.stream().anyMatch(t -> t.description().equals("Depois")));
+        assertFalse(saved.stream().anyMatch(t -> t.description().equals("BOOM")));
+    }
+}

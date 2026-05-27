@@ -1,0 +1,124 @@
+/* _3_infrastructure/secondary/http-client.js — token-rotating HTTP client.
+ * Requests are serialized through a queue so the rotating token stays consistent. */
+(function () {
+  const TOKEN_HEADER = 'X-Access-Token';
+
+  function p2(n) { return n < 10 ? '0' + n : '' + n; }
+  function p5(n) {
+    if (n < 10)    return '0000' + n;
+    if (n < 100)   return '000' + n;
+    if (n < 1000)  return '00' + n;
+    if (n < 10000) return '0' + n;
+    return '' + n;
+  }
+
+  function reqId(user) {
+    const d = new Date();
+    let v = d.getMilliseconds() * 100;
+    if (typeof performance !== 'undefined') v += (performance.now() % 1) * 100 | 0;
+    return '' + d.getFullYear() + p2(d.getMonth() + 1) + p2(d.getDate()) +
+      p2(d.getHours()) + p2(d.getMinutes()) + p2(d.getSeconds()) +
+      p5(v) + user;
+  }
+
+  function create(opts) {
+    const baseUrl = (opts && opts.baseUrl) || '/api';
+    let onUnauthorized = function () {};
+    let queue = Promise.resolve();
+
+    function enqueue(fn) {
+      const next = queue.then(fn, fn);
+      queue = next.catch(function () {});
+      return next;
+    }
+
+    function doRequest(method, path, body) {
+      const auth = window.Infra.AuthStore;
+      const headers = { 'X-request-id': reqId(auth.decodeUser()) };
+      const token = auth.get();
+      if (token) headers[TOKEN_HEADER] = token;
+      if (body)  headers['Content-Type'] = 'application/json';
+
+      return fetch(baseUrl + path, {
+        method: method,
+        headers: headers,
+        body: body ? JSON.stringify(body) : undefined,
+      }).then(function (res) {
+        const nextToken = res.headers.get(TOKEN_HEADER);
+        if (nextToken) auth.set(nextToken);
+
+        if (!res.ok) {
+          if (res.status === 401) {
+            auth.clear();
+            try { onUnauthorized(); } catch (e) { /* noop */ }
+          }
+          return res.text().then(function (txt) {
+            const err = new Error(txt || ('HTTP ' + res.status));
+            err.status = res.status;
+            throw err;
+          });
+        }
+        if (res.status === 204) return null;
+        return res.json();
+      });
+    }
+
+    function request(method, path, body) {
+      return enqueue(function () { return doRequest(method, path, body); });
+    }
+
+    /* Multipart upload. Shares the serialized queue + rotating token of doRequest, but sends a
+     * FormData body (the browser sets the multipart Content-Type/boundary) and surfaces the
+     * server's ProblemDetail `code` on the rejection so callers can map error UX. */
+    function doUpload(method, path, formData) {
+      const auth = window.Infra.AuthStore;
+      const headers = { 'X-request-id': reqId(auth.decodeUser()) };
+      const token = auth.get();
+      if (token) headers[TOKEN_HEADER] = token;
+
+      return fetch(baseUrl + path, {
+        method: method,
+        headers: headers,
+        body: formData,
+      }).then(function (res) {
+        const nextToken = res.headers.get(TOKEN_HEADER);
+        if (nextToken) auth.set(nextToken);
+
+        if (!res.ok) {
+          if (res.status === 401) {
+            auth.clear();
+            try { onUnauthorized(); } catch (e) { /* noop */ }
+          }
+          return res.text().then(function (txt) {
+            let code = null, detail = txt;
+            try {
+              const json = JSON.parse(txt);
+              code = json.code || null;
+              detail = json.detail || json.message || txt;
+            } catch (e) { /* non-JSON body */ }
+            const err = new Error(detail || ('HTTP ' + res.status));
+            err.status = res.status;
+            if (code) err.code = code;
+            throw err;
+          });
+        }
+        if (res.status === 204) return null;
+        return res.json();
+      });
+    }
+
+    return {
+      baseUrl: baseUrl,
+      get:    function (p)    { return request('GET',    p); },
+      post:   function (p, b) { return request('POST',   p, b); },
+      put:    function (p, b) { return request('PUT',    p, b); },
+      patch:  function (p, b) { return request('PATCH',  p, b); },
+      delete: function (p)    { return request('DELETE', p); },
+      upload: function (p, fd) { return enqueue(function () { return doUpload('POST', p, fd); }); },
+      setUnauthorizedHandler: function (fn) { onUnauthorized = fn || function () {}; },
+    };
+  }
+
+  window.Infra = window.Infra || {};
+  window.Infra.HttpClient = { create: create };
+})();

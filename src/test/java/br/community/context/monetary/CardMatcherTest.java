@@ -1,0 +1,79 @@
+package br.community.context.monetary;
+
+import br.community.context.monetary._0_domain.model.AccountType;
+import br.community.context.monetary._0_domain.model.MonetaryAccount;
+import br.community.context.monetary._1_application.service.CardMatch;
+import br.community.context.monetary._1_application.service.CardMatcher;
+import org.junit.jupiter.api.Test;
+
+import java.math.BigDecimal;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+
+class CardMatcherTest {
+
+    private final CardMatcher matcher = new CardMatcher();
+
+    private static MonetaryAccount card(String name, Map<String, Object> additionalInfo) {
+        return new MonetaryAccount(
+                UUID.randomUUID(), name, BigDecimal.ZERO, AccountType.CREDIT_CARD,
+                "#000", true, null, additionalInfo);
+    }
+
+    private static MonetaryAccount cardWithLast4(String name, String last4) {
+        return card(name, Map.of("last4", last4));
+    }
+
+    @Test
+    void matchesSingleCardWhoseLast4IsOnStatement() {
+        var visa = cardWithLast4("Visa", "0020");
+        var master = cardWithLast4("Master", "9999");
+
+        var result = matcher.match(List.of("0020"), List.of(visa, master));
+
+        var matched = assertInstanceOf(CardMatch.Matched.class, result);
+        assertEquals(visa, matched.card());
+    }
+
+    @Test
+    void noMatchWhenNoCardHasThatLast4() {
+        var visa = cardWithLast4("Visa", "0020");
+
+        var result = matcher.match(List.of("1234"), List.of(visa));
+
+        assertInstanceOf(CardMatch.NoMatch.class, result);
+    }
+
+    @Test
+    void noMatchWhenStatementLast4sEmpty() {
+        var visa = cardWithLast4("Visa", "0020");
+
+        var result = matcher.match(List.of(), List.of(visa));
+
+        assertInstanceOf(CardMatch.NoMatch.class, result);
+    }
+
+    @Test
+    void noMatchWhenCardHasNoLast4() {
+        var noLast4 = card("Sem final", Map.of());
+
+        var result = matcher.match(List.of("0020"), List.of(noLast4));
+
+        assertInstanceOf(CardMatch.NoMatch.class, result);
+    }
+
+    @Test
+    void ambiguousWhenTwoCardsShareTheSameLast4() {
+        var titular = cardWithLast4("Titular", "0020");
+        var adicional = cardWithLast4("Adicional", "0020");
+
+        var result = matcher.match(List.of("0020"), List.of(titular, adicional));
+
+        var ambiguous = assertInstanceOf(CardMatch.Ambiguous.class, result);
+        assertEquals(List.of(titular, adicional), ambiguous.candidates());
+    }
+}
