@@ -479,11 +479,71 @@
 
   // ── Modal: confirm delete ─────────────────────────────────
   function openDeleteModal(target) {
+    // Find credit cards linked to this account.
+    var linkedCards = state.accounts.filter(function (a) {
+      return a.type === 'CREDIT_CARD' && String(a.linkedAccountId) === String(target.id);
+    });
+
+    // Collect all account IDs to check (target + linked cards).
+    var idsToCheck = [String(target.id)];
+    linkedCards.forEach(function (c) { idsToCheck.push(String(c.id)); });
+
+    // Check if any of those accounts have transactions.
+    window.App.TransactionService.list('').then(function (all) {
+      var allTxs = Array.isArray(all) ? all : [];
+      var txCount = 0;
+      allTxs.forEach(function (tx) {
+        if (idsToCheck.indexOf(String(tx.accountId)) >= 0) txCount++;
+      });
+      showDeleteConfirm(target, linkedCards, txCount);
+    }).catch(function () {
+      showDeleteConfirm(target, linkedCards, 0);
+    });
+  }
+
+  function showDeleteConfirm(target, linkedCards, txCount) {
     const nameHtml = '<strong>' + esc(target.name) + '</strong>';
-    const bodyHtml =
+    let bodyHtml = '';
+    var hasWarning = linkedCards.length > 0 || txCount > 0;
+
+    if (hasWarning) {
+      var warnings = [];
+
+      if (linkedCards.length > 0) {
+        var cardNames = linkedCards.map(function (c) { return c.name; }).join(', ');
+        warnings.push(
+          'Esta conta possui <strong>' + esc(String(linkedCards.length)) + '</strong> ' +
+          (linkedCards.length === 1 ? 'cartão vinculado' : 'cartões vinculados') +
+          ' (' + esc(cardNames) + ') que ' +
+          (linkedCards.length === 1 ? 'será excluído' : 'serão excluídos') + ' junto com a conta.'
+        );
+      }
+
+      if (txCount > 0) {
+        warnings.push(
+          'Existem <strong>' + esc(String(txCount)) + '</strong> transaç' +
+          (txCount === 1 ? 'ão vinculada' : 'ões vinculadas') +
+          (linkedCards.length > 0 ? ' à conta e seus cartões' : ' a esta conta') +
+          ' que ' + (txCount === 1 ? 'será removida' : 'serão removidas') + ' permanentemente.'
+        );
+      }
+
+      bodyHtml +=
+        '<div style="padding:12px 14px;border-radius:8px;background:var(--expense-bg, rgba(244,63,94,0.08));' +
+          'border:1px solid var(--expense, #F43F5E);margin-bottom:12px;">' +
+          '<p style="font-size:13px;font-weight:600;color:var(--expense, #F43F5E);margin:0 0 6px 0;">' +
+            window.icon('alertCircle', 16) + ' Atenção' +
+          '</p>' +
+          warnings.map(function (w) {
+            return '<p style="font-size:13px;color:var(--text-secondary);margin:0 0 4px 0;line-height:1.5;">' + w + '</p>';
+          }).join('') +
+        '</div>';
+    }
+
+    bodyHtml +=
       '<p style="font-size:13px;color:var(--text-secondary);line-height:1.5;">' +
         'Tem certeza que deseja excluir a conta ' + nameHtml + '? ' +
-        'Esta ação não pode ser desfeita.' +
+        'Esta ação ' + (hasWarning ? '<strong>não pode ser desfeita</strong>' : 'não pode ser desfeita') + '.' +
       '</p>';
 
     const $cancel = window.btn({
