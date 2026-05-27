@@ -362,13 +362,11 @@
               'color:' + amtColor + ';">' +
               window.icon(iconName, 16) +
             '</div>' +
-            '<div style="min-width:0;flex:1;display:flex;flex-direction:column;gap:2px;">' +
-              '<span class="row-title" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' +
-                esc(tx.description || '—') +
-              '</span>' +
-              '<span class="row-sub">' +
-                esc(catLbl) + ' • ' + esc(accName) + ' • ' + esc(fmtDate(tx.date)) +
-              '</span>' +
+            '<div style="min-width:0;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:13px;">' +
+              '<span style="color:var(--text-muted);">' + esc(fmtDate(tx.date)) + '</span>' +
+              '<span style="color:var(--text-muted);"> • </span>' +
+              '<span style="font-weight:600;">' + esc(tx.description || '—') + '</span>' +
+              '<span style="color:var(--text-muted);"> • ' + esc(accName) + ' • ' + esc(catLbl) + '</span>' +
             '</div>' +
             '<span class="badge badge-' + esc(STATUS_BADGE[stKey] || 'muted') + '" ' +
               'style="flex-shrink:0;">' + esc(STATUS_LABEL[stKey] || stKey) + '</span>' +
@@ -735,6 +733,10 @@
       accountId: isEdit ? String(existing.accountId || '') : '',
       destAccountId: '',
       status: isEdit ? (existing.status === 'balance' ? 'confirmed' : (existing.status || 'confirmed')) : 'confirmed',
+      isEstorno: isEdit ? (
+        (existing.type === 'expense' && Number(existing.amount) > 0) ||
+        (existing.type === 'income'  && Number(existing.amount) < 0)
+      ) : false,
     };
 
     // Account options.
@@ -838,6 +840,14 @@
         '<div class="form-group full">' +
           '<label class="form-label" for="' + ids.status + '">Status</label>' +
           '<select id="' + ids.status + '" name="status">' + statusOpts + '</select>' +
+        '</div>' +
+        '<div class="form-group full">' +
+          '<label style="display:inline-flex;align-items:center;gap:8px;cursor:pointer;' +
+            'font-size:13px;font-weight:500;color:var(--text-secondary);">' +
+            '<input type="checkbox" name="estorno"' + (initial.isEstorno ? ' checked' : '') +
+              ' style="width:16px;height:16px;accent-color:var(--accent);" />' +
+            'Estorno (inverter sinal)' +
+          '</label>' +
         '</div>'
       );
     }
@@ -893,6 +903,8 @@
       if ($catSel.length)  initial.categoryId    = $catSel.val()       || initial.categoryId;
       const $stSel        = $form.find('select[name=status]');
       if ($stSel.length)   initial.status        = $stSel.val()        || initial.status;
+      const $estornoChk   = $form.find('input[name=estorno]');
+      if ($estornoChk.length) initial.isEstorno  = $estornoChk.is(':checked');
 
       $form.find('input[name=type]').val(t);
       // Repaint type row.
@@ -947,11 +959,12 @@
       if (!isFinite(amt) || amt <= 0) { $form.find('input[name=amount]').trigger('focus'); return; }
       const categoryId = $form.find('select[name=categoryId]').val();
       const status = $form.find('select[name=status]').val();
+      const isEstorno = $form.find('input[name=estorno]').is(':checked');
 
       if (!accountId) { window.toast('Selecione uma conta', 'error'); return; }
       if (!categoryId) { window.toast('Selecione uma categoria', 'error'); return; }
 
-      const signed = window.Domain.Transaction.signedAmount(type, amt);
+      const signed = window.Domain.Transaction.signedAmount(type, amt) * (isEstorno ? -1 : 1);
       const payload = {
         description: description,
         amount: Number(signed.toFixed(2)),

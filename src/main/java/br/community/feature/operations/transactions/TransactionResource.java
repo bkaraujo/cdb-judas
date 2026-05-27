@@ -9,10 +9,12 @@ import lombok.RequiredArgsConstructor;
 import lombok.val;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
 
@@ -25,13 +27,20 @@ public class TransactionResource {
     private final MonetaryContext monetaryContext;
 
     @GetMapping
-    public List<Transaction> listAll(@Nullable @RequestParam(required = false) Integer limit) {
+    public List<Transaction> listAll(
+            @Nullable @RequestParam(required = false) Integer limit,
+            @Nullable @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dateFrom,
+            @Nullable @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dateTo) {
         return switch (monetaryContext.listTransactions()) {
             case Result.Failure(var error) -> throw new DomainException(error);
             case Result.Success(var all) -> {
-                val transactions = (limit != null && limit > 0 && limit < all.size())
-                        ? all.subList(0, limit)
-                        : all;
+                val filtered = all.stream()
+                        .filter(t -> dateFrom == null || !t.date().isBefore(dateFrom))
+                        .filter(t -> dateTo == null || !t.date().isAfter(dateTo))
+                        .toList();
+                val transactions = (limit != null && limit > 0 && limit < filtered.size())
+                        ? filtered.subList(0, limit)
+                        : filtered;
                 yield transactions.stream().map(this::toDto).toList();
             }
         };

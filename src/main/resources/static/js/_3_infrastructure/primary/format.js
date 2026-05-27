@@ -41,12 +41,21 @@ window.fmtSigned = function (v) {
   return '<span style="color:' + window.valueColor(v) + ';">' + window.fmt(v) + '</span>';
 };
 
+/* Parse a date value to a Date in LOCAL time. A bare "YYYY-MM-DD" is parsed by
+   Date() as UTC midnight, which renders as the previous day in negative-offset
+   zones (e.g. BRT). Build the date from its parts to keep it on the local day. */
+window.parseLocalDate = function (d) {
+  if (d instanceof Date) return d;
+  const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(d || ''));
+  return m ? new Date(+m[1], +m[2] - 1, +m[3]) : new Date(d);
+};
+
 window.fmtDate = function (d) {
-  return new Intl.DateTimeFormat('pt-BR', { day: '2-digit', month: 'short' }).format(new Date(d));
+  return new Intl.DateTimeFormat('pt-BR', { day: '2-digit', month: 'short' }).format(window.parseLocalDate(d));
 };
 
 window.fmtMonth = function (d) {
-  return new Intl.DateTimeFormat('pt-BR', { month: 'short' }).format(new Date(d)).replace('.', '');
+  return new Intl.DateTimeFormat('pt-BR', { month: 'short' }).format(window.parseLocalDate(d)).replace('.', '');
 };
 
 /* Parse "1.234,56" / "R$ 1.234,56" / "1234.56" / number → Number (NaN if invalid). */

@@ -65,7 +65,7 @@
   }
 
   function maskInitial(n) {
-    return maskCurrency(String(Math.round((Number(n) || 0) * 100)));
+    return maskCurrency(String(Math.round(Math.abs(Number(n) || 0) * 100)));
   }
 
   // ── Render ────────────────────────────────────────────────
@@ -244,6 +244,7 @@
       type: isEdit ? (existing.type || 'CHECKING') : 'CHECKING',
       color: isEdit ? (existing.color || '#6366F1') : '#6366F1',
       balance: isEdit ? maskInitial(existing.balance) : '0,00',
+      balanceNegative: isEdit ? (Number(existing.balance || 0) < 0) : false,
       active: isEdit ? (existing.active !== false) : true,
       linkedAccountId: isEdit ? (existing.linkedAccountId ? String(existing.linkedAccountId) : '') : '',
       last4: isEdit && existing.additionalInfo ? (existing.additionalInfo.last4 || '') : '',
@@ -306,8 +307,18 @@
           '</div>' +
           '<div class="form-group">' +
             '<label class="form-label" for="' + ids.balance + '">Saldo Inicial</label>' +
-            '<input id="' + ids.balance + '" name="balance" type="text" inputmode="numeric" ' +
-              'value="' + esc(initial.balance) + '" />' +
+            '<div style="display:flex;gap:6px;align-items:center;">' +
+              '<button type="button" data-act="toggle-balance-sign" ' +
+                'style="width:36px;height:36px;border-radius:var(--radius-sm);' +
+                'border:1px solid var(--border);background:transparent;cursor:pointer;' +
+                'font-size:18px;font-weight:700;flex-shrink:0;line-height:1;' +
+                'color:' + (initial.balanceNegative ? 'var(--expense)' : 'var(--text-secondary)') + ';" ' +
+                'title="Alternar sinal">' +
+                (initial.balanceNegative ? '−' : '+') +
+              '</button>' +
+              '<input id="' + ids.balance + '" name="balance" type="text" inputmode="numeric" ' +
+                'value="' + esc(initial.balance) + '" />' +
+            '</div>' +
           '</div>' +
 
           '<div class="form-group full">' +
@@ -426,6 +437,18 @@
     });
     $color.on('input change', function () { paintSwatches($color.val()); });
 
+    // Sign toggle for initial balance.
+    function updateSignBtn() {
+      const $btn = $form.find('[data-act=toggle-balance-sign]');
+      $btn.text(initial.balanceNegative ? '−' : '+');
+      $btn.css('color', initial.balanceNegative ? 'var(--expense)' : 'var(--text-secondary)');
+    }
+    $form.on('click', '[data-act=toggle-balance-sign]', function (e) {
+      e.preventDefault();
+      initial.balanceNegative = !initial.balanceNegative;
+      updateSignBtn();
+    });
+
     // Currency masks.
     $balance.on('input', function () { $balance.val(maskCurrency($balance.val())); });
     $limit.on('input', function () { $limit.val(maskCurrency($limit.val())); });
@@ -440,7 +463,7 @@
       const t = $type.val();
       const payload = {
         name: name,
-        balance: parseCurrency($balance.val()).toFixed(2),
+        balance: (parseCurrency($balance.val()) * (initial.balanceNegative ? -1 : 1)).toFixed(2),
         type: t,
         color: $color.val() || '#6366F1',
         active: $form.find('input[name=active]').is(':checked'),
