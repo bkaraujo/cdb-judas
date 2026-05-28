@@ -494,7 +494,7 @@
     m.open();
     m.$el.on('click', '[data-act=confirm-delete]', function () {
       const $b = $(this).prop('disabled', true);
-      window.App.TransactionService.remove(item.id).then(function () {
+      window.App.TransactionService.remove(item.accountId, item.id).then(function () {
         m.close();
         window.toast('Conta excluída', 'success');
         return loadData();
@@ -508,7 +508,7 @@
   // ── Mark as paid ──────────────────────────────────────────
   function markPaid(item) {
     const today = new Date().toISOString().slice(0, 10);
-    window.App.TransactionService.patchStatus(item.id, 'confirmed', today).then(function () {
+    window.App.TransactionService.patchStatus(item.accountId, item.id, 'confirmed', today).then(function () {
       window.toast('Conta confirmada', 'success');
       return loadData();
     }).catch(function (err) {

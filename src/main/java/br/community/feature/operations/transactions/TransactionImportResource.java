@@ -31,7 +31,7 @@ import java.io.IOException;
 @NullMarked
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("/api/transactions/import")
+@RequestMapping("/api/{uuid}/accounts/transactions/import")
 public class TransactionImportResource {
 
     private final MonetaryContext monetaryContext;

@@ -1019,7 +1019,7 @@
       m.open();
       m.$el.on('click', '[data-act=confirm-delete]', function () {
         const $b = $(this).prop('disabled', true);
-        window.App.TransactionService.remove(tx.id).then(function () {
+        window.App.TransactionService.remove(tx.accountId, tx.id).then(function () {
           m.close();
           window.toast('Lançamento excluído', 'success');
           return loadTransactions();
@@ -1065,7 +1065,7 @@
 
     function doRemove(mode) {
       const $btns = m2.$el.find('button').prop('disabled', true);
-      window.App.TransactionService.remove(tx.id, mode).then(function () {
+      window.App.TransactionService.remove(tx.accountId, tx.id, mode).then(function () {
         m2.close();
         window.toast('Lançamento(s) excluído(s)', 'success');
         return loadTransactions();
@@ -1082,7 +1082,7 @@
   // ── Quick mark as paid ────────────────────────────────────
   function markPaid(tx) {
     const today = new Date().toISOString().slice(0, 10);
-    window.App.TransactionService.patchStatus(tx.id, 'confirmed', today).then(function () {
+    window.App.TransactionService.patchStatus(tx.accountId, tx.id, 'confirmed', today).then(function () {
       window.toast('Lançamento confirmado', 'success');
       return loadTransactions();
     }).catch(function (err) {

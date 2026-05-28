@@ -24,7 +24,6 @@ class WebConfig implements WebMvcConfigurer {
                 // Cada exclusão é removida quando o recurso correspondente migra para /api/{uuid}/...
                 .excludePathPatterns(
                         "/api/categories", "/api/categories/**",
-                        "/api/transactions", "/api/transactions/**",
                         "/api/dashboard", "/api/dashboard/**",
                         "/api/operations/**",
                         "/api/cost-centers", "/api/cost-centers/**",

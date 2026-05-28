@@ -20,7 +20,7 @@ class TransactionImportResourceTest extends BaseHttpTest {
         byte[] pdf = PdfFixtures.withText("BTG Pactual S.A\nCNPJ 30.306.294/0001-45\ncartao final 5115");
         var file = new MockMultipartFile("file", "fatura.pdf", "application/pdf", pdf);
 
-        mockMvc.perform(multipart("/api/transactions/import/preview").file(file))
+        mockMvc.perform(multipart("/api/" + TEST_USER_ID + "/accounts/transactions/import/preview").file(file))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.issuer").value("BTG"));
     }
@@ -37,7 +37,7 @@ class TransactionImportResourceTest extends BaseHttpTest {
         var file = new MockMultipartFile("file", "fatura.pdf", "application/pdf", pdf);
 
         // The single printed "(9/10)" line expands into the full 10-installment schedule.
-        mockMvc.perform(multipart("/api/transactions/import/preview").file(file))
+        mockMvc.perform(multipart("/api/" + TEST_USER_ID + "/accounts/transactions/import/preview").file(file))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.issuer").value("BTG"))
                 .andExpect(jsonPath("$.last4s[0]").value("0020"))
@@ -56,7 +56,7 @@ class TransactionImportResourceTest extends BaseHttpTest {
         byte[] pdf = PdfFixtures.encrypted("segredo", "BTG Pactual 30.306.294/0001-45");
         var file = new MockMultipartFile("file", "fatura.pdf", "application/pdf", pdf);
 
-        mockMvc.perform(multipart("/api/transactions/import/preview").file(file))
+        mockMvc.perform(multipart("/api/" + TEST_USER_ID + "/accounts/transactions/import/preview").file(file))
                 .andExpect(status().isUnprocessableEntity())
                 .andExpect(jsonPath("$.code").value("PASSWORD_REQUIRED"));
     }
@@ -66,7 +66,7 @@ class TransactionImportResourceTest extends BaseHttpTest {
         byte[] pdf = PdfFixtures.encrypted("segredo", "BTG Pactual 30.306.294/0001-45");
         var file = new MockMultipartFile("file", "fatura.pdf", "application/pdf", pdf);
 
-        mockMvc.perform(multipart("/api/transactions/import/preview").file(file).param("password", "errada"))
+        mockMvc.perform(multipart("/api/" + TEST_USER_ID + "/accounts/transactions/import/preview").file(file).param("password", "errada"))
                 .andExpect(status().isUnprocessableEntity())
                 .andExpect(jsonPath("$.code").value("WRONG_PASSWORD"));
     }
@@ -76,7 +76,7 @@ class TransactionImportResourceTest extends BaseHttpTest {
         byte[] pdf = PdfFixtures.withText("Documento qualquer sem marcador de banco");
         var file = new MockMultipartFile("file", "doc.pdf", "application/pdf", pdf);
 
-        mockMvc.perform(multipart("/api/transactions/import/preview").file(file))
+        mockMvc.perform(multipart("/api/" + TEST_USER_ID + "/accounts/transactions/import/preview").file(file))
                 .andExpect(status().isUnprocessableEntity())
                 .andExpect(jsonPath("$.code").value("UNKNOWN_ISSUER"))
                 .andExpect(jsonPath("$.detail").value(Matchers.containsString("não reconhecido")));
@@ -98,14 +98,14 @@ class TransactionImportResourceTest extends BaseHttpTest {
             }
             """.formatted(cardId, categoryId, categoryId, categoryId);
 
-        mockMvc.perform(post("/api/transactions/import/confirm")
+        mockMvc.perform(post("/api/" + TEST_USER_ID + "/accounts/transactions/import/confirm")
                         .contentType(MediaType.APPLICATION_JSON).content(body))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.created").value(3))
                 .andExpect(jsonPath("$.skipped").value(0));
 
         // A second identical POST creates nothing (idempotent re-import).
-        mockMvc.perform(post("/api/transactions/import/confirm")
+        mockMvc.perform(post("/api/" + TEST_USER_ID + "/accounts/transactions/import/confirm")
                         .contentType(MediaType.APPLICATION_JSON).content(body))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.created").value(0))
@@ -124,7 +124,7 @@ class TransactionImportResourceTest extends BaseHttpTest {
             }
             """.formatted(UUID.randomUUID(), categoryId);
 
-        mockMvc.perform(post("/api/transactions/import/confirm")
+        mockMvc.perform(post("/api/" + TEST_USER_ID + "/accounts/transactions/import/confirm")
                         .contentType(MediaType.APPLICATION_JSON).content(body))
                 .andExpect(status().isUnprocessableEntity())
                 .andExpect(jsonPath("$.code").value("CARD_NOT_FOUND"));

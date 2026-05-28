@@ -17,7 +17,7 @@ public record TransactionRequest(
         @NotNull @TwoDecimalPlaces BigDecimal amount,
         @NotNull LocalDate date,
         @NotNull UUID categoryId,
-        @NotNull UUID accountId,
+        @Nullable UUID accountId,
         @NotBlank String status,
         @NotBlank String type,
         @Nullable @Min(1) Integer installments,

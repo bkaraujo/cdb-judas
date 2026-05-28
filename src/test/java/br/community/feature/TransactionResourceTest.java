@@ -12,166 +12,150 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 class TransactionResourceTest extends BaseHttpTest {
 
+    private UUID createAccount(String color) throws Exception {
+        String json = """
+            {"name":"Conta","balance":1000.00,"type":"CHECKING","color":"%s","active":true}
+            """.formatted(color);
+        String resp = mockMvc.perform(post("/api/{u}/accounts", TEST_USER_ID)
+                .contentType(MediaType.APPLICATION_JSON).content(json))
+                .andReturn().getResponse().getContentAsString();
+        return UUID.fromString(objectMapper.readTree(resp).get("id").asText());
+    }
+
+    // Transações só podem ser lançadas em subcategorias (não em macro-categorias).
+    private UUID createLeafCategory() throws Exception {
+        String macroResp = mockMvc.perform(post("/api/categories")
+                .contentType(MediaType.APPLICATION_JSON).content("{\"name\":\"Moradia\",\"nature\":\"EXPENSE\"}"))
+                .andReturn().getResponse().getContentAsString();
+        UUID macroId = UUID.fromString(objectMapper.readTree(macroResp).get("id").asText());
+
+        String subJson = """
+            {"name":"Aluguel","nature":"EXPENSE","parentId":"%s"}
+            """.formatted(macroId);
+        String subResp = mockMvc.perform(post("/api/categories")
+                .contentType(MediaType.APPLICATION_JSON).content(subJson))
+                .andReturn().getResponse().getContentAsString();
+        return UUID.fromString(objectMapper.readTree(subResp).get("id").asText());
+    }
+
     @Test
-    void deveGerenciarTransacoes() throws Exception {
-        // Criar uma conta primeiro para a transação
-        String accJson = """
-            {
-              "name": "Conta Teste",
-              "balance": 1000.00,
-              "type": "CHECKING",
-              "color": "#000000",
-              "active": true
-            }
-            """;
-        String accResp = mockMvc.perform(post("/api/accounts").contentType(MediaType.APPLICATION_JSON).content(accJson))
-                .andReturn().getResponse().getContentAsString();
-        UUID accountId = UUID.fromString(objectMapper.readTree(accResp).get("id").asText());
+    void deveGerenciarTransacoesPorConta() throws Exception {
+        UUID accountId = createAccount("#000000");
+        UUID categoryId = createLeafCategory();
 
-        // Criar categoria
-        String catJson = """
-            {
-              "name": "Moradia",
-              "nature": "EXPENSE"
-            }
-            """;
-        String catResp = mockMvc.perform(post("/api/categories").contentType(MediaType.APPLICATION_JSON).content(catJson))
-                .andReturn().getResponse().getContentAsString();
-        UUID categoryId = UUID.fromString(objectMapper.readTree(catResp).get("id").asText());
-
+        // Criar com o id da conta vindo do caminho (sem accountId no corpo).
         String createJson = """
             {
               "description": "Pagamento Aluguel",
               "amount": -2500.00,
               "date": "2024-04-01",
               "categoryId": "%s",
-              "accountId": "%s",
               "status": "pending",
               "type": "expense",
               "installments": 1,
               "editMode": "single"
             }
-            """.formatted(categoryId, accountId);
+            """.formatted(categoryId);
 
-        String response = mockMvc.perform(post("/api/transactions")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(createJson))
+        String response = mockMvc.perform(post("/api/{u}/accounts/{acc}/transactions", TEST_USER_ID, accountId)
+                .contentType(MediaType.APPLICATION_JSON).content(createJson))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.id").exists())
                 .andExpect(jsonPath("$.amount").value(-2500.00))
-                .andExpect(jsonPath("$.type").value("expense"))
+                .andExpect(jsonPath("$.accountId").value(accountId.toString()))
                 .andReturn().getResponse().getContentAsString();
+        UUID id = objectMapper.readValue(response, Transaction.class).id();
 
-        Transaction created = objectMapper.readValue(response, Transaction.class);
-        UUID id = created.id();
-
-        mockMvc.perform(get("/api/transactions").param("limit", "10"))
+        // Lista entre contas com filtros.
+        mockMvc.perform(get("/api/{u}/accounts/transactions", TEST_USER_ID).param("limit", "10"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$").isArray())
                 .andExpect(jsonPath("$[0].description").value("Pagamento Aluguel"));
 
-        String statusJson = """
-            {
-              "status": "confirmed",
-              "paymentDate": "2024-04-02"
-            }
-            """;
+        mockMvc.perform(get("/api/{u}/accounts/transactions", TEST_USER_ID).param("status", "pending"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(1));
+        mockMvc.perform(get("/api/{u}/accounts/transactions", TEST_USER_ID).param("status", "confirmed"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(0));
 
-        mockMvc.perform(patch("/api/transactions/{id}/status", id)
+        // Lista por conta.
+        mockMvc.perform(get("/api/{u}/accounts/{acc}/transactions", TEST_USER_ID, accountId))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(1));
+
+        // Alterar status informando data de pagamento.
+        mockMvc.perform(patch("/api/{u}/accounts/{acc}/transactions/{id}/status", TEST_USER_ID, accountId, id)
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(statusJson))
+                .content("{\"status\":\"confirmed\",\"paymentDate\":\"2024-04-02\"}"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("confirmed"))
                 .andExpect(jsonPath("$.paymentDate").value("2024-04-02"));
 
-        mockMvc.perform(delete("/api/transactions/{id}", id))
+        // Excluir.
+        mockMvc.perform(delete("/api/{u}/accounts/{acc}/transactions/{id}", TEST_USER_ID, accountId, id))
                 .andExpect(status().isNoContent());
     }
 
     @Test
-    void deveAtualizarTransacaoCompleta() throws Exception {
-        String accJson = """
-            {"name":"Conta U","balance":1000.00,"type":"CHECKING","color":"#111111","active":true}
-            """;
-        UUID accountId = UUID.fromString(objectMapper.readTree(
-                mockMvc.perform(post("/api/accounts").contentType(MediaType.APPLICATION_JSON).content(accJson))
-                        .andReturn().getResponse().getContentAsString()).get("id").asText());
-
-        String catJson = """
-            {"name":"Diversos","nature":"EXPENSE"}
-            """;
-        UUID categoryId = UUID.fromString(objectMapper.readTree(
-                mockMvc.perform(post("/api/categories").contentType(MediaType.APPLICATION_JSON).content(catJson))
-                        .andReturn().getResponse().getContentAsString()).get("id").asText());
+    void deveCriarParcelasEExcluirFuturas() throws Exception {
+        UUID accountId = createAccount("#222222");
+        UUID categoryId = createLeafCategory();
 
         String createJson = """
-            {"description":"Mercado","amount":-100.00,"date":"2024-05-10","categoryId":"%s","accountId":"%s","status":"pending","type":"expense","installments":1,"editMode":"single"}
-            """.formatted(categoryId, accountId);
-        UUID id = UUID.fromString(objectMapper.readTree(
-                mockMvc.perform(post("/api/transactions").contentType(MediaType.APPLICATION_JSON).content(createJson))
-                        .andReturn().getResponse().getContentAsString()).get("id").asText());
+            {"description":"TV","amount":-300.00,"date":"2024-06-01","categoryId":"%s","status":"pending","type":"expense","installments":3,"editMode":"single"}
+            """.formatted(categoryId);
 
-        String updateJson = """
-            {"description":"Mercado Atacado","amount":-200.50,"date":"2024-05-15","categoryId":"%s","accountId":"%s","status":"confirmed","type":"expense","installments":1,"editMode":"single"}
-            """.formatted(categoryId, accountId);
-
-        mockMvc.perform(patch("/api/transactions/{id}", id)
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(updateJson))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.description").value("Mercado Atacado"))
-                .andExpect(jsonPath("$.amount").value(-200.50))
-                .andExpect(jsonPath("$.date").value("2024-05-15"))
-                .andExpect(jsonPath("$.status").value("confirmed"));
-    }
-
-    @Test
-    void deveCriarParcelasESeriarExclusaoFuture() throws Exception {
-        String accJson = """
-            {"name":"Conta P","balance":0.00,"type":"CHECKING","color":"#222222","active":true}
-            """;
-        UUID accountId = UUID.fromString(objectMapper.readTree(
-                mockMvc.perform(post("/api/accounts").contentType(MediaType.APPLICATION_JSON).content(accJson))
-                        .andReturn().getResponse().getContentAsString()).get("id").asText());
-
-        String catJson = """
-            {"name":"Eletro","nature":"EXPENSE"}
-            """;
-        UUID categoryId = UUID.fromString(objectMapper.readTree(
-                mockMvc.perform(post("/api/categories").contentType(MediaType.APPLICATION_JSON).content(catJson))
-                        .andReturn().getResponse().getContentAsString()).get("id").asText());
-
-        String createJson = """
-            {"description":"TV","amount":-300.00,"date":"2024-06-01","categoryId":"%s","accountId":"%s","status":"pending","type":"expense","installments":3,"editMode":"single"}
-            """.formatted(categoryId, accountId);
-
-        mockMvc.perform(post("/api/transactions")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(createJson))
+        mockMvc.perform(post("/api/{u}/accounts/{acc}/transactions", TEST_USER_ID, accountId)
+                .contentType(MediaType.APPLICATION_JSON).content(createJson))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.groupId").exists())
                 .andExpect(jsonPath("$.installmentNumber").value(1))
                 .andExpect(jsonPath("$.totalInstallments").value(3));
 
-        String listResp = mockMvc.perform(get("/api/transactions"))
+        String listResp = mockMvc.perform(get("/api/{u}/accounts/transactions", TEST_USER_ID))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.length()").value(3))
                 .andReturn().getResponse().getContentAsString();
 
-        var arr = objectMapper.readTree(listResp);
         UUID firstId = null;
-        for (var node : arr) {
+        for (var node : objectMapper.readTree(listResp)) {
             if (node.get("installmentNumber").asInt() == 1) {
                 firstId = UUID.fromString(node.get("id").asText());
                 break;
             }
         }
 
-        mockMvc.perform(delete("/api/transactions/{id}", firstId).param("mode", "FUTURE"))
+        mockMvc.perform(delete("/api/{u}/accounts/{acc}/transactions/{id}", TEST_USER_ID, accountId, firstId)
+                .param("mode", "FUTURE"))
                 .andExpect(status().isNoContent());
 
-        mockMvc.perform(get("/api/transactions"))
+        mockMvc.perform(get("/api/{u}/accounts/transactions", TEST_USER_ID))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.length()").value(0));
+    }
+
+    @Test
+    void deveTransferirEntreContas() throws Exception {
+        UUID origem = createAccount("#010101");
+        UUID destino = createAccount("#020202");
+
+        String transferJson = """
+            {"fromAccountId":"%s","toAccountId":"%s","date":"2024-07-01","amount":150.00}
+            """.formatted(origem, destino);
+
+        mockMvc.perform(post("/api/{u}/accounts/transactions/transfer", TEST_USER_ID)
+                .contentType(MediaType.APPLICATION_JSON).content(transferJson))
+                .andExpect(status().isCreated());
+
+        mockMvc.perform(get("/api/{u}/accounts/transactions", TEST_USER_ID))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(2));
+
+        // Saída pertence à conta de origem.
+        mockMvc.perform(get("/api/{u}/accounts/{acc}/transactions", TEST_USER_ID, origem)
+                .param("type", "expense"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(1));
     }
 }
