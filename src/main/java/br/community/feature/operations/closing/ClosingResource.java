@@ -15,7 +15,7 @@ import java.time.YearMonth;
 @NullMarked
 @RestController
 @RequiredArgsConstructor
-@RequestMapping(value = "/api/operations/closing", produces = MediaType.APPLICATION_JSON_VALUE)
+@RequestMapping(value = "/api/{uuid}/accounts/closing", produces = MediaType.APPLICATION_JSON_VALUE)
 public class ClosingResource {
 
     private final MonetaryContext monetaryContext;

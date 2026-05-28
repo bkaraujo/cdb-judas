@@ -25,7 +25,6 @@ class WebConfig implements WebMvcConfigurer {
                 .excludePathPatterns(
                         "/api/categories", "/api/categories/**",
                         "/api/dashboard", "/api/dashboard/**",
-                        "/api/operations/**",
                         "/api/cost-centers", "/api/cost-centers/**",
                         "/api/tags", "/api/tags/**",
                         "/api/v1/**"
