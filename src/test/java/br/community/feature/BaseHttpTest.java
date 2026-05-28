@@ -3,6 +3,7 @@ package br.community.feature;
 import br.commons.framework.persistence.Storage;
 import br.commons.framework.persistence.json.Repository;
 import br.community.core.JsonStorageProperties;
+import br.community.core.web.security.AuthenticatedUser;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.val;
 import org.junit.jupiter.api.BeforeEach;
@@ -10,7 +11,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.core.userdetails.User;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
@@ -25,6 +25,8 @@ import java.util.List;
 @SpringBootTest
 @ActiveProfiles("test")
 abstract class BaseHttpTest {
+
+    protected static final String TEST_USER_ID = "00000000-0000-0000-0000-0000000000ad";
 
     @Autowired
     protected WebApplicationContext context;
@@ -47,13 +49,13 @@ abstract class BaseHttpTest {
     void setUpBase() throws IOException {
         this.mockMvc = MockMvcBuilders.webAppContextSetup(this.context).build();
         
-        val user = new User("admin", "password", List.of());
+        val principal = new AuthenticatedUser(TEST_USER_ID, "admin");
         SecurityContextHolder
                 .getContext()
                 .setAuthentication(new UsernamePasswordAuthenticationToken(
-                        user,
+                        principal,
                         null,
-                        user.getAuthorities()
+                        List.of()
                 ));
 
         // Clean storage directory

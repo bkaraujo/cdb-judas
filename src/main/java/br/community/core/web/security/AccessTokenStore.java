@@ -14,29 +14,29 @@ import java.util.UUID;
 public class AccessTokenStore {
 
     @NullMarked
-    public record RotationResult(String username, String nextToken) {}
+    public record RotationResult(String userId, String nextToken) {}
 
     private final Map<String, String> tokenToUser = new HashMap<>();
     private final Map<String, String> userToToken = new HashMap<>();
 
-    public synchronized String issue(String username) {
-        val old = userToToken.remove(username);
+    public synchronized String issue(String userId) {
+        val old = userToToken.remove(userId);
         if (old != null) tokenToUser.remove(old);
 
         val token = generate();
-        userToToken.put(username, token);
-        tokenToUser.put(token, username);
+        userToToken.put(userId, token);
+        tokenToUser.put(token, userId);
         return token;
     }
 
     public synchronized Optional<RotationResult> rotate(String incomingToken) {
-        val username = tokenToUser.remove(incomingToken);
-        if (username == null) return Optional.empty();
+        val userId = tokenToUser.remove(incomingToken);
+        if (userId == null) return Optional.empty();
 
         val nextToken = generate();
-        tokenToUser.put(nextToken, username);
-        userToToken.put(username, nextToken);
-        return Optional.of(new RotationResult(username, nextToken));
+        tokenToUser.put(nextToken, userId);
+        userToToken.put(userId, nextToken);
+        return Optional.of(new RotationResult(userId, nextToken));
     }
 
     public synchronized Optional<String> validate(String token) {

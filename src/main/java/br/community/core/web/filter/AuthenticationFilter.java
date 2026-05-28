@@ -2,6 +2,9 @@ package br.community.core.web.filter;
 
 import br.commons.Logger;
 import br.commons.framework.logger.MDC;
+import br.community.context.security._0_domain.UserRepository;
+import br.community.core.web.security.AccessTokenStore;
+import br.community.core.web.security.AuthenticatedUser;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -22,7 +25,8 @@ import static br.community.core.web.security.LoginResource.TOKEN_HEADER;
 @RequiredArgsConstructor
 public class AuthenticationFilter extends OncePerRequestFilter {
 
-    private final br.community.core.web.security.AccessTokenStore tokenStore;
+    private final AccessTokenStore tokenStore;
+    private final UserRepository userRepository;
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
@@ -30,21 +34,12 @@ public class AuthenticationFilter extends OncePerRequestFilter {
         if (token != null) {
             val isSse = "text/event-stream".equals(request.getHeader("Accept"));
             if (isSse) {
-                tokenStore.validate(token).ifPresent(username -> {
-                    val auth = new UsernamePasswordAuthenticationToken(username, null, List.of());
-                    SecurityContextHolder.getContext().setAuthentication(auth);
-                    Logger.debug("AUTHN %s %s => user '%s' authenticated (SSE)", request.getMethod(), request.getRequestURI(), username);
-                    MDC.push("X-REQUEST-USER", username);
-                });
+                tokenStore.validate(token).ifPresent(userId ->
+                        authenticate(userId, request, response, false, null));
             } else {
                 val result = tokenStore.rotate(token);
                 if (result.isPresent()) {
-                    val rotation = result.get();
-                    val auth = new UsernamePasswordAuthenticationToken(rotation.username(), null, List.of());
-                    SecurityContextHolder.getContext().setAuthentication(auth);
-                    response.setHeader(TOKEN_HEADER, rotation.nextToken());
-                    Logger.debug("AUTHN %s %s => user '%s' authenticated", request.getMethod(), request.getRequestURI(), rotation.username());
-                    MDC.push("X-REQUEST-USER", rotation.username());
+                    authenticate(result.get().userId(), request, response, true, result.get().nextToken());
                 } else {
                     Logger.debug("AUTHN %s %s => invalid or expired token", request.getMethod(), request.getRequestURI());
                 }
@@ -52,5 +47,22 @@ public class AuthenticationFilter extends OncePerRequestFilter {
         }
 
         filterChain.doFilter(request, response);
+    }
+
+    private void authenticate(String userId, HttpServletRequest request, HttpServletResponse response, boolean rotated, String nextToken) {
+        val user = userRepository.findById(userId).orElse(null);
+        if (user == null) {
+            Logger.debug("AUTHN %s %s => token references unknown user '%s'", request.getMethod(), request.getRequestURI(), userId);
+            return;
+        }
+
+        val auth = new UsernamePasswordAuthenticationToken(new AuthenticatedUser(userId, user.username()), null, List.of());
+        SecurityContextHolder.getContext().setAuthentication(auth);
+        if (rotated) response.setHeader(TOKEN_HEADER, nextToken);
+
+        Logger.debug("AUTHN %s %s => user '%s' (%s) authenticated%s",
+                request.getMethod(), request.getRequestURI(), user.username(), userId, rotated ? "" : " (SSE)");
+        MDC.push("X-REQUEST-USER", user.username());
+        MDC.push("X-REQUEST-USER-ID", userId);
     }
 }

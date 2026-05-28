@@ -39,7 +39,7 @@ public abstract class AbstractJsonRepository<T, ID> implements Repository<T, ID>
     }
 
     protected String fileName() {
-        return CurrentUser.getUsername() + ".json";
+        return CurrentUser.getId() + ".json";
     }
 
     protected abstract String jsonKey();
@@ -105,7 +105,7 @@ public abstract class AbstractJsonRepository<T, ID> implements Repository<T, ID>
 
     private List<T> readAll() {
         val now = System.currentTimeMillis();
-        val username = CurrentUser.getUsername();
+        val username = CurrentUser.getId();
 
         lock.readLock().lock();
         try {
@@ -149,7 +149,7 @@ public abstract class AbstractJsonRepository<T, ID> implements Repository<T, ID>
             storage.write(fileName(), jsonKey(), mapper.writeValueAsBytes(entities));
             cachedData = List.copyOf(entities);
             lastAccess = System.currentTimeMillis();
-            lastUser = CurrentUser.getUsername();
+            lastUser = CurrentUser.getId();
         } catch (IOException e) {
             throw new UncheckedIOException("Error writing " + fileName() + ":" + jsonKey(), e);
         }

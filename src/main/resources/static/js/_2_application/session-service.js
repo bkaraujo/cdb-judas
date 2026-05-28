@@ -18,9 +18,10 @@
 
   function login(user, password) {
     return loginFn(user, password)
-      .then(function (token) {
-        authStore.set(token);
+      .then(function (result) {
+        authStore.set(result.token);
         authStore.setUser(user);
+        if (result.userId) authStore.setUserId(result.userId);
         return hydrate();
       })
       .catch(function (e) {

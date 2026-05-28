@@ -1,16 +1,12 @@
 package br.community.core.web.security;
 
 import br.community.context.security._0_domain.UserRepository;
-import br.community.context.security._2_infrastructure.UserJsonRepository;
 import lombok.RequiredArgsConstructor;
 import org.jspecify.annotations.NullMarked;
-import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
-
-import java.util.Collections;
 
 @Service
 @NullMarked
@@ -22,7 +18,7 @@ public final class UserDetailsServiceImpl implements UserDetailsService {
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
         return repository.findByUsername(username)
-                .map(u -> new User(u.username(), u.password(), Collections.emptyList()))
+                .map(u -> new AuthUserDetails(u.id(), u.username(), u.password()))
                 .orElseThrow(() -> new UsernameNotFoundException("Usuário não encontrado: " + username));
     }
 }

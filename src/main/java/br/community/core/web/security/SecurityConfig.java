@@ -1,5 +1,6 @@
 package br.community.core.web.security;
 
+import br.community.context.security._0_domain.UserRepository;
 import br.community.core.web.filter.AuthenticationFilter;
 import br.community.core.web.filter.AuthorizationFilter;
 import lombok.val;
@@ -30,12 +31,12 @@ import static org.springframework.security.config.Customizer.withDefaults;
 public class SecurityConfig {
 
     @Bean
-    public SecurityFilterChain apiFilterChain(HttpSecurity http, AccessTokenStore tokenStore) throws Exception {
+    public SecurityFilterChain apiFilterChain(HttpSecurity http, AccessTokenStore tokenStore, UserRepository userRepository) throws Exception {
         http
             .cors(withDefaults())
             .csrf(AbstractHttpConfigurer::disable)
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-            .addFilterBefore(new AuthenticationFilter(tokenStore), UsernamePasswordAuthenticationFilter.class)
+            .addFilterBefore(new AuthenticationFilter(tokenStore, userRepository), UsernamePasswordAuthenticationFilter.class)
             .addFilterAfter(new AuthorizationFilter(), AuthenticationFilter.class)
             .authorizeHttpRequests(authz -> authz
                 .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
@@ -56,7 +57,7 @@ public class SecurityConfig {
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));
         configuration.setAllowedHeaders(List.of("*"));
         configuration.setAllowCredentials(true);
-        configuration.setExposedHeaders(List.of(TOKEN_HEADER));
+        configuration.setExposedHeaders(List.of(TOKEN_HEADER, LoginResource.USER_ID_HEADER));
 
         val source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);

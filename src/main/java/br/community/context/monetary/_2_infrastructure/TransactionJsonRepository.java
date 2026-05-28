@@ -98,11 +98,11 @@ public final class TransactionJsonRepository implements TransactionRepository {
     }
 
     private String fileName(int year) {
-        return CurrentUser.getUsername() + "-" + year + FILE_SUFFIX;
+        return CurrentUser.getId() + "-" + year + FILE_SUFFIX;
     }
 
     private String userFilePrefix() {
-        return CurrentUser.getUsername() + "-";
+        return CurrentUser.getId() + "-";
     }
 
     private boolean isYearFile(String fileName) {

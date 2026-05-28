@@ -58,7 +58,10 @@
         err.status = res.status;
         throw err;
       }
-      return res.headers.get('X-Access-Token');
+      return {
+        token: res.headers.get('X-Access-Token'),
+        userId: res.headers.get('X-User-Id'),
+      };
     });
   }
 

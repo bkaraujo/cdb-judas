@@ -19,6 +19,7 @@ import org.springframework.web.bind.annotation.RestController;
 public class LoginResource {
 
     public static final String TOKEN_HEADER = "X-Access-Token";
+    public static final String USER_ID_HEADER = "X-User-Id";
 
     private final UserDetailsService userDetailsService;
     private final PasswordEncoder passwordEncoder;
@@ -27,14 +28,15 @@ public class LoginResource {
     @PostMapping("/login")
     public ResponseEntity<Void> login(@RequestBody LoginRequest request, HttpServletResponse response) {
         try {
-            val userDetails = userDetailsService.loadUserByUsername(request.username());
+            val userDetails = (AuthUserDetails) userDetailsService.loadUserByUsername(request.username());
             if (!passwordEncoder.matches(request.password(), userDetails.getPassword())) {
                 Logger.debug("LOGIN => invalid password for '%s'", request.username());
                 return ResponseEntity.status(401).build();
             }
-            val token = tokenStore.issue(request.username());
+            val token = tokenStore.issue(userDetails.getId());
             response.setHeader(TOKEN_HEADER, token);
-            Logger.debug("LOGIN => '%s' issued token", request.username());
+            response.setHeader(USER_ID_HEADER, userDetails.getId());
+            Logger.debug("LOGIN => '%s' (%s) issued token", request.username(), userDetails.getId());
             return ResponseEntity.ok().build();
         } catch (UsernameNotFoundException e) {
             Logger.debug("LOGIN => user '%s' not found", request.username());

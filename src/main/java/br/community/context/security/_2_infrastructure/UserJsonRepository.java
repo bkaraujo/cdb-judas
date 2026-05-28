@@ -2,87 +2,83 @@ package br.community.context.security._2_infrastructure;
 
 import br.commons.Logger;
 import br.commons.framework.persistence.Storage;
-import br.commons.framework.persistence.json.EntityDiff;
 import br.community.context.security._0_domain.User;
 import br.community.context.security._0_domain.UserRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ObjectNode;
 import lombok.val;
 import org.jspecify.annotations.NullMarked;
-import org.springframework.stereotype.Repository;
+import org.jspecify.annotations.Nullable;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
-import java.util.Map;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
-import java.util.concurrent.ConcurrentHashMap;
 
 @NullMarked
 public final class UserJsonRepository implements UserRepository {
 
-    private static final String AUTH_KEY = "auth";
-    private static final String PASSWORD_KEY = "password";
+    private static final String FILE = "users.json";
+    private static final String KEY = "users";
     private static final long CACHE_TTL_MS = 60_000;
 
     private final Storage storage;
     private final ObjectMapper mapper;
-    
-    private final Map<String, CachedUser> cache = new ConcurrentHashMap<>();
 
-    @NullMarked
-    private record CachedUser(User user, long lastAccess) {}
+    @Nullable
+    private volatile List<User> cache;
+    private volatile long loadedAt;
 
     public UserJsonRepository(Storage storage, ObjectMapper mapper) {
         this.storage = storage;
         this.mapper = mapper;
     }
 
+    @Override
     public Optional<User> findByUsername(String username) {
-        val now = System.currentTimeMillis();
-        val cached = cache.get(username);
-        
-        if (cached != null && (now - cached.lastAccess) < CACHE_TTL_MS) {
-            cache.put(username, new CachedUser(cached.user, now));
-            return Optional.of(cached.user);
-        }
-
-        val key = fileFor(username);
-        if (!storage.exists(key)) return Optional.empty();
-
-        try {
-            val bytes = storage.read(key, AUTH_KEY);
-            if (bytes == null) return Optional.empty();
-
-            val auth = (ObjectNode) mapper.readTree(bytes);
-            if (auth.get(PASSWORD_KEY) == null) return Optional.empty();
-
-            val user = new User(username, auth.get(PASSWORD_KEY).asText());
-            cache.put(username, new CachedUser(user, now));
-            return Optional.of(user);
-        } catch (IOException e) {
-            throw new UncheckedIOException("Erro ao ler user " + username, e);
-        }
+        return all().stream().filter(u -> u.username().equals(username)).findFirst();
     }
 
-    public User save(User user) {
-        Logger.debug("Persisting user: %s", user.username());
-        val before = findByUsername(user.username()).orElse(null);
-        val key = fileFor(user.username());
+    @Override
+    public Optional<User> findById(String id) {
+        return all().stream().filter(u -> u.id().equals(id)).findFirst();
+    }
 
+    @Override
+    public synchronized User save(User user) {
+        Logger.debug("Persisting user: %s (%s)", user.username(), user.id());
+        val all = new ArrayList<>(all());
+        all.removeIf(u -> u.id().equals(user.id()));
+        all.add(user);
         try {
-            val auth = mapper.createObjectNode();
-            auth.put(PASSWORD_KEY, user.password());
-            storage.write(key, AUTH_KEY, mapper.writeValueAsBytes(auth));
-
-            cache.put(user.username(), new CachedUser(user, System.currentTimeMillis()));
-            Logger.verbose(() -> "auth/%s diff:%s".formatted(user.username(), EntityDiff.of(mapper, before, user)));
-            return user;
+            storage.write(FILE, KEY, mapper.writeValueAsBytes(all));
         } catch (IOException e) {
             throw new UncheckedIOException("Erro ao gravar user " + user.username(), e);
         }
+        cache = List.copyOf(all);
+        loadedAt = System.currentTimeMillis();
+        return user;
     }
 
-    private String fileFor(String username) {
-        return username + ".json";
+    private List<User> all() {
+        val now = System.currentTimeMillis();
+        val cached = cache;
+        if (cached != null && (now - loadedAt) < CACHE_TTL_MS) return cached;
+
+        val bytes = storage.read(FILE, KEY);
+        List<User> list;
+        if (bytes == null || bytes.length == 0) {
+            list = List.of();
+        } else {
+            try {
+                val listType = mapper.getTypeFactory().constructCollectionType(List.class, User.class);
+                list = List.copyOf(mapper.readValue(bytes, listType));
+            } catch (IOException e) {
+                throw new UncheckedIOException("Erro ao ler registro de usuários", e);
+            }
+        }
+        cache = list;
+        loadedAt = now;
+        return list;
     }
 }

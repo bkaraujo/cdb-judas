@@ -54,6 +54,6 @@ public class ClosingJsonRepository implements ClosingRepository {
     }
 
     private String fileName() {
-        return CurrentUser.getUsername() + ".json";
+        return CurrentUser.getId() + ".json";
     }
 }
