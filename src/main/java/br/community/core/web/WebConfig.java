@@ -26,7 +26,6 @@ class WebConfig implements WebMvcConfigurer {
                         "/api/categories", "/api/categories/**",
                         "/api/transactions", "/api/transactions/**",
                         "/api/dashboard", "/api/dashboard/**",
-                        "/api/credit-cards", "/api/credit-cards/**",
                         "/api/operations/**",
                         "/api/cost-centers", "/api/cost-centers/**",
                         "/api/tags", "/api/tags/**",

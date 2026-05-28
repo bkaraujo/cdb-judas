@@ -1,18 +1,3 @@
+// DTO de cartão absorvido por Contas (Account DTO) — issue 03.
+// Arquivo neutralizado; remoção física pendente (git rm bloqueado no ambiente).
 package br.community.feature.creditcards;
-
-import org.jspecify.annotations.NullMarked;
-
-import java.math.BigDecimal;
-import java.util.UUID;
-
-@NullMarked
-public record CreditCard(
-        UUID id,
-        UUID accountId,
-        String last4,
-        BigDecimal limit,
-        int closingDay,
-        int dueDay,
-        String color,
-        boolean active
-) {}

@@ -97,4 +97,62 @@ class AccountResourceTest extends BaseHttpTest {
         mockMvc.perform(delete("/api/{u}/accounts/{id}", TEST_USER_ID, missing))
                 .andExpect(status().isNotFound());
     }
+
+    @Test
+    void deveGerenciarCartaoViaContas() throws Exception {
+        // Conta vinculada (CHECKING) — cartão exige mesma cor da conta de origem.
+        String checkingJson = """
+            {"name":"Conta Corrente","balance":0.00,"type":"CHECKING","color":"#820AD1","active":true}
+            """;
+        String checkingResp = mockMvc.perform(post("/api/{u}/accounts", TEST_USER_ID)
+                .contentType(MediaType.APPLICATION_JSON).content(checkingJson))
+                .andExpect(status().isCreated())
+                .andReturn().getResponse().getContentAsString();
+        UUID checkingId = objectMapper.readValue(checkingResp, Account.class).id();
+
+        String cardJson = """
+            {
+              "name":"Nubank","balance":0.00,"type":"CREDIT_CARD","color":"#820AD1","active":true,
+              "linkedAccountId":"%s",
+              "additionalInfo":{"last4":"1234","limit":5000.00,"closingDay":5,"dueDay":12}
+            }
+            """.formatted(checkingId);
+        String cardResp = mockMvc.perform(post("/api/{u}/accounts", TEST_USER_ID)
+                .contentType(MediaType.APPLICATION_JSON).content(cardJson))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.type").value("CREDIT_CARD"))
+                .andExpect(jsonPath("$.linkedAccountId").value(checkingId.toString()))
+                .andExpect(jsonPath("$.additionalInfo.last4").value("1234"))
+                .andReturn().getResponse().getContentAsString();
+        UUID cardId = objectMapper.readValue(cardResp, Account.class).id();
+
+        // Listar apenas cartões via filtro de tipo.
+        mockMvc.perform(get("/api/{u}/accounts", TEST_USER_ID).param("type", "card"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$").isArray())
+                .andExpect(jsonPath("$.length()").value(1))
+                .andExpect(jsonPath("$[0].id").value(cardId.toString()))
+                .andExpect(jsonPath("$[0].type").value("CREDIT_CARD"));
+
+        // Editar o cartão pelos endpoints de item de conta.
+        String patchCard = """
+            {
+              "name":"Nubank","balance":0.00,"type":"CREDIT_CARD","color":"#820AD1","active":true,
+              "linkedAccountId":"%s",
+              "additionalInfo":{"last4":"9999","limit":8000.00,"closingDay":5,"dueDay":12}
+            }
+            """.formatted(checkingId);
+        mockMvc.perform(patch("/api/{u}/accounts/{id}", TEST_USER_ID, cardId)
+                .contentType(MediaType.APPLICATION_JSON).content(patchCard))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.additionalInfo.last4").value("9999"));
+
+        // Excluir o cartão.
+        mockMvc.perform(delete("/api/{u}/accounts/{id}", TEST_USER_ID, cardId))
+                .andExpect(status().isNoContent());
+
+        mockMvc.perform(get("/api/{u}/accounts", TEST_USER_ID).param("type", "card"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(0));
+    }
 }

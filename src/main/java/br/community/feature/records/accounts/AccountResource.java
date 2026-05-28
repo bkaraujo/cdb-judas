@@ -11,6 +11,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.val;
 import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
@@ -29,11 +30,18 @@ public class AccountResource {
     private final MonetaryContext monetaryContext;
 
     @GetMapping
-    public List<Account> listAll() {
-        return switch (monetaryContext.listAccounts()) {
+    public List<Account> listAll(@RequestParam(required = false) @Nullable String type) {
+        val result = isCardType(type) ? monetaryContext.listCreditCards() : monetaryContext.listAccounts();
+        return switch (result) {
             case Result.Success(var accounts) -> accounts.stream().map(this::toDto).toList();
             case Result.Failure(var error) -> throw new DomainException(error);
         };
+    }
+
+    private boolean isCardType(@Nullable String type) {
+        if (type == null) return false;
+        val t = type.replace('-', '_').toUpperCase();
+        return t.equals("CARD") || t.equals("CREDIT_CARD");
     }
 
     @GetMapping("/{id}/balance")

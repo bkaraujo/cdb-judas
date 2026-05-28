@@ -1,20 +1,3 @@
+// DTO de requisição de cartão absorvido por Contas (AccountRequest) — issue 03.
+// Arquivo neutralizado; remoção física pendente (git rm bloqueado no ambiente).
 package br.community.feature.creditcards;
-
-import br.community.core.TwoDecimalPlaces;
-import jakarta.validation.constraints.*;
-import org.jspecify.annotations.NullMarked;
-
-import java.math.BigDecimal;
-import java.util.UUID;
-
-@NullMarked
-public record CreditCardRequest(
-        @NotNull UUID accountId,
-        @NotNull String name,
-        @NotBlank @Pattern(regexp = "\\d{4}") String last4,
-        @NotNull @PositiveOrZero @TwoDecimalPlaces BigDecimal limit,
-        @Min(1) @Max(31) int closingDay,
-        @Min(1) @Max(31) int dueDay,
-        @NotBlank @Pattern(regexp = "#[0-9A-Fa-f]{6}") String color,
-        boolean active
-) {}

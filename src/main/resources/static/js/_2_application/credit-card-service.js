@@ -1,21 +1,19 @@
 /* _2_application/credit-card-service.js — Credit card use cases. */
 (function () {
-  let repo = null;
   let txRepo = null;
   let cache = null;
 
   function init(deps) {
-    repo   = deps.repo;
     txRepo = deps.txRepo;
     cache  = deps.cache;
     return { ready: true };
   }
 
+  // Cards are accounts (type CREDIT_CARD); read them from the shared accounts cache.
+  // Create/edit/delete happen through the Accounts resource (Contas page).
   function listFromCache() {
     return cache.accounts().filter(window.Domain.Account.isCreditCard);
   }
-
-  function listRemote() { return repo.list(); }
 
   function invoiceFor(cardId, period) {
     const b = window.Domain.Period.bounds(period);
@@ -33,7 +31,6 @@
   window.App.CreditCardService = {
     init: init,
     listFromCache: listFromCache,
-    listRemote: listRemote,
     invoiceFor: invoiceFor,
   };
 })();

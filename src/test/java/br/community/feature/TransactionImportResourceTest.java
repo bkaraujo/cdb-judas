@@ -140,9 +140,11 @@ class TransactionImportResourceTest extends BaseHttpTest {
         UUID accountId = UUID.fromString(objectMapper.readTree(accResponse).get("id").asText());
 
         String cardJson = """
-            {"accountId":"%s","name":"Black Card","last4":"0020","limit":10000.00,"closingDay":1,"dueDay":10,"color":"#007AFF","active":true}
+            {"name":"Black Card","balance":0.00,"type":"CREDIT_CARD","color":"#007AFF","active":true,
+             "linkedAccountId":"%s",
+             "additionalInfo":{"last4":"0020","limit":10000.00,"closingDay":1,"dueDay":10}}
             """.formatted(accountId);
-        String cardResponse = mockMvc.perform(post("/api/credit-cards")
+        String cardResponse = mockMvc.perform(post("/api/{u}/accounts", TEST_USER_ID)
                         .contentType(MediaType.APPLICATION_JSON).content(cardJson))
                 .andExpect(status().isCreated())
                 .andReturn().getResponse().getContentAsString();

@@ -22,7 +22,6 @@
     payables:     window.Infra.PayableRepository.create(http),
     closing:      window.Infra.ClosingRepository.create(http),
     dashboard:    window.Infra.DashboardRepository.create(http),
-    creditCards:  window.Infra.CreditCardRepository.create(http),
   };
 
   const cadastroBootstrap = window.Infra.CadastroBootstrap.create({ repos: repos });
@@ -43,7 +42,7 @@
   window.App.PayableService.init     ({ repo: repos.payables });
   window.App.StatementService.init   ({ repo: repos.statement });
   window.App.BudgetService.init      ({ repo: repos.budget });
-  window.App.CreditCardService.init  ({ repo: repos.creditCards, txRepo: repos.transactions, cache: window.App.CacheStore });
+  window.App.CreditCardService.init  ({ txRepo: repos.transactions, cache: window.App.CacheStore });
   window.App.ClosingService.init     ({ repo: repos.closing });
   window.App.DashboardService.init   ({ repo: repos.dashboard, txRepo: repos.transactions, payableRepo: repos.payables });
   const loginUrl = baseUrl.replace(/\/api\/?$/, '') + '/login';

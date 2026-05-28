@@ -27,7 +27,6 @@
     'payable-repository.js',
     'closing-repository.js',
     'dashboard-repository.js',
-    'credit-card-repository.js',
     'cadastro-bootstrap.js',
     'sse-client.js'
   ];
