@@ -112,14 +112,15 @@
 
   /* ---- Modal ----
    * Returns { open, close, $el }. Stacks: each modal has its own overlay.
-   * Closes on overlay click and ESC (delegated on document), unless
-   * `opts.persistent === true` — used for the login modal so users can't
-   * dismiss it accidentally (e.g. typing Ctrl+Shift+I for DevTools).
+   * Persistent by default: closes ONLY via action buttons (footer / any
+   * `[data-modal-close]`), never on overlay click, ESC, or a header X.
+   * Pass `opts.persistent === false` to opt back into the dismissable
+   * behavior (overlay click + ESC + header X).
    */
   function modal(opts) {
     opts = opts || {};
     const id = nextId();
-    const persistent = !!opts.persistent;
+    const persistent = opts.persistent !== false;
     const titleHtml = '<h3>' + esc(opts.title || '') + '</h3>';
     const bodyHtml  = opts.body || '';
     const footerContent = opts.footer;
