@@ -28,7 +28,7 @@ class AccountResourceTest extends BaseHttpTest {
             }
             """;
 
-        String response = mockMvc.perform(post("/api/accounts")
+        String response = mockMvc.perform(post("/api/{u}/accounts", TEST_USER_ID)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(createJson))
                 .andExpect(status().isCreated())
@@ -40,12 +40,12 @@ class AccountResourceTest extends BaseHttpTest {
         Account created = objectMapper.readValue(response, Account.class);
         UUID id = created.id();
 
-        mockMvc.perform(get("/api/accounts/{id}", id))
+        mockMvc.perform(get("/api/{u}/accounts/{id}", TEST_USER_ID, id))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(id.toString()))
                 .andExpect(jsonPath("$.additionalInfo.bank").value("Banco do Brasil"));
 
-        mockMvc.perform(get("/api/accounts"))
+        mockMvc.perform(get("/api/{u}/accounts", TEST_USER_ID))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$").isArray())
                 .andExpect(jsonPath("$.length()").value(1));
@@ -60,22 +60,22 @@ class AccountResourceTest extends BaseHttpTest {
             }
             """;
 
-        mockMvc.perform(patch("/api/accounts/{id}", id)
+        mockMvc.perform(patch("/api/{u}/accounts/{id}", TEST_USER_ID, id)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(patchJson))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.name").value("Conta Alterada"))
                 .andExpect(jsonPath("$.balance").value(1300.00));
 
-        mockMvc.perform(get("/api/accounts/{id}/balance", id)
+        mockMvc.perform(get("/api/{u}/accounts/{id}/balance", TEST_USER_ID, id)
                 .param("year", "2024"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$").isArray());
 
-        mockMvc.perform(get("/api/accounts/{id}/balance", id))
+        mockMvc.perform(get("/api/{u}/accounts/{id}/balance", TEST_USER_ID, id))
                 .andExpect(status().isUnprocessableEntity());
 
-        mockMvc.perform(delete("/api/accounts/{id}", id))
+        mockMvc.perform(delete("/api/{u}/accounts/{id}", TEST_USER_ID, id))
                 .andExpect(status().isNoContent());
     }
 
@@ -83,18 +83,18 @@ class AccountResourceTest extends BaseHttpTest {
     void deveRetornar404ParaContaInexistente() throws Exception {
         UUID missing = UUID.randomUUID();
 
-        mockMvc.perform(get("/api/accounts/{id}", missing))
+        mockMvc.perform(get("/api/{u}/accounts/{id}", TEST_USER_ID, missing))
                 .andExpect(status().isNotFound());
 
         String patchJson = """
             {"name":"X","balance":0.00,"type":"CHECKING","color":"#000000","active":true}
             """;
-        mockMvc.perform(patch("/api/accounts/{id}", missing)
+        mockMvc.perform(patch("/api/{u}/accounts/{id}", TEST_USER_ID, missing)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(patchJson))
                 .andExpect(status().isNotFound());
 
-        mockMvc.perform(delete("/api/accounts/{id}", missing))
+        mockMvc.perform(delete("/api/{u}/accounts/{id}", TEST_USER_ID, missing))
                 .andExpect(status().isNotFound());
     }
 }

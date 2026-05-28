@@ -134,7 +134,7 @@ class TransactionImportResourceTest extends BaseHttpTest {
         String accJson = """
             {"name":"Conta Corrente","balance":1000.00,"type":"CHECKING","color":"#007AFF","active":true}
             """;
-        String accResponse = mockMvc.perform(post("/api/accounts")
+        String accResponse = mockMvc.perform(post("/api/{u}/accounts", TEST_USER_ID)
                         .contentType(MediaType.APPLICATION_JSON).content(accJson))
                 .andReturn().getResponse().getContentAsString();
         UUID accountId = UUID.fromString(objectMapper.readTree(accResponse).get("id").asText());

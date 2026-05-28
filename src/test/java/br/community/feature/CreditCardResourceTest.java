@@ -23,7 +23,7 @@ class CreditCardResourceTest extends BaseHttpTest {
               "active": true
             }
             """;
-        String accResponse = mockMvc.perform(post("/api/accounts").contentType(MediaType.APPLICATION_JSON).content(accJson))
+        String accResponse = mockMvc.perform(post("/api/{u}/accounts", TEST_USER_ID).contentType(MediaType.APPLICATION_JSON).content(accJson))
                 .andReturn().getResponse().getContentAsString();
         UUID accountId = UUID.fromString(objectMapper.readTree(accResponse).get("id").asText());
 

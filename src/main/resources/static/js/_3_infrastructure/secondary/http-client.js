@@ -107,6 +107,13 @@
       });
     }
 
+    /* Prepends the authenticated user's id, building /api/{uuid}<path>. Opt-in per call during the
+     * cutover transition so resources can migrate one at a time without breaking legacy routes. */
+    function withUser(path) {
+      const uid = window.Infra.AuthStore.userId();
+      return (uid ? '/' + uid : '') + path;
+    }
+
     return {
       baseUrl: baseUrl,
       get:    function (p)    { return request('GET',    p); },
@@ -115,6 +122,14 @@
       patch:  function (p, b) { return request('PATCH',  p, b); },
       delete: function (p)    { return request('DELETE', p); },
       upload: function (p, fd) { return enqueue(function () { return doUpload('POST', p, fd); }); },
+      user: {
+        get:    function (p)    { return request('GET',    withUser(p)); },
+        post:   function (p, b) { return request('POST',   withUser(p), b); },
+        put:    function (p, b) { return request('PUT',    withUser(p), b); },
+        patch:  function (p, b) { return request('PATCH',  withUser(p), b); },
+        delete: function (p)    { return request('DELETE', withUser(p)); },
+        upload: function (p, fd) { return enqueue(function () { return doUpload('POST', withUser(p), fd); }); },
+      },
       setUnauthorizedHandler: function (fn) { onUnauthorized = fn || function () {}; },
     };
   }

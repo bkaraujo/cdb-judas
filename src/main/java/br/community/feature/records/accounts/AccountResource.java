@@ -23,7 +23,7 @@ import java.util.UUID;
 @NullMarked
 @RestController
 @RequiredArgsConstructor
-@RequestMapping(value = "/api/accounts", produces = MediaType.APPLICATION_JSON_VALUE)
+@RequestMapping(value = "/api/{uuid}/accounts", produces = MediaType.APPLICATION_JSON_VALUE)
 public class AccountResource {
 
     private final MonetaryContext monetaryContext;
