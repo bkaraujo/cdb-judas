@@ -4,10 +4,10 @@
   function create(http) {
     return {
       detail: function (accountId, yyyyMM, status) {
-        return http.user.get('/accounts/' + accountId + '/statements/' + yyyyMM + (status ? '?status=' + status : ''));
+        return http.get('/accounts/' + accountId + '/statements/' + yyyyMM + (status ? '?status=' + status : ''));
       },
       summary: function (yyyyMM, status) {
-        return http.user.get('/accounts/statements/' + yyyyMM + (status ? '?status=' + status : ''));
+        return http.get('/accounts/statements/' + yyyyMM + (status ? '?status=' + status : ''));
       },
     };
   }

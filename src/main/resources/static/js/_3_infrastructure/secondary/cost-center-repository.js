@@ -3,7 +3,7 @@
 (function () {
   function create(http) {
     return {
-      list: function () { return http.get('/cost-center'); },
+      list: function () { return http.global.get('/cost-center'); },
     };
   }
   window.Infra = window.Infra || {};

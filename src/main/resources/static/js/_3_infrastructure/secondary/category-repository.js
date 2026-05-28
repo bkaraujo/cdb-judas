@@ -2,10 +2,10 @@
 (function () {
   function create(http) {
     return {
-      list:   function ()        { return http.user.get('/categories'); },
-      create: function (data)    { return http.user.post('/categories', data); },
-      update: function (id, d)   { return http.user.patch('/categories/' + id, d); },
-      remove: function (id)      { return http.user.delete('/categories/' + id); },
+      list:   function ()        { return http.get('/categories'); },
+      create: function (data)    { return http.post('/categories', data); },
+      update: function (id, d)   { return http.patch('/categories/' + id, d); },
+      remove: function (id)      { return http.delete('/categories/' + id); },
     };
   }
   window.Infra = window.Infra || {};

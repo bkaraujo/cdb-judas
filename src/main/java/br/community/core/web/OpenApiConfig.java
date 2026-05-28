@@ -27,7 +27,10 @@ class OpenApiConfig {
         return new OpenAPI()
                 .info(new Info()
                         .title("CDB Judas API")
-                        .description("API de controle financeiro pessoal")
+                        .description("API de controle financeiro pessoal. Rotas de dados do usuário vivem sob "
+                                + "o namespace /api/{uuid}/... (o {uuid} é o id do usuário autenticado, validado "
+                                + "pela guarda de propriedade). Apenas rotas globais (ex.: /api/cost-center) e o "
+                                + "login (/login) ficam fora do namespace.")
                         .version(version))
                 .components(new Components()
                         .addSecuritySchemes(TOKEN_SCHEME, new SecurityScheme()

@@ -107,8 +107,8 @@
       });
     }
 
-    /* Prepends the authenticated user's id, building /api/{uuid}<path>. Opt-in per call during the
-     * cutover transition so resources can migrate one at a time without breaking legacy routes. */
+    /* Prepends the authenticated user's id, building /api/{uuid}<path>. This is the default for all
+     * data routes after the cutover; global routes (cost-center) opt out via http.global.*. */
     function withUser(path) {
       const uid = window.Infra.AuthStore.userId();
       return (uid ? '/' + uid : '') + path;
@@ -116,19 +116,19 @@
 
     return {
       baseUrl: baseUrl,
-      get:    function (p)    { return request('GET',    p); },
-      post:   function (p, b) { return request('POST',   p, b); },
-      put:    function (p, b) { return request('PUT',    p, b); },
-      patch:  function (p, b) { return request('PATCH',  p, b); },
-      delete: function (p)    { return request('DELETE', p); },
-      upload: function (p, fd) { return enqueue(function () { return doUpload('POST', p, fd); }); },
-      user: {
-        get:    function (p)    { return request('GET',    withUser(p)); },
-        post:   function (p, b) { return request('POST',   withUser(p), b); },
-        put:    function (p, b) { return request('PUT',    withUser(p), b); },
-        patch:  function (p, b) { return request('PATCH',  withUser(p), b); },
-        delete: function (p)    { return request('DELETE', withUser(p)); },
-        upload: function (p, fd) { return enqueue(function () { return doUpload('POST', withUser(p), fd); }); },
+      get:    function (p)    { return request('GET',    withUser(p)); },
+      post:   function (p, b) { return request('POST',   withUser(p), b); },
+      put:    function (p, b) { return request('PUT',    withUser(p), b); },
+      patch:  function (p, b) { return request('PATCH',  withUser(p), b); },
+      delete: function (p)    { return request('DELETE', withUser(p)); },
+      upload: function (p, fd) { return enqueue(function () { return doUpload('POST', withUser(p), fd); }); },
+      // Global (no user prefix) — only for system-wide routes such as /cost-center.
+      global: {
+        get:    function (p)    { return request('GET',    p); },
+        post:   function (p, b) { return request('POST',   p, b); },
+        put:    function (p, b) { return request('PUT',    p, b); },
+        patch:  function (p, b) { return request('PATCH',  p, b); },
+        delete: function (p)    { return request('DELETE', p); },
       },
       setUnauthorizedHandler: function (fn) { onUnauthorized = fn || function () {}; },
     };

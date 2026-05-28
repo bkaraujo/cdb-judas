@@ -2,9 +2,9 @@
 (function () {
   function create(http) {
     return {
-      get:   function ()       { return http.user.get('/accounts/closing'); },
-      set:   function (period) { return http.user.post('/accounts/closing', { period: period }); },
-      clear: function ()       { return http.user.delete('/accounts/closing'); },
+      get:   function ()       { return http.get('/accounts/closing'); },
+      set:   function (period) { return http.post('/accounts/closing', { period: period }); },
+      clear: function ()       { return http.delete('/accounts/closing'); },
     };
   }
   window.Infra = window.Infra || {};
