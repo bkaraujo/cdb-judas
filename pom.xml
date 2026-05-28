@@ -43,6 +43,7 @@
         <dependency.test.archunit>1.4.1</dependency.test.archunit>
         <dependency.runtime.juniversalchardet>1.0.3</dependency.runtime.juniversalchardet>
         <dependency.runtime.pdfbox>3.0.5</dependency.runtime.pdfbox>
+        <dependency.runtime.springdoc>3.0.3</dependency.runtime.springdoc>
         <!-- NullAway + ErrorProne para verificação de null-safety em tempo de compilação -->
         <dependency.nullaway>0.13.4</dependency.nullaway>
         <dependency.errorprone>2.48.0</dependency.errorprone>
@@ -87,6 +88,7 @@
         <dependency><groupId>com.fasterxml.jackson.datatype</groupId><artifactId>jackson-datatype-jsr310</artifactId></dependency>
         <dependency><groupId>com.googlecode.juniversalchardet</groupId><artifactId>juniversalchardet</artifactId><version>${dependency.runtime.juniversalchardet}</version></dependency>
         <dependency><groupId>org.apache.pdfbox</groupId><artifactId>pdfbox</artifactId><version>${dependency.runtime.pdfbox}</version></dependency>
+        <dependency><groupId>org.springdoc</groupId><artifactId>springdoc-openapi-starter-webmvc-ui</artifactId><version>${dependency.runtime.springdoc}</version></dependency>
 
 
         <dependency><groupId>org.junit.jupiter</groupId><artifactId>junit-jupiter-engine</artifactId><scope>test</scope></dependency>
