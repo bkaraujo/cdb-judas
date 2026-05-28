@@ -41,11 +41,11 @@ class ClosingResourceTest extends BaseHttpTest {
                         .andReturn().getResponse().getContentAsString()).get("id").asText());
 
         UUID macroId = UUID.fromString(objectMapper.readTree(
-                mockMvc.perform(post("/api/categories").contentType(MediaType.APPLICATION_JSON)
+                mockMvc.perform(post("/api/" + TEST_USER_ID + "/categories").contentType(MediaType.APPLICATION_JSON)
                         .content("{\"name\":\"Geral\",\"nature\":\"EXPENSE\"}"))
                         .andReturn().getResponse().getContentAsString()).get("id").asText());
         UUID categoryId = UUID.fromString(objectMapper.readTree(
-                mockMvc.perform(post("/api/categories").contentType(MediaType.APPLICATION_JSON)
+                mockMvc.perform(post("/api/" + TEST_USER_ID + "/categories").contentType(MediaType.APPLICATION_JSON)
                         .content("{\"name\":\"Sub\",\"nature\":\"EXPENSE\",\"parentId\":\"" + macroId + "\"}"))
                         .andReturn().getResponse().getContentAsString()).get("id").asText());
 

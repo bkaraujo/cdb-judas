@@ -18,7 +18,7 @@ import java.util.UUID;
 @NullMarked
 @RestController
 @RequiredArgsConstructor
-@RequestMapping(value = "/api/tags", produces = MediaType.APPLICATION_JSON_VALUE)
+@RequestMapping(value = "/api/{uuid}/tags", produces = MediaType.APPLICATION_JSON_VALUE)
 public class TagResource {
 
     private final MonetaryContext monetaryContext;

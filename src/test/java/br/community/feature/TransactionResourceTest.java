@@ -24,7 +24,7 @@ class TransactionResourceTest extends BaseHttpTest {
 
     // Transações só podem ser lançadas em subcategorias (não em macro-categorias).
     private UUID createLeafCategory() throws Exception {
-        String macroResp = mockMvc.perform(post("/api/categories")
+        String macroResp = mockMvc.perform(post("/api/" + TEST_USER_ID + "/categories")
                 .contentType(MediaType.APPLICATION_JSON).content("{\"name\":\"Moradia\",\"nature\":\"EXPENSE\"}"))
                 .andReturn().getResponse().getContentAsString();
         UUID macroId = UUID.fromString(objectMapper.readTree(macroResp).get("id").asText());
@@ -32,7 +32,7 @@ class TransactionResourceTest extends BaseHttpTest {
         String subJson = """
             {"name":"Aluguel","nature":"EXPENSE","parentId":"%s"}
             """.formatted(macroId);
-        String subResp = mockMvc.perform(post("/api/categories")
+        String subResp = mockMvc.perform(post("/api/" + TEST_USER_ID + "/categories")
                 .contentType(MediaType.APPLICATION_JSON).content(subJson))
                 .andReturn().getResponse().getContentAsString();
         return UUID.fromString(objectMapper.readTree(subResp).get("id").asText());

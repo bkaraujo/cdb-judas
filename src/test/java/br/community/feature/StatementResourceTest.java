@@ -26,11 +26,11 @@ class StatementResourceTest extends BaseHttpTest {
     }
 
     private UUID createLeafCategory() throws Exception {
-        String macro = mockMvc.perform(post("/api/categories")
+        String macro = mockMvc.perform(post("/api/" + TEST_USER_ID + "/categories")
                 .contentType(MediaType.APPLICATION_JSON).content("{\"name\":\"Geral\",\"nature\":\"EXPENSE\"}"))
                 .andReturn().getResponse().getContentAsString();
         UUID macroId = UUID.fromString(objectMapper.readTree(macro).get("id").asText());
-        String sub = mockMvc.perform(post("/api/categories")
+        String sub = mockMvc.perform(post("/api/" + TEST_USER_ID + "/categories")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("{\"name\":\"Sub\",\"nature\":\"EXPENSE\",\"parentId\":\"" + macroId + "\"}"))
                 .andReturn().getResponse().getContentAsString();

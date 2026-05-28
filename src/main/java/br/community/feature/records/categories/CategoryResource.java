@@ -21,7 +21,7 @@ import java.util.UUID;
 @NullMarked
 @RestController
 @RequiredArgsConstructor
-@RequestMapping(value = "/api/categories", produces = MediaType.APPLICATION_JSON_VALUE)
+@RequestMapping(value = "/api/{uuid}/categories", produces = MediaType.APPLICATION_JSON_VALUE)
 public class CategoryResource {
 
     private final MonetaryContext monetaryContext;

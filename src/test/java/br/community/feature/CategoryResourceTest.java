@@ -21,7 +21,7 @@ class CategoryResourceTest extends BaseHttpTest {
             }
             """;
 
-        val createResult = mockMvc.perform(post("/api/categories")
+        val createResult = mockMvc.perform(post("/api/" + TEST_USER_ID + "/categories")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(createJson));
 
@@ -34,7 +34,7 @@ class CategoryResourceTest extends BaseHttpTest {
         val created = objectMapper.readValue(responseBody, CategoryDTO.class);
         val id = created.id();
 
-        mockMvc.perform(get("/api/categories"))
+        mockMvc.perform(get("/api/" + TEST_USER_ID + "/categories"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$").isArray())
                 .andExpect(jsonPath("$.length()").value(1))
@@ -47,18 +47,18 @@ class CategoryResourceTest extends BaseHttpTest {
             }
             """;
 
-        mockMvc.perform(patch("/api/categories/{id}", id)
+        mockMvc.perform(patch("/api/" + TEST_USER_ID + "/categories/{id}", id)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(updateJson))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(id.toString()))
                 .andExpect(jsonPath("$.name").value("Supermercado"));
 
-        mockMvc.perform(delete("/api/categories/{id}", id))
+        mockMvc.perform(delete("/api/" + TEST_USER_ID + "/categories/{id}", id))
                 .andExpect(status().isNoContent());
 
         // After deletion, "Outros" fallback category is auto-created
-        mockMvc.perform(get("/api/categories"))
+        mockMvc.perform(get("/api/" + TEST_USER_ID + "/categories"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.length()").value(1))
                 .andExpect(jsonPath("$[0].name").value("Outros"));
@@ -69,7 +69,7 @@ class CategoryResourceTest extends BaseHttpTest {
         val root = """
             {"name": "Moradia", "nature": "EXPENSE"}
             """;
-        val rootBody = mockMvc.perform(post("/api/categories").contentType(MediaType.APPLICATION_JSON).content(root))
+        val rootBody = mockMvc.perform(post("/api/" + TEST_USER_ID + "/categories").contentType(MediaType.APPLICATION_JSON).content(root))
                 .andExpect(status().isCreated())
                 .andReturn().getResponse().getContentAsString();
         val rootId = objectMapper.readTree(rootBody).get("id").asText();
@@ -77,7 +77,7 @@ class CategoryResourceTest extends BaseHttpTest {
         val sub = """
             {"name": "Aluguel", "nature": "EXPENSE", "parentId": "%s"}
             """.formatted(rootId);
-        val subBody = mockMvc.perform(post("/api/categories").contentType(MediaType.APPLICATION_JSON).content(sub))
+        val subBody = mockMvc.perform(post("/api/" + TEST_USER_ID + "/categories").contentType(MediaType.APPLICATION_JSON).content(sub))
                 .andExpect(status().isCreated())
                 .andReturn().getResponse().getContentAsString();
         val subId = objectMapper.readTree(subBody).get("id").asText();
@@ -85,7 +85,7 @@ class CategoryResourceTest extends BaseHttpTest {
         val subsub = """
             {"name": "IPTU", "nature": "EXPENSE", "parentId": "%s"}
             """.formatted(subId);
-        mockMvc.perform(post("/api/categories").contentType(MediaType.APPLICATION_JSON).content(subsub))
+        mockMvc.perform(post("/api/" + TEST_USER_ID + "/categories").contentType(MediaType.APPLICATION_JSON).content(subsub))
                 .andExpect(status().isBadRequest());
     }
 
@@ -94,7 +94,7 @@ class CategoryResourceTest extends BaseHttpTest {
         val root = """
             {"name": "Moradia", "nature": "EXPENSE"}
             """;
-        val rootBody = mockMvc.perform(post("/api/categories").contentType(MediaType.APPLICATION_JSON).content(root))
+        val rootBody = mockMvc.perform(post("/api/" + TEST_USER_ID + "/categories").contentType(MediaType.APPLICATION_JSON).content(root))
                 .andExpect(status().isCreated())
                 .andReturn().getResponse().getContentAsString();
         val rootId = objectMapper.readTree(rootBody).get("id").asText();
@@ -102,7 +102,7 @@ class CategoryResourceTest extends BaseHttpTest {
         val sub = """
             {"name": "Salário", "nature": "REVENUE", "parentId": "%s"}
             """.formatted(rootId);
-        mockMvc.perform(post("/api/categories").contentType(MediaType.APPLICATION_JSON).content(sub))
+        mockMvc.perform(post("/api/" + TEST_USER_ID + "/categories").contentType(MediaType.APPLICATION_JSON).content(sub))
                 .andExpect(status().isBadRequest());
     }
 
@@ -115,7 +115,7 @@ class CategoryResourceTest extends BaseHttpTest {
             }
             """;
 
-        val createResult = mockMvc.perform(post("/api/categories")
+        val createResult = mockMvc.perform(post("/api/" + TEST_USER_ID + "/categories")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(moradiaJson));
 
@@ -124,7 +124,7 @@ class CategoryResourceTest extends BaseHttpTest {
                 .andExpect(jsonPath("$.name").value("Moradia"))
                 .andExpect(jsonPath("$.nature").value(MonetaryNature.EXPENSE.name()));
 
-        mockMvc.perform(get("/api/categories"))
+        mockMvc.perform(get("/api/" + TEST_USER_ID + "/categories"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.length()").value(1));
 
@@ -140,7 +140,7 @@ class CategoryResourceTest extends BaseHttpTest {
             }
             """.formatted(moradiaId.toString());
 
-        val aluguelResult = mockMvc.perform(post("/api/categories")
+        val aluguelResult = mockMvc.perform(post("/api/" + TEST_USER_ID + "/categories")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(aluguelJson));
 
@@ -150,15 +150,15 @@ class CategoryResourceTest extends BaseHttpTest {
                 .andExpect(jsonPath("$.parentId").value(moradiaId.toString()))
                 .andExpect(jsonPath("$.nature").value(MonetaryNature.EXPENSE.name()));
 
-        mockMvc.perform(get("/api/categories"))
+        mockMvc.perform(get("/api/" + TEST_USER_ID + "/categories"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.length()").value(2));
 
-        mockMvc.perform(delete("/api/categories/{id}", moradiaId.toString()))
+        mockMvc.perform(delete("/api/" + TEST_USER_ID + "/categories/{id}", moradiaId.toString()))
                 .andExpect(status().isNoContent());
 
         // After deletion, "Outros" fallback category is auto-created
-        mockMvc.perform(get("/api/categories"))
+        mockMvc.perform(get("/api/" + TEST_USER_ID + "/categories"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.length()").value(1))
                 .andExpect(jsonPath("$[0].name").value("Outros"));
