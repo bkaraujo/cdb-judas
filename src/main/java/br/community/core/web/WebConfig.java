@@ -28,7 +28,6 @@ class WebConfig implements WebMvcConfigurer {
                         "/api/operations/**",
                         "/api/cost-centers", "/api/cost-centers/**",
                         "/api/tags", "/api/tags/**",
-                        "/api/statement", "/api/statement/**",
                         "/api/v1/**"
                 );
     }

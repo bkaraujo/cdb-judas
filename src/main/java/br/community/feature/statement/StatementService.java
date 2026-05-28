@@ -60,4 +60,32 @@ public class StatementService {
             });
         });
     }
+
+    public Result<List<StatementSummary>, DomainError> summary(int month, int year, @Nullable String status) {
+        val ym = YearMonth.of(year, month);
+        val start = ym.atDay(1);
+        val end = ym.atEndOfMonth();
+
+        return monetaryContext.listAccounts().flatMap(accounts ->
+                monetaryContext.listTransactions().map(allTransactions ->
+                        accounts.stream().map(account -> {
+                            val opening = monetaryContext.getMonthlyBalance(account.id(), ym.minusMonths(1))
+                                    .map(b -> b.balance())
+                                    .getOrElse(account.balance());
+
+                            var totalIn = BigDecimal.ZERO;
+                            var totalOut = BigDecimal.ZERO;
+                            for (val t : allTransactions) {
+                                if (!account.id().equals(t.accountId())) continue;
+                                if (t.date().isBefore(start) || t.date().isAfter(end)) continue;
+                                if (status != null && !status.isBlank() && !status.equalsIgnoreCase(t.status())) continue;
+                                if (t.amount().signum() >= 0) totalIn = totalIn.add(t.amount());
+                                else totalOut = totalOut.add(t.amount().abs());
+                            }
+                            val closing = opening.add(totalIn).subtract(totalOut);
+                            return new StatementSummary(account.id(), account.name(), opening, closing, totalIn, totalOut);
+                        }).toList()
+                )
+        );
+    }
 }

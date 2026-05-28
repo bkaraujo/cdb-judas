@@ -17,6 +17,7 @@
       month: now.getMonth() + 1, // 1-12 (backend usa 1-based)
       year: now.getFullYear(),
       items: [],
+      summary: {}, // panorama por conta no período (accountId -> resumo)
       loading: false,
     };
   }
@@ -66,6 +67,18 @@
       });
   }
 
+  // Panorama do mês por conta (saldo inicial/final + totais) para a coluna da esquerda.
+  function loadSummary() {
+    return window.App.StatementService.summary(window.Domain.Period.create(state.month, state.year))
+      .then(function (list) {
+        const map = {};
+        (Array.isArray(list) ? list : []).forEach(function (s) { map[String(s.accountId)] = s; });
+        state.summary = map;
+        render();
+      })
+      .catch(function () { /* panorama é complementar; silencioso */ });
+  }
+
   // ── Render ────────────────────────────────────────────────
   function render() {
     const $root = state.$root;
@@ -85,10 +98,12 @@
       onPrev: function () {
         if (--state.month < 1) { state.month = 12; state.year--; }
         loadStatement();
+        loadSummary();
       },
       onNext: function () {
         if (++state.month > 12) { state.month = 1; state.year++; }
         loadStatement();
+        loadSummary();
       },
     });
     $header.find('[data-region=head-actions]').append($periodNav);
@@ -110,7 +125,8 @@
     } else {
       accs.forEach(function (a) {
         const active = String(a.id) === String(state.accountId);
-        const bal = Number(a.balance) || 0;
+        const sum = state.summary[String(a.id)];
+        const bal = sum ? (Number(sum.closingBalance) || 0) : (Number(a.balance) || 0);
         const btnStyle =
           'padding:14px 16px;border-radius:var(--radius);text-align:left;' +
           'background:' + (active ? 'var(--accent-light)' : 'var(--bg-card)') + ';' +
@@ -223,6 +239,7 @@
         state.accountId = String(accs[0].id);
       }
       render();
+      loadSummary();
       if (state.accountId) loadStatement();
     },
     unmount: function () {

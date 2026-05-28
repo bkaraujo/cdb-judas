@@ -1,9 +1,13 @@
-/* _3_infrastructure/secondary/statement-repository.js — HTTP adapter for /statement. */
+/* _3_infrastructure/secondary/statement-repository.js — HTTP adapter for statements
+ * under the accounts namespace: detail per account + month summary per account. */
 (function () {
   function create(http) {
     return {
-      list: function (accountId, month, year) {
-        return http.get('/statement?accountId=' + accountId + '&month=' + month + '&year=' + year);
+      detail: function (accountId, yyyyMM, status) {
+        return http.user.get('/accounts/' + accountId + '/statements/' + yyyyMM + (status ? '?status=' + status : ''));
+      },
+      summary: function (yyyyMM, status) {
+        return http.user.get('/accounts/statements/' + yyyyMM + (status ? '?status=' + status : ''));
       },
     };
   }
