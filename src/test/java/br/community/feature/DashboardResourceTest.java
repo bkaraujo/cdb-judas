@@ -10,7 +10,7 @@ class DashboardResourceTest extends BaseHttpTest {
 
     @Test
     void deveObterResultadoMensal() throws Exception {
-        mockMvc.perform(get("/api/dashboard/result")
+        mockMvc.perform(get("/api/" + TEST_USER_ID + "/dashboard/result")
                 .param("month", "3")
                 .param("year", "2024"))
                 .andExpect(status().isOk())
