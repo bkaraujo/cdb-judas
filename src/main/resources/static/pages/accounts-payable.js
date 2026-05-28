@@ -30,37 +30,6 @@
     return window.Domain.Period.create(state.month + 1, state.year);
   }
 
-  function categoryById() {
-    const cats = window.App.CacheStore.categories();
-    const map = {};
-    cats.forEach(function (c) { map[c.id] = c; });
-    return map;
-  }
-
-  function categoryLabel(c) {
-    if (!c) return '';
-    return window.Domain.Category.labelChain(window.App.CacheStore.categories(), c.id, ' / ');
-  }
-
-  function flatCategories(natureFilter, excludeRoots) {
-    var Cat = window.Domain.Category;
-    const cats = window.App.CacheStore.categories();
-    return cats
-      .filter(function (c) {
-        if (excludeRoots && Cat.isRoot(c)) return false;
-        if (!natureFilter) return true;
-        return String(c.nature || '').toUpperCase() === natureFilter;
-      })
-      .map(function (c) { return { id: c.id, label: categoryLabel(c) }; })
-      .sort(function (a, b) {
-        return a.label.toLowerCase().localeCompare(b.label.toLowerCase(), 'pt-BR');
-      });
-  }
-
-  function accountsList() {
-    return window.App.CacheStore.accounts().slice().sort(window.sortByName);
-  }
-
   function findItem(id) {
     const src = state.payable.concat(state.receivable);
     for (let i = 0; i < src.length; i++) {

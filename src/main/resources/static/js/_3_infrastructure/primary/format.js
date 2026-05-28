@@ -94,3 +94,39 @@ window.esc = function (s) {
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#39;');
 };
+
+window.categoryById = function () {
+  const cats = window.App.CacheStore.categories();
+  const map = {};
+  cats.forEach(function (c) { map[c.id] = c; });
+  return map;
+};
+
+window.categoryLabel = function (c) {
+  if (!c) return '';
+  return window.Domain.Category.labelChain(window.App.CacheStore.categories(), c.id, ' / ');
+};
+
+window.flatCategories = function (natureFilter, excludeRoots) {
+  var Cat = window.Domain.Category;
+  const cats = window.App.CacheStore.categories();
+  return cats
+    .filter(function (c) {
+      if (excludeRoots && Cat.isRoot(c)) return false;
+      if (!natureFilter) return true;
+      return String(c.nature || '').toUpperCase() === natureFilter;
+    })
+    .map(function (c) { return { id: c.id, label: window.categoryLabel(c) }; })
+    .sort(function (a, b) {
+      return a.label.toLowerCase().localeCompare(b.label.toLowerCase(), 'pt-BR');
+    });
+};
+
+window.accountsList = function () {
+  return window.App.CacheStore.accounts().slice().sort(window.sortByName);
+};
+
+window.monthBounds = function (month, year) {
+  return window.Domain.Period.bounds(window.Domain.Period.create(month + 1, year));
+};
+

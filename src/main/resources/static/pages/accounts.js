@@ -46,26 +46,8 @@
     return type === 'CREDIT_CARD' ? 'creditCard' : 'building';
   }
 
-  // BR currency mask for the modal input.
-  function maskCurrency(input) {
-    let digits = String(input == null ? '' : input).replace(/\D/g, '');
-    if (!digits) return '0,00';
-    digits = digits.replace(/^0+/, '') || '0';
-    while (digits.length < 3) digits = '0' + digits;
-    const cents = digits.slice(-2);
-    const whole = digits.slice(0, -2);
-    const withSep = whole.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
-    return withSep + ',' + cents;
-  }
-
-  function parseCurrency(masked) {
-    const s = String(masked == null ? '' : masked).replace(/\./g, '').replace(',', '.');
-    const n = parseFloat(s);
-    return isNaN(n) ? 0 : n;
-  }
-
   function maskInitial(n) {
-    return maskCurrency(String(Math.round(Math.abs(Number(n) || 0) * 100)));
+    return window.maskCurrency(n);
   }
 
   // ── Render ────────────────────────────────────────────────
@@ -450,8 +432,8 @@
     });
 
     // Currency masks.
-    $balance.on('input', function () { $balance.val(maskCurrency($balance.val())); });
-    $limit.on('input', function () { $limit.val(maskCurrency($limit.val())); });
+    window.bindCurrencyMask($balance);
+    window.bindCurrencyMask($limit);
 
     function submit(e) {
       if (e) e.preventDefault();
@@ -463,7 +445,7 @@
       const t = $type.val();
       const payload = {
         name: name,
-        balance: (parseCurrency($balance.val()) * (initial.balanceNegative ? -1 : 1)).toFixed(2),
+        balance: (window.parseCurrency($balance.val()) * (initial.balanceNegative ? -1 : 1)).toFixed(2),
         type: t,
         color: $color.val() || '#6366F1',
         active: $form.find('input[name=active]').is(':checked'),
@@ -473,7 +455,7 @@
         if (linkedId) payload.linkedAccountId = linkedId;
         payload.additionalInfo = {
           last4: ($form.find('input[name=last4]').val() || '').trim(),
-          limit: parseCurrency($limit.val()).toFixed(2),
+          limit: window.parseCurrency($limit.val()).toFixed(2),
           closingDay: parseInt($form.find('input[name=closingDay]').val(), 10) || 1,
           dueDay: parseInt($form.find('input[name=dueDay]').val(), 10) || 10,
         };

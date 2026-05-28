@@ -42,43 +42,6 @@
 
   // ── Helpers ───────────────────────────────────────────────
 
-
-
-  function monthBounds(month, year) {
-    return window.Domain.Period.bounds(window.Domain.Period.create(month + 1, year));
-  }
-
-  function categoryById() {
-    const cats = window.App.CacheStore.categories();
-    const map = {};
-    cats.forEach(function (c) { map[c.id] = c; });
-    return map;
-  }
-
-  function categoryLabel(c) {
-    if (!c) return '';
-    return window.Domain.Category.labelChain(window.App.CacheStore.categories(), c.id, ' / ');
-  }
-
-  function flatCategories(natureFilter, excludeRoots) {
-    var Cat = window.Domain.Category;
-    const cats = window.App.CacheStore.categories();
-    return cats
-      .filter(function (c) {
-        if (excludeRoots && Cat.isRoot(c)) return false;
-        if (!natureFilter) return true;
-        return String(c.nature || '').toUpperCase() === natureFilter;
-      })
-      .map(function (c) { return { id: c.id, label: categoryLabel(c) }; })
-      .sort(function (a, b) {
-        return a.label.toLowerCase().localeCompare(b.label.toLowerCase(), 'pt-BR');
-      });
-  }
-
-  function accountsList() {
-    return window.App.CacheStore.accounts().slice().sort(window.sortByName);
-  }
-
   function findTx(id) {
     for (let i = 0; i < state.transactions.length; i++) {
       if (String(state.transactions[i].id) === String(id)) return state.transactions[i];
