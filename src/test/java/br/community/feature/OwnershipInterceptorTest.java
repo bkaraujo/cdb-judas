@@ -30,8 +30,8 @@ class OwnershipInterceptorTest extends BaseHttpTest {
 
     @Test
     void naoGuardaRotaGlobalDeCentroDeCusto() throws Exception {
-        // /api/cost-centers é global (isenta da guarda); jamais retorna 403 por propriedade.
-        mockMvc.perform(get("/api/cost-centers"))
+        // /api/cost-center é global (isenta da guarda); jamais retorna 403 por propriedade.
+        mockMvc.perform(get("/api/cost-center"))
                 .andExpect(status().isOk());
     }
 }

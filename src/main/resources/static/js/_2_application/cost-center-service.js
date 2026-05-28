@@ -5,10 +5,8 @@
 
   function init(deps) { repo = deps.repo; cache = deps.cache; return { ready: true }; }
 
+  // Centro de custo é fixo e somente leitura — sem create/update/remove.
   function list()           { return repo.list(); }
-  function create(data)     { return repo.create(data); }
-  function update(id, data) { return repo.update(id, data); }
-  function remove(id)       { return repo.remove(id); }
 
   function listCached()     { return cache.costCenters(); }
   function findById(id)     { return cache.findById('costCenters', id); }
@@ -18,7 +16,6 @@
   window.App.CostCenterService = {
     init: init,
     list: list, listCached: listCached,
-    create: create, update: update, remove: remove,
     findById: findById, onChange: onChange,
   };
 })();

@@ -3,53 +3,44 @@ package br.community.feature;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.MediaType;
 
-import java.util.UUID;
+import java.nio.charset.StandardCharsets;
 
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 class CostCenterResourceTest extends BaseHttpTest {
 
+    private static final String CATALOG = """
+            [ {"id":"d0000000-0000-0000-0000-000000000001","description":"Fixo"},
+              {"id":"d0000000-0000-0000-0000-000000000002","description":"Variável"} ]""";
+
     @Test
-    void deveGerenciarCentrosDeCusto() throws Exception {
-        String createJson = """
-            {
-              "description": "Trabalho"
-            }
-            """;
+    void retornaListaFixaGlobalSomenteLeitura() throws Exception {
+        storage.write("cost-centers.json", "costCenters", CATALOG.getBytes(StandardCharsets.UTF_8));
 
-        String createResp = mockMvc.perform(post("/api/cost-centers")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(createJson))
-                .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.id").exists())
-                .andExpect(jsonPath("$.description").value("Trabalho"))
-                .andReturn().getResponse().getContentAsString();
-        UUID id = UUID.fromString(objectMapper.readTree(createResp).get("id").asText());
-
-        mockMvc.perform(get("/api/cost-centers"))
+        mockMvc.perform(get("/api/cost-center"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$").isArray())
-                .andExpect(jsonPath("$[0].description").value("Trabalho"));
+                .andExpect(jsonPath("$.length()").value(2))
+                .andExpect(jsonPath("$[0].id").value("d0000000-0000-0000-0000-000000000001"))
+                .andExpect(jsonPath("$[0].description").value("Fixo"))
+                .andExpect(jsonPath("$[1].description").value("Variável"));
+    }
 
-        String patchJson = """
-            {
-              "description": "Pessoal"
-            }
-            """;
-
-        mockMvc.perform(patch("/api/cost-centers/{id}", id)
+    @Test
+    void naoPermiteCriacaoViaApi() throws Exception {
+        mockMvc.perform(post("/api/cost-center")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(patchJson))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.description").value("Pessoal"));
+                .content("{\"description\":\"Trabalho\"}"))
+                .andExpect(status().isMethodNotAllowed());
+    }
 
-        mockMvc.perform(delete("/api/cost-centers/{id}", id))
-                .andExpect(status().isNoContent());
-
-        mockMvc.perform(get("/api/cost-centers"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.length()").value(0));
+    @Test
+    void naoPermiteExclusaoViaApi() throws Exception {
+        mockMvc.perform(delete("/api/cost-center"))
+                .andExpect(status().isMethodNotAllowed());
     }
 }

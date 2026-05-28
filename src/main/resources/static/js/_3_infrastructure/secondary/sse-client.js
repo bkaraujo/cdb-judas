@@ -11,7 +11,7 @@
     if (type === 'CATEGORY')                       return 'categories';
     if (type === 'ACCOUNT' || type === 'CREDITCARD') return 'accounts';
     if (type === 'TAG')                            return 'tags';
-    if (type === 'COST_CENTER')                    return 'costCenters';
+    // Centro de custo é fixo (somente leitura): sem canal de eventos.
     return null;
   }
 

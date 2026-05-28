@@ -1,59 +1,26 @@
 package br.community.feature.records.costcenter;
 
-import br.commons.Result;
-import br.community.context.monetary.MonetaryContext;
 import br.community.context.monetary._0_domain.model.MonetaryCenter;
-import br.community.context.monetary._1_application.command.CostCenterCommand;
-import br.community.context.shared._1_application.DomainException;
-import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.jspecify.annotations.NullMarked;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
-import java.util.UUID;
 
+/** Centro de custo é dado fixo do sistema: rota global, somente leitura (sem namespace de usuário). */
 @NullMarked
 @RestController
 @RequiredArgsConstructor
-@RequestMapping(value = "/api/cost-centers", produces = MediaType.APPLICATION_JSON_VALUE)
+@RequestMapping(value = "/api/cost-center", produces = MediaType.APPLICATION_JSON_VALUE)
 public class CostCenterResource {
 
-    private final MonetaryContext monetaryContext;
+    private final CostCenterCatalog catalog;
 
     @GetMapping
-    public List<MonetaryCenter> listAll() {
-        return switch (monetaryContext.listCostCenters()) {
-            case Result.Success(var list) -> list;
-            case Result.Failure(var error) -> throw new DomainException(error);
-        };
-    }
-
-    @PostMapping
-    @ResponseStatus(HttpStatus.CREATED)
-    public MonetaryCenter create(@RequestBody @Valid CostCenterRequest req) {
-        return switch (monetaryContext.createCostCenter(new CostCenterCommand(req.description()))) {
-            case Result.Success(var c) -> c;
-            case Result.Failure(var error) -> throw new DomainException(error);
-        };
-    }
-
-    @PatchMapping("/{id}")
-    public MonetaryCenter update(@PathVariable UUID id, @RequestBody @Valid CostCenterRequest req) {
-        return switch (monetaryContext.updateCostCenter(id, new CostCenterCommand(req.description()))) {
-            case Result.Success(var c) -> c;
-            case Result.Failure(var error) -> throw new DomainException(error);
-        };
-    }
-
-    @DeleteMapping("/{id}")
-    @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void delete(@PathVariable UUID id) {
-        switch (monetaryContext.deleteCostCenter(id)) {
-            case Result.Success(var ignored) -> {}
-            case Result.Failure(var error) -> throw new DomainException(error);
-        }
+    public List<MonetaryCenter> list() {
+        return catalog.list();
     }
 }

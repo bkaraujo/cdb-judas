@@ -23,7 +23,8 @@ class WebConfig implements WebMvcConfigurer {
                 // Rotas legadas (ainda fora do namespace) e globais — isentas durante a transição.
                 // Cada exclusão é removida quando o recurso correspondente migra para /api/{uuid}/...
                 .excludePathPatterns(
-                        "/api/cost-centers", "/api/cost-centers/**",
+                        // Centro de custo é global (fixo, somente leitura) — fora do namespace de usuário.
+                        "/api/cost-center", "/api/cost-center/**",
                         "/api/v1/**"
                 );
     }
