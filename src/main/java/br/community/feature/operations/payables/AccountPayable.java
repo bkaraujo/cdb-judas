@@ -1,19 +1,3 @@
+// DTO de payables eliminado — "A Pagar/Receber" virou filtro de transações pendentes (issue 05).
+// Arquivo neutralizado; remoção física pendente (git rm bloqueado no ambiente).
 package br.community.feature.operations.payables;
-
-import org.jspecify.annotations.NullMarked;
-
-import java.math.BigDecimal;
-import java.time.LocalDate;
-import java.util.UUID;
-
-@NullMarked
-public record AccountPayable(
-        UUID id,
-        String name,
-        LocalDate due,
-        BigDecimal amount,
-        UUID accountId,
-        UUID categoryId,
-        String status,
-        String type
-) {}

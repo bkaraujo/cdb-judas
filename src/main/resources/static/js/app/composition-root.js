@@ -19,7 +19,6 @@
     transactions: window.Infra.TransactionRepository.create(http),
     statement:    window.Infra.StatementRepository.create(http),
     budget:       window.Infra.BudgetRepository.create(http),
-    payables:     window.Infra.PayableRepository.create(http),
     closing:      window.Infra.ClosingRepository.create(http),
     dashboard:    window.Infra.DashboardRepository.create(http),
   };
@@ -39,12 +38,12 @@
   window.App.TagService.init         ({ repo: repos.tags,         cache: window.App.CacheStore });
   window.App.CostCenterService.init  ({ repo: repos.costCenters,  cache: window.App.CacheStore });
   window.App.TransactionService.init ({ repo: repos.transactions });
-  window.App.PayableService.init     ({ repo: repos.payables });
+  window.App.PayableService.init     ({ repo: repos.transactions });
   window.App.StatementService.init   ({ repo: repos.statement });
   window.App.BudgetService.init      ({ repo: repos.budget });
   window.App.CreditCardService.init  ({ txRepo: repos.transactions, cache: window.App.CacheStore });
   window.App.ClosingService.init     ({ repo: repos.closing });
-  window.App.DashboardService.init   ({ repo: repos.dashboard, txRepo: repos.transactions, payableRepo: repos.payables });
+  window.App.DashboardService.init   ({ repo: repos.dashboard, txRepo: repos.transactions });
   const loginUrl = baseUrl.replace(/\/api\/?$/, '') + '/login';
   function loginFn(username, password) {
     return fetch(loginUrl, {

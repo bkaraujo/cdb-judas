@@ -1,29 +1,39 @@
-/* _2_application/payable-service.js — Payable / Receivable use cases. */
+/* _2_application/payable-service.js — "A Pagar / A Receber" como filtro de transações pendentes.
+ * Não há recurso de payables: A Pagar = despesas pendentes; A Receber = receitas pendentes. */
 (function () {
-  let repo = null;
+  let txRepo = null;
 
-  function init(deps) { repo = deps.repo; return { ready: true }; }
+  function init(deps) { txRepo = deps.repo; return { ready: true }; }
 
-  function listPayable()        { return repo.listPayable(); }
-  function listReceivable()     { return repo.listReceivable(); }
-  function confirm(id, date)    { return repo.confirm(id, date); }
-  function cancel(id)           { return repo.cancel(id); }
-
-  function periodTotals(items, period) {
-    return window.Domain.Payable.periodTotals(items, period);
+  // Adapta a transação ao formato consumido pela tela (Domain.Payable): due, amount positivo, type label.
+  function adapt(label) {
+    return function (txs) {
+      return (Array.isArray(txs) ? txs : []).map(function (t) {
+        return {
+          id: t.id,
+          description: t.description,
+          due: t.date,
+          amount: Math.abs(+t.amount || 0),
+          accountId: t.accountId,
+          categoryId: t.categoryId,
+          status: t.status,
+          type: label,
+        };
+      });
+    };
   }
 
-  function inPeriod(items, period) {
-    return window.Domain.Payable.inPeriod(items, period);
-  }
+  function listPayable()    { return txRepo.list('status=pending&type=expense').then(adapt('PAYABLE')); }
+  function listReceivable() { return txRepo.list('status=pending&type=income').then(adapt('RECEIVABLE')); }
+
+  function periodTotals(items, period) { return window.Domain.Payable.periodTotals(items, period); }
+  function inPeriod(items, period)     { return window.Domain.Payable.inPeriod(items, period); }
 
   window.App = window.App || {};
   window.App.PayableService = {
     init: init,
     listPayable: listPayable,
     listReceivable: listReceivable,
-    confirm: confirm,
-    cancel: cancel,
     periodTotals: periodTotals,
     inPeriod: inPeriod,
   };

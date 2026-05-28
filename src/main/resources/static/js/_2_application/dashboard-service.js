@@ -2,13 +2,24 @@
 (function () {
   let repo = null;
   let txRepo = null;
-  let payableRepo = null;
 
   function init(deps) {
     repo        = deps.repo;
     txRepo      = deps.txRepo;
-    payableRepo = deps.payableRepo;
     return { ready: true };
+  }
+
+  // A Pagar/Receber derivam de transações pendentes (sem recurso de payables).
+  function adaptPending(label) {
+    return function (txs) {
+      return (Array.isArray(txs) ? txs : []).map(function (t) {
+        return {
+          id: t.id, description: t.description, due: t.date,
+          amount: Math.abs(+t.amount || 0), accountId: t.accountId,
+          categoryId: t.categoryId, status: t.status, type: label,
+        };
+      });
+    };
   }
 
   function monthlyResult(period) {
@@ -24,8 +35,8 @@
     const b = window.Domain.Period.bounds(period);
     return Promise.all([
       txRepo.list('from=' + b.from + '&to=' + b.to),
-      payableRepo.listPayable(),
-      payableRepo.listReceivable(),
+      txRepo.list('status=pending&type=expense').then(adaptPending('PAYABLE')),
+      txRepo.list('status=pending&type=income').then(adaptPending('RECEIVABLE')),
     ]).then(function (arr) {
       return {
         transactions: Array.isArray(arr[0]) ? arr[0] : [],

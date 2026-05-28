@@ -24,7 +24,6 @@
     'transaction-repository.js',
     'statement-repository.js',
     'budget-repository.js',
-    'payable-repository.js',
     'closing-repository.js',
     'dashboard-repository.js',
     'cadastro-bootstrap.js',
