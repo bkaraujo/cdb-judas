@@ -29,6 +29,14 @@ class OwnershipInterceptorTest extends BaseHttpTest {
     }
 
     @Test
+    void streamDeOutroUsuarioRetorna403() throws Exception {
+        String outroUsuario = UUID.randomUUID().toString();
+        mockMvc.perform(get("/api/{u}/stream", outroUsuario)
+                .header("Accept", "text/event-stream"))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
     void naoGuardaRotaGlobalDeCentroDeCusto() throws Exception {
         // /api/cost-center é global (isenta da guarda); jamais retorna 403 por propriedade.
         mockMvc.perform(get("/api/cost-center"))

@@ -16,21 +16,21 @@ public class SseService implements SSE {
     private final Map<String, CopyOnWriteArrayList<SseEmitter>> emitters = new ConcurrentHashMap<>();
 
     public SseEmitter subscribe() {
-        val username = CurrentUser.getUsername();
+        val userId = CurrentUser.getId();
         val emitter = new SseEmitter(Long.MAX_VALUE); // Infinite timeout
 
         emitters
-                .computeIfAbsent(username, k -> new CopyOnWriteArrayList<>())
+                .computeIfAbsent(userId, k -> new CopyOnWriteArrayList<>())
                 .add(emitter);
 
-        emitter.onCompletion(() -> removeEmitter(username, emitter));
-        emitter.onTimeout(() -> removeEmitter(username, emitter));
-        emitter.onError((e) -> removeEmitter(username, emitter));
+        emitter.onCompletion(() -> removeEmitter(userId, emitter));
+        emitter.onTimeout(() -> removeEmitter(userId, emitter));
+        emitter.onError((e) -> removeEmitter(userId, emitter));
 
         // Send initial connection event
         dispatchEvent(
                 emitter,
-                username,
+                userId,
                 SSE.Event.INITIALIZE,
                 "Connected"
         );

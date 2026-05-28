@@ -5,7 +5,8 @@
  * broadcasts `cbd:change` via the application event bus.
  */
 (function () {
-  const STREAM_PATH = '/v1/sse/stream';
+  // Stream lives under the user namespace: /api/{uuid}/stream.
+  function streamPath(uid) { return '/' + uid + '/stream'; }
 
   function keyOf(type) {
     if (type === 'CATEGORY')                       return 'categories';
@@ -103,13 +104,14 @@
     async function connect() {
       if (connecting) return;
       const t = auth.get();
-      if (!t) return;
+      const uid = auth.userId();
+      if (!t || !uid) return;
 
       connecting = true;
       ctrl = new AbortController();
 
       try {
-        const res = await fetch(baseUrl + STREAM_PATH, {
+        const res = await fetch(baseUrl + streamPath(uid), {
           method: 'GET',
           headers: {
             'X-Access-Token': t,

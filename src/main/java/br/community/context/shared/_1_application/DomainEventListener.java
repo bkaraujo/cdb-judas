@@ -20,7 +20,7 @@ public class DomainEventListener {
     public MessageResult onEntityUpserted(DomainEvent.EntityUpserted event) {
         try {
             sse.dispatch(
-                    CurrentUser.getUsername(),
+                    CurrentUser.getId(),
                     SSE.Event.UPSERT,
                     Map.of("type", event.entityType(), "payload", event.payload())
             );
@@ -33,7 +33,7 @@ public class DomainEventListener {
     public MessageResult onEntityDeleted(DomainEvent.EntityDeleted event) {
         try {
             sse.dispatch(
-                    CurrentUser.getUsername(),
+                    CurrentUser.getId(),
                     SSE.Event.DELETE,
                     Map.of("type", event.entityType(), "id", event.entityId())
             );

@@ -20,12 +20,10 @@ class WebConfig implements WebMvcConfigurer {
     public void addInterceptors(InterceptorRegistry registry) {
         registry.addInterceptor(ownershipInterceptor)
                 .addPathPatterns("/api/**")
-                // Rotas legadas (ainda fora do namespace) e globais — isentas durante a transição.
-                // Cada exclusão é removida quando o recurso correspondente migra para /api/{uuid}/...
+                // Apenas rotas globais ficam fora do namespace de usuário.
                 .excludePathPatterns(
-                        // Centro de custo é global (fixo, somente leitura) — fora do namespace de usuário.
-                        "/api/cost-center", "/api/cost-center/**",
-                        "/api/v1/**"
+                        // Centro de custo é global (fixo, somente leitura).
+                        "/api/cost-center", "/api/cost-center/**"
                 );
     }
 }
