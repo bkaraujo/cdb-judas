@@ -1,8 +1,8 @@
 /* _2_application.js — barrel loader. Use cases / ports.
  * Files keep their IIFE + window.App.* globals. */
 (function () {
-  var base = 'js/_2_application/';
-  var files = [
+  constbase = 'js/_2_application/';
+  constfiles = [
     'event-bus.js',
     'cache-store.js',
     'preferences-service.js',
@@ -20,7 +20,7 @@
     'dashboard-service.js'
   ];
   files.forEach(function (path) {
-    var s = document.createElement('script');
+    consts = document.createElement('script');
     s.src = base + path;
     s.async = false;
     document.head.appendChild(s);

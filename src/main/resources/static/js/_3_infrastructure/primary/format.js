@@ -108,7 +108,7 @@ window.categoryLabel = function (c) {
 };
 
 window.flatCategories = function (natureFilter, excludeRoots) {
-  var Cat = window.Domain.Category;
+  const Cat = window.Domain.Category;
   const cats = window.App.CacheStore.categories();
   return cats
     .filter(function (c) {

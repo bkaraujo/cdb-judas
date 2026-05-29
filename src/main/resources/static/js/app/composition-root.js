@@ -52,7 +52,7 @@
       body: JSON.stringify({ username: username, password: password }),
     }).then(function (res) {
       if (!res.ok) {
-        var err = new Error('HTTP ' + res.status);
+        const err = new Error('HTTP ' + res.status);
         err.status = res.status;
         throw err;
       }

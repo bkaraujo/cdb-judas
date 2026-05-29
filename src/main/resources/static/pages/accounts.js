@@ -485,18 +485,18 @@
   // ── Modal: confirm delete ─────────────────────────────────
   function openDeleteModal(target) {
     // Find credit cards linked to this account.
-    var linkedCards = state.accounts.filter(function (a) {
+    const linkedCards = state.accounts.filter(function (a) {
       return a.type === 'CREDIT_CARD' && String(a.linkedAccountId) === String(target.id);
     });
 
     // Collect all account IDs to check (target + linked cards).
-    var idsToCheck = [String(target.id)];
+    const idsToCheck = [String(target.id)];
     linkedCards.forEach(function (c) { idsToCheck.push(String(c.id)); });
 
     // Check if any of those accounts have transactions.
     window.App.TransactionService.list('').then(function (all) {
-      var allTxs = Array.isArray(all) ? all : [];
-      var txCount = 0;
+      const allTxs = Array.isArray(all) ? all : [];
+      let txCount = 0;
       allTxs.forEach(function (tx) {
         if (idsToCheck.indexOf(String(tx.accountId)) >= 0) txCount++;
       });
@@ -509,13 +509,13 @@
   function showDeleteConfirm(target, linkedCards, txCount) {
     const nameHtml = '<strong>' + esc(target.name) + '</strong>';
     let bodyHtml = '';
-    var hasWarning = linkedCards.length > 0 || txCount > 0;
+    const hasWarning = linkedCards.length > 0 || txCount > 0;
 
     if (hasWarning) {
-      var warnings = [];
+      const warnings = [];
 
       if (linkedCards.length > 0) {
-        var cardNames = linkedCards.map(function (c) { return c.name; }).join(', ');
+        const cardNames = linkedCards.map(function (c) { return c.name; }).join(', ');
         warnings.push(
           'Esta conta possui <strong>' + esc(String(linkedCards.length)) + '</strong> ' +
           (linkedCards.length === 1 ? 'cartão vinculado' : 'cartões vinculados') +
