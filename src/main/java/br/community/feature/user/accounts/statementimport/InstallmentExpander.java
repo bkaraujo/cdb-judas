@@ -1,7 +1,5 @@
-package br.community.context.monetary._1_application.service;
+package br.community.feature.user.accounts.statementimport;
 
-import br.community.context.monetary._0_domain.model.ParsedStatementLine;
-import br.community.context.monetary._0_domain.model.TransactionDraft;
 import lombok.RequiredArgsConstructor;
 import org.jspecify.annotations.NullMarked;
 

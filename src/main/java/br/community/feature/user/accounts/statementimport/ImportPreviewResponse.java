@@ -1,4 +1,4 @@
-package br.community.feature.user.accounts.transactions;
+package br.community.feature.user.accounts.statementimport;
 
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;

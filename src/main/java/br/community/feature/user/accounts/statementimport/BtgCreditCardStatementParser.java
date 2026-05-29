@@ -1,8 +1,5 @@
-package br.community.context.monetary._1_application.service;
+package br.community.feature.user.accounts.statementimport;
 
-import br.community.context.monetary._0_domain.model.ChargeKind;
-import br.community.context.monetary._0_domain.model.ParsedStatement;
-import br.community.context.monetary._0_domain.model.ParsedStatementLine;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 

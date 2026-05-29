@@ -4,12 +4,15 @@ import br.commons.MessageBus;
 import br.commons.Result;
 import br.commons.framework.message.MessageListener;
 import br.commons.framework.message.MessageResult;
+import br.commons.pdf.ExtractionFailure;
+import br.commons.pdf.PdfTextExtractor;
 import br.community.context.monetary._0_domain.event.MonetaryEvent;
-import br.community.context.monetary._0_domain.model.*;
-import br.community.context.monetary._0_domain.port.CreditCardStatementTextExtractor;
-import br.community.context.monetary._0_domain.port.ExtractionFailure;
+import br.community.context.monetary._0_domain.model.AccountType;
+import br.community.context.monetary._0_domain.model.MonetaryAccount;
+import br.community.context.monetary._0_domain.model.MonetaryTransaction;
 import br.community.context.monetary._1_application.command.ImportConfirmCommand;
 import br.community.context.monetary._1_application.service.*;
+import br.community.feature.user.accounts.statementimport.*;
 import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;
@@ -31,34 +34,53 @@ class CreditCardStatementImportUseCaseTest {
     private static final CreditCardStatementParserRegistry PARSERS = new CreditCardStatementParserRegistry(
             new SantanderCreditCardStatementParser(), new BtgCreditCardStatementParser());
 
-    private CreditCardStatementImportUseCase useCaseWith(CreditCardStatementTextExtractor extractor) {
+    private StatementImportUseCase useCaseWith(PdfTextExtractor extractor) {
         return useCaseWith(extractor, new InMemoryRepositories.Accounts());
     }
 
-    private CreditCardStatementImportUseCase useCaseWith(
-            CreditCardStatementTextExtractor extractor, InMemoryRepositories.Accounts accounts) {
+    private StatementImportUseCase useCaseWith(
+            PdfTextExtractor extractor, InMemoryRepositories.Accounts accounts) {
         return useCaseWith(extractor, accounts, new InMemoryRepositories.Transactions());
     }
 
-    private CreditCardStatementImportUseCase useCaseWith(
-            CreditCardStatementTextExtractor extractor,
+    private StatementImportUseCase useCaseWith(
+            PdfTextExtractor extractor,
             InMemoryRepositories.Accounts accounts,
             InMemoryRepositories.Transactions transactions) {
         return useCaseWith(extractor, accounts, transactions, new InMemoryRepositories.Categories());
     }
 
-    private CreditCardStatementImportUseCase useCaseWith(
-            CreditCardStatementTextExtractor extractor,
+    private StatementImportUseCase useCaseWith(
+            PdfTextExtractor extractor,
             InMemoryRepositories.Accounts accounts,
             InMemoryRepositories.Transactions transactions,
             InMemoryRepositories.Categories categories) {
         final GroupSignature groupSignature = new GroupSignature();
-        return new CreditCardStatementImportUseCase(
-                extractor, new IssuerDetector(), PARSERS,
-                new AccountService(accounts), new CardMatcher(),
-                new InstallmentExpander(groupSignature), groupSignature,
-                new TransactionService(transactions), new CategoryGuesser(),
-                new CategoryService(categories), CLOCK, MAX_BYTES);
+        final MonetaryContext monetaryContext = monetaryContext(accounts, transactions, categories);
+        return new StatementImportUseCase(
+                monetaryContext, extractor, new IssuerDetector(), PARSERS, new CardMatcher(),
+                new InstallmentExpander(groupSignature), groupSignature, new CategoryGuesser(),
+                CLOCK, MAX_BYTES);
+    }
+
+    /** Wires a real monetary facade over in-memory repositories so the import drives actual
+     *  persistence/dedup/event behaviour through {@link MonetaryContext}. */
+    private static MonetaryContext monetaryContext(
+            InMemoryRepositories.Accounts accounts,
+            InMemoryRepositories.Transactions transactions,
+            InMemoryRepositories.Categories categories) {
+        final AccountService accountService = new AccountService(accounts);
+        final BalanceService balanceService = new BalanceService(new InMemoryRepositories.Balances());
+        final TransactionService transactionService = new TransactionService(transactions);
+        final CategoryService categoryService = new CategoryService(categories);
+        final ClosingService closingService = new ClosingService(new InMemoryRepositories.Closings());
+        final TagService tagService = new TagService(new InMemoryRepositories.Tags());
+        final CostCenterService costCenterService = new CostCenterService(new InMemoryRepositories.CostCenters());
+        final AccountUseCase ucAccount = new AccountUseCase(accountService, balanceService);
+        final TransactionUseCase ucTransaction = new TransactionUseCase(transactionService, closingService, categoryService);
+        final MetadataUseCase ucMetadata =
+                new MetadataUseCase(tagService, closingService, categoryService, costCenterService, transactionService);
+        return new MonetaryContext(ucAccount, ucTransaction, ucMetadata);
     }
 
     private static MonetaryAccount creditCard(String name, String last4) {
@@ -79,7 +101,7 @@ class CreditCardStatementImportUseCaseTest {
                 "#000", true, null, Map.of());
     }
 
-    private static final CreditCardStatementTextExtractor NOOP_EXTRACTOR =
+    private static final PdfTextExtractor NOOP_EXTRACTOR =
             (bytes, password) -> Result.success("unused");
 
     @Test

@@ -25,7 +25,6 @@ public class MonetaryContext implements Facade {
     private final AccountUseCase ucAccount;
     private final TransactionUseCase ucTransaction;
     private final MetadataUseCase ucMetadata;
-    private final CreditCardStatementImportUseCase ucImport;
 
     // ── Account operations ─────────────────────────────────────────
 
@@ -156,14 +155,14 @@ public class MonetaryContext implements Facade {
         return ucTransaction.createTransfer(fromAccountId, toAccountId, date, amount);
     }
 
-    // ── Credit-card statement import ───────────────────────────────
+    // ── Imported transactions (used by the statement-import feature) ─
 
-    public Result<ImportPreview, ImportError> previewImport(byte[] fileBytes, @Nullable String password) {
-        return ucImport.preview(fileBytes, password);
+    public Result<MonetaryTransaction, DomainError> createImportedTransaction(ImportedTransactionCommand cmd) {
+        return ucTransaction.createImported(cmd);
     }
 
-    public Result<ImportResult, DomainError> confirmImport(ImportConfirmCommand cmd) {
-        return ucImport.confirm(cmd);
+    public MonetaryCategory findOrCreateUncategorizedCategory() {
+        return ucMetadata.findOrCreateUncategorizedCategory();
     }
 
     // ── Cost center operations ─────────────────────────────────────

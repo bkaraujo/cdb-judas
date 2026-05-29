@@ -39,6 +39,10 @@ public class MetadataUseCase {
         return categoryService.findById(id);
     }
 
+    public MonetaryCategory findOrCreateUncategorizedCategory() {
+        return categoryService.findOrCreateUncategorizedCategory();
+    }
+
     public Result<MonetaryCategory, DomainError> createCategory(CategoryCommand cmd) {
         if (cmd.parentId() != null) {
             val validation = categoryService.validateParent(cmd.parentId(), cmd.nature());

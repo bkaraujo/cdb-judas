@@ -1,18 +1,18 @@
 package br.community.context.monetary;
 
 import br.commons.Result;
+import br.commons.pdf.ExtractionFailure;
+import br.commons.pdf.PdfBoxTextExtractor;
 import br.community.PdfFixtures;
-import br.community.context.monetary._0_domain.port.ExtractionFailure;
-import br.community.context.monetary._2_infrastructure.PdfBoxCreditCardStatementTextExtractor;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-class PdfBoxCreditCardStatementTextExtractorTest {
+class PdfBoxTextExtractorTest {
 
-    private final PdfBoxCreditCardStatementTextExtractor extractor =
-            new PdfBoxCreditCardStatementTextExtractor(50);
+    private final PdfBoxTextExtractor extractor =
+            new PdfBoxTextExtractor(50);
 
     @Test
     void extractsTextFromGoodPdf() throws Exception {
@@ -51,7 +51,7 @@ class PdfBoxCreditCardStatementTextExtractorTest {
 
     @Test
     void exceedingPageGuardReturnsTooManyPages() throws Exception {
-        var smallGuard = new PdfBoxCreditCardStatementTextExtractor(2);
+        var smallGuard = new PdfBoxTextExtractor(2);
         var result = smallGuard.extract(PdfFixtures.withText("conteudo", 3), null);
         var error = assertInstanceOf(Result.Failure.class, result).error();
         assertInstanceOf(ExtractionFailure.TooManyPages.class, error);

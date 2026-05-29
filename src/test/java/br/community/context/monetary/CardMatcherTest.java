@@ -2,8 +2,8 @@ package br.community.context.monetary;
 
 import br.community.context.monetary._0_domain.model.AccountType;
 import br.community.context.monetary._0_domain.model.MonetaryAccount;
-import br.community.context.monetary._1_application.service.CardMatch;
-import br.community.context.monetary._1_application.service.CardMatcher;
+import br.community.feature.user.accounts.statementimport.CardMatch;
+import br.community.feature.user.accounts.statementimport.CardMatcher;
 import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;

@@ -4,6 +4,7 @@ import br.commons.MessageBus;
 import br.commons.Result;
 import br.community.context.monetary._0_domain.event.MonetaryEvent;
 import br.community.context.monetary._0_domain.model.MonetaryTransaction;
+import br.community.context.monetary._1_application.command.ImportedTransactionCommand;
 import br.community.context.monetary._1_application.command.TransactionCommand;
 import br.community.context.monetary._1_application.service.CategoryService;
 import br.community.context.monetary._1_application.service.ClosingService;
@@ -207,6 +208,18 @@ public class TransactionUseCase {
         MessageBus.submit(new MonetaryEvent.TransactionCreated(savedOut));
         MessageBus.submit(new MonetaryEvent.TransactionCreated(savedIn));
         return Result.success(savedOut);
+    }
+
+    /** Persists an already-resolved imported charge (expense sign applied here) and emits the
+     *  creation event so balances recalc. Used by the statement-import feature via the facade. */
+    public Result<MonetaryTransaction, DomainError> createImported(ImportedTransactionCommand cmd) {
+        val tx = new MonetaryTransaction(
+                UUID.randomUUID(), cmd.description(), cmd.amount().abs().negate(), cmd.date(),
+                cmd.categoryId(), cmd.accountId(), cmd.status(), "expense", null,
+                cmd.groupId(), cmd.installmentNumber(), cmd.totalInstallments());
+        val saved = transactionService.save(tx);
+        MessageBus.submit(new MonetaryEvent.TransactionCreated(saved));
+        return Result.success(saved);
     }
 
     private MonetaryTransaction toMonetaryTransactionEntity(UUID id, TransactionCommand cmd, LocalDate date, String status,

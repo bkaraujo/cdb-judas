@@ -1,8 +1,8 @@
 package br.community.context.monetary;
 
-import br.community.context.monetary._0_domain.model.ChargeKind;
-import br.community.context.monetary._0_domain.model.ParsedStatement;
-import br.community.context.monetary._1_application.service.BtgCreditCardStatementParser;
+import br.community.feature.user.accounts.statementimport.BtgCreditCardStatementParser;
+import br.community.feature.user.accounts.statementimport.ChargeKind;
+import br.community.feature.user.accounts.statementimport.ParsedStatement;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;

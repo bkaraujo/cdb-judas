@@ -1,4 +1,4 @@
-package br.community.context.monetary._0_domain.model;
+package br.community.feature.user.accounts.statementimport;
 
 public enum Issuer {
     SANTANDER,

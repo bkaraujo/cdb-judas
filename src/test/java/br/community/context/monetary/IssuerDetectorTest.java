@@ -1,7 +1,7 @@
 package br.community.context.monetary;
 
-import br.community.context.monetary._0_domain.model.Issuer;
-import br.community.context.monetary._1_application.service.IssuerDetector;
+import br.community.feature.user.accounts.statementimport.Issuer;
+import br.community.feature.user.accounts.statementimport.IssuerDetector;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;

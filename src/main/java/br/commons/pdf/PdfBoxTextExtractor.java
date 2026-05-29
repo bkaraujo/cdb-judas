@@ -1,8 +1,6 @@
-package br.community.context.monetary._2_infrastructure;
+package br.commons.pdf;
 
 import br.commons.Result;
-import br.community.context.monetary._0_domain.port.CreditCardStatementTextExtractor;
-import br.community.context.monetary._0_domain.port.ExtractionFailure;
 import org.apache.pdfbox.Loader;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.encryption.InvalidPasswordException;
@@ -13,16 +11,16 @@ import org.jspecify.annotations.Nullable;
 import java.io.IOException;
 
 /**
- * Sole owner of the Apache PDFBox dependency. Turns PDF bytes into statement text, mapping
+ * Sole owner of the Apache PDFBox dependency. Turns PDF bytes into text, mapping
  * failures to typed {@link ExtractionFailure}s. The password is a transient parameter only:
  * never persisted, never logged.
  */
 @NullMarked
-public final class PdfBoxCreditCardStatementTextExtractor implements CreditCardStatementTextExtractor {
+public final class PdfBoxTextExtractor implements PdfTextExtractor {
 
     private final int maxPages;
 
-    public PdfBoxCreditCardStatementTextExtractor(int maxPages) {
+    public PdfBoxTextExtractor(int maxPages) {
         this.maxPages = maxPages;
     }
 

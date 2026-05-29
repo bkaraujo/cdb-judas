@@ -1,10 +1,6 @@
 package br.community.context.monetary;
 
-import br.community.context.monetary._0_domain.model.ChargeKind;
-import br.community.context.monetary._0_domain.model.ParsedStatementLine;
-import br.community.context.monetary._0_domain.model.TransactionDraft;
-import br.community.context.monetary._1_application.service.GroupSignature;
-import br.community.context.monetary._1_application.service.InstallmentExpander;
+import br.community.feature.user.accounts.statementimport.*;
 import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;

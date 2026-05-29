@@ -2,7 +2,6 @@ package br.community.context.monetary;
 
 import br.commons.MessageBus;
 import br.commons.framework.persistence.Storage;
-import br.community.context.monetary._0_domain.port.CreditCardStatementTextExtractor;
 import br.community.context.monetary._0_domain.repository.*;
 import br.community.context.monetary._1_application.event.TransactionEventListener;
 import br.community.context.monetary._1_application.service.*;
@@ -12,14 +11,9 @@ import org.jspecify.annotations.NullMarked;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
-import java.time.Clock;
-
 @Configuration
 @NullMarked
 public class MonetaryModule {
-
-    private static final int MAX_STATEMENT_PAGES = 50;
-    private static final long MAX_STATEMENT_FILE_BYTES = 10L * 1024 * 1024;
 
     // ── Repositories ──────────────────────────────────────────────
 
@@ -118,66 +112,6 @@ public class MonetaryModule {
         return new TransactionUseCase(transactionService, closingService, categoryService);
     }
 
-    @Bean
-    CreditCardStatementTextExtractor creditCardStatementTextExtractor() {
-        return new PdfBoxCreditCardStatementTextExtractor(MAX_STATEMENT_PAGES);
-    }
-
-    @Bean
-    IssuerDetector issuerDetector() {
-        return new IssuerDetector();
-    }
-
-    @Bean
-    CreditCardStatementParserRegistry creditCardStatementParserRegistry() {
-        return new CreditCardStatementParserRegistry(
-                new SantanderCreditCardStatementParser(), new BtgCreditCardStatementParser());
-    }
-
-    @Bean
-    CardMatcher cardMatcher() {
-        return new CardMatcher();
-    }
-
-    @Bean
-    GroupSignature groupSignature() {
-        return new GroupSignature();
-    }
-
-    @Bean
-    InstallmentExpander installmentExpander(GroupSignature groupSignature) {
-        return new InstallmentExpander(groupSignature);
-    }
-
-    @Bean
-    CategoryGuesser categoryGuesser() {
-        return new CategoryGuesser();
-    }
-
-    @Bean
-    Clock clock() {
-        return Clock.systemDefaultZone();
-    }
-
-    @Bean
-    CreditCardStatementImportUseCase creditCardStatementImportUseCase(
-            CreditCardStatementTextExtractor extractor,
-            IssuerDetector issuerDetector,
-            CreditCardStatementParserRegistry parsers,
-            AccountService accountService,
-            CardMatcher cardMatcher,
-            InstallmentExpander installmentExpander,
-            GroupSignature groupSignature,
-            TransactionService transactionService,
-            CategoryGuesser categoryGuesser,
-            CategoryService categoryService,
-            Clock clock) {
-        return new CreditCardStatementImportUseCase(
-                extractor, issuerDetector, parsers, accountService, cardMatcher,
-                installmentExpander, groupSignature, transactionService,
-                categoryGuesser, categoryService, clock, MAX_STATEMENT_FILE_BYTES);
-    }
-
     // ── Event Listeners ──────────────────────────────────────────
 
     @Bean
@@ -196,10 +130,9 @@ public class MonetaryModule {
             AccountUseCase ucAccount,
             MetadataUseCase ucMetadata,
             TransactionUseCase ucTransaction,
-            CreditCardStatementImportUseCase ucImport,
             TransactionEventListener transactionEventListener
     ) {
         MessageBus.subscribe(transactionEventListener);
-        return new MonetaryContext(ucAccount, ucTransaction, ucMetadata, ucImport);
+        return new MonetaryContext(ucAccount, ucTransaction, ucMetadata);
     }
 }

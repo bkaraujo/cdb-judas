@@ -1,8 +1,8 @@
-package br.community.context.monetary._0_domain.port;
+package br.commons.pdf;
 
 import org.jspecify.annotations.NullMarked;
 
-/** Typed outcomes when a PDF cannot be turned into usable statement text. */
+/** Typed outcomes when a PDF cannot be turned into usable text. */
 @NullMarked
 public sealed interface ExtractionFailure {
 

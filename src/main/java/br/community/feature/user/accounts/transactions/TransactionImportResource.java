@@ -1,10 +1,10 @@
 package br.community.feature.user.accounts.transactions;
 
 import br.commons.Result;
-import br.community.context.monetary.MonetaryContext;
-import br.community.context.monetary._0_domain.model.*;
+import br.community.context.monetary._0_domain.model.MonetaryAccount;
 import br.community.context.monetary._1_application.command.ImportConfirmCommand;
 import br.community.context.shared._0_domain.model.DomainError;
+import br.community.feature.user.accounts.statementimport.*;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.val;
@@ -25,7 +25,7 @@ import java.io.IOException;
 @RequestMapping("/api/{uuid}/accounts/transactions/import")
 public class TransactionImportResource {
 
-    private final MonetaryContext monetaryContext;
+    private final StatementImportUseCase statementImport;
 
     @PostMapping(value = "/preview", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<Object> preview(
@@ -43,7 +43,7 @@ public class TransactionImportResource {
             return problem(HttpStatus.BAD_REQUEST, "FILE_UNREADABLE", "Não foi possível ler o arquivo enviado.");
         }
 
-        return switch (monetaryContext.previewImport(bytes, password)) {
+        return switch (statementImport.preview(bytes, password)) {
             case Result.Success(var preview) -> ResponseEntity.<Object>ok(toResponse(preview));
             case Result.Failure(var error) -> problem(error);
         };
@@ -54,7 +54,7 @@ public class TransactionImportResource {
         val rows = req.rows().stream().map(TransactionImportResource::toCommandRow).toList();
         val cmd = new ImportConfirmCommand(req.cardId(), rows);
 
-        return switch (monetaryContext.confirmImport(cmd)) {
+        return switch (statementImport.confirm(cmd)) {
             case Result.Success(var res) ->
                     ResponseEntity.<Object>ok(new ImportConfirmResponse(res.created(), res.skipped()));
             case Result.Failure(var error) ->
