@@ -1,7 +1,7 @@
 package br.community.feature;
 
 import br.community.context.monetary._0_domain.model.MonetaryNature;
-import br.community.feature.records.categories.CategoryDTO;
+import br.community.feature.user.categories.Category;
 import lombok.val;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.MediaType;
@@ -31,7 +31,7 @@ class CategoryResourceTest extends BaseHttpTest {
                 .andExpect(jsonPath("$.nature").value(MonetaryNature.EXPENSE.name()));
 
         val responseBody = createResult.andReturn().getResponse().getContentAsString();
-        val created = objectMapper.readValue(responseBody, CategoryDTO.class);
+        val created = objectMapper.readValue(responseBody, Category.class);
         val id = created.id();
 
         mockMvc.perform(get("/api/" + TEST_USER_ID + "/categories"))
@@ -129,7 +129,7 @@ class CategoryResourceTest extends BaseHttpTest {
                 .andExpect(jsonPath("$.length()").value(1));
 
         val moradiaResponseBody = createResult.andReturn().getResponse().getContentAsString();
-        val moradiaCreated = objectMapper.readValue(moradiaResponseBody, CategoryDTO.class);
+        val moradiaCreated = objectMapper.readValue(moradiaResponseBody, Category.class);
         val moradiaId = moradiaCreated.id();
 
         val aluguelJson = """

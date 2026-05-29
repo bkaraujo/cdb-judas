@@ -1,13 +1,11 @@
 package br.community.core.web.filter;
 
-import br.commons.Logger;
 import br.commons.framework.logger.MDC;
 import br.community.core.web.RequestUtils;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import lombok.val;
 import org.jspecify.annotations.NullMarked;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;

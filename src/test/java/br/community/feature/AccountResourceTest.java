@@ -1,6 +1,6 @@
 package br.community.feature;
 
-import br.community.feature.records.accounts.Account;
+import br.community.feature.user.accounts.Account;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.MediaType;
 

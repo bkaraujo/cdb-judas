@@ -1,19 +1,11 @@
 package br.community.context.monetary;
 
 import br.commons.Result;
-import br.community.context.monetary._0_domain.model.MonetaryCategory;
-import br.community.context.monetary._0_domain.model.MonetaryCenter;
-import br.community.context.monetary._0_domain.model.MonetaryNature;
-import br.community.context.monetary._0_domain.model.MonetaryTransaction;
-import br.community.context.monetary._0_domain.model.Tag;
+import br.community.context.monetary._0_domain.model.*;
 import br.community.context.monetary._1_application.command.CategoryCommand;
 import br.community.context.monetary._1_application.command.CostCenterCommand;
 import br.community.context.monetary._1_application.command.TagCommand;
-import br.community.context.monetary._1_application.service.CategoryService;
-import br.community.context.monetary._1_application.service.ClosingService;
-import br.community.context.monetary._1_application.service.CostCenterService;
-import br.community.context.monetary._1_application.service.TagService;
-import br.community.context.monetary._1_application.service.TransactionService;
+import br.community.context.monetary._1_application.service.*;
 import br.community.context.shared._0_domain.model.DomainError;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;

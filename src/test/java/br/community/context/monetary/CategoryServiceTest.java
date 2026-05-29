@@ -5,9 +5,7 @@ import br.community.context.monetary._0_domain.model.MonetaryNature;
 import br.community.context.monetary._1_application.service.CategoryService;
 import org.junit.jupiter.api.Test;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 class CategoryServiceTest {
 

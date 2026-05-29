@@ -1,26 +1,10 @@
 package br.community.context.monetary;
 
-import br.community.context.monetary._0_domain.model.MonetaryAccount;
-import br.community.context.monetary._0_domain.model.MonetaryCategory;
-import br.community.context.monetary._0_domain.model.MonetaryCenter;
-import br.community.context.monetary._0_domain.model.MonetaryTransaction;
-import br.community.context.monetary._0_domain.model.MonthlyBalance;
-import br.community.context.monetary._0_domain.model.Tag;
-import br.community.context.monetary._0_domain.repository.AccountRepository;
-import br.community.context.monetary._0_domain.repository.BalanceRepository;
-import br.community.context.monetary._0_domain.repository.CategoryRepository;
-import br.community.context.monetary._0_domain.repository.ClosingRepository;
-import br.community.context.monetary._0_domain.repository.CostCenterRepository;
-import br.community.context.monetary._0_domain.repository.TagRepository;
-import br.community.context.monetary._0_domain.repository.TransactionRepository;
+import br.community.context.monetary._0_domain.model.*;
+import br.community.context.monetary._0_domain.repository.*;
 
 import java.time.YearMonth;
-import java.util.ArrayList;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
 
 @SuppressWarnings("MissingOverride")
 final class InMemoryRepositories {

@@ -1,6 +1,6 @@
 package br.community.feature;
 
-import br.community.feature.operations.transactions.Transaction;
+import br.community.feature.user.accounts.transactions.Transaction;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.MediaType;
 

@@ -2,7 +2,7 @@ package br.community.context.monetary;
 
 import br.commons.MessageBus;
 import br.commons.framework.persistence.Storage;
-import br.community.context.monetary._0_domain.port.*;
+import br.community.context.monetary._0_domain.port.CreditCardStatementTextExtractor;
 import br.community.context.monetary._0_domain.repository.*;
 import br.community.context.monetary._1_application.event.TransactionEventListener;
 import br.community.context.monetary._1_application.service.*;

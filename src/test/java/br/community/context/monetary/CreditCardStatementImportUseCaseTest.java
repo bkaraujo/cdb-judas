@@ -5,47 +5,21 @@ import br.commons.Result;
 import br.commons.framework.message.MessageListener;
 import br.commons.framework.message.MessageResult;
 import br.community.context.monetary._0_domain.event.MonetaryEvent;
-import br.community.context.monetary._0_domain.model.AccountType;
-import br.community.context.monetary._0_domain.model.ChargeKind;
-import br.community.context.monetary._0_domain.model.ImportError;
-import br.community.context.monetary._0_domain.model.ImportPreview;
-import br.community.context.monetary._0_domain.model.ImportResult;
-import br.community.context.monetary._0_domain.model.Issuer;
-import br.community.context.monetary._0_domain.model.MonetaryAccount;
-import br.community.context.monetary._0_domain.model.MonetaryTransaction;
-import br.community.context.monetary._0_domain.model.ParsedStatementLine;
+import br.community.context.monetary._0_domain.model.*;
 import br.community.context.monetary._0_domain.port.CreditCardStatementTextExtractor;
 import br.community.context.monetary._0_domain.port.ExtractionFailure;
 import br.community.context.monetary._1_application.command.ImportConfirmCommand;
-import br.community.context.monetary._1_application.service.AccountService;
-import br.community.context.monetary._1_application.service.BtgCreditCardStatementParser;
-import br.community.context.monetary._1_application.service.CardMatcher;
-import br.community.context.monetary._1_application.service.CategoryGuesser;
-import br.community.context.monetary._1_application.service.CategoryService;
-import br.community.context.monetary._1_application.service.CreditCardStatementParserRegistry;
-import br.community.context.monetary._1_application.service.GroupSignature;
-import br.community.context.monetary._1_application.service.InstallmentExpander;
-import br.community.context.monetary._1_application.service.IssuerDetector;
-import br.community.context.monetary._1_application.service.SantanderCreditCardStatementParser;
-import br.community.context.monetary._1_application.service.TransactionService;
+import br.community.context.monetary._1_application.service.*;
 import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;
-import java.time.Clock;
-import java.time.Instant;
-import java.time.LocalDate;
-import java.time.MonthDay;
-import java.time.ZoneOffset;
+import java.time.*;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertInstanceOf;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 class CreditCardStatementImportUseCaseTest {
 
