@@ -1,6 +1,8 @@
 package br.community.context.monetary;
 
 import br.commons.Result;
+import br.community.context.monetary._0_domain.model.MonetaryCategory;
+import br.community.context.monetary._0_domain.model.MonetaryNature;
 import br.community.context.monetary._0_domain.model.MonetaryTransaction;
 import br.community.context.monetary._1_application.command.TransactionCommand;
 import br.community.context.monetary._1_application.service.CategoryService;
@@ -34,7 +36,9 @@ class TransactionUseCaseTest {
     void setUp() {
         txRepo = new InMemoryRepositories.Transactions();
         closingRepo = new InMemoryRepositories.Closings();
-        useCase = new TransactionUseCase(new TransactionService(txRepo), new ClosingService(closingRepo), new CategoryService(new InMemoryRepositories.Categories()));
+        InMemoryRepositories.Categories catRepo = new InMemoryRepositories.Categories();
+        catRepo.save(new MonetaryCategory(categoryId, MonetaryNature.EXPENSE, "Subcategoria", UUID.randomUUID()));
+        useCase = new TransactionUseCase(new TransactionService(txRepo), new ClosingService(closingRepo), new CategoryService(catRepo));
     }
 
     private TransactionCommand cmd(LocalDate date, String status, Integer installments) {
