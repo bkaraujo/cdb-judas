@@ -2,6 +2,7 @@ package br.community.feature.user.accounts.statement;
 
 import br.commons.Result;
 import br.community.context.monetary.MonetaryContext;
+import br.community.context.monetary._0_domain.model.MonetaryTransaction;
 import br.community.context.shared._0_domain.model.DomainError;
 import lombok.RequiredArgsConstructor;
 import lombok.val;
@@ -31,13 +32,21 @@ public class StatementService {
             val start = ym.atDay(1);
             val end = ym.atEndOfMonth();
 
-            val openingBal = monetaryContext.getMonthlyBalance(uuid, ym.minusMonths(1))
-                    .map(b -> b.balance())
-                    .getOrElse(account.balance());
-
             return monetaryContext.listTransactions().map(allTransactions -> {
-                var stream = allTransactions.stream()
+                val accountTx = allTransactions.stream()
                         .filter(t -> uuid.equals(t.accountId()))
+                        .toList();
+
+                // Opening balance = initial account balance plus every transaction before this month.
+                // Derived from transactions so it stays correct for any month, regardless of which
+                // monthly-balance snapshots happen to be persisted.
+                val openingBal = account.balance().add(
+                        accountTx.stream()
+                                .filter(t -> t.date().isBefore(start))
+                                .map(MonetaryTransaction::amount)
+                                .reduce(BigDecimal.ZERO, BigDecimal::add));
+
+                var stream = accountTx.stream()
                         .filter(t -> !t.date().isBefore(start) && !t.date().isAfter(end));
 
                 if (status != null && !status.isBlank()) {
@@ -45,7 +54,7 @@ public class StatementService {
                 }
 
                 val period = stream
-                        .sorted(Comparator.comparing(br.community.context.monetary._0_domain.model.MonetaryTransaction::date))
+                        .sorted(Comparator.comparing(MonetaryTransaction::date))
                         .toList();
 
                 val out = new ArrayList<StatementItem>();
@@ -69,15 +78,17 @@ public class StatementService {
         return monetaryContext.listAccounts().flatMap(accounts ->
                 monetaryContext.listTransactions().map(allTransactions ->
                         accounts.stream().map(account -> {
-                            val opening = monetaryContext.getMonthlyBalance(account.id(), ym.minusMonths(1))
-                                    .map(b -> b.balance())
-                                    .getOrElse(account.balance());
-
+                            var opening = account.balance();
                             var totalIn = BigDecimal.ZERO;
                             var totalOut = BigDecimal.ZERO;
                             for (val t : allTransactions) {
                                 if (!account.id().equals(t.accountId())) continue;
-                                if (t.date().isBefore(start) || t.date().isAfter(end)) continue;
+                                if (t.date().isBefore(start)) {
+                                    // carry every prior transaction forward into the opening balance
+                                    opening = opening.add(t.amount());
+                                    continue;
+                                }
+                                if (t.date().isAfter(end)) continue;
                                 if (status != null && !status.isBlank() && !status.equalsIgnoreCase(t.status())) continue;
                                 if (t.amount().signum() >= 0) totalIn = totalIn.add(t.amount());
                                 else totalOut = totalOut.add(t.amount().abs());

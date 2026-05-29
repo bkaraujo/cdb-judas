@@ -49,6 +49,16 @@
     return null;
   }
 
+  // Default date for a new transaction: today when the displayed month is the
+  // current month, otherwise the first day of the month being displayed.
+  function defaultNewDate() {
+    const now = new Date();
+    if (state.month === now.getMonth() && state.year === now.getFullYear()) {
+      return now.toISOString().slice(0, 10);
+    }
+    return window.monthBounds(state.month, state.year).from;
+  }
+
   // ── Fetch ─────────────────────────────────────────────────
   function loadTransactions() {
     state.loading = true;
@@ -691,7 +701,7 @@
       type: isEdit ? (existing.type || 'expense') : 'expense',
       description: isEdit ? (existing.description || '') : '',
       amount: isEdit ? maskCurrency(String(Math.round(Math.abs(Number(existing.amount) || 0) * 100) / 100)) : '',
-      date: isEdit ? (existing.date || '').slice(0, 10) : new Date().toISOString().slice(0, 10),
+      date: isEdit ? (existing.date || '').slice(0, 10) : defaultNewDate(),
       categoryId: isEdit ? (existing.categoryId || '') : '',
       accountId: isEdit ? String(existing.accountId || '') : '',
       destAccountId: '',

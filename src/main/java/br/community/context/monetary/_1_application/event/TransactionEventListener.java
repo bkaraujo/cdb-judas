@@ -14,7 +14,6 @@ import lombok.val;
 import org.jspecify.annotations.NullMarked;
 
 import java.math.BigDecimal;
-import java.time.LocalDate;
 import java.time.YearMonth;
 import java.util.Comparator;
 import java.util.List;
@@ -31,19 +30,19 @@ public class TransactionEventListener {
 
     @MessageListener
     public MessageResult onTransaction(MonetaryEvent.TransactionCreated transaction) {
-        triggerRecalculate(transaction.transaction().accountId(), transaction.transaction().date());
+        triggerRecalculate(transaction.transaction().accountId());
         return MessageResult.AVAILABLE;
     }
 
     @MessageListener
     public MessageResult onTransaction(MonetaryEvent.TransactionUpdated transaction) {
-        triggerRecalculate(transaction.transaction().accountId(), transaction.transaction().date());
+        triggerRecalculate(transaction.transaction().accountId());
         return MessageResult.AVAILABLE;
     }
 
     @MessageListener
     public MessageResult onTransaction(MonetaryEvent.TransactionDeleted transaction) {
-        triggerRecalculate(transaction.transaction().accountId(), transaction.transaction().date());
+        triggerRecalculate(transaction.transaction().accountId());
         return MessageResult.AVAILABLE;
     }
 
@@ -64,44 +63,55 @@ public class TransactionEventListener {
         return MessageResult.AVAILABLE;
     }
 
-    private void triggerRecalculate(UUID accountId, LocalDate referenceDate) {
+    private void triggerRecalculate(UUID accountId) {
         val accountResult = accountService.findById(accountId);
         if (accountResult.isFailure()) return;
         val initialBalance = accountResult.getOrThrow().balance();
-        val summaries = transactionService.findByAccount(accountId).stream()
+        val transactions = transactionService.findByAccount(accountId).stream()
                 .map(t -> new MonetaryBalance(t.date(), t.amount()))
                 .toList();
 
-        recalculateBalance(accountId, initialBalance, YearMonth.from(referenceDate), summaries);
+        recalculateBalance(accountId, initialBalance, transactions);
     }
 
-    private void recalculateBalance(UUID accountId, BigDecimal initialBalance, YearMonth start, List<MonetaryBalance> monetaryTransactions) {
-        Logger.verbose("Recalculating balance for account %s at %s", accountId, start);
+    private void recalculateBalance(UUID accountId, BigDecimal initialBalance, List<MonetaryBalance> transactions) {
         val existingBalances = balanceService.findByAccount(accountId);
 
-        val lastMonthWithBalance = existingBalances.stream()
-                .map(MonthlyBalance::period)
-                .max(Comparator.naturalOrder())
-                .orElse(start);
+        if (transactions.isEmpty()) {
+            // No activity left → no monthly snapshots make sense; drop any stale rows so reads
+            // fall back to the account's initial balance.
+            existingBalances.forEach(b -> balanceService.deleteById(b.id()));
+            return;
+        }
 
-        val lastMonthWithMonetaryTransaction = monetaryTransactions.stream()
+        val firstMonth = transactions.stream()
                 .map(t -> YearMonth.from(t.date()))
-                .max(Comparator.naturalOrder())
-                .orElse(start);
+                .min(Comparator.naturalOrder())
+                .orElse(YearMonth.now());
 
-        val endMonth = lastMonthWithBalance.isAfter(lastMonthWithMonetaryTransaction) ? lastMonthWithBalance : lastMonthWithMonetaryTransaction;
+        // Recompute the whole timeline from the first activity through the current month, so every
+        // month up to today has a snapshot (months with no movement carry the prior balance forward).
+        var endMonth = YearMonth.now();
+        for (val t : transactions) {
+            val month = YearMonth.from(t.date());
+            if (month.isAfter(endMonth)) endMonth = month;
+        }
+        for (val b : existingBalances) {
+            if (b.period().isAfter(endMonth)) endMonth = b.period();
+        }
 
-        var runningBalance = initialBalance.add(
-                monetaryTransactions.stream()
-                        .filter(t -> YearMonth.from(t.date()).isBefore(start))
-                        .map(MonetaryBalance::amount)
-                        .reduce(BigDecimal.ZERO, BigDecimal::add)
-        );
+        // Drop snapshots that precede all current activity (e.g. the earliest transactions were deleted).
+        existingBalances.stream()
+                .filter(b -> b.period().isBefore(firstMonth))
+                .forEach(b -> balanceService.deleteById(b.id()));
 
-        var current = start;
+        Logger.verbose("Recalculating balance for account %s from %s to %s", accountId, firstMonth, endMonth);
+
+        var runningBalance = initialBalance;
+        var current = firstMonth;
         while (!current.isAfter(endMonth)) {
             val finalCurrent = current;
-            val monthSum = monetaryTransactions.stream()
+            val monthSum = transactions.stream()
                     .filter(t -> YearMonth.from(t.date()).equals(finalCurrent))
                     .map(MonetaryBalance::amount)
                     .reduce(BigDecimal.ZERO, BigDecimal::add);
