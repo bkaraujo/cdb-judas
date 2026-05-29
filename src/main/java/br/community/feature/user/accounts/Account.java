@@ -16,5 +16,6 @@ public record Account(
         String color,
         boolean active,
         @Nullable UUID linkedAccountId,
-        Map<String, Object> additionalInfo
+        Map<String, Object> additionalInfo,
+        BigDecimal currentBalance
 ) {}

@@ -3,10 +3,11 @@
   function compute(accounts) {
     let ativo = 0, passivo = 0;
     (accounts || []).forEach(function (a) {
+      const bal = window.Domain.Account.currentBalance(a);
       if (window.Domain.Account.isLiability(a)) {
-        passivo += Math.abs(+a.balance || 0);
+        passivo += Math.abs(bal);
       } else {
-        ativo += (+a.balance || 0);
+        ativo += bal;
       }
     });
     return { ativo: ativo, passivo: passivo, patrimonio: ativo - passivo };

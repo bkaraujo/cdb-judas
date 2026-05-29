@@ -3,6 +3,7 @@ package br.community.context.monetary;
 import br.commons.Result;
 import br.commons.annotation.Facade;
 import br.community.context.monetary._0_domain.model.*;
+import br.community.context.monetary._1_application.AccountView;
 import br.community.context.monetary._1_application.command.*;
 import br.community.context.shared._0_domain.model.DomainError;
 import br.community.context.shared._1_application.DomainEventPublisher;
@@ -39,19 +40,30 @@ public class MonetaryContext implements Facade {
     public Result<MonetaryAccount, DomainError> createAccount(AccountCommand cmd) {
         return  ucAccount
                 .createAccount(cmd)
-                .ifSuccess(value -> DomainEventPublisher.upsert("ACCOUNT", value));
+                .ifSuccess(value -> DomainEventPublisher.upsert("ACCOUNT", withCurrentBalance(value)));
     }
 
     public Result<MonetaryAccount, DomainError> updateAccount(UUID id, AccountCommand cmd) {
         return ucAccount
                 .updateAccount(id, cmd)
-                .ifSuccess(value -> DomainEventPublisher.upsert("ACCOUNT", value));
+                .ifSuccess(value -> DomainEventPublisher.upsert("ACCOUNT", withCurrentBalance(value)));
     }
 
     public Result<Void, DomainError> deleteAccount(UUID id) {
         return ucAccount
                 .deleteAccount(id)
                 .ifSuccess(ignored -> DomainEventPublisher.delete("ACCOUNT", id.toString()));
+    }
+
+    /** Builds the SSE payload for an account, deriving the current balance
+     *  (opening balance + every transaction) so live updates match the statement. */
+    private AccountView withCurrentBalance(MonetaryAccount account) {
+        List<MonetaryTransaction> transactions = ucTransaction.listTransactions().getOrElse(List.of());
+        BigDecimal sum = BigDecimal.ZERO;
+        for (MonetaryTransaction t : transactions) {
+            if (account.id().equals(t.accountId())) sum = sum.add(t.amount());
+        }
+        return AccountView.of(account, account.balance().add(sum));
     }
 
     // ── Balance operations ─────────────────────────────────────────
@@ -99,13 +111,13 @@ public class MonetaryContext implements Facade {
     public Result<MonetaryAccount, DomainError> createCreditCard(CreditCardCommand cmd) {
         return ucAccount
                 .createCreditCard(cmd)
-                .ifSuccess(value -> DomainEventPublisher.upsert("ACCOUNT", value));
+                .ifSuccess(value -> DomainEventPublisher.upsert("ACCOUNT", withCurrentBalance(value)));
     }
 
     public Result<MonetaryAccount, DomainError> updateCreditCard(UUID id, CreditCardCommand cmd) {
         return ucAccount
                 .updateCreditCard(id, cmd)
-                .ifSuccess(value -> DomainEventPublisher.upsert("ACCOUNT", value));
+                .ifSuccess(value -> DomainEventPublisher.upsert("ACCOUNT", withCurrentBalance(value)));
     }
 
     public Result<Void, DomainError> deleteCreditCard(UUID id) {

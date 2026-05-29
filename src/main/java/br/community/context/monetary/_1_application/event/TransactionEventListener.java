@@ -6,9 +6,11 @@ import br.commons.framework.message.MessageResult;
 import br.community.context.monetary._0_domain.event.MonetaryEvent;
 import br.community.context.monetary._0_domain.model.MonetaryBalance;
 import br.community.context.monetary._0_domain.model.MonthlyBalance;
+import br.community.context.monetary._1_application.AccountView;
 import br.community.context.monetary._1_application.service.AccountService;
 import br.community.context.monetary._1_application.service.BalanceService;
 import br.community.context.monetary._1_application.service.TransactionService;
+import br.community.context.shared._1_application.DomainEventPublisher;
 import lombok.RequiredArgsConstructor;
 import lombok.val;
 import org.jspecify.annotations.NullMarked;
@@ -66,12 +68,19 @@ public class TransactionEventListener {
     private void triggerRecalculate(UUID accountId) {
         val accountResult = accountService.findById(accountId);
         if (accountResult.isFailure()) return;
-        val initialBalance = accountResult.getOrThrow().balance();
+        val account = accountResult.getOrThrow();
+        val initialBalance = account.balance();
         val transactions = transactionService.findByAccount(accountId).stream()
                 .map(t -> new MonetaryBalance(t.date(), t.amount()))
                 .toList();
 
         recalculateBalance(accountId, initialBalance, transactions);
+
+        // Push the refreshed current balance to the read screens (cadastro, visão geral),
+        // which cache accounts over SSE and otherwise never see transaction-driven changes.
+        var currentBalance = initialBalance;
+        for (val b : transactions) currentBalance = currentBalance.add(b.amount());
+        DomainEventPublisher.upsert("ACCOUNT", AccountView.of(account, currentBalance));
     }
 
     private void recalculateBalance(UUID accountId, BigDecimal initialBalance, List<MonetaryBalance> transactions) {

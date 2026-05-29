@@ -15,6 +15,7 @@
       name:     raw.name || '',
       type:     type,
       balance:  +raw.balance || 0,
+      currentBalance: raw.currentBalance != null ? (+raw.currentBalance || 0) : (+raw.balance || 0),
       color:    raw.color || null,
       active:   raw.active !== false,
       additionalInfo: raw.additionalInfo || {},
@@ -25,18 +26,25 @@
   function isCash(a)       { return !!a && a.type !== TYPES.CREDIT_CARD; }
   function isLiability(a)  { return isCreditCard(a); }
 
-  /* Available limit for a credit card = limit - absolute balance owed.
+  /* Current balance = opening balance + every transaction (derived backend-side).
+     Falls back to the opening balance for payloads without `currentBalance`. */
+  function currentBalance(a) {
+    if (!a) return 0;
+    return a.currentBalance != null ? (+a.currentBalance || 0) : (+a.balance || 0);
+  }
+
+  /* Available limit for a credit card = limit - absolute current balance owed.
      Returns 0 if not a credit card or limit missing. */
   function availableLimit(a) {
     if (!isCreditCard(a)) return 0;
     const limit = +((a.additionalInfo && a.additionalInfo.limit) || 0);
-    const used  = Math.abs(+a.balance || 0);
+    const used  = Math.abs(currentBalance(a));
     return Math.max(0, limit - used);
   }
 
-  /* Display value: balance for cash; available limit for credit card. */
+  /* Display value: current balance for cash; available limit for credit card. */
   function displayBalance(a) {
-    return isCreditCard(a) ? availableLimit(a) : (+a.balance || 0);
+    return isCreditCard(a) ? availableLimit(a) : currentBalance(a);
   }
 
   function balanceSheetSide(a) {
@@ -57,6 +65,7 @@
     isCreditCard: isCreditCard,
     isCash: isCash,
     isLiability: isLiability,
+    currentBalance: currentBalance,
     availableLimit: availableLimit,
     displayBalance: displayBalance,
     balanceSheetSide: balanceSheetSide,

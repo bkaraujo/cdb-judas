@@ -433,16 +433,17 @@
 
   function renderSaldosCaixa(p) {
     const accs = cashAccounts();
-    const total = accs.reduce(function (s, a) { return s + (+a.balance || 0); }, 0);
+    const total = accs.reduce(function (s, a) { return s + window.Domain.Account.currentBalance(a); }, 0);
     let rows = accs.map(function (a, i) {
       const color = pickColor(i, a.color);
+      const bal = window.Domain.Account.currentBalance(a);
       return (
         '<div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-top:1px solid var(--border-light);">' +
           '<div style="display:flex;align-items:center;gap:8px;min-width:0;">' +
             '<span style="width:8px;height:8px;border-radius:50%;background:' + esc(color) + ';flex-shrink:0;"></span>' +
             '<span style="font-size:12px;color:var(--text-secondary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + esc(a.name) + '</span>' +
           '</div>' +
-          '<span style="font-size:13px;font-weight:700;color:' + window.valueColor(+a.balance || 0) + ';">' + esc(v(+a.balance || 0)) + '</span>' +
+          '<span style="font-size:13px;font-weight:700;color:' + window.valueColor(bal) + ';">' + esc(v(bal)) + '</span>' +
         '</div>'
       );
     }).join('');
@@ -561,7 +562,7 @@
     let html = '';
     cards.forEach(function (c, i) {
       const limit = (c.additionalInfo && c.additionalInfo.limit) || 0;
-      const used = Math.abs(+c.balance || 0);
+      const used = Math.abs(window.Domain.Account.currentBalance(c));
       const pct = window.Domain.CreditCard.usagePct(used, limit);
       const color = pickColor(i + 4, c.color);
       const barColor = 'var(--' + window.Domain.CreditCard.barColorByUsage(pct) + ')';

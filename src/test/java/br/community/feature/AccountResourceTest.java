@@ -155,4 +155,49 @@ class AccountResourceTest extends BaseHttpTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.length()").value(0));
     }
+
+    @Test
+    void saldoAtualRefleteTransacoesEnquantoSaldoInicialPermanece() throws Exception {
+        // Conta com saldo inicial 1000 — sem transações, saldo atual = saldo inicial.
+        String accJson = """
+            {"name":"Conta Corrente","balance":1000.00,"type":"CHECKING","color":"#007AFF","active":true}
+            """;
+        String accResp = mockMvc.perform(post("/api/{u}/accounts", TEST_USER_ID)
+                .contentType(MediaType.APPLICATION_JSON).content(accJson))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.balance").value(1000.00))
+                .andExpect(jsonPath("$.currentBalance").value(1000.00))
+                .andReturn().getResponse().getContentAsString();
+        UUID accountId = UUID.fromString(objectMapper.readTree(accResp).get("id").asText());
+
+        // Transações só podem ser lançadas em subcategorias (folhas).
+        String macroResp = mockMvc.perform(post("/api/" + TEST_USER_ID + "/categories")
+                .contentType(MediaType.APPLICATION_JSON).content("{\"name\":\"Moradia\",\"nature\":\"EXPENSE\"}"))
+                .andReturn().getResponse().getContentAsString();
+        UUID macroId = UUID.fromString(objectMapper.readTree(macroResp).get("id").asText());
+        String subResp = mockMvc.perform(post("/api/" + TEST_USER_ID + "/categories")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"name\":\"Aluguel\",\"nature\":\"EXPENSE\",\"parentId\":\"%s\"}".formatted(macroId)))
+                .andReturn().getResponse().getContentAsString();
+        UUID categoryId = UUID.fromString(objectMapper.readTree(subResp).get("id").asText());
+
+        // Lançamento de -250 na conta.
+        String txJson = """
+            {"description":"Aluguel","amount":-250.00,"date":"2024-04-01","categoryId":"%s","status":"confirmed","type":"expense","installments":1,"editMode":"single"}
+            """.formatted(categoryId);
+        mockMvc.perform(post("/api/{u}/accounts/{acc}/transactions", TEST_USER_ID, accountId)
+                .contentType(MediaType.APPLICATION_JSON).content(txJson))
+                .andExpect(status().isCreated());
+
+        // Saldo inicial permanece 1000; saldo atual = 1000 - 250 = 750 (no item e na lista).
+        mockMvc.perform(get("/api/{u}/accounts/{id}", TEST_USER_ID, accountId))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.balance").value(1000.00))
+                .andExpect(jsonPath("$.currentBalance").value(750.00));
+
+        mockMvc.perform(get("/api/{u}/accounts", TEST_USER_ID))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].balance").value(1000.00))
+                .andExpect(jsonPath("$[0].currentBalance").value(750.00));
+    }
 }
