@@ -13,8 +13,13 @@
   <!-- jQuery 4 beta (stable 4.x not yet released). TODO: swap to GA when available. -->
   <script src="https://code.jquery.com/jquery-4.0.0.js"></script>
 
-  <!-- API base URL — same-origin (servido pelo Spring Boot). Sobrescrever só p/ dev cross-origin. -->
-  <script>window.API_BASE_URL = '/api';</script>
+  <!-- API base URL: same-origin '/api' quando servido pelo Spring Boot (localhost:8080);
+       absoluto p/ localhost:8080 quando aberto direto do disco via file:// (cross-origin). -->
+  <script>
+    window.API_BASE_URL = (location.protocol === 'file:')
+      ? 'http://localhost:8080/api'
+      : '/api';
+  </script>
 
   <!-- ── Layer barrels (each loads its individual files dynamically, async=false preserves order) ── -->
   <script src="js/_1_domain.js"></script>

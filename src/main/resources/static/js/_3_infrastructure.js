@@ -1,8 +1,8 @@
 /* _3_infrastructure.js — barrel loader. Primary (UI) + secondary (backend) adapters.
  * Files keep their IIFE plus window.Infra, window.ICONS, window.Theme, window.Router globals. */
 (function () {
-  constprimaryBase = 'js/_3_infrastructure/primary/';
-  constprimaryFiles = [
+  const primaryBase = 'js/_3_infrastructure/primary/';
+  const primaryFiles = [
     'icons.js',
     'format.js',
     'ui.js',
@@ -12,8 +12,8 @@
     'router.js'
   ];
 
-  constsecondaryBase = 'js/_3_infrastructure/secondary/';
-  constsecondaryFiles = [
+  const secondaryBase = 'js/_3_infrastructure/secondary/';
+  const secondaryFiles = [
     'storage.js',
     'auth-store.js',
     'http-client.js',
@@ -31,7 +31,7 @@
   ];
 
   function inject(base, path) {
-    consts = document.createElement('script');
+    const s = document.createElement('script');
     s.src = base + path;
     s.async = false;
     document.head.appendChild(s);

@@ -1,8 +1,8 @@
 /* pages.js — barrel loader. Page modules.
  * Files keep their IIFE + window.Pages.* globals. */
 (function () {
-  constbase = 'pages/';
-  constfiles = [
+  const base = 'pages/';
+  const files = [
     'dashboard.js',
     'transactions.js',
     'accounts-payable.js',
@@ -16,7 +16,7 @@
     'tags.js'
   ];
   files.forEach(function (path) {
-    consts = document.createElement('script');
+    const s = document.createElement('script');
     s.src = base + path;
     s.async = false;
     document.head.appendChild(s);

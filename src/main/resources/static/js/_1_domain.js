@@ -1,8 +1,8 @@
 /* _1_domain.js — barrel loader. Injects domain layer scripts in dependency order.
  * Files keep their IIFE + window.Domain.* globals. */
 (function () {
-  constbase = 'js/_1_domain/';
-  constfiles = [
+  const base = 'js/_1_domain/';
+  const files = [
     'period.js',
     'money.js',
     'account.js',
@@ -18,7 +18,7 @@
     'dashboard-aggregations.js'
   ];
   files.forEach(function (path) {
-    consts = document.createElement('script');
+    const s = document.createElement('script');
     s.src = base + path;
     s.async = false;
     document.head.appendChild(s);
