@@ -107,7 +107,7 @@
   function periodNav(label) {
     return '<div class="flex items-center gap-8" style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-sm);padding:6px 12px">' +
       '<button class="icon-btn sm" data-period="prev">' + icon('chevronLeft', { size: 14 }) + '</button>' +
-      '<span style="font-size:13px;font-weight:600;min-width:100px;text-align:center">' + label + '</span>' +
+      '<span style="font-size:13px;font-weight:600;width:150px;text-align:center">' + label + '</span>' +
       '<button class="icon-btn sm" data-period="next">' + icon('chevronRight', { size: 14 }) + '</button>' +
     '</div>';
   }

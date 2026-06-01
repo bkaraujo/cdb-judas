@@ -198,7 +198,7 @@ window.PeriodNav = function PeriodNav({ label, onPrev, onNext }) {
     React.createElement('button', { className: 'icon-btn', style: { width: 24, height: 24 }, onClick: onPrev },
       React.createElement(Icon, { name: 'chevronLeft', size: 14 })
     ),
-    React.createElement('span', { style: { fontSize: '13px', fontWeight: 600, minWidth: '100px', textAlign: 'center' } }, label),
+    React.createElement('span', { style: { fontSize: '13px', fontWeight: 600, width: '150px', textAlign: 'center' } }, label),
     React.createElement('button', { className: 'icon-btn', style: { width: 24, height: 24 }, onClick: onNext },
       React.createElement(Icon, { name: 'chevronRight', size: 14 })
     )

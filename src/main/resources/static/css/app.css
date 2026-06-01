@@ -328,7 +328,7 @@ button { font-family: var(--font); cursor: pointer; border: none; outline: none;
 .period-nav .icon-btn { width: 24px; height: 24px; }
 .period-nav-label {
   font-size: 13px; font-weight: 600;
-  min-width: 100px; text-align: center;
+  width: 150px; text-align: center;
 }
 
 /* ───── Sidebar ───── */
