@@ -51,12 +51,13 @@ class ArchitectureTest {
     static final ArchRule feature_must_access_context_only_via_facade_or_domain_model =
             noClasses().that().resideInAPackage("..feature..")
                     .should().accessClassesThat(contextClassNotExposedViaFacade())
-                    .because("feature deve acessar context exclusivamente via Facade ou modelos de domínio (_0_domain.model)");
+                    .because("feature deve acessar context exclusivamente via Facade, modelos de domínio (_0_domain.model) ou eventos de domínio (_0_domain.event)");
 
     private static DescribedPredicate<JavaClass> contextClassNotExposedViaFacade() {
         return resideInAPackage("..context..")
                 .and(not(resideInAPackage("..context..shared..")))
                 .and(not(resideInAPackage("..context.._0_domain.model..")))
+                .and(not(resideInAPackage("..context.._0_domain.event..")))
                 .and(not(resideInAPackage("..context.._1_application.command..")))
                 .and(not(resideInAPackage("..context.._1_application.event..")))
                 .and(not(implement(Facade.class)));

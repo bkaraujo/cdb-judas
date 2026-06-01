@@ -5,7 +5,6 @@ import br.community.context.monetary._0_domain.model.AccountType;
 import br.community.context.monetary._0_domain.model.MonetaryAccount;
 import br.community.context.monetary._1_application.event.AccountEventListener;
 import br.community.context.monetary._1_application.service.AccountService;
-import br.community.context.monetary._1_application.service.TransactionService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -18,17 +17,12 @@ import static org.junit.jupiter.api.Assertions.*;
 class AccountEventListenerTest {
 
     private InMemoryRepositories.Accounts accountRepo;
-    private InMemoryRepositories.Transactions transactionRepo;
     private AccountEventListener listener;
 
     @BeforeEach
     void setUp() {
         accountRepo = new InMemoryRepositories.Accounts();
-        transactionRepo = new InMemoryRepositories.Transactions();
-        listener = new AccountEventListener(
-                new AccountService(accountRepo),
-                new TransactionService(transactionRepo)
-        );
+        listener = new AccountEventListener(new AccountService(accountRepo));
     }
 
     private MonetaryAccount seedChecking(String color) {

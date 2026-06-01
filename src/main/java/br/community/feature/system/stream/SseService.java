@@ -1,6 +1,5 @@
-package br.community.context.shared._2_infrastructure.sse;
+package br.community.feature.system.stream;
 
-import br.community.context.shared._1_application.SSE;
 import br.community.core.web.security.CurrentUser;
 import lombok.val;
 import org.jspecify.annotations.NullMarked;

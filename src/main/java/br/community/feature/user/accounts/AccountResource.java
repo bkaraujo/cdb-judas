@@ -1,9 +1,7 @@
 package br.community.feature.user.accounts;
 
 import br.commons.Result;
-import br.commons.tools.Strings;
 import br.community.context.monetary.MonetaryContext;
-import br.community.context.monetary._0_domain.model.MonetaryAccount;
 import br.community.context.monetary._0_domain.model.MonetaryTransaction;
 import br.community.context.monetary._1_application.command.AccountCommand;
 import br.community.context.shared._0_domain.model.DomainError;
@@ -17,7 +15,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
 
-import java.math.BigDecimal;
 import java.time.YearMonth;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
@@ -36,7 +33,7 @@ public class AccountResource {
         val result = isCardType(type) ? monetaryContext.listCreditCards() : monetaryContext.listAccounts();
         val transactions = allTransactions();
         return switch (result) {
-            case Result.Success(var accounts) -> accounts.stream().map(a -> toDto(a, transactions)).toList();
+            case Result.Success(var accounts) -> accounts.stream().map(a -> Account.from(a, transactions)).toList();
             case Result.Failure(var error) -> throw new DomainException(error);
         };
     }
@@ -72,7 +69,7 @@ public class AccountResource {
     @GetMapping("/{id}")
     public Account getById(@PathVariable UUID id) {
         return switch (monetaryContext.findAccount(id)) {
-            case Result.Success(var c) -> toDto(c, allTransactions());
+            case Result.Success(var c) -> Account.from(c, allTransactions());
             case Result.Failure(var error) -> throw new DomainException(error);
         };
     }
@@ -81,7 +78,7 @@ public class AccountResource {
     @ResponseStatus(HttpStatus.CREATED)
     public Account create(@RequestBody @Valid AccountRequest req) {
         return switch (monetaryContext.createAccount(toCommand(req))) {
-            case Result.Success(var c) -> toDto(c, allTransactions());
+            case Result.Success(var c) -> Account.from(c, allTransactions());
             case Result.Failure(var error) -> throw new DomainException(error);
         };
     }
@@ -89,8 +86,8 @@ public class AccountResource {
     @PatchMapping("/{id}")
     public Account update(@PathVariable UUID id, @RequestBody @Valid AccountRequest req) {
         return switch (monetaryContext.updateAccount(id, toCommand(req))) {
-            case Result.Success(var c) -> toDto(c, allTransactions());
             case Result.Failure(var error) -> throw new DomainException(error);
+            case Result.Success(var c) -> Account.from(c, allTransactions());
         };
     }
 
@@ -109,29 +106,5 @@ public class AccountResource {
 
     private List<MonetaryTransaction> allTransactions() {
         return monetaryContext.listTransactions().getOrElse(List.of());
-    }
-
-    /** Current balance = opening balance + every transaction on the account.
-     *  Mirrors the statement's derivation so all read screens agree. */
-    private BigDecimal currentBalanceOf(MonetaryAccount account, List<MonetaryTransaction> transactions) {
-        var sum = BigDecimal.ZERO;
-        for (val t : transactions) {
-            if (account.id().equals(t.accountId())) sum = sum.add(t.amount());
-        }
-        return account.balance().add(sum);
-    }
-
-    private Account toDto(MonetaryAccount monetary, List<MonetaryTransaction> transactions) {
-        return new Account(
-                monetary.id(),
-                monetary.name(),
-                monetary.balance(),
-                Strings.upper(monetary.type().name()),
-                monetary.color(),
-                monetary.active(),
-                monetary.linkedAccountId(),
-                monetary.additionalInfo(),
-                currentBalanceOf(monetary, transactions)
-        );
     }
 }

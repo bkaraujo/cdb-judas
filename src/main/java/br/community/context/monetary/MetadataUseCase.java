@@ -1,6 +1,8 @@
 package br.community.context.monetary;
 
+import br.commons.MessageBus;
 import br.commons.Result;
+import br.community.context.monetary._0_domain.event.MonetaryEvent;
 import br.community.context.monetary._0_domain.model.MonetaryCategory;
 import br.community.context.monetary._0_domain.model.MonetaryCenter;
 import br.community.context.monetary._0_domain.model.MonetaryTransaction;
@@ -10,7 +12,6 @@ import br.community.context.monetary._1_application.command.CostCenterCommand;
 import br.community.context.monetary._1_application.command.TagCommand;
 import br.community.context.monetary._1_application.service.*;
 import br.community.context.shared._0_domain.model.DomainError;
-import br.community.context.shared._1_application.DomainEventPublisher;
 import lombok.RequiredArgsConstructor;
 import lombok.val;
 import org.jspecify.annotations.NullMarked;
@@ -53,6 +54,7 @@ public class MetadataUseCase {
         if (nameConflict instanceof Result.Failure<Void, DomainError>(var error)) return Result.failure(error);
 
         val created = categoryService.save(UUID.randomUUID(), cmd.nature(), cmd.name(), cmd.parentId());
+        MessageBus.submit(new MonetaryEvent.CategoryCreated(created));
         return Result.success(created);
     }
 
@@ -71,6 +73,7 @@ public class MetadataUseCase {
                     if (nameConflict instanceof Result.Failure<Void, DomainError>(var error)) return Result.<MonetaryCategory>failure(error);
 
                     val updated = categoryService.save(id, existing.nature(), cmd.name(), cmd.parentId(), existing.isSystem());
+                    MessageBus.submit(new MonetaryEvent.CategoryUpdated(updated));
                     return Result.<MonetaryCategory, DomainError>success(updated);
                 });
     }
@@ -86,7 +89,7 @@ public class MetadataUseCase {
         val nature = root.get().nature();
         val others = categoryService.findOrCreateOthersCategory(nature);
         if (!others.id().equals(id)) {
-            DomainEventPublisher.upsert("CATEGORY", others);
+            MessageBus.submit(new MonetaryEvent.CategoryUpdated(others));
         }
 
         deleteRecursive(id, others.id(), all);
@@ -112,7 +115,7 @@ public class MetadataUseCase {
                 .forEach(c -> deleteRecursive(c.id(), othersId, all));
 
         categoryService.deleteById(id);
-        DomainEventPublisher.delete("CATEGORY", id.toString());
+        MessageBus.submit(new MonetaryEvent.CategoryDeleted(id));
     }
 
     public Optional<YearMonth> getClosingPeriod() {
@@ -156,15 +159,21 @@ public class MetadataUseCase {
 
     public Result<Tag, DomainError> createTag(TagCommand cmd) {
         val created = tagService.save(UUID.randomUUID(), cmd.name(), cmd.color());
+        MessageBus.submit(new MonetaryEvent.TagCreated(created));
         return Result.success(created);
     }
 
     public Result<Tag, DomainError> updateTag(UUID id, TagCommand cmd) {
         return tagService.findById(id)
-                .map(existing -> tagService.save(id, cmd.name(), cmd.color()));
+                .map(existing -> {
+                    val updated = tagService.save(id, cmd.name(), cmd.color());
+                    MessageBus.submit(new MonetaryEvent.TagUpdated(updated));
+                    return updated;
+                });
     }
 
     public Result<Void, DomainError> deleteTag(UUID id) {
-        return tagService.deleteById(id);
+        return tagService.deleteById(id)
+                .ifSuccess(ignored -> MessageBus.submit(new MonetaryEvent.TagDeleted(id)));
     }
 }

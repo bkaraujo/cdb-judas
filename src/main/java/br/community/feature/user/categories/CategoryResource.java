@@ -3,7 +3,6 @@ package br.community.feature.user.categories;
 import br.commons.Result;
 import br.commons.tools.Strings;
 import br.community.context.monetary.MonetaryContext;
-import br.community.context.monetary._0_domain.model.MonetaryCategory;
 import br.community.context.monetary._0_domain.model.MonetaryNature;
 import br.community.context.monetary._1_application.command.CategoryCommand;
 import br.community.context.shared._1_application.DomainException;
@@ -29,7 +28,7 @@ public class CategoryResource {
     @GetMapping
     public List<Category> listAll() {
         return switch (monetaryContext.listCategories()) {
-            case Result.Success(var categories) -> categories.stream().map(this::toDto).toList();
+            case Result.Success(var categories) -> categories.stream().map(Category::from).toList();
             case Result.Failure(var error) -> throw new DomainException(error);
         };
     }
@@ -41,7 +40,7 @@ public class CategoryResource {
         val command = new CategoryCommand(req.name(), nature, req.parentId());
 
         return switch (monetaryContext.createCategory(command)) {
-            case Result.Success(var c) -> toDto(c);
+            case Result.Success(var c) -> Category.from(c);
             case Result.Failure(var error) -> throw new DomainException(error);
         };
     }
@@ -53,7 +52,7 @@ public class CategoryResource {
             case Result.Success(var existing) -> {
                 val command = new CategoryCommand(req.name(), existing.nature(), req.parentId());
                 yield switch (monetaryContext.updateCategory(id, command)) {
-                    case Result.Success(var c) -> toDto(c);
+                    case Result.Success(var c) -> Category.from(c);
                     case Result.Failure(var error) -> throw new DomainException(error);
                 };
             }
@@ -67,15 +66,5 @@ public class CategoryResource {
             case Result.Success(var ignored) -> {}
             case Result.Failure(var error) -> throw new DomainException(error);
         }
-    }
-
-    private Category toDto(MonetaryCategory entity) {
-        return new Category(
-                entity.id(),
-                entity.name(),
-                entity.nature().name(),
-                entity.parentId(),
-                entity.isSystem()
-        );
     }
 }

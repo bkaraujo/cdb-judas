@@ -3,12 +3,9 @@ package br.community.context.monetary;
 import br.commons.Result;
 import br.commons.annotation.Facade;
 import br.community.context.monetary._0_domain.model.*;
-import br.community.context.monetary._1_application.AccountView;
 import br.community.context.monetary._1_application.command.*;
 import br.community.context.shared._0_domain.model.DomainError;
-import br.community.context.shared._1_application.DomainEventPublisher;
 import lombok.RequiredArgsConstructor;
-import lombok.val;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 
@@ -38,32 +35,15 @@ public class MonetaryContext implements Facade {
     }
 
     public Result<MonetaryAccount, DomainError> createAccount(AccountCommand cmd) {
-        return  ucAccount
-                .createAccount(cmd)
-                .ifSuccess(value -> DomainEventPublisher.upsert("ACCOUNT", withCurrentBalance(value)));
+        return ucAccount.createAccount(cmd);
     }
 
     public Result<MonetaryAccount, DomainError> updateAccount(UUID id, AccountCommand cmd) {
-        return ucAccount
-                .updateAccount(id, cmd)
-                .ifSuccess(value -> DomainEventPublisher.upsert("ACCOUNT", withCurrentBalance(value)));
+        return ucAccount.updateAccount(id, cmd);
     }
 
     public Result<Void, DomainError> deleteAccount(UUID id) {
-        return ucAccount
-                .deleteAccount(id)
-                .ifSuccess(ignored -> DomainEventPublisher.delete("ACCOUNT", id.toString()));
-    }
-
-    /** Builds the SSE payload for an account, deriving the current balance
-     *  (opening balance + every transaction) so live updates match the statement. */
-    private AccountView withCurrentBalance(MonetaryAccount account) {
-        val transactions = ucTransaction.listTransactions().getOrElse(List.of());
-        var sum = BigDecimal.ZERO;
-        for (MonetaryTransaction t : transactions) {
-            if (account.id().equals(t.accountId())) sum = sum.add(t.amount());
-        }
-        return AccountView.of(account, account.balance().add(sum));
+        return ucAccount.deleteAccount(id);
     }
 
     // ── Balance operations ─────────────────────────────────────────
@@ -87,11 +67,11 @@ public class MonetaryContext implements Facade {
     }
 
     public Result<MonetaryCategory, DomainError> createCategory(CategoryCommand cmd) {
-        return ucMetadata.createCategory(cmd).ifSuccess(value -> DomainEventPublisher.upsert("CATEGORY", value));
+        return ucMetadata.createCategory(cmd);
     }
 
     public Result<MonetaryCategory, DomainError> updateCategory(UUID id, CategoryCommand cmd) {
-        return ucMetadata.updateCategory(id, cmd).ifSuccess(value -> DomainEventPublisher.upsert("CATEGORY", value));
+        return ucMetadata.updateCategory(id, cmd);
     }
 
     public Result<Void, DomainError> deleteCategory(UUID id) {
@@ -109,21 +89,15 @@ public class MonetaryContext implements Facade {
     }
 
     public Result<MonetaryAccount, DomainError> createCreditCard(CreditCardCommand cmd) {
-        return ucAccount
-                .createCreditCard(cmd)
-                .ifSuccess(value -> DomainEventPublisher.upsert("ACCOUNT", withCurrentBalance(value)));
+        return ucAccount.createCreditCard(cmd);
     }
 
     public Result<MonetaryAccount, DomainError> updateCreditCard(UUID id, CreditCardCommand cmd) {
-        return ucAccount
-                .updateCreditCard(id, cmd)
-                .ifSuccess(value -> DomainEventPublisher.upsert("ACCOUNT", withCurrentBalance(value)));
+        return ucAccount.updateCreditCard(id, cmd);
     }
 
     public Result<Void, DomainError> deleteCreditCard(UUID id) {
-        return ucAccount
-                .deleteCreditCard(id)
-                .ifSuccess(ignored -> DomainEventPublisher.delete("ACCOUNT", id.toString()));
+        return ucAccount.deleteCreditCard(id);
     }
 
     // ── Transaction operations ─────────────────────────────────────
@@ -173,21 +147,15 @@ public class MonetaryContext implements Facade {
     }
 
     public Result<MonetaryCenter, DomainError> createCostCenter(CostCenterCommand cmd) {
-        return ucMetadata
-                .createCostCenter(cmd)
-                .ifSuccess(value -> DomainEventPublisher.upsert("COST_CENTER", value));
+        return ucMetadata.createCostCenter(cmd);
     }
 
     public Result<MonetaryCenter, DomainError> updateCostCenter(UUID id, CostCenterCommand cmd) {
-        return ucMetadata
-                .updateCostCenter(id, cmd)
-                .ifSuccess(value -> DomainEventPublisher.upsert("COST_CENTER", value));
+        return ucMetadata.updateCostCenter(id, cmd);
     }
 
     public Result<Void, DomainError> deleteCostCenter(UUID id) {
-        return ucMetadata
-                .deleteCostCenter(id)
-                .ifSuccess(ignored -> DomainEventPublisher.delete("COST_CENTER", id.toString()));
+        return ucMetadata.deleteCostCenter(id);
     }
 
     // ── Tag operations ─────────────────────────────────────────────
@@ -197,21 +165,15 @@ public class MonetaryContext implements Facade {
     }
 
     public Result<Tag, DomainError> createTag(TagCommand cmd) {
-        return ucMetadata
-                .createTag(cmd)
-                .ifSuccess(value -> DomainEventPublisher.upsert("TAG", value));
+        return ucMetadata.createTag(cmd);
     }
 
     public Result<Tag, DomainError> updateTag(UUID id, TagCommand cmd) {
-        return ucMetadata
-                .updateTag(id, cmd)
-                .ifSuccess(value -> DomainEventPublisher.upsert("TAG", value));
+        return ucMetadata.updateTag(id, cmd);
     }
 
     public Result<Void, DomainError> deleteTag(UUID id) {
-        return ucMetadata
-                .deleteTag(id)
-                .ifSuccess(ignored -> DomainEventPublisher.delete("TAG", id.toString()));
+        return ucMetadata.deleteTag(id);
     }
 
     // ── Closing operations ─────────────────────────────────────────

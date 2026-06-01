@@ -6,11 +6,9 @@ import br.commons.framework.message.MessageResult;
 import br.community.context.monetary._0_domain.event.MonetaryEvent;
 import br.community.context.monetary._0_domain.model.MonetaryBalance;
 import br.community.context.monetary._0_domain.model.MonthlyBalance;
-import br.community.context.monetary._1_application.AccountView;
 import br.community.context.monetary._1_application.service.AccountService;
 import br.community.context.monetary._1_application.service.BalanceService;
 import br.community.context.monetary._1_application.service.TransactionService;
-import br.community.context.shared._1_application.DomainEventPublisher;
 import lombok.RequiredArgsConstructor;
 import lombok.val;
 import org.jspecify.annotations.NullMarked;
@@ -33,19 +31,19 @@ public class TransactionEventListener {
     @MessageListener
     public MessageResult onTransaction(MonetaryEvent.TransactionCreated transaction) {
         triggerRecalculate(transaction.transaction().accountId());
-        return MessageResult.AVAILABLE;
+        return MessageResult.CONSUMED;
     }
 
     @MessageListener
     public MessageResult onTransaction(MonetaryEvent.TransactionUpdated transaction) {
         triggerRecalculate(transaction.transaction().accountId());
-        return MessageResult.AVAILABLE;
+        return MessageResult.CONSUMED;
     }
 
     @MessageListener
     public MessageResult onTransaction(MonetaryEvent.TransactionDeleted transaction) {
         triggerRecalculate(transaction.transaction().accountId());
-        return MessageResult.AVAILABLE;
+        return MessageResult.CONSUMED;
     }
 
     @MessageListener
@@ -62,7 +60,7 @@ public class TransactionEventListener {
         balanceService.findByAccount(accountId)
                 .forEach(b -> balanceService.deleteById(b.id()));
 
-        return MessageResult.AVAILABLE;
+        return MessageResult.CONSUMED;
     }
 
     private void triggerRecalculate(UUID accountId) {
@@ -75,12 +73,6 @@ public class TransactionEventListener {
                 .toList();
 
         recalculateBalance(accountId, initialBalance, transactions);
-
-        // Push the refreshed current balance to the read screens (cadastro, visão geral),
-        // which cache accounts over SSE and otherwise never see transaction-driven changes.
-        var currentBalance = initialBalance;
-        for (val b : transactions) currentBalance = currentBalance.add(b.amount());
-        DomainEventPublisher.upsert("ACCOUNT", AccountView.of(account, currentBalance));
     }
 
     private void recalculateBalance(UUID accountId, BigDecimal initialBalance, List<MonetaryBalance> transactions) {

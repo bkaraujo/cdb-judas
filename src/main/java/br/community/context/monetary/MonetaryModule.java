@@ -116,11 +116,8 @@ public class MonetaryModule {
     // ── Event Listeners ──────────────────────────────────────────
 
     @Bean
-    AccountEventListener accountEventListener(
-            AccountService accountService,
-            TransactionService transactionService
-    ) {
-        return new AccountEventListener(accountService, transactionService);
+    AccountEventListener accountEventListener(AccountService accountService) {
+        return new AccountEventListener(accountService);
     }
 
     @Bean

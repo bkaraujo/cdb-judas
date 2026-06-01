@@ -1,26 +1,28 @@
 package br.community.context.monetary._1_application.event;
 
+import br.commons.MessageBus;
 import br.commons.framework.message.MessageListener;
 import br.commons.framework.message.MessageResult;
 import br.community.context.monetary._0_domain.event.MonetaryEvent;
 import br.community.context.monetary._0_domain.model.MonetaryAccount;
-import br.community.context.monetary._1_application.AccountView;
 import br.community.context.monetary._1_application.service.AccountService;
-import br.community.context.monetary._1_application.service.TransactionService;
-import br.community.context.shared._1_application.DomainEventPublisher;
 import lombok.RequiredArgsConstructor;
 import lombok.val;
 import org.jspecify.annotations.NullMarked;
-
-import java.math.BigDecimal;
 
 @NullMarked
 @RequiredArgsConstructor
 public class AccountEventListener {
 
     private final AccountService accountService;
-    private final TransactionService transactionService;
 
+    /**
+     * Propaga a cor da conta para os cartões de crédito vinculados. Cada cartão alterado re-emite
+     * {@link MonetaryEvent.AccountUpdated} — a camada de feature converte esse evento em SSE.
+     * Retorna {@code CONSUMED} para não interromper a cadeia: outros assinantes (inclusive o stream
+     * da feature) também precisam receber o evento. A recursão termina porque um cartão não possui
+     * cartões vinculados.
+     */
     @MessageListener
     public MessageResult onAccountUpdated(MonetaryEvent.AccountUpdated event) {
         val account = event.account();
@@ -33,17 +35,10 @@ public class AccountEventListener {
                 );
                 updated.additionalInfo().putAll(card.additionalInfo());
                 val saved = accountService.save(updated);
-                DomainEventPublisher.upsert("ACCOUNT", withCurrentBalance(saved));
+                MessageBus.submit(new MonetaryEvent.AccountUpdated(saved));
             }
         }
 
-        return MessageResult.AVAILABLE;
-    }
-
-    private AccountView withCurrentBalance(MonetaryAccount account) {
-        val transactions = transactionService.findByAccount(account.id());
-        var sum = BigDecimal.ZERO;
-        for (val t : transactions) sum = sum.add(t.amount());
-        return AccountView.of(account, account.balance().add(sum));
+        return MessageResult.CONSUMED;
     }
 }

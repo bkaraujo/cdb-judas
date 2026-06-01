@@ -1,4 +1,4 @@
-package br.community.context.shared._1_application;
+package br.community.feature.system.stream;
 
 import org.jspecify.annotations.NullMarked;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;

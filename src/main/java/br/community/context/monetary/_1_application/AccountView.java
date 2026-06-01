@@ -12,7 +12,7 @@ import java.util.UUID;
 /**
  * Read projection of an account carrying both the persisted opening balance
  * ({@code balance}) and the derived {@code currentBalance} (opening + every
- * transaction). Used as the SSE payload so read screens (cadastro, visão geral)
+ * transaction). Used as the domain event payload so read screens (cadastro, visão geral)
  * stay in sync with the statement, which derives the same figure.
  */
 @NullMarked

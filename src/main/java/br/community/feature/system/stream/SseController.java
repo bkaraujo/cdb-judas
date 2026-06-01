@@ -1,6 +1,5 @@
-package br.community.context.shared._2_infrastructure.web;
+package br.community.feature.system.stream;
 
-import br.community.context.shared._1_application.SSE;
 import lombok.RequiredArgsConstructor;
 import org.jspecify.annotations.NullMarked;
 import org.springframework.http.MediaType;
