@@ -3,6 +3,7 @@ package br.community.context.monetary;
 import br.commons.MessageBus;
 import br.commons.framework.persistence.Storage;
 import br.community.context.monetary._0_domain.repository.*;
+import br.community.context.monetary._1_application.event.AccountEventListener;
 import br.community.context.monetary._1_application.event.TransactionEventListener;
 import br.community.context.monetary._1_application.service.*;
 import br.community.context.monetary._2_infrastructure.*;
@@ -115,6 +116,14 @@ public class MonetaryModule {
     // ── Event Listeners ──────────────────────────────────────────
 
     @Bean
+    AccountEventListener accountEventListener(
+            AccountService accountService,
+            TransactionService transactionService
+    ) {
+        return new AccountEventListener(accountService, transactionService);
+    }
+
+    @Bean
     TransactionEventListener transactionEventListener(
             AccountService accountService,
             BalanceService balanceService,
@@ -130,8 +139,10 @@ public class MonetaryModule {
             AccountUseCase ucAccount,
             MetadataUseCase ucMetadata,
             TransactionUseCase ucTransaction,
+            AccountEventListener accountEventListener,
             TransactionEventListener transactionEventListener
     ) {
+        MessageBus.subscribe(accountEventListener);
         MessageBus.subscribe(transactionEventListener);
         return new MonetaryContext(ucAccount, ucTransaction, ucMetadata);
     }

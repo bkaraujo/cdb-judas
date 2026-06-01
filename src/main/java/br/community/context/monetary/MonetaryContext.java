@@ -8,6 +8,7 @@ import br.community.context.monetary._1_application.command.*;
 import br.community.context.shared._0_domain.model.DomainError;
 import br.community.context.shared._1_application.DomainEventPublisher;
 import lombok.RequiredArgsConstructor;
+import lombok.val;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 
@@ -57,8 +58,8 @@ public class MonetaryContext implements Facade {
     /** Builds the SSE payload for an account, deriving the current balance
      *  (opening balance + every transaction) so live updates match the statement. */
     private AccountView withCurrentBalance(MonetaryAccount account) {
-        List<MonetaryTransaction> transactions = ucTransaction.listTransactions().getOrElse(List.of());
-        BigDecimal sum = BigDecimal.ZERO;
+        val transactions = ucTransaction.listTransactions().getOrElse(List.of());
+        var sum = BigDecimal.ZERO;
         for (MonetaryTransaction t : transactions) {
             if (account.id().equals(t.accountId())) sum = sum.add(t.amount());
         }

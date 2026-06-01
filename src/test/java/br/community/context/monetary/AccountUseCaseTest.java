@@ -162,3 +162,4 @@ class AccountUseCaseTest {
         assertEquals(1, ((Result.Success<java.util.List<MonetaryAccount>, DomainError>) r).value().size());
     }
 }
+

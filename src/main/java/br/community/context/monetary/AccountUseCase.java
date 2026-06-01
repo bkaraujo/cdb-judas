@@ -63,16 +63,18 @@ public class AccountUseCase {
                 .flatMap(existing -> {
                     if (AccountType.CREDIT_CARD.name().equalsIgnoreCase(cmd.type())) {
                         if (cmd.linkedAccountId() == null) {
-                            return Result.<MonetaryAccount>failure(new DomainError.BusinessRule("Credit card must be linked to a checking account"));
+                            return Result.failure(new DomainError.BusinessRule("Credit card must be linked to a checking account"));
                         }
                         val validation = validateCreditCardAccount(cmd.linkedAccountId(), cmd.color());
-                        if (validation instanceof Result.Failure<Void, DomainError>(var error)) return Result.<MonetaryAccount>failure(error);
+                        if (validation instanceof Result.Failure<Void, DomainError>(var error)) return Result.failure(error);
                     }
                     val updated = accountService.save(parse(accountId, cmd));
                     MessageBus.submit(new MonetaryEvent.AccountUpdated(updated));
-                    return Result.<MonetaryAccount, DomainError>success(updated);
+                    return Result.success(updated);
                 });
     }
+
+
 
     public Result<Void, DomainError> deleteAccount(UUID accountId) {
         return accountService.deleteById(accountId)
