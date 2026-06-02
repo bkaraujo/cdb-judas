@@ -1,0 +1,27 @@
+@startuml
+title Statement Routes
+
+actor Client
+participant "StatementResource" as Resource
+participant "StatementService" as Service
+
+== GET /api/{uuid}/accounts/{accountID}/statements/{yyyyMM} ==
+Client -> Resource: GET /api/{uuid}/accounts/{accountID}/statements/{yyyyMM}?status={status}
+activate Resource
+Resource -> Service: list(accountID, month, year, status)
+activate Service
+Service --> Resource: Result<List<StatementItem>>
+deactivate Service
+Resource --> Client: 200 OK (List<StatementItem>)
+deactivate Resource
+
+== GET /api/{uuid}/accounts/statements/{yyyyMM} ==
+Client -> Resource: GET /api/{uuid}/accounts/statements/{yyyyMM}?status={status}
+activate Resource
+Resource -> Service: summary(month, year, status)
+activate Service
+Service --> Resource: Result<List<StatementSummary>>
+deactivate Service
+Resource --> Client: 200 OK (List<StatementSummary>)
+deactivate Resource
+@enduml

@@ -1,0 +1,64 @@
+@startuml
+title Tag Routes
+
+actor Client
+participant "TagResource" as Resource
+participant "MonetaryContext\n(Facade)" as Facade
+participant "MetadataUseCase" as UseCase
+
+== GET /api/{uuid}/tags ==
+Client -> Resource: GET /api/{uuid}/tags
+activate Resource
+Resource -> Facade: listTags()
+activate Facade
+Facade -> UseCase: listTags()
+activate UseCase
+UseCase --> Facade: Result<List<Tag>>
+deactivate UseCase
+Facade --> Resource: Result<List<Tag>>
+deactivate Facade
+Resource --> Client: 200 OK (List<Tag>)
+deactivate Resource
+
+== POST /api/{uuid}/tags ==
+Client -> Resource: POST /api/{uuid}/tags (TagRequest)
+activate Resource
+Resource -> Facade: createTag(TagCommand)
+activate Facade
+Facade -> UseCase: createTag(TagCommand)
+activate UseCase
+UseCase --> Facade: Result<Tag>
+deactivate UseCase
+Facade --> Resource: Result<Tag>
+deactivate Facade
+Resource --> Client: 201 Created (Tag)
+deactivate Resource
+
+== PATCH /api/{uuid}/tags/{id} ==
+Client -> Resource: PATCH /api/{uuid}/tags/{id} (TagRequest)
+activate Resource
+Resource -> Facade: updateTag(id, TagCommand)
+activate Facade
+Facade -> UseCase: updateTag(id, TagCommand)
+activate UseCase
+UseCase --> Facade: Result<Tag>
+deactivate UseCase
+Facade --> Resource: Result<Tag>
+deactivate Facade
+Resource --> Client: 200 OK (Tag)
+deactivate Resource
+
+== DELETE /api/{uuid}/tags/{id} ==
+Client -> Resource: DELETE /api/{uuid}/tags/{id}
+activate Resource
+Resource -> Facade: deleteTag(id)
+activate Facade
+Facade -> UseCase: deleteTag(id)
+activate UseCase
+UseCase --> Facade: Result<Void>
+deactivate UseCase
+Facade --> Resource: Result<Void>
+deactivate Facade
+Resource --> Client: 204 No Content
+deactivate Resource
+@enduml

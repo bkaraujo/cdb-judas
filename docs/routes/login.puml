@@ -1,0 +1,35 @@
+@startuml
+title Login Routes
+
+actor Client
+participant "LoginResource" as Resource
+participant "UserDetailsService" as UserDetailsService
+participant "PasswordEncoder" as PasswordEncoder
+participant "AccessTokenStore" as AccessTokenStore
+
+== POST /login ==
+Client -> Resource: POST /login (LoginRequest)
+activate Resource
+
+Resource -> UserDetailsService: loadUserByUsername(request.username())
+activate UserDetailsService
+UserDetailsService --> Resource: AuthUserDetails
+deactivate UserDetailsService
+
+Resource -> PasswordEncoder: matches(request.password(), userDetails.getPassword())
+activate PasswordEncoder
+PasswordEncoder --> Resource: boolean
+deactivate PasswordEncoder
+
+alt valid password
+    Resource -> AccessTokenStore: issue(userDetails.getId())
+    activate AccessTokenStore
+    AccessTokenStore --> Resource: String (token)
+    deactivate AccessTokenStore
+    Resource --> Client: 200 OK (Headers: X-Access-Token, X-User-Id)
+else invalid password or user not found
+    Resource --> Client: 401 Unauthorized
+end
+
+deactivate Resource
+@enduml

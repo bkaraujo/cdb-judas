@@ -1,0 +1,106 @@
+@startuml
+title Transaction Routes
+
+actor Client
+participant "TransactionResource" as Resource
+participant "MonetaryContext\n(Facade)" as Facade
+participant "TransactionUseCase" as UseCase
+
+== GET /api/{uuid}/accounts/transactions ==
+Client -> Resource: GET /api/{uuid}/accounts/transactions
+activate Resource
+Resource -> Facade: listTransactions()
+activate Facade
+Facade -> UseCase: listTransactions()
+activate UseCase
+UseCase --> Facade: Result<List<MonetaryTransaction>>
+deactivate UseCase
+Facade --> Resource: Result<List<MonetaryTransaction>>
+deactivate Facade
+Resource --> Client: 200 OK (List<Transaction>)
+deactivate Resource
+
+== POST /api/{uuid}/accounts/transactions/transfer ==
+Client -> Resource: POST /api/{uuid}/accounts/transactions/transfer (TransferRequest)
+activate Resource
+Resource -> Facade: createTransfer(from, to, date, amount)
+activate Facade
+Facade -> UseCase: createTransfer(...)
+activate UseCase
+UseCase --> Facade: Result<MonetaryTransaction>
+deactivate UseCase
+Facade --> Resource: Result<MonetaryTransaction>
+deactivate Facade
+Resource --> Client: 201 Created (Transaction)
+deactivate Resource
+
+== GET /api/{uuid}/accounts/{accId}/transactions ==
+Client -> Resource: GET /api/{uuid}/accounts/{accId}/transactions
+activate Resource
+Resource -> Facade: listTransactions()
+activate Facade
+Facade -> UseCase: listTransactions()
+activate UseCase
+UseCase --> Facade: Result<List<MonetaryTransaction>>
+deactivate UseCase
+Facade --> Resource: Result<List<MonetaryTransaction>>
+deactivate Facade
+Resource --> Client: 200 OK (List<Transaction>)
+deactivate Resource
+
+== POST /api/{uuid}/accounts/{accId}/transactions ==
+Client -> Resource: POST /api/{uuid}/accounts/{accId}/transactions (TransactionRequest)
+activate Resource
+Resource -> Facade: createTransaction(TransactionCommand)
+activate Facade
+Facade -> UseCase: createTransaction(TransactionCommand)
+activate UseCase
+UseCase --> Facade: Result<MonetaryTransaction>
+deactivate UseCase
+Facade --> Resource: Result<MonetaryTransaction>
+deactivate Facade
+Resource --> Client: 201 Created (Transaction)
+deactivate Resource
+
+== PATCH /api/{uuid}/accounts/{accId}/transactions/{txId} ==
+Client -> Resource: PATCH /api/{uuid}/accounts/{accId}/transactions/{txId} (TransactionRequest)
+activate Resource
+Resource -> Facade: updateTransaction(txId, TransactionCommand)
+activate Facade
+Facade -> UseCase: updateTransaction(txId, TransactionCommand)
+activate UseCase
+UseCase --> Facade: Result<MonetaryTransaction>
+deactivate UseCase
+Facade --> Resource: Result<MonetaryTransaction>
+deactivate Facade
+Resource --> Client: 200 OK (Transaction)
+deactivate Resource
+
+== PATCH /api/{uuid}/accounts/{accId}/transactions/{txId}/status ==
+Client -> Resource: PATCH /api/{uuid}/accounts/{accId}/transactions/{txId}/status (PatchStatusRequest)
+activate Resource
+Resource -> Facade: updateTransactionStatus(txId, status, paymentDate)
+activate Facade
+Facade -> UseCase: updateTransactionStatus(...)
+activate UseCase
+UseCase --> Facade: Result<MonetaryTransaction>
+deactivate UseCase
+Facade --> Resource: Result<MonetaryTransaction>
+deactivate Facade
+Resource --> Client: 200 OK (Transaction)
+deactivate Resource
+
+== DELETE /api/{uuid}/accounts/{accId}/transactions/{txId} ==
+Client -> Resource: DELETE /api/{uuid}/accounts/{accId}/transactions/{txId}?mode={mode}
+activate Resource
+Resource -> Facade: deleteTransaction(txId, mode)
+activate Facade
+Facade -> UseCase: deleteTransaction(txId, mode)
+activate UseCase
+UseCase --> Facade: Result<Void>
+deactivate UseCase
+Facade --> Resource: Result<Void>
+deactivate Facade
+Resource --> Client: 204 No Content
+deactivate Resource
+@enduml

@@ -1,0 +1,50 @@
+@startuml
+title Closing Routes
+
+actor Client
+participant "ClosingResource" as Resource
+participant "MonetaryContext\n(Facade)" as Facade
+participant "MetadataUseCase" as UseCase
+
+== GET /api/{uuid}/accounts/closing ==
+Client -> Resource: GET /api/{uuid}/accounts/closing
+activate Resource
+Resource -> Facade: getClosingPeriod()
+activate Facade
+Facade -> UseCase: getClosingPeriod()
+activate UseCase
+UseCase --> Facade: Optional<YearMonth>
+deactivate UseCase
+Facade --> Resource: Optional<YearMonth>
+deactivate Facade
+Resource --> Client: 200 OK (ClosingResponse)
+deactivate Resource
+
+== POST /api/{uuid}/accounts/closing ==
+Client -> Resource: POST /api/{uuid}/accounts/closing (ClosingRequest)
+activate Resource
+Resource -> Facade: setClosingPeriod(YearMonth)
+activate Facade
+Facade -> UseCase: setClosingPeriod(YearMonth)
+activate UseCase
+UseCase --> Facade: YearMonth
+deactivate UseCase
+Facade --> Resource: YearMonth
+deactivate Facade
+Resource --> Client: 200 OK (ClosingResponse)
+deactivate Resource
+
+== DELETE /api/{uuid}/accounts/closing ==
+Client -> Resource: DELETE /api/{uuid}/accounts/closing
+activate Resource
+Resource -> Facade: clearClosingPeriod()
+activate Facade
+Facade -> UseCase: clearClosingPeriod()
+activate UseCase
+UseCase --> Facade: void
+deactivate UseCase
+Facade --> Resource: void
+deactivate Facade
+Resource --> Client: 204 No Content
+deactivate Resource
+@enduml

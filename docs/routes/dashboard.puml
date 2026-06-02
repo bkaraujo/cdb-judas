@@ -1,0 +1,17 @@
+@startuml
+title Dashboard Routes
+
+actor Client
+participant "DashboardResource" as Resource
+participant "DashboardService" as Service
+
+== GET /api/{uuid}/dashboard/result ==
+Client -> Resource: GET /api/{uuid}/dashboard/result?month={m}&year={y}
+activate Resource
+Resource -> Service: getMonthlyResult(month, year)
+activate Service
+Service --> Resource: Result<MonthlyResult>
+deactivate Service
+Resource --> Client: 200 OK (MonthlyResult)
+deactivate Resource
+@enduml

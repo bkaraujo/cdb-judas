@@ -1,0 +1,37 @@
+@startuml
+title Transaction Import Routes
+
+actor Client
+participant "TransactionImportResource" as Resource
+participant "StatementImportUseCase" as UseCase
+
+== POST /api/{uuid}/accounts/transactions/import/preview ==
+Client -> Resource: POST /api/{uuid}/accounts/transactions/import/preview (MultipartFile)
+activate Resource
+Resource -> UseCase: preview(bytes, password, accountId)
+activate UseCase
+UseCase --> Resource: Result<ImportPreviewOutcome>
+deactivate UseCase
+Resource --> Client: 200 OK (ImportPreviewResponse or BankStatementPreviewResponse)
+deactivate Resource
+
+== POST /api/{uuid}/accounts/transactions/import/confirm ==
+Client -> Resource: POST /api/{uuid}/accounts/transactions/import/confirm (ImportConfirmRequest)
+activate Resource
+Resource -> UseCase: confirm(ImportConfirmCommand)
+activate UseCase
+UseCase --> Resource: Result<ImportConfirmResponse>
+deactivate UseCase
+Resource --> Client: 200 OK (ImportConfirmResponse)
+deactivate Resource
+
+== POST /api/{uuid}/accounts/transactions/import/statement/confirm ==
+Client -> Resource: POST /api/{uuid}/accounts/transactions/import/statement/confirm (BankStatementConfirmRequest)
+activate Resource
+Resource -> UseCase: confirmStatement(BankStatementConfirmCommand)
+activate UseCase
+UseCase --> Resource: Result<ImportConfirmResponse>
+deactivate UseCase
+Resource --> Client: 200 OK (ImportConfirmResponse)
+deactivate Resource
+@enduml

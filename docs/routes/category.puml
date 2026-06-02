@@ -1,0 +1,68 @@
+@startuml
+title Category Routes
+
+actor Client
+participant "CategoryResource" as Resource
+participant "MonetaryContext\n(Facade)" as Facade
+participant "MetadataUseCase" as UseCase
+
+== GET /api/{uuid}/categories ==
+Client -> Resource: GET /api/{uuid}/categories
+activate Resource
+Resource -> Facade: listCategories()
+activate Facade
+Facade -> UseCase: listCategories()
+activate UseCase
+UseCase --> Facade: Result<List<MonetaryCategory>>
+deactivate UseCase
+Facade --> Resource: Result<List<MonetaryCategory>>
+deactivate Facade
+Resource --> Client: 200 OK (List<Category>)
+deactivate Resource
+
+== POST /api/{uuid}/categories ==
+Client -> Resource: POST /api/{uuid}/categories (CreateRequest)
+activate Resource
+Resource -> Facade: createCategory(CategoryCommand)
+activate Facade
+Facade -> UseCase: createCategory(CategoryCommand)
+activate UseCase
+UseCase --> Facade: Result<MonetaryCategory>
+deactivate UseCase
+Facade --> Resource: Result<MonetaryCategory>
+deactivate Facade
+Resource --> Client: 201 Created (Category)
+deactivate Resource
+
+== PATCH /api/{uuid}/categories/{id} ==
+Client -> Resource: PATCH /api/{uuid}/categories/{id} (UpdateRequest)
+activate Resource
+Resource -> Facade: findCategoryById(id)
+activate Facade
+Facade --> Resource: Result<MonetaryCategory>
+deactivate Facade
+Resource -> Facade: updateCategory(id, CategoryCommand)
+activate Facade
+Facade -> UseCase: updateCategory(id, CategoryCommand)
+activate UseCase
+UseCase --> Facade: Result<MonetaryCategory>
+deactivate UseCase
+Facade --> Resource: Result<MonetaryCategory>
+deactivate Facade
+Resource --> Client: 200 OK (Category)
+deactivate Resource
+
+== DELETE /api/{uuid}/categories/{id} ==
+Client -> Resource: DELETE /api/{uuid}/categories/{id}
+activate Resource
+Resource -> Facade: deleteCategory(id)
+activate Facade
+Facade -> UseCase: deleteCategory(id)
+activate UseCase
+UseCase --> Facade: Result<Void>
+deactivate UseCase
+Facade --> Resource: Result<Void>
+deactivate Facade
+Resource --> Client: 204 No Content
+deactivate Resource
+@enduml
