@@ -1,4 +1,4 @@
-package br.community.feature.user.accounts.statementimport;
+package br.community.feature.user.accounts.statementimport.preview;
 
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
@@ -17,7 +17,7 @@ import java.time.MonthDay;
 @NullMarked
 public record ParsedStatementLine(
         String last4,
-        MonthDay purchaseDate,
+        MonthDay date,
         String description,
         BigDecimal amount,
         @Nullable Integer installmentNumber,

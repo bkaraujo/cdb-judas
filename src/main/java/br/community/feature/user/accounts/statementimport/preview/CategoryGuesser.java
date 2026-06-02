@@ -1,6 +1,7 @@
-package br.community.feature.user.accounts.statementimport;
+package br.community.feature.user.accounts.statementimport.preview;
 
 import br.community.context.monetary._0_domain.model.MonetaryTransaction;
+import br.community.feature.user.accounts.statementimport.GroupSignature;
 import org.jspecify.annotations.NullMarked;
 
 import java.time.LocalDate;

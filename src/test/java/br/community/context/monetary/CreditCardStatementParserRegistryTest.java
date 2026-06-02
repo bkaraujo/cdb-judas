@@ -1,9 +1,9 @@
 package br.community.context.monetary;
 
-import br.community.feature.user.accounts.statementimport.BtgCreditCardStatementParser;
-import br.community.feature.user.accounts.statementimport.CreditCardStatementParserRegistry;
-import br.community.feature.user.accounts.statementimport.Issuer;
-import br.community.feature.user.accounts.statementimport.SantanderCreditCardStatementParser;
+import br.community.feature.user.accounts.statementimport.provider.BtgCreditCardStatementParser;
+import br.community.feature.user.accounts.statementimport.preview.CreditCardStatementParserRegistry;
+import br.community.feature.user.accounts.statementimport.preview.Issuer;
+import br.community.feature.user.accounts.statementimport.provider.SantanderCreditCardStatementParser;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;

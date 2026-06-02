@@ -3,6 +3,10 @@ package br.community.feature.user.accounts.statementimport;
 import br.commons.pdf.PdfBoxTextExtractor;
 import br.commons.pdf.PdfTextExtractor;
 import br.community.context.monetary.MonetaryContext;
+import br.community.feature.user.accounts.statementimport.preview.*;
+import br.community.feature.user.accounts.statementimport.provider.BtgBankStatementParser;
+import br.community.feature.user.accounts.statementimport.provider.BtgCreditCardStatementParser;
+import br.community.feature.user.accounts.statementimport.provider.SantanderCreditCardStatementParser;
 import org.jspecify.annotations.NullMarked;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -27,6 +31,11 @@ public class StatementImportModule {
     }
 
     @Bean
+    DocumentTypeDetector documentTypeDetector() {
+        return new DocumentTypeDetector();
+    }
+
+    @Bean
     IssuerDetector issuerDetector() {
         return new IssuerDetector();
     }
@@ -35,6 +44,11 @@ public class StatementImportModule {
     CreditCardStatementParserRegistry creditCardStatementParserRegistry() {
         return new CreditCardStatementParserRegistry(
                 new SantanderCreditCardStatementParser(), new BtgCreditCardStatementParser());
+    }
+
+    @Bean
+    BankStatementParserRegistry bankStatementParserRegistry() {
+        return new BankStatementParserRegistry(new BtgBankStatementParser());
     }
 
     @Bean
@@ -66,15 +80,17 @@ public class StatementImportModule {
     StatementImportUseCase statementImportUseCase(
             MonetaryContext monetaryContext,
             PdfTextExtractor extractor,
+            DocumentTypeDetector documentTypeDetector,
             IssuerDetector issuerDetector,
             CreditCardStatementParserRegistry parsers,
+            BankStatementParserRegistry bankParsers,
             CardMatcher cardMatcher,
             InstallmentExpander installmentExpander,
             GroupSignature groupSignature,
             CategoryGuesser categoryGuesser,
             Clock clock) {
         return new StatementImportUseCase(
-                monetaryContext, extractor, issuerDetector, parsers, cardMatcher,
-                installmentExpander, groupSignature, categoryGuesser, clock, MAX_STATEMENT_FILE_BYTES);
+                monetaryContext, extractor, documentTypeDetector, issuerDetector, parsers, bankParsers,
+                cardMatcher, installmentExpander, groupSignature, categoryGuesser, clock, MAX_STATEMENT_FILE_BYTES);
     }
 }

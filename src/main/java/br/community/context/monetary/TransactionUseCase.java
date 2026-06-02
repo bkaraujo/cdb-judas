@@ -210,12 +210,15 @@ public class TransactionUseCase {
         return Result.success(savedOut);
     }
 
-    /** Persists an already-resolved imported charge (expense sign applied here) and emits the
-     *  creation event so balances recalc. Used by the statement-import feature via the facade. */
+    /** Persists an already-resolved imported movement (sign applied here from {@code type}) and emits
+     *  the creation event so balances recalc. Used by the statement-import feature via the facade. */
     public Result<MonetaryTransaction, DomainError> createImported(ImportedTransactionCommand cmd) {
+        final BigDecimal signed = "income".equals(cmd.type())
+                ? cmd.amount().abs()
+                : cmd.amount().abs().negate();
         val tx = new MonetaryTransaction(
-                UUID.randomUUID(), cmd.description(), cmd.amount().abs().negate(), cmd.date(),
-                cmd.categoryId(), cmd.accountId(), cmd.status(), "expense", null,
+                UUID.randomUUID(), cmd.description(), signed, cmd.date(),
+                cmd.categoryId(), cmd.accountId(), cmd.status(), cmd.type(), null,
                 cmd.groupId(), cmd.installmentNumber(), cmd.totalInstallments());
         val saved = transactionService.save(tx);
         MessageBus.submit(new MonetaryEvent.TransactionCreated(saved));

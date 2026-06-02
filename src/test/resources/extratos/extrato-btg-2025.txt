@@ -1,0 +1,783 @@
+Extrato de conta corrente
+Cliente:
+CPF:
+Agência:
+Conta:
+Período do extrato:
+Olá Bruno!
+008.604.931-30
+20
+324255-8
+01/06/2026 15h48
+Lançamentos: R$ 69,64
+Este é o extrato da sua conta corrente BTG Pactual
+01/01/2025 a 31/12/2025
+Bruno Da Silva Perez Araujo
+Saldo final
+Data e hora Categoria Transação Descrição Valor
+02/01/2025 08h08 Saúde Pagamento de boleto Odontoprev -R$ 161,43
+02/01/2025 08h21
+Impostos e
+Tributos
+IOF limite da conta BTG Pactual -R$ 2,46
+02/01/2025 08h21
+Crédito e
+Financiamento
+Juros - limite da conta BTG Pactual -R$ 4,44
+02/01/2025 23h59 Saldo Diário R$ 29,95
+09/01/2025 15h10 Transferência Pix recebido Vanessa Thaís Ferreira De Lima Krohn R$ 45,00
+09/01/2025 15h34 Transferência Pix recebido Sheila Pereira Horn R$ 60,00
+09/01/2025 23h59 Saldo Diário R$ 134,95
+12/01/2025 15h01 Transporte Compra no débito autorizada Fib Park -R$ 10,40
+12/01/2025 23h59 Saldo Diário R$ 124,55
+13/01/2025 17h18 Investimentos Transferência recebida Bruno Da Silva Perez Araújo R$ 1.200,00
+13/01/2025 17h19 Investimentos Transferência recebida Bruno Da Silva Perez Araújo R$ 700,00
+13/01/2025 17h20 Contas
+Pagamento de fatura do cartão
+Fatura do cartão BTG Pactual -R$ 1.992,94
+13/01/2025 23h59 Saldo Diário R$ 31,61
+14/01/2025 14h23 Compras Compra no débito autorizada Riachuelo -R$ 100,34
+14/01/2025 14h43 Investimentos Transferência recebida Bruno Da Silva Perez Araújo R$ 100,00
+14/01/2025 23h59 Saldo Diário R$ 31,27
+19/01/2025 12h51 Transferência Pix recebido Leiva Martins De Souza Venancio Pereira R$ 40,00
+19/01/2025 23h59 Saldo Diário R$ 71,27
+22/01/2025 20h49 Transferência Pix enviado Luciene Santos E Franca -R$ 481,95
+22/01/2025 23h59 Saldo Diário -R$ 410,68
+24/01/2025 09h23 Transferência Pix recebido Igreja Crista De Aguas Claras R$ 1.077,00
+24/01/2025 09h24 Compras Pagamento de boleto Safra Cfi -R$ 1.077,00
+24/01/2025 23h59 Saldo Diário -R$ 410,68
+31/01/2025 09h06 Saúde Pagamento de boleto Odontoprev -R$ 161,43
+31/01/2025 23h59 Saldo Diário -R$ 572,11
+03/02/2025 08h14
+Impostos e
+Tributos
+IOF limite da conta BTG Pactual -R$ 2,52
+03/02/2025 08h14
+Crédito e
+Financiamento
+Juros - limite da conta BTG Pactual -R$ 12,20
+03/02/2025 23h59 Saldo Diário -R$ 586,83
+05/02/2025 12h00 Investimentos Transferência recebida Bruno Da Silva Perez Araújo R$ 600,00
+05/02/2025 23h59 Saldo Diário R$ 13,17
+10/02/2025 18h38 Transferência Pix recebido Alipio Getulio Krohn Junior R$ 40,00
+Ouvidoria: 0800-722-0048 ou ouvidoria@btgpactual.com
+©BTG Pactual - CNPJ 30.306.294/0002-26
+Extrato de conta corrente
+Cliente:
+CPF:
+Agência:
+Conta:
+Período do extrato:
+Olá Bruno!
+008.604.931-30
+20
+324255-8
+01/06/2026 15h48
+Lançamentos: R$ 69,64
+Este é o extrato da sua conta corrente BTG Pactual
+01/01/2025 a 31/12/2025
+Bruno Da Silva Perez Araujo
+Saldo final
+Data e hora Categoria Transação Descrição Valor
+10/02/2025 19h48 Transferência Pix recebido Ludmila Tayná Ferreira De Lima Coelho R$ 40,00
+10/02/2025 23h59 Saldo Diário R$ 93,17
+15/02/2025 14h21 Transferência Pix recebido Aliete Silva Perez Araujo R$ 30,00
+15/02/2025 23h59 Saldo Diário R$ 123,17
+17/02/2025 11h17 Transferência Pix recebido Hr Representacoes Ltda - Me R$ 35.700,00
+17/02/2025 11h26 Transferência Pix recebido Israel Sousa Luz R$ 1.800,00
+17/02/2025 11h49 Contas
+Pagamento de fatura do cartão
+Fatura do cartão BTG Pactual -R$ 18.368,75
+17/02/2025 11h52 Transferência Pix enviado Bruno Da Silva Perez Araujo -R$ 10.500,00
+17/02/2025 11h53 Transferência Pix enviado Bruno Da Silva Perez Araujo -R$ 754,42
+17/02/2025 12h37 Saúde Pagamento de boleto Supermed Administradora De Beneficios Lt -R$ 2.517,00
+17/02/2025 12h38 Contas Pagamento de boleto Supergasbras Energia -R$ 20,77
+17/02/2025 12h58
+Outra Categoria
+Pagamento de conta Detran Df -R$ 119,50
+17/02/2025 12h58
+Outra Categoria
+Pagamento de conta Detran Df -R$ 102,00
+17/02/2025 12h59
+Outra Categoria
+Pagamento de conta Detran Df Renainf -R$ 104,13
+17/02/2025 12h59
+Outra Categoria
+Pagamento de conta Detran Df -R$ 273,34
+17/02/2025 13h11 Transferência Pagamento de boleto Santander -R$ 1.212,32
+17/02/2025 17h13 Contas Pagamento de conta CEB -R$ 323,89
+17/02/2025 23h59 Saldo Diário R$ 3.327,05
+18/02/2025 09h42 Transferência Pix enviado Departamento De Transito Do Distrito Federal -R$ 234,78
+18/02/2025 13h00 Transferência Pix enviado Rc Contratos E Consultoria Ltda -R$ 2,00
+18/02/2025 21h50 Transferência Pix recebido Mario Perez Araujo R$ 200,00
+18/02/2025 23h59 Saldo Diário R$ 3.290,27
+22/02/2025 17h46 Compras Pix enviado Deborah Guerra Alves -R$ 72,74
+22/02/2025 23h59 Saldo Diário R$ 3.217,55
+24/02/2025 11h15 Transferência Pix recebido Igreja Crista De Aguas Claras R$ 1.077,00
+24/02/2025 11h16 Compras Pagamento de boleto Safra Cfi -R$ 1.077,00
+24/02/2025 23h59 Saldo Diário R$ 3.217,57
+25/02/2025 18h36 Transferência Pix recebido Mario Perez Araujo R$ 850,00
+25/02/2025 23h59 Saldo Diário R$ 4.067,58
+26/02/2025 10h19 Transferência Pix enviado Cassia Pereira Pinto -R$ 850,00
+26/02/2025 23h59 Saldo Diário R$ 3.217,60
+Ouvidoria: 0800-722-0048 ou ouvidoria@btgpactual.com
+©BTG Pactual - CNPJ 30.306.294/0002-26
+Extrato de conta corrente
+Cliente:
+CPF:
+Agência:
+Conta:
+Período do extrato:
+Olá Bruno!
+008.604.931-30
+20
+324255-8
+01/06/2026 15h48
+Lançamentos: R$ 69,64
+Este é o extrato da sua conta corrente BTG Pactual
+01/01/2025 a 31/12/2025
+Bruno Da Silva Perez Araujo
+Saldo final
+Data e hora Categoria Transação Descrição Valor
+27/02/2025 10h42
+Outra Categoria
+Pix recebido Latam Tecnologia Instituicao De Pagamento R$ 3.465,81
+27/02/2025 22h15 Transferência Pix enviado Juan Carlos Fialho Sales -R$ 329,00
+27/02/2025 23h59 Saldo Diário R$ 6.354,42
+28/02/2025 08h07 Saúde Pagamento de boleto Odontoprev -R$ 161,43
+28/02/2025 23h59 Saldo Diário R$ 6.193,00
+05/03/2025 08h11
+Impostos e
+Tributos
+IOF limite da conta BTG Pactual -R$ 0,24
+05/03/2025 08h11
+Crédito e
+Financiamento
+Juros - limite da conta BTG Pactual -R$ 4,52
+05/03/2025 10h42 Educação Pagamento de boleto Educacao Infantil -R$ 758,16
+05/03/2025 10h43 Contas Pagamento de boleto Supergasbras Energia -R$ 28,67
+05/03/2025 23h59 Saldo Diário R$ 5.401,48
+06/03/2025 02h17
+Crédito e
+Financiamento
+Pix recebido Caixa Econômica Federal R$ 3.000,00
+06/03/2025 11h52 Contas
+Pagamento de fatura do cartão
+Fatura do cartão BTG Pactual -R$ 232,97
+06/03/2025 23h59 Saldo Diário R$ 8.168,53
+07/03/2025 09h02 Contas
+Pagamento de fatura do cartão
+Fatura do cartão BTG Pactual -R$ 808,37
+07/03/2025 14h16 Transferência Pix recebido Carmen Regina Panta Souza R$ 30,00
+07/03/2025 23h59 Saldo Diário R$ 7.390,18
+09/03/2025 10h34 Transferência Pix enviado Levi Ferreira De Brito -R$ 15,00
+09/03/2025 23h59 Saldo Diário R$ 7.375,20
+12/03/2025 08h56 Contas Pagamento de conta CAESB -R$ 127,24
+12/03/2025 23h59 Saldo Diário R$ 7.248,09
+14/03/2025 19h06 Transferência Pix enviado Cassia Pereira Pinto -R$ 850,00
+14/03/2025 23h59 Saldo Diário R$ 6.398,21
+15/03/2025 22h08 Transferência Pix enviado Marta Silva Dabadia -R$ 15,00
+15/03/2025 23h59 Saldo Diário R$ 6.383,21
+16/03/2025 16h18 Transferência Pix recebido Mario Perez Araujo R$ 500,00
+16/03/2025 23h59 Saldo Diário R$ 6.883,23
+19/03/2025 11h26 Educação Pix enviado Educacao Infantil -R$ 55,00
+19/03/2025 23h59 Saldo Diário R$ 6.828,41
+20/03/2025 06h20 Saúde Pagamento de boleto Supermed Administradora De Beneficios Lt -R$ 2.517,00
+20/03/2025 23h59 Saldo Diário R$ 4.311,47
+25/03/2025 13h53 Transferência Pix recebido Admar Souza Neto R$ 100,00
+Ouvidoria: 0800-722-0048 ou ouvidoria@btgpactual.com
+©BTG Pactual - CNPJ 30.306.294/0002-26
+Extrato de conta corrente
+Cliente:
+CPF:
+Agência:
+Conta:
+Período do extrato:
+Olá Bruno!
+008.604.931-30
+20
+324255-8
+01/06/2026 15h48
+Lançamentos: R$ 69,64
+Este é o extrato da sua conta corrente BTG Pactual
+01/01/2025 a 31/12/2025
+Bruno Da Silva Perez Araujo
+Saldo final
+Data e hora Categoria Transação Descrição Valor
+25/03/2025 23h59 Saldo Diário R$ 4.411,65
+31/03/2025 10h16 Compras Pagamento de boleto Safra Cfi -R$ 1.125,14
+31/03/2025 10h19 Transferência Pix recebido Igreja Crista De Aguas Claras R$ 1.125,14
+31/03/2025 23h59 Saldo Diário R$ 4.411,94
+01/04/2025 17h03 Educação Pagamento de boleto Educacao Infantil -R$ 758,16
+01/04/2025 17h03 Saúde Pagamento de boleto Odontoprev -R$ 161,43
+01/04/2025 17h04
+Outra Categoria
+Pagamento de boleto Ministerio Da Justica Dpto De Policia Rodoviari -R$ 104,13
+01/04/2025 17h04 Contas Pagamento de boleto Supergasbras Energia -R$ 30,32
+01/04/2025 23h59 Saldo Diário R$ 3.357,96
+06/04/2025 09h45 Transferência Pix enviado Anderson Cleiton Rodrigues -R$ 100,00
+06/04/2025 23h59 Saldo Diário R$ 3.258,16
+07/04/2025 07h25 Contas
+Pagamento de fatura do cartão
+Fatura do cartão BTG Pactual -R$ 2.228,60
+07/04/2025 12h06 Supermercado Pagamento de boleto Midway -R$ 35,84
+07/04/2025 23h59 Saldo Diário R$ 993,76
+08/04/2025 07h27 Educação Pix enviado Educacao Infantil -R$ 65,00
+08/04/2025 23h59 Saldo Diário R$ 928,76
+10/04/2025 11h06 Contas Pagamento de conta CAESB -R$ 121,38
+10/04/2025 23h59 Saldo Diário R$ 807,40
+12/04/2025 17h33 Investimentos Transferência enviada Bruno Da Silva Perez Araújo -R$ 800,00
+12/04/2025 23h59 Saldo Diário R$ 7,41
+14/04/2025 15h12 Compras Pagamento de boleto Safra Cfi -R$ 1.077,00
+14/04/2025 15h12 Transferência Pix recebido Igreja Crista De Aguas Claras R$ 1.077,00
+14/04/2025 23h59 Saldo Diário R$ 7,41
+16/04/2025 11h10 Transferência Pix recebido Rodrigo Da Silva Perez Araujo R$ 1.000,00
+16/04/2025 16h43 Saúde Pix recebido Supermed Administradora De Beneficios Ltda R$ 6.739,06
+16/04/2025 17h33 Investimentos Transferência enviada Bruno Da Silva Perez Araújo -R$ 7.500,00
+16/04/2025 23h59 Saldo Diário R$ 246,47
+19/04/2025 12h35 Transferência Pix recebido Erik Leandro De Freitas Santos R$ 24,80
+19/04/2025 23h59 Saldo Diário R$ 271,27
+21/04/2025 22h37 Transferência Pix recebido Erik Leandro De Freitas Santos R$ 71,00
+21/04/2025 22h48 Transferência Pix recebido Leiva Martins De Souza Venancio Pereira R$ 71,00
+21/04/2025 23h07 Transferência Pix recebido Alipio Getulio Krohn Junior R$ 71,00
+Ouvidoria: 0800-722-0048 ou ouvidoria@btgpactual.com
+©BTG Pactual - CNPJ 30.306.294/0002-26
+Extrato de conta corrente
+Cliente:
+CPF:
+Agência:
+Conta:
+Período do extrato:
+Olá Bruno!
+008.604.931-30
+20
+324255-8
+01/06/2026 15h48
+Lançamentos: R$ 69,64
+Este é o extrato da sua conta corrente BTG Pactual
+01/01/2025 a 31/12/2025
+Bruno Da Silva Perez Araujo
+Saldo final
+Data e hora Categoria Transação Descrição Valor
+21/04/2025 23h24 Transferência Pix recebido Juan Carlos Fialho Sales R$ 71,00
+21/04/2025 23h59 Saldo Diário R$ 555,27
+22/04/2025 13h47 Doações Pix enviado Associacao Evangelistica Seara Latina -R$ 522,50
+22/04/2025 14h10 Investimentos Transferência recebida Bruno Da Silva Perez Araújo R$ 800,36
+22/04/2025 23h59 Saldo Diário R$ 833,13
+23/04/2025 14h18 Contas Pix enviado Neoenergia Distribuicao Brasilia S A -R$ 268,11
+23/04/2025 23h59 Saldo Diário R$ 565,02
+25/04/2025 11h50 Transferência Pix enviado Kelly Cristina Vieira De Araújo -R$ 265,02
+25/04/2025 23h59 Saldo Diário R$ 300,00
+26/04/2025 10h18 Transferência Pix enviado Jaqueline Alves Martins De Andrade -R$ 15,00
+26/04/2025 23h59 Saldo Diário R$ 285,00
+28/04/2025 21h08 Transferência Pix enviado Larissa Tayana F De L Souza -R$ 85,00
+28/04/2025 23h59 Saldo Diário R$ 200,00
+30/04/2025 16h22 Transferência Pix recebido Erik Leandro De Freitas Santos R$ 207,00
+30/04/2025 23h59 Saldo Diário R$ 407,00
+01/05/2025 11h34 Transferência Pix enviado Maria Aparecida Da Fonseca -R$ 60,00
+01/05/2025 21h00 Transferência Pix enviado Janaina De Miranda Silverio -R$ 60,00
+01/05/2025 23h59 Saldo Diário R$ 287,00
+02/05/2025 08h42
+Outra Categoria
+Transferência recebida Caixa Econômica Federal R$ 1.628,43
+02/05/2025 08h51 Educação Pagamento de boleto Educacao Infantil -R$ 758,16
+02/05/2025 08h51 Saúde Pagamento de boleto Odontoprev -R$ 161,43
+02/05/2025 10h50 Transferência Pix enviado Kelly Cristina Vieira De Araújo -R$ 10,00
+02/05/2025 23h59 Saldo Diário R$ 985,84
+03/05/2025 11h46 Transferência Pix enviado Kelly Cristina Vieira De Araújo -R$ 500,00
+03/05/2025 23h59 Saldo Diário R$ 485,84
+05/05/2025 10h27 Viagem Pagamento de boleto Fg Trip -R$ 190,00
+05/05/2025 10h35 Viagem Pagamento de boleto Fg Trip -R$ 190,00
+05/05/2025 10h35 Contas Pagamento de boleto Supergasbras Energia -R$ 29,60
+05/05/2025 23h59 Saldo Diário R$ 76,24
+12/05/2025 16h08 Reembolso Pix recebido Cuponomia Divulgacao Virtual Ltda R$ 134,69
+12/05/2025 23h59 Saldo Diário R$ 210,93
+14/05/2025 18h11 Saúde Pix enviado Ultrafarma -R$ 47,23
+Ouvidoria: 0800-722-0048 ou ouvidoria@btgpactual.com
+©BTG Pactual - CNPJ 30.306.294/0002-26
+Extrato de conta corrente
+Cliente:
+CPF:
+Agência:
+Conta:
+Período do extrato:
+Olá Bruno!
+008.604.931-30
+20
+324255-8
+01/06/2026 15h48
+Lançamentos: R$ 69,64
+Este é o extrato da sua conta corrente BTG Pactual
+01/01/2025 a 31/12/2025
+Bruno Da Silva Perez Araujo
+Saldo final
+Data e hora Categoria Transação Descrição Valor
+14/05/2025 23h59 Saldo Diário R$ 163,70
+15/05/2025 08h16 Transferência Pix enviado Welber Rodrigues Da Silva Dias -R$ 11,00
+15/05/2025 23h59 Saldo Diário R$ 152,70
+21/05/2025 17h42 Transferência Pix enviado Admar Souza Neto -R$ 150,00
+21/05/2025 23h59 Saldo Diário R$ 2,70
+22/05/2025 02h02 Transferência Pix recebido Banco Do Brasil S.a. R$ 4,54
+22/05/2025 23h59 Saldo Diário R$ 7,24
+02/06/2025 12h58 Transferência Pix recebido Admar Souza Neto R$ 150,00
+02/06/2025 16h38 Saúde Pagamento de boleto Odontoprev -R$ 161,43
+02/06/2025 23h59 Saldo Diário -R$ 4,19
+05/06/2025 07h51 Transferência Pix enviado Geraldo Moreira De Jesus -R$ 60,00
+05/06/2025 23h59 Saldo Diário -R$ 64,19
+06/06/2025 12h06 Transferência Pix recebido Bruno Da Silva Perez Araujo R$ 100,00
+06/06/2025 23h59 Saldo Diário R$ 35,81
+09/06/2025 11h45 Investimentos
+CDB BANCO BTG PACTUAL S
+A
+Resgate de Renda Fixa R$ 3.000,00
+09/06/2025 11h49 Transferência Pix recebido Bruno Da Silva Perez Araujo R$ 700,00
+09/06/2025 11h50 Contas
+Pagamento de fatura do cartão
+Fatura do cartão BTG Pactual -R$ 3.704,23
+09/06/2025 23h59 Saldo Diário R$ 31,58
+17/06/2025 01h25
+Crédito e
+Financiamento
+Pix recebido Caixa Econômica Federal R$ 18.492,71
+17/06/2025 15h28
+Outra Categoria
+Pagamento de conta Gdf Conta Arrecadacao -R$ 270,27
+17/06/2025 15h28
+Outra Categoria
+Pagamento de conta Gdf Conta Arrecadacao -R$ 300,27
+17/06/2025 15h29
+Outra Categoria
+Pagamento de conta Gdf Conta Arrecadacao -R$ 270,31
+17/06/2025 15h29
+Outra Categoria
+Pagamento de conta Gdf Conta Arrecadacao -R$ 270,27
+17/06/2025 15h29
+Outra Categoria
+Pagamento de conta Gdf Conta Arrecadacao -R$ 270,27
+17/06/2025 15h33 Contas Pagamento de conta CEB -R$ 635,46
+17/06/2025 15h34 Viagem Pagamento de boleto Fg Trip -R$ 190,00
+17/06/2025 15h35 Viagem Pagamento de boleto Fg Trip -R$ 190,00
+17/06/2025 15h37 Viagem Pagamento de boleto Fg Trip -R$ 190,00
+17/06/2025 18h11 Compras Pix enviado Sul Bijuterias -R$ 333,00
+17/06/2025 23h59 Saldo Diário R$ 15.604,44
+Ouvidoria: 0800-722-0048 ou ouvidoria@btgpactual.com
+©BTG Pactual - CNPJ 30.306.294/0002-26
+Extrato de conta corrente
+Cliente:
+CPF:
+Agência:
+Conta:
+Período do extrato:
+Olá Bruno!
+008.604.931-30
+20
+324255-8
+01/06/2026 15h48
+Lançamentos: R$ 69,64
+Este é o extrato da sua conta corrente BTG Pactual
+01/01/2025 a 31/12/2025
+Bruno Da Silva Perez Araujo
+Saldo final
+Data e hora Categoria Transação Descrição Valor
+18/06/2025 11h27 Doações Pix enviado Igreja Crista De Agas Claras -R$ 250,00
+18/06/2025 15h14 Investimentos Transferência enviada Bruno Da Silva Perez Araújo -R$ 15.000,00
+18/06/2025 16h48 Transferência Pix recebido Rodrigo Da Silva Perez Araujo R$ 1.000,00
+18/06/2025 19h23 Contas Pagamento de conta CAESB -R$ 149,71
+18/06/2025 19h23 Contas Pagamento de conta CAESB -R$ 180,76
+18/06/2025 23h59 Saldo Diário R$ 1.023,97
+22/06/2025 11h32 Doações Pix enviado Igreja Crista De Aguas Claras -R$ 172,00
+22/06/2025 21h27 Compras Pix enviado Tuna Pagamentos -R$ 43,00
+22/06/2025 21h57 Compras Pix enviado Tuna Pagamentos -R$ 27,50
+22/06/2025 23h59 Saldo Diário R$ 781,47
+23/06/2025 11h26
+Outra Categoria
+Pagamento de conta Gdf Conta Arrecadacao -R$ 270,27
+23/06/2025 23h59 Saldo Diário R$ 511,20
+24/06/2025 15h02 Transferência Pix enviado Geraldo Moreira De Jesus -R$ 60,00
+24/06/2025 20h40 Transferência Pix enviado Alipio Getulio Krohn Junior -R$ 120,00
+24/06/2025 23h59 Saldo Diário R$ 331,20
+28/06/2025 10h55 Transferência Pix recebido Mario Perez Araujo R$ 1.244,00
+28/06/2025 23h59 Saldo Diário R$ 1.575,21
+30/06/2025 00h48 Transferência Pix recebido
+Secr. Da Receita Federal -  Lote 2025/02 - Rms 0136
+R$ 2.273,90
+30/06/2025 10h26 Transferência Pix enviado Bruno Da Silva Perez Araujo -R$ 1.239,49
+30/06/2025 11h40 Investimentos Pagamento de boleto Hs Administradora De Consorcios Ltda -R$ 341,50
+30/06/2025 23h59 Saldo Diário R$ 2.268,12
+01/07/2025 07h14
+Outra Categoria
+Pix enviado Latam Gateway -R$ 1.000,00
+01/07/2025 08h17
+Impostos e
+Tributos
+IOF limite da conta BTG Pactual -R$ 0,25
+01/07/2025 08h17
+Crédito e
+Financiamento
+Juros - limite da conta BTG Pactual -R$ 0,29
+01/07/2025 23h59 Saldo Diário R$ 1.267,58
+02/07/2025 16h19
+Outra Categoria
+Pix enviado Gowd -R$ 1.000,00
+02/07/2025 16h56 Investimentos Transferência recebida Bruno Da Silva Perez Araújo R$ 4.641,61
+02/07/2025 16h57 Educação Pagamento de boleto Educacao Infantil -R$ 758,16
+02/07/2025 17h17
+Outra Categoria
+Pix enviado Gowd -R$ 2.000,00
+02/07/2025 23h59 Saldo Diário R$ 2.151,03
+04/07/2025 09h42 Transferência Pix enviado Maria Da Conceicao Da Silva -R$ 180,00
+Ouvidoria: 0800-722-0048 ou ouvidoria@btgpactual.com
+©BTG Pactual - CNPJ 30.306.294/0002-26
+Extrato de conta corrente
+Cliente:
+CPF:
+Agência:
+Conta:
+Período do extrato:
+Olá Bruno!
+008.604.931-30
+20
+324255-8
+01/06/2026 15h48
+Lançamentos: R$ 69,64
+Este é o extrato da sua conta corrente BTG Pactual
+01/01/2025 a 31/12/2025
+Bruno Da Silva Perez Araujo
+Saldo final
+Data e hora Categoria Transação Descrição Valor
+04/07/2025 12h03 Transferência Pix enviado Bruno Da Silva Perez Araujo -R$ 1.244,00
+04/07/2025 15h08 Investimentos
+CDB BANCO BTG PACTUAL S
+A
+Resgate de Renda Fixa R$ 10.000,00
+04/07/2025 15h17
+Outra Categoria
+Pix enviado Latam Gateway -R$ 10.000,00
+04/07/2025 18h01 Transferência Pix recebido Mario Perez Araujo R$ 600,66
+04/07/2025 23h59 Saldo Diário R$ 1.327,69
+07/07/2025 00h12 Transferência Pix enviado Adriana Lomeu Ramos Sales -R$ 150,00
+07/07/2025 13h10 Contas
+Pagamento de fatura do cartão
+Fatura do cartão BTG Pactual -R$ 1.533,11
+07/07/2025 13h11 Transferência Pix recebido Bruno Da Silva Perez Araujo R$ 355,42
+07/07/2025 13h12 Transferência Pix recebido Bruno Da Silva Perez Araujo R$ 11.326,49
+07/07/2025 13h13 Investimentos Transferência enviada Bruno Da Silva Perez Araújo -R$ 11.326,49
+07/07/2025 23h59 Saldo Diário R$ 0,00
+09/07/2025 15h10 Investimentos
+CDB BANCO BTG PACTUAL S
+A
+Resgate de Renda Fixa R$ 373,63
+09/07/2025 15h11 Transferência Pix enviado Bruno Da Silva Perez Araujo -R$ 373,63
+09/07/2025 23h59 Saldo Diário R$ 0,00
+10/07/2025 09h05 Transferência Pix enviado Kelly Cristina Vieira De Araújo -R$ 500,00
+10/07/2025 09h07 Investimentos
+CDB BANCO BTG PACTUAL S
+A
+Resgate de Renda Fixa R$ 1.003,35
+10/07/2025 09h17 Contas Pagamento de boleto Supergasbras Energia -R$ 28,23
+10/07/2025 15h11 Investimentos
+CDB BANCO BTG PACTUAL S
+A
+Resgate de Renda Fixa R$ 2.500,00
+10/07/2025 15h45 Transferência Pix enviado Aliete Da Silva Perez Araujo -R$ 2.500,00
+10/07/2025 23h59 Saldo Diário R$ 475,12
+11/07/2025 18h10 Transferência Pix enviado Erik Leandro De Freitas Santos -R$ 800,00
+11/07/2025 18h13 Transferência Pix recebido Bruno Da Silva Perez Araujo R$ 154,57
+11/07/2025 23h59 Saldo Diário -R$ 170,31
+13/07/2025 13h41 Transferência Pix enviado Juan Carlos Fialho Sales -R$ 67,21
+13/07/2025 23h59 Saldo Diário -R$ 237,52
+14/07/2025 07h30 Supermercado Pagamento de boleto Midway -R$ 227,77
+14/07/2025 11h23 Investimentos
+CDB BANCO BTG PACTUAL S
+A
+Resgate de Renda Fixa R$ 506,25
+14/07/2025 23h59 Saldo Diário R$ 40,96
+18/07/2025 11h35 Transferência Pix enviado Kelly Cristina Vieira De Araújo -R$ 442,00
+18/07/2025 15h43 Investimentos
+CDB BANCO BTG PACTUAL S
+A
+Resgate de Renda Fixa R$ 669,46
+Ouvidoria: 0800-722-0048 ou ouvidoria@btgpactual.com
+©BTG Pactual - CNPJ 30.306.294/0002-26
+Extrato de conta corrente
+Cliente:
+CPF:
+Agência:
+Conta:
+Período do extrato:
+Olá Bruno!
+008.604.931-30
+20
+324255-8
+01/06/2026 15h48
+Lançamentos: R$ 69,64
+Este é o extrato da sua conta corrente BTG Pactual
+01/01/2025 a 31/12/2025
+Bruno Da Silva Perez Araujo
+Saldo final
+Data e hora Categoria Transação Descrição Valor
+18/07/2025 15h43 Investimentos
+CDB BANCO BTG PACTUAL S
+A
+Resgate de Renda Fixa R$ 342,65
+18/07/2025 16h53 Transferência Pix enviado Organizacao Da Igreja Em Sao Paulo -R$ 496,00
+18/07/2025 23h59 Saldo Diário R$ 115,07
+21/07/2025 11h33 Transferência Pix enviado Bruno Da Silva Perez Araujo -R$ 300,08
+21/07/2025 11h33 Investimentos
+CDB BANCO BTG PACTUAL S
+A
+Resgate de Renda Fixa R$ 1.006,44
+21/07/2025 23h59 Saldo Diário R$ 821,43
+25/07/2025 16h37 Transferência Pix recebido Bruno Da Silva Perez Araujo R$ 360,60
+25/07/2025 23h59 Saldo Diário R$ 1.182,03
+26/07/2025 10h14 Transferência Pix enviado Alipio Getulio Krohn Junior -R$ 82,43
+26/07/2025 23h59 Saldo Diário R$ 1.099,60
+28/07/2025 15h51 Transferência Pix enviado Bruno Da Silva Perez Araujo -R$ 315,76
+28/07/2025 23h59 Saldo Diário R$ 783,85
+01/08/2025 15h24 Educação Pagamento de boleto Educacao Infantil -R$ 758,16
+01/08/2025 16h04
+Impostos e
+Tributos
+IOF limite da conta BTG Pactual -R$ 0,94
+01/08/2025 16h04
+Crédito e
+Financiamento
+Juros - limite da conta BTG Pactual -R$ 0,57
+01/08/2025 23h59 Saldo Diário R$ 24,18
+03/08/2025 08h47 Transferência Pix recebido Mario Perez Araujo R$ 600,66
+03/08/2025 23h59 Saldo Diário R$ 624,84
+04/08/2025 11h54 Transferência Pix recebido Romislaein Alves Ferraz Souza R$ 105,00
+04/08/2025 23h59 Saldo Diário R$ 729,84
+05/08/2025 15h51 Transferência Pix enviado Bruno Da Silva Perez Araujo -R$ 729,84
+05/08/2025 15h57 Investimentos
+CDB BANCO BTG PACTUAL S
+A
+Resgate de Renda Fixa R$ 3.567,26
+05/08/2025 16h10 Transferência Pix enviado Bruno Da Silva Perez Araujo -R$ 843,22
+05/08/2025 23h59 Saldo Diário R$ 2.724,04
+07/08/2025 20h14 Transferência Pix recebido Bruno Da Silva Perez Araujo R$ 69,00
+07/08/2025 23h59 Saldo Diário R$ 2.793,04
+08/08/2025 11h38 Educação Pix enviado Talita Soares Da Silva -R$ 1.499,00
+08/08/2025 11h44 Transferência Pix enviado Ione Lomeu Ramos Souza -R$ 50,00
+08/08/2025 11h50 Supermercado Pagamento de boleto Midway -R$ 342,11
+08/08/2025 11h51 Contas
+Pagamento de fatura do cartão
+Fatura do cartão BTG Pactual -R$ 563,80
+08/08/2025 11h51 Contas Pagamento de boleto Nubank -R$ 477,62
+Ouvidoria: 0800-722-0048 ou ouvidoria@btgpactual.com
+©BTG Pactual - CNPJ 30.306.294/0002-26
+Extrato de conta corrente
+Cliente:
+CPF:
+Agência:
+Conta:
+Período do extrato:
+Olá Bruno!
+008.604.931-30
+20
+324255-8
+01/06/2026 15h48
+Lançamentos: R$ 69,64
+Este é o extrato da sua conta corrente BTG Pactual
+01/01/2025 a 31/12/2025
+Bruno Da Silva Perez Araujo
+Saldo final
+Data e hora Categoria Transação Descrição Valor
+08/08/2025 11h52 Investimentos
+CDB BANCO BTG PACTUAL S
+A
+Resgate de Renda Fixa R$ 1.510,10
+08/08/2025 12h59 Transferência Pix enviado Bruno Da Silva Perez Araujo -R$ 70,61
+08/08/2025 23h59 Saldo Diário R$ 1.300,00
+09/08/2025 19h09 Transferência Pix enviado Kelly Cristina Vieira De Araújo -R$ 738,05
+09/08/2025 23h59 Saldo Diário R$ 561,95
+14/08/2025 13h14 Transferência Pix enviado Organizacao Da Igreja Em Sao Paulo -R$ 149,15
+14/08/2025 15h32 Educação Pix enviado Educacao Infantil -R$ 50,00
+14/08/2025 15h54
+Cuidados
+Pessoais
+Pix enviado Skin Tone Cosmeticos -R$ 167,00
+14/08/2025 23h59 Saldo Diário R$ 195,81
+17/08/2025 16h13 Transferência Pix enviado Adao Martins De Sousa -R$ 20,00
+17/08/2025 16h19 Transferência Pix enviado Adao Martins De Sousa -R$ 20,00
+17/08/2025 16h40 Transferência Pix enviado Osmar Sabino Gomes Júnior -R$ 20,00
+17/08/2025 23h59 Saldo Diário R$ 135,80
+19/08/2025 18h37 Transferência Pix enviado Ione Lomeu Ramos Souza -R$ 50,00
+19/08/2025 23h59 Saldo Diário R$ 85,80
+22/08/2025 18h38 Transferência Pix enviado Loida Palima Agape -R$ 20,00
+22/08/2025 23h59 Saldo Diário R$ 65,80
+26/08/2025 11h45 Compras Pix enviado Moda Mundial Brasil Pagamentos -R$ 253,73
+26/08/2025 14h31 Transferência Pix recebido Bruno Da Silva Perez Araujo R$ 4.000,00
+26/08/2025 23h59 Saldo Diário R$ 3.812,07
+28/08/2025 14h01 Educação Pix recebido Talita Soares Da Silva R$ 1.499,00
+28/08/2025 14h20 Contas Pagamento de conta CEB -R$ 360,05
+28/08/2025 23h59 Saldo Diário R$ 4.951,03
+04/09/2025 11h47 Transferência Pix enviado Cristiano Oliveira Silva -R$ 600,00
+04/09/2025 11h57 Educação Pix enviado Educacao Infantil -R$ 8,00
+04/09/2025 23h59 Saldo Diário R$ 4.343,14
+05/09/2025 09h25 Transferência Pix recebido Mario Perez Araujo R$ 690,66
+05/09/2025 23h59 Saldo Diário R$ 5.033,83
+07/09/2025 17h05 Contas
+Pagamento de fatura do cartão
+Fatura do cartão BTG Pactual -R$ 1.757,37
+07/09/2025 23h59 Saldo Diário R$ 3.276,48
+08/09/2025 10h49 Transferência Pix enviado Jose Bueno De Almeida -R$ 185,00
+Ouvidoria: 0800-722-0048 ou ouvidoria@btgpactual.com
+©BTG Pactual - CNPJ 30.306.294/0002-26
+Extrato de conta corrente
+Cliente:
+CPF:
+Agência:
+Conta:
+Período do extrato:
+Olá Bruno!
+008.604.931-30
+20
+324255-8
+01/06/2026 15h48
+Lançamentos: R$ 69,64
+Este é o extrato da sua conta corrente BTG Pactual
+01/01/2025 a 31/12/2025
+Bruno Da Silva Perez Araujo
+Saldo final
+Data e hora Categoria Transação Descrição Valor
+08/09/2025 12h32 Transferência Pix enviado Helena Alves Da Silva -R$ 60,00
+08/09/2025 13h33 Transferência Pix recebido Erik Leandro De Freitas Santos R$ 800,00
+08/09/2025 23h59 Saldo Diário R$ 3.831,50
+10/09/2025 09h53 Educação Pix enviado Educacao Infantil -R$ 972,00
+10/09/2025 16h22 Compras Pix enviado Copiadora E Grafica D I -R$ 50,00
+10/09/2025 23h59 Saldo Diário R$ 2.809,55
+11/09/2025 12h28 Investimentos Transferência enviada Bruno Da Silva Perez Araújo -R$ 2.000,00
+11/09/2025 23h59 Saldo Diário R$ 809,56
+12/09/2025 13h51 Transferência Pix recebido Bruno Da Silva Perez Araujo R$ 9.000,00
+12/09/2025 13h52 Investimentos Transferência enviada Bruno Da Silva Perez Araújo -R$ 9.000,00
+12/09/2025 23h59 Saldo Diário R$ 809,56
+13/09/2025 08h46 Transferência Pix enviado Zelia Maria De Fatima Gomes -R$ 465,00
+13/09/2025 09h48 Transferência Pix recebido Mario Perez Araujo R$ 375,00
+13/09/2025 23h59 Saldo Diário R$ 719,56
+15/09/2025 09h03 Transferência Pix enviado Localiza Rent A Car Sa -R$ 898,91
+15/09/2025 17h50 Investimentos Transferência recebida Bruno Da Silva Perez Araújo R$ 179,35
+15/09/2025 23h59 Saldo Diário R$ 0,00
+16/09/2025 08h45 Transferência Pix enviado Fabricio Rosa De Lima -R$ 460,00
+16/09/2025 19h07 Investimentos Transferência recebida Bruno Da Silva Perez Araújo R$ 820,69
+16/09/2025 23h59 Saldo Diário R$ 360,69
+19/09/2025 09h08 Compras Pix enviado Zapizi -R$ 10,00
+19/09/2025 20h05 Transferência Pix enviado Beatriz Borges Freitas -R$ 15,00
+19/09/2025 23h59 Saldo Diário R$ 335,69
+22/09/2025 10h49 Transferência Pix enviado Localiza Rent A Car Sa -R$ 872,09
+22/09/2025 10h51 Investimentos Transferência recebida Bruno Da Silva Perez Araújo R$ 536,40
+22/09/2025 23h59 Saldo Diário R$ 0,00
+26/09/2025 10h12 Investimentos Transferência recebida Bruno Da Silva Perez Araújo R$ 600,00
+26/09/2025 10h12 Transferência Pix enviado Erik Leandro De Freitas Santos -R$ 600,00
+26/09/2025 23h59 Saldo Diário R$ 0,00
+29/09/2025 17h22 Transferência Pix enviado Organizacao Da Igreja Em Sao Paulo -R$ 149,15
+29/09/2025 17h25 Investimentos Transferência recebida Bruno Da Silva Perez Araújo R$ 1.360,88
+29/09/2025 17h26 Investimentos Transferência recebida Bruno Da Silva Perez Araújo R$ 26,68
+Ouvidoria: 0800-722-0048 ou ouvidoria@btgpactual.com
+©BTG Pactual - CNPJ 30.306.294/0002-26
+Extrato de conta corrente
+Cliente:
+CPF:
+Agência:
+Conta:
+Período do extrato:
+Olá Bruno!
+008.604.931-30
+20
+324255-8
+01/06/2026 15h48
+Lançamentos: R$ 69,64
+Este é o extrato da sua conta corrente BTG Pactual
+01/01/2025 a 31/12/2025
+Bruno Da Silva Perez Araujo
+Saldo final
+Data e hora Categoria Transação Descrição Valor
+29/09/2025 17h26 Transferência Pagamento de boleto Santander -R$ 1.238,41
+29/09/2025 23h59 Saldo Diário R$ 0,00
+03/10/2025 19h07 Investimentos Transferência recebida Bruno Da Silva Perez Araújo R$ 7.477,17
+03/10/2025 19h09 Transferência Pix enviado Bruno Da Silva Perez Araujo -R$ 7.000,00
+03/10/2025 23h59 Saldo Diário R$ 477,17
+05/10/2025 10h41 Transferência Pix enviado Riane De Oliveira Torres Santos -R$ 20,00
+05/10/2025 23h59 Saldo Diário R$ 457,17
+06/10/2025 11h28
+Outra Categoria Canc. Transferência Pix enviada
+Nubank R$ 296,88
+06/10/2025 11h28
+Outra Categoria
+Pix enviado Nubank -R$ 296,88
+06/10/2025 18h31 Educação Pix enviado Educacao Infantil -R$ 180,00
+06/10/2025 23h59 Saldo Diário R$ 277,17
+07/10/2025 14h17 Contas Pagamento de boleto Nubank -R$ 296,88
+07/10/2025 14h17 Investimentos
+CDB BANCO BTG PACTUAL S
+A
+Resgate de Renda Fixa R$ 5.091,02
+07/10/2025 14h18 Contas
+Pagamento de fatura do cartão
+Fatura do cartão BTG Pactual -R$ 3.398,53
+07/10/2025 16h24 Transferência Pix enviado Organizacao Da Igreja Em Sao Paulo -R$ 149,15
+07/10/2025 23h59 Saldo Diário R$ 1.523,63
+11/10/2025 15h59 Contas Pix enviado Neoenergia Distribuicao Brasilia S A -R$ 283,37
+11/10/2025 23h59 Saldo Diário R$ 1.240,26
+12/10/2025 12h18 Transferência Pix enviado Cezario Do Nascimento Araujo -R$ 120,00
+12/10/2025 23h59 Saldo Diário R$ 1.120,26
+14/10/2025 13h05 Educação Pix enviado Kiwify -R$ 37,00
+14/10/2025 18h06 Transporte Pix enviado Midway -R$ 877,13
+14/10/2025 18h07 Transferência Pix recebido Bruno Da Silva Perez Araujo R$ 288,35
+14/10/2025 23h59 Saldo Diário R$ 494,49
+17/10/2025 11h27 Transferência Pix enviado Riane De Oliveira Torres Santos -R$ 48,00
+17/10/2025 23h59 Saldo Diário R$ 446,49
+19/10/2025 12h27 Transferência Pix enviado Maria Amelia Rodrigues Da Silva -R$ 15,00
+19/10/2025 23h59 Saldo Diário R$ 431,49
+20/10/2025 10h36
+Cuidados
+Pessoais
+Pix enviado Skin Tone Cosmeticos -R$ 167,00
+20/10/2025 23h59 Saldo Diário R$ 264,50
+21/10/2025 16h05 Compras Pix enviado Gocase -R$ 194,72
+Ouvidoria: 0800-722-0048 ou ouvidoria@btgpactual.com
+©BTG Pactual - CNPJ 30.306.294/0002-26
+Extrato de conta corrente
+Cliente:
+CPF:
+Agência:
+Conta:
+Período do extrato:
+Olá Bruno!
+008.604.931-30
+20
+324255-8
+01/06/2026 15h48
+Lançamentos: R$ 69,64
+Este é o extrato da sua conta corrente BTG Pactual
+01/01/2025 a 31/12/2025
+Bruno Da Silva Perez Araujo
+Saldo final
+Data e hora Categoria Transação Descrição Valor
+21/10/2025 23h59 Saldo Diário R$ 69,77
+02/11/2025 09h57 Transferência Pix enviado Lindomar Braz Da Silva -R$ 7,00
+02/11/2025 10h03 Transferência Pix enviado Lindomar Braz Da Silva -R$ 6,00
+02/11/2025 11h10 Transferência Pix enviado Rosineide De Nazare Ferreira Amorim -R$ 25,00
+02/11/2025 23h59 Saldo Diário R$ 31,78
+05/11/2025 17h27 Transferência Pix recebido Bruno Da Silva Perez Araujo R$ 3.200,00
+05/11/2025 23h59 Saldo Diário R$ 3.231,77
+07/11/2025 13h20 Transferência Pix recebido Bruno Da Silva Perez Araujo R$ 100,00
+07/11/2025 13h20 Contas
+Pagamento de fatura do cartão
+Fatura do cartão BTG Pactual -R$ 3.323,41
+07/11/2025 23h59 Saldo Diário R$ 8,36
+06/12/2025 14h33 Transferência Pix recebido Bruno Da Silva Perez Araujo R$ 14,28
+06/12/2025 23h59 Saldo Diário R$ 22,64
+15/12/2025 13h48 Transferência Pix recebido Juan Carlos Fialho Sales R$ 70,00
+15/12/2025 23h59 Saldo Diário R$ 92,64
+28/12/2025 14h03 Transferência Pix enviado Gabrielle Dos Santos Jansen Ferreira -R$ 13,00
+28/12/2025 22h42 Transferência Pix enviado Elisa Lomeu Souza -R$ 10,00
+28/12/2025 23h59 Saldo Diário R$ 69,64
+29/12/2025 05h30
+Crédito e
+Financiamento
+Pix recebido Caixa Econômica Federal R$ 1.800,00
+29/12/2025 06h43 Transferência Pix enviado Bruno Da Silva Perez Araujo -R$ 1.800,00
+29/12/2025 23h59 Saldo Diário R$ 69,64
+Ouvidoria: 0800-722-0048 ou ouvidoria@btgpactual.com
+©BTG Pactual - CNPJ 30.306.294/0002-26

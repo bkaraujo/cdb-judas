@@ -1,4 +1,4 @@
-package br.community.feature.user.accounts.statementimport;
+package br.community.feature.user.accounts.statementimport.preview;
 
 import br.community.context.monetary._0_domain.model.MonetaryAccount;
 import org.jspecify.annotations.NullMarked;

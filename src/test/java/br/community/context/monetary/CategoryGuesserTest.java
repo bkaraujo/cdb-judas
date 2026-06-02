@@ -1,7 +1,7 @@
 package br.community.context.monetary;
 
 import br.community.context.monetary._0_domain.model.MonetaryTransaction;
-import br.community.feature.user.accounts.statementimport.CategoryGuesser;
+import br.community.feature.user.accounts.statementimport.preview.CategoryGuesser;
 import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;

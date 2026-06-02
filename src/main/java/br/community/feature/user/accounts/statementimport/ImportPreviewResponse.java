@@ -17,6 +17,7 @@ import java.util.UUID;
  */
 @NullMarked
 public record ImportPreviewResponse(
+        String documentType,
         String issuer,
         List<String> last4s,
         List<Row> rows,

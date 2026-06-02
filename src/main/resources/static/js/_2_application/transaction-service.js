@@ -11,8 +11,9 @@
   function patchStatus(accountId, id, status, date) { return repo.patchStatus(accountId, id, status, date); }
   function remove(accountId, id, scope)    { return repo.remove(accountId, id, scope); }
   function transfer(data)                  { return repo.transfer(data); }
-  function importPreview(file, password)   { return repo.importPreview(file, password); }
+  function importPreview(file, password, accountId) { return repo.importPreview(file, password, accountId); }
   function importConfirm(data)             { return repo.importConfirm(data); }
+  function importStatementConfirm(data)    { return repo.importStatementConfirm(data); }
 
   /* Builds payload with the domain signing rule applied to amount. */
   function buildPayload(form) {
@@ -35,6 +36,7 @@
     transfer: transfer,
     importPreview: importPreview,
     importConfirm: importConfirm,
+    importStatementConfirm: importStatementConfirm,
     buildPayload: buildPayload,
   };
 })();

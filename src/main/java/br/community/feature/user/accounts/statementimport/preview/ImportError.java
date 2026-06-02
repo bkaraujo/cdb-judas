@@ -1,4 +1,4 @@
-package br.community.feature.user.accounts.statementimport;
+package br.community.feature.user.accounts.statementimport.preview;
 
 import org.jspecify.annotations.NullMarked;
 

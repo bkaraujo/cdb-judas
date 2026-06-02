@@ -1,8 +1,8 @@
 package br.community.context.monetary;
 
-import br.community.feature.user.accounts.statementimport.BtgCreditCardStatementParser;
-import br.community.feature.user.accounts.statementimport.ChargeKind;
-import br.community.feature.user.accounts.statementimport.ParsedStatement;
+import br.community.feature.user.accounts.statementimport.provider.BtgCreditCardStatementParser;
+import br.community.feature.user.accounts.statementimport.preview.ChargeKind;
+import br.community.feature.user.accounts.statementimport.preview.ParsedStatement;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
@@ -42,7 +42,7 @@ class BtgCreditCardStatementParserTest {
                 l.description().equals("Amazonmktplc Megabytem")
                         && Integer.valueOf(9).equals(l.installmentNumber())
                         && Integer.valueOf(10).equals(l.installmentTotal())
-                        && l.purchaseDate().equals(MonthDay.of(7, 15))
+                        && l.date().equals(MonthDay.of(7, 15))
                         && l.amount().compareTo(new BigDecimal("72.99")) == 0
                         && l.last4().equals("0020")));
     }
@@ -54,7 +54,7 @@ class BtgCreditCardStatementParserTest {
                 l.description().equals("Microsoft")
                         && l.installmentNumber() == null
                         && l.installmentTotal() == null
-                        && l.purchaseDate().equals(MonthDay.of(3, 9))
+                        && l.date().equals(MonthDay.of(3, 9))
                         && l.amount().compareTo(new BigDecimal("60.00")) == 0
                         && l.last4().equals("9822")));
     }
@@ -78,7 +78,7 @@ class BtgCreditCardStatementParserTest {
                 l.description().equals("Amazonmktplc Megabytem")
                         && Integer.valueOf(10).equals(l.installmentNumber())
                         && Integer.valueOf(10).equals(l.installmentTotal())
-                        && l.purchaseDate().equals(MonthDay.of(7, 15))
+                        && l.date().equals(MonthDay.of(7, 15))
                         && l.amount().compareTo(new BigDecimal("72.99")) == 0));
     }
 

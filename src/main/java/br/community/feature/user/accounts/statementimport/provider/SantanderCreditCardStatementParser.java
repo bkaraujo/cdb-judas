@@ -1,5 +1,9 @@
-package br.community.feature.user.accounts.statementimport;
+package br.community.feature.user.accounts.statementimport.provider;
 
+import br.community.feature.user.accounts.statementimport.preview.ChargeKind;
+import br.community.feature.user.accounts.statementimport.preview.CreditCardStatementParser;
+import br.community.feature.user.accounts.statementimport.preview.ParsedStatement;
+import br.community.feature.user.accounts.statementimport.preview.ParsedStatementLine;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 

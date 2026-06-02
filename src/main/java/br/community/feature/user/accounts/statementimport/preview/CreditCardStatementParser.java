@@ -1,5 +1,6 @@
-package br.community.feature.user.accounts.statementimport;
+package br.community.feature.user.accounts.statementimport.preview;
 
+import br.commons.tools.Parser;
 import org.jspecify.annotations.NullMarked;
 
 /**
@@ -10,7 +11,7 @@ import org.jspecify.annotations.NullMarked;
  * (pagamento da fatura anterior) and summary / previous-balance lines are dropped.
  */
 @NullMarked
-public interface CreditCardStatementParser {
+public interface CreditCardStatementParser extends Parser<ParsedStatement> {
 
     ParsedStatement parse(String text);
 }

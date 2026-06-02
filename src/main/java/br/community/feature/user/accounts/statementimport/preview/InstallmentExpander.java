@@ -1,5 +1,6 @@
-package br.community.feature.user.accounts.statementimport;
+package br.community.feature.user.accounts.statementimport.preview;
 
+import br.community.feature.user.accounts.statementimport.GroupSignature;
 import lombok.RequiredArgsConstructor;
 import org.jspecify.annotations.NullMarked;
 
@@ -30,7 +31,7 @@ public class InstallmentExpander {
         final YearMonth statementPeriod = YearMonth.from(today);
         final int n = line.isInstallment() ? line.installmentNumber() : 1;
         final YearMonth anchor = line.isInstallment() ? statementPeriod.minusMonths(n - 1L) : statementPeriod;
-        final LocalDate originalDate = resolveOriginalDate(line.purchaseDate(), anchor);
+        final LocalDate originalDate = resolveOriginalDate(line.date(), anchor);
 
         if (!line.isInstallment()) {
             return List.of(new TransactionDraft(

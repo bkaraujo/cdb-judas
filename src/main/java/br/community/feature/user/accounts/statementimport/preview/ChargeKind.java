@@ -1,4 +1,4 @@
-package br.community.feature.user.accounts.statementimport;
+package br.community.feature.user.accounts.statementimport.preview;
 
 /**
  * Classification of a kept credit-card statement charge. Payment-received and summary lines are

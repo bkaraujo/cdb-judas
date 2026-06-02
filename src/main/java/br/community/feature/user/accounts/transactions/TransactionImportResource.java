@@ -5,6 +5,8 @@ import br.community.context.monetary._0_domain.model.MonetaryAccount;
 import br.community.context.monetary._1_application.command.ImportConfirmCommand;
 import br.community.context.shared._0_domain.model.DomainError;
 import br.community.feature.user.accounts.statementimport.*;
+import br.community.feature.user.accounts.statementimport.confirm.*;
+import br.community.feature.user.accounts.statementimport.preview.*;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.val;
@@ -18,6 +20,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.util.UUID;
 
 @NullMarked
 @RestController
@@ -30,7 +33,8 @@ public class TransactionImportResource {
     @PostMapping(value = "/preview", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<Object> preview(
             @RequestParam("file") MultipartFile file,
-            @RequestParam(value = "password", required = false) @Nullable String password) {
+            @RequestParam(value = "password", required = false) @Nullable String password,
+            @RequestParam(value = "accountId", required = false) @Nullable UUID accountId) {
 
         if (file.isEmpty()) {
             return problem(HttpStatus.UNPROCESSABLE_CONTENT, "FILE_REQUIRED", "Selecione um arquivo PDF.");
@@ -43,9 +47,16 @@ public class TransactionImportResource {
             return problem(HttpStatus.BAD_REQUEST, "FILE_UNREADABLE", "Não foi possível ler o arquivo enviado.");
         }
 
-        return switch (statementImport.preview(bytes, password)) {
-            case Result.Success(var preview) -> ResponseEntity.<Object>ok(toResponse(preview));
+        return switch (statementImport.preview(bytes, password, accountId)) {
+            case Result.Success(var outcome) -> ResponseEntity.<Object>ok(toResponseBody(outcome));
             case Result.Failure(var error) -> problem(error);
+        };
+    }
+
+    private static Object toResponseBody(ImportPreviewOutcome outcome) {
+        return switch (outcome) {
+            case ImportPreviewOutcome.Invoice(var preview) -> toResponse(preview);
+            case ImportPreviewOutcome.Statement(var preview) -> toStatementResponse(preview);
         };
     }
 
@@ -56,9 +67,24 @@ public class TransactionImportResource {
 
         return switch (statementImport.confirm(cmd)) {
             case Result.Success(var res) ->
-                    ResponseEntity.<Object>ok(new ImportConfirmResponse(res.created(), res.skipped()));
+                    ResponseEntity.<Object>ok(new ImportConfirmResponse(res.created(), res.reconciled(), res.skipped()));
             case Result.Failure(var error) ->
                     problem(HttpStatus.UNPROCESSABLE_CONTENT, "CARD_NOT_FOUND", messageOf(error));
+        };
+    }
+
+    @PostMapping(value = "/statement/confirm", consumes = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<Object> confirmStatement(@RequestBody @Valid BankStatementConfirmRequest req) {
+        val rows = req.rows().stream()
+                .map(r -> new BankStatementConfirmCommand.Row(r.description(), r.amount(), r.date(), r.type(), r.categoryId()))
+                .toList();
+        val cmd = new BankStatementConfirmCommand(req.accountId(), rows);
+
+        return switch (statementImport.confirmStatement(cmd)) {
+            case Result.Success(var res) ->
+                    ResponseEntity.<Object>ok(new ImportConfirmResponse(res.created(), res.reconciled(), res.skipped()));
+            case Result.Failure(var error) ->
+                    problem(HttpStatus.UNPROCESSABLE_CONTENT, "ACCOUNT_NOT_FOUND", messageOf(error));
         };
     }
 
@@ -83,7 +109,20 @@ public class TransactionImportResource {
         val matchedCardId = matchedCard != null ? matchedCard.id() : null;
         val candidateCards = preview.candidateCards().stream().map(TransactionImportResource::toCardOption).toList();
         return new ImportPreviewResponse(
-                preview.issuer().name(), preview.statement().last4s(), rows, matchedCardId, candidateCards);
+                "CREDIT_CARD_INVOICE", preview.issuer().name(), preview.statement().last4s(), rows, matchedCardId, candidateCards);
+    }
+
+    private static BankStatementPreviewResponse toStatementResponse(BankStatementPreview preview) {
+        val accounts = preview.candidateAccounts().stream()
+                .map(a -> new BankStatementPreviewResponse.AccountOption(a.id(), a.name()))
+                .toList();
+        val rows = preview.rows().stream()
+                .map(r -> new BankStatementPreviewResponse.Row(
+                        r.date().toString(), r.description(), r.amount(), r.type(),
+                        r.state().name(), r.categoryId(), r.reconcileDescription()))
+                .toList();
+        return new BankStatementPreviewResponse(
+                "BANK_STATEMENT", preview.issuer().name(), accounts, preview.selectedAccountId(), rows);
     }
 
     private static ImportPreviewResponse.CardOption toCardOption(MonetaryAccount card) {

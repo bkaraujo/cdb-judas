@@ -6,11 +6,14 @@ import br.commons.pdf.ExtractionFailure;
 import br.commons.pdf.PdfTextExtractor;
 import br.commons.tools.Strings;
 import br.community.context.monetary.MonetaryContext;
+import br.community.context.monetary._0_domain.model.AccountType;
 import br.community.context.monetary._0_domain.model.MonetaryAccount;
 import br.community.context.monetary._0_domain.model.MonetaryTransaction;
 import br.community.context.monetary._1_application.command.ImportConfirmCommand;
 import br.community.context.monetary._1_application.command.ImportedTransactionCommand;
 import br.community.context.shared._0_domain.model.DomainError;
+import br.community.feature.user.accounts.statementimport.confirm.*;
+import br.community.feature.user.accounts.statementimport.preview.*;
 import lombok.RequiredArgsConstructor;
 import lombok.val;
 import org.jspecify.annotations.NullMarked;
@@ -19,6 +22,7 @@ import org.jspecify.annotations.Nullable;
 import java.time.Clock;
 import java.time.LocalDate;
 import java.time.YearMonth;
+import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -32,10 +36,14 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class StatementImportUseCase {
 
+    private static final int RECONCILE_WINDOW_DAYS = 3;
+
     private final MonetaryContext monetaryContext;
     private final PdfTextExtractor extractor;
+    private final DocumentTypeDetector documentTypeDetector;
     private final IssuerDetector issuerDetector;
     private final CreditCardStatementParserRegistry parsers;
+    private final BankStatementParserRegistry bankParsers;
     private final CardMatcher cardMatcher;
     private final InstallmentExpander expander;
     private final GroupSignature groupSignature;
@@ -43,14 +51,19 @@ public class StatementImportUseCase {
     private final Clock clock;
     private final long maxFileBytes;
 
-    public Result<ImportPreview, ImportError> preview(byte[] fileBytes, @Nullable String password) {
+    /**
+     * Extracts the PDF text and routes by document type. {@code accountId} is honored only by the
+     * bank-statement path — it lets the preview compute per-row duplicate/reconcile states against the
+     * chosen destination account (the credit-card path matches its card by last4 instead).
+     */
+    public Result<ImportPreviewOutcome, ImportError> preview(byte[] fileBytes, @Nullable String password, @Nullable UUID accountId) {
         if (fileBytes.length > maxFileBytes) {
             return new Result.Failure<>(new ImportError.FileTooLarge(fileBytes.length, maxFileBytes));
         }
 
         return switch (extractor.extract(fileBytes, password)) {
             case Result.Failure(var failure) -> new Result.Failure<>(toImportError(failure));
-            case Result.Success(var text) -> previewFromText(text);
+            case Result.Success(var text) -> previewFromText(text, accountId);
         };
     }
 
@@ -122,9 +135,169 @@ public class StatementImportUseCase {
                 }
             }
 
-            return new ImportResult(created, skipped);
+            return new ImportResult(created, 0, skipped);
         });
     }
+
+    // ── Bank-statement path ────────────────────────────────────────
+
+    /**
+     * Persists the kept bank-statement rows on the chosen account. Each row's fate is re-derived
+     * against the account's current transactions ({@link #classify}): an already-imported identical
+     * row is skipped; a row that matches a pending/scheduled manual transaction promotes that one to
+     * {@code confirmed} (reconciliation, no insert); otherwise a new transaction is created with the
+     * sign-derived type. Best-effort: a failure on one row is logged and the loop continues.
+     */
+    public Result<ImportResult, DomainError> confirmStatement(BankStatementConfirmCommand cmd) {
+        return monetaryContext.findAccount(cmd.accountId()).map(account -> {
+            final UUID accountId = account.id();
+            final LocalDate today = LocalDate.now(clock);
+
+            final List<MonetaryTransaction> accountTx = monetaryContext.listTransactions().getOrElse(List.of()).stream()
+                    .filter(t -> accountId.equals(t.accountId()))
+                    .toList();
+
+            final List<ParsedBankStatementLine> movements = cmd.rows().stream()
+                    .map(r -> new ParsedBankStatementLine(r.date(), r.description(), r.amount()))
+                    .toList();
+            final List<Classification> classes = classify(movements, accountTx);
+
+            int created = 0;
+            int reconciled = 0;
+            int skipped = 0;
+            for (int i = 0; i < cmd.rows().size(); i++) {
+                final BankStatementConfirmCommand.Row row = cmd.rows().get(i);
+                final Classification cls = classes.get(i);
+                switch (cls.state()) {
+                    case DUPLICATE -> skipped++;
+                    case RECONCILE -> {
+                        final MonetaryTransaction target = cls.target();
+                        if (target != null) {
+                            monetaryContext.updateTransactionStatus(target.id(), "confirmed", row.date());
+                            reconciled++;
+                        }
+                    }
+                    case NEW -> {
+                        if (persistStatementRow(row, accountId, today)) {
+                            created++;
+                        }
+                    }
+                }
+            }
+
+            return new ImportResult(created, reconciled, skipped);
+        });
+    }
+
+    private boolean persistStatementRow(BankStatementConfirmCommand.Row row, UUID accountId, LocalDate today) {
+        final String status = YearMonth.from(row.date()).isAfter(YearMonth.from(today)) ? "scheduled" : "confirmed";
+        final ImportedTransactionCommand command = new ImportedTransactionCommand(
+                accountId, row.description(), row.amount(), row.date(), row.categoryId(),
+                status, row.type(), null, null, null);
+        try {
+            return switch (monetaryContext.createImportedTransaction(command)) {
+                case Result.Success(var ignored) -> true;
+                case Result.Failure(var error) -> {
+                    Logger.warn("Failed to persist statement row '%s': %s", row.description(), String.valueOf(error));
+                    yield false;
+                }
+            };
+        } catch (RuntimeException e) {
+            Logger.warn("Failed to persist statement row '%s': %s", row.description(), Strings.orEmpty(e.getMessage()));
+            return false;
+        }
+    }
+
+    private Result<ImportPreviewOutcome, ImportError> previewBankStatement(String text, @Nullable UUID accountId) {
+        final Issuer issuer = issuerDetector.detect(text);
+        final Optional<BankStatementParser> parser = bankParsers.forIssuer(issuer);
+        if (parser.isEmpty()) {
+            return new Result.Failure<>(new ImportError.UnknownIssuer());
+        }
+        final ParsedBankStatement statement = parser.get().parse(text);
+
+        final List<MonetaryAccount> candidates = monetaryContext.listAccounts().getOrElse(List.of()).stream()
+                .filter(a -> a.type() != AccountType.CREDIT_CARD && a.active())
+                .toList();
+
+        @Nullable UUID selected = accountId;
+        if (selected == null && candidates.size() == 1) {
+            selected = candidates.getFirst().id();
+        }
+        final @Nullable UUID selectedAccountId = selected;
+
+        final List<MonetaryTransaction> history = monetaryContext.listTransactions().getOrElse(List.of());
+        final List<MonetaryTransaction> accountTx = selectedAccountId != null
+                ? history.stream().filter(t -> selectedAccountId.equals(t.accountId())).toList()
+                : List.of();
+        final UUID fallbackCategoryId = monetaryContext.findOrCreateUncategorizedCategory().id();
+
+        final List<Classification> classes = classify(statement.lines(), accountTx);
+
+        final List<BankStatementPreviewRow> rows = new ArrayList<>();
+        for (int i = 0; i < statement.lines().size(); i++) {
+            final ParsedBankStatementLine line = statement.lines().get(i);
+            final Classification cls = classes.get(i);
+            final String type = line.amount().signum() < 0 ? "expense" : "income";
+            final UUID categoryId = cls.state() == RowState.NEW
+                    ? categoryGuesser.guess(line.description(), history).orElse(fallbackCategoryId)
+                    : null;
+            final String reconcileDescription = cls.target() != null ? cls.target().description() : null;
+            rows.add(new BankStatementPreviewRow(
+                    line.date(), line.description(), line.amount(), type, cls.state(), categoryId, reconcileDescription));
+        }
+
+        return Result.success(new ImportPreviewOutcome.Statement(
+                new BankStatementPreview(issuer, candidates, selectedAccountId, List.copyOf(rows))));
+    }
+
+    /**
+     * Classifies each statement movement against the chosen account's transactions, consuming each
+     * existing transaction at most once (1:1): an identical already-imported row → DUPLICATE; a
+     * pending/scheduled manual transaction with the same signed amount within ±{@value
+     * #RECONCILE_WINDOW_DAYS} days (closest date wins) → RECONCILE; otherwise NEW.
+     */
+    private List<Classification> classify(List<ParsedBankStatementLine> movements, List<MonetaryTransaction> accountTx) {
+        final Set<UUID> consumed = new HashSet<>();
+        final List<Classification> out = new ArrayList<>();
+        for (final ParsedBankStatementLine mv : movements) {
+            final String desc = GroupSignature.normalizeDescription(mv.description());
+
+            final Optional<MonetaryTransaction> dup = accountTx.stream()
+                    .filter(t -> !consumed.contains(t.id()))
+                    .filter(t -> mv.date().equals(t.date())
+                            && t.amount().compareTo(mv.amount()) == 0
+                            && desc.equals(GroupSignature.normalizeDescription(t.description())))
+                    .findFirst();
+            if (dup.isPresent()) {
+                consumed.add(dup.get().id());
+                out.add(new Classification(RowState.DUPLICATE, dup.get()));
+                continue;
+            }
+
+            final Optional<MonetaryTransaction> rec = accountTx.stream()
+                    .filter(t -> !consumed.contains(t.id()))
+                    .filter(t -> isReconcilable(t.status()))
+                    .filter(t -> t.amount().compareTo(mv.amount()) == 0)
+                    .filter(t -> Math.abs(ChronoUnit.DAYS.between(t.date(), mv.date())) <= RECONCILE_WINDOW_DAYS)
+                    .min(Comparator.comparingLong(t -> Math.abs(ChronoUnit.DAYS.between(t.date(), mv.date()))));
+            if (rec.isPresent()) {
+                consumed.add(rec.get().id());
+                out.add(new Classification(RowState.RECONCILE, rec.get()));
+                continue;
+            }
+
+            out.add(new Classification(RowState.NEW, null));
+        }
+        return out;
+    }
+
+    private static boolean isReconcilable(String status) {
+        return "pending".equals(status) || "scheduled".equals(status);
+    }
+
+    @NullMarked
+    private record Classification(RowState state, @Nullable MonetaryTransaction target) {}
 
     private static boolean isAvistaDuplicate(ImportConfirmCommand.Row row, UUID accountId, List<MonetaryTransaction> seen) {
         final String desc = GroupSignature.normalizeDescription(row.description());
@@ -142,7 +315,7 @@ public class StatementImportUseCase {
         final String status = YearMonth.from(row.date()).isAfter(YearMonth.from(today)) ? "scheduled" : "confirmed";
         final ImportedTransactionCommand command = new ImportedTransactionCommand(
                 accountId, row.description(), row.amount(), row.date(), row.categoryId(),
-                status, groupId, installmentNumber, totalInstallments);
+                status, "expense", groupId, installmentNumber, totalInstallments);
         try {
             return switch (monetaryContext.createImportedTransaction(command)) {
                 case Result.Success(var saved) -> saved;
@@ -157,7 +330,14 @@ public class StatementImportUseCase {
         }
     }
 
-    private Result<ImportPreview, ImportError> previewFromText(String text) {
+    private Result<ImportPreviewOutcome, ImportError> previewFromText(String text, @Nullable UUID accountId) {
+        return switch (documentTypeDetector.detect(text)) {
+            case BANK_STATEMENT -> previewBankStatement(text, accountId);
+            case CREDIT_CARD_INVOICE, UNKNOWN -> previewInvoice(text);
+        };
+    }
+
+    private Result<ImportPreviewOutcome, ImportError> previewInvoice(String text) {
         final Issuer issuer = issuerDetector.detect(text);
         final Optional<CreditCardStatementParser> parser = parsers.forIssuer(issuer);
         if (parser.isEmpty()) {
@@ -188,7 +368,8 @@ public class StatementImportUseCase {
             }
         }
 
-        return Result.success(new ImportPreview(issuer, statement, matchedCard, cards, List.copyOf(rows)));
+        return Result.success(new ImportPreviewOutcome.Invoice(
+                new ImportPreview(issuer, statement, matchedCard, cards, List.copyOf(rows))));
     }
 
     private boolean isDuplicate(TransactionDraft draft, List<MonetaryTransaction> existing) {

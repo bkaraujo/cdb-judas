@@ -1,8 +1,8 @@
 package br.community.context.monetary;
 
-import br.community.feature.user.accounts.statementimport.ChargeKind;
-import br.community.feature.user.accounts.statementimport.ParsedStatement;
-import br.community.feature.user.accounts.statementimport.SantanderCreditCardStatementParser;
+import br.community.feature.user.accounts.statementimport.preview.ChargeKind;
+import br.community.feature.user.accounts.statementimport.preview.ParsedStatement;
+import br.community.feature.user.accounts.statementimport.provider.SantanderCreditCardStatementParser;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
@@ -33,7 +33,7 @@ class SantanderCreditCardStatementParserTest {
                 l.description().equals("DECATHLON")
                         && Integer.valueOf(8).equals(l.installmentNumber())
                         && Integer.valueOf(10).equals(l.installmentTotal())
-                        && l.purchaseDate().equals(MonthDay.of(8, 3))
+                        && l.date().equals(MonthDay.of(8, 3))
                         && l.amount().compareTo(new BigDecimal("111.98")) == 0
                         && l.last4().equals("1258")
                         && l.kind() == ChargeKind.PURCHASE));
@@ -45,7 +45,7 @@ class SantanderCreditCardStatementParserTest {
         assertTrue(st.lines().stream().anyMatch(l ->
                 l.description().equals("NETFLIX COM")
                         && l.installmentNumber() == null
-                        && l.purchaseDate().equals(MonthDay.of(3, 6))
+                        && l.date().equals(MonthDay.of(3, 6))
                         && l.amount().compareTo(new BigDecimal("72.80")) == 0
                         && l.last4().equals("1258")));
     }
@@ -63,7 +63,7 @@ class SantanderCreditCardStatementParserTest {
                 l.kind() == ChargeKind.IOF
                         && l.description().contains("IOF DESPESA")
                         && l.amount().compareTo(new BigDecimal("1.41")) == 0
-                        && l.purchaseDate().equals(MonthDay.of(3, 20))));
+                        && l.date().equals(MonthDay.of(3, 20))));
     }
 
     @Test
@@ -88,7 +88,7 @@ class SantanderCreditCardStatementParserTest {
                 l.description().equals("DECATHLON")
                         && Integer.valueOf(9).equals(l.installmentNumber())
                         && Integer.valueOf(10).equals(l.installmentTotal())
-                        && l.purchaseDate().equals(MonthDay.of(8, 3))
+                        && l.date().equals(MonthDay.of(8, 3))
                         && l.amount().compareTo(new BigDecimal("111.98")) == 0));
         // Santander varies the per-installment cents: 037 - DF TAGUATINGA CT bills 231,79 as 3/3.
         assertTrue(st.lines().stream().anyMatch(l ->

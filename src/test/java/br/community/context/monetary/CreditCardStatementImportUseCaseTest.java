@@ -13,6 +13,9 @@ import br.community.context.monetary._0_domain.model.MonetaryTransaction;
 import br.community.context.monetary._1_application.command.ImportConfirmCommand;
 import br.community.context.monetary._1_application.service.*;
 import br.community.feature.user.accounts.statementimport.*;
+import br.community.feature.user.accounts.statementimport.confirm.*;
+import br.community.feature.user.accounts.statementimport.preview.*;
+import br.community.feature.user.accounts.statementimport.provider.*;
 import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;
@@ -33,6 +36,11 @@ class CreditCardStatementImportUseCaseTest {
 
     private static final CreditCardStatementParserRegistry PARSERS = new CreditCardStatementParserRegistry(
             new SantanderCreditCardStatementParser(), new BtgCreditCardStatementParser());
+
+    private static ImportPreview invoicePreview(Result<ImportPreviewOutcome, ImportError> result) {
+        var outcome = assertInstanceOf(Result.Success.class, result).value();
+        return assertInstanceOf(ImportPreviewOutcome.Invoice.class, outcome).preview();
+    }
 
     private StatementImportUseCase useCaseWith(PdfTextExtractor extractor) {
         return useCaseWith(extractor, new InMemoryRepositories.Accounts());
@@ -58,7 +66,8 @@ class CreditCardStatementImportUseCaseTest {
         final GroupSignature groupSignature = new GroupSignature();
         final MonetaryContext monetaryContext = monetaryContext(accounts, transactions, categories);
         return new StatementImportUseCase(
-                monetaryContext, extractor, new IssuerDetector(), PARSERS, new CardMatcher(),
+                monetaryContext, extractor, new DocumentTypeDetector(), new IssuerDetector(), PARSERS,
+                new BankStatementParserRegistry(new BtgBankStatementParser()), new CardMatcher(),
                 new InstallmentExpander(groupSignature), groupSignature, new CategoryGuesser(),
                 CLOCK, MAX_BYTES);
     }
@@ -107,7 +116,7 @@ class CreditCardStatementImportUseCaseTest {
     @Test
     void rejectsOversizedFileBeforeExtracting() {
         var useCase = useCaseWith((bytes, password) -> Result.success("BTG Pactual 30.306.294/0001-45"));
-        var result = useCase.preview(new byte[(int) MAX_BYTES + 1], null);
+        var result = useCase.preview(new byte[(int) MAX_BYTES + 1], null, null);
         var error = assertInstanceOf(Result.Failure.class, result).error();
         assertInstanceOf(ImportError.FileTooLarge.class, error);
     }
@@ -115,7 +124,7 @@ class CreditCardStatementImportUseCaseTest {
     @Test
     void mapsEncryptedToPasswordRequired() {
         var useCase = useCaseWith((bytes, password) -> new Result.Failure<>(new ExtractionFailure.Encrypted()));
-        var result = useCase.preview(new byte[1], null);
+        var result = useCase.preview(new byte[1], null, null);
         var error = assertInstanceOf(Result.Failure.class, result).error();
         assertInstanceOf(ImportError.PasswordRequired.class, error);
     }
@@ -123,7 +132,7 @@ class CreditCardStatementImportUseCaseTest {
     @Test
     void mapsTooManyPagesPreservingCounts() {
         var useCase = useCaseWith((bytes, password) -> new Result.Failure<>(new ExtractionFailure.TooManyPages(99, 50)));
-        var result = useCase.preview(new byte[1], null);
+        var result = useCase.preview(new byte[1], null, null);
         var error = assertInstanceOf(Result.Failure.class, result).error();
         var tooMany = assertInstanceOf(ImportError.TooManyPages.class, error);
         assertEquals(99, tooMany.pages());
@@ -133,7 +142,7 @@ class CreditCardStatementImportUseCaseTest {
     @Test
     void rejectsUnknownIssuer() {
         var useCase = useCaseWith((bytes, password) -> Result.success("texto qualquer sem banco"));
-        var result = useCase.preview(new byte[1], null);
+        var result = useCase.preview(new byte[1], null, null);
         var error = assertInstanceOf(Result.Failure.class, result).error();
         assertInstanceOf(ImportError.UnknownIssuer.class, error);
     }
@@ -149,7 +158,7 @@ class CreditCardStatementImportUseCaseTest {
                 """;
         var useCase = useCaseWith((bytes, password) -> Result.success(text));
 
-        var preview = (ImportPreview) assertInstanceOf(Result.Success.class, useCase.preview(new byte[1], null)).value();
+        var preview = invoicePreview(useCase.preview(new byte[1], null, null));
 
         assertEquals(Issuer.BTG, preview.issuer());
         assertEquals(java.util.List.of("0020"), preview.statement().last4s());
@@ -158,7 +167,7 @@ class CreditCardStatementImportUseCaseTest {
         ParsedStatementLine row = preview.statement().lines().getFirst();
         assertEquals("Amazonmktplc Megabytem", row.description());
         assertEquals(0, row.amount().compareTo(new BigDecimal("72.99")));
-        assertEquals(MonthDay.of(7, 15), row.purchaseDate());
+        assertEquals(MonthDay.of(7, 15), row.date());
         assertEquals(9, row.installmentNumber());
         assertEquals(10, row.installmentTotal());
     }
@@ -179,7 +188,7 @@ class CreditCardStatementImportUseCaseTest {
         accounts.save(otherCard);
         var useCase = useCaseWith((bytes, password) -> Result.success(text), accounts);
 
-        var preview = (ImportPreview) assertInstanceOf(Result.Success.class, useCase.preview(new byte[1], null)).value();
+        var preview = invoicePreview(useCase.preview(new byte[1], null, null));
 
         assertEquals(matchingCard, preview.matchedCard());
         assertEquals(java.util.List.of(matchingCard, otherCard), preview.candidateCards());
@@ -196,7 +205,7 @@ class CreditCardStatementImportUseCaseTest {
                 """;
         var useCase = useCaseWith((bytes, password) -> Result.success(text));
 
-        var preview = (ImportPreview) assertInstanceOf(Result.Success.class, useCase.preview(new byte[1], null)).value();
+        var preview = invoicePreview(useCase.preview(new byte[1], null, null));
         ParsedStatementLine row = preview.statement().lines().getFirst();
         assertNull(row.installmentNumber());
         assertNull(row.installmentTotal());
@@ -213,7 +222,7 @@ class CreditCardStatementImportUseCaseTest {
                 """;
         var useCase = useCaseWith((bytes, password) -> Result.success(text));
 
-        var preview = (ImportPreview) assertInstanceOf(Result.Success.class, useCase.preview(new byte[1], null)).value();
+        var preview = invoicePreview(useCase.preview(new byte[1], null, null));
 
         // The raw statement still carries the single printed line.
         assertEquals(1, preview.statement().lines().size());
@@ -247,7 +256,7 @@ class CreditCardStatementImportUseCaseTest {
                 "confirmed", "expense", null, groupId, 1, 10));
 
         var useCase = useCaseWith((bytes, password) -> Result.success(text), accounts, transactions);
-        var preview = (ImportPreview) assertInstanceOf(Result.Success.class, useCase.preview(new byte[1], null)).value();
+        var preview = invoicePreview(useCase.preview(new byte[1], null, null));
 
         assertEquals(10, preview.rows().size());
         assertTrue(preview.rows().stream().allMatch(r -> r.duplicate()),
@@ -275,7 +284,7 @@ class CreditCardStatementImportUseCaseTest {
                 "confirmed", "expense", null, null, null, null));
 
         var useCase = useCaseWith((bytes, password) -> Result.success(text), accounts, transactions);
-        var preview = (ImportPreview) assertInstanceOf(Result.Success.class, useCase.preview(new byte[1], null)).value();
+        var preview = invoicePreview(useCase.preview(new byte[1], null, null));
 
         assertEquals(1, preview.rows().size());
         assertTrue(preview.rows().getFirst().duplicate(),
@@ -293,7 +302,7 @@ class CreditCardStatementImportUseCaseTest {
                 """;
         var useCase = useCaseWith((bytes, password) -> Result.success(text));
 
-        var preview = (ImportPreview) assertInstanceOf(Result.Success.class, useCase.preview(new byte[1], null)).value();
+        var preview = invoicePreview(useCase.preview(new byte[1], null, null));
 
         assertEquals(10, preview.rows().size());
         assertTrue(preview.rows().stream().allMatch(r -> r.categoryId() != null),
@@ -323,7 +332,7 @@ class CreditCardStatementImportUseCaseTest {
                 "confirmed", "expense", null, null, null, null));
 
         var useCase = useCaseWith((bytes, password) -> Result.success(text), accounts, transactions);
-        var preview = (ImportPreview) assertInstanceOf(Result.Success.class, useCase.preview(new byte[1], null)).value();
+        var preview = invoicePreview(useCase.preview(new byte[1], null, null));
 
         assertEquals(10, preview.rows().size());
         assertTrue(preview.rows().stream().allMatch(r -> categoryC.equals(r.categoryId())),
@@ -340,7 +349,7 @@ class CreditCardStatementImportUseCaseTest {
                 R$ 60,00
                 """;
         var useCase = useCaseWith((bytes, password) -> Result.success(text));
-        var preview = (ImportPreview) assertInstanceOf(Result.Success.class, useCase.preview(new byte[1], null)).value();
+        var preview = invoicePreview(useCase.preview(new byte[1], null, null));
 
         assertNull(preview.matchedCard());
         assertEquals(1, preview.rows().size());
