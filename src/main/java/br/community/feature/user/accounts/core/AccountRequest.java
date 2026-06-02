@@ -1,4 +1,4 @@
-package br.community.feature.user.accounts;
+package br.community.feature.user.accounts.core;
 
 import br.community.core.TwoDecimalPlaces;
 import jakarta.validation.constraints.NotBlank;

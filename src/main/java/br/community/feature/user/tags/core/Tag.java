@@ -1,4 +1,4 @@
-package br.community.feature.user.tags;
+package br.community.feature.user.tags.core;
 
 import org.jspecify.annotations.NullMarked;
 

@@ -6,6 +6,8 @@ import br.community.context.monetary._0_domain.model.MonetaryTransaction;
 import br.community.context.monetary._1_application.command.AccountCommand;
 import br.community.context.shared._0_domain.model.DomainError;
 import br.community.context.shared._1_application.DomainException;
+import br.community.feature.user.accounts.core.Account;
+import br.community.feature.user.accounts.core.AccountRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.val;

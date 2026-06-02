@@ -1,4 +1,4 @@
-package br.community.feature.user.tags;
+package br.community.feature.user.tags.core;
 
 import br.commons.framework.message.MessageListener;
 import br.commons.framework.message.MessageResult;

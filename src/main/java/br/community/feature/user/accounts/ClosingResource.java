@@ -1,7 +1,9 @@
-package br.community.feature.user.accounts.closing;
+package br.community.feature.user.accounts;
 
 import br.commons.Logger;
 import br.community.context.monetary.MonetaryContext;
+import br.community.feature.user.accounts.closing.ClosingRequest;
+import br.community.feature.user.accounts.closing.ClosingResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.val;

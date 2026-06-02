@@ -1,4 +1,4 @@
-package br.community.feature.user.tags;
+package br.community.feature.user.tags.core;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;

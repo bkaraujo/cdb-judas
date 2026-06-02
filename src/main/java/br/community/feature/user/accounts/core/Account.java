@@ -1,4 +1,4 @@
-package br.community.feature.user.accounts;
+package br.community.feature.user.accounts.core;
 
 import br.commons.tools.Strings;
 import br.community.context.monetary._0_domain.model.MonetaryAccount;

@@ -1,8 +1,8 @@
-package br.community.feature.user.accounts;
+package br.community.feature.user;
 
 import br.commons.MessageBus;
-import br.community.context.monetary.MonetaryContext;
 import br.community.feature.system.stream.SSE;
+import br.community.feature.user.tags.core.TagStreamListener;
 import lombok.val;
 import org.jspecify.annotations.NullMarked;
 import org.springframework.context.annotation.Bean;
@@ -10,11 +10,11 @@ import org.springframework.context.annotation.Configuration;
 
 @Configuration
 @NullMarked
-public class AccountStreamModule {
+public class TagModule {
 
     @Bean
-    AccountStreamListener accountStreamListener(SSE sse, MonetaryContext monetaryContext) {
-        val listener = new AccountStreamListener(sse, monetaryContext);
+    TagStreamListener tagStreamListener(SSE sse) {
+        val listener = new TagStreamListener(sse);
         MessageBus.subscribe(listener);
         return listener;
     }

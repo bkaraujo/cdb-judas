@@ -1,10 +1,14 @@
-package br.community.feature.user.accounts.transactions;
+package br.community.feature.user.accounts;
 
 import br.commons.Result;
 import br.community.context.monetary.MonetaryContext;
 import br.community.context.monetary._0_domain.model.MonetaryTransaction;
 import br.community.context.monetary._1_application.command.TransactionCommand;
 import br.community.context.shared._1_application.DomainException;
+import br.community.feature.user.accounts.transactions.PatchStatusRequest;
+import br.community.feature.user.accounts.transactions.Transaction;
+import br.community.feature.user.accounts.transactions.TransactionRequest;
+import br.community.feature.user.accounts.transactions.TransferRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.val;

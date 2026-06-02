@@ -1,4 +1,4 @@
-package br.community.feature.user.dashboard;
+package br.community.feature.user.dashboard.core;
 
 import br.commons.Result;
 import br.community.context.monetary.MonetaryContext;

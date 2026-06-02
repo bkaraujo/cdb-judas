@@ -2,6 +2,7 @@ package br.community.feature.user.dashboard;
 
 import br.commons.Result;
 import br.community.context.shared._1_application.DomainException;
+import br.community.feature.user.dashboard.core.DashboardService;
 import lombok.RequiredArgsConstructor;
 import lombok.val;
 import org.jspecify.annotations.NullMarked;

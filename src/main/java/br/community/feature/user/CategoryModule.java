@@ -1,7 +1,8 @@
-package br.community.feature.user.tags;
+package br.community.feature.user;
 
 import br.commons.MessageBus;
 import br.community.feature.system.stream.SSE;
+import br.community.feature.user.categories.core.CategoryStreamListener;
 import lombok.val;
 import org.jspecify.annotations.NullMarked;
 import org.springframework.context.annotation.Bean;
@@ -9,11 +10,11 @@ import org.springframework.context.annotation.Configuration;
 
 @Configuration
 @NullMarked
-public class TagStreamModule {
+public class CategoryModule {
 
     @Bean
-    TagStreamListener tagStreamListener(SSE sse) {
-        val listener = new TagStreamListener(sse);
+    CategoryStreamListener categoryStreamListener(SSE sse) {
+        val listener = new CategoryStreamListener(sse);
         MessageBus.subscribe(listener);
         return listener;
     }

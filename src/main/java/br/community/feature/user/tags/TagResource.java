@@ -5,6 +5,7 @@ import br.community.context.monetary.MonetaryContext;
 import br.community.context.monetary._0_domain.model.Tag;
 import br.community.context.monetary._1_application.command.TagCommand;
 import br.community.context.shared._1_application.DomainException;
+import br.community.feature.user.tags.core.TagRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.jspecify.annotations.NullMarked;

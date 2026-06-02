@@ -1,4 +1,4 @@
-package br.community.feature.user.categories;
+package br.community.feature.user.categories.core;
 
 import br.commons.framework.message.MessageListener;
 import br.commons.framework.message.MessageResult;

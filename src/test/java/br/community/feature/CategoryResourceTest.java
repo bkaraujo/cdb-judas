@@ -1,7 +1,7 @@
 package br.community.feature;
 
 import br.community.context.monetary._0_domain.model.MonetaryNature;
-import br.community.feature.user.categories.Category;
+import br.community.feature.user.categories.core.Category;
 import lombok.val;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.MediaType;

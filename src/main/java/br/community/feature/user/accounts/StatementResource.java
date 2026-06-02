@@ -1,7 +1,10 @@
-package br.community.feature.user.accounts.statement;
+package br.community.feature.user.accounts;
 
 import br.commons.Result;
 import br.community.context.shared._1_application.DomainException;
+import br.community.feature.user.accounts.statement.StatementItem;
+import br.community.feature.user.accounts.statement.StatementService;
+import br.community.feature.user.accounts.statement.StatementSummary;
 import lombok.RequiredArgsConstructor;
 import lombok.val;
 import org.jspecify.annotations.NullMarked;
@@ -24,13 +27,14 @@ public class StatementResource {
 
     private final StatementService service;
 
-    @GetMapping("/{accId}/statements/{yyyyMM}")
+    @GetMapping("/{accountID}/statements/{yyyyMM}")
     public List<StatementItem> detail(
-            @PathVariable UUID accId,
+            @PathVariable UUID accountID,
             @PathVariable("yyyyMM") String yyyyMM,
-            @RequestParam(required = false) @Nullable String status) {
+            @RequestParam(required = false) @Nullable String status
+    ) {
         val ym = YearMonth.parse(yyyyMM, YYYYMM);
-        return switch (service.list(accId.toString(), ym.getMonthValue(), ym.getYear(), status)) {
+        return switch (service.list(accountID.toString(), ym.getMonthValue(), ym.getYear(), status)) {
             case Result.Success(var list) -> list;
             case Result.Failure(var error) -> throw new DomainException(error);
         };
@@ -39,7 +43,8 @@ public class StatementResource {
     @GetMapping("/statements/{yyyyMM}")
     public List<StatementSummary> summary(
             @PathVariable("yyyyMM") String yyyyMM,
-            @RequestParam(required = false) @Nullable String status) {
+            @RequestParam(required = false) @Nullable String status
+    ) {
         val ym = YearMonth.parse(yyyyMM, YYYYMM);
         return switch (service.summary(ym.getMonthValue(), ym.getYear(), status)) {
             case Result.Success(var list) -> list;

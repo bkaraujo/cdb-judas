@@ -39,7 +39,9 @@ class ArchitectureTest {
     @ArchTest
     static final ArchRule core_must_not_access_feature =
             noClasses().that().resideInAPackage("..core..")
-                    .should().accessClassesThat().resideInAPackage("..feature..");
+                    .and().resideOutsideOfPackage("..feature..")
+                    .should().accessClassesThat().resideInAPackage("..feature..")
+                    .because("o core da aplicação não deve depender de features; cores locais de feature (feature..core) são exceção legítima");
 
     @ArchTest
     static final ArchRule application_must_not_access_infrastructure =

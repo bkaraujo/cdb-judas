@@ -1,4 +1,4 @@
-package br.community.feature.user.categories;
+package br.community.feature.user.categories.core;
 
 import br.community.context.monetary._0_domain.model.MonetaryCategory;
 import org.jspecify.annotations.NullMarked;
