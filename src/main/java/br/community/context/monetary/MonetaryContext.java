@@ -4,6 +4,7 @@ import br.commons.Result;
 import br.commons.annotation.Facade;
 import br.community.context.monetary._0_domain.model.*;
 import br.community.context.monetary._1_application.command.*;
+import br.community.context.monetary._1_application.usecase.*;
 import br.community.context.shared._0_domain.model.DomainError;
 import lombok.RequiredArgsConstructor;
 import org.jspecify.annotations.NullMarked;
@@ -54,28 +55,6 @@ public class MonetaryContext implements Facade {
 
     public Result<List<MonthlyBalance>, DomainError> getYearBalances(UUID accountId, int year) {
         return ucAccount.getYearBalances(accountId, year);
-    }
-
-    // ── Category operations ────────────────────────────────────────
-
-    public Result<List<MonetaryCategory>, DomainError> listCategories() {
-        return ucMetadata.listCategories();
-    }
-
-    public Result<MonetaryCategory, DomainError> findCategoryById(UUID id) {
-        return ucMetadata.findCategoryById(id);
-    }
-
-    public Result<MonetaryCategory, DomainError> createCategory(CategoryCommand cmd) {
-        return ucMetadata.createCategory(cmd);
-    }
-
-    public Result<MonetaryCategory, DomainError> updateCategory(UUID id, CategoryCommand cmd) {
-        return ucMetadata.updateCategory(id, cmd);
-    }
-
-    public Result<Void, DomainError> deleteCategory(UUID id) {
-        return ucMetadata.deleteCategory(id);
     }
 
     // ── Credit card operations ─────────────────────────────────────
@@ -136,10 +115,6 @@ public class MonetaryContext implements Facade {
         return ucTransaction.createImported(cmd);
     }
 
-    public MonetaryCategory findOrCreateUncategorizedCategory() {
-        return ucMetadata.findOrCreateUncategorizedCategory();
-    }
-
     // ── Cost center operations ─────────────────────────────────────
 
     public Result<List<MonetaryCenter>, DomainError> listCostCenters() {
@@ -152,6 +127,32 @@ public class MonetaryContext implements Facade {
 
     public Result<MonetaryCenter, DomainError> updateCostCenter(UUID id, CostCenterCommand cmd) {
         return ucMetadata.updateCostCenter(id, cmd);
+    }
+
+    // ── Category operations ────────────────────────────────────────
+
+    public Result<List<MonetaryCategory>, DomainError> listCategories() {
+        return ucMetadata.listCategories();
+    }
+
+    public Result<MonetaryCategory, DomainError> findCategoryById(UUID id) {
+        return ucMetadata.findCategoryById(id);
+    }
+
+    public Result<MonetaryCategory, DomainError> createCategory(CategoryCommand cmd) {
+        return ucMetadata.createCategory(cmd);
+    }
+
+    public Result<MonetaryCategory, DomainError> updateCategory(UUID id, CategoryCommand cmd) {
+        return ucMetadata.updateCategory(id, cmd);
+    }
+
+    public MonetaryCategory findOrCreateUncategorizedCategory() {
+        return ucMetadata.findOrCreateUncategorizedCategory();
+    }
+
+    public Result<Void, DomainError> deleteCategory(UUID id) {
+        return ucMetadata.deleteCategory(id);
     }
 
     public Result<Void, DomainError> deleteCostCenter(UUID id) {

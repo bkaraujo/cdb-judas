@@ -8,6 +8,7 @@ import br.community.context.monetary._1_application.command.TransactionCommand;
 import br.community.context.monetary._1_application.service.CategoryService;
 import br.community.context.monetary._1_application.service.ClosingService;
 import br.community.context.monetary._1_application.service.TransactionService;
+import br.community.context.monetary._1_application.usecase.TransactionUseCase;
 import br.community.context.shared._0_domain.model.DomainError;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;

@@ -6,6 +6,7 @@ import br.community.context.monetary._1_application.command.CategoryCommand;
 import br.community.context.monetary._1_application.command.CostCenterCommand;
 import br.community.context.monetary._1_application.command.TagCommand;
 import br.community.context.monetary._1_application.service.*;
+import br.community.context.monetary._1_application.usecase.MetadataUseCase;
 import br.community.context.shared._0_domain.model.DomainError;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;

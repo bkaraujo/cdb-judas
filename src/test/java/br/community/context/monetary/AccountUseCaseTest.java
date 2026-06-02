@@ -7,6 +7,7 @@ import br.community.context.monetary._1_application.command.AccountCommand;
 import br.community.context.monetary._1_application.command.CreditCardCommand;
 import br.community.context.monetary._1_application.service.AccountService;
 import br.community.context.monetary._1_application.service.BalanceService;
+import br.community.context.monetary._1_application.usecase.AccountUseCase;
 import br.community.context.shared._0_domain.model.DomainError;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;

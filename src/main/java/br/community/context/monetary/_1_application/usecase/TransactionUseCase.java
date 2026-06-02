@@ -1,4 +1,4 @@
-package br.community.context.monetary;
+package br.community.context.monetary._1_application.usecase;
 
 import br.commons.MessageBus;
 import br.commons.Result;
