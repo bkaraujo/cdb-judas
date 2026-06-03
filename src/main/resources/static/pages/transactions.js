@@ -1067,7 +1067,14 @@
           '<input id="' + ids.date + '" name="date" type="date" required value="' + esc(initial.date) + '" />' +
         '</div>' +
         '<div class="form-group">' +
-          '<label class="form-label" for="' + ids.category + '">Categoria</label>' +
+          '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">' +
+            '<label class="form-label" for="' + ids.category + '" style="margin:0;">Categoria</label>' +
+            '<button type="button" data-act="new-category" ' +
+              'style="background:none;border:none;color:var(--accent);cursor:pointer;' +
+              'font-size:11px;font-weight:600;padding:0;display:inline-flex;align-items:center;gap:3px;">' +
+              window.icon('plus', 12) + 'Nova categoria' +
+            '</button>' +
+          '</div>' +
           '<select id="' + ids.category + '" name="categoryId" data-region="category-select">' +
             buildCatOptions(type, initial.categoryId) +
           '</select>' +
@@ -1157,6 +1164,24 @@
       bindAmountMask();
     });
 
+    // "+ Nova categoria": quick-create a category inline, then select it.
+    m.$body.on('click', '[data-act=new-category]', function (e) {
+      e.preventDefault();
+      const nature = natureForType($form.find('input[name=type]').val());
+      if (!nature) return; // transfer has no category
+      openCategoryCreateModal(nature, function (created) {
+        const $sel = $form.find('select[name=categoryId]');
+        // Drop the "Nenhuma categoria disponível" placeholder, if present.
+        $sel.find('option').each(function () { if (!this.value) $(this).remove(); });
+        if (!$sel.find('option[value="' + esc(created.id) + '"]').length) {
+          $sel.append('<option value="' + esc(created.id) + '">' +
+            esc(quickCategoryLabel(created)) + '</option>');
+        }
+        $sel.val(String(created.id));
+        initial.categoryId = String(created.id);
+      });
+    });
+
     function submit(e) {
       if (e) e.preventDefault();
       const type = $form.find('input[name=type]').val();
@@ -1231,6 +1256,98 @@
 
     $form.on('submit', submit);
     m.$el.on('click', '[data-act=save]', submit);
+  }
+
+  // ── Modal: quick-create category (nested, from the tx form) ─
+  // Label for a freshly-created category not yet in the cache (SSE lag).
+  function quickCategoryLabel(cat) {
+    const name = cat.name || cat.description || '';
+    if (cat.parentId) {
+      const parent = window.categoryById()[cat.parentId];
+      if (parent) return parent.name + ' / ' + name;
+    }
+    return name;
+  }
+
+  // Nature is fixed by the originating transaction type. On success the created
+  // category (with id) is handed to `onCreated` so the caller can select it.
+  function openCategoryCreateModal(nature, onCreated) {
+    const uniq = Date.now();
+    const nameId = 'qcat-name-' + uniq;
+    const parentSelId = 'qcat-parent-' + uniq;
+    const natureLabel = nature === 'REVENUE' ? 'Receita' : 'Despesa';
+
+    const roots = window.App.CacheStore.categories().filter(function (c) {
+      return String(c.nature || '').toUpperCase() === nature && !c.parentId;
+    }).slice().sort(window.sortByName);
+
+    const parentOpts = '<option value="">— Nenhuma (categoria raiz) —</option>' +
+      roots.map(function (p) {
+        return '<option value="' + esc(p.id) + '">' + esc(p.name) + '</option>';
+      }).join('');
+
+    const bodyHtml =
+      '<form data-form="qcat" autocomplete="off">' +
+        '<div class="form-grid">' +
+          '<div class="form-group full">' +
+            '<label class="form-label">Tipo</label>' +
+            '<input type="text" value="' + esc(natureLabel) + '" disabled />' +
+          '</div>' +
+          '<div class="form-group full">' +
+            '<label class="form-label" for="' + nameId + '">Nome</label>' +
+            '<input id="' + nameId + '" name="name" type="text" required ' +
+              'placeholder="Nome da categoria" />' +
+          '</div>' +
+          '<div class="form-group full">' +
+            '<label class="form-label" for="' + parentSelId + '">Categoria Pai (opcional)</label>' +
+            '<select id="' + parentSelId + '" name="parentId">' + parentOpts + '</select>' +
+          '</div>' +
+        '</div>' +
+      '</form>';
+
+    const $cancel = window.btn({
+      variant: 'secondary', size: 'md', label: 'Cancelar',
+      attrs: 'data-modal-close="1" type="button"'
+    });
+    const $save = window.btn({
+      variant: 'primary', size: 'md', label: 'Salvar',
+      attrs: 'data-act="qcat-save" type="submit"'
+    });
+    const $footer = $('<div style="display:flex;gap:10px;"></div>').append($cancel).append($save);
+
+    const m = window.modal({
+      title: 'Nova Categoria',
+      body: bodyHtml,
+      footer: $footer[0].outerHTML,
+    });
+    m.open();
+
+    const $form = m.$body.find('form[data-form=qcat]');
+    $form.find('input[name=name]').trigger('focus');
+
+    function submit(e) {
+      if (e) e.preventDefault();
+      const name = ($form.find('input[name=name]').val() || '').trim();
+      if (!name) { $form.find('input[name=name]').trigger('focus'); return; }
+      const parentId = $form.find('select[name=parentId]').val() || null;
+
+      const $btn = m.$el.find('[data-act=qcat-save]').prop('disabled', true);
+      window.App.CategoryService.create({
+        name: name,
+        nature: nature,
+        parentId: parentId,
+      }).then(function (created) {
+        m.close();
+        window.toast('Categoria criada', 'success');
+        if (onCreated) onCreated(created);
+      }).catch(function (err) {
+        $btn.prop('disabled', false);
+        window.toast((err && err.message) || 'Falha ao criar categoria', 'error');
+      });
+    }
+
+    $form.on('submit', submit);
+    m.$el.on('click', '[data-act=qcat-save]', submit);
   }
 
   // ── Delete (with scope for grouped/recurring) ─────────────
