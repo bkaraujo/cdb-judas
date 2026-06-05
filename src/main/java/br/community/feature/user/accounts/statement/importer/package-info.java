@@ -28,4 +28,7 @@
  *       — parsers específicos por banco/emissor (BTG, Santander …)</li>
  * </ul>
  */
+@NullMarked
 package br.community.feature.user.accounts.statement.importer;
+
+import org.jspecify.annotations.NullMarked;

@@ -13,4 +13,7 @@
  *   <li>{@link br.community.feature.user.dashboard.core} — serviço de cálculo do resultado mensal</li>
  * </ul>
  */
+@NullMarked
 package br.community.feature.user.dashboard;
+
+import org.jspecify.annotations.NullMarked;

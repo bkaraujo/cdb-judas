@@ -9,4 +9,7 @@
  *   <li>{@code CategoryStreamListener} — ouve eventos do domínio e envia updates via SSE</li>
  * </ul>
  */
+@NullMarked
 package br.community.feature.user.categories.core;
+
+import org.jspecify.annotations.NullMarked;

@@ -8,4 +8,7 @@
  * projetos, naturezas de despesa). Não há operações de escrita por HTTP; a carga é feita
  * via {@link br.community.feature.system.costcenter.CostCenterCatalog}.
  */
+@NullMarked
 package br.community.feature.system.costcenter;
+
+import org.jspecify.annotations.NullMarked;

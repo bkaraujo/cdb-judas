@@ -16,4 +16,7 @@
  * pelo domínio. O parâmetro {@code mode} no DELETE controla se a exclusão é unitária
  * ou em lote (todas as parcelas do grupo).
  */
+@NullMarked
 package br.community.feature.user.accounts.transactions;
+
+import org.jspecify.annotations.NullMarked;

@@ -11,4 +11,7 @@
  * <p>O período de fechamento determina a competência de referência usada para
  * consolidar informações financeiras em aberto no contexto monetário.
  */
+@NullMarked
 package br.community.feature.user.accounts.closing;
+
+import org.jspecify.annotations.NullMarked;

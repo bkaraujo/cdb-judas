@@ -8,4 +8,7 @@
  *   <li>{@code AccountStreamListener} — ouve eventos SSE do domínio e propaga atualizações ao frontend</li>
  * </ul>
  */
+@NullMarked
 package br.community.feature.user.accounts.core;
+
+import org.jspecify.annotations.NullMarked;

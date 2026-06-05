@@ -13,4 +13,7 @@
  * <p>Exatamente um dos parâmetros deve ser informado; caso contrário a requisição
  * é rejeitada com erro de validação.
  */
+@NullMarked
 package br.community.feature.user.accounts.balance;
+
+import org.jspecify.annotations.NullMarked;

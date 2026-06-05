@@ -13,4 +13,7 @@
  * mas o controlador é agnóstico a ele; a guarda de segurança valida a propriedade
  * externamente.
  */
+@NullMarked
 package br.community.feature.system.stream;
+
+import org.jspecify.annotations.NullMarked;

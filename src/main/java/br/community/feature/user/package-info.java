@@ -11,4 +11,7 @@
  *   <li>{@link br.community.feature.user.tags}        — rótulos livres para organização pessoal</li>
  * </ul>
  */
+@NullMarked
 package br.community.feature.user;
+
+import org.jspecify.annotations.NullMarked;

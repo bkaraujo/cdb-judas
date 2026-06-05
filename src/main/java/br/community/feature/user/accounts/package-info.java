@@ -21,4 +21,7 @@
  * <p>A feature delega toda a lógica de domínio ao {@code MonetaryContext}
  * e escuta eventos via {@link br.community.feature.user.accounts.core.AccountStreamListener}.
  */
+@NullMarked
 package br.community.feature.user.accounts;
+
+import org.jspecify.annotations.NullMarked;

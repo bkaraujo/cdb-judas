@@ -19,4 +19,7 @@
  *   <li>{@link br.community.feature.user.tags.core} — entidade, request e listener de stream</li>
  * </ul>
  */
+@NullMarked
 package br.community.feature.user.tags;
+
+import org.jspecify.annotations.NullMarked;

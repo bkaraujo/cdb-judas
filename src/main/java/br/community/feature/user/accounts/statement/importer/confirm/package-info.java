@@ -9,4 +9,7 @@
  *       reconciliados e ignorados</li>
  * </ul>
  */
+@NullMarked
 package br.community.feature.user.accounts.statement.importer.confirm;
+
+import org.jspecify.annotations.NullMarked;

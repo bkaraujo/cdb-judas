@@ -9,4 +9,7 @@
  *   <li>{@link br.community.feature.system.stream} — canal SSE para push de eventos de domínio</li>
  * </ul>
  */
+@NullMarked
 package br.community.feature.system;
+
+import org.jspecify.annotations.NullMarked;

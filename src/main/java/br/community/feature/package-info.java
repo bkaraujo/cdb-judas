@@ -23,4 +23,7 @@
  *     └── tags         CRUD /api/{uuid}/tags
  * </pre>
  */
+@NullMarked
 package br.community.feature;
+
+import org.jspecify.annotations.NullMarked;

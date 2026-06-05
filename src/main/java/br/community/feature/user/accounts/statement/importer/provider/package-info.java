@@ -12,4 +12,7 @@
  * {@code CreditCardStatementParser} definida em {@code preview} e é registrado
  * automaticamente nos respectivos registries pelo mecanismo de injeção do Spring.
  */
+@NullMarked
 package br.community.feature.user.accounts.statement.importer.provider;
+
+import org.jspecify.annotations.NullMarked;

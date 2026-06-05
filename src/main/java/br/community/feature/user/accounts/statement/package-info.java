@@ -16,4 +16,7 @@
  *       — importação de extratos PDF (fatura de cartão e extrato bancário)</li>
  * </ul>
  */
+@NullMarked
 package br.community.feature.user.accounts.statement;
+
+import org.jspecify.annotations.NullMarked;

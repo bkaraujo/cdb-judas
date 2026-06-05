@@ -19,4 +19,7 @@
  *   <li>{@link br.community.feature.user.categories.core} — entidade, requests e listener de stream</li>
  * </ul>
  */
+@NullMarked
 package br.community.feature.user.categories;
+
+import org.jspecify.annotations.NullMarked;

@@ -14,4 +14,7 @@
  * <p>Os resultados são encapsulados em {@code ImportPreviewOutcome}, discriminado entre
  * {@code Invoice} (fatura de cartão) e {@code Statement} (extrato bancário).
  */
+@NullMarked
 package br.community.feature.user.accounts.statement.importer.preview;
+
+import org.jspecify.annotations.NullMarked;
