@@ -26,8 +26,8 @@ import java.util.UUID;
 @NullMarked
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("/api/{uuid}/accounts/transactions/import")
-public class TransactionImportResource {
+@RequestMapping("/api/{uuid}/accounts/statement/import")
+public class StatementImportResource {
 
     private final StatementImportUseCase statementImport;
 
@@ -63,7 +63,7 @@ public class TransactionImportResource {
 
     @PostMapping(value = "/confirm", consumes = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<Object> confirm(@RequestBody @Valid ImportConfirmRequest req) {
-        val rows = req.rows().stream().map(TransactionImportResource::toCommandRow).toList();
+        val rows = req.rows().stream().map(StatementImportResource::toCommandRow).toList();
         val cmd = new ImportConfirmCommand(req.cardId(), rows);
 
         return switch (statementImport.confirm(cmd)) {
@@ -105,10 +105,10 @@ public class TransactionImportResource {
     }
 
     private static ImportPreviewResponse toResponse(ImportPreview preview) {
-        val rows = preview.rows().stream().map(TransactionImportResource::toRow).toList();
+        val rows = preview.rows().stream().map(StatementImportResource::toRow).toList();
         val matchedCard = preview.matchedCard();
         val matchedCardId = matchedCard != null ? matchedCard.id() : null;
-        val candidateCards = preview.candidateCards().stream().map(TransactionImportResource::toCardOption).toList();
+        val candidateCards = preview.candidateCards().stream().map(StatementImportResource::toCardOption).toList();
         return new ImportPreviewResponse(
                 "CREDIT_CARD_INVOICE", preview.issuer().name(), preview.statement().last4s(), rows, matchedCardId, candidateCards);
     }
