@@ -31,7 +31,7 @@ public class RequestLoggingFilter extends OncePerRequestFilter {
         if (requestBody.length > 0) { bodyString = new String(requestBody, StandardCharsets.UTF_8); }
 
         if (!request.getRequestURI().contains("favicon")) {
-            Logger.debug("%s %s => %s", request.getMethod(), request.getRequestURI(), bodyString.isEmpty() ? "none" : bodyString);
+            Logger.trace("%s %s => %s", request.getMethod(), request.getRequestURI(), bodyString.isEmpty() ? "none" : bodyString);
         }
 
         filterChain.doFilter(wrappedRequest, response);

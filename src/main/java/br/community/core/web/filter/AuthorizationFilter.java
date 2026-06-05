@@ -31,7 +31,7 @@ public class AuthorizationFilter extends OncePerRequestFilter {
             return;
         }
 
-        Logger.debug("AUTHZ %s %s => granted for '%s'", request.getMethod(), request.getRequestURI(), auth.getName());
+        Logger.trace("AUTHZ %s %s => granted for '%s'", request.getMethod(), request.getRequestURI(), auth.getName());
         filterChain.doFilter(request, response);
     }
 }

@@ -3,6 +3,7 @@ package br.community.core.web.filter;
 import br.commons.Logger;
 import br.commons.framework.logger.MDC;
 import br.community.context.security._0_domain.UserRepository;
+import br.community.core.web.RequestUtils;
 import br.community.core.web.security.AccessTokenStore;
 import br.community.core.web.security.AuthenticatedUser;
 import jakarta.servlet.FilterChain;
@@ -32,10 +33,10 @@ public class AuthenticationFilter extends OncePerRequestFilter {
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
         val token = request.getHeader(TOKEN_HEADER);
         if (token != null) {
-            val isSse = "text/event-stream".equals(request.getHeader("Accept"));
-            if (isSse) {
-                tokenStore.validate(token).ifPresent(userId ->
-                        authenticate(userId, request, response, false, null));
+            if (RequestUtils.isStream(request)) {
+                tokenStore
+                        .validate(token)
+                        .ifPresent(userId -> authenticate(userId, request, response, false, null));
             } else {
                 val result = tokenStore.rotate(token);
                 if (result.isPresent()) {

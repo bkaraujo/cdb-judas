@@ -272,4 +272,89 @@ class TransactionUseCaseTest {
         useCase.createTransaction(cmd(LocalDate.of(2026, 5, 10), "confirmed", null));
         assertEquals(costCenterId, txRepo.findAll().get(0).costCenterId());
     }
+
+    // ── Transferências: par indissociável ─────────────────────
+
+    /** Persiste as duas pernas de uma transferência (saída + entrada) sob um mesmo groupId. */
+    private UUID saveTransferPair(LocalDate date, UUID fromAccount, UUID toAccount) {
+        UUID groupId = UUID.randomUUID();
+        txRepo.save(new MonetaryTransaction(UUID.randomUUID(), "Transferência (saída)", new BigDecimal("-50.00"),
+                date, categoryId, fromAccount, "confirmed", "expense", costCenterId, date, groupId, 1, 2));
+        txRepo.save(new MonetaryTransaction(UUID.randomUUID(), "Transferência (entrada)", new BigDecimal("50.00"),
+                date, categoryId, toAccount, "confirmed", "income", costCenterId, date, groupId, 2, 2));
+        return groupId;
+    }
+
+    @Test
+    @DisplayName("excluir uma perna da transferência remove ambas")
+    void deleteTransferLegRemovesBothLegs() {
+        saveTransferPair(LocalDate.of(2026, 5, 10), accountId, UUID.randomUUID());
+        MonetaryTransaction entrada = txRepo.findAll().stream()
+                .filter(t -> "income".equals(t.type())).findFirst().orElseThrow();
+
+        Result<Void, DomainError> r = useCase.deleteTransaction(entrada.id(), null);
+        assertTrue(r.isSuccess());
+        assertEquals(0, txRepo.findAll().size(), "as duas pernas removidas");
+    }
+
+    @Test
+    @DisplayName("excluir perna de transferência ignora o mode (FUTURE remove ambas)")
+    void deleteTransferLegIgnoresMode() {
+        saveTransferPair(LocalDate.of(2026, 5, 10), accountId, UUID.randomUUID());
+        MonetaryTransaction saida = txRepo.findAll().stream()
+                .filter(t -> "expense".equals(t.type())).findFirst().orElseThrow();
+
+        assertTrue(useCase.deleteTransaction(saida.id(), "FUTURE").isSuccess());
+        assertEquals(0, txRepo.findAll().size());
+    }
+
+    @Test
+    @DisplayName("excluir perna em período fechado não remove nenhuma")
+    void deleteTransferLegClosedAborts() {
+        saveTransferPair(LocalDate.of(2026, 5, 10), accountId, UUID.randomUUID());
+        closingRepo.save(YearMonth.of(2026, 5));
+        MonetaryTransaction entrada = txRepo.findAll().stream()
+                .filter(t -> "income".equals(t.type())).findFirst().orElseThrow();
+
+        assertTrue(useCase.deleteTransaction(entrada.id(), null).isFailure());
+        assertEquals(2, txRepo.findAll().size(), "nada removido");
+    }
+
+    @Test
+    @DisplayName("editar uma perna desfaz o par: sobra avulsa, oposta removida")
+    void updateTransferLegDissolvesPair() {
+        saveTransferPair(LocalDate.of(2026, 5, 10), accountId, UUID.randomUUID());
+        MonetaryTransaction entrada = txRepo.findAll().stream()
+                .filter(t -> "income".equals(t.type())).findFirst().orElseThrow();
+
+        TransactionCommand upd = new TransactionCommand("ajuste", new BigDecimal("70.00"),
+                LocalDate.of(2026, 5, 12), categoryId, accountId, costCenterId, "confirmed", "income", null, null);
+        Result<MonetaryTransaction, DomainError> r = useCase.updateTransaction(entrada.id(), upd);
+        assertTrue(r.isSuccess());
+
+        List<MonetaryTransaction> all = txRepo.findAll();
+        assertEquals(1, all.size(), "perna oposta removida");
+        MonetaryTransaction survivor = all.get(0);
+        assertEquals(entrada.id(), survivor.id());
+        assertNull(survivor.groupId(), "lançamento degrupado (avulso)");
+        assertNull(survivor.installmentNumber());
+        assertNull(survivor.totalInstallments());
+        assertEquals(new BigDecimal("70.00"), survivor.amount());
+    }
+
+    @Test
+    @DisplayName("grupo de parcelas (tipo único) não é tratado como transferência ao editar")
+    void updateInstallmentGroupNotTreatedAsTransfer() {
+        useCase.createTransaction(cmd(LocalDate.of(2026, 5, 10), "confirmed", 3));
+        MonetaryTransaction first = txRepo.findAll().stream()
+                .filter(t -> t.installmentNumber() == 1).findFirst().orElseThrow();
+
+        TransactionCommand upd = new TransactionCommand("upd", new BigDecimal("20.00"),
+                LocalDate.of(2026, 5, 15), categoryId, accountId, costCenterId, "confirmed", "expense", null, null);
+        assertTrue(useCase.updateTransaction(first.id(), upd).isSuccess());
+
+        assertEquals(3, txRepo.findAll().size(), "parcelas preservadas");
+        MonetaryTransaction reload = txRepo.findById(first.id()).orElseThrow();
+        assertNotNull(reload.groupId(), "ainda parte do grupo de parcelas");
+    }
 }

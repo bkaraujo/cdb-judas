@@ -54,4 +54,16 @@ public class TransactionService {
                 .filter(t -> groupId.equals(t.groupId()))
                 .toList();
     }
+
+    /** Returns the opposite leg(s) of a transfer when {@code tx} belongs to a transfer group.
+     *  A transfer group mixes one income and one expense leg under a shared groupId, unlike an
+     *  installment group whose members share a single type. Empty when {@code tx} is not a transfer. */
+    public List<MonetaryTransaction> findTransferSiblings(MonetaryTransaction tx) {
+        if (tx.groupId() == null) return List.of();
+        List<MonetaryTransaction> group = findByGroupId(tx.groupId());
+        boolean hasIncome = group.stream().anyMatch(t -> "income".equalsIgnoreCase(t.type()));
+        boolean hasExpense = group.stream().anyMatch(t -> "expense".equalsIgnoreCase(t.type()));
+        if (!hasIncome || !hasExpense) return List.of();
+        return group.stream().filter(t -> !t.id().equals(tx.id())).toList();
+    }
 }

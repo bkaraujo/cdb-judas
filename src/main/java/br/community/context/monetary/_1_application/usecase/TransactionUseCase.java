@@ -88,13 +88,24 @@ public class TransactionUseCase {
             val isFuture = "FUTURE".equalsIgnoreCase(cmd.editMode()) && existing.groupId() != null;
 
             if (!isFuture) {
+                val transferSiblings = transactionService.findTransferSiblings(existing);
                 return closingService.validateDate(existing.date())
                         .flatMap(ignored -> closingService.validateDate(cmd.date()))
                         .map(ignored -> {
+                            // Editing one leg of a transfer dissolves the pair: the edited leg becomes a
+                            // standalone entry (group metadata dropped) and the opposite leg is removed so
+                            // its amount no longer lingers on the other account.
+                            val keepGroup = transferSiblings.isEmpty();
                             val updated = transactionService.save(toMonetaryTransactionEntity(id, cmd, cmd.date(), cmd.status(),
-                                    existing.groupId(), existing.installmentNumber(), existing.totalInstallments()));
+                                    keepGroup ? existing.groupId() : null,
+                                    keepGroup ? existing.installmentNumber() : null,
+                                    keepGroup ? existing.totalInstallments() : null));
                             MessageBus.submit(new MonetaryEvent.TransactionUpdated(existing));
                             MessageBus.submit(new MonetaryEvent.TransactionUpdated(updated));
+                            for (val sib : transferSiblings) {
+                                transactionService.deleteById(sib.id());
+                                MessageBus.submit(new MonetaryEvent.TransactionDeleted(sib));
+                            }
                             return updated;
                         });
             }
@@ -146,6 +157,9 @@ public class TransactionUseCase {
 
     public Result<Void, DomainError> deleteTransaction(UUID id, @Nullable String mode) {
         return transactionService.findById(id).flatMap(existing -> {
+            val transferSiblings = transactionService.findTransferSiblings(existing);
+            if (!transferSiblings.isEmpty()) return deleteTransferGroup(existing, transferSiblings);
+
             val isFuture = "FUTURE".equalsIgnoreCase(mode) && existing.groupId() != null;
 
             if (!isFuture) {
@@ -178,6 +192,26 @@ public class TransactionUseCase {
             MessageBus.submit(new MonetaryEvent.TransactionDeleted(existing));
             return Result.success();
         });
+    }
+
+    /** A transfer is an inseparable pair: removing either leg removes both so balances on both
+     *  accounts stay consistent. Delete mode (SINGLE/FUTURE/ALL) is irrelevant for transfers. */
+    private Result<Void, DomainError> deleteTransferGroup(MonetaryTransaction leg, List<MonetaryTransaction> siblings) {
+        val legs = new ArrayList<MonetaryTransaction>();
+        legs.add(leg);
+        legs.addAll(siblings);
+        for (val t : legs) {
+            if (closingService.validateDate(t.date()) instanceof Result.Failure<Void, DomainError>(DomainError error)) {
+                return Result.failure(error);
+            }
+        }
+        for (val t : legs) {
+            if (transactionService.deleteById(t.id()) instanceof Result.Failure<Void, DomainError>(DomainError error)) {
+                return Result.failure(error);
+            }
+        }
+        for (val t : legs) MessageBus.submit(new MonetaryEvent.TransactionDeleted(t));
+        return Result.success();
     }
 
     public Result<MonetaryTransaction, DomainError> createTransfer(UUID fromAccountId, UUID toAccountId, LocalDate date, BigDecimal amount) {

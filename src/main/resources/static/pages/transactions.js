@@ -49,6 +49,17 @@
     return null;
   }
 
+  // A transfer is stored as two legs (one income + one expense) sharing a groupId, unlike
+  // installments whose legs share a single type. Both legs carry the same date, so they sit in
+  // the same month view together — detection works off the loaded list.
+  function isTransferTx(tx) {
+    if (!tx || !tx.groupId) return false;
+    const group = state.transactions.filter(function (t) { return String(t.groupId) === String(tx.groupId); });
+    const hasIncome = group.some(function (t) { return t.type === 'income'; });
+    const hasExpense = group.some(function (t) { return t.type === 'expense'; });
+    return hasIncome && hasExpense;
+  }
+
   // Default date for a new transaction: today when the displayed month is the
   // current month, otherwise the first day of the month being displayed.
   function defaultNewDate() {
@@ -952,6 +963,7 @@
   // ── Modal: create / edit ──────────────────────────────────
   function openFormModal(existing) {
     const isEdit = !!existing;
+    const isTransferEdit = isEdit && isTransferTx(existing);
     const uniq = Date.now();
     const ids = {
       desc: 'tx-desc-' + uniq,
@@ -1118,6 +1130,15 @@
 
     const bodyHtml =
       '<form data-form="tx" autocomplete="off">' +
+        (isTransferEdit
+          ? '<div style="display:flex;gap:8px;align-items:flex-start;padding:10px 12px;margin-bottom:14px;' +
+              'border:1px solid var(--warning);border-radius:var(--radius-sm);background:var(--warning-light, transparent);">' +
+              '<span style="color:var(--warning);flex-shrink:0;display:flex;">' + window.icon('alertCircle', 16) + '</span>' +
+              '<span style="font-size:12px;color:var(--text-secondary);line-height:1.4;">' +
+                'Editar uma transferência desfaz o par: a perna oposta será removida e este lançamento passa a ser avulso.' +
+              '</span>' +
+            '</div>'
+          : '') +
         '<div data-region="type-row" style="display:flex;gap:8px;margin-bottom:16px;">' +
           typeBtnHtml('expense',  '↓ Despesa',       'expense',  initial.type === 'expense') +
           typeBtnHtml('income',   '↑ Receita',       'income',   initial.type === 'income') +
@@ -1228,8 +1249,12 @@
           date: date,
           amount: Number(amt.toFixed(2)),
         }).then(function () {
+          // Converting an existing lançamento into a transfer: drop the original
+          // so its amount isn't counted twice alongside the new transfer pair.
+          if (isEdit) return window.App.TransactionService.remove(existing.accountId, existing.id);
+        }).then(function () {
           m.close();
-          window.toast('Transferência registrada', 'success');
+          window.toast(isEdit ? 'Lançamento convertido em transferência' : 'Transferência registrada', 'success');
           return loadTransactions();
         }).catch(function (err) {
           $btn.prop('disabled', false);
@@ -1375,14 +1400,18 @@
 
   // ── Delete (with scope for grouped/recurring) ─────────────
   function openDeleteModal(tx) {
-    const isGrouped = !!tx.groupId;
+    const isTransfer = isTransferTx(tx);
+    // Transfer legs carry a groupId but are not installments — never offer the parcelas scope for them.
+    const isGrouped = !!tx.groupId && !isTransfer;
 
     if (!isGrouped) {
-      // Simple confirm.
+      // Simple confirm. A transfer always removes both legs server-side.
       let bodyHtml =
         '<p style="font-size:13px;color:var(--text-secondary);line-height:1.5;">' +
-          'Excluir <strong>' + esc(tx.description || 'lançamento') + '</strong>? ' +
-          'Esta ação não pode ser desfeita.' +
+          (isTransfer
+            ? 'Excluir esta transferência? As duas pernas (saída e entrada) serão removidas. Esta ação não pode ser desfeita.'
+            : 'Excluir <strong>' + esc(tx.description || 'lançamento') + '</strong>? ' +
+              'Esta ação não pode ser desfeita.') +
         '</p>';
       const $cancel = window.btn({
         variant: 'secondary', size: 'md', label: 'Cancelar',
@@ -1394,7 +1423,7 @@
       });
       const $footer = $('<div style="display:flex;gap:10px;"></div>').append($cancel).append($confirm);
 
-      const m = window.modal({ title: 'Excluir Lançamento', body: bodyHtml, footer: $footer[0].outerHTML });
+      const m = window.modal({ title: isTransfer ? 'Excluir Transferência' : 'Excluir Lançamento', body: bodyHtml, footer: $footer[0].outerHTML });
       m.open();
       m.$el.on('click', '[data-act=confirm-delete]', function () {
         const $b = $(this).prop('disabled', true);
