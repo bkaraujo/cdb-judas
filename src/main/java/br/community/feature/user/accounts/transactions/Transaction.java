@@ -17,6 +17,7 @@ public record Transaction(
         UUID accountId,
         String status,
         String type,
+        UUID costCenterId,
         @Nullable LocalDate paymentDate,
         @Nullable UUID groupId,
         @Nullable Integer installmentNumber,

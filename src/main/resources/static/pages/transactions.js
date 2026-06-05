@@ -960,6 +960,7 @@
       category: 'tx-cat-' + uniq,
       account: 'tx-acc-' + uniq,
       destAccount: 'tx-dest-' + uniq,
+      costCenter: 'tx-cc-' + uniq,
       status: 'tx-status-' + uniq,
     };
 
@@ -972,6 +973,7 @@
       accountId: isEdit ? String(existing.accountId || '') : '',
       destAccountId: '',
       status: isEdit ? (existing.status === 'balance' ? 'confirmed' : (existing.status || 'confirmed')) : 'confirmed',
+      costCenterId: isEdit ? String(existing.costCenterId || '') : '',
       isEstorno: isEdit ? (
         (existing.type === 'expense' && Number(existing.amount) > 0) ||
         (existing.type === 'income'  && Number(existing.amount) < 0)
@@ -1004,6 +1006,18 @@
       return empty + accs.map(function (a) {
         const sel = String(a.id) === String(selectedId) ? ' selected' : '';
         return '<option value="' + esc(a.id) + '"' + sel + '>' + esc(a.name) + '</option>';
+      }).join('');
+    }
+
+    function buildCostCenterOpts(selectedId) {
+      const ccs = window.App.CacheStore.costCenters();
+      if (!ccs.length) return '<option value="">Nenhum centro de custo</option>';
+      const variavel = ccs.filter(function (c) { return /vari/i.test(c.description || c.name || ''); })[0];
+      const target = selectedId || (variavel && variavel.id) || '';
+      return ccs.map(function (c) {
+        const label = c.description || c.name || '';
+        const sel = String(c.id) === String(target) ? ' selected' : '';
+        return '<option value="' + esc(c.id) + '"' + sel + '>' + esc(label) + '</option>';
       }).join('');
     }
 
@@ -1058,13 +1072,16 @@
             'placeholder="Ex: Mercado, Salário..." value="' + esc(initial.description) + '" />' +
         '</div>' +
         '<div class="form-group">' +
-          '<label class="form-label" for="' + ids.amount + '">Valor (R$)</label>' +
-          '<input id="' + ids.amount + '" name="amount" type="text" inputmode="numeric" ' +
-            'placeholder="0,00" value="' + esc(initial.amount) + '" />' +
-        '</div>' +
-        '<div class="form-group">' +
           '<label class="form-label" for="' + ids.date + '">Data</label>' +
           '<input id="' + ids.date + '" name="date" type="date" required value="' + esc(initial.date) + '" />' +
+        '</div>' +
+        '<div class="form-group">' +
+          '<label class="form-label" for="' + ids.account + '">Conta</label>' +
+          '<select id="' + ids.account + '" name="accountId">' + accOpts + '</select>' +
+        '</div>' +
+        '<div class="form-group">' +
+          '<label class="form-label" for="' + ids.costCenter + '">Centro de Custo</label>' +
+          '<select id="' + ids.costCenter + '" name="costCenterId">' + buildCostCenterOpts(initial.costCenterId) + '</select>' +
         '</div>' +
         '<div class="form-group">' +
           '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">' +
@@ -1080,10 +1097,11 @@
           '</select>' +
         '</div>' +
         '<div class="form-group">' +
-          '<label class="form-label" for="' + ids.account + '">Conta</label>' +
-          '<select id="' + ids.account + '" name="accountId">' + accOpts + '</select>' +
+          '<label class="form-label" for="' + ids.amount + '">Valor (R$)</label>' +
+          '<input id="' + ids.amount + '" name="amount" type="text" inputmode="numeric" ' +
+            'placeholder="0,00" value="' + esc(initial.amount) + '" />' +
         '</div>' +
-        '<div class="form-group full">' +
+        '<div class="form-group">' +
           '<label class="form-label" for="' + ids.status + '">Status</label>' +
           '<select id="' + ids.status + '" name="status">' + statusOpts + '</select>' +
         '</div>' +
@@ -1149,6 +1167,8 @@
       if ($catSel.length)  initial.categoryId    = $catSel.val()       || initial.categoryId;
       const $stSel        = $form.find('select[name=status]');
       if ($stSel.length)   initial.status        = $stSel.val()        || initial.status;
+      const $ccSel        = $form.find('select[name=costCenterId]');
+      if ($ccSel.length)   initial.costCenterId  = $ccSel.val()        || initial.costCenterId;
       const $estornoChk   = $form.find('input[name=estorno]');
       if ($estornoChk.length) initial.isEstorno  = $estornoChk.is(':checked');
 
@@ -1222,11 +1242,13 @@
       if (!description) { $form.find('input[name=description]').trigger('focus'); return; }
       if (!isFinite(amt) || amt <= 0) { $form.find('input[name=amount]').trigger('focus'); return; }
       const categoryId = $form.find('select[name=categoryId]').val();
+      const costCenterId = $form.find('select[name=costCenterId]').val();
       const status = $form.find('select[name=status]').val();
       const isEstorno = $form.find('input[name=estorno]').is(':checked');
 
       if (!accountId) { window.toast('Selecione uma conta', 'error'); return; }
       if (!categoryId) { window.toast('Selecione uma categoria', 'error'); return; }
+      if (!costCenterId) { window.toast('Selecione o centro de custo', 'error'); return; }
 
       const signed = window.Domain.Transaction.signedAmount(type, amt) * (isEstorno ? -1 : 1);
       const payload = {
@@ -1235,6 +1257,7 @@
         date: date,
         categoryId: categoryId || null,
         accountId: accountId,
+        costCenterId: costCenterId,
         status: status,
         type: type,
       };

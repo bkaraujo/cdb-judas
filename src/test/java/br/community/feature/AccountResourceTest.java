@@ -183,7 +183,7 @@ class AccountResourceTest extends BaseHttpTest {
 
         // Lançamento de -250 na conta.
         String txJson = """
-            {"description":"Aluguel","amount":-250.00,"date":"2024-04-01","categoryId":"%s","status":"confirmed","type":"expense","installments":1,"editMode":"single"}
+            {"description":"Aluguel","amount":-250.00,"date":"2024-04-01","categoryId":"%s","costCenterId":"d0000000-0000-0000-0000-000000000002","status":"confirmed","type":"expense","installments":1,"editMode":"single"}
             """.formatted(categoryId);
         mockMvc.perform(post("/api/{u}/accounts/{acc}/transactions", TEST_USER_ID, accountId)
                 .contentType(MediaType.APPLICATION_JSON).content(txJson))

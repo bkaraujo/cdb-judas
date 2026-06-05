@@ -18,6 +18,7 @@ public record TransactionCommand(
         @NotNull LocalDate date,
         @NotNull UUID categoryId,
         @NotNull UUID accountId,
+        @NotNull UUID costCenterId,
         @NotBlank String status,
         @NotBlank String type,
         @Nullable @Min(1) Integer installments,

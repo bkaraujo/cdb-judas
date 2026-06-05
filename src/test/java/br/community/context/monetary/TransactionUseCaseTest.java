@@ -2,6 +2,7 @@ package br.community.context.monetary;
 
 import br.commons.Result;
 import br.community.context.monetary._0_domain.model.MonetaryCategory;
+import br.community.context.monetary._0_domain.model.MonetaryCenter;
 import br.community.context.monetary._0_domain.model.MonetaryNature;
 import br.community.context.monetary._0_domain.model.MonetaryTransaction;
 import br.community.context.monetary._1_application.command.TransactionCommand;
@@ -32,6 +33,7 @@ class TransactionUseCaseTest {
 
     private final UUID accountId = UUID.randomUUID();
     private final UUID categoryId = UUID.randomUUID();
+    private final UUID costCenterId = MonetaryCenter.VARIAVEL_ID;
 
     @BeforeEach
     void setUp() {
@@ -44,7 +46,7 @@ class TransactionUseCaseTest {
 
     private TransactionCommand cmd(LocalDate date, String status, Integer installments) {
         return new TransactionCommand("desc", new BigDecimal("10.00"), date, categoryId, accountId,
-                status, "expense", installments, null);
+                costCenterId, status, "expense", installments, null);
     }
 
     @Test
@@ -116,7 +118,7 @@ class TransactionUseCaseTest {
         MonetaryTransaction first = all.stream().filter(t -> t.installmentNumber() == 1).findFirst().orElseThrow();
 
         TransactionCommand upd = new TransactionCommand("upd", new BigDecimal("20.00"),
-                LocalDate.of(2026, 5, 15), categoryId, accountId, "confirmed", "expense", null, null);
+                LocalDate.of(2026, 5, 15), categoryId, accountId, costCenterId, "confirmed", "expense", null, null);
         Result<MonetaryTransaction, DomainError> r = useCase.updateTransaction(first.id(), upd);
         assertTrue(r.isSuccess());
 
@@ -140,13 +142,13 @@ class TransactionUseCaseTest {
 
         closingRepo.save(YearMonth.of(2026, 5));
         TransactionCommand upd = new TransactionCommand("x", new BigDecimal("1.00"),
-                LocalDate.of(2026, 6, 1), categoryId, accountId, "confirmed", "expense", null, null);
+                LocalDate.of(2026, 6, 1), categoryId, accountId, costCenterId, "confirmed", "expense", null, null);
         assertTrue(useCase.updateTransaction(t.id(), upd).isFailure(), "data original em fechamento");
 
         closingRepo.clear();
         closingRepo.save(YearMonth.of(2026, 7));
         TransactionCommand upd2 = new TransactionCommand("x", new BigDecimal("1.00"),
-                LocalDate.of(2026, 7, 1), categoryId, accountId, "confirmed", "expense", null, null);
+                LocalDate.of(2026, 7, 1), categoryId, accountId, costCenterId, "confirmed", "expense", null, null);
         assertTrue(useCase.updateTransaction(t.id(), upd2).isFailure(), "nova data em fechamento");
     }
 
@@ -159,7 +161,7 @@ class TransactionUseCaseTest {
 
         LocalDate newDate = LocalDate.of(2026, 7, 20);
         TransactionCommand upd = new TransactionCommand("future", new BigDecimal("99.00"),
-                newDate, categoryId, accountId, "confirmed", "expense", null, "FUTURE");
+                newDate, categoryId, accountId, costCenterId, "confirmed", "expense", null, "FUTURE");
         Result<MonetaryTransaction, DomainError> r = useCase.updateTransaction(second.id(), upd);
         assertTrue(r.isSuccess());
 
@@ -190,7 +192,7 @@ class TransactionUseCaseTest {
 
         closingRepo.save(YearMonth.of(2026, 8));
         TransactionCommand upd = new TransactionCommand("desc", new BigDecimal("10.00"),
-                LocalDate.of(2026, 9, 10), categoryId, accountId, "confirmed", "expense", null, "FUTURE");
+                LocalDate.of(2026, 9, 10), categoryId, accountId, costCenterId, "confirmed", "expense", null, "FUTURE");
         // existing.date é 2026-05-10 (em fechamento) → falha de imediato
         assertTrue(useCase.updateTransaction(first.id(), upd).isFailure());
     }
@@ -262,5 +264,12 @@ class TransactionUseCaseTest {
                 useCase.listTransactions()).value();
         assertEquals(LocalDate.of(2026, 6, 10), list.get(0).date());
         assertEquals(LocalDate.of(2026, 4, 10), list.get(list.size() - 1).date());
+    }
+
+    @Test
+    @DisplayName("lançamento criado guarda o centro de custo do comando")
+    void persistsCostCenter() {
+        useCase.createTransaction(cmd(LocalDate.of(2026, 5, 10), "confirmed", null));
+        assertEquals(costCenterId, txRepo.findAll().get(0).costCenterId());
     }
 }

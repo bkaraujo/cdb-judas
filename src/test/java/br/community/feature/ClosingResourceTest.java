@@ -55,14 +55,14 @@ class ClosingResourceTest extends BaseHttpTest {
                 .andExpect(status().isOk());
 
         String blockedJson = """
-            {"description":"Dentro do fechado","amount":-50.00,"date":"2024-06-15","categoryId":"%s","status":"pending","type":"expense"}
+            {"description":"Dentro do fechado","amount":-50.00,"date":"2024-06-15","categoryId":"%s","costCenterId":"d0000000-0000-0000-0000-000000000002","status":"pending","type":"expense"}
             """.formatted(categoryId);
         mockMvc.perform(post("/api/{u}/accounts/{acc}/transactions", TEST_USER_ID, accountId)
                 .contentType(MediaType.APPLICATION_JSON).content(blockedJson))
                 .andExpect(status().isBadRequest());
 
         String okJson = """
-            {"description":"Pos fechamento","amount":-50.00,"date":"2024-07-15","categoryId":"%s","status":"pending","type":"expense"}
+            {"description":"Pos fechamento","amount":-50.00,"date":"2024-07-15","categoryId":"%s","costCenterId":"d0000000-0000-0000-0000-000000000002","status":"pending","type":"expense"}
             """.formatted(categoryId);
         mockMvc.perform(post("/api/{u}/accounts/{acc}/transactions", TEST_USER_ID, accountId)
                 .contentType(MediaType.APPLICATION_JSON).content(okJson))

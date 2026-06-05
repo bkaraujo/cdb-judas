@@ -1,29 +1,18 @@
 /* _3_infrastructure/primary/sidebar.js — collapsible sidebar with grouped nav + tooltips + theme toggle. */
 
 (function () {
-  const NAV = [
-    { id: 'dashboard', label: 'Visão Geral', icon: 'home' },
-    {
-      id: 'movimentacoes', label: 'Movimentações', icon: 'layers',
-      children: [
-        { id: 'transactions',     label: 'Lançamentos',       icon: 'list' },
-        { id: 'accounts-payable', label: 'A pagar e receber', icon: 'calendar' },
-      ],
-    },
-    { id: 'statement',    label: 'Extrato de Contas',  icon: 'bookOpen' },
-    { id: 'credit-cards', label: 'Cartões de Crédito', icon: 'creditCard' },
-    { id: 'budget',       label: 'Metas / Orçamento',  icon: 'target' },
-    { id: 'reports',      label: 'Relatórios',         icon: 'barChart' },
-    {
-      id: 'cadastros', label: 'Cadastros', icon: 'database',
-      children: [
-        { id: 'categories',   label: 'Categorias',      icon: 'tag' },
-        { id: 'cost-centers', label: 'Centros de Custo', icon: 'briefcase' },
-        { id: 'accounts',     label: 'Contas',           icon: 'building' },
-        { id: 'tags',         label: 'Tags',             icon: 'hash' },
-      ],
-    },
-  ];
+  // NAV vem de window.SIDEBAR_NAV (sidebar.data.js, carregado via <script> no barrel).
+  // Promise resolvida mantém a API dos callers; funciona sob file:// (sem fetch/CORS).
+  let NAV = [];
+  let navPromise = null;
+
+  function loadNav() {
+    if (navPromise) return navPromise;
+    NAV = window.SIDEBAR_NAV || [];
+    if (!NAV.length) console.error('Sidebar: window.SIDEBAR_NAV ausente (sidebar.data.js não carregou)');
+    navPromise = Promise.resolve(NAV);
+    return navPromise;
+  }
 
   const KEY_COLLAPSED = 'cbd-sidebar-collapsed';
   const KEY_GROUPS    = 'cbd-sidebar-groups';
@@ -154,18 +143,20 @@
       state.$root = $root.addClass('sidebar');
       state.current = opts.current || state.current;
       state.onNav = opts.onNav || null;
-      render();
+      loadNav().then(render);
     },
     setCurrent: function (id) {
       state.current = id;
-      // Auto-open parent group if current is a child.
-      NAV.forEach(function (item) {
-        if (item.children && item.children.some(function (c) { return c.id === id; })) {
-          state.groups[item.id] = true;
-        }
+      loadNav().then(function () {
+        // Auto-open parent group if current is a child.
+        NAV.forEach(function (item) {
+          if (item.children && item.children.some(function (c) { return c.id === id; })) {
+            state.groups[item.id] = true;
+          }
+        });
+        persist();
+        if (state.$root) render();
       });
-      persist();
-      if (state.$root) render();
     },
   };
 })();

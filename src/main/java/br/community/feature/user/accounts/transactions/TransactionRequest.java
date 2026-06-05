@@ -18,6 +18,7 @@ public record TransactionRequest(
         @NotNull LocalDate date,
         @NotNull UUID categoryId,
         @Nullable UUID accountId,
+        @NotNull UUID costCenterId,
         @NotBlank String status,
         @NotBlank String type,
         @Nullable @Min(1) Integer installments,

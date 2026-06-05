@@ -9,6 +9,7 @@ import br.commons.pdf.PdfTextExtractor;
 import br.community.context.monetary._0_domain.event.MonetaryEvent;
 import br.community.context.monetary._0_domain.model.AccountType;
 import br.community.context.monetary._0_domain.model.MonetaryAccount;
+import br.community.context.monetary._0_domain.model.MonetaryCenter;
 import br.community.context.monetary._0_domain.model.MonetaryTransaction;
 import br.community.context.monetary._1_application.command.ImportConfirmCommand;
 import br.community.context.monetary._1_application.service.*;
@@ -19,6 +20,7 @@ import br.community.feature.user.accounts.statementimport.*;
 import br.community.feature.user.accounts.statementimport.confirm.*;
 import br.community.feature.user.accounts.statementimport.preview.*;
 import br.community.feature.user.accounts.statementimport.provider.*;
+import org.jspecify.annotations.NonNull;
 import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;
@@ -256,7 +258,7 @@ class CreditCardStatementImportUseCaseTest {
         transactions.save(new MonetaryTransaction(
                 UUID.randomUUID(), "Amazonmktplc Megabytem", new BigDecimal("72.99"),
                 LocalDate.of(2024, 7, 15), UUID.randomUUID(), card.id(),
-                "confirmed", "expense", null, groupId, 1, 10));
+                "confirmed", "expense", MonetaryCenter.VARIAVEL_ID, null, groupId, 1, 10));
 
         var useCase = useCaseWith((bytes, password) -> Result.success(text), accounts, transactions);
         var preview = invoicePreview(useCase.preview(new byte[1], null, null));
@@ -284,7 +286,7 @@ class CreditCardStatementImportUseCaseTest {
         transactions.save(new MonetaryTransaction(
                 UUID.randomUUID(), "MICROSOFT", new BigDecimal("-60.00"),
                 LocalDate.of(2025, 3, 9), UUID.randomUUID(), card.id(),
-                "confirmed", "expense", null, null, null, null));
+                "confirmed", "expense", MonetaryCenter.VARIAVEL_ID, null, null, null, null));
 
         var useCase = useCaseWith((bytes, password) -> Result.success(text), accounts, transactions);
         var preview = invoicePreview(useCase.preview(new byte[1], null, null));
@@ -332,7 +334,7 @@ class CreditCardStatementImportUseCaseTest {
         transactions.save(new MonetaryTransaction(
                 UUID.randomUUID(), "AMAZONMKTPLC MEGABYTEM", new BigDecimal("-99.90"),
                 LocalDate.of(2024, 1, 10), categoryC, card.id(),
-                "confirmed", "expense", null, null, null, null));
+                "confirmed", "expense", MonetaryCenter.VARIAVEL_ID, null, null, null, null));
 
         var useCase = useCaseWith((bytes, password) -> Result.success(text), accounts, transactions);
         var preview = invoicePreview(useCase.preview(new byte[1], null, null));
@@ -509,7 +511,7 @@ class CreditCardStatementImportUseCaseTest {
         transactions.save(new MonetaryTransaction(
                 UUID.randomUUID(), "MERCADO LIVRE", new BigDecimal("-90.00"),
                 LocalDate.of(2025, 7, 4), UUID.randomUUID(), account.id(),
-                "confirmed", "expense", null, null, null, null));
+                "confirmed", "expense", MonetaryCenter.VARIAVEL_ID, null, null, null, null));
 
         var useCase = useCaseWith(NOOP_EXTRACTOR, accounts, transactions);
 
@@ -543,7 +545,7 @@ class CreditCardStatementImportUseCaseTest {
         // A transactions double whose save throws on the "BOOM" row but persists the others.
         var transactions = new InMemoryRepositories.Transactions() {
             @Override
-            public MonetaryTransaction save(MonetaryTransaction e) {
+            public MonetaryTransaction save(@NonNull MonetaryTransaction e) {
                 if ("BOOM".equals(e.description())) throw new RuntimeException("simulated save failure");
                 return super.save(e);
             }

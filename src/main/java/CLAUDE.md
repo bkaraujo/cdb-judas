@@ -3,44 +3,6 @@
 Este documento descreve os comandos úteis e as diretrizes arquiteturais para o desenvolvimento no backend do **CDB Finance** (Java 25 + Spring Boot 4).
 
 ---
-
-## 🛠️ Comandos Maven Úteis
-
-Use os seguintes comandos no terminal a partir da raiz do projeto:
-
-* **Compilar o projeto:**
-  ```bash
-  mvn clean compile
-  ```
-  *(Executa a checagem estática com ErrorProne e NullAway)*
-
-* **Executar todos os testes:**
-  ```bash
-  mvn test
-  ```
-
-* **Executar um teste específico:**
-  ```bash
-  mvn test -Dtest=NomeDoTesteTest
-  ```
-
-* **Iniciar a aplicação via Spring Boot:**
-  ```bash
-  mvn spring-boot:run
-  ```
-
-* **Iniciar a aplicação pulando testes:**
-  ```bash
-  mvn spring-boot:run -Dmaven.surefire.skipTest=true
-  ```
-
-* **Gerar o artefato JAR empacotado:**
-  ```bash
-  mvn clean package
-  ```
-
----
-
 ## 📐 Diretrizes de Arquitetura e Estilo
 
 O backend segue um modelo híbrido combinando **Vertical Slice Architecture (VSA)** e **Arquitetura Hexagonal**.

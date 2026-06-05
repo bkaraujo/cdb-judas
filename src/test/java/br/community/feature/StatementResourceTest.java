@@ -39,7 +39,7 @@ class StatementResourceTest extends BaseHttpTest {
 
     private void createTx(UUID accId, UUID catId, String date, String amount, String status, String type) throws Exception {
         String json = """
-            {"description":"Mov","amount":%s,"date":"%s","categoryId":"%s","status":"%s","type":"%s","installments":1,"editMode":"single"}
+            {"description":"Mov","amount":%s,"date":"%s","categoryId":"%s","costCenterId":"d0000000-0000-0000-0000-000000000002","status":"%s","type":"%s","installments":1,"editMode":"single"}
             """.formatted(amount, date, catId, status, type);
         mockMvc.perform(post("/api/{u}/accounts/{acc}/transactions", TEST_USER_ID, accId)
                 .contentType(MediaType.APPLICATION_JSON).content(json))

@@ -123,7 +123,7 @@ class MetadataUseCaseTest {
         UUID txId = UUID.randomUUID();
         txRepo.save(new MonetaryTransaction(txId, "x", new BigDecimal("1.00"),
                 LocalDate.of(2026, 5, 1), sub.id(), UUID.randomUUID(),
-                "confirmed", "expense", null, null, null, null));
+                "confirmed", "expense", MonetaryCenter.VARIAVEL_ID, null, null, null, null));
 
         Result<Void, DomainError> r = useCase.deleteCategory(root.id());
         assertTrue(r.isSuccess());

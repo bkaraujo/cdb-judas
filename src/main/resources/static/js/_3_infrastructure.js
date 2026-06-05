@@ -7,6 +7,7 @@
     'format.js',
     'ui.js',
     'theme.js',
+    'sidebar.data.js',
     'sidebar.js',
     'header.js',
     'router.js'

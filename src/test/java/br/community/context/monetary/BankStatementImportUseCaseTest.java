@@ -4,6 +4,7 @@ import br.commons.Result;
 import br.commons.pdf.PdfTextExtractor;
 import br.community.context.monetary._0_domain.model.AccountType;
 import br.community.context.monetary._0_domain.model.MonetaryAccount;
+import br.community.context.monetary._0_domain.model.MonetaryCenter;
 import br.community.context.monetary._0_domain.model.MonetaryTransaction;
 import br.community.context.monetary._1_application.service.*;
 import br.community.context.monetary._1_application.usecase.AccountUseCase;
@@ -97,7 +98,7 @@ class BankStatementImportUseCaseTest {
         // A manual, still-pending expense the user typed with a slightly different date and description.
         var manual = new MonetaryTransaction(
                 UUID.randomUUID(), "Dentista", new BigDecimal("-161.43"), LocalDate.of(2025, 3, 4),
-                UUID.randomUUID(), account.id(), "pending", "expense", null, null, null, null);
+                UUID.randomUUID(), account.id(), "pending", "expense", MonetaryCenter.VARIAVEL_ID, null, null, null, null);
         transactions.save(manual);
         var useCase = useCaseWith(accounts, transactions);
 
@@ -120,7 +121,7 @@ class BankStatementImportUseCaseTest {
         var transactions = new InMemoryRepositories.Transactions();
         var manual = new MonetaryTransaction(
                 UUID.randomUUID(), "Dentista", new BigDecimal("-161.43"), LocalDate.of(2025, 3, 1),
-                UUID.randomUUID(), account.id(), "pending", "expense", null, null, null, null);
+                UUID.randomUUID(), account.id(), "pending", "expense", MonetaryCenter.VARIAVEL_ID, null, null, null, null);
         transactions.save(manual);
         var useCase = useCaseWith(accounts, transactions);
 
@@ -142,7 +143,7 @@ class BankStatementImportUseCaseTest {
         var transactions = new InMemoryRepositories.Transactions();
         var existing = new MonetaryTransaction(
                 UUID.randomUUID(), "Odontoprev", new BigDecimal("-161.43"), LocalDate.of(2025, 3, 5),
-                UUID.randomUUID(), account.id(), "confirmed", "expense", null, null, null, null);
+                UUID.randomUUID(), account.id(), "confirmed", "expense", MonetaryCenter.VARIAVEL_ID, null, null, null, null);
         transactions.save(existing);
         var useCase = useCaseWith(accounts, transactions);
 

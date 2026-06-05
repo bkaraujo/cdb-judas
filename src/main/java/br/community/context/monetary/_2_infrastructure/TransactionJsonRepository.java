@@ -4,6 +4,7 @@ import br.commons.Logger;
 import br.commons.framework.persistence.Storage;
 import br.commons.framework.persistence.json.EntityDiff;
 import br.commons.tools.Strings;
+import br.community.context.monetary._0_domain.model.MonetaryCenter;
 import br.community.context.monetary._0_domain.model.MonetaryTransaction;
 import br.community.context.monetary._0_domain.repository.TransactionRepository;
 import br.community.core.web.security.CurrentUser;
@@ -117,7 +118,8 @@ public final class TransactionJsonRepository implements TransactionRepository {
             val bytes = storage.read(file, JSON_KEY);
             if (bytes == null || bytes.length == 0) return List.of();
             val listType = mapper.getTypeFactory().constructCollectionType(List.class, MonetaryTransaction.class);
-            return mapper.readValue(bytes, listType);
+            final List<MonetaryTransaction> parsed = mapper.readValue(bytes, listType);
+            return parsed.stream().map(TransactionJsonRepository::withDefaultCostCenter).toList();
         } catch (IOException e) {
             throw new UncheckedIOException("Error reading " + file + ":" + JSON_KEY, e);
         }
@@ -129,5 +131,15 @@ public final class TransactionJsonRepository implements TransactionRepository {
         } catch (IOException e) {
             throw new UncheckedIOException("Error writing " + file + ":" + JSON_KEY, e);
         }
+    }
+
+    /** Lançamentos persistidos antes do centro de custo obrigatório recaem em "Variável" na leitura. */
+    private static MonetaryTransaction withDefaultCostCenter(MonetaryTransaction t) {
+        if (t.costCenterId() != null) {
+            return t;
+        }
+        return new MonetaryTransaction(t.id(), t.description(), t.amount(), t.date(),
+                t.categoryId(), t.accountId(), t.status(), t.type(), MonetaryCenter.VARIAVEL_ID,
+                t.paymentDate(), t.groupId(), t.installmentNumber(), t.totalInstallments());
     }
 }

@@ -104,7 +104,7 @@ public class MetadataUseCase {
                 .forEach(t -> {
                     val updated = new MonetaryTransaction(
                             t.id(), t.description(), t.amount(), t.date(),
-                            othersId, t.accountId(), t.status(), t.type(), t.paymentDate(),
+                            othersId, t.accountId(), t.status(), t.type(), t.costCenterId(), t.paymentDate(),
                             t.groupId(), t.installmentNumber(), t.totalInstallments()
                     );
                     transactionService.save(updated);

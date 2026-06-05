@@ -3,6 +3,7 @@ package br.community.context.monetary._1_application.usecase;
 import br.commons.MessageBus;
 import br.commons.Result;
 import br.community.context.monetary._0_domain.event.MonetaryEvent;
+import br.community.context.monetary._0_domain.model.MonetaryCenter;
 import br.community.context.monetary._0_domain.model.MonetaryTransaction;
 import br.community.context.monetary._1_application.command.ImportedTransactionCommand;
 import br.community.context.monetary._1_application.command.TransactionCommand;
@@ -135,7 +136,7 @@ public class TransactionUseCase {
                 .map(existing -> {
                     val saved = transactionService.save(new MonetaryTransaction(
                             existing.id(), existing.description(), existing.amount(), existing.date(),
-                            existing.categoryId(), existing.accountId(), status, existing.type(), paymentDate,
+                            existing.categoryId(), existing.accountId(), status, existing.type(), existing.costCenterId(), paymentDate,
                             existing.groupId(), existing.installmentNumber(), existing.totalInstallments()
                     ));
                     MessageBus.submit(new MonetaryEvent.TransactionUpdated(saved));
@@ -194,12 +195,12 @@ public class TransactionUseCase {
 
         val outflow = new MonetaryTransaction(
                 outId, "Transferência (saída)", absAmount.negate(), date,
-                transferCat.id(), fromAccountId, "confirmed", "expense", date,
+                transferCat.id(), fromAccountId, "confirmed", "expense", MonetaryCenter.VARIAVEL_ID, date,
                 groupId, 1, 2
         );
         val inflow = new MonetaryTransaction(
                 inId, "Transferência (entrada)", absAmount, date,
-                transferCat.id(), toAccountId, "confirmed", "income", date,
+                transferCat.id(), toAccountId, "confirmed", "income", MonetaryCenter.VARIAVEL_ID, date,
                 groupId, 2, 2
         );
 
@@ -218,7 +219,7 @@ public class TransactionUseCase {
                 : cmd.amount().abs().negate();
         val tx = new MonetaryTransaction(
                 UUID.randomUUID(), cmd.description(), signed, cmd.date(),
-                cmd.categoryId(), cmd.accountId(), cmd.status(), cmd.type(), null,
+                cmd.categoryId(), cmd.accountId(), cmd.status(), cmd.type(), MonetaryCenter.VARIAVEL_ID, null,
                 cmd.groupId(), cmd.installmentNumber(), cmd.totalInstallments());
         val saved = transactionService.save(tx);
         MessageBus.submit(new MonetaryEvent.TransactionCreated(saved));
@@ -228,7 +229,7 @@ public class TransactionUseCase {
     private MonetaryTransaction toMonetaryTransactionEntity(UUID id, TransactionCommand cmd, LocalDate date, String status,
                                                             @Nullable UUID groupId, @Nullable Integer installmentNumber, @Nullable Integer totalInstallments) {
         return new MonetaryTransaction(id, cmd.description(), cmd.amount(), date,
-                cmd.categoryId(), cmd.accountId(), status, cmd.type(), null,
+                cmd.categoryId(), cmd.accountId(), status, cmd.type(), cmd.costCenterId(), null,
                 groupId, installmentNumber, totalInstallments);
     }
 

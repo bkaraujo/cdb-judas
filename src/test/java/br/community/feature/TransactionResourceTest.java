@@ -50,6 +50,7 @@ class TransactionResourceTest extends BaseHttpTest {
               "amount": -2500.00,
               "date": "2024-04-01",
               "categoryId": "%s",
+              "costCenterId": "d0000000-0000-0000-0000-000000000002",
               "status": "pending",
               "type": "expense",
               "installments": 1,
@@ -103,7 +104,7 @@ class TransactionResourceTest extends BaseHttpTest {
         UUID categoryId = createLeafCategory();
 
         String createJson = """
-            {"description":"TV","amount":-300.00,"date":"2024-06-01","categoryId":"%s","status":"pending","type":"expense","installments":3,"editMode":"single"}
+            {"description":"TV","amount":-300.00,"date":"2024-06-01","categoryId":"%s","costCenterId":"d0000000-0000-0000-0000-000000000002","status":"pending","type":"expense","installments":3,"editMode":"single"}
             """.formatted(categoryId);
 
         mockMvc.perform(post("/api/{u}/accounts/{acc}/transactions", TEST_USER_ID, accountId)

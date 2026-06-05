@@ -2,10 +2,14 @@ package br.community.context.monetary;
 
 import br.community.context.monetary._0_domain.model.*;
 import br.community.context.monetary._0_domain.repository.*;
+import org.jspecify.annotations.NonNull;
+import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
 
 import java.time.YearMonth;
 import java.util.*;
 
+@NullMarked
 @SuppressWarnings("MissingOverride")
 final class InMemoryRepositories {
     private InMemoryRepositories() {}
@@ -46,7 +50,7 @@ final class InMemoryRepositories {
     }
 
     static class Closings implements ClosingRepository {
-        private YearMonth ym;
+        private @Nullable YearMonth ym;
         public Optional<YearMonth> find() { return Optional.ofNullable(ym); }
         public void save(YearMonth ym) { this.ym = ym; }
         public void clear() { this.ym = null; }
