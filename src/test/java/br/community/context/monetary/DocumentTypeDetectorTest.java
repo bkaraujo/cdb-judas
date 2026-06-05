@@ -1,7 +1,7 @@
 package br.community.context.monetary;
 
-import br.community.feature.user.accounts.statementimport.preview.DocumentType;
-import br.community.feature.user.accounts.statementimport.preview.DocumentTypeDetector;
+import br.community.feature.user.accounts.statement.importer.preview.DocumentType;
+import br.community.feature.user.accounts.statement.importer.preview.DocumentTypeDetector;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;

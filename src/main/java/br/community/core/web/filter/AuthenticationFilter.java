@@ -61,8 +61,7 @@ public class AuthenticationFilter extends OncePerRequestFilter {
         SecurityContextHolder.getContext().setAuthentication(auth);
         if (rotated) response.setHeader(TOKEN_HEADER, nextToken);
 
-        Logger.debug("AUTHN %s %s => user '%s' (%s) authenticated%s",
-                request.getMethod(), request.getRequestURI(), user.username(), userId, rotated ? "" : " (SSE)");
+        Logger.trace("AUTHN %s %s => user '%s' (%s) authenticated%s", request.getMethod(), request.getRequestURI(), user.username(), userId, rotated ? "" : " (SSE)");
         MDC.push("X-REQUEST-USER", user.username());
         MDC.push("X-REQUEST-USER-ID", userId);
     }

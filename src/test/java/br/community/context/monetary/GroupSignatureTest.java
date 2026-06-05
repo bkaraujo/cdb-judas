@@ -1,6 +1,6 @@
 package br.community.context.monetary;
 
-import br.community.feature.user.accounts.statementimport.GroupSignature;
+import br.community.feature.user.accounts.statement.importer.GroupSignature;
 import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;

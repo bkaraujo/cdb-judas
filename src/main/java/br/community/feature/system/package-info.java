@@ -1,0 +1,12 @@
+/**
+ * Features de sistema — recursos globais sem namespace de usuário.
+ *
+ * <p>Endpoints aqui expostos não carregam o segmento {@code {uuid}} de workspace,
+ * pois representam dados ou canais de infraestrutura compartilhados.
+ *
+ * <ul>
+ *   <li>{@link br.community.feature.system.costcenter} — catálogo somente-leitura de centros de custo</li>
+ *   <li>{@link br.community.feature.system.stream} — canal SSE para push de eventos de domínio</li>
+ * </ul>
+ */
+package br.community.feature.system;

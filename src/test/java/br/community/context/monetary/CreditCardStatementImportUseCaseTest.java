@@ -16,10 +16,11 @@ import br.community.context.monetary._1_application.service.*;
 import br.community.context.monetary._1_application.usecase.AccountUseCase;
 import br.community.context.monetary._1_application.usecase.MetadataUseCase;
 import br.community.context.monetary._1_application.usecase.TransactionUseCase;
-import br.community.feature.user.accounts.statementimport.*;
-import br.community.feature.user.accounts.statementimport.confirm.*;
-import br.community.feature.user.accounts.statementimport.preview.*;
-import br.community.feature.user.accounts.statementimport.provider.*;
+import br.community.feature.user.accounts.statement.importer.GroupSignature;
+import br.community.feature.user.accounts.statement.importer.StatementImportUseCase;
+import br.community.feature.user.accounts.statement.importer.confirm.*;
+import br.community.feature.user.accounts.statement.importer.preview.*;
+import br.community.feature.user.accounts.statement.importer.provider.*;
 import org.jspecify.annotations.NonNull;
 import org.junit.jupiter.api.Test;
 

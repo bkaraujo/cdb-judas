@@ -1,8 +1,8 @@
 package br.community.context.monetary;
 
-import br.community.feature.user.accounts.statementimport.preview.ChargeKind;
-import br.community.feature.user.accounts.statementimport.preview.ParsedStatement;
-import br.community.feature.user.accounts.statementimport.provider.SantanderCreditCardStatementParser;
+import br.community.feature.user.accounts.statement.importer.preview.ChargeKind;
+import br.community.feature.user.accounts.statement.importer.preview.ParsedStatement;
+import br.community.feature.user.accounts.statement.importer.provider.SantanderCreditCardStatementParser;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
