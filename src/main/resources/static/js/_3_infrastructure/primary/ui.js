@@ -112,15 +112,17 @@
 
   /* ---- Modal ----
    * Returns { open, close, $el }. Stacks: each modal has its own overlay.
-   * Persistent by default: closes ONLY via action buttons (footer / any
-   * `[data-modal-close]`), never on overlay click, ESC, or a header X.
-   * Pass `opts.persistent === false` to opt back into the dismissable
-   * behavior (overlay click + ESC + header X).
+   * Persistent by default: no overlay-click close and no header X. Pass
+   * `opts.persistent === false` to re-enable overlay click + header X.
+   * ESC always cancels the operation and closes the top-most modal,
+   * regardless of `persistent`. Pass `opts.locked === true` to opt out of
+   * ESC too (e.g. the auth/login gate that must not be dismissable).
    */
   function modal(opts) {
     opts = opts || {};
     const id = nextId();
     const persistent = opts.persistent !== false;
+    const locked = opts.locked === true;
     const titleHtml = '<h3>' + esc(opts.title || '') + '</h3>';
     const bodyHtml  = opts.body || '';
     const footerContent = opts.footer;
@@ -134,7 +136,8 @@
     const closeBtnHtml = persistent
       ? ''
       : '<button class="icon-btn" data-modal-close="1">' + window.icon('x', 18) + '</button>';
-    const overlayClass = persistent ? 'modal-overlay modal-persistent' : 'modal-overlay';
+    let overlayClass = persistent ? 'modal-overlay modal-persistent' : 'modal-overlay';
+    if (locked) overlayClass += ' modal-locked';
     const $overlay = $(
       '<div class="' + overlayClass + '" data-modal="' + id + '">' +
         '<div class="modal-box fade-in">' +
@@ -168,15 +171,16 @@
       $overlay.on('click', function (e) { if (e.target === $overlay[0]) close(); });
     }
     $overlay.on('click', '[data-modal-close]', close);
+    $overlay.on('modal:dismiss', close);
 
     return { open: open, close: close, $el: $overlay, $body: $body };
   }
 
-  /* ESC closes the top-most non-persistent modal. */
+  /* ESC cancels the operation and closes the top-most modal (skips locked). */
   $(document).on('keydown', function (e) {
     if (e.key !== 'Escape') return;
-    const $top = $('.modal-overlay').not('.modal-persistent').last();
-    if ($top.length) $top.find('[data-modal-close]').trigger('click');
+    const $top = $('.modal-overlay').not('.modal-locked').last();
+    if ($top.length) $top.trigger('modal:dismiss');
   });
 
   /* ---- Toast ---- */

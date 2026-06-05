@@ -28,6 +28,7 @@
       body: formHtml,
       footer: footer,
       persistent: true,
+      locked: true,
       onClose: function () { _loginModal = null; },
     });
     _loginModal = m;
