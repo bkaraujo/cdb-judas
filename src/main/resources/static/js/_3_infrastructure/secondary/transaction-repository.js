@@ -24,7 +24,6 @@
         return http.upload('/accounts/statement/import/preview', fd);
       },
       importConfirm: function (data) { return http.post('/accounts/statement/import/confirm', data); },
-      importStatementConfirm: function (data) { return http.post('/accounts/statement/import/statement/confirm', data); },
     };
   }
   window.Infra = window.Infra || {};

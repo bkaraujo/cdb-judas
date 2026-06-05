@@ -89,6 +89,7 @@ class StatementImportResourceTest extends BaseHttpTest {
 
         String body = """
             {
+              "type": "CREDIT_CARD_INVOICE",
               "cardId": "%s",
               "rows": [
                 {"description":"Mercado","amount":80.00,"date":"2025-07-10","originalDate":"2025-07-10","categoryId":"%s"},
@@ -117,6 +118,7 @@ class StatementImportResourceTest extends BaseHttpTest {
         UUID categoryId = UUID.randomUUID();
         String body = """
             {
+              "type": "CREDIT_CARD_INVOICE",
               "cardId": "%s",
               "rows": [
                 {"description":"Mercado","amount":80.00,"date":"2025-07-10","originalDate":"2025-07-10","categoryId":"%s"}

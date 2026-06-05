@@ -16,22 +16,21 @@ Resource --> Client: 200 OK (ImportPreviewResponse or BankStatementPreviewRespon
 deactivate Resource
 
 == POST /api/{uuid}/accounts/statement/import/confirm ==
-Client -> Resource: POST /api/{uuid}/accounts/statement/import/confirm (ImportConfirmRequest)
+Client -> Resource: POST /api/{uuid}/accounts/statement/import/confirm (StatementConfirmRequest)
 activate Resource
-Resource -> UseCase: confirm(ImportConfirmCommand)
-activate UseCase
-UseCase --> Resource: Result<ImportConfirmResponse>
-deactivate UseCase
-Resource --> Client: 200 OK (ImportConfirmResponse)
-deactivate Resource
 
-== POST /api/{uuid}/accounts/statement/import/statement/confirm ==
-Client -> Resource: POST /api/{uuid}/accounts/statement/import/statement/confirm (BankStatementConfirmRequest)
-activate Resource
-Resource -> UseCase: confirmStatement(BankStatementConfirmCommand)
-activate UseCase
-UseCase --> Resource: Result<ImportConfirmResponse>
-deactivate UseCase
+alt type = CREDIT_CARD_INVOICE
+  Resource -> UseCase: confirm(ImportConfirmCommand)
+  activate UseCase
+  UseCase --> Resource: Result<ImportResult>
+  deactivate UseCase
+else type = BANK_STATEMENT
+  Resource -> UseCase: confirmStatement(BankStatementConfirmCommand)
+  activate UseCase
+  UseCase --> Resource: Result<ImportResult>
+  deactivate UseCase
+end
+
 Resource --> Client: 200 OK (ImportConfirmResponse)
 deactivate Resource
 @enduml

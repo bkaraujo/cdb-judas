@@ -661,7 +661,7 @@
       if (!rows.length) { window.toast('Selecione ao menos um lançamento', 'error'); return; }
 
       const $btn = m.$el.find('[data-act=do-confirm]').prop('disabled', true);
-      window.App.TransactionService.importConfirm({ cardId: selectedCardId, rows: rows })
+      window.App.TransactionService.importConfirm({ type: 'CREDIT_CARD_INVOICE', cardId: selectedCardId, rows: rows })
         .then(function (res) {
           const created = (res && res.created) || 0;
           const skipped = (res && res.skipped) || 0;
@@ -863,7 +863,7 @@
           description: description,
           amount: src.amount,
           date: src.date,
-          type: src.type,
+          transactionType: src.type,
           categoryId: categoryId,
         });
       });
@@ -871,7 +871,7 @@
       if (!rows.length) { window.toast('Selecione ao menos um lançamento', 'error'); return; }
 
       const $btn = m.$el.find('[data-act=do-statement-confirm]').prop('disabled', true);
-      window.App.TransactionService.importStatementConfirm({ accountId: selectedAccountId, rows: rows })
+      window.App.TransactionService.importConfirm({ type: 'BANK_STATEMENT', accountId: selectedAccountId, rows: rows })
         .then(function (res) {
           showConfirmSummary((res && res.created) || 0, (res && res.skipped) || 0, (res && res.reconciled) || 0);
           return loadTransactions();

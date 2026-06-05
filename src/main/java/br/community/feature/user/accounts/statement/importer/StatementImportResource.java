@@ -6,7 +6,6 @@ import br.community.context.monetary._1_application.command.ImportConfirmCommand
 import br.community.context.shared._0_domain.model.DomainError;
 import br.community.feature.user.accounts.statement.importer.confirm.BankStatementConfirmCommand;
 import br.community.feature.user.accounts.statement.importer.preview.*;
-import br.community.feature.user.accounts.transactions.ImportConfirmRequest;
 import br.community.feature.user.accounts.transactions.ImportConfirmResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -62,8 +61,18 @@ public class StatementImportResource {
     }
 
     @PostMapping(value = "/confirm", consumes = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<Object> confirm(@RequestBody @Valid ImportConfirmRequest req) {
-        val rows = req.rows().stream().map(StatementImportResource::toCommandRow).toList();
+    public ResponseEntity<Object> confirm(@RequestBody @Valid StatementConfirmRequest req) {
+        return switch (req.type()) {
+            case CREDIT_CARD_INVOICE -> confirmInvoice(req);
+            case BANK_STATEMENT -> confirmBankStatement(req);
+        };
+    }
+
+    private ResponseEntity<Object> confirmInvoice(StatementConfirmRequest req) {
+        if (req.cardId() == null) {
+            return problem(HttpStatus.UNPROCESSABLE_CONTENT, "CARD_REQUIRED", "O campo cardId é obrigatório para faturas de cartão.");
+        }
+        val rows = req.rows().stream().map(StatementImportResource::toInvoiceRow).toList();
         val cmd = new ImportConfirmCommand(req.cardId(), rows);
 
         return switch (statementImport.confirm(cmd)) {
@@ -74,10 +83,12 @@ public class StatementImportResource {
         };
     }
 
-    @PostMapping(value = "/statement/confirm", consumes = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<Object> confirmStatement(@RequestBody @Valid BankStatementConfirmRequest req) {
+    private ResponseEntity<Object> confirmBankStatement(StatementConfirmRequest req) {
+        if (req.accountId() == null) {
+            return problem(HttpStatus.UNPROCESSABLE_CONTENT, "ACCOUNT_REQUIRED", "O campo accountId é obrigatório para extratos bancários.");
+        }
         val rows = req.rows().stream()
-                .map(r -> new BankStatementConfirmCommand.Row(r.description(), r.amount(), r.date(), r.type(), r.categoryId()))
+                .map(r -> new BankStatementConfirmCommand.Row(r.description(), r.amount(), r.date(), r.transactionType(), r.categoryId()))
                 .toList();
         val cmd = new BankStatementConfirmCommand(req.accountId(), rows);
 
@@ -89,7 +100,7 @@ public class StatementImportResource {
         };
     }
 
-    private static ImportConfirmCommand.Row toCommandRow(ImportConfirmRequest.Row row) {
+    private static ImportConfirmCommand.Row toInvoiceRow(StatementConfirmRequest.Row row) {
         return new ImportConfirmCommand.Row(
                 row.description(), row.amount(), row.date(), row.originalDate(),
                 row.installmentNumber(), row.installmentTotal(), row.categoryId());
