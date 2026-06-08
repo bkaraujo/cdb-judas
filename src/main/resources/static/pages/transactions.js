@@ -439,7 +439,8 @@
       persistent: true
     });
     m.open();
-    m.$el.find('.modal-box').css({ width: '70vw', 'min-width': '560px' });
+    m.$el.find('.modal-box').css({ width: '70vw', 'min-width': '560px', 'max-height': '90vh', display: 'flex', 'flex-direction': 'column', overflow: 'hidden' });
+    m.$body.css({ flex: '1', 'overflow-y': 'scroll', 'min-height': '0', display: 'flex', 'flex-direction': 'column' });
 
     let selectedFile = null;
     let selectedCardId = null;
@@ -582,7 +583,7 @@
 
       const tableRows = rows.map(previewRowHtml).join('');
       const tableHtml = rows.length
-        ? '<div style="max-height:360px;overflow:auto;border:1px solid var(--border);border-radius:var(--radius-sm);margin-top:12px;">' +
+        ? '<div style="flex:1;overflow-y:scroll;min-height:0;border:1px solid var(--border);border-radius:var(--radius-sm);margin-top:12px;">' +
             '<table style="width:100%;border-collapse:collapse;font-size:13px;">' +
               '<thead><tr style="position:sticky;top:0;background:var(--bg-hover);">' +
                 '<th style="padding:8px 10px;width:34px;text-align:center;">' +
@@ -789,7 +790,7 @@
 
       const tableRows = rows.map(statementRowHtml).join('');
       const tableHtml = rows.length
-        ? '<div style="max-height:360px;overflow:auto;border:1px solid var(--border);border-radius:var(--radius-sm);margin-top:12px;">' +
+        ? '<div style="flex:1;overflow-y:scroll;min-height:0;border:1px solid var(--border);border-radius:var(--radius-sm);margin-top:12px;">' +
             '<table style="width:100%;border-collapse:collapse;font-size:13px;">' +
               '<thead><tr style="position:sticky;top:0;background:var(--bg-hover);">' +
                 '<th style="padding:8px 10px;width:34px;text-align:center;">' +
