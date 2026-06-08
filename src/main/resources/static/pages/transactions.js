@@ -761,6 +761,10 @@
 
     function showStatementPreview(preview) {
       statementData = preview;
+      const issuer = (preview && preview.issuer) || 'UNKNOWN';
+      const issuerLabel = issuer === 'SANTANDER' ? 'Santander'
+                        : issuer === 'BTG' ? 'BTG Pactual'
+                        : issuer;
       const accounts = (preview && preview.candidateAccounts) || [];
       selectedAccountId = (preview && preview.selectedAccountId) || selectedAccountId ||
         (accounts[0] && accounts[0].id) || null;
@@ -807,7 +811,7 @@
           '<span style="color:var(--income);display:flex;">' + window.icon('check', 22) + '</span>' +
           '<div>' +
             '<p style="font-size:13px;color:var(--text-muted);">Extrato detectado</p>' +
-            '<p style="font-size:18px;font-weight:800;">BTG Pactual</p>' +
+            '<p style="font-size:18px;font-weight:800;">' + esc(issuerLabel) + '</p>' +
           '</div>' +
         '</div>' +
         accSelectorHtml +
