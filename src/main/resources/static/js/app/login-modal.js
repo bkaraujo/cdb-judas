@@ -51,6 +51,7 @@
           _loginModal = null;
           m.close();
           window.App.SessionService.startSSE();
+          location.hash = '#/dashboard';
           window.Router.start();
         })
         .catch(function (e) {
