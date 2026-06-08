@@ -21,5 +21,6 @@ public record MonetaryTransaction(
         @Nullable LocalDate paymentDate,
         @Nullable UUID groupId,
         @Nullable Integer installmentNumber,
-        @Nullable Integer totalInstallments
+        @Nullable Integer totalInstallments,
+        @Nullable String notes
 ) {}

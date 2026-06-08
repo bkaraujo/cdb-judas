@@ -4,6 +4,7 @@ import br.community.core.TwoDecimalPlaces;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 
@@ -23,5 +24,6 @@ public record TransactionRequest(
         @NotBlank String type,
         @Nullable @Min(1) Integer installments,
         @Nullable String editMode,
-        @Nullable String deleteMode
+        @Nullable String deleteMode,
+        @Nullable @Size(max = 250) String notes
 ) {}

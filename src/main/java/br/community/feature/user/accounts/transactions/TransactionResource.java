@@ -119,12 +119,12 @@ public class TransactionResource {
     private Transaction toDto(MonetaryTransaction t) {
         return new Transaction(t.id(), t.description(), t.amount(), t.date(),
                 t.categoryId(), t.accountId(), t.status(), t.type(),
-                t.costCenterId(), t.paymentDate(), t.groupId(), t.installmentNumber(), t.totalInstallments());
+                t.costCenterId(), t.paymentDate(), t.groupId(), t.installmentNumber(), t.totalInstallments(), t.notes());
     }
 
     private TransactionCommand toCommand(UUID accId, TransactionRequest req) {
         return new TransactionCommand(req.description(), req.amount(), req.date(),
                 req.categoryId(), accId, req.costCenterId(), req.status(), req.type(),
-                req.installments(), req.editMode());
+                req.installments(), req.editMode(), req.notes());
     }
 }

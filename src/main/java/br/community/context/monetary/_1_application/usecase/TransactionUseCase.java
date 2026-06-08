@@ -148,7 +148,7 @@ public class TransactionUseCase {
                     val saved = transactionService.save(new MonetaryTransaction(
                             existing.id(), existing.description(), existing.amount(), existing.date(),
                             existing.categoryId(), existing.accountId(), status, existing.type(), existing.costCenterId(), paymentDate,
-                            existing.groupId(), existing.installmentNumber(), existing.totalInstallments()
+                            existing.groupId(), existing.installmentNumber(), existing.totalInstallments(), existing.notes()
                     ));
                     MessageBus.submit(new MonetaryEvent.TransactionUpdated(saved));
                     return saved;
@@ -230,12 +230,12 @@ public class TransactionUseCase {
         val outflow = new MonetaryTransaction(
                 outId, "Transferência (saída)", absAmount.negate(), date,
                 transferCat.id(), fromAccountId, "confirmed", "expense", MonetaryCenter.VARIAVEL_ID, date,
-                groupId, 1, 2
+                groupId, 1, 2, null
         );
         val inflow = new MonetaryTransaction(
                 inId, "Transferência (entrada)", absAmount, date,
                 transferCat.id(), toAccountId, "confirmed", "income", MonetaryCenter.VARIAVEL_ID, date,
-                groupId, 2, 2
+                groupId, 2, 2, null
         );
 
         val savedOut = transactionService.save(outflow);
@@ -254,7 +254,7 @@ public class TransactionUseCase {
         val tx = new MonetaryTransaction(
                 UUID.randomUUID(), cmd.description(), signed, cmd.date(),
                 cmd.categoryId(), cmd.accountId(), cmd.status(), cmd.type(), MonetaryCenter.VARIAVEL_ID, null,
-                cmd.groupId(), cmd.installmentNumber(), cmd.totalInstallments());
+                cmd.groupId(), cmd.installmentNumber(), cmd.totalInstallments(), null);
         val saved = transactionService.save(tx);
         MessageBus.submit(new MonetaryEvent.TransactionCreated(saved));
         return Result.success(saved);
@@ -264,7 +264,7 @@ public class TransactionUseCase {
                                                             @Nullable UUID groupId, @Nullable Integer installmentNumber, @Nullable Integer totalInstallments) {
         return new MonetaryTransaction(id, cmd.description(), cmd.amount(), date,
                 cmd.categoryId(), cmd.accountId(), status, cmd.type(), cmd.costCenterId(), null,
-                groupId, installmentNumber, totalInstallments);
+                groupId, installmentNumber, totalInstallments, cmd.notes());
     }
 
 }

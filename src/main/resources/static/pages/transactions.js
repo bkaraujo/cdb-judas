@@ -974,6 +974,7 @@
       destAccount: 'tx-dest-' + uniq,
       costCenter: 'tx-cc-' + uniq,
       status: 'tx-status-' + uniq,
+      notes: 'tx-notes-' + uniq,
     };
 
     const initial = {
@@ -990,6 +991,7 @@
         (existing.type === 'expense' && Number(existing.amount) > 0) ||
         (existing.type === 'income'  && Number(existing.amount) < 0)
       ) : false,
+      notes: isEdit ? (existing.notes || '') : '',
     };
 
     // Account options.
@@ -1124,6 +1126,14 @@
               ' style="width:16px;height:16px;accent-color:var(--accent);" />' +
             'Estorno (inverter sinal)' +
           '</label>' +
+        '</div>' +
+        '<div class="form-group full">' +
+          '<label class="form-label" for="' + ids.notes + '">Anotações <span style="font-weight:400;color:var(--text-muted);">(opcional)</span></label>' +
+          '<textarea id="' + ids.notes + '" name="notes" maxlength="250" rows="3" ' +
+            'placeholder="Até 250 caracteres..." style="resize:vertical;min-height:60px;">' + esc(initial.notes) + '</textarea>' +
+          '<p style="font-size:11px;color:var(--text-muted);margin-top:4px;text-align:right;" data-region="notes-counter">' +
+            esc(initial.notes.length + '/250') +
+          '</p>' +
         '</div>'
       );
     }
@@ -1173,6 +1183,18 @@
     }
     bindAmountMask();
 
+    // Live character counter for the notes textarea.
+    function bindNotesCounter() {
+      var $notes = $form.find('textarea[name=notes]');
+      if ($notes.length) {
+        $notes.off('input.notesCnt').on('input.notesCnt', function () {
+          var len = (this.value || '').length;
+          m.$body.find('[data-region=notes-counter]').text(len + '/250');
+        });
+      }
+    }
+    bindNotesCounter();
+
     // Type buttons sync hidden input + rebuild grid layout for the chosen type.
     m.$body.on('click', '[data-act=set-form-type]', function (e) {
       e.preventDefault();
@@ -1192,6 +1214,8 @@
       if ($ccSel.length)   initial.costCenterId  = $ccSel.val()        || initial.costCenterId;
       const $estornoChk   = $form.find('input[name=estorno]');
       if ($estornoChk.length) initial.isEstorno  = $estornoChk.is(':checked');
+      const $notesTa      = $form.find('textarea[name=notes]');
+      if ($notesTa.length) initial.notes         = $notesTa.val()       || initial.notes;
 
       $form.find('input[name=type]').val(t);
       // Repaint type row.
@@ -1203,6 +1227,7 @@
       // Rebuild grid.
       m.$body.find('[data-region=grid]').html(buildGridHtml(t));
       bindAmountMask();
+      bindNotesCounter();
     });
 
     // "+ Nova categoria": quick-create a category inline, then select it.
@@ -1276,6 +1301,7 @@
       if (!costCenterId) { window.toast('Selecione o centro de custo', 'error'); return; }
 
       const signed = window.Domain.Transaction.signedAmount(type, amt) * (isEstorno ? -1 : 1);
+      const notes = ($form.find('textarea[name=notes]').val() || '').trim() || null;
       const payload = {
         description: description,
         amount: Number(signed.toFixed(2)),
@@ -1285,6 +1311,7 @@
         costCenterId: costCenterId,
         status: status,
         type: type,
+        notes: notes,
       };
 
       $btn.prop('disabled', true);

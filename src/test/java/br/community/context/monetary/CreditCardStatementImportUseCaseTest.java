@@ -259,7 +259,7 @@ class CreditCardStatementImportUseCaseTest {
         transactions.save(new MonetaryTransaction(
                 UUID.randomUUID(), "Amazonmktplc Megabytem", new BigDecimal("72.99"),
                 LocalDate.of(2024, 7, 15), UUID.randomUUID(), card.id(),
-                "confirmed", "expense", MonetaryCenter.VARIAVEL_ID, null, groupId, 1, 10));
+                "confirmed", "expense", MonetaryCenter.VARIAVEL_ID, null, groupId, 1, 10, null));
 
         var useCase = useCaseWith((bytes, password) -> Result.success(text), accounts, transactions);
         var preview = invoicePreview(useCase.preview(new byte[1], null, null));
@@ -287,7 +287,7 @@ class CreditCardStatementImportUseCaseTest {
         transactions.save(new MonetaryTransaction(
                 UUID.randomUUID(), "MICROSOFT", new BigDecimal("-60.00"),
                 LocalDate.of(2025, 3, 9), UUID.randomUUID(), card.id(),
-                "confirmed", "expense", MonetaryCenter.VARIAVEL_ID, null, null, null, null));
+                "confirmed", "expense", MonetaryCenter.VARIAVEL_ID, null, null, null, null, null));
 
         var useCase = useCaseWith((bytes, password) -> Result.success(text), accounts, transactions);
         var preview = invoicePreview(useCase.preview(new byte[1], null, null));
@@ -335,7 +335,7 @@ class CreditCardStatementImportUseCaseTest {
         transactions.save(new MonetaryTransaction(
                 UUID.randomUUID(), "AMAZONMKTPLC MEGABYTEM", new BigDecimal("-99.90"),
                 LocalDate.of(2024, 1, 10), categoryC, card.id(),
-                "confirmed", "expense", MonetaryCenter.VARIAVEL_ID, null, null, null, null));
+                "confirmed", "expense", MonetaryCenter.VARIAVEL_ID, null, null, null, null, null));
 
         var useCase = useCaseWith((bytes, password) -> Result.success(text), accounts, transactions);
         var preview = invoicePreview(useCase.preview(new byte[1], null, null));
@@ -512,7 +512,7 @@ class CreditCardStatementImportUseCaseTest {
         transactions.save(new MonetaryTransaction(
                 UUID.randomUUID(), "MERCADO LIVRE", new BigDecimal("-90.00"),
                 LocalDate.of(2025, 7, 4), UUID.randomUUID(), account.id(),
-                "confirmed", "expense", MonetaryCenter.VARIAVEL_ID, null, null, null, null));
+                "confirmed", "expense", MonetaryCenter.VARIAVEL_ID, null, null, null, null, null));
 
         var useCase = useCaseWith(NOOP_EXTRACTOR, accounts, transactions);
 

@@ -105,7 +105,7 @@ public class MetadataUseCase {
                     val updated = new MonetaryTransaction(
                             t.id(), t.description(), t.amount(), t.date(),
                             othersId, t.accountId(), t.status(), t.type(), t.costCenterId(), t.paymentDate(),
-                            t.groupId(), t.installmentNumber(), t.totalInstallments()
+                            t.groupId(), t.installmentNumber(), t.totalInstallments(), t.notes()
                     );
                     transactionService.save(updated);
                 });

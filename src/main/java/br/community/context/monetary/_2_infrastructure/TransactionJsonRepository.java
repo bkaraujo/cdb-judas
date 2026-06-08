@@ -140,6 +140,6 @@ public final class TransactionJsonRepository implements TransactionRepository {
         }
         return new MonetaryTransaction(t.id(), t.description(), t.amount(), t.date(),
                 t.categoryId(), t.accountId(), t.status(), t.type(), MonetaryCenter.VARIAVEL_ID,
-                t.paymentDate(), t.groupId(), t.installmentNumber(), t.totalInstallments());
+                t.paymentDate(), t.groupId(), t.installmentNumber(), t.totalInstallments(), t.notes());
     }
 }
