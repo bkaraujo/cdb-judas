@@ -23,7 +23,9 @@ class WebConfig implements WebMvcConfigurer {
                 // Apenas rotas globais ficam fora do namespace de usuário.
                 .excludePathPatterns(
                         // Centro de custo é global (fixo, somente leitura).
-                        "/api/cost-center", "/api/cost-center/**"
+                        "/api/cost-center", "/api/cost-center/**",
+                        // Versão do sistema é pública.
+                        "/api/version"
                 );
     }
 }

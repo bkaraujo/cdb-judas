@@ -24,6 +24,7 @@
       try { return JSON.parse(localStorage.getItem(KEY_GROUPS)) || { movimentacoes: true, cadastros: false }; }
       catch (e) { return { movimentacoes: true, cadastros: false }; }
     })(),
+    version: '0.0.0',
     onNav: null,
     $root: null,
   };
@@ -46,12 +47,15 @@
 
     // Head
     const $head = $('<div class="sidebar-head"></div>');
-    $head.append(
-      '<div class="sidebar-brand">' +
-        '<div class="sidebar-logo">C</div>' +
+    const $brand = $('<div class="sidebar-brand"></div>');
+    $brand.append(
+      '<div class="sidebar-logo">C</div>' +
+      '<div class="sidebar-brand-text">' +
         '<span class="sidebar-brand-name">CBD Finance</span>' +
+        '<span class="sidebar-version">v' + state.version + '</span>' +
       '</div>'
     );
+    $head.append($brand);
     const $collapseBtn = $('<button class="icon-btn sidebar-collapse-btn">' + window.icon('chevronLeft', 16) + '</button>');
     $collapseBtn.on('click', function () { state.collapsed = true; persist(); render(); });
     $head.append($collapseBtn);
@@ -152,6 +156,19 @@
       state.current = opts.current || state.current;
       state.onNav = opts.onNav || null;
       loadNav().then(render);
+      this.refreshVersion();
+    },
+    refreshVersion: function () {
+      if (window.App && window.App.SystemService) {
+        window.App.SystemService.getVersion()
+          .then(function (res) {
+            state.version = res.version || '0.0.0';
+            if (state.$root) render();
+          })
+          .catch(function (err) {
+            console.warn('Sidebar: falha ao obter versão', err);
+          });
+      }
     },
     setCurrent: function (id) {
       state.current = id;

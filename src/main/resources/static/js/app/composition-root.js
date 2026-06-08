@@ -32,6 +32,7 @@
 
   window.App.CacheStore.init({ bus: window.App.EventBus });
   window.App.PreferencesService.init({ storage: window.Infra.Storage });
+  window.App.SystemService.init({ api: http });
 
   window.App.AccountService.init     ({ repo: repos.accounts,     cache: window.App.CacheStore });
   window.App.CategoryService.init    ({ repo: repos.categories,   cache: window.App.CacheStore });

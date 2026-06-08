@@ -321,11 +321,23 @@ button { font-family: var(--font); cursor: pointer; border: none; outline: none;
   color: #fff; font-weight: 800; font-size: 13px;
   flex-shrink: 0;
 }
+.sidebar-brand-text {
+  display: flex;
+  flex-direction: column;
+}
 .sidebar-brand-name {
   font-weight: 800; font-size: 15px;
   color: var(--text-primary); letter-spacing: -0.02em;
+  line-height: 1.2;
 }
-.sidebar.collapsed .sidebar-brand-name,
+.sidebar-version {
+  font-size: 10px;
+  color: var(--text-muted);
+  font-weight: 500;
+  opacity: 0.8;
+  margin-top: -2px;
+}
+.sidebar.collapsed .sidebar-brand-text,
 .sidebar.collapsed .sidebar-collapse-btn { display: none; }
 
 .sidebar-nav {

@@ -1,0 +1,127 @@
+EXTRATO CONSOLIDADO INTELIGENTE
+dezembro/2025
+
+Extrato_PF_A4_Inteligente - 27/11/2024
+BALP_UY_M3SM4623_MXDD1225.PIM -
+Pagina: 1/6
+Resumo - dezembro/2025
+Nome
+FULANO DE TAL EXEMPLO
+Agência
+0082
+Conta Corrente
+01.000000-0
+(=) Saldo de Conta Corrente em 30/11 526,13-
+(+) Total de Créditos 19.087,00
+(-) Total de Débitos 18.986,32
+Conta Corrente
+Movimentação
+Data Descrição Nº Documento Movimento (R$) Saldo (R$)
+SALDO EM 30/11 526,13-
+01/12  IOF IMPOSTO OPERACOES FINANCEIRAS
+PERIODO: 01/11 A 30/11/25
+- 0,75-
+ IOF ADICIONAL - AUTOMATICO
+PERIODO: 01/11 A 30/11/25
+- 1,99-
+ JUROS SALDO UTILIZ ATE LIMITE
+PERIODO: 01/11 A 30/11/25
+- 23,93- 552,80-
+02/12  COMPRA CARTAO DEB MC
+28/11 PADARIA EXEMPLO LTDA
+330759 23,00-
+04/12  TED RECEBIDA
+EMPRESA EXEMPLO E ASSES
+- 14.098,27
+ PIX ENVIADO
+Fulano De Tal Exemplo
+- 250,00-
+ PAGAMENTO DE BOLETO OUTROS BANCOS
+Escola Exemplo Infantil L
+- 758,16-
+ PAGAMENTO DE BOLETO
+Adm Exemplo De Consorcio
+- 341,60-
+ PAGAMENTO DE BOLETO OUTROS BANCOS
+Distribuidora Exemplo Ltda
+- 21,57-
+EXTRATO CONSOLIDADO INTELIGENTE
+dezembro/2025
+Extrato_PF_A4_Inteligente - 27/11/2024
+BALP_UY_M3SM4623_MXDD1225.PIM -
+Pagina: 3/6
+Data Descrição Nº Documento Movimento (R$) Saldo (R$)
+ CONTA DE AGUA E ESGOTO EM CANAIS
+INTERNET CAESB BRASILIA
+- 165,64-
+ PAGAMENTO CONTA LUZ EM CANAIS
+INTERNET NEOENERGIA BRASI
+- 339,50-
+ PAGAMENTO DE BOLETO
+BANCO EXEMPLO BRASIL
+- 1.242,31-
+ PAGAMENTO CARTAO CREDITO BCE
+04/12 15:13 CARTAO MASTER
+151330 13.366,18-
+ PAGAMENTO DE BOLETO OUTROS BANCOS
+Instituicao Exemplo SA
+- 238,00- 3.177,49-
+05/12  TED RECEBIDA
+EMPRESA EXEMPLO E ASSES
+- 4.988,72
+ PIX ENVIADO
+Academia Exemplo Norte Ltda
+- 106,39- 1.704,84
+10/12  PIX ENVIADO
+Financeira Exemplo S A
+- 351,04- 1.353,80
+11/12  DEBITO AUT. CONTA DE TELEFONE
+Provedor Exemplo A
+- 112,54-
+ PAGAMENTO DE BOLETO OUTROS BANCOS
+Fatura Cartao BTG Pactual
+- 3.076,08-
+ REMUNERACAO APLICACAO AUTOMATICA - 0,01 1.834,81-
+15/12  PIX ENVIADO
+Estacionamento Exemplo
+- 28,00-
+ PIX ENVIADO
+Beltrano De Tal Exemplo
+- 220,00- 2.082,81-
+19/12  PIX ENVIADO
+Ciclano De Tal Exemplo
+- 179,00- 2.261,81-
+26/12  PIX ENVIADO
+Sicrano De Tal Exemplo
+- 165,00- 2.426,81-
+29/12  PIX RECEBIDO
+Fulano De Tal Exemplo
+- 1.800,00 626,81-
+SALDO EM 31/12 626,81-
+Se você não tem Limite da Conta e a sua conta ficou com saldo devedor, terá sido prestado o serviço de Adiantamento a Depositantes, sujeito à cobrança de juros de acordo com a taxa do produto
+contratado, juros moratórios mensais de 1% e multa contratual de 2% sobre o saldo devedor total, além da respectiva tarifa prevista na Tabela de Serviços vigente.
+Saldos por Período
+Dia Saldo de
+Conta Corrente
+(+)
+Provisão de
+Encargos*
+(-)
+Saldo
+Disponível
+(=)
+01 552,80- 0,00 0,00 0,00 0,00 0,00 552,80-
+04 3.177,49- 0,00 0,00 0,00 0,23 0,00 3.177,49-
+11 1.834,81- 0,00 0,00 0,00 134,04 0,00 1.834,81-
+31 626,81- 0,00 0,00 0,00 134,04 0,00 626,81-
+* Valores deduzidos do saldo disponível para contas sem limite.
+Débito Automático em Conta Corrente
+Data Descrição Nº Identificação Valor (R$) Realizado Motivo Limite para
+Débito (R$)
+11/12 PROVEDOR EXEMPLO A. 402129909081 112,54 Sim - NÃO HÁ
+Extrato_PF_A4_Inteligente - 27/11/2024
+BALP_UY_M3SM4623_MXDD1225.PIM -
+Pagina: 4/6
+Transferências entre Contas, DOCs, TEDs e PIXs Enviados
+Data Canal Tipo Favorecido ISPB Agência Conta Valor (R$)
+04/12 INTERNET BANKING PIX FULANO DE TAL EXEMPLO 18236120 0000 0000000000000 250,00

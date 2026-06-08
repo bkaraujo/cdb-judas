@@ -51,6 +51,9 @@
           _loginModal = null;
           m.close();
           window.App.SessionService.startSSE();
+          if (window.Sidebar && window.Sidebar.refreshVersion) {
+            window.Sidebar.refreshVersion();
+          }
           location.hash = '#/dashboard';
           window.Router.start();
         })

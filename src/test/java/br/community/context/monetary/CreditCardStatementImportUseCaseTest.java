@@ -73,7 +73,7 @@ class CreditCardStatementImportUseCaseTest {
         final MonetaryContext monetaryContext = monetaryContext(accounts, transactions, categories);
         return new StatementImportUseCase(
                 monetaryContext, extractor, new DocumentTypeDetector(), new IssuerDetector(), PARSERS,
-                new BankStatementParserRegistry(new BtgBankStatementParser()), new CardMatcher(),
+                new BankStatementParserRegistry(new BtgBankStatementParser(), new SantanderBankStatementParser()), new CardMatcher(),
                 new InstallmentExpander(groupSignature), groupSignature, new CategoryGuesser(),
                 CLOCK, MAX_BYTES);
     }

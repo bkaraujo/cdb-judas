@@ -6,6 +6,7 @@
     'event-bus.js',
     'cache-store.js',
     'preferences-service.js',
+    'system-service.js',
     'session-service.js',
     'account-service.js',
     'category-service.js',

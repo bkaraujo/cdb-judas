@@ -22,6 +22,11 @@ class DocumentTypeDetectorTest {
     }
 
     @Test
+    void detectsSantanderBankStatementFromHeaderMarker() throws IOException {
+        assertEquals(DocumentType.BANK_STATEMENT, detector.detect(resource("/extratos/extrato-santander-202512.txt")));
+    }
+
+    @Test
     void treatsCreditCardInvoicesAsInvoices() throws IOException {
         assertEquals(DocumentType.CREDIT_CARD_INVOICE, detector.detect(resource("/faturas/fatura-btg-maio.txt")));
         assertEquals(DocumentType.CREDIT_CARD_INVOICE, detector.detect(resource("/faturas/fatura-santander-maio.txt")));

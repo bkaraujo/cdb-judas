@@ -36,6 +36,22 @@ class IssuerDetectorTest {
     }
 
     @Test
+    void detectsSantanderFromCheckingAccountStatement() throws IOException {
+        // The Santander extrato carries no CNPJ and mentions "BTG Pactual" as a boleto counterparty,
+        // so only its own "Extrato Consolidado Inteligente" marker disambiguates it.
+        try (InputStream in = IssuerDetectorTest.class.getResourceAsStream("/extratos/extrato-santander-202512.txt")) {
+            final String text = new String(Objects.requireNonNull(in).readAllBytes(), StandardCharsets.UTF_8);
+            assertEquals(Issuer.SANTANDER, detector.detect(text));
+        }
+    }
+
+    @Test
+    void statementMarkerWinsOverCounterpartyBankName() {
+        assertEquals(Issuer.SANTANDER, detector.detect(
+                "EXTRATO CONSOLIDADO INTELIGENTE\n11/12 Pagamento de boleto Fatura Cartao BTG Pactual -3.076,08"));
+    }
+
+    @Test
     void cnpjWinsOverCounterpartyBankName() {
         // BTG checking-account statement that paid a boleto to "Santander": the account CNPJ is
         // authoritative, the counterparty name must not make detection ambiguous.

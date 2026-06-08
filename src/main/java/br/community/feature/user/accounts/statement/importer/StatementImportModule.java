@@ -6,6 +6,7 @@ import br.community.context.monetary.MonetaryContext;
 import br.community.feature.user.accounts.statement.importer.preview.*;
 import br.community.feature.user.accounts.statement.importer.provider.BtgBankStatementParser;
 import br.community.feature.user.accounts.statement.importer.provider.BtgCreditCardStatementParser;
+import br.community.feature.user.accounts.statement.importer.provider.SantanderBankStatementParser;
 import br.community.feature.user.accounts.statement.importer.provider.SantanderCreditCardStatementParser;
 import org.jspecify.annotations.NullMarked;
 import org.springframework.context.annotation.Bean;
@@ -48,7 +49,7 @@ public class StatementImportModule {
 
     @Bean
     BankStatementParserRegistry bankStatementParserRegistry() {
-        return new BankStatementParserRegistry(new BtgBankStatementParser());
+        return new BankStatementParserRegistry(new BtgBankStatementParser(), new SantanderBankStatementParser());
     }
 
     @Bean

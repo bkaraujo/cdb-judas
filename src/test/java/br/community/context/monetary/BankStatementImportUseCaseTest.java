@@ -172,7 +172,7 @@ class BankStatementImportUseCaseTest {
         return new StatementImportUseCase(
                 monetaryContext, extractor, new DocumentTypeDetector(), new IssuerDetector(),
                 new CreditCardStatementParserRegistry(new SantanderCreditCardStatementParser(), new BtgCreditCardStatementParser()),
-                new BankStatementParserRegistry(new BtgBankStatementParser()), new CardMatcher(),
+                new BankStatementParserRegistry(new BtgBankStatementParser(), new SantanderBankStatementParser()), new CardMatcher(),
                 new InstallmentExpander(groupSignature), groupSignature, new CategoryGuesser(),
                 CLOCK, MAX_BYTES);
     }

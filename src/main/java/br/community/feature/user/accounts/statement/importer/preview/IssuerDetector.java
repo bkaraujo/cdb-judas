@@ -5,11 +5,13 @@ import org.jspecify.annotations.NullMarked;
 import java.util.Locale;
 
 /**
- * Detects the statement issuer from extracted text. The CNPJ is authoritative (matched on its digit
- * sequence to be robust to spacing/punctuation): both the credit-card and the checking-account CNPJ
- * of each bank are recognized. The bank-name fallback applies only when no CNPJ matched, because a
- * bank name can appear merely as a counterparty (e.g. a boleto paid to "Santander" on a BTG extrato),
- * which would otherwise make detection ambiguous.
+ * Detects the statement issuer from extracted text. Each bank's checking-account statement carries a
+ * bank-specific header that is authoritative on its own (the Santander extrato omits any CNPJ). The
+ * CNPJ is the next authority (matched on its digit sequence to be robust to spacing/punctuation):
+ * both the credit-card and the checking-account CNPJ of each bank are recognized. The bank-name
+ * fallback applies only when nothing above matched, because a bank name can appear merely as a
+ * counterparty (e.g. a boleto paid to "Santander" on a BTG extrato, or to "BTG Pactual" on a
+ * Santander extrato), which would otherwise make detection ambiguous.
  */
 @NullMarked
 public class IssuerDetector {
@@ -18,14 +20,18 @@ public class IssuerDetector {
     private static final String BTG_ACCOUNT_CNPJ_DIGITS = "30306294000226";
     private static final String SANTANDER_CNPJ_DIGITS = "90400888000142";
     private static final String BTG_STATEMENT_MARKER = "EXTRATO DA SUA CONTA CORRENTE BTG PACTUAL";
+    private static final String SANTANDER_STATEMENT_MARKER = "EXTRATO CONSOLIDADO INTELIGENTE";
 
     public Issuer detect(String text) {
         final String digits = text.replaceAll("\\D", "");
         final String upper = text.toUpperCase(Locale.ROOT);
 
-        // The BTG checking-account statement stamps its own header — an authoritative BTG signal.
+        // Each checking-account statement stamps its own header — an authoritative per-bank signal.
         if (upper.contains(BTG_STATEMENT_MARKER)) {
             return Issuer.BTG;
+        }
+        if (upper.contains(SANTANDER_STATEMENT_MARKER)) {
+            return Issuer.SANTANDER;
         }
 
         final boolean btgCnpj = digits.contains(BTG_CARD_CNPJ_DIGITS) || digits.contains(BTG_ACCOUNT_CNPJ_DIGITS);
