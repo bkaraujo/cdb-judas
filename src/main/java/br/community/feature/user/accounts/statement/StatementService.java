@@ -58,12 +58,12 @@ public class StatementService {
                         .toList();
 
                 val out = new ArrayList<StatementItem>();
-                out.add(new StatementItem(start, "Previous balance", BigDecimal.ZERO, "balance", openingBal));
+                out.add(new StatementItem(start, "Previous balance", BigDecimal.ZERO, "balance", openingBal, null));
 
                 BigDecimal running = openingBal;
                 for (val t : period) {
                     running = running.add(t.amount());
-                    out.add(new StatementItem(t.date(), t.description(), t.amount(), t.status(), running));
+                    out.add(new StatementItem(t.date(), t.description(), t.amount(), t.status(), running, t.categoryId()));
                 }
                 return out;
             });

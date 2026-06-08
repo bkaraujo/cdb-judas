@@ -1,7 +1,8 @@
 /* pages/statement.js — Extrato de Contas.
  * Layout 280px / 1fr: lista de contas (esquerda) + Card de lançamentos com saldo corrente (direita).
  * Conta selecionável; período navegável (mês/ano). Backend: API.statement.list(accountId, month, year)
- * retorna StatementItem[] = { date, description, amount, status, runningBal, balance? }.
+ * retorna StatementItem[] = { date, description, amount, status, runningBal, categoryId?, balance? }.
+ * Coluna fixa categoria/subcategoria (largura = maior label possível) entre data e descrição.
  * Status 'balance' => linha "Saldo anterior" (sem amount, runningBal = balance).
  */
 (function () {
@@ -166,9 +167,16 @@
       }));
     } else {
       const items = state.items;
+      // Fixed category column: width of the widest possible category label so
+      // every description starts at the same x, regardless of each row's category.
+      const catMap = window.categoryById();
+      const catLens = window.flatCategories().map(function (c) { return c.label.length; });
+      const catColCh = (catLens.length ? Math.max.apply(null, catLens) : 12) + 1;
       items.forEach(function (tx, i) {
         const isLast = i === items.length - 1;
         const isBalance = window.Domain.StatementItem.isBalanceHeader(tx);
+        const cat = isBalance ? null : catMap[tx.categoryId];
+        const catLbl = cat ? window.categoryLabel(cat) : '';
         const amt = Number(tx.amount) || 0;
         const amtColor = window.valueColor(amt);
         const dotColor =
@@ -187,6 +195,11 @@
           'color:' + (isBalance ? 'var(--text-secondary)' : 'var(--text-primary)') + ';' +
           'overflow:hidden;text-overflow:ellipsis;white-space:nowrap;';
 
+        const catStyle =
+          'flex:0 0 ' + catColCh + 'ch;width:' + catColCh + 'ch;' +
+          'font-size:12px;color:var(--text-muted);' +
+          'overflow:hidden;text-overflow:ellipsis;white-space:nowrap;';
+
         const amountHtml = (!isBalance && amt !== 0)
           ? '<span style="font-size:13px;font-weight:700;color:' + amtColor + ';">' +
               esc(fmt(amt)) +
@@ -198,6 +211,7 @@
             '<span style="font-size:12px;color:var(--text-muted);min-width:56px;">' +
               esc(fmtDate(tx.date)) +
             '</span>' +
+            '<span style="' + catStyle + '">' + esc(catLbl) + '</span>' +
             '<span style="' + descStyle + '">' + esc(tx.description || '—') + '</span>' +
             amountHtml +
             '<span style="font-size:13px;font-weight:700;color:' + window.valueColor(runningBal) + ';min-width:100px;text-align:right;">' +
