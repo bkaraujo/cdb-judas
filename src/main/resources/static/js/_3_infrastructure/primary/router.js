@@ -35,7 +35,7 @@
     localStorage.setItem(KEY_SCREEN, id);
     document.body.setAttribute('data-screen', id);
 
-    if (window.Header && window.Header.setTitle) window.Header.setTitle(SCREENS[id]);
+
     if (window.Sidebar && window.Sidebar.setCurrent) window.Sidebar.setCurrent(id);
 
     const $page = $('#page').empty();

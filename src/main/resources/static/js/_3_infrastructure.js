@@ -9,7 +9,7 @@
     'theme.js',
     'sidebar.data.js',
     'sidebar.js',
-    'header.js',
+
     'router.js'
   ];
 

@@ -118,9 +118,17 @@
     const $foot = $('<div class="sidebar-foot"></div>');
     const themeName = window.Theme.get() === 'dark' ? 'sun' : 'moon';
     const themeLbl  = window.Theme.get() === 'dark' ? 'Modo Claro' : 'Modo Escuro';
-    const $themeWrap = $('<div class="tooltip-wrap"></div>');
-    const $themeBtn = $('<button class="icon-btn">' + window.icon(themeName, 16) +
-      '<span class="sidebar-foot-label">' + esc(themeLbl) + '</span></button>');
+
+    // User avatar (left)
+    const $avatarWrap = $('<div class="tooltip-wrap"></div>');
+    const $avatar = $('<div class="sidebar-avatar">C</div>');
+    $avatarWrap.append($avatar);
+    $avatarWrap.append('<span class="tooltip">Perfil</span>');
+    $foot.append($avatarWrap);
+
+    // Theme toggle icon (right)
+    const $themeWrap = $('<div class="tooltip-wrap sidebar-foot-right"></div>');
+    const $themeBtn = $('<button class="icon-btn">' + window.icon(themeName, 16) + '</button>');
     $themeBtn.on('click', function () { window.Theme.toggle(); render(); });
     $themeWrap.append($themeBtn);
     $themeWrap.append('<span class="tooltip">' + esc(themeLbl) + '</span>');
