@@ -35,11 +35,7 @@
 
   // ── Helpers ─────────────────────────────────────────────
 
-  function shiftMonth(delta) {
-    const d = new Date(state.year, state.month + delta, 1);
-    state.month = d.getMonth();
-    state.year = d.getFullYear();
-  }
+  function shiftMonth(delta) { window.shiftMonth(state, delta, false); }
 
   function colorFor(item, idx) {
     return item.color || PALETTE[idx % PALETTE.length];
@@ -53,12 +49,7 @@
     return 'target';
   }
 
-  function findById(id) {
-    for (let i = 0; i < state.items.length; i++) {
-      if (String(state.items[i].id) === String(id)) return state.items[i];
-    }
-    return null;
-  }
+  function findById(id) { return window.byId(state.items, id); }
 
   function categoryOptions(selectedId) {
     const expenseCats = window.Domain.Category.filterByNature(
@@ -314,20 +305,10 @@
         '</div>' +
       '</form>';
 
-    const $cancel = window.btn({
-      variant: 'secondary', size: 'md', label: 'Cancelar',
-      attrs: 'data-modal-close="1" type="button"',
-    });
-    const $save = window.btn({
-      variant: 'primary', size: 'md', label: 'Salvar',
-      attrs: 'data-act="save" type="button"',
-    });
-    const $footer = $('<div style="display:flex;gap:10px;"></div>').append($cancel).append($save);
-
     const m = window.modal({
       title: isEdit ? 'Editar Meta' : 'Nova Meta',
       body: bodyHtml,
-      footer: $footer,
+      footer: window.saveCancelFooter({ saveAttrs: 'data-act="save" type="button"' }),
     });
     m.open();
 
@@ -412,39 +393,19 @@
   // ── Modal: confirm delete ───────────────────────────────
   function openDeleteModal(target) {
     const name = target.name || categoryName(target.categoryId) || 'esta meta';
-    const bodyHtml =
-      '<p style="font-size:13px;color:var(--text-secondary);line-height:1.5;">' +
-        'Tem certeza que deseja excluir a meta <strong>' + esc(name) + '</strong>? ' +
-        'Esta ação não pode ser desfeita.' +
-      '</p>';
-
-    const $cancel = window.btn({
-      variant: 'secondary', size: 'md', label: 'Cancelar',
-      attrs: 'data-modal-close="1" type="button"',
-    });
-    const $confirm = window.btn({
-      variant: 'danger', size: 'md', icon: 'trash', label: 'Excluir',
-      attrs: 'data-act="confirm-delete" type="button"',
-    });
-    const $footer = $('<div style="display:flex;gap:10px;"></div>').append($cancel).append($confirm);
-
-    const m = window.modal({
+    window.confirmModal({
       title: 'Excluir Meta',
-      body: bodyHtml,
-      footer: $footer,
-    });
-    m.open();
-
-    m.$el.on('click', '[data-act=confirm-delete]', function () {
-      const $b = $(this).prop('disabled', true);
-      window.App.BudgetService.remove(target.id).then(function () {
-        m.close();
-        window.toast('Meta excluída', 'success');
-        return loadBudget();
-      }).catch(function (err) {
-        $b.prop('disabled', false);
-        window.toast((err && err.message) || 'Falha ao excluir meta');
-      });
+      body: window.modalText('Tem certeza que deseja excluir a meta <strong>' + esc(name) + '</strong>? Esta ação não pode ser desfeita.'),
+      onConfirm: function (m, reEnable) {
+        window.App.BudgetService.remove(target.id).then(function () {
+          m.close();
+          window.toast('Meta excluída', 'success');
+          return loadBudget();
+        }).catch(function (err) {
+          reEnable();
+          window.toast((err && err.message) || 'Falha ao excluir meta');
+        });
+      },
     });
   }
 

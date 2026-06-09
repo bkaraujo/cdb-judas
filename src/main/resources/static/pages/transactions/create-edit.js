@@ -221,20 +221,10 @@
         '</div>' +
       '</form>';
 
-    const $cancel = window.btn({
-      variant: 'secondary', size: 'md', label: 'Cancelar',
-      attrs: 'data-modal-close="1" type="button"'
-    });
-    const $save = window.btn({
-      variant: 'primary', size: 'md', label: 'Salvar',
-      attrs: 'data-act="save" type="submit"'
-    });
-    const $footer = $('<div style="display:flex;gap:10px;"></div>').append($cancel).append($save);
-
     const m = window.modal({
       title: isEdit ? 'Editar Lançamento' : 'Novo Lançamento',
       body: bodyHtml,
-      footer: $footer[0].outerHTML,
+      footer: window.saveCancelFooter(),
     });
     m.open();
 
@@ -443,20 +433,10 @@
         '</div>' +
       '</form>';
 
-    const $cancel = window.btn({
-      variant: 'secondary', size: 'md', label: 'Cancelar',
-      attrs: 'data-modal-close="1" type="button"'
-    });
-    const $save = window.btn({
-      variant: 'primary', size: 'md', label: 'Salvar',
-      attrs: 'data-act="qcat-save" type="submit"'
-    });
-    const $footer = $('<div style="display:flex;gap:10px;"></div>').append($cancel).append($save);
-
     const m = window.modal({
       title: 'Nova Categoria',
       body: bodyHtml,
-      footer: $footer[0].outerHTML,
+      footer: window.saveCancelFooter({ saveAttrs: 'data-act="qcat-save" type="submit"' }),
     });
     m.open();
 

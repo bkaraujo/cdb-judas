@@ -34,11 +34,7 @@
   }
 
   function selectedAccount() {
-    const list = checkingAccounts();
-    for (let i = 0; i < list.length; i++) {
-      if (String(list[i].id) === String(state.accountId)) return list[i];
-    }
-    return null;
+    return window.byId(checkingAccounts(), state.accountId);
   }
 
   // ── Fetch ─────────────────────────────────────────────────
@@ -96,16 +92,8 @@
     );
     const $periodNav = window.periodNav({
       label: window.monthLabel(state.month, state.year),
-      onPrev: function () {
-        if (--state.month < 1) { state.month = 12; state.year--; }
-        loadStatement();
-        loadSummary();
-      },
-      onNext: function () {
-        if (++state.month > 12) { state.month = 1; state.year++; }
-        loadStatement();
-        loadSummary();
-      },
+      onPrev: function () { window.shiftMonth(state, -1, true); loadStatement(); loadSummary(); },
+      onNext: function () { window.shiftMonth(state, +1, true); loadStatement(); loadSummary(); },
     });
     $header.find('[data-region=head-actions]').append($periodNav);
     $page.append($header);

@@ -42,12 +42,7 @@
 
   // ── Helpers ───────────────────────────────────────────────
 
-  function findTx(id) {
-    for (let i = 0; i < state.transactions.length; i++) {
-      if (String(state.transactions[i].id) === String(id)) return state.transactions[i];
-    }
-    return null;
-  }
+  function findTx(id) { return window.byId(state.transactions, id); }
 
   // A transfer is stored as two legs (one income + one expense) sharing a groupId, unlike
   // installments whose legs share a single type. Both legs carry the same date, so they sit in
@@ -145,14 +140,8 @@
     // period nav
     const $periodNav = window.periodNav({
       label: window.monthLabel(state.month + 1, state.year),
-      onPrev: function () {
-        if (--state.month < 0) { state.month = 11; state.year--; }
-        loadTransactions();
-      },
-      onNext: function () {
-        if (++state.month > 11) { state.month = 0; state.year++; }
-        loadTransactions();
-      },
+      onPrev: function () { window.shiftMonth(state, -1, false); loadTransactions(); },
+      onNext: function () { window.shiftMonth(state, +1, false); loadTransactions(); },
     });
     $headRight.append($periodNav);
 
@@ -413,35 +402,22 @@
 
     if (!isGrouped) {
       // Simple confirm. A transfer always removes both legs server-side.
-      let bodyHtml =
-        '<p style="font-size:13px;color:var(--text-secondary);line-height:1.5;">' +
-          (isTransfer
-            ? 'Excluir esta transferência? As duas pernas (saída e entrada) serão removidas. Esta ação não pode ser desfeita.'
-            : 'Excluir <strong>' + esc(tx.description || 'lançamento') + '</strong>? ' +
-              'Esta ação não pode ser desfeita.') +
-        '</p>';
-      const $cancel = window.btn({
-        variant: 'secondary', size: 'md', label: 'Cancelar',
-        attrs: 'data-modal-close="1" type="button"'
-      });
-      const $confirm = window.btn({
-        variant: 'danger', size: 'md', icon: 'trash', label: 'Excluir',
-        attrs: 'data-act="confirm-delete" type="button"'
-      });
-      const $footer = $('<div style="display:flex;gap:10px;"></div>').append($cancel).append($confirm);
-
-      const m = window.modal({ title: isTransfer ? 'Excluir Transferência' : 'Excluir Lançamento', body: bodyHtml, footer: $footer[0].outerHTML });
-      m.open();
-      m.$el.on('click', '[data-act=confirm-delete]', function () {
-        const $b = $(this).prop('disabled', true);
-        window.App.TransactionService.remove(tx.accountId, tx.id).then(function () {
-          m.close();
-          window.toast('Lançamento excluído', 'success');
-          return loadTransactions();
-        }).catch(function (err) {
-          $b.prop('disabled', false);
-          window.toast((err && err.message) || 'Falha ao excluir', 'error');
-        });
+      const msg = isTransfer
+        ? 'Excluir esta transferência? As duas pernas (saída e entrada) serão removidas. Esta ação não pode ser desfeita.'
+        : 'Excluir <strong>' + esc(tx.description || 'lançamento') + '</strong>? Esta ação não pode ser desfeita.';
+      window.confirmModal({
+        title: isTransfer ? 'Excluir Transferência' : 'Excluir Lançamento',
+        body: window.modalText(msg),
+        onConfirm: function (m, reEnable) {
+          window.App.TransactionService.remove(tx.accountId, tx.id).then(function () {
+            m.close();
+            window.toast('Lançamento excluído', 'success');
+            return loadTransactions();
+          }).catch(function (err) {
+            reEnable();
+            window.toast((err && err.message) || 'Falha ao excluir', 'error');
+          });
+        },
       });
       return;
     }
@@ -468,13 +444,12 @@
       variant: 'ghost', size: 'md', label: 'Cancelar',
       attrs: 'data-modal-close="1" type="button"'
     });
-    const $footer2 = $('<div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end;"></div>')
-      .append($cancel2).append($only).append($future).append($all);
+    const $footer2 = window.modalFooter([$cancel2, $only, $future, $all], { align: 'end' });
 
     const m2 = window.modal({
       title: 'Excluir Lançamento Recorrente',
       body: bodyHtml,
-      footer: $footer2[0].outerHTML,
+      footer: $footer2,
     });
     m2.open();
 

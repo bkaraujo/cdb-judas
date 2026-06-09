@@ -6,6 +6,7 @@
     'icons.js',
     'format.js',
     'ui.js',
+    'helpers.js',
     'theme.js',
     'sidebar.data.js',
     'sidebar.js',

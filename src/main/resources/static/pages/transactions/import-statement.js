@@ -52,12 +52,12 @@
       variant: 'primary', size: 'md', icon: 'download', label: 'Importar',
       attrs: 'data-act="do-import" type="button"'
     });
-    const $footer = $('<div style="display:flex;gap:10px;"></div>').append($cancel).append($import);
+    const $footer = window.modalFooter([$cancel, $import]);
 
     const m = window.modal({
       title: 'Importar Fatura ou Extrato',
       body: bodyHtml,
-      footer: $footer[0].outerHTML,
+      footer: $footer,
       persistent: true
     });
     m.open();

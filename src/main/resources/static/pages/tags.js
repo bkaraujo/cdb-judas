@@ -24,12 +24,7 @@
   }
 
 
-  function findTag(id) {
-    for (let i = 0; i < state.tags.length; i++) {
-      if (String(state.tags[i].id) === String(id)) return state.tags[i];
-    }
-    return null;
-  }
+  function findTag(id) { return window.byId(state.tags, id); }
 
   // ── Render ────────────────────────────────────────────────
   function render() {
@@ -145,13 +140,7 @@
       color: isEdit ? (existing.color || DEFAULT_COLOR) : DEFAULT_COLOR,
     };
 
-    const swatchesHtml = DEFAULT_COLORS.map(function (c) {
-      const isSel = c.toLowerCase() === String(initial.color).toLowerCase();
-      return '<button type="button" data-swatch="' + esc(c) + '" ' +
-        'style="width:22px;height:22px;border-radius:50%;cursor:pointer;' +
-        'border:' + (isSel ? '2px solid var(--text-primary)' : '1px solid var(--border)') + ';' +
-        'background:' + esc(c) + ';padding:0;flex-shrink:0;" title="' + esc(c) + '"></button>';
-    }).join('');
+    const swatchesHtml = window.swatchesHtml(DEFAULT_COLORS, initial.color);
 
     const bodyHtml =
       '<form data-form="tag" autocomplete="off">' +
@@ -173,20 +162,10 @@
         '</div>' +
       '</form>';
 
-    const $cancel = window.btn({
-      variant: 'secondary', size: 'md', label: 'Cancelar',
-      attrs: 'data-modal-close="1" type="button"'
-    });
-    const $save = window.btn({
-      variant: 'primary', size: 'md', label: 'Salvar',
-      attrs: 'data-act="save" type="submit"'
-    });
-    const $footer = $('<div style="display:flex;gap:10px;"></div>').append($cancel).append($save);
-
     const m = window.modal({
       title: isEdit ? 'Editar Tag' : 'Nova Tag',
       body: bodyHtml,
-      footer: $footer,
+      footer: window.saveCancelFooter(),
     });
     m.open();
 
@@ -194,20 +173,7 @@
     const $color = $form.find('input[name=color]');
     const $name  = $form.find('input[name=name]');
 
-    function paintSwatches(activeHex) {
-      m.$body.find('[data-region=swatches] [data-swatch]').each(function () {
-        const c = $(this).attr('data-swatch');
-        const on = c && c.toLowerCase() === String(activeHex).toLowerCase();
-        $(this).css('border', on ? '2px solid var(--text-primary)' : '1px solid var(--border)');
-      });
-    }
-    m.$body.on('click', '[data-swatch]', function (e) {
-      e.preventDefault();
-      const c = $(this).attr('data-swatch');
-      $color.val(c);
-      paintSwatches(c);
-    });
-    $color.on('input change', function () { paintSwatches($color.val()); });
+    window.bindSwatches(m, $color);
 
     setTimeout(function () { $name.trigger('focus'); }, 0);
 
@@ -244,39 +210,19 @@
   // ── Modal: confirm delete ─────────────────────────────────
   function openDeleteModal(target) {
     const nameHtml = '<strong>#' + esc(target.name) + '</strong>';
-    const bodyHtml =
-      '<p style="font-size:13px;color:var(--text-secondary);line-height:1.5;">' +
-        'Tem certeza que deseja excluir a tag ' + nameHtml + '? ' +
-        'Esta ação não pode ser desfeita.' +
-      '</p>';
-
-    const $cancel = window.btn({
-      variant: 'secondary', size: 'md', label: 'Cancelar',
-      attrs: 'data-modal-close="1" type="button"'
-    });
-    const $confirm = window.btn({
-      variant: 'danger', size: 'md', icon: 'trash', label: 'Excluir',
-      attrs: 'data-act="confirm-delete" type="button"'
-    });
-    const $footer = $('<div style="display:flex;gap:10px;"></div>').append($cancel).append($confirm);
-
-    const m = window.modal({
+    window.confirmModal({
       title: 'Excluir Tag',
-      body: bodyHtml,
-      footer: $footer,
-    });
-    m.open();
-
-    m.$el.on('click', '[data-act=confirm-delete]', function () {
-      const $b = $(this).prop('disabled', true);
-      window.App.TagService.remove(target.id).then(function () {
-        m.close();
-        window.toast('Tag removida', 'success');
-        // SSE DELETE will refresh CacheStore → TagService.onChange → re-render.
-      }).catch(function (err) {
-        $b.prop('disabled', false);
-        window.toast(err && err.message ? err.message : 'Falha ao excluir tag', 'error');
-      });
+      body: window.modalText('Tem certeza que deseja excluir a tag ' + nameHtml + '? Esta ação não pode ser desfeita.'),
+      onConfirm: function (m, reEnable) {
+        window.App.TagService.remove(target.id).then(function () {
+          m.close();
+          window.toast('Tag removida', 'success');
+          // SSE DELETE will refresh CacheStore → TagService.onChange → re-render.
+        }).catch(function (err) {
+          reEnable();
+          window.toast(err && err.message ? err.message : 'Falha ao excluir tag', 'error');
+        });
+      },
     });
   }
 

@@ -30,13 +30,7 @@
     return window.Domain.Period.create(state.month + 1, state.year);
   }
 
-  function findItem(id) {
-    const src = state.payable.concat(state.receivable);
-    for (let i = 0; i < src.length; i++) {
-      if (String(src[i].id) === String(id)) return src[i];
-    }
-    return null;
-  }
+  function findItem(id) { return window.byId(state.payable.concat(state.receivable), id); }
 
   function inPeriod(arr) {
     return window.App.PayableService.inPeriod(arr, currentPeriod());
@@ -81,14 +75,8 @@
 
     const $periodNav = window.periodNav({
       label: window.monthLabel(state.month + 1, state.year),
-      onPrev: function () {
-        if (--state.month < 0) { state.month = 11; state.year--; }
-        render();
-      },
-      onNext: function () {
-        if (++state.month > 11) { state.month = 0; state.year++; }
-        render();
-      },
+      onPrev: function () { window.shiftMonth(state, -1, false); render(); },
+      onNext: function () { window.shiftMonth(state, +1, false); render(); },
     });
     $headRight.append($periodNav);
 
@@ -361,20 +349,10 @@
         '</div>' +
       '</form>';
 
-    const $cancel = window.btn({
-      variant: 'secondary', size: 'md', label: 'Cancelar',
-      attrs: 'data-modal-close="1" type="button"'
-    });
-    const $save = window.btn({
-      variant: 'primary', size: 'md', label: 'Salvar',
-      attrs: 'data-act="save" type="submit"'
-    });
-    const $footer = $('<div style="display:flex;gap:10px;"></div>').append($cancel).append($save);
-
     const m = window.modal({
       title: isEdit ? 'Editar Conta' : 'Nova Conta',
       body: bodyHtml,
-      footer: $footer[0].outerHTML,
+      footer: window.saveCancelFooter(),
     });
     m.open();
 
@@ -444,33 +422,19 @@
 
   // ── Delete ────────────────────────────────────────────────
   function openDeleteModal(item) {
-    const bodyHtml =
-      '<p style="font-size:13px;color:var(--text-secondary);line-height:1.5;">' +
-        'Excluir <strong>' + esc(item.name || 'conta') + '</strong>? ' +
-        'Esta ação não pode ser desfeita.' +
-      '</p>';
-    const $cancel = window.btn({
-      variant: 'secondary', size: 'md', label: 'Cancelar',
-      attrs: 'data-modal-close="1" type="button"'
-    });
-    const $confirm = window.btn({
-      variant: 'danger', size: 'md', icon: 'trash', label: 'Excluir',
-      attrs: 'data-act="confirm-delete" type="button"'
-    });
-    const $footer = $('<div style="display:flex;gap:10px;"></div>').append($cancel).append($confirm);
-
-    const m = window.modal({ title: 'Excluir Conta', body: bodyHtml, footer: $footer[0].outerHTML });
-    m.open();
-    m.$el.on('click', '[data-act=confirm-delete]', function () {
-      const $b = $(this).prop('disabled', true);
-      window.App.TransactionService.remove(item.accountId, item.id).then(function () {
-        m.close();
-        window.toast('Conta excluída', 'success');
-        return loadData();
-      }).catch(function (err) {
-        $b.prop('disabled', false);
-        window.toast((err && err.message) || 'Falha ao excluir', 'error');
-      });
+    window.confirmModal({
+      title: 'Excluir Conta',
+      body: window.modalText('Excluir <strong>' + esc(item.name || 'conta') + '</strong>? Esta ação não pode ser desfeita.'),
+      onConfirm: function (m, reEnable) {
+        window.App.TransactionService.remove(item.accountId, item.id).then(function () {
+          m.close();
+          window.toast('Conta excluída', 'success');
+          return loadData();
+        }).catch(function (err) {
+          reEnable();
+          window.toast((err && err.message) || 'Falha ao excluir', 'error');
+        });
+      },
     });
   }
 

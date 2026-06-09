@@ -44,12 +44,7 @@
       .sort(window.sortByName);
   }
 
-  function findCategory(id) {
-    for (let i = 0; i < state.categories.length; i++) {
-      if (state.categories[i].id === id) return state.categories[i];
-    }
-    return null;
-  }
+  function findCategory(id) { return window.byId(state.categories, id); }
 
   // ── Render ────────────────────────────────────────────────
   function render() {
@@ -271,20 +266,10 @@
         '</div>' +
       '</form>';
 
-    const $cancel = window.btn({
-      variant: 'secondary', size: 'md', label: 'Cancelar',
-      attrs: 'data-modal-close="1" type="button"'
-    });
-    const $save = window.btn({
-      variant: 'primary', size: 'md', label: 'Salvar',
-      attrs: 'data-act="save" type="submit"'
-    });
-    const $footer = $('<div style="display:flex;gap:10px;"></div>').append($cancel).append($save);
-
     const m = window.modal({
       title: isEdit ? 'Editar Categoria' : 'Nova Categoria',
       body: bodyHtml,
-      footer: $footer[0].outerHTML, // ui.modal accepts HTML string for footer
+      footer: window.saveCancelFooter(),
     });
 
     m.open();
@@ -350,39 +335,19 @@
   // ── Modal: confirm delete ─────────────────────────────────
   function openDeleteModal(target) {
     const nameHtml = '<strong>' + esc(target.name) + '</strong>';
-    const bodyHtml =
-      '<p style="font-size:13px;color:var(--text-secondary);line-height:1.5;">' +
-        'Tem certeza que deseja excluir a categoria ' + nameHtml + '? ' +
-        'Esta ação não pode ser desfeita.' +
-      '</p>';
-
-    const $cancel = window.btn({
-      variant: 'secondary', size: 'md', label: 'Cancelar',
-      attrs: 'data-modal-close="1" type="button"'
-    });
-    const $confirm = window.btn({
-      variant: 'danger', size: 'md', icon: 'trash', label: 'Excluir',
-      attrs: 'data-act="confirm-delete" type="button"'
-    });
-    const $footer = $('<div style="display:flex;gap:10px;"></div>').append($cancel).append($confirm);
-
-    const m = window.modal({
+    window.confirmModal({
       title: 'Excluir Categoria',
-      body: bodyHtml,
-      footer: $footer[0].outerHTML,
-    });
-    m.open();
-
-    m.$el.on('click', '[data-act=confirm-delete]', function () {
-      const $b = $(this).prop('disabled', true);
-      window.App.CategoryService.remove(target.id).then(function () {
-        m.close();
-        window.toast('Categoria excluída', 'success');
-        // SSE DELETE will refresh CacheStore → CategoryService.onChange → re-render.
-      }).catch(function (err) {
-        $b.prop('disabled', false);
-        window.toast(err && err.message ? err.message : 'Falha ao excluir categoria');
-      });
+      body: window.modalText('Tem certeza que deseja excluir a categoria ' + nameHtml + '? Esta ação não pode ser desfeita.'),
+      onConfirm: function (m, reEnable) {
+        window.App.CategoryService.remove(target.id).then(function () {
+          m.close();
+          window.toast('Categoria excluída', 'success');
+          // SSE DELETE will refresh CacheStore → CategoryService.onChange → re-render.
+        }).catch(function (err) {
+          reEnable();
+          window.toast(err && err.message ? err.message : 'Falha ao excluir categoria');
+        });
+      },
     });
   }
 

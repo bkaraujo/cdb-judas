@@ -33,12 +33,7 @@
 
   // ── Helpers ───────────────────────────────────────────────
 
-  function findAccount(id) {
-    for (let i = 0; i < state.accounts.length; i++) {
-      if (String(state.accounts[i].id) === String(id)) return state.accounts[i];
-    }
-    return null;
-  }
+  function findAccount(id) { return window.byId(state.accounts, id); }
 
   function colorOf(a) { return a.color || '#6366F1'; }
 
@@ -257,13 +252,7 @@
           return '<option value="' + esc(a.id) + '"' + sel + '>' + esc(a.name) + '</option>';
         }).join('');
 
-    const swatchesHtml = DEFAULT_COLORS.map(function (c) {
-      const isSel = c.toLowerCase() === String(initial.color).toLowerCase();
-      return '<button type="button" data-swatch="' + esc(c) + '" ' +
-        'style="width:22px;height:22px;border-radius:50%;cursor:pointer;' +
-        'border:' + (isSel ? '2px solid var(--text-primary)' : '1px solid var(--border)') + ';' +
-        'background:' + esc(c) + ';padding:0;flex-shrink:0;" title="' + esc(c) + '"></button>';
-    }).join('');
+    const swatchesHtml = window.swatchesHtml(DEFAULT_COLORS, initial.color);
 
     const bodyHtml =
       '<form data-form="acc" autocomplete="off">' +
@@ -347,20 +336,10 @@
         '</div>' +
       '</form>';
 
-    const $cancel = window.btn({
-      variant: 'secondary', size: 'md', label: 'Cancelar',
-      attrs: 'data-modal-close="1" type="button"'
-    });
-    const $save = window.btn({
-      variant: 'primary', size: 'md', label: 'Salvar',
-      attrs: 'data-act="save" type="submit"'
-    });
-    const $footer = $('<div style="display:flex;gap:10px;"></div>').append($cancel).append($save);
-
     const m = window.modal({
       title: isEdit ? 'Editar Conta' : 'Nova Conta',
       body: bodyHtml,
-      footer: $footer[0].outerHTML,
+      footer: window.saveCancelFooter(),
     });
     m.open();
 
@@ -370,6 +349,10 @@
     const $cc = m.$body.find('[data-region=cc-fields]');
     const $balance = $form.find('input[name=balance]');
     const $limit = $form.find('input[name=limit]');
+
+    // Swatch picker. Captures the returned paint(hex) fn so the credit-card
+    // auto-color logic below can repaint borders after setting $color.
+    const paintSwatches = window.bindSwatches(m, $color);
 
     // Type toggles credit-card fields and disables color picker.
     function syncTypeUI() {
@@ -401,23 +384,6 @@
         }
       }
     });
-
-    // Swatch click → set color.
-    function paintSwatches(activeHex) {
-      m.$body.find('[data-region=swatches] [data-swatch]').each(function () {
-        const c = $(this).attr('data-swatch');
-        const on = c && c.toLowerCase() === String(activeHex).toLowerCase();
-        $(this).css('border', on ? '2px solid var(--text-primary)' : '1px solid var(--border)');
-      });
-    }
-    m.$body.on('click', '[data-swatch]', function (e) {
-      e.preventDefault();
-      if ($color.prop('disabled')) return;
-      const c = $(this).attr('data-swatch');
-      $color.val(c);
-      paintSwatches(c);
-    });
-    $color.on('input change', function () { paintSwatches($color.val()); });
 
     // Sign toggle for initial balance.
     function updateSignBtn() {
@@ -551,33 +517,19 @@
         'Esta ação ' + (hasWarning ? '<strong>não pode ser desfeita</strong>' : 'não pode ser desfeita') + '.' +
       '</p>';
 
-    const $cancel = window.btn({
-      variant: 'secondary', size: 'md', label: 'Cancelar',
-      attrs: 'data-modal-close="1" type="button"'
-    });
-    const $confirm = window.btn({
-      variant: 'danger', size: 'md', icon: 'trash', label: 'Excluir',
-      attrs: 'data-act="confirm-delete" type="button"'
-    });
-    const $footer = $('<div style="display:flex;gap:10px;"></div>').append($cancel).append($confirm);
-
-    const m = window.modal({
+    window.confirmModal({
       title: 'Excluir Conta',
       body: bodyHtml,
-      footer: $footer[0].outerHTML,
-    });
-    m.open();
-
-    m.$el.on('click', '[data-act=confirm-delete]', function () {
-      const $b = $(this).prop('disabled', true);
-      window.App.AccountService.remove(target.id).then(function () {
-        m.close();
-        window.toast('Conta excluída', 'success');
-        // SSE DELETE will refresh CacheStore → AccountService.onChange → re-render.
-      }).catch(function (err) {
-        $b.prop('disabled', false);
-        window.toast(err && err.message ? err.message : 'Falha ao excluir conta');
-      });
+      onConfirm: function (m, reEnable) {
+        window.App.AccountService.remove(target.id).then(function () {
+          m.close();
+          window.toast('Conta excluída', 'success');
+          // SSE DELETE will refresh CacheStore → AccountService.onChange → re-render.
+        }).catch(function (err) {
+          reEnable();
+          window.toast(err && err.message ? err.message : 'Falha ao excluir conta');
+        });
+      },
     });
   }
 

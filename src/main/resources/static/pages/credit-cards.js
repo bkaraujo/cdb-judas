@@ -43,12 +43,7 @@
     return window.Domain.Period.create(state.month, state.year);
   }
 
-  function findCard(id) {
-    for (let i = 0; i < state.cards.length; i++) {
-      if (String(state.cards[i].id) === String(id)) return state.cards[i];
-    }
-    return null;
-  }
+  function findCard(id) { return window.byId(state.cards, id); }
 
   function accountName(id) {
     if (!id) return '—';
@@ -108,14 +103,8 @@
     const $actions = $header.find('[data-region=head-actions]');
     const $periodNav = window.periodNav({
       label: window.monthLabel(state.month, state.year),
-      onPrev: function () {
-        if (--state.month < 1) { state.month = 12; state.year--; }
-        render();
-      },
-      onNext: function () {
-        if (++state.month > 12) { state.month = 1; state.year++; }
-        render();
-      },
+      onPrev: function () { window.shiftMonth(state, -1, true); render(); },
+      onNext: function () { window.shiftMonth(state, +1, true); render(); },
     });
     $actions.append($periodNav);
     $actions.append(window.btn({
@@ -357,12 +346,10 @@
       variant: 'secondary', size: 'md', label: 'Fechar',
       attrs: 'data-modal-close="1" type="button"'
     });
-    const $footer = $('<div style="display:flex;gap:10px;"></div>').append($close);
-
     const m = window.modal({
       title: 'Fatura · ' + (card.name || 'Cartão'),
       body: headerSummary + listHtml,
-      footer: $footer[0].outerHTML,
+      footer: window.modalFooter($close),
     });
     m.open();
   }
