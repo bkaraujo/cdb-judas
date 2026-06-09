@@ -21,8 +21,8 @@
     current: 'dashboard',
     collapsed: localStorage.getItem(KEY_COLLAPSED) === '1',
     groups: (function () {
-      try { return JSON.parse(localStorage.getItem(KEY_GROUPS)) || { movimentacoes: true, cadastros: false }; }
-      catch (e) { return { movimentacoes: true, cadastros: false }; }
+      try { return JSON.parse(localStorage.getItem(KEY_GROUPS)) || { movements: true, registries: false }; }
+      catch (e) { return { movements: true, registries: false }; }
     })(),
     version: '0.0.0',
     onNav: null,

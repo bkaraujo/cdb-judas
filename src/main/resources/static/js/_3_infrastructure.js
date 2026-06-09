@@ -27,7 +27,7 @@
     'budget-repository.js',
     'closing-repository.js',
     'dashboard-repository.js',
-    'cadastro-bootstrap.js',
+    'registry-bootstrap.js',
     'sse-client.js'
   ];
 

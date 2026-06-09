@@ -1,4 +1,4 @@
-/* _3_infrastructure/secondary/cadastro-bootstrap.js — initial hydration of CBD cache. */
+/* _3_infrastructure/secondary/registry-bootstrap.js — initial hydration of CBD cache. */
 (function () {
   function create(deps) {
     const repos = deps.repos;
@@ -22,5 +22,5 @@
   }
 
   window.Infra = window.Infra || {};
-  window.Infra.CadastroBootstrap = { create: create };
+  window.Infra.RegistryBootstrap = { create: create };
 })();

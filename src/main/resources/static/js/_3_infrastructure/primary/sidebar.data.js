@@ -4,7 +4,7 @@
 window.SIDEBAR_NAV = [
   { "id": "dashboard", "label": "Visão Geral", "icon": "home" },
   {
-   "id": "movimentacoes", "label": "Movimentações", "icon": "layers",
+   "id": "movements", "label": "Movimentações", "icon": "layers",
     "children": [
       {"id": "transactions",     "label": "Lançamentos",       "icon": "list" },
       {"id": "accounts-payable", "label": "A pagar e receber", "icon": "calendar" }
@@ -15,7 +15,7 @@ window.SIDEBAR_NAV = [
   {"id": "budget",       "label": "Metas / Orçamento",  "icon": "target" },
   {"id": "reports",      "label": "Relatórios",         "icon": "barChart" },
   {
-   "id": "cadastros", "label": "Cadastros", "icon": "database",
+   "id": "registries", "label": "Cadastros", "icon": "database",
     "children": [
       {"id": "cost-centers", "label": "Centros de Custo", "icon": "briefcase" },
       {"id": "categories",   "label": "Categorias",      "icon": "tag" },

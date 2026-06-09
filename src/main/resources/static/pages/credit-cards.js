@@ -212,13 +212,13 @@
     $card.append($band);
 
     // ── Fatura atual + Limite ──────────────────────────────
-    let faturaValueHtml;
+    let invoiceValueHtml;
     if (loadingInv) {
-      faturaValueHtml = '<span style="font-size:13px;color:var(--text-muted);">…</span>';
+      invoiceValueHtml = '<span style="font-size:13px;color:var(--text-muted);">…</span>';
     } else {
-      const faturaColor = used > 0 ? 'var(--expense)' : 'var(--text-primary)';
-      faturaValueHtml =
-        '<span style="font-size:20px;font-weight:800;color:' + faturaColor + ';">' +
+      const invoiceColor = used > 0 ? 'var(--expense)' : 'var(--text-primary)';
+      invoiceValueHtml =
+        '<span style="font-size:20px;font-weight:800;color:' + invoiceColor + ';">' +
           esc(fmt(used)) +
         '</span>';
     }
@@ -228,7 +228,7 @@
         '<div>' +
           '<p style="font-size:11px;color:var(--text-muted);font-weight:700;' +
             'text-transform:uppercase;letter-spacing:0.04em;">Fatura atual</p>' +
-          '<p data-region="fatura-value" style="margin-top:4px;">' + faturaValueHtml + '</p>' +
+          '<p data-region="invoice-value" style="margin-top:4px;">' + invoiceValueHtml + '</p>' +
         '</div>' +
         '<div style="text-align:right;">' +
           '<p style="font-size:11px;color:var(--text-muted);font-weight:700;' +

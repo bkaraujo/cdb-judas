@@ -1,36 +1,37 @@
 /* pages/dashboard.js — Visão Geral (painéis configuráveis + drag-reorder + modal personalizar). */
 (function () {
   window.Pages = window.Pages || {};
+  window.DashboardPanels = window.DashboardPanels || {};
 
   // ── Definição dos painéis (port direto de dashboard.jsx) ──────
   const ALL_PANELS = [
-    { id: 'saldos-caixa',       label: 'Saldos de caixa',                defaultOn: true,  icon: 'building'     },
-    { id: 'resultado-mes',      label: 'Resultado do mês',               defaultOn: true,  icon: 'activity'     },
-    { id: 'despesas-cat',       label: 'Despesas por categoria',         defaultOn: true,  icon: 'pieChart'     },
-    { id: 'contas-pagar',       label: 'Contas a pagar',                 defaultOn: true,  icon: 'calendar'     },
-    { id: 'contas-receber',     label: 'Contas a receber',               defaultOn: false, icon: 'arrowUp'      },
-    { id: 'cartoes-credito',    label: 'Cartões de crédito',             defaultOn: true,  icon: 'creditCard'   },
-    { id: 'fluxo-caixa',        label: 'Fluxo de caixa',                 defaultOn: true,  icon: 'trendingUp'   },
-    { id: 'metas-despesa',      label: 'Metas de despesa',               defaultOn: true,  icon: 'target'       },
-    { id: 'ultimos-lanc',       label: 'Últimos lançamentos',            defaultOn: true,  icon: 'list'         },
-    { id: 'balanco',            label: 'Balanço patrimonial',            defaultOn: false, icon: 'database'     },
-    { id: 'despesas-centro',    label: 'Despesas por centro',            defaultOn: false, icon: 'barChart'     },
-    { id: 'metas-despesa-ctr',  label: 'Metas de despesa por centro',    defaultOn: false, icon: 'target'       },
-    { id: 'metas-economia',     label: 'Metas de economia',              defaultOn: false, icon: 'target'       },
-    { id: 'metas-invest',       label: 'Metas de investimentos',         defaultOn: false, icon: 'target'       },
-    { id: 'metas-receita',      label: 'Metas de receita',               defaultOn: false, icon: 'target'       },
-    { id: 'metas-receita-ctr',  label: 'Metas de receita por centro',    defaultOn: false, icon: 'target'       },
-    { id: 'receitas-cat',       label: 'Receitas por categoria',         defaultOn: false, icon: 'pieChart'     },
-    { id: 'receitas-centro',    label: 'Receitas por centro',            defaultOn: false, icon: 'barChart'     },
-    { id: 'resultados-caixa',   label: 'Resultados de caixa',            defaultOn: false, icon: 'activity'     },
-    { id: 'resultados-centro',  label: 'Resultados por centro',          defaultOn: false, icon: 'barChart'     },
+    { id: 'cash-balances',       label: 'Saldos de caixa',                defaultOn: true,  icon: 'building'     },
+    { id: 'month-result',      label: 'Resultado do mês',               defaultOn: true,  icon: 'activity'     },
+    { id: 'expenses-cat',       label: 'Despesas por categoria',         defaultOn: true,  icon: 'pieChart'     },
+    { id: 'accounts-payable',       label: 'Contas a pagar',                 defaultOn: true,  icon: 'calendar'     },
+    { id: 'accounts-receivable',     label: 'Contas a receber',               defaultOn: false, icon: 'arrowUp'      },
+    { id: 'credit-cards',    label: 'Cartões de crédito',             defaultOn: true,  icon: 'creditCard'   },
+    { id: 'cash-flow',        label: 'Fluxo de caixa',                 defaultOn: true,  icon: 'trendingUp'   },
+    { id: 'expense-goals',      label: 'Metas de despesa',               defaultOn: true,  icon: 'target'       },
+    { id: 'recent-postings',       label: 'Últimos lançamentos',            defaultOn: true,  icon: 'list'         },
+    { id: 'balance-sheet',            label: 'Balanço patrimonial',            defaultOn: false, icon: 'database'     },
+    { id: 'expenses-center',    label: 'Despesas por centro',            defaultOn: false, icon: 'barChart'     },
+    { id: 'expense-goals-ctr',  label: 'Metas de despesa por centro',    defaultOn: false, icon: 'target'       },
+    { id: 'saving-goals',     label: 'Metas de economia',              defaultOn: false, icon: 'target'       },
+    { id: 'investment-goals',       label: 'Metas de investimentos',         defaultOn: false, icon: 'target'       },
+    { id: 'revenue-goals',      label: 'Metas de receita',               defaultOn: false, icon: 'target'       },
+    { id: 'revenue-goals-ctr',  label: 'Metas de receita por centro',    defaultOn: false, icon: 'target'       },
+    { id: 'revenues-cat',       label: 'Receitas por categoria',         defaultOn: false, icon: 'pieChart'     },
+    { id: 'revenues-center',    label: 'Receitas por centro',            defaultOn: false, icon: 'barChart'     },
+    { id: 'cash-results',   label: 'Resultados de caixa',            defaultOn: false, icon: 'activity'     },
+    { id: 'results-center',  label: 'Resultados por centro',          defaultOn: false, icon: 'barChart'     },
   ];
 
   const DEFAULT_ENABLED = {};
   ALL_PANELS.forEach(function (p) { DEFAULT_ENABLED[p.id] = p.defaultOn; });
 
   const DEFAULT_SETTINGS = {
-    viewMode: 'caixa',
+    viewMode: 'cash',
     columns: 2,
     scrollPanels: false,
     includeInvestments: true,
@@ -182,149 +183,6 @@
     return window.Domain.DashboardAggregations.upcomingPayables(src);
   }
 
-  // ── Render ───────────────────────────────────────────────────
-  function render() {
-    const $root = state.$root;
-    if (!$root) return;
-    $root.empty();
-
-    // Page header
-    const $header = $(
-      '<div class="page-header">' +
-        '<h1>Visão Geral</h1>' +
-        '<div class="page-header-actions" data-region="actions"></div>' +
-      '</div>'
-    );
-    const $actions = $header.find('[data-region=actions]');
-    $actions.append(
-      $('<button class="icon-btn" data-act="toggle-hide" type="button" title="' +
-        (state.hideValues ? 'Mostrar valores' : 'Ocultar valores') +
-        '" style="width:34px;height:34px;">' +
-        window.icon(state.hideValues ? 'eyeOff' : 'eye', 16) +
-        '</button>')
-    );
-    $actions.append(
-      window.btn({
-        variant: 'secondary', size: 'sm', icon: 'settings', label: 'Personalizar',
-        attrs: 'data-act="customize"',
-      })
-    );
-    $actions.append(
-      window.btn({
-        variant: 'primary', size: 'sm', icon: 'plus', label: 'Novo Lançamento',
-        attrs: 'data-act="new-tx"',
-      })
-    );
-
-    $root.append($header);
-
-    // Enabled panels in order
-    const order = (state.settings.panelOrder && state.settings.panelOrder.length)
-      ? state.settings.panelOrder
-      : ALL_PANELS.map(function (p) { return p.id; });
-
-    const enabled = order
-      .map(function (id) { return ALL_PANELS.find(function (p) { return p.id === id; }); })
-      .filter(function (p) { return p && state.settings.enabled[p.id]; });
-
-    if (enabled.length === 0) {
-      $root.append(window.emptyState({
-        icon: 'settings',
-        title: 'Nenhum painel habilitado',
-        desc: 'Clique em "Personalizar" para adicionar painéis à visão geral.',
-      }));
-      return;
-    }
-
-    const cols = state.settings.columns || 2;
-    const $grid = $(
-      '<div class="dash-grid" style="' +
-        'display:grid;' +
-        'grid-template-columns:repeat(' + cols + ', 1fr);' +
-        'gap:14px;align-items:start;"></div>'
-    );
-
-    enabled.forEach(function (p) {
-      const isDragged  = state.draggedId === p.id;
-      const isDragOver = state.dragOverId === p.id && state.draggedId && state.draggedId !== p.id;
-      const $wrap = $(
-        '<div data-panel="' + esc(p.id) + '" draggable="true" style="' +
-          'opacity:' + (isDragged ? 0.35 : 1) + ';' +
-          'transform:' + (isDragOver ? 'scale(1.01)' : 'none') + ';' +
-          'transition:opacity 0.15s, transform 0.15s;' +
-          'border-radius:var(--radius);' +
-          'outline:' + (isDragOver ? '2px solid var(--accent)' : '2px solid transparent') + ';' +
-        '"></div>'
-      );
-      $wrap.append(renderPanel(p));
-      $grid.append($wrap);
-    });
-
-    $root.append($grid);
-  }
-
-  // ── Panel skeleton (PanelWrap) ───────────────────────────────
-  function panelWrap(opts) {
-    // opts: { title, icon, action: jQuery|string, body: jQuery|string }
-    const $card = $('<div class="card" style="padding:0;overflow:hidden;display:flex;flex-direction:column;"></div>');
-
-    const $head = $(
-      '<div style="' +
-        'padding:11px 16px 10px;border-bottom:1px solid var(--border);' +
-        'display:flex;align-items:center;justify-content:space-between;flex-shrink:0;' +
-        'cursor:grab;"></div>'
-    );
-
-    const gripSvg =
-      '<svg width="10" height="14" viewBox="0 0 10 14" fill="var(--text-muted)" style="flex-shrink:0;opacity:0.5;">' +
-        '<circle cx="2" cy="2" r="1.3"/><circle cx="2" cy="6" r="1.3"/><circle cx="2" cy="11" r="1.3"/>' +
-        '<circle cx="6" cy="2" r="1.3"/><circle cx="6" cy="6" r="1.3"/><circle cx="6" cy="11" r="1.3"/>' +
-      '</svg>';
-
-    const $left = $(
-      '<div style="display:flex;align-items:center;gap:8px;min-width:0;">' +
-        gripSvg +
-        '<span style="display:flex;align-items:center;color:var(--text-muted);flex-shrink:0;">' +
-          window.icon(opts.icon || 'activity', 14) +
-        '</span>' +
-        '<span style="font-size:13px;font-weight:700;color:var(--text-primary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' +
-          esc(opts.title) +
-        '</span>' +
-      '</div>'
-    );
-    $head.append($left);
-
-    const $right = $('<div style="display:flex;align-items:center;gap:6px;flex-shrink:0;"></div>');
-    if (opts.action) {
-      if (typeof opts.action === 'string') $right.append(opts.action);
-      else $right.append(opts.action);
-    }
-    $head.append($right);
-
-    $card.append($head);
-
-    let bodyStyle = 'padding:14px 16px;flex:1;overflow:hidden;';
-    if (state.settings.scrollPanels) {
-      bodyStyle = 'padding:14px 16px;flex:1;overflow:auto;max-height:340px;';
-    }
-    const $body = $('<div style="' + bodyStyle + '"></div>');
-    if (opts.body) {
-      if (typeof opts.body === 'string') $body.html(opts.body);
-      else $body.append(opts.body);
-    }
-    $card.append($body);
-
-    return $card;
-  }
-
-  function stubPanel(p) {
-    return panelWrap({
-      title: p.label,
-      icon: p.icon || 'barChart',
-      body: window.emptyState({ icon: 'activity', title: 'Em breve', desc: 'Dados disponíveis em breve.' }),
-    });
-  }
-
   // ── Charts ───────────────────────────────────────────────────
   function miniLineChart(data, height) {
     height = height || 100;
@@ -405,6 +263,92 @@
     return html;
   }
 
+  // ── Panel skeleton (PanelWrap) ───────────────────────────────
+  function panelWrap(opts) {
+    // opts: { title, icon, action: jQuery|string, body: jQuery|string }
+    const $card = $('<div class="card" style="padding:0;overflow:hidden;display:flex;flex-direction:column;"></div>');
+
+    const $head = $(
+      '<div style="' +
+        'padding:11px 16px 10px;border-bottom:1px solid var(--border);' +
+        'display:flex;align-items:center;justify-content:space-between;flex-shrink:0;' +
+        'cursor:grab;"></div>'
+    );
+
+    const gripSvg =
+      '<svg width="10" height="14" viewBox="0 0 10 14" fill="var(--text-muted)" style="flex-shrink:0;opacity:0.5;">' +
+        '<circle cx="2" cy="2" r="1.3"/><circle cx="2" cy="6" r="1.3"/><circle cx="2" cy="11" r="1.3"/>' +
+        '<circle cx="6" cy="2" r="1.3"/><circle cx="6" cy="6" r="1.3"/><circle cx="6" cy="11" r="1.3"/>' +
+      '</svg>';
+
+    const $left = $(
+      '<div style="display:flex;align-items:center;gap:8px;min-width:0;">' +
+        gripSvg +
+        '<span style="display:flex;align-items:center;color:var(--text-muted);flex-shrink:0;">' +
+          window.icon(opts.icon || 'activity', 14) +
+        '</span>' +
+        '<span style="font-size:13px;font-weight:700;color:var(--text-primary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' +
+          esc(opts.title) +
+        '</span>' +
+      '</div>'
+    );
+    $head.append($left);
+
+    const $right = $('<div style="display:flex;align-items:center;gap:6px;flex-shrink:0;"></div>');
+    if (opts.action) {
+      if (typeof opts.action === 'string') $right.append(opts.action);
+      else $right.append(opts.action);
+    }
+    $head.append($right);
+
+    $card.append($head);
+
+    let bodyStyle = 'padding:14px 16px;flex:1;overflow:hidden;';
+    if (state.settings.scrollPanels) {
+      bodyStyle = 'padding:14px 16px;flex:1;overflow:auto;max-height:340px;';
+    }
+    const $body = $('<div style="' + bodyStyle + '"></div>');
+    if (opts.body) {
+      if (typeof opts.body === 'string') $body.html(opts.body);
+      else $body.append(opts.body);
+    }
+    $card.append($body);
+
+    return $card;
+  }
+
+  function stubPanel(p) {
+    return panelWrap({
+      title: p.label,
+      icon: p.icon || 'barChart',
+      body: window.emptyState({ icon: 'activity', title: 'Em breve', desc: 'Dados disponíveis em breve.' }),
+    });
+  }
+
+  // ── Panel context (shared utilities for external panel files) ─
+  function buildCtx() {
+    return {
+      state:              state,
+      panelWrap:          panelWrap,
+      v:                  v,
+      esc:                esc,
+      pickColor:          pickColor,
+      cashAccounts:       cashAccounts,
+      creditCards:        creditCards,
+      cbdAccounts:        cbdAccounts,
+      currentMonthTxs:    currentMonthTxs,
+      categoryName:       categoryName,
+      txIsExpense:        txIsExpense,
+      expenseByCategory:  expenseByCategory,
+      monthlySeries:      monthlySeries,
+      upcomingPayables:   upcomingPayables,
+      categoryBars:       categoryBars,
+      miniLineChart:      miniLineChart,
+      stubPanel:          stubPanel,
+      SERIES_PALETTE:     SERIES_PALETTE,
+    };
+  }
+
   // ── Individual panel renderers ───────────────────────────────
   function renderPanel(p) {
     if (!state.data.loaded) {
@@ -415,297 +359,88 @@
       });
     }
 
-    switch (p.id) {
-      case 'saldos-caixa':    return renderSaldosCaixa(p);
-      case 'resultado-mes':   return renderResultadoMes(p);
-      case 'despesas-cat':    return renderDespesasCategoria(p);
-      case 'contas-pagar':    return renderContasPagar(p);
-      case 'contas-receber':  return renderContasReceber(p);
-      case 'cartoes-credito': return renderCartoesCredito(p);
-      case 'fluxo-caixa':     return renderFluxoCaixa(p);
-      case 'metas-despesa':   return renderMetasDespesa(p);
-      case 'ultimos-lanc':    return renderUltimosLanc(p);
-      case 'balanco':         return renderBalanco(p);
-      case 'receitas-cat':    return renderReceitasCategoria(p);
-      default:                return stubPanel(p);
+    var renderer = window.DashboardPanels[p.id];
+    if (renderer) {
+      return renderer(p, buildCtx());
     }
+
+    return stubPanel(p);
   }
 
-  function renderSaldosCaixa(p) {
-    const accs = cashAccounts();
-    const total = accs.reduce(function (s, a) { return s + window.Domain.Account.currentBalance(a); }, 0);
-    let rows = accs.map(function (a, i) {
-      const color = pickColor(i, a.color);
-      const bal = window.Domain.Account.currentBalance(a);
-      return (
-        '<div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-top:1px solid var(--border-light);">' +
-          '<div style="display:flex;align-items:center;gap:8px;min-width:0;">' +
-            '<span style="width:8px;height:8px;border-radius:50%;background:' + esc(color) + ';flex-shrink:0;"></span>' +
-            '<span style="font-size:12px;color:var(--text-secondary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + esc(a.name) + '</span>' +
-          '</div>' +
-          '<span style="font-size:13px;font-weight:700;color:' + window.valueColor(bal) + ';">' + esc(v(bal)) + '</span>' +
-        '</div>'
-      );
-    }).join('');
-    if (!accs.length) {
-      rows = '<div style="font-size:12px;color:var(--text-muted);text-align:center;padding:12px 0;">Sem contas cadastradas.</div>';
-    }
-    const body =
-      '<div style="margin-bottom:12px;">' +
-        '<p style="font-size:11px;color:var(--text-muted);font-weight:600;text-transform:uppercase;letter-spacing:0.04em;">Total</p>' +
-        '<p style="font-size:24px;font-weight:800;margin-top:2px;color:' + window.valueColor(total) + ';">' +
-          esc(v(total)) +
-        '</p>' +
-      '</div>' + rows;
-    return panelWrap({ title: 'Saldos de Caixa', icon: p.icon, body: body });
-  }
+  // ── Render ───────────────────────────────────────────────────
+  function render() {
+    const $root = state.$root;
+    if (!$root) return;
+    $root.empty();
 
-  function renderResultadoMes(p) {
-    const txs = currentMonthTxs();
-    let inc = 0, exp = 0;
-    txs.forEach(function (t) {
-      const a = Math.abs(+t.amount || 0);
-      if (txIsExpense(t)) exp += a; else inc += a;
-    });
-    const res = inc - exp;
-    const rows = [
-      { label: 'Receitas', value: inc, color: 'var(--income)' },
-      { label: 'Despesas', value: exp, color: 'var(--expense)' },
-      { label: 'Resultado', value: res, color: res >= 0 ? 'var(--income)' : 'var(--expense)', bold: true },
-    ];
-    let body = '<div style="display:flex;flex-direction:column;gap:10px;">';
-    rows.forEach(function (r) {
-      body +=
-        '<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border-light);">' +
-          '<span style="font-size:13px;color:var(--text-secondary);font-weight:' + (r.bold ? 700 : 400) + ';">' + esc(r.label) + '</span>' +
-          '<span style="font-size:14px;font-weight:700;color:' + r.color + ';">' + esc(v(r.value)) + '</span>' +
-        '</div>';
-    });
-    const series = monthlySeries(4);
-    body += '<div style="height:80px;margin-top:4px;">' + miniLineChart(series, 80) + '</div>';
-    body += '</div>';
-    return panelWrap({ title: 'Resultado do Mês', icon: p.icon, body: body });
-  }
-
-  function renderDespesasCategoria(p) {
-    const data = expenseByCategory().slice(0, 5);
-    return panelWrap({ title: 'Despesas por Categoria', icon: p.icon, body: categoryBars(data) });
-  }
-
-  function renderReceitasCategoria(p) {
-    const map = {};
-    currentMonthTxs().forEach(function (t) {
-      if (txIsExpense(t)) return;
-      const n = categoryName(t.categoryId);
-      map[n] = (map[n] || 0) + Math.abs(+t.amount || 0);
-    });
-    const list = Object.keys(map).map(function (k, i) {
-      return { name: k, amount: map[k], color: SERIES_PALETTE[i % SERIES_PALETTE.length] };
-    });
-    list.sort(function (a, b) { return b.amount - a.amount; });
-    return panelWrap({ title: 'Receitas por Categoria', icon: p.icon, body: categoryBars(window.Domain.DashboardAggregations.topN(list, 5)) });
-  }
-
-  function renderListaPayable(p, kind) {
-    const isExp = kind === 'expense';
-    const src = upcomingPayables(kind).slice(0, 6);
-    let bodyEl;
-    if (!src.length) {
-      bodyEl = window.emptyState({
-        icon: isExp ? 'calendar' : 'arrowUp',
-        title: isExp ? 'Sem contas a pagar' : 'Sem contas a receber',
-        desc: 'Tudo em dia.',
-      });
-    } else {
-      const color = isExp ? 'var(--expense)' : 'var(--income)';
-      let html = '<div style="display:flex;flex-direction:column;gap:0;">';
-      src.forEach(function (b) {
-        const due = b.due || b.date;
-        let dueTxt = '';
-        try { dueTxt = window.fmtDate(due); } catch (e) {}
-        html +=
-          '<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border-light);">' +
-            '<div style="min-width:0;">' +
-              '<p style="font-size:12px;font-weight:600;color:var(--text-primary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' +
-                esc(b.description || b.name || '—') +
-              '</p>' +
-              '<p style="font-size:11px;color:var(--text-muted);">' + esc(dueTxt) + '</p>' +
-            '</div>' +
-            '<span style="font-size:13px;font-weight:700;color:' + color + ';flex-shrink:0;margin-left:10px;">' +
-              esc(v(Math.abs(+b.amount || 0))) +
-            '</span>' +
-          '</div>';
-      });
-      html += '</div>';
-      bodyEl = html;
-    }
-    const action = window.badge(String(upcomingPayables(kind).length), isExp ? 'expense' : 'income');
-    return panelWrap({
-      title: isExp ? 'Contas a Pagar' : 'Contas a Receber',
-      icon: isExp ? 'calendar' : 'arrowUp',
-      action: action,
-      body: bodyEl,
-    });
-  }
-
-  function renderContasPagar(p)   { return renderListaPayable(p, 'expense'); }
-  function renderContasReceber(p) { return renderListaPayable(p, 'income'); }
-
-  function renderCartoesCredito(p) {
-    const cards = creditCards();
-    if (!cards.length) {
-      return panelWrap({
-        title: 'Cartões de Crédito', icon: p.icon,
-        body: window.emptyState({ icon: 'creditCard', title: 'Sem cartões', desc: 'Cadastre um cartão para visualizar aqui.' }),
-      });
-    }
-    let html = '';
-    cards.forEach(function (c, i) {
-      const limit = (c.additionalInfo && c.additionalInfo.limit) || 0;
-      const used = Math.abs(window.Domain.Account.currentBalance(c));
-      const pct = window.Domain.CreditCard.usagePct(used, limit);
-      const color = pickColor(i + 4, c.color);
-      const barColor = 'var(--' + window.Domain.CreditCard.barColorByUsage(pct) + ')';
-      html +=
-        '<div style="margin-bottom:12px;">' +
-          '<div style="display:flex;justify-content:space-between;margin-bottom:6px;">' +
-            '<div style="display:flex;align-items:center;gap:6px;min-width:0;">' +
-              '<span style="width:10px;height:10px;border-radius:2px;background:' + esc(color) + ';flex-shrink:0;"></span>' +
-              '<span style="font-size:12px;font-weight:600;color:var(--text-primary);">' + esc(c.name) + '</span>' +
-            '</div>' +
-            '<span style="font-size:12px;color:var(--expense);font-weight:700;">' + esc(v(used)) + '</span>' +
-          '</div>' +
-          '<div style="height:6px;background:var(--bg-hover);border-radius:3px;overflow:hidden;margin-bottom:4px;">' +
-            '<div style="height:100%;border-radius:3px;width:' + pct + '%;background:' + barColor + ';transition:width 0.5s ease;"></div>' +
-          '</div>' +
-          '<div style="display:flex;justify-content:space-between;font-size:11px;color:var(--text-muted);">' +
-            '<span>' + (limit > 0 ? pct.toFixed(0) + '% usado' : 'Sem limite') + '</span>' +
-            '<span>Limite: ' + esc(limit > 0 ? v(limit) : '—') + '</span>' +
-          '</div>' +
-        '</div>';
-    });
-    return panelWrap({ title: 'Cartões de Crédito', icon: p.icon, body: html });
-  }
-
-  function renderFluxoCaixa(p) {
-    const series = monthlySeries(6);
-    const body =
-      '<div style="display:flex;gap:16px;margin-bottom:10px;font-size:12px;">' +
-        '<span style="display:flex;align-items:center;gap:4px;color:var(--text-secondary);">' +
-          '<span style="width:14px;height:3px;border-radius:2px;background:var(--income);display:inline-block;"></span>Receitas' +
-        '</span>' +
-        '<span style="display:flex;align-items:center;gap:4px;color:var(--text-secondary);">' +
-          '<span style="width:14px;height:3px;border-radius:2px;background:var(--expense);display:inline-block;"></span>Despesas' +
-        '</span>' +
-      '</div>' +
-      '<div style="height:110px;">' + miniLineChart(series, 110) + '</div>';
-    return panelWrap({ title: 'Fluxo de Caixa', icon: p.icon, body: body });
-  }
-
-  function renderMetasDespesa(p) {
-    // Try API.budget — current month
-    const now = new Date();
-    const $card = panelWrap({
-      title: 'Metas de Despesa', icon: p.icon,
-      body: '<div style="font-size:12px;color:var(--text-muted);text-align:center;padding:20px 0;">Carregando…</div>',
-    });
-    window.App.BudgetService.loadPeriod(window.Domain.Period.create(now.getMonth() + 1, now.getFullYear())).then(function (list) {
-      const data = (Array.isArray(list) ? list : []).filter(function (g) {
-        return g && (g.budgeted || g.budget || g.target);
-      });
-      const $body = $card.find('div').last();
-      if (!data.length) {
-        $body.html(window.emptyState({ icon: 'target', title: 'Sem metas', desc: 'Configure metas em Metas / Orçamento.' }));
-        return;
-      }
-      let html = '<div style="display:flex;flex-direction:column;gap:10px;">';
-      data.slice(0, 6).forEach(function (g) {
-        const name = g.name || g.categoryName || categoryName(g.categoryId) || 'Categoria';
-        const budgeted = +(g.budgeted || g.budget || g.target || 0);
-        const spent = +(g.spent || g.actual || 0);
-        const pct = window.Domain.Budget.consumptionPct(spent, budgeted);
-        const over = window.Domain.Budget.isOverBudget(spent, budgeted);
-        const barColor = over ? 'var(--expense)' : pct > 80 ? 'var(--warning)' : 'var(--income)';
-        html +=
-          '<div>' +
-            '<div style="display:flex;justify-content:space-between;margin-bottom:4px;font-size:12px;">' +
-              '<span style="color:var(--text-secondary);">' + esc(name) + '</span>' +
-              '<span style="font-weight:700;color:' + (over ? 'var(--expense)' : 'var(--text-primary)') + ';">' +
-                esc(v(spent)) + ' / ' + esc(v(budgeted)) +
-              '</span>' +
-            '</div>' +
-            '<div style="height:6px;background:var(--bg-hover);border-radius:3px;overflow:hidden;">' +
-              '<div style="height:100%;border-radius:3px;width:' + pct + '%;background:' + barColor + ';transition:width 0.5s ease;"></div>' +
-            '</div>' +
-          '</div>';
-      });
-      html += '</div>';
-      $body.html(html);
-    }).catch(function () {
-      const $body = $card.find('div').last();
-      $body.html(window.emptyState({ icon: 'target', title: 'Em breve', desc: 'Endpoint de metas indisponível.' }));
-    });
-    return $card;
-  }
-
-  function renderUltimosLanc(p) {
-    const txs = (state.data.transactions || []).slice(0, 7);
-    if (!txs.length) {
-      return panelWrap({
-        title: 'Últimos Lançamentos', icon: p.icon,
-        body: window.emptyState({ icon: 'list', title: 'Sem lançamentos', desc: 'Nenhum movimento ainda.' }),
-      });
-    }
-    let html = '';
-    txs.forEach(function (t) {
-      const isExp = txIsExpense(t);
-      const color = isExp ? 'var(--expense)' : 'var(--income)';
-      const amt   = Math.abs(+t.amount || 0);
-      let dateTxt = '';
-      try { dateTxt = window.fmtDate(t.date); } catch (e) {}
-      const cat = categoryName(t.categoryId);
-      html +=
-        '<div style="display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid var(--border-light);">' +
-          '<span style="width:28px;height:28px;border-radius:6px;background:' + (isExp ? 'var(--expense-light)' : 'var(--income-light)') +
-            ';color:' + color + ';display:flex;align-items:center;justify-content:center;flex-shrink:0;">' +
-            window.icon(isExp ? 'arrowDown' : 'arrowUp', 14) +
-          '</span>' +
-          '<div style="flex:1;min-width:0;">' +
-            '<p style="font-size:12px;font-weight:600;color:var(--text-primary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' +
-              esc(t.description || '—') +
-            '</p>' +
-            '<p style="font-size:11px;color:var(--text-muted);">' + esc(cat) + (dateTxt ? ' · ' + esc(dateTxt) : '') + '</p>' +
-          '</div>' +
-          '<span style="font-size:12px;font-weight:700;color:' + color + ';flex-shrink:0;">' +
-            esc(v(amt)) +
-          '</span>' +
-        '</div>';
-    });
-    const action = $(
-      '<button class="btn btn-ghost btn-sm" data-act="goto-tx" type="button">' +
-        '<span>Ver todos</span>' +
-      '</button>'
+    // Page header
+    const $header = $(
+      '<div class="page-header">' +
+        '<h1>Visão Geral</h1>' +
+        '<div class="page-header-actions" data-region="actions"></div>' +
+      '</div>'
     );
-    return panelWrap({ title: 'Últimos Lançamentos', icon: p.icon, action: action, body: html });
-  }
+    const $actions = $header.find('[data-region=actions]');
+    $actions.append(
+      $('<button class="icon-btn" data-act="toggle-hide" type="button" title="' +
+        (state.hideValues ? 'Mostrar valores' : 'Ocultar valores') +
+        '" style="width:34px;height:34px;">' +
+        window.icon(state.hideValues ? 'eyeOff' : 'eye', 16) +
+        '</button>')
+    );
+    $actions.append(
+      window.btn({
+        variant: 'secondary', size: 'sm', icon: 'settings', label: 'Personalizar',
+        attrs: 'data-act="customize"',
+      })
+    );
 
-  function renderBalanco(p) {
-    const sheet = window.Domain.BalanceSheet.compute(cbdAccounts());
-    const rows = [
-      { label: 'Ativo Total',     value: sheet.ativo,      color: 'var(--income)' },
-      { label: 'Passivo Total',   value: sheet.passivo,    color: 'var(--expense)' },
-      { label: 'Patrimônio Líq.', value: sheet.patrimonio, color: 'var(--accent)', bold: true },
-    ];
-    let body = '<div style="display:flex;flex-direction:column;gap:8px;">';
-    rows.forEach(function (r) {
-      body +=
-        '<div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border-light);">' +
-          '<span style="font-size:13px;color:var(--text-secondary);font-weight:' + (r.bold ? 700 : 400) + ';">' + esc(r.label) + '</span>' +
-          '<span style="font-size:14px;font-weight:700;color:' + r.color + ';">' + esc(v(r.value)) + '</span>' +
-        '</div>';
+
+    $root.append($header);
+
+    // Enabled panels in order
+    const order = (state.settings.panelOrder && state.settings.panelOrder.length)
+      ? state.settings.panelOrder
+      : ALL_PANELS.map(function (p) { return p.id; });
+
+    const enabled = order
+      .map(function (id) { return ALL_PANELS.find(function (p) { return p.id === id; }); })
+      .filter(function (p) { return p && state.settings.enabled[p.id]; });
+
+    if (enabled.length === 0) {
+      $root.append(window.emptyState({
+        icon: 'settings',
+        title: 'Nenhum painel habilitado',
+        desc: 'Clique em "Personalizar" para adicionar painéis à visão geral.',
+      }));
+      return;
+    }
+
+    const cols = state.settings.columns || 2;
+    const $grid = $(
+      '<div class="dash-grid" style="' +
+        'display:grid;' +
+        'grid-template-columns:repeat(' + cols + ', 1fr);' +
+        'gap:14px;align-items:start;"></div>'
+    );
+
+    enabled.forEach(function (p) {
+      const isDragged  = state.draggedId === p.id;
+      const isDragOver = state.dragOverId === p.id && state.draggedId && state.draggedId !== p.id;
+      const $wrap = $(
+        '<div data-panel="' + esc(p.id) + '" draggable="true" style="' +
+          'opacity:' + (isDragged ? 0.35 : 1) + ';' +
+          'transform:' + (isDragOver ? 'scale(1.01)' : 'none') + ';' +
+          'transition:opacity 0.15s, transform 0.15s;' +
+          'border-radius:var(--radius);' +
+          'outline:' + (isDragOver ? '2px solid var(--accent)' : '2px solid transparent') + ';' +
+        '"></div>'
+      );
+      $wrap.append(renderPanel(p));
+      $grid.append($wrap);
     });
-    body += '</div>';
-    return panelWrap({ title: 'Balanço Patrimonial', icon: p.icon, body: body });
+
+    $root.append($grid);
   }
 
   // ── Customize modal ──────────────────────────────────────────
@@ -755,9 +490,9 @@
         section(
           'Exibir painéis de receitas e despesas na visão de',
           radioGroup('viewMode', [
-            { value: 'caixa',       label: 'Caixa' },
-            { value: 'competencia', label: 'Competência' },
-            { value: 'definir',     label: 'Definir em cada painel' },
+            { value: 'cash',       label: 'Caixa' },
+            { value: 'accrual', label: 'Competência' },
+            { value: 'define',     label: 'Definir em cada painel' },
           ]),
           true
         ) +
@@ -925,10 +660,7 @@
     $root.on('click.dash', '[data-act=customize]', function () {
       openCustomizeModal();
     });
-    $root.on('click.dash', '[data-act=new-tx]', function () {
-      // Out of scope — friendly redirect to transactions screen.
-      window.location.hash = '#/transactions';
-    });
+
     $root.on('click.dash', '[data-act=goto-tx]', function () {
       window.location.hash = '#/transactions';
     });

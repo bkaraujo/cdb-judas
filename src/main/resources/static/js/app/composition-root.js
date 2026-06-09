@@ -23,7 +23,7 @@
     dashboard:    window.Infra.DashboardRepository.create(http),
   };
 
-  const cadastroBootstrap = window.Infra.CadastroBootstrap.create({ repos: repos });
+  const registryBootstrap = window.Infra.RegistryBootstrap.create({ repos: repos });
   const sse = window.Infra.SSEClient.create({
     baseUrl: baseUrl,
     authStore: window.Infra.AuthStore,
@@ -64,7 +64,7 @@
     });
   }
 
-  window.App.SessionService.init({ authStore: window.Infra.AuthStore, loginFn: loginFn, hydrate: cadastroBootstrap.hydrate, sse: sse });
+  window.App.SessionService.init({ authStore: window.Infra.AuthStore, loginFn: loginFn, hydrate: registryBootstrap.hydrate, sse: sse });
 
   http.setUnauthorizedHandler(function () { window.App.SessionService.handleUnauthorized(); });
 

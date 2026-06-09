@@ -1,16 +1,16 @@
 /* _1_domain/balance-sheet.js — balance sheet computation. Pure. */
 (function () {
   function compute(accounts) {
-    let ativo = 0, passivo = 0;
+    let assets = 0, liabilities = 0;
     (accounts || []).forEach(function (a) {
       const bal = window.Domain.Account.currentBalance(a);
       if (window.Domain.Account.isLiability(a)) {
-        passivo += Math.abs(bal);
+        liabilities += Math.abs(bal);
       } else {
-        ativo += bal;
+        assets += bal;
       }
     });
-    return { ativo: ativo, passivo: passivo, patrimonio: ativo - passivo };
+    return { assets: assets, liabilities: liabilities, equity: assets - liabilities };
   }
 
   window.Domain = window.Domain || {};

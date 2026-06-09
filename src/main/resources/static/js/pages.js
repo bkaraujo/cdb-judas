@@ -3,7 +3,19 @@
 (function () {
   const base = 'pages/';
   const files = [
+    'dashboard/cash-balances.js',
+    'dashboard/month-result.js',
+    'dashboard/expenses-by-category.js',
+    'dashboard/revenues-by-category.js',
+    'dashboard/accounts-payable.js',
+    'dashboard/credit-cards.js',
+    'dashboard/cash-flow.js',
+    'dashboard/expense-goals.js',
+    'dashboard/recent-postings.js',
+    'dashboard/balance-sheet.js',
     'dashboard.js',
+    'transactions/import-statement.js',
+    'transactions/create-edit.js',
     'transactions.js',
     'accounts-payable.js',
     'statement.js',
