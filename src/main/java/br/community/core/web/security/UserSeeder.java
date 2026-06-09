@@ -3,7 +3,7 @@ package br.community.core.web.security;
 import br.commons.Logger;
 import br.commons.framework.persistence.Storage;
 import br.commons.tools.Strings;
-import br.community.context.security._0_domain.UserRepository;
+import br.community.context.security._0_domain.repository.UserRepository;
 import br.community.context.security._0_domain.model.Preferences;
 import br.community.context.security._0_domain.model.User;
 import jakarta.annotation.PostConstruct;

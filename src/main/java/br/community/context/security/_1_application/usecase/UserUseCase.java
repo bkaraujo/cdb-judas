@@ -1,7 +1,7 @@
 package br.community.context.security._1_application.usecase;
 
 import br.commons.Result;
-import br.community.context.security._0_domain.UserRepository;
+import br.community.context.security._0_domain.repository.UserRepository;
 import br.community.context.security._0_domain.model.PreferencesPatch;
 import br.community.context.security._0_domain.model.User;
 import br.community.context.shared._0_domain.model.DomainError;

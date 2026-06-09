@@ -1,6 +1,6 @@
 package br.community.core.web.security;
 
-import br.community.context.security._0_domain.UserRepository;
+import br.community.context.security._0_domain.repository.UserRepository;
 import br.community.core.web.filter.AuthenticationFilter;
 import br.community.core.web.filter.AuthorizationFilter;
 import lombok.val;

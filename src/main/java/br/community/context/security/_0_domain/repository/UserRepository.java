@@ -1,4 +1,4 @@
-package br.community.context.security._0_domain;
+package br.community.context.security._0_domain.repository;
 
 import br.community.context.security._0_domain.model.User;
 import org.jspecify.annotations.NullMarked;

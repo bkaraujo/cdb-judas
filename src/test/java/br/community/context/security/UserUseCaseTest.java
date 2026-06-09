@@ -1,7 +1,7 @@
 package br.community.context.security;
 
 import br.commons.Result;
-import br.community.context.security._0_domain.UserRepository;
+import br.community.context.security._0_domain.repository.UserRepository;
 import br.community.context.security._0_domain.model.Preferences;
 import br.community.context.security._0_domain.model.PreferencesPatch;
 import br.community.context.security._0_domain.model.User;

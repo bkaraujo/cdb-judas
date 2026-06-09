@@ -2,7 +2,7 @@ package br.community.feature;
 
 import br.commons.framework.persistence.Storage;
 import br.commons.framework.persistence.json.Repository;
-import br.community.context.security._0_domain.UserRepository;
+import br.community.context.security._0_domain.repository.UserRepository;
 import br.community.context.security._0_domain.model.Preferences;
 import br.community.context.security._0_domain.model.User;
 import br.community.core.JsonStorageProperties;

@@ -2,7 +2,7 @@ package br.community.context.security._2_infrastructure;
 
 import br.commons.Logger;
 import br.commons.framework.persistence.Storage;
-import br.community.context.security._0_domain.UserRepository;
+import br.community.context.security._0_domain.repository.UserRepository;
 import br.community.context.security._0_domain.model.User;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.val;
