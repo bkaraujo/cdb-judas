@@ -32,9 +32,13 @@
   });
 
   window.App.CacheStore.init({ bus: window.App.EventBus });
-  window.App.PreferencesService.init({ storage: window.Infra.Storage });
   window.App.SystemService.init({ api: http });
   window.App.SelfService.init({ repo: repos.self });
+  // Write-through: preference changes push to the server via the self service (debounced).
+  window.App.PreferencesService.init({
+    storage: window.Infra.Storage,
+    sync: function (patch) { return window.App.SelfService.updatePreferences(patch); },
+  });
 
   window.App.AccountService.init     ({ repo: repos.accounts,     cache: window.App.CacheStore });
   window.App.CategoryService.init    ({ repo: repos.categories,   cache: window.App.CacheStore });
@@ -74,6 +78,11 @@
         if (me) {
           window.Infra.AuthStore.setName(me.name || '');
           if (me.username) window.Infra.AuthStore.setUser(me.username);
+          if (me.preferences) {
+            // Reconcile: server wins (server theme null → client value is taught back).
+            window.App.PreferencesService.applyServer(me.preferences);
+            if (window.Theme && window.Theme.restore) window.Theme.restore();
+          }
         }
         return me;
       })
