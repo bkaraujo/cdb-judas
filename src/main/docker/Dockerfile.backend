@@ -1,0 +1,50 @@
+# syntax=docker/dockerfile:1
+
+# ============================================================================
+# Build stage — compila e empacota o jar executável do Spring Boot.
+# Base com Maven 3.9 + Temurin 25, exigidos pelo maven-enforcer-plugin do pom.
+# ============================================================================
+FROM maven:3.9-eclipse-temurin-25 AS builder
+WORKDIR /app
+
+# Resolve dependências primeiro: esta camada é reaproveitada enquanto o pom
+# não muda, mesmo quando apenas o código-fonte é alterado.
+COPY pom.xml .
+RUN mvn -B dependency:go-offline
+
+# .mvn/jvm.config traz os --add-exports/--add-opens que o ErrorProne exige para
+# acessar internals do javac. Sem ele a compilação falha com "An unknown
+# compilation problem occurred". go-offline não compila, então fica antes do
+# copy para preservar o cache daquela camada.
+COPY .mvn ./.mvn
+
+# Compila e gera o jar repackaged (cdb-judas-<versão>.jar). Testes ficam por
+# conta do CI; a imagem foca no artefato de runtime.
+COPY src ./src
+RUN mvn -B package -DskipTests
+
+# ============================================================================
+# Runtime stage — apenas o JRE e o jar. Imagem final enxuta.
+# ============================================================================
+FROM eclipse-temurin:25-jre-alpine
+WORKDIR /app
+
+# Versão atual do sistema (pom <version>). Sobrescrevível pelo build do compose.
+ARG APP_VERSION=0.1.0
+LABEL org.opencontainers.image.title="cdb-judas-backend" \
+      org.opencontainers.image.version="${APP_VERSION}" \
+      org.opencontainers.image.vendor="br.community"
+
+# Diretório de persistência JSON. Liga a propriedade storage.json.path (binding
+# relaxado de @ConfigurationProperties) a um caminho de container que o compose
+# monta a partir do ./data do host. mkdir garante execução mesmo sem volume.
+ENV STORAGE_JSON_PATH=/data
+RUN mkdir -p /data
+
+COPY --from=builder /app/target/cdb-judas-*.jar app.jar
+
+EXPOSE 8080
+
+# --enable-preview é obrigatório: o código é compilado com preview features do
+# Java 25, logo a JVM de runtime precisa habilitá-las ou a inicialização falha.
+ENTRYPOINT ["java", "--enable-preview", "-jar", "app.jar"]

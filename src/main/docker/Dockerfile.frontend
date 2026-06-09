@@ -1,0 +1,24 @@
+# syntax=docker/dockerfile:1
+
+# ============================================================================
+# Frontend estático servido por nginx.
+# O frontend é HTML/CSS/JS vanilla + jQuery (CDN), sem etapa de build, então
+# uma única stage basta: copiamos os arquivos e a config do nginx.
+#
+# IMPORTANTE: o contexto de build é a RAIZ do repositório (.), logo todos os
+# caminhos de COPY são relativos à raiz, não a este diretório.
+# ============================================================================
+FROM nginx:alpine
+
+# Versão atual do sistema (pom <version>). Sobrescrevível pelo build do compose.
+ARG APP_VERSION=0.1.0
+LABEL org.opencontainers.image.title="cdb-judas-frontend" \
+      org.opencontainers.image.version="${APP_VERSION}"
+
+# Site estático: index.html + css/ + js/ + pages/.
+COPY src/main/resources/static/ /usr/share/nginx/html/
+
+# Config do server: serve o estático e faz proxy reverso das rotas do backend.
+COPY src/main/docker/nginx.conf /etc/nginx/conf.d/default.conf
+
+EXPOSE 80
