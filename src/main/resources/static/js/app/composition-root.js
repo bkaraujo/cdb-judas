@@ -82,6 +82,7 @@
             // Reconcile: server wins (server theme null → client value is taught back).
             window.App.PreferencesService.applyServer(me.preferences);
             if (window.Theme && window.Theme.restore) window.Theme.restore();
+            if (window.Sidebar && window.Sidebar.refreshState) window.Sidebar.refreshState();
           }
         }
         return me;

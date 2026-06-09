@@ -14,24 +14,35 @@
     return navPromise;
   }
 
-  const KEY_COLLAPSED = 'cbd-sidebar-collapsed';
-  const KEY_GROUPS    = 'cbd-sidebar-groups';
+  const DEFAULT_GROUPS = { movements: true, registries: false };
 
   const state = {
     current: 'dashboard',
-    collapsed: localStorage.getItem(KEY_COLLAPSED) === '1',
-    groups: (function () {
-      try { return JSON.parse(localStorage.getItem(KEY_GROUPS)) || { movements: true, registries: false }; }
-      catch (e) { return { movements: true, registries: false }; }
-    })(),
+    collapsed: false,
+    groups: Object.assign({}, DEFAULT_GROUPS),
     version: '0.0.0',
     onNav: null,
     $root: null,
   };
 
+  // Collapse + group state live in PreferencesService: collapse is server-synced
+  // (write-through), groups are local-only. The service is wired after this module loads,
+  // so state is pulled at mount/reconcile time — not at IIFE load.
+  function prefs() { return window.App && window.App.PreferencesService; }
+
+  function loadState() {
+    const p = prefs();
+    if (!p) return;
+    state.collapsed = p.getSidebarCollapsed();
+    const groups = p.getSidebarGroups();
+    state.groups = (groups && Object.keys(groups).length) ? groups : Object.assign({}, DEFAULT_GROUPS);
+  }
+
   function persist() {
-    localStorage.setItem(KEY_COLLAPSED, state.collapsed ? '1' : '0');
-    localStorage.setItem(KEY_GROUPS, JSON.stringify(state.groups));
+    const p = prefs();
+    if (!p) return;
+    p.setSidebarCollapsed(state.collapsed); // write-through: mirror + debounced PATCH /api/me
+    p.setSidebarGroups(state.groups);       // local-only
   }
 
   // Initial letter of the display name (name ?? username); falls back to 'C' when unknown.
@@ -171,6 +182,7 @@
       state.$root = $root.addClass('sidebar');
       state.current = opts.current || state.current;
       state.onNav = opts.onNav || null;
+      loadState();
       loadNav().then(render);
       this.refreshVersion();
     },
@@ -201,6 +213,11 @@
     },
     // Re-render to reflect a changed display name on the avatar (after a profile save).
     refreshUser: function () {
+      if (state.$root) render();
+    },
+    // Re-read collapse/group state from preferences (after login reconciliation) and re-render.
+    refreshState: function () {
+      loadState();
       if (state.$root) render();
     },
   };
