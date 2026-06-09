@@ -13,6 +13,7 @@
     'cost-centers':     'Centros de Custo',
     'accounts':         'Contas Bancárias',
     'tags':             'Tags',
+    'settings':         'Configurações',
   };
 
   const KEY_SCREEN = 'cbd-screen';

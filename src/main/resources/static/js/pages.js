@@ -25,7 +25,8 @@
     'categories.js',
     'cost-centers.js',
     'accounts.js',
-    'tags.js'
+    'tags.js',
+    'settings.js'
   ];
   files.forEach(function (path) {
     const s = document.createElement('script');

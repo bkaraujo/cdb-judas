@@ -138,9 +138,10 @@
     const themeName = window.Theme.get() === 'dark' ? 'sun' : 'moon';
     const themeLbl  = window.Theme.get() === 'dark' ? 'Modo Claro' : 'Modo Escuro';
 
-    // User avatar (left) — initial of the display name (name ?? username).
+    // User avatar (left) — initial of the display name (name ?? username); opens Configurações.
     const $avatarWrap = $('<div class="tooltip-wrap"></div>');
-    const $avatar = $('<div class="sidebar-avatar"></div>').text(avatarInitial());
+    const $avatar = $('<div class="sidebar-avatar" style="cursor:pointer;"></div>').text(avatarInitial());
+    $avatar.on('click', function () { if (window.Router && window.Router.go) window.Router.go('settings'); });
     $avatarWrap.append($avatar);
     $avatarWrap.append('<span class="tooltip">Perfil</span>');
     $foot.append($avatarWrap);
@@ -197,6 +198,10 @@
         persist();
         if (state.$root) render();
       });
+    },
+    // Re-render to reflect a changed display name on the avatar (after a profile save).
+    refreshUser: function () {
+      if (state.$root) render();
     },
   };
 })();

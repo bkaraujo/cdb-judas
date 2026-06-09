@@ -15,6 +15,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.http.MediaType;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
@@ -29,6 +30,7 @@ import java.util.List;
 
 import static br.community.core.web.security.LoginResource.TOKEN_HEADER;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -86,6 +88,41 @@ class SelfResourceTest {
     @Test
     void getMeSemTokenRetorna401() throws Exception {
         mockMvc.perform(get("/api/me"))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void patchSomenteNomeNaoAfetaPreferencias() throws Exception {
+        userRepository.save(new User(USER_ID, "tester", "Tester", "hash",
+                new Preferences("dark", "pt-BR", "pt-BR", false)));
+
+        mockMvc.perform(patch("/api/me").header(TOKEN_HEADER, token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"name\":\"Renomeado\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.name").value("Renomeado"))
+                .andExpect(jsonPath("$.preferences.theme").value("dark"))
+                .andExpect(jsonPath("$.preferences.sidebarCollapsed").value(false));
+    }
+
+    @Test
+    void patchSomentePreferenciasNaoAfetaNome() throws Exception {
+        userRepository.save(new User(USER_ID, "tester", "Mantido", "hash", Preferences.defaults()));
+
+        mockMvc.perform(patch("/api/me").header(TOKEN_HEADER, token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"preferences\":{\"theme\":\"light\"}}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.name").value("Mantido"))
+                .andExpect(jsonPath("$.preferences.theme").value("light"))
+                .andExpect(jsonPath("$.preferences.language").value("pt-BR"));
+    }
+
+    @Test
+    void patchSemTokenRetorna401() throws Exception {
+        mockMvc.perform(patch("/api/me")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"name\":\"x\"}"))
                 .andExpect(status().isUnauthorized());
     }
 }

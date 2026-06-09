@@ -3,7 +3,8 @@
 (function () {
   function create(http) {
     return {
-      get: function () { return http.global.get('/me'); },
+      get:   function ()     { return http.global.get('/me'); },
+      patch: function (data) { return http.global.patch('/me', data); },
     };
   }
   window.Infra = window.Infra || {};

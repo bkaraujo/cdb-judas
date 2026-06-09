@@ -31,4 +31,17 @@ public record Preferences(
     public static Preferences defaults() {
         return new Preferences(null, DEFAULT_LANGUAGE, DEFAULT_LOCALE, false);
     }
+
+    /**
+     * Aplica um patch parcial sobre as preferências atuais: campo nulo no patch mantém o
+     * valor corrente; campo presente substitui. Lógica de domínio pura (sem efeitos).
+     */
+    public Preferences merge(PreferencesPatch patch) {
+        return new Preferences(
+                patch.theme() != null ? patch.theme() : this.theme,
+                patch.language() != null ? patch.language() : this.language,
+                patch.locale() != null ? patch.locale() : this.locale,
+                patch.sidebarCollapsed() != null ? patch.sidebarCollapsed() : this.sidebarCollapsed
+        );
+    }
 }
