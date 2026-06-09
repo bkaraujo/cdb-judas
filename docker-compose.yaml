@@ -20,12 +20,15 @@ services:
       # in name resolution" ao baixar dependências do Maven Central.
       network: host
       args:
-        APP_VERSION: "0.1.0"
-    image: cdb-judas-backend:0.1.0
+        APP_VERSION: "0.9.0"
+    image: cdb-judas-backend:0.9.0
     container_name: cdb-judas-backend
     environment:
       # Aponta storage.json.path (binding relaxado) para o diretório montado.
       STORAGE_JSON_PATH: /data
+      # Nível de log raiz. Por pacote: APP_LOGLEVEL_<PATTERN>=<LEVEL>, com _ no
+      # lugar de . (ex.: APP_LOGLEVEL_ORG_SPRINGFRAMEWORK=WARN -> org.springframework).
+      APP_LOGLEVEL_ROOT: INFO
     volumes:
       # Exporta o ./data do host para o backend: os JSON do sistema persistem
       # no repositório e sobrevivem à recriação do container.
