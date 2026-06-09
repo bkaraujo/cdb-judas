@@ -339,17 +339,17 @@
 
       const $row = $(
         '<div class="card-row" data-row="tx" data-id="' + esc(tx.id) + '" ' +
-          (isLast ? 'style="border-bottom:none;"' : '') + '>' +
+          'style="padding: 8px 16px;' + (isLast ? 'border-bottom:none;' : '') + '">' +
           '<div class="card-row-main">' +
-            '<div style="width:34px;height:34px;border-radius:8px;flex-shrink:0;display:flex;align-items:center;justify-content:center;' +
+            '<div style="width:30px;height:30px;border-radius:8px;flex-shrink:0;display:flex;align-items:center;justify-content:center;' +
               'background:' + (tx.type === 'income' ? 'var(--income-light)' : tx.type === 'transfer' ? 'var(--accent-light)' : 'var(--expense-light)') + ';' +
               'color:' + amtColor + ';">' +
-              window.icon(iconName, 16) +
+              window.icon(iconName, 14) +
             '</div>' +
             '<div style="min-width:0;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:13px;">' +
               '<span style="color:var(--text-muted);">' + esc(fmtDate(tx.date)) + '</span>' +
               '<span style="color:var(--text-muted);"> • </span>' +
-              '<span style="font-weight:600;">' + esc(tx.description || '—') + '</span>' +
+              '<span style="font-weight:600;text-transform:uppercase;">' + esc(tx.description || '—') + '</span>' +
               '<span style="color:var(--text-muted);"> • ' + esc(accName) + ' • ' + esc(catLbl) + '</span>' +
             '</div>' +
             '<span class="badge badge-' + esc(STATUS_BADGE[stKey] || 'muted') + '" ' +

@@ -185,7 +185,7 @@
           '<div class="card-row-main">' +
             '<div style="width:10px;height:10px;border-radius:50%;background:' + dotColor + ';flex-shrink:0;"></div>' +
             '<div style="min-width:0;flex:1;display:flex;flex-direction:column;gap:2px;">' +
-              '<span class="row-title" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' +
+              '<span class="row-title" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-transform:uppercase;">' +
                 esc(item.name || '—') +
               '</span>' +
               '<span class="row-sub">' + esc(catLbl) + '</span>' +
@@ -321,6 +321,7 @@
           '<div class="form-group full">' +
             '<label class="form-label" for="' + ids.name + '">Descrição</label>' +
             '<input id="' + ids.name + '" name="name" type="text" required ' +
+              'style="text-transform:uppercase;" ' +
               'placeholder="Ex: Aluguel, Salário..." value="' + esc(initial.name) + '" />' +
           '</div>' +
           '<div class="form-group">' +

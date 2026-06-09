@@ -143,7 +143,7 @@
           '<td style="padding:8px 10px;text-align:center;color:var(--text-secondary);">' + parcela + '</td>' +
           '<td style="padding:8px 10px;">' +
             '<input type="text" data-row-description data-idx="' + idx + '" value="' + esc(row.description) + '" ' +
-              'style="width:100%;font-size:12px;padding:4px 6px;border:1px solid transparent;background:transparent;color:inherit;outline:none;" ' +
+              'style="width:100%;font-size:12px;padding:4px 6px;border:1px solid transparent;background:transparent;color:inherit;outline:none;text-transform:uppercase;" ' +
               'onfocus="this.style.border=\'1px solid var(--border)\';this.style.background=\'var(--bg-card)\'" ' +
               'onblur="this.style.border=\'1px solid transparent\';this.style.background=\'transparent\'" />' +
             (row.last4 ? ' <span style="color:var(--text-muted);font-size:11px;">•' + esc(row.last4) + '</span>' : '') +
@@ -371,7 +371,7 @@
           '<td style="padding:8px 10px;">' + statementCategorySelectHtml(row.categoryId, idx, row.type) + '</td>' +
           '<td style="padding:8px 10px;">' +
             '<input type="text" data-row-description data-idx="' + idx + '" value="' + esc(row.description) + '" ' +
-              'style="width:100%;font-size:12px;padding:4px 6px;border:1px solid transparent;background:transparent;color:inherit;outline:none;" ' +
+              'style="width:100%;font-size:12px;padding:4px 6px;border:1px solid transparent;background:transparent;color:inherit;outline:none;text-transform:uppercase;" ' +
               'onfocus="this.style.border=\'1px solid var(--border)\';this.style.background=\'var(--bg-card)\'" ' +
               'onblur="this.style.border=\'1px solid transparent\';this.style.background=\'transparent\'" />' +
             note +

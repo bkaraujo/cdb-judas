@@ -22,7 +22,7 @@
         html +=
           '<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border-light);">' +
             '<div style="min-width:0;">' +
-              '<p style="font-size:12px;font-weight:600;color:var(--text-primary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' +
+              '<p style="font-size:12px;font-weight:600;color:var(--text-primary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-transform:uppercase;">' +
                 ctx.esc(b.description || b.name || '—') +
               '</p>' +
               '<p style="font-size:11px;color:var(--text-muted);">' + ctx.esc(dueTxt) + '</p>' +

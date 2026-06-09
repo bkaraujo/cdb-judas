@@ -144,6 +144,7 @@
         '<div class="form-group full">' +
           '<label class="form-label" for="' + ids.desc + '">Descrição</label>' +
           '<input id="' + ids.desc + '" name="description" type="text" required ' +
+            'style="text-transform:uppercase;" ' +
             'placeholder="Ex: Mercado, Salário..." value="' + esc(initial.description) + '" />' +
         '</div>' +
         '<div class="form-group">' +

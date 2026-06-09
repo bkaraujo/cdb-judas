@@ -326,7 +326,7 @@
           return '<div style="display:flex;align-items:center;gap:12px;' +
             'padding:10px 16px;border-bottom:1px solid var(--border-light);">' +
             '<span style="flex:1;font-size:13px;color:var(--text-primary);' +
-              'overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' +
+              'overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-transform:uppercase;">' +
               esc(t.description || '—') +
             '</span>' +
             '<span style="font-size:13px;font-weight:700;color:' + color + ';">' +

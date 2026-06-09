@@ -181,7 +181,7 @@
         const descStyle =
           'flex:1;font-size:13px;font-weight:' + (isBalance ? '700' : '500') + ';' +
           'color:' + (isBalance ? 'var(--text-secondary)' : 'var(--text-primary)') + ';' +
-          'overflow:hidden;text-overflow:ellipsis;white-space:nowrap;';
+          'overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-transform:uppercase;';
 
         const catStyle =
           'flex:0 0 ' + catColCh + 'ch;width:' + catColCh + 'ch;' +
