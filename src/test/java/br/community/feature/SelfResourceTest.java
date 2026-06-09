@@ -1,0 +1,91 @@
+package br.community.feature;
+
+import br.commons.framework.persistence.Storage;
+import br.commons.framework.persistence.json.Repository;
+import br.community.context.security._0_domain.UserRepository;
+import br.community.context.security._0_domain.model.Preferences;
+import br.community.context.security._0_domain.model.User;
+import br.community.core.JsonStorageProperties;
+import br.community.core.web.filter.AuthenticationFilter;
+import br.community.core.web.filter.AuthorizationFilter;
+import br.community.core.web.security.AccessTokenStore;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import lombok.val;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.setup.MockMvcBuilders;
+import org.springframework.util.FileSystemUtils;
+import org.springframework.web.context.WebApplicationContext;
+
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Path;
+import java.util.List;
+
+import static br.community.core.web.security.LoginResource.TOKEN_HEADER;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
+/**
+ * Integração HTTP do recurso self. Exercita a cadeia real de filtros (autenticação por
+ * token + autorização) para validar 200 autenticado e 401 sem token — prior art:
+ * AccountResourceTest sobre BaseHttpTest, aqui com os filtros reais montados.
+ */
+@SpringBootTest
+@ActiveProfiles("test")
+class SelfResourceTest {
+
+    private static final String USER_ID = "00000000-0000-0000-0000-00000000beef";
+
+    @Autowired WebApplicationContext context;
+    @Autowired JsonStorageProperties storageProperties;
+    @Autowired List<Repository<?, ?>> repositories;
+    @Autowired Storage storage;
+    @Autowired ObjectMapper objectMapper;
+    @Autowired AccessTokenStore tokenStore;
+    @Autowired UserRepository userRepository;
+
+    private MockMvc mockMvc;
+    private String token;
+
+    @BeforeEach
+    void setUp() throws IOException {
+        val path = Path.of(storageProperties.path());
+        FileSystemUtils.deleteRecursively(path);
+        new File(path.toString()).mkdirs();
+        repositories.forEach(Repository::clearCache);
+        SecurityContextHolder.clearContext();
+
+        userRepository.save(new User(USER_ID, "tester", "Tester", "hash", Preferences.defaults()));
+        token = tokenStore.issue(USER_ID);
+
+        mockMvc = MockMvcBuilders.webAppContextSetup(context)
+                .addFilters(new AuthenticationFilter(tokenStore, userRepository), new AuthorizationFilter())
+                .build();
+    }
+
+    @Test
+    void getMeAutenticadoRetorna200ComPerfil() throws Exception {
+        mockMvc.perform(get("/api/me").header(TOKEN_HEADER, token))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(USER_ID))
+                .andExpect(jsonPath("$.username").value("tester"))
+                .andExpect(jsonPath("$.name").value("Tester"))
+                .andExpect(jsonPath("$.preferences.theme").value(org.hamcrest.Matchers.nullValue()))
+                .andExpect(jsonPath("$.preferences.language").value("pt-BR"))
+                .andExpect(jsonPath("$.preferences.locale").value("pt-BR"))
+                .andExpect(jsonPath("$.preferences.sidebarCollapsed").value(false));
+    }
+
+    @Test
+    void getMeSemTokenRetorna401() throws Exception {
+        mockMvc.perform(get("/api/me"))
+                .andExpect(status().isUnauthorized());
+    }
+}

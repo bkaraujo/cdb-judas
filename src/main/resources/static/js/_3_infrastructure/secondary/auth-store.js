@@ -3,17 +3,22 @@
   const TOKEN_KEY = window.Infra.Storage.KEYS.AUTH_TOKEN;
   const USER_KEY  = 'auth_user';
   const UID_KEY   = 'auth_uid';
+  const NAME_KEY  = 'auth_name';
   const ss        = window.Infra.Storage.session;
 
   function get()         { return ss.get(TOKEN_KEY); }
   function set(token)    { ss.set(TOKEN_KEY, token); }
-  function clear()       { ss.del(TOKEN_KEY); ss.del(USER_KEY); ss.del(UID_KEY); }
+  function clear()       { ss.del(TOKEN_KEY); ss.del(USER_KEY); ss.del(UID_KEY); ss.del(NAME_KEY); }
 
   function setUser(user) { ss.set(USER_KEY, user); }
   function decodeUser()  { return ss.get(USER_KEY) || 'anonymous'; }
 
   function setUserId(id) { ss.set(UID_KEY, id); }
   function userId()      { return ss.get(UID_KEY); }
+
+  // Display name (from /api/me). Empty/null clears it so the avatar falls back to the username.
+  function setName(name) { if (name) ss.set(NAME_KEY, name); else ss.del(NAME_KEY); }
+  function name()        { return ss.get(NAME_KEY); }
 
   window.Infra = window.Infra || {};
   window.Infra.AuthStore = {
@@ -24,5 +29,7 @@
     decodeUser: decodeUser,
     setUserId: setUserId,
     userId: userId,
+    setName: setName,
+    name: name,
   };
 })();

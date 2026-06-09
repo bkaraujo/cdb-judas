@@ -2,8 +2,8 @@ package br.community.context.security._2_infrastructure;
 
 import br.commons.Logger;
 import br.commons.framework.persistence.Storage;
-import br.community.context.security._0_domain.User;
 import br.community.context.security._0_domain.UserRepository;
+import br.community.context.security._0_domain.model.User;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.val;
 import org.jspecify.annotations.NullMarked;

@@ -21,6 +21,7 @@
     budget:       window.Infra.BudgetRepository.create(http),
     closing:      window.Infra.ClosingRepository.create(http),
     dashboard:    window.Infra.DashboardRepository.create(http),
+    self:         window.Infra.SelfRepository.create(http),
   };
 
   const registryBootstrap = window.Infra.RegistryBootstrap.create({ repos: repos });
@@ -33,6 +34,7 @@
   window.App.CacheStore.init({ bus: window.App.EventBus });
   window.App.PreferencesService.init({ storage: window.Infra.Storage });
   window.App.SystemService.init({ api: http });
+  window.App.SelfService.init({ repo: repos.self });
 
   window.App.AccountService.init     ({ repo: repos.accounts,     cache: window.App.CacheStore });
   window.App.CategoryService.init    ({ repo: repos.categories,   cache: window.App.CacheStore });
@@ -64,7 +66,25 @@
     });
   }
 
-  window.App.SessionService.init({ authStore: window.Infra.AuthStore, loginFn: loginFn, hydrate: registryBootstrap.hydrate, sse: sse });
+  // Reads the self resource (/api/me) and stores the display name so the avatar/greeting
+  // can show the user's identity. Tolerant: a failed /me must not block cadastro hydration.
+  function hydrateSelf() {
+    return window.App.SelfService.getMe()
+      .then(function (me) {
+        if (me) {
+          window.Infra.AuthStore.setName(me.name || '');
+          if (me.username) window.Infra.AuthStore.setUser(me.username);
+        }
+        return me;
+      })
+      .catch(function () { return null; });
+  }
+
+  function hydrate() {
+    return Promise.all([registryBootstrap.hydrate(), hydrateSelf()]).then(function () { return true; });
+  }
+
+  window.App.SessionService.init({ authStore: window.Infra.AuthStore, loginFn: loginFn, hydrate: hydrate, sse: sse });
 
   http.setUnauthorizedHandler(function () { window.App.SessionService.handleUnauthorized(); });
 

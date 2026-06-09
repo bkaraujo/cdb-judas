@@ -25,7 +25,9 @@ class WebConfig implements WebMvcConfigurer {
                         // Centro de custo é global (fixo, somente leitura).
                         "/api/cost-center", "/api/cost-center/**",
                         // Versão do sistema é pública.
-                        "/api/version"
+                        "/api/version",
+                        // Recurso self: identidade vem do contexto autenticado, sem uuid na rota.
+                        "/api/me"
                 );
     }
 }

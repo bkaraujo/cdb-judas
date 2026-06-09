@@ -34,6 +34,21 @@
     localStorage.setItem(KEY_GROUPS, JSON.stringify(state.groups));
   }
 
+  // Initial letter of the display name (name ?? username); falls back to 'C' when unknown.
+  function avatarInitial() {
+    const store = window.Infra && window.Infra.AuthStore;
+    let who = '';
+    if (store) {
+      who = store.name() || '';
+      if (!who) {
+        const u = store.decodeUser();
+        if (u && u !== 'anonymous') who = u;
+      }
+    }
+    who = (who || '').trim();
+    return who ? who.charAt(0).toUpperCase() : 'C';
+  }
+
   function isActive(item) {
     if (item.id === state.current) return true;
     if (item.children) return item.children.some(function (c) { return c.id === state.current; });
@@ -123,9 +138,9 @@
     const themeName = window.Theme.get() === 'dark' ? 'sun' : 'moon';
     const themeLbl  = window.Theme.get() === 'dark' ? 'Modo Claro' : 'Modo Escuro';
 
-    // User avatar (left)
+    // User avatar (left) — initial of the display name (name ?? username).
     const $avatarWrap = $('<div class="tooltip-wrap"></div>');
-    const $avatar = $('<div class="sidebar-avatar">C</div>');
+    const $avatar = $('<div class="sidebar-avatar"></div>').text(avatarInitial());
     $avatarWrap.append($avatar);
     $avatarWrap.append('<span class="tooltip">Perfil</span>');
     $foot.append($avatarWrap);

@@ -1,7 +1,8 @@
 package br.community.context.security;
 
 import br.commons.framework.persistence.inmemory.InMemoryStorage;
-import br.community.context.security._0_domain.User;
+import br.community.context.security._0_domain.model.Preferences;
+import br.community.context.security._0_domain.model.User;
 import br.community.context.security._2_infrastructure.UserJsonRepository;
 import br.community.core.web.security.AccessTokenStore;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -19,7 +20,7 @@ class UserRegistryTest {
     @Test
     void resolvePorUsernameEPorId() {
         var id = UUID.randomUUID().toString();
-        repository.save(new User(id, "admin", "hash"));
+        repository.save(new User(id, "admin", null, "hash", Preferences.defaults()));
 
         assertTrue(repository.findByUsername("admin").isPresent());
         assertEquals(id, repository.findByUsername("admin").orElseThrow().id());
@@ -33,8 +34,8 @@ class UserRegistryTest {
     @Test
     void saveFazUpsertPorId() {
         var id = UUID.randomUUID().toString();
-        repository.save(new User(id, "admin", "hash1"));
-        repository.save(new User(id, "admin", "hash2"));
+        repository.save(new User(id, "admin", null, "hash1", Preferences.defaults()));
+        repository.save(new User(id, "admin", null, "hash2", Preferences.defaults()));
 
         assertEquals(1, repository.findByUsername("admin").stream().count());
         assertEquals("hash2", repository.findById(id).orElseThrow().password());
@@ -43,7 +44,7 @@ class UserRegistryTest {
     @Test
     void tokenEmiteRotacionaEMapeiaParaId() {
         var id = UUID.randomUUID().toString();
-        repository.save(new User(id, "admin", "hash"));
+        repository.save(new User(id, "admin", null, "hash", Preferences.defaults()));
 
         var store = new AccessTokenStore();
         var token = store.issue(id);

@@ -18,6 +18,7 @@
     'storage.js',
     'auth-store.js',
     'http-client.js',
+    'self-repository.js',
     'account-repository.js',
     'category-repository.js',
     'tag-repository.js',

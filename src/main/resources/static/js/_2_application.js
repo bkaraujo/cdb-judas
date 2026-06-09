@@ -7,6 +7,7 @@
     'cache-store.js',
     'preferences-service.js',
     'system-service.js',
+    'self-service.js',
     'session-service.js',
     'account-service.js',
     'category-service.js',

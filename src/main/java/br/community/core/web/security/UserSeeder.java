@@ -3,8 +3,9 @@ package br.community.core.web.security;
 import br.commons.Logger;
 import br.commons.framework.persistence.Storage;
 import br.commons.tools.Strings;
-import br.community.context.security._0_domain.User;
 import br.community.context.security._0_domain.UserRepository;
+import br.community.context.security._0_domain.model.Preferences;
+import br.community.context.security._0_domain.model.User;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import org.jspecify.annotations.NullMarked;
@@ -41,7 +42,9 @@ public final class UserSeeder {
             repository.save(new User(
                     id,
                     "admin",
-                    Strings.orEmpty(passwordEncoder.encode("admin"))
+                    null,
+                    Strings.orEmpty(passwordEncoder.encode("admin")),
+                    Preferences.defaults()
             ));
             Logger.info("Seed => usuário 'admin' criado com id %s", id);
         }

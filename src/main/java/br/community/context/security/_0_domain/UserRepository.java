@@ -1,5 +1,6 @@
 package br.community.context.security._0_domain;
 
+import br.community.context.security._0_domain.model.User;
 import org.jspecify.annotations.NullMarked;
 
 import java.util.Optional;
