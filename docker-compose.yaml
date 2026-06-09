@@ -1,13 +1,3 @@
-# docker-compose para build e execução local do CDB Finance.
-#
-#   docker compose up --build
-#
-# - backend : Spring Boot (API + persistência JSON) em http://localhost:8080
-# - frontend: nginx servindo o estático e fazendo proxy de /api -> backend,
-#             acessível em http://localhost:8081
-#
-# Ambos os serviços são construídos a partir dos Dockerfiles em src/main/docker
-# usando a RAIZ do repositório como contexto de build.
 name: cdb-judas
 
 services:
@@ -15,26 +5,16 @@ services:
     build:
       context: .
       dockerfile: src/main/docker/Dockerfile.backend
-      # RUN mvn usa a rede do host p/ herdar o resolver DNS dele. Sem isto, em
-      # máquinas com VPN/systemd-resolved o build falha com "Temporary failure
-      # in name resolution" ao baixar dependências do Maven Central.
       network: host
       args:
         APP_VERSION: "0.9.0"
     image: cdb-judas-backend:0.9.0
     container_name: cdb-judas-backend
     environment:
-      # Aponta storage.json.path (binding relaxado) para o diretório montado.
       STORAGE_JSON_PATH: /data
-      # Nível de log raiz. Por pacote: APP_LOGLEVEL_<PATTERN>=<LEVEL>, com _ no
-      # lugar de . (ex.: APP_LOGLEVEL_ORG_SPRINGFRAMEWORK=WARN -> org.springframework).
       APP_LOGLEVEL_ROOT: INFO
-    volumes:
-      # Exporta o ./data do host para o backend: os JSON do sistema persistem
-      # no repositório e sobrevivem à recriação do container.
-      - ./data:/data
-    ports:
-      - "8080:8080"
+    ports: ["8080:8080"]
+    volumes: [ ./data:/data ]
     restart: unless-stopped
 
   frontend:
@@ -45,10 +25,6 @@ services:
         APP_VERSION: "0.1.0"
     image: cdb-judas-frontend:0.1.0
     container_name: cdb-judas-frontend
-    # nginx faz proxy para o serviço "backend" pelo DNS da rede do compose.
-    depends_on:
-      - backend
-    ports:
-      # 8081 no host -> 80 no container (8080 já é do backend).
-      - "8081:80"
+    ports: ["8081:80"]
+    depends_on: [backend]
     restart: unless-stopped
