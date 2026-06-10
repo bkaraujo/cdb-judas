@@ -4,6 +4,7 @@ import br.commons.Logger;
 import br.commons.tools.platform.FileSystem;
 import br.commons.tools.platform.OS;
 import br.commons.tools.platform.Terminal;
+import br.commons.tools.platform.provider.agnostic.Network;
 import br.commons.tools.platform.provider.linux.LNXFileSystem;
 import br.commons.tools.platform.provider.linux.LNXTerminal;
 import br.commons.tools.platform.provider.windows.WINFileSystem;
@@ -68,6 +69,9 @@ public abstract class Platform {
         return terminal;
     }
 
-
+    /** Verifica se a porta TCP já está em uso no host local. Ver {@link Network#isPortInUse(int)}. */
+    public static boolean isPortInUse(int port) {
+        return Network.isPortInUse(port);
+    }
 
 }

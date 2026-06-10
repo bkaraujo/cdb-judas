@@ -33,6 +33,7 @@
         <maven.plugin.aspectj>1.13.1</maven.plugin.aspectj>
         <maven.plugin.enforcer>3.6.2</maven.plugin.enforcer>
         <maven.plugin.jacoco>0.8.14</maven.plugin.jacoco>
+        <maven.plugin.pmd>3.28.0</maven.plugin.pmd>
         <maven.plugin.springboot>4.0.6</maven.plugin.springboot>
         <maven.plugin.versions>2.21.0</maven.plugin.versions>
         <maven.plugin.antrun>3.2.0</maven.plugin.antrun>
@@ -47,6 +48,9 @@
         <!-- NullAway + ErrorProne para verificação de null-safety em tempo de compilação -->
         <dependency.nullaway>0.13.4</dependency.nullaway>
         <dependency.errorprone>2.48.0</dependency.errorprone>
+        <!-- PMD/CPD — libs sobrescritas para suportar bytecode Java 25 (class major 69) -->
+        <dependency.pmd>7.13.0</dependency.pmd>
+        <dependency.asm>9.10.1</dependency.asm>
     </properties>
 
     <dependencyManagement>
@@ -104,6 +108,7 @@
         <pluginManagement>
             <plugins>
                 <plugin><groupId>org.jacoco</groupId><artifactId>jacoco-maven-plugin</artifactId><version>${maven.plugin.jacoco}</version></plugin>
+                <plugin><groupId>org.apache.maven.plugins</groupId><artifactId>maven-pmd-plugin</artifactId><version>${maven.plugin.pmd}</version></plugin>
                 <plugin><groupId>org.codehaus.mojo</groupId><artifactId>exec-maven-plugin</artifactId><version>${maven.plugin.exec}</version></plugin>
                 <plugin><groupId>org.codehaus.mojo</groupId><artifactId>versions-maven-plugin</artifactId><version>${maven.plugin.versions}</version></plugin>
                 <plugin><groupId>org.apache.maven.plugins</groupId><artifactId>maven-clean-plugin</artifactId><version>${maven.plugin.clean}</version></plugin>
@@ -244,6 +249,44 @@
                         </goals>
                     </execution>
                 </executions>
+            </plugin>
+            <!-- ############################################################## -->
+            <!-- PMD + CPD — métricas de qualidade (CC<=7, método curto, duplicação) -->
+            <!-- failOnViolation=false enquanto a baseline é estabelecida.       -->
+            <!-- ############################################################## -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-pmd-plugin</artifactId>
+                <configuration>
+                    <rulesets>
+                        <ruleset>${project.basedir}/config/pmd/ruleset.xml</ruleset>
+                    </rulesets>
+                    <targetJdk>21</targetJdk>
+                    <includeTests>false</includeTests>
+                    <printFailingErrors>true</printFailingErrors>
+                    <failOnViolation>true</failOnViolation>
+                    <minimumTokens>100</minimumTokens>
+                    <!-- Wrappers JDBC: a hierarquia Statement→Prepared→Callable força delegação
+                         quase idêntica (superfície da própria API JDBC), não é cópia-cola real. -->
+                    <excludes>
+                        <exclude>**/jdbc/primitives/*.java</exclude>
+                    </excludes>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>pmd-quality-gate</id>
+                        <phase>verify</phase>
+                        <goals>
+                            <goal>check</goal>
+                            <goal>cpd-check</goal>
+                        </goals>
+                    </execution>
+                </executions>
+                <dependencies>
+                    <dependency><groupId>net.sourceforge.pmd</groupId><artifactId>pmd-core</artifactId><version>${dependency.pmd}</version></dependency>
+                    <dependency><groupId>net.sourceforge.pmd</groupId><artifactId>pmd-java</artifactId><version>${dependency.pmd}</version></dependency>
+                    <dependency><groupId>org.ow2.asm</groupId><artifactId>asm</artifactId><version>${dependency.asm}</version></dependency>
+                </dependencies>
             </plugin>
         </plugins>
 

@@ -9,6 +9,7 @@ import lombok.val;
 import org.jspecify.annotations.NullMarked;
 
 import java.lang.invoke.MethodHandles;
+import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
@@ -35,73 +36,79 @@ public abstract class MessageBus {
 
         Logger.verbose("Processing %s", lazy(() -> Meta.fqn(container)));
         for (val method : container.getClass().getMethods()) {
-            val annotation = method.getAnnotation(MessageListener.class);
-            if (annotation == null) { continue; }
-
-            val parameters = method.getParameters();
-            if (method.getReturnType() != MessageResult.class) {
-                Logger.warn(
-                        "Method '%s.%s' must return %s",
-                        Meta.fqn(container),
-                        method.getName(),
-                        Meta.fqn(MessageResult.class)
-                );
-                continue;
-            }
-
-            if (parameters.length != 1) {
-                Logger.warn(
-                        "Method '%s.%s' must accept a single parameter",
-                        Meta.fqn(container),
-                        method.getName()
-                );
-                continue;
-            }
-
-            if (!Meta.assignable(parameters[0].getType(), Message.class)) {
-                Logger.warn(
-                        "Method '%s.%s' parameter must be assignable to %s",
-                        Meta.fqn(container),
-                        method.getName(),
-                        Meta.fqn(Message.class)
-                );
-
-                continue;
-            }
-
-            try { method.setAccessible(true); }
-            catch (final SecurityException e) {
-                Logger.warn(
-                        "Failed to make '%s.%s' accessible'",
-                        Meta.fqn(container),
-                        method.getName()
-                );
-
-                continue;
-            }
-
-            try {
-                val handle = LOOKUP.unreflect(method);
-                subscribed++;
-                processors
-                        .computeIfAbsent(parameters[0].getType(), ignored -> new ArrayList<>())
-                        .add(new MessageProcessor(container, handle));
-
-                Logger.verbose("Method accepted: %s(%s)", Logger.lazy(method::getName), Logger.lazy(() -> Meta.fqn(parameters[0].getType())));
-            } catch (IllegalAccessException e) {
-                Logger.warn(
-                        "Failed to create handle for '%s.%s': %s",
-                        Meta.fqn(container),
-                        method.getName(),
-                        Strings.orEmpty(e.getMessage())
-                );
-            }
+            subscribed += tryRegister(container, method);
         }
 
         // Invalidate dispatch cache when new processors are registered
         dispatchCache.clear();
 
         return subscribed;
+    }
+
+    /** Valida e registra um método anotado com {@link MessageListener}; devolve 1 se inscrito, 0 caso contrário. */
+    private static int tryRegister(Object container, Method method) {
+        val annotation = method.getAnnotation(MessageListener.class);
+        if (annotation == null) { return 0; }
+
+        val parameters = method.getParameters();
+        if (method.getReturnType() != MessageResult.class) {
+            Logger.warn(
+                    "Method '%s.%s' must return %s",
+                    Meta.fqn(container),
+                    method.getName(),
+                    Meta.fqn(MessageResult.class)
+            );
+            return 0;
+        }
+
+        if (parameters.length != 1) {
+            Logger.warn(
+                    "Method '%s.%s' must accept a single parameter",
+                    Meta.fqn(container),
+                    method.getName()
+            );
+            return 0;
+        }
+
+        if (!Meta.assignable(parameters[0].getType(), Message.class)) {
+            Logger.warn(
+                    "Method '%s.%s' parameter must be assignable to %s",
+                    Meta.fqn(container),
+                    method.getName(),
+                    Meta.fqn(Message.class)
+            );
+
+            return 0;
+        }
+
+        try { method.setAccessible(true); }
+        catch (final SecurityException e) {
+            Logger.warn(
+                    "Failed to make '%s.%s' accessible'",
+                    Meta.fqn(container),
+                    method.getName()
+            );
+
+            return 0;
+        }
+
+        try {
+            val handle = LOOKUP.unreflect(method);
+            processors
+                    .computeIfAbsent(parameters[0].getType(), ignored -> new ArrayList<>())
+                    .add(new MessageProcessor(container, handle));
+
+            Logger.verbose("Method accepted: %s(%s)", Logger.lazy(method::getName), Logger.lazy(() -> Meta.fqn(parameters[0].getType())));
+            return 1;
+        } catch (IllegalAccessException e) {
+            Logger.warn(
+                    "Failed to create handle for '%s.%s': %s",
+                    Meta.fqn(container),
+                    method.getName(),
+                    Strings.orEmpty(e.getMessage())
+            );
+            return 0;
+        }
     }
 
     public static <T extends Message> void submit(T message) {

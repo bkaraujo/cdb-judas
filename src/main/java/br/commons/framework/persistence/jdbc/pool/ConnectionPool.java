@@ -10,6 +10,7 @@ import br.commons.tools.Strings;
 import br.commons.tools.Threads;
 import lombok.val;
 import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
 
 import java.sql.Connection;
 import java.sql.DriverManager;
@@ -103,17 +104,8 @@ public final class ConnectionPool {
             return Results.resourceIsClosed(properties.name());
         }
 
-        PooledConnection pooled = null;
-
         try {
-            // Try to get from available pool
-            pooled = availableConnections.poll(timeoutMs, TimeUnit.MILLISECONDS);
-
-            // If none available and below max size, create new
-            if (pooled == null && totalConnections.get() < properties.maxPoolSize()) {
-                pooled = createConnection();
-            }
-
+            val pooled = obtain(timeoutMs);
             if (pooled == null) {
                 return Results.poolExhausted(properties.name(), timeoutMs);
             }
@@ -139,6 +131,16 @@ public final class ConnectionPool {
         } catch (SQLException e) {
             return Results.error(properties.name(), e);
         }
+    }
+
+    /** Tira uma conexão do pool (aguardando até {@code timeoutMs}); se vazio e abaixo do máximo, cria nova. */
+    @Nullable
+    private PooledConnection obtain(long timeoutMs) throws InterruptedException, SQLException {
+        PooledConnection pooled = availableConnections.poll(timeoutMs, TimeUnit.MILLISECONDS);
+        if (pooled == null && totalConnections.get() < properties.maxPoolSize()) {
+            pooled = createConnection();
+        }
+        return pooled;
     }
 
     void release(Connection connection) {
@@ -196,43 +198,52 @@ public final class ConnectionPool {
         try {
             Logger.trace("Performing maintenance on pool '%s'", properties.name());
 
-            // Remove idle connections exceeding idle timeout
-            val idleDeadline = System.currentTimeMillis() - properties.idleTimeout();
-            val iterator = availableConnections.iterator();
-            int removed = 0;
-
-            while (iterator.hasNext()) {
-                val pooled = iterator.next();
-
-                // Keep minimum pool size
-                if (totalConnections.get() <= properties.minPoolSize()) {
-                    break;
-                }
-
-                if (pooled.getLastAccessedAt() < idleDeadline) {
-                    iterator.remove();
-                    closeConnection(pooled);
-                    removed++;
-                }
-            }
-
+            val removed = removeIdleConnections();
             if (removed > 0) {
                 Logger.debug("Removed %d idle connections from pool '%s'", removed, properties.name());
             }
 
-            // Ensure minimum pool size
-            while (totalConnections.get() < properties.minPoolSize()) {
-                try {
-                    availableConnections.offer(createConnection());
-                } catch (SQLException e) {
-                    Logger.error("Failed to maintain minimum pool size for '%s': %s",
-                            properties.name(), Strings.orEmpty(e.getMessage()));
-                    break;
-                }
-            }
+            ensureMinimumPoolSize();
 
         } catch (Exception e) {
             Logger.error("Error during pool maintenance for '%s': %s", properties.name(), Strings.orEmpty(e.getMessage()));
+        }
+    }
+
+    /** Remove conexões ociosas além do idle-timeout, sempre preservando o tamanho mínimo do pool. */
+    private int removeIdleConnections() {
+        val idleDeadline = System.currentTimeMillis() - properties.idleTimeout();
+        val iterator = availableConnections.iterator();
+        int removed = 0;
+
+        while (iterator.hasNext()) {
+            val pooled = iterator.next();
+
+            // Keep minimum pool size
+            if (totalConnections.get() <= properties.minPoolSize()) {
+                break;
+            }
+
+            if (pooled.getLastAccessedAt() < idleDeadline) {
+                iterator.remove();
+                closeConnection(pooled);
+                removed++;
+            }
+        }
+
+        return removed;
+    }
+
+    /** Recria conexões até alcançar o tamanho mínimo do pool. */
+    private void ensureMinimumPoolSize() {
+        while (totalConnections.get() < properties.minPoolSize()) {
+            try {
+                availableConnections.offer(createConnection());
+            } catch (SQLException e) {
+                Logger.error("Failed to maintain minimum pool size for '%s': %s",
+                        properties.name(), Strings.orEmpty(e.getMessage()));
+                break;
+            }
         }
     }
 

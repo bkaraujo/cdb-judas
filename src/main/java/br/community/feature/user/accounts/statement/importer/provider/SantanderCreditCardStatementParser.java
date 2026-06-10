@@ -53,55 +53,78 @@ public class SantanderCreditCardStatementParser implements CreditCardStatementPa
             }
 
             final String trimmed = line.trim();
-            if (trimmed.equals("Parcelamentos") || trimmed.equals("Despesas")) {
-                keep = true;
-                continue;
-            }
-            if (trimmed.equals("Pagamento e Demais Créditos") || trimmed.equals("Resumo da Fatura")
-                    || trimmed.startsWith("VALOR TOTAL")) {
-                keep = false;
+            final Boolean section = sectionKeep(trimmed);
+            if (section != null) {
+                keep = section;
                 continue;
             }
             if (!keep || last4 == null) {
                 continue;
             }
-
-            final Matcher iof = IOF_LINE.matcher(trimmed);
-            if (iof.matches()) {
-                final BigDecimal value = amount(iof.group(2));
-                if (value.signum() >= 0 && lastDate != null) {
-                    lines.add(new ParsedStatementLine(
-                            last4, lastDate, iof.group(1).trim(), value, null, null, ChargeKind.IOF));
-                }
-                continue;
-            }
-
-            final Matcher m = TXN.matcher(line);
-            if (!m.matches()) {
-                continue;
-            }
-            final BigDecimal value = amount(m.group(6));
-            if (value.signum() < 0) {
-                continue;
-            }
-
-            final MonthDay date = MonthDay.of(Integer.parseInt(m.group(2)), Integer.parseInt(m.group(1)));
-            final Integer number = m.group(4) == null ? null : Integer.valueOf(m.group(4));
-            final Integer total = m.group(5) == null ? null : Integer.valueOf(m.group(5));
-            final String description = m.group(3).trim();
-            lines.add(new ParsedStatementLine(
-                    last4, date, description, value, number, total, classify(description)));
-            lastDate = date;
+            lastDate = emitLine(line, trimmed, last4, lastDate, lines);
         }
 
         return new ParsedStatement(List.copyOf(lines));
     }
 
-    private static ChargeKind classify(String description) {
-        return description.toUpperCase(Locale.ROOT).startsWith("ANUIDADE") ? ChargeKind.FEE : ChargeKind.PURCHASE;
+    /** {@code true}/{@code false} se a linha alterna a seção de interesse; {@code null} caso contrário. */
+    private static @Nullable Boolean sectionKeep(String trimmed) {
+        if (trimmed.equals("Parcelamentos") || trimmed.equals("Despesas")) {
+            return Boolean.TRUE;
+        }
+        if (trimmed.equals("Pagamento e Demais Créditos") || trimmed.equals("Resumo da Fatura")
+                || trimmed.startsWith("VALOR TOTAL")) {
+            return Boolean.FALSE;
+        }
+        return null;
     }
 
-    private static BigDecimal amount(String raw) {
-        return new BigDecimal(raw.replace(".", "").replace(",", "."));
+    /** Emite a linha IOF ou de transação (se houver) e devolve a data corrente que ancora o IOF. */
+    private static @Nullable MonthDay emitLine(String line, String trimmed, String last4,
+                                               @Nullable MonthDay lastDate, List<ParsedStatementLine> lines) {
+        final ParsedStatementLine iof = iofLine(trimmed, last4, lastDate);
+        if (iof != null) {
+            lines.add(iof);
+            return lastDate;
+        }
+        final ParsedStatementLine txn = txnLine(line, last4);
+        if (txn != null) {
+            lines.add(txn);
+            return txn.date();
+        }
+        return lastDate;
+    }
+
+    /** A linha de IOF não traz data própria — é ancorada na última transação (a compra no exterior). */
+    private static @Nullable ParsedStatementLine iofLine(String trimmed, String last4, @Nullable MonthDay lastDate) {
+        final Matcher iof = IOF_LINE.matcher(trimmed);
+        if (!iof.matches()) {
+            return null;
+        }
+        final BigDecimal value = Amounts.brl(iof.group(2));
+        if (value.signum() < 0 || lastDate == null) {
+            return null;
+        }
+        return new ParsedStatementLine(last4, lastDate, iof.group(1).trim(), value, null, null, ChargeKind.IOF);
+    }
+
+    private static @Nullable ParsedStatementLine txnLine(String line, String last4) {
+        final Matcher m = TXN.matcher(line);
+        if (!m.matches()) {
+            return null;
+        }
+        final BigDecimal value = Amounts.brl(m.group(6));
+        if (value.signum() < 0) {
+            return null;
+        }
+        final MonthDay date = MonthDay.of(Integer.parseInt(m.group(2)), Integer.parseInt(m.group(1)));
+        final Integer number = m.group(4) == null ? null : Integer.valueOf(m.group(4));
+        final Integer total = m.group(5) == null ? null : Integer.valueOf(m.group(5));
+        final String description = m.group(3).trim();
+        return new ParsedStatementLine(last4, date, description, value, number, total, classify(description));
+    }
+
+    private static ChargeKind classify(String description) {
+        return description.toUpperCase(Locale.ROOT).startsWith("ANUIDADE") ? ChargeKind.FEE : ChargeKind.PURCHASE;
     }
 }

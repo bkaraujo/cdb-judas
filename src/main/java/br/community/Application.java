@@ -4,6 +4,7 @@ import br.commons.Logger;
 import br.commons.RT;
 import br.commons.framework.logger.LogLevel;
 import br.commons.framework.logger.channel.ConsoleChannel;
+import br.commons.tools.Platform;
 import br.commons.tools.Strings;
 import br.community.context.monetary.MonetaryModule;
 import br.community.context.security.SecurityModule;
@@ -13,7 +14,9 @@ import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.boot.context.event.ApplicationEnvironmentPreparedEvent;
 import org.springframework.boot.context.properties.ConfigurationPropertiesScan;
+import org.springframework.context.ApplicationListener;
 import org.springframework.context.annotation.Import;
 
 import java.util.List;
@@ -30,6 +33,9 @@ public class Application {
     /** Variável do nível raiz: {@code APP_LOGLEVEL_ROOT}. */
     private static final String LOG_LEVEL_ROOT = LOG_LEVEL_PREFIX + "ROOT";
 
+    /** Porta HTTP assumida quando o Spring/Tomcat não define {@code server.port}. */
+    private static final int DEFAULT_PORT = 8080;
+
     static void main(String[] args) {
         RT.packages.addAll(List.of(
                 "br.commons.framework.logger.",
@@ -39,7 +45,12 @@ public class Application {
 
         configureLogging();
 
-        SpringApplication.run(Application.class, args);
+        val app = new SpringApplication(Application.class);
+        app.addListeners((ApplicationListener<ApplicationEnvironmentPreparedEvent>) event ->
+                ensurePortAvailable(event.getEnvironment().getProperty("server.port", Integer.class, DEFAULT_PORT))
+        );
+
+        app.run(args);
     }
 
     /**
@@ -65,6 +76,18 @@ public class Application {
             try { Logger.level(pattern, LogLevel.valueOf(Strings.upper(value))); }
             catch (IllegalArgumentException e) { Logger.warn("Nível de log inválido para %s: %s", key, value); }
         });
+    }
+
+    /**
+     * Falha cedo, com mensagem amigável, se a porta HTTP do Tomcat já estiver
+     * ocupada — evita o stacktrace cru de "Port already in use" do Spring Boot.
+     * Portas especiais (0 = aleatória, -1 = container desabilitado) são ignoradas.
+     */
+    private static void ensurePortAvailable(int port) {
+        if (port <= 0 || port > 65535) return;
+        if (Platform.isPortInUse(port)) {
+            Logger.fatal("Porta %d já está em uso. Encerre o processo que a ocupa ou configure outra porta (server.port / SERVER_PORT).", port);
+        }
     }
 
     private static LogLevel parseLevel(@Nullable String value, LogLevel fallback) {

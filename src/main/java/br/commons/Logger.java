@@ -161,6 +161,15 @@ public abstract class Logger {
     }
 
     /**
+     * Guard compartilhado pelos métodos de log: só resolve o caller (StackWalker, caro) quando há
+     * filtros por pacote ativos. Como {@code resolveCallerClass} pula os frames de infraestrutura
+     * ({@link br.commons.tools.Meta#stackFrame}), chamá-lo daqui não altera o caller resolvido.
+     */
+    private static boolean blocked(LogLevel messageLevel) {
+        return filter.hasPackageFilters() && !shouldLog(resolveCallerClass(), messageLevel);
+    }
+
+    /**
      * Helper to create lazy arguments for expensive operations.
      * Usage: Logger.debug("Value: %s", lazy(() -> expensiveOperation()))
      */
@@ -171,56 +180,32 @@ public abstract class Logger {
     public static void verbose(String message, Object... args) {
         // OTIMIZAÇÃO: Só resolve caller se há filtros por pacote
         // O forwarder já filtra por nível (VerboseForwarder.verbose() vs default vazio)
-        if (filter.hasPackageFilters()) {
-            val callerClass = resolveCallerClass();
-            if (!shouldLog(callerClass, LogLevel.VERBOSE))
-                return;
-        }
+        if (blocked(LogLevel.VERBOSE)) return;
         forwarder.verbose(() -> message.formatted(Meta.evaluate(args)));
     }
 
     public static void trace(String message, Object... args) {
-        if (filter.hasPackageFilters()) {
-            val callerClass = resolveCallerClass();
-            if (!shouldLog(callerClass, LogLevel.TRACE))
-                return;
-        }
+        if (blocked(LogLevel.TRACE)) return;
         forwarder.trace(() -> message.formatted(Meta.evaluate(args)));
     }
 
     public static void debug(String message, Object... args) {
-        if (filter.hasPackageFilters()) {
-            val callerClass = resolveCallerClass();
-            if (!shouldLog(callerClass, LogLevel.DEBUG))
-                return;
-        }
+        if (blocked(LogLevel.DEBUG)) return;
         forwarder.debug(() -> message.formatted(Meta.evaluate(args)));
     }
 
     public static void info(String message, Object... args) {
-        if (filter.hasPackageFilters()) {
-            val callerClass = resolveCallerClass();
-            if (!shouldLog(callerClass, LogLevel.INFO))
-                return;
-        }
+        if (blocked(LogLevel.INFO)) return;
         forwarder.info(() -> message.formatted(Meta.evaluate(args)));
     }
 
     public static void warn(String message, Object... args) {
-        if (filter.hasPackageFilters()) {
-            val callerClass = resolveCallerClass();
-            if (!shouldLog(callerClass, LogLevel.WARN))
-                return;
-        }
+        if (blocked(LogLevel.WARN)) return;
         forwarder.warn(() -> message.formatted(Meta.evaluate(args)));
     }
 
     public static void error(String message, Object... args) {
-        if (filter.hasPackageFilters()) {
-            val callerClass = resolveCallerClass();
-            if (!shouldLog(callerClass, LogLevel.ERROR))
-                return;
-        }
+        if (blocked(LogLevel.ERROR)) return;
         forwarder.error(() -> message.formatted(Meta.evaluate(args)));
     }
 
@@ -236,11 +221,7 @@ public abstract class Logger {
      * @param messageSupplier supplier que produz a mensagem
      */
     public static void verbose(Supplier<String> messageSupplier) {
-        if (filter.hasPackageFilters()) {
-            val callerClass = resolveCallerClass();
-            if (!shouldLog(callerClass, LogLevel.VERBOSE))
-                return;
-        }
+        if (blocked(LogLevel.VERBOSE)) return;
         forwarder.verbose(messageSupplier);
     }
 
@@ -258,11 +239,7 @@ public abstract class Logger {
      * @param messageSupplier supplier que produz a mensagem
      */
     public static void trace(Supplier<String> messageSupplier) {
-        if (filter.hasPackageFilters()) {
-            val callerClass = resolveCallerClass();
-            if (!shouldLog(callerClass, LogLevel.TRACE))
-                return;
-        }
+        if (blocked(LogLevel.TRACE)) return;
         forwarder.trace(messageSupplier);
     }
 
@@ -272,11 +249,7 @@ public abstract class Logger {
      * @param messageSupplier supplier que produz a mensagem
      */
     public static void debug(Supplier<String> messageSupplier) {
-        if (filter.hasPackageFilters()) {
-            val callerClass = resolveCallerClass();
-            if (!shouldLog(callerClass, LogLevel.DEBUG))
-                return;
-        }
+        if (blocked(LogLevel.DEBUG)) return;
         forwarder.debug(messageSupplier);
     }
 
@@ -286,11 +259,7 @@ public abstract class Logger {
      * @param messageSupplier supplier que produz a mensagem
      */
     public static void info(Supplier<String> messageSupplier) {
-        if (filter.hasPackageFilters()) {
-            val callerClass = resolveCallerClass();
-            if (!shouldLog(callerClass, LogLevel.INFO))
-                return;
-        }
+        if (blocked(LogLevel.INFO)) return;
         forwarder.info(() -> messageSupplier.get());
     }
 
@@ -300,11 +269,7 @@ public abstract class Logger {
      * @param messageSupplier supplier que produz a mensagem
      */
     public static void warn(Supplier<String> messageSupplier) {
-        if (filter.hasPackageFilters()) {
-            val callerClass = resolveCallerClass();
-            if (!shouldLog(callerClass, LogLevel.WARN))
-                return;
-        }
+        if (blocked(LogLevel.WARN)) return;
         forwarder.warn(() -> messageSupplier.get());
     }
 
@@ -314,11 +279,7 @@ public abstract class Logger {
      * @param messageSupplier supplier que produz a mensagem
      */
     public static void error(Supplier<String> messageSupplier) {
-        if (filter.hasPackageFilters()) {
-            val callerClass = resolveCallerClass();
-            if (!shouldLog(callerClass, LogLevel.ERROR))
-                return;
-        }
+        if (blocked(LogLevel.ERROR)) return;
         forwarder.error(() -> messageSupplier.get());
     }
 
@@ -336,6 +297,15 @@ public abstract class Logger {
         });
     }
 
+    private static final Map<LogLevel, Consumer<String>> SINKS = Map.of(
+            LogLevel.VERBOSE, Logger::verbose,
+            LogLevel.TRACE, Logger::trace,
+            LogLevel.DEBUG, Logger::debug,
+            LogLevel.INFO, Logger::info,
+            LogLevel.WARN, Logger::warn,
+            LogLevel.ERROR, Logger::error,
+            LogLevel.FATAL, Logger::fatal);
+
     public static void stackTrace(LogLevel level) {
         val message = new StringBuilder("\n\n");
         val stackTrace = Meta.stackFrame();
@@ -343,18 +313,11 @@ public abstract class Logger {
             message.append(entry).append("\n");
         }
 
-        switch (level) {
-            case VERBOSE -> verbose(message.toString());
-            case TRACE -> trace(message.toString());
-            case DEBUG -> debug(message.toString());
-            case INFO -> info(message.toString());
-            case WARN -> warn(message.toString());
-            case ERROR -> error(message.toString());
-            case FATAL -> fatal(message.toString());
-            default -> {
-                throw new IllegalStateException("Unexpected value: " + level);
-            }
+        val sink = SINKS.get(level);
+        if (sink == null) {
+            throw new IllegalStateException("Unexpected value: " + level);
         }
+        sink.accept(message.toString());
     }
 
     // Internal methods for SLF4J bridge to specify caller class

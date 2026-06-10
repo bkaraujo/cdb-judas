@@ -42,20 +42,27 @@ public class TransactionUseCase {
     }
 
     public Result<MonetaryTransaction, DomainError> createTransaction(TransactionCommand cmd) {
-        val catValidation = categoryService.validateNotMacroCategory(cmd.categoryId());
-        if (catValidation instanceof Result.Failure<Void, DomainError>(DomainError error)) return Result.failure(error);
+        return categoryService.validateNotMacroCategory(cmd.categoryId())
+                .flatMap(ignored -> {
+                    val count = installmentCount(cmd);
+                    return count == 1 ? createSingle(cmd) : createInstallments(cmd, count);
+                });
+    }
 
-        val installmentsCount = cmd.installments() != null && cmd.installments() > 1 ? cmd.installments() : 1;
+    private static int installmentCount(TransactionCommand cmd) {
+        return cmd.installments() != null && cmd.installments() > 1 ? cmd.installments() : 1;
+    }
 
-        if (installmentsCount == 1) {
-            return closingService.validateDate(cmd.date())
-                    .map(ignored -> {
-                        val saved = transactionService.save(toMonetaryTransactionEntity(UUID.randomUUID(), cmd, cmd.date(), cmd.status(), null, null, null));
-                        MessageBus.submit(new MonetaryEvent.TransactionCreated(saved));
-                        return saved;
-                    });
-        }
+    private Result<MonetaryTransaction, DomainError> createSingle(TransactionCommand cmd) {
+        return closingService.validateDate(cmd.date())
+                .map(ignored -> {
+                    val saved = transactionService.save(toMonetaryTransactionEntity(UUID.randomUUID(), cmd, cmd.date(), cmd.status(), null, null, null));
+                    MessageBus.submit(new MonetaryEvent.TransactionCreated(saved));
+                    return saved;
+                });
+    }
 
+    private Result<MonetaryTransaction, DomainError> createInstallments(TransactionCommand cmd, int installmentsCount) {
         val groupId = UUID.randomUUID();
         val batch = new ArrayList<MonetaryTransaction>();
 
@@ -81,10 +88,8 @@ public class TransactionUseCase {
     }
 
     public Result<MonetaryTransaction, DomainError> updateTransaction(UUID id, TransactionCommand cmd) {
-        val catValidation = categoryService.validateNotMacroCategory(cmd.categoryId());
-        if (catValidation instanceof Result.Failure<Void, DomainError>(DomainError error)) return Result.failure(error);
-
-        return transactionService.findById(id).flatMap(existing -> {
+        return categoryService.validateNotMacroCategory(cmd.categoryId())
+                .flatMap(catOk -> transactionService.findById(id).flatMap(existing -> {
             val isFuture = "FUTURE".equalsIgnoreCase(cmd.editMode()) && existing.groupId() != null;
 
             if (!isFuture) {
@@ -139,7 +144,7 @@ public class TransactionUseCase {
             }
 
             return Result.success(firstSaved);
-        });
+        }));
     }
 
     public Result<MonetaryTransaction, DomainError> updateTransactionStatus(UUID id, String status, @Nullable LocalDate paymentDate) {

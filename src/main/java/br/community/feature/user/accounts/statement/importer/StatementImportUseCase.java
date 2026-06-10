@@ -220,12 +220,7 @@ public class StatementImportUseCase {
         final List<MonetaryAccount> candidates = monetaryContext.listAccounts().getOrElse(List.of()).stream()
                 .filter(a -> a.type() != AccountType.CREDIT_CARD && a.active())
                 .toList();
-
-        @Nullable UUID selected = accountId;
-        if (selected == null && candidates.size() == 1) {
-            selected = candidates.getFirst().id();
-        }
-        final @Nullable UUID selectedAccountId = selected;
+        final @Nullable UUID selectedAccountId = selectAccount(accountId, candidates);
 
         final List<MonetaryTransaction> history = monetaryContext.listTransactions().getOrElse(List.of());
         final List<MonetaryTransaction> accountTx = selectedAccountId != null
@@ -237,19 +232,30 @@ public class StatementImportUseCase {
 
         final List<BankStatementPreviewRow> rows = new ArrayList<>();
         for (int i = 0; i < statement.lines().size(); i++) {
-            final ParsedBankStatementLine line = statement.lines().get(i);
-            final Classification cls = classes.get(i);
-            final String type = line.amount().signum() < 0 ? "expense" : "income";
-            final UUID categoryId = cls.state() == RowState.NEW
-                    ? categoryGuesser.guess(line.description(), history).orElse(fallbackCategoryId)
-                    : null;
-            final String reconcileDescription = cls.target() != null ? cls.target().description() : null;
-            rows.add(new BankStatementPreviewRow(
-                    line.date(), line.description(), line.amount(), type, cls.state(), categoryId, reconcileDescription));
+            rows.add(bankRow(statement.lines().get(i), classes.get(i), history, fallbackCategoryId));
         }
 
         return Result.success(new ImportPreviewOutcome.Statement(
                 new BankStatementPreview(issuer, candidates, selectedAccountId, List.copyOf(rows))));
+    }
+
+    /** Sem conta escolhida, usa a única candidata elegível (quando há exatamente uma). */
+    private static @Nullable UUID selectAccount(@Nullable UUID accountId, List<MonetaryAccount> candidates) {
+        if (accountId != null) {
+            return accountId;
+        }
+        return candidates.size() == 1 ? candidates.getFirst().id() : null;
+    }
+
+    private BankStatementPreviewRow bankRow(ParsedBankStatementLine line, Classification cls,
+                                            List<MonetaryTransaction> history, UUID fallbackCategoryId) {
+        final String type = line.amount().signum() < 0 ? "expense" : "income";
+        final UUID categoryId = cls.state() == RowState.NEW
+                ? categoryGuesser.guess(line.description(), history).orElse(fallbackCategoryId)
+                : null;
+        final String reconcileDescription = cls.target() != null ? cls.target().description() : null;
+        return new BankStatementPreviewRow(
+                line.date(), line.description(), line.amount(), type, cls.state(), categoryId, reconcileDescription);
     }
 
     /**
@@ -350,9 +356,7 @@ public class StatementImportUseCase {
         final MonetaryAccount matchedCard = (match instanceof CardMatch.Matched(MonetaryAccount card)) ? card : null;
 
         final LocalDate today = LocalDate.now(clock);
-        final UUID accountId = matchedCard != null
-                ? (matchedCard.linkedAccountId() != null ? matchedCard.linkedAccountId() : matchedCard.id())
-                : new UUID(0L, 0L);
+        final UUID accountId = resolveAccountId(matchedCard);
 
         final List<MonetaryTransaction> history = monetaryContext.listTransactions().getOrElse(List.of());
         final List<MonetaryTransaction> existing = matchedCard != null
@@ -371,6 +375,14 @@ public class StatementImportUseCase {
 
         return Result.success(new ImportPreviewOutcome.Invoice(
                 new ImportPreview(issuer, statement, matchedCard, cards, List.copyOf(rows))));
+    }
+
+    /** Conta de destino dos lançamentos do cartão: a conta vinculada, o próprio cartão, ou sentinela se não casou. */
+    private static UUID resolveAccountId(@Nullable MonetaryAccount card) {
+        if (card == null) {
+            return new UUID(0L, 0L);
+        }
+        return card.linkedAccountId() != null ? card.linkedAccountId() : card.id();
     }
 
     private boolean isDuplicate(TransactionDraft draft, List<MonetaryTransaction> existing) {

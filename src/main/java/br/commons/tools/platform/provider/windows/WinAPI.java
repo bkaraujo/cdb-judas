@@ -62,6 +62,8 @@ public abstract class WinAPI {
         }
     }
 
+    // Mapeamento exaustivo de códigos de erro do Windows → nome: é tabela de dados, não lógica.
+    @SuppressWarnings("PMD.CyclomaticComplexity")
     public static String error(int code) {
         return switch (code) {
             case WinError.ERROR_SUCCESS -> "ERROR_SUCCESS";

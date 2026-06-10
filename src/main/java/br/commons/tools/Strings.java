@@ -363,4 +363,11 @@ public abstract class Strings {
         if (message == null) return EMPTY;
         return message;
     }
+
+    /** Anexa {@code part} ao buffer separando por um espaço, ignorando partes vazias. */
+    public static void appendToken(StringBuilder buffer, String part) {
+        if (part.isEmpty()) return;
+        if (!buffer.isEmpty()) buffer.append(' ');
+        buffer.append(part);
+    }
 }

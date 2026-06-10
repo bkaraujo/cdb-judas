@@ -1,5 +1,6 @@
 package br.community.feature.user.accounts.statement.importer.provider;
 
+import br.commons.tools.Strings;
 import br.community.feature.user.accounts.statement.importer.preview.BankStatementParser;
 import br.community.feature.user.accounts.statement.importer.preview.ParsedBankStatement;
 import br.community.feature.user.accounts.statement.importer.preview.ParsedBankStatementLine;
@@ -56,19 +57,13 @@ public class BtgBankStatementParser implements BankStatementParser {
                 // (page headers between the print-date line and the first real movement).
                 recordDate = LocalDate.parse(date.group(1), DATE);
                 buffer.setLength(0);
-                appendPart(buffer, date.group(2).trim());
-                if (TRAILING_VALUE.matcher(buffer).find()) {
-                    finalize(recordDate, buffer.toString(), lines);
-                    recordDate = null;
-                }
-                continue;
-            }
-
-            if (recordDate == null) {
+                Strings.appendToken(buffer, date.group(2).trim());
+            } else if (recordDate != null) {
+                Strings.appendToken(buffer, line);
+            } else {
                 continue; // header/footer noise outside any record
             }
 
-            appendPart(buffer, line);
             if (TRAILING_VALUE.matcher(buffer).find()) {
                 finalize(recordDate, buffer.toString(), lines);
                 recordDate = null;
@@ -87,7 +82,7 @@ public class BtgBankStatementParser implements BankStatementParser {
         if (isDropped(description)) {
             return;
         }
-        BigDecimal amount = new BigDecimal(value.group(2).replace(".", "").replace(",", "."));
+        BigDecimal amount = Amounts.brl(value.group(2));
         if (value.group(1) != null) {
             amount = amount.negate();
         }
@@ -101,13 +96,4 @@ public class BtgBankStatementParser implements BankStatementParser {
                 || description.contains("Pagamento de fatura do cartão");
     }
 
-    private static void appendPart(StringBuilder buffer, String part) {
-        if (part.isEmpty()) {
-            return;
-        }
-        if (!buffer.isEmpty()) {
-            buffer.append(' ');
-        }
-        buffer.append(part);
-    }
 }

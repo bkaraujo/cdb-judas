@@ -57,36 +57,8 @@ public final class FileChannel implements LogChannel {
     private void drain(BufferedWriter writer) throws IOException {
         String message;
         while ((message = queue.poll()) != null) {
-            writeStripped(writer, message);
+            Ansi.writeStripped(writer, message);
         }
         writer.flush();
-    }
-
-    private static void writeStripped(BufferedWriter writer, String message) throws IOException {
-        val length = message.length();
-        val ANSI_ESCAPE = '\u001B';
-        var lastWritePos = 0;
-        var currentPos = 0;
-
-        while (currentPos < length) {
-            if (message.charAt(currentPos) == ANSI_ESCAPE) {
-                val len = currentPos - lastWritePos;
-                if (len > 0) writer.write(message, lastWritePos, len);
-
-                var endAnsi = currentPos + 1;
-                if (endAnsi < length && message.charAt(endAnsi) == '[') {
-                    endAnsi++;
-                    while (endAnsi < length && message.charAt(endAnsi++) != 'm') { /* avança */ }
-                    currentPos = endAnsi;
-                    lastWritePos = currentPos;
-                    continue;
-                }
-            }
-            currentPos++;
-        }
-
-        val tailLen = length - lastWritePos;
-        if (tailLen > 0) writer.write(message, lastWritePos, tailLen);
-        writer.newLine();
     }
 }

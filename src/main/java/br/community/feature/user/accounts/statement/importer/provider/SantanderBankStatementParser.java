@@ -1,5 +1,6 @@
 package br.community.feature.user.accounts.statement.importer.provider;
 
+import br.commons.tools.Strings;
 import br.community.feature.user.accounts.statement.importer.preview.BankStatementParser;
 import br.community.feature.user.accounts.statement.importer.preview.ParsedBankStatement;
 import br.community.feature.user.accounts.statement.importer.preview.ParsedBankStatementLine;
@@ -75,33 +76,21 @@ public class SantanderBankStatementParser implements BankStatementParser {
             final String line = raw.strip();
 
             if (!inSection) {
-                if (line.contains("Movimento (R")) {
-                    inSection = true; // the Movimentação column header opens the table
-                }
+                inSection = line.contains("Movimento (R"); // the Movimentação column header opens the table
                 continue;
             }
-
-            if (line.contains("Movimento (R")) {
-                continue; // header repeats on every page
+            if (isStop(line, recordDate)) {
+                break;
             }
-            if (line.startsWith("Saldos por Per")) {
-                break; // next section — its rows must not be parsed as movements
-            }
-            if (line.contains("SALDO EM")) {
-                if (recordDate != null) {
-                    break; // closing balance ends the movement window
-                }
-                continue; // opening balance, before the first movement
-            }
-            if (line.isEmpty() || isNoise(line)) {
-                continue; // blank line or a page header repeated mid-table
+            if (skip(line)) {
+                continue;
             }
 
             final Matcher date = DATE_PREFIX.matcher(line);
             if (date.find()) {
                 recordDate = dateFor(year, refMonth, Integer.parseInt(date.group(2)), Integer.parseInt(date.group(1)));
                 buffer.setLength(0);
-                append(buffer, date.group(3).strip());
+                Strings.appendToken(buffer, date.group(3).strip());
                 finalizeIfComplete(recordDate, buffer, lines);
                 continue;
             }
@@ -109,11 +98,26 @@ public class SantanderBankStatementParser implements BankStatementParser {
             if (recordDate == null) {
                 continue; // noise before the first movement
             }
-            append(buffer, line);
+            Strings.appendToken(buffer, line);
             finalizeIfComplete(recordDate, buffer, lines);
         }
 
         return new ParsedBankStatement(List.copyOf(lines));
+    }
+
+    /** Fim da janela de movimentos: a tabela {@code Saldos por Período} ou o saldo de fechamento. */
+    private static boolean isStop(String line, @Nullable LocalDate recordDate) {
+        if (line.startsWith("Saldos por Per")) {
+            return true; // next section — its rows must not be parsed as movements
+        }
+        return line.contains("SALDO EM") && recordDate != null; // closing balance ends the window
+    }
+
+    /** Linhas ignoradas dentro da tabela: header repetido, saldo de abertura, vazias e ruído de página. */
+    private static boolean skip(String line) {
+        return line.contains("Movimento (R")  // header repeats on every page
+                || line.contains("SALDO EM")   // opening balance, before the first movement
+                || line.isEmpty() || isNoise(line);
     }
 
     private static void finalizeIfComplete(LocalDate date, StringBuilder buffer, List<ParsedBankStatementLine> out) {
@@ -122,7 +126,7 @@ public class SantanderBankStatementParser implements BankStatementParser {
             return;
         }
         final String description = buffer.substring(0, value.start()).replaceAll("\\s+", " ").strip();
-        BigDecimal amount = new BigDecimal(value.group(1).replace(".", "").replace(",", "."));
+        BigDecimal amount = Amounts.brl(value.group(1));
         if ("-".equals(value.group(2))) {
             amount = amount.negate();
         }
@@ -163,13 +167,4 @@ public class SantanderBankStatementParser implements BankStatementParser {
         return m.find() ? MONTHS.getOrDefault(m.group(1).toLowerCase(Locale.ROOT), 1) : 1;
     }
 
-    private static void append(StringBuilder buffer, String part) {
-        if (part.isEmpty()) {
-            return;
-        }
-        if (!buffer.isEmpty()) {
-            buffer.append(' ');
-        }
-        buffer.append(part);
-    }
 }

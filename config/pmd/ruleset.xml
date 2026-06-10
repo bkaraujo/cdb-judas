@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ruleset name="cdb-judas-quality"
+         xmlns="http://pmd.sourceforge.net/ruleset/2.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://pmd.sourceforge.net/ruleset/2.0.0 https://pmd.sourceforge.io/ruleset_2_0_0.xsd">
+
+    <description>
+        Gates de qualidade do CDB Finance.
+        - CyclomaticComplexity: complexidade ciclomatica POR METODO &lt;= 7 (reportLevel 8);
+          classReportLevel alto de proposito — o interesse e a funcao, nao o total da classe.
+        - NcssCount: tamanho de metodo (sentencas). PMD 7 nao expoe numero de linha em XPath,
+          entao usamos NCSS (sentencas, ~equivalente a "funcao longa") em vez de linhas cruas.
+        Duplicacao e medida por CPD (config do maven-pmd-plugin, minimumTokens=80).
+    </description>
+
+    <rule ref="category/java/design.xml/CyclomaticComplexity">
+        <properties>
+            <property name="methodReportLevel" value="8"/>
+            <property name="classReportLevel" value="9999"/>
+        </properties>
+    </rule>
+
+    <rule ref="category/java/design.xml/NcssCount">
+        <properties>
+            <property name="methodReportLevel" value="30"/>
+            <property name="classReportLevel" value="99999"/>
+        </properties>
+    </rule>
+
+</ruleset>

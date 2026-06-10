@@ -109,9 +109,10 @@ public abstract class AbstractJsonRepository<T, ID> implements Repository<T, ID>
 
         lock.readLock().lock();
         try {
-            if (cachedData != null && username.equals(lastUser) && (now - lastAccess) < CACHE_TTL_MS) {
+            val cached = validCache(now, username);
+            if (cached != null) {
                 lastAccess = now;
-                return cachedData;
+                return cached;
             }
         } finally {
             lock.readLock().unlock();
@@ -120,28 +121,44 @@ public abstract class AbstractJsonRepository<T, ID> implements Repository<T, ID>
         lock.writeLock().lock();
         try {
             // Re-check after lock
-            if (cachedData != null && username.equals(lastUser) && (now - lastAccess) < CACHE_TTL_MS) {
+            val cached = validCache(now, username);
+            if (cached != null) {
                 lastAccess = now;
-                return cachedData;
+                return cached;
             }
 
-            val bytes = storage.read(fileName(), jsonKey());
-            List<T> data;
-            if (bytes == null || bytes.length == 0) {
-                data = new ArrayList<>();
-            } else {
-                val listType = mapper.getTypeFactory().constructCollectionType(List.class, type);
-                data = mapper.readValue(bytes, listType);
-            }
-            cachedData = Collections.unmodifiableList(data);
-            lastAccess = now;
-            lastUser = username;
-            return this.cachedData;
+            return loadFromStorage(now, username);
         } catch (IOException e) {
             throw new UncheckedIOException("Error reading " + fileName() + ":" + jsonKey(), e);
         } finally {
             lock.writeLock().unlock();
         }
+    }
+
+    /** Lê e desserializa o arquivo, preenchendo o cache. Deve ser chamado sob o write lock. */
+    private List<T> loadFromStorage(long now, String username) throws IOException {
+        val bytes = storage.read(fileName(), jsonKey());
+        List<T> data;
+        if (bytes == null || bytes.length == 0) {
+            data = new ArrayList<>();
+        } else {
+            val listType = mapper.getTypeFactory().constructCollectionType(List.class, type);
+            data = mapper.readValue(bytes, listType);
+        }
+        cachedData = Collections.unmodifiableList(data);
+        lastAccess = now;
+        lastUser = username;
+        return this.cachedData;
+    }
+
+    /** Snapshot do cache se ainda válido (mesmo usuário, dentro do TTL); senão {@code null}. */
+    @Nullable
+    private List<T> validCache(long now, String username) {
+        val cached = cachedData;
+        if (cached != null && username.equals(lastUser) && (now - lastAccess) < CACHE_TTL_MS) {
+            return cached;
+        }
+        return null;
     }
 
     private void writeAll(List<T> entities) {

@@ -251,26 +251,43 @@ final class YamlReader {
     @Nullable
     private <T> T convertNumber(Object value, Class<T> type) {
         if (value instanceof Number num) {
-            if (type == Byte.class) return (T) Byte.valueOf(num.byteValue());
-            if (type == Short.class) return (T) Short.valueOf(num.shortValue());
-            if (type == Integer.class) return (T) Integer.valueOf(num.intValue());
-            if (type == Long.class) return (T) Long.valueOf(num.longValue());
-            if (type == Float.class) return (T) Float.valueOf(num.floatValue());
-            if (type == Double.class) return (T) Double.valueOf(num.doubleValue());
+            val converted = fromNumber(num, type);
+            if (converted != null) {
+                return (T) converted;
+            }
         }
 
-        val str = value.toString();
         try {
-            if (type == Byte.class) return (T) Byte.valueOf(str);
-            if (type == Short.class) return (T) Short.valueOf(str);
-            if (type == Integer.class) return (T) Integer.valueOf(str);
-            if (type == Long.class) return (T) Long.valueOf(str);
-            if (type == Float.class) return (T) Float.valueOf(str);
-            if (type == Double.class) return (T) Double.valueOf(str);
+            val parsed = parseNumber(value.toString(), type);
+            return parsed != null ? (T) parsed : null;
         } catch (NumberFormatException ignored) {
             Logger.fatal("Expected a number, got %s", value);
         }
 
+        return null;
+    }
+
+    /** Reapresenta um {@link Number} no tipo numérico alvo; {@code null} se o tipo não for suportado. */
+    @Nullable
+    private static Number fromNumber(Number num, Class<?> type) {
+        if (type == Byte.class) return num.byteValue();
+        if (type == Short.class) return num.shortValue();
+        if (type == Integer.class) return num.intValue();
+        if (type == Long.class) return num.longValue();
+        if (type == Float.class) return num.floatValue();
+        if (type == Double.class) return num.doubleValue();
+        return null;
+    }
+
+    /** Faz parse da string no tipo numérico alvo; {@code null} se o tipo não for suportado. */
+    @Nullable
+    private static Number parseNumber(String str, Class<?> type) {
+        if (type == Byte.class) return Byte.valueOf(str);
+        if (type == Short.class) return Short.valueOf(str);
+        if (type == Integer.class) return Integer.valueOf(str);
+        if (type == Long.class) return Long.valueOf(str);
+        if (type == Float.class) return Float.valueOf(str);
+        if (type == Double.class) return Double.valueOf(str);
         return null;
     }
 

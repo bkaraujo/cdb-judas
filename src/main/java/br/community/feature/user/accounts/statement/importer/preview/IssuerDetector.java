@@ -1,6 +1,7 @@
 package br.community.feature.user.accounts.statement.importer.preview;
 
 import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
 
 import java.util.Locale;
 
@@ -23,7 +24,6 @@ public class IssuerDetector {
     private static final String SANTANDER_STATEMENT_MARKER = "EXTRATO CONSOLIDADO INTELIGENTE";
 
     public Issuer detect(String text) {
-        final String digits = text.replaceAll("\\D", "");
         final String upper = text.toUpperCase(Locale.ROOT);
 
         // Each checking-account statement stamps its own header — an authoritative per-bank signal.
@@ -34,18 +34,36 @@ public class IssuerDetector {
             return Issuer.SANTANDER;
         }
 
-        final boolean btgCnpj = digits.contains(BTG_CARD_CNPJ_DIGITS) || digits.contains(BTG_ACCOUNT_CNPJ_DIGITS);
-        final boolean santanderCnpj = digits.contains(SANTANDER_CNPJ_DIGITS);
-        if (btgCnpj || santanderCnpj) {
-            if (btgCnpj && !santanderCnpj) return Issuer.BTG;
-            if (santanderCnpj && !btgCnpj) return Issuer.SANTANDER;
+        final Issuer byCnpj = byCnpj(text.replaceAll("\\D", ""));
+        if (byCnpj != null) {
+            return byCnpj; // CNPJ match é autoritativo; ambíguo → UNKNOWN, nunca cai para o nome
+        }
+        return byBankName(upper);
+    }
+
+    /** {@code null} se nenhum CNPJ conhecido aparece; senão BTG/SANTANDER (ou UNKNOWN se ambíguo). */
+    private static @Nullable Issuer byCnpj(String digits) {
+        final boolean btg = digits.contains(BTG_CARD_CNPJ_DIGITS) || digits.contains(BTG_ACCOUNT_CNPJ_DIGITS);
+        final boolean santander = digits.contains(SANTANDER_CNPJ_DIGITS);
+        if (!btg && !santander) {
+            return null;
+        }
+        if (btg && santander) {
             return Issuer.UNKNOWN;
         }
+        return btg ? Issuer.BTG : Issuer.SANTANDER;
+    }
 
-        final boolean btgName = upper.contains("BTG PACTUAL");
-        final boolean santanderName = upper.contains("SANTANDER");
-        if (btgName && !santanderName) return Issuer.BTG;
-        if (santanderName && !btgName) return Issuer.SANTANDER;
+    /** Fallback por nome — só quando nada acima casou, pois um nome pode ser mera contraparte. */
+    private static Issuer byBankName(String upper) {
+        final boolean btg = upper.contains("BTG PACTUAL");
+        final boolean santander = upper.contains("SANTANDER");
+        if (btg && !santander) {
+            return Issuer.BTG;
+        }
+        if (santander && !btg) {
+            return Issuer.SANTANDER;
+        }
         return Issuer.UNKNOWN;
     }
 }
