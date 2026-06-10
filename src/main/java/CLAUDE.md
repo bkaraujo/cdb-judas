@@ -2,6 +2,8 @@
 
 Este documento descreve os comandos úteis e as diretrizes arquiteturais para o desenvolvimento no backend do **CDB Finance** (Java 25 + Spring Boot 4).
 
+> A documentação detalhada de cada diretriz vive em `@docs/backend/`. Este arquivo é o índice operacional; consulte os documentos referenciados antes de implementar.
+
 ---
 ## 📐 Diretrizes de Arquitetura e Estilo
 
@@ -18,15 +20,38 @@ Cada contexto de negócio (ex: `br.community.context.monetary`) é isolado inter
 * **`_2_infrastructure` (Infraestrutura):** Contém implementações concretas de portas de persistência (armazenamento JDBC ou em memória).
 * **`UseCase`:** Classes de orquestração de alto nível que expõem os serviços do contexto recebendo Commands.
 
+O fluxo de dependência `Resource → UseCase → Service → Repository` e a responsabilidade de cada camada estão detalhados em **`@docs/backend/hexagonal-architecture.md`**.
+
 ---
 
-## 🛡️ Null-Safety (NullAway & ErrorProne)
+## 🚦 Tratamento de Erros — Padrão Result
 
-O compilador Java está configurado para falhar em caso de violação de null-safety usando NullAway e ErrorProne.
+O projeto evita exceções para controle de fluxo de negócio e adota o tipo `Result<T, E>` (Railway Oriented Programming). Erros de domínio são objetos de valor (`UserAlreadyExists`, `InsufficientFunds`); a tradução para HTTP/Web acontece apenas na borda (Resource). Exceções de runtime permanecem reservadas a falhas fatais de infraestrutura.
 
-* **Obrigatoriedade de `@NullMarked`:** Todas as classes Java do projeto (com exceção de Enums, classes anônimas e classes cujo nome termina com `Builder`) no pacote `br..` devem ser anotadas com `@NullMarked` (de `org.jspecify.annotations.NullMarked`).
-* **Uso de `@Nullable`:** Se um parâmetro, campo ou retorno puder ser nulo, use explicitamente a anotação `org.jspecify.annotations.Nullable`.
-* **Lombok Getter Exclusion:** A checagem de NullAway ignora a anotação `@Getter` do Lombok para evitar falsos positivos.
+Filosofia, composição (`map`/`flatMap`/`recover`) e integração com o hexágono em **`@docs/backend/result-pattern.md`**.
+
+---
+
+## 🧩 Lombok
+
+* `val` em toda variável local tratável como `final`.
+* `@RequiredArgsConstructor` para injeção via construtor (`private final`).
+* `@Getter`/`@Builder` quando necessário; `record` é o padrão para modelos de domínio e DTOs.
+* **Evitar** `@Data`, `@Setter` e `@AllArgsConstructor` no domínio.
+
+Detalhes e configuração de `lombok.config` em **`@docs/backend/lombok.md`**.
+
+---
+
+## 🛡️ Null-Safety (JSpecify + NullAway & ErrorProne)
+
+O compilador está configurado para falhar em caso de violação de null-safety.
+
+* **Obrigatoriedade de `@NullMarked`:** Todas as classes/interfaces no pacote `br..` devem ser anotadas com `@NullMarked` (de `org.jspecify.annotations.NullMarked`). Exceção: `enum`.
+* **Uso de `@Nullable`:** Anote explicitamente parâmetros, campos ou retornos que podem ser nulos com `org.jspecify.annotations.Nullable`.
+* **Lombok Getter Exclusion:** A checagem de NullAway ignora `@Getter` do Lombok para evitar falsos positivos.
+
+Contrato completo, checklist por classe e integração com ArchUnit em **`@docs/backend/null-safety.md`**.
 
 ---
 
