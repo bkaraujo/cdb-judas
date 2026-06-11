@@ -73,8 +73,8 @@ class GroupSignatureTest {
     }
 
     @Test
-    void normalizeDescriptionCollapsesWhitespaceAndUppercases() {
+    void normalizeCollapsesWhitespaceAndUppercases() {
         assertEquals("AMAZONMKTPLC MEGABYTEM",
-                GroupSignature.normalizeDescription("  Amazonmktplc   Megabytem \t"));
+                GroupSignature.normalize("  Amazonmktplc   Megabytem \t"));
     }
 }

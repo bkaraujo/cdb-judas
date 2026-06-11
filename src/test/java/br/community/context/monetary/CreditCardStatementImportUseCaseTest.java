@@ -40,9 +40,6 @@ class CreditCardStatementImportUseCaseTest {
     // Fixed "today" → 2025-07-15, so the BTG fixtures' "15 Jul" anchors deterministically.
     private static final Clock CLOCK = Clock.fixed(Instant.parse("2025-07-15T12:00:00Z"), ZoneOffset.UTC);
 
-    private static final CreditCardStatementParserRegistry PARSERS = new CreditCardStatementParserRegistry(
-            new SantanderCreditCardStatementParser(), new BtgCreditCardStatementParser());
-
     private static ImportPreview invoicePreview(Result<ImportPreviewOutcome, ImportError> result) {
         var outcome = assertInstanceOf(Result.Success.class, result).value();
         return assertInstanceOf(ImportPreviewOutcome.Invoice.class, outcome).preview();
@@ -72,9 +69,10 @@ class CreditCardStatementImportUseCaseTest {
         final GroupSignature groupSignature = new GroupSignature();
         final MonetaryContext monetaryContext = monetaryContext(accounts, transactions, categories);
         return new StatementImportUseCase(
-                monetaryContext, extractor, new DocumentTypeDetector(), new IssuerDetector(), PARSERS,
-                new BankStatementParserRegistry(new BtgBankStatementParser(), new SantanderBankStatementParser()), new CardMatcher(),
-                new InstallmentExpander(groupSignature), groupSignature, new CategoryGuesser(),
+                monetaryContext, extractor,
+                List.of(new BTGStatementParser(), new SantanderStatementParser(),
+                        new BTGInvoiceParser(), new SantanderInvoiceParser()),
+                new CardMatcher(), new InstallmentExpander(groupSignature), groupSignature, new CategoryGuesser(),
                 CLOCK, MAX_BYTES);
     }
 
@@ -167,13 +165,13 @@ class CreditCardStatementImportUseCaseTest {
         var preview = invoicePreview(useCase.preview(new byte[1], null, null));
 
         assertEquals(Issuer.BTG, preview.issuer());
-        assertEquals(java.util.List.of("0020"), preview.statement().last4s());
-        assertEquals(1, preview.statement().lines().size());
+        assertEquals(java.util.List.of("0020"), preview.last4s());
+        assertEquals(1, preview.statement().size());
 
-        ParsedStatementLine row = preview.statement().lines().getFirst();
+        ParsedStatementLine row = preview.statement().getFirst();
         assertEquals("Amazonmktplc Megabytem", row.description());
         assertEquals(0, row.amount().compareTo(new BigDecimal("72.99")));
-        assertEquals(MonthDay.of(7, 15), row.date());
+        assertEquals(MonthDay.of(7, 15), MonthDay.from(row.date()));
         assertEquals(9, row.installmentNumber());
         assertEquals(10, row.installmentTotal());
     }
@@ -188,16 +186,19 @@ class CreditCardStatementImportUseCaseTest {
                 R$ 72,99
                 """;
         var accounts = new InMemoryRepositories.Accounts();
-        var matchingCard = creditCard("Cartão BTG", "0020");
-        var otherCard = creditCard("Cartão Santander", "9999");
+        var bank = checking("Conta");
+        var matchingCard = creditCardLinkedTo("Cartão BTG", "0020", bank.id());
+        var otherCard = creditCardLinkedTo("Cartão Santander", "9999", bank.id());
+        accounts.save(bank);
         accounts.save(matchingCard);
         accounts.save(otherCard);
         var useCase = useCaseWith((bytes, password) -> Result.success(text), accounts);
 
         var preview = invoicePreview(useCase.preview(new byte[1], null, null));
 
-        assertEquals(matchingCard, preview.matchedCard());
-        assertEquals(java.util.List.of(matchingCard, otherCard), preview.candidateCards());
+        // Only cards whose last4 is printed on the invoice are offered — the 9999 card is excluded even
+        // though it is registered and linked to the same bank account.
+        assertEquals(java.util.List.of(matchingCard), preview.candidateCards());
     }
 
     @Test
@@ -212,7 +213,7 @@ class CreditCardStatementImportUseCaseTest {
         var useCase = useCaseWith((bytes, password) -> Result.success(text));
 
         var preview = invoicePreview(useCase.preview(new byte[1], null, null));
-        ParsedStatementLine row = preview.statement().lines().getFirst();
+        ParsedStatementLine row = preview.statement().getFirst();
         assertNull(row.installmentNumber());
         assertNull(row.installmentTotal());
     }
@@ -231,7 +232,7 @@ class CreditCardStatementImportUseCaseTest {
         var preview = invoicePreview(useCase.preview(new byte[1], null, null));
 
         // The raw statement still carries the single printed line.
-        assertEquals(1, preview.statement().lines().size());
+        assertEquals(1, preview.statement().size());
         // The expanded schedule is all N=10 installments.
         assertEquals(10, preview.rows().size());
         assertEquals(1, preview.rows().getFirst().draft().installmentNumber());
@@ -250,15 +251,17 @@ class CreditCardStatementImportUseCaseTest {
                 R$ 72,99
                 """;
         var accounts = new InMemoryRepositories.Accounts();
-        var card = creditCard("Cartão BTG", "0020"); // no linkedAccountId → drafts use card.id()
+        var bank = checking("Conta");
+        var card = creditCardLinkedTo("Cartão BTG", "0020", bank.id()); // drafts use the linked account
+        accounts.save(bank);
         accounts.save(card);
 
         // Pre-compute the parcelado group id the expander will assign: originalDate 2024-07-15, N=10.
-        var groupId = new GroupSignature().groupId(card.id(), LocalDate.of(2024, 7, 15), 10, "Amazonmktplc Megabytem");
+        var groupId = new GroupSignature().groupId(bank.id(), LocalDate.of(2024, 7, 15), 10, "Amazonmktplc Megabytem");
         var transactions = new InMemoryRepositories.Transactions();
         transactions.save(new MonetaryTransaction(
                 UUID.randomUUID(), "Amazonmktplc Megabytem", new BigDecimal("72.99"),
-                LocalDate.of(2024, 7, 15), UUID.randomUUID(), card.id(),
+                LocalDate.of(2024, 7, 15), UUID.randomUUID(), bank.id(),
                 "confirmed", "expense", MonetaryCenter.VARIAVEL_ID, null, groupId, 1, 10, null));
 
         var useCase = useCaseWith((bytes, password) -> Result.success(text), accounts, transactions);
@@ -279,14 +282,16 @@ class CreditCardStatementImportUseCaseTest {
                 R$ 60,00
                 """;
         var accounts = new InMemoryRepositories.Accounts();
-        var card = creditCard("Cartão BTG", "0020");
+        var bank = checking("Conta");
+        var card = creditCardLinkedTo("Cartão BTG", "0020", bank.id());
+        accounts.save(bank);
         accounts.save(card);
 
         // à-vista "09 Mar" with today 2025-07-15 → anchor 2025-07, diff 3-7=-4 → year 2025 → 2025-03-09.
         var transactions = new InMemoryRepositories.Transactions();
         transactions.save(new MonetaryTransaction(
                 UUID.randomUUID(), "MICROSOFT", new BigDecimal("-60.00"),
-                LocalDate.of(2025, 3, 9), UUID.randomUUID(), card.id(),
+                LocalDate.of(2025, 3, 9), UUID.randomUUID(), bank.id(),
                 "confirmed", "expense", MonetaryCenter.VARIAVEL_ID, null, null, null, null, null));
 
         var useCase = useCaseWith((bytes, password) -> Result.success(text), accounts, transactions);
@@ -357,13 +362,88 @@ class CreditCardStatementImportUseCaseTest {
         var useCase = useCaseWith((bytes, password) -> Result.success(text));
         var preview = invoicePreview(useCase.preview(new byte[1], null, null));
 
-        assertNull(preview.matchedCard());
+        assertTrue(preview.candidateCards().isEmpty());
         assertEquals(1, preview.rows().size());
         assertFalse(preview.rows().getFirst().duplicate());
         assertEquals(ChargeKind.PURCHASE, preview.rows().getFirst().draft().kind());
     }
 
+    @Test
+    void previewSuggestsTheUniquelyMatchedCardPerRow() {
+        var text = """
+                BTG Pactual S.A CNPJ 30.306.294/0001-45
+                Lançamentos do cartão físico | Fulano | Final 0020 Total do cartão: R$ 72,99
+                Total de compras e despesas
+                R$ 72,99Amazonmktplc Megabytem (9/10)15 Jul
+                R$ 72,99
+                """;
+        var accounts = new InMemoryRepositories.Accounts();
+        var bank = checking("Conta");
+        var card = creditCardLinkedTo("Cartão BTG", "0020", bank.id());
+        accounts.save(bank);
+        accounts.save(card);
+        var useCase = useCaseWith((bytes, password) -> Result.success(text), accounts);
+
+        var preview = invoicePreview(useCase.preview(new byte[1], null, null));
+
+        assertEquals(10, preview.rows().size());
+        assertTrue(preview.rows().stream().allMatch(r -> card.id().equals(r.suggestedCardId())),
+                "every row of a charge on card 0020 should suggest that card");
+    }
+
+    @Test
+    void previewLeavesSuggestedCardNullWhenNoCardMatches() {
+        var text = """
+                BTG Pactual S.A CNPJ 30.306.294/0001-45
+                Lançamentos do cartão físico | Fulano | Final 0020 Total do cartão: R$ 60,00
+                Total de compras e despesas
+                R$ 60,00Microsoft09 Mar
+                R$ 60,00
+                """;
+        var useCase = useCaseWith((bytes, password) -> Result.success(text));
+
+        var preview = invoicePreview(useCase.preview(new byte[1], null, null));
+
+        assertEquals(1, preview.rows().size());
+        assertNull(preview.rows().getFirst().suggestedCardId());
+    }
+
     // ── confirm ────────────────────────────────────────────────────────────────
+
+    @Test
+    void confirmRoutesEachRowToItsOwnCardAccount() {
+        var accounts = new InMemoryRepositories.Accounts();
+        var accountA = checking("Conta A");
+        var accountB = checking("Conta B");
+        var cardA = creditCardLinkedTo("Cartão A", "0020", accountA.id());
+        var cardB = creditCardLinkedTo("Cartão B", "9999", accountB.id());
+        accounts.save(accountA);
+        accounts.save(accountB);
+        accounts.save(cardA);
+        accounts.save(cardB);
+
+        var transactions = new InMemoryRepositories.Transactions();
+        var useCase = useCaseWith(NOOP_EXTRACTOR, accounts, transactions);
+        var categoryId = UUID.randomUUID();
+
+        // Each row names its own card: row A → card A, row B → card B.
+        var rowA = new ImportConfirmCommand.Row(
+                "Compra A", new BigDecimal("50.00"), LocalDate.of(2025, 7, 3), LocalDate.of(2025, 7, 3),
+                null, null, categoryId, cardA.id());
+        var rowB = new ImportConfirmCommand.Row(
+                "Compra B", new BigDecimal("70.00"), LocalDate.of(2025, 7, 4), LocalDate.of(2025, 7, 4),
+                null, null, categoryId, cardB.id());
+
+        var cmd = new ImportConfirmCommand(List.of(rowA, rowB));
+        var result = (ImportResult) assertInstanceOf(Result.Success.class, useCase.confirm(cmd)).value();
+
+        assertEquals(2, result.created());
+        var saved = transactions.findAll();
+        var a = saved.stream().filter(t -> t.description().equals("Compra A")).findFirst().orElseThrow();
+        var b = saved.stream().filter(t -> t.description().equals("Compra B")).findFirst().orElseThrow();
+        assertEquals(accountA.id(), a.accountId());
+        assertEquals(accountB.id(), b.accountId());
+    }
 
     @Test
     void confirmPersistsAvistaAndParceladoRowsOnLinkedAccount() {
@@ -380,21 +460,21 @@ class CreditCardStatementImportUseCaseTest {
         // Two à-vista rows + one parcelado purchase expanded into 2 installment rows.
         var avistaConfirmed = new ImportConfirmCommand.Row(
                 "Mercado", new BigDecimal("80.00"), LocalDate.of(2025, 7, 10), LocalDate.of(2025, 7, 10),
-                null, null, categoryId);
+                null, null, categoryId, card.id());
         var avistaScheduled = new ImportConfirmCommand.Row(
                 "Streaming", new BigDecimal("30.00"), LocalDate.of(2025, 9, 5), LocalDate.of(2025, 9, 5),
-                null, null, categoryId);
+                null, null, categoryId, card.id());
         var parc1 = new ImportConfirmCommand.Row(
                 "Geladeira", new BigDecimal("100.00"), LocalDate.of(2025, 7, 15), LocalDate.of(2025, 7, 15),
-                1, 2, categoryId);
+                1, 2, categoryId, card.id());
         var parc2 = new ImportConfirmCommand.Row(
                 "Geladeira", new BigDecimal("100.00"), LocalDate.of(2025, 8, 15), LocalDate.of(2025, 7, 15),
-                2, 2, categoryId);
+                2, 2, categoryId, card.id());
 
         // preview persists nothing — nothing exists before confirm.
         assertTrue(transactions.findAll().isEmpty());
 
-        var cmd = new ImportConfirmCommand(card.id(), List.of(avistaConfirmed, avistaScheduled, parc1, parc2));
+        var cmd = new ImportConfirmCommand(List.of(avistaConfirmed, avistaScheduled, parc1, parc2));
         var result = (ImportResult) assertInstanceOf(Result.Success.class, useCase.confirm(cmd)).value();
 
         assertEquals(4, result.created());
@@ -450,14 +530,14 @@ class CreditCardStatementImportUseCaseTest {
 
         var row1 = new ImportConfirmCommand.Row(
                 "Padaria", new BigDecimal("12.00"), LocalDate.of(2025, 7, 1), LocalDate.of(2025, 7, 1),
-                null, null, categoryId);
+                null, null, categoryId, card.id());
         var row2 = new ImportConfirmCommand.Row(
                 "Farmácia", new BigDecimal("45.00"), LocalDate.of(2025, 7, 2), LocalDate.of(2025, 7, 2),
-                null, null, categoryId);
+                null, null, categoryId, card.id());
 
         int before = counter.get();
         var result = (ImportResult) assertInstanceOf(Result.Success.class,
-                useCase.confirm(new ImportConfirmCommand(card.id(), List.of(row1, row2)))).value();
+                useCase.confirm(new ImportConfirmCommand(List.of(row1, row2)))).value();
 
         assertEquals(2, result.created());
         // One TransactionCreated per created row (delta, robust against other subscribers/state).
@@ -478,14 +558,14 @@ class CreditCardStatementImportUseCaseTest {
 
         var avista = new ImportConfirmCommand.Row(
                 "Uber", new BigDecimal("25.00"), LocalDate.of(2025, 7, 8), LocalDate.of(2025, 7, 8),
-                null, null, categoryId);
+                null, null, categoryId, card.id());
         var parc1 = new ImportConfirmCommand.Row(
                 "Notebook", new BigDecimal("200.00"), LocalDate.of(2025, 7, 15), LocalDate.of(2025, 7, 15),
-                3, 4, categoryId);
+                3, 4, categoryId, card.id());
         var parc2 = new ImportConfirmCommand.Row(
                 "Notebook", new BigDecimal("200.00"), LocalDate.of(2025, 8, 15), LocalDate.of(2025, 7, 15),
-                4, 4, categoryId);
-        var cmd = new ImportConfirmCommand(card.id(), List.of(avista, parc1, parc2));
+                4, 4, categoryId, card.id());
+        var cmd = new ImportConfirmCommand(List.of(avista, parc1, parc2));
 
         var first = (ImportResult) assertInstanceOf(Result.Success.class, useCase.confirm(cmd)).value();
         assertEquals(3, first.created());
@@ -518,9 +598,9 @@ class CreditCardStatementImportUseCaseTest {
 
         var row = new ImportConfirmCommand.Row(
                 "Mercado Livre", new BigDecimal("90.00"), LocalDate.of(2025, 7, 4), LocalDate.of(2025, 7, 4),
-                null, null, UUID.randomUUID());
+                null, null, UUID.randomUUID(), card.id());
         var result = (ImportResult) assertInstanceOf(Result.Success.class,
-                useCase.confirm(new ImportConfirmCommand(card.id(), List.of(row)))).value();
+                useCase.confirm(new ImportConfirmCommand(List.of(row)))).value();
 
         assertEquals(0, result.created());
         assertEquals(1, result.skipped());
@@ -528,9 +608,12 @@ class CreditCardStatementImportUseCaseTest {
     }
 
     @Test
-    void confirmFailsWhenCardNotFound() {
+    void confirmFailsWhenRowCardNotFound() {
         var useCase = useCaseWith(NOOP_EXTRACTOR);
-        var cmd = new ImportConfirmCommand(UUID.randomUUID(), List.of());
+        var row = new ImportConfirmCommand.Row(
+                "Compra", new BigDecimal("10.00"), LocalDate.of(2025, 7, 1), LocalDate.of(2025, 7, 1),
+                null, null, UUID.randomUUID(), UUID.randomUUID());
+        var cmd = new ImportConfirmCommand(List.of(row));
         var error = assertInstanceOf(Result.Failure.class, useCase.confirm(cmd)).error();
         assertInstanceOf(br.community.context.shared._0_domain.model.DomainError.NotFound.class, error);
     }
@@ -556,16 +639,16 @@ class CreditCardStatementImportUseCaseTest {
 
         var ok1 = new ImportConfirmCommand.Row(
                 "Antes", new BigDecimal("10.00"), LocalDate.of(2025, 7, 1), LocalDate.of(2025, 7, 1),
-                null, null, categoryId);
+                null, null, categoryId, card.id());
         var boom = new ImportConfirmCommand.Row(
                 "BOOM", new BigDecimal("20.00"), LocalDate.of(2025, 7, 2), LocalDate.of(2025, 7, 2),
-                null, null, categoryId);
+                null, null, categoryId, card.id());
         var ok2 = new ImportConfirmCommand.Row(
                 "Depois", new BigDecimal("30.00"), LocalDate.of(2025, 7, 3), LocalDate.of(2025, 7, 3),
-                null, null, categoryId);
+                null, null, categoryId, card.id());
 
         var result = (ImportResult) assertInstanceOf(Result.Success.class,
-                useCase.confirm(new ImportConfirmCommand(card.id(), List.of(ok1, boom, ok2)))).value();
+                useCase.confirm(new ImportConfirmCommand(List.of(ok1, boom, ok2)))).value();
 
         // The failing row is swallowed; the rows around it persist and stand.
         assertEquals(2, result.created());

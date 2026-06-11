@@ -41,10 +41,7 @@ public class StatementImportUseCase {
 
     private final MonetaryContext monetaryContext;
     private final PdfTextExtractor extractor;
-    private final DocumentTypeDetector documentTypeDetector;
-    private final IssuerDetector issuerDetector;
-    private final CreditCardStatementParserRegistry parsers;
-    private final BankStatementParserRegistry bankParsers;
+    private final List<StatementParser> parsers;
     private final CardMatcher cardMatcher;
     private final InstallmentExpander expander;
     private final GroupSignature groupSignature;
@@ -63,81 +60,118 @@ public class StatementImportUseCase {
         }
 
         return switch (extractor.extract(fileBytes, password)) {
-            case Result.Failure(var failure) -> new Result.Failure<>(toImportError(failure));
-            case Result.Success(var text) -> previewFromText(text, accountId);
+
+            case Result.Success(var text) -> {
+                if (text == null) yield new Result.Failure<>(new ImportError.NoTextLayer());
+
+                val capable = parsers.stream().filter(parser -> parser.parseable(text)).toList();
+                if (capable.size() != 1) {
+                    yield new Result.Failure<>(new ImportError.UnknownIssuer());
+                }
+
+                yield switch (capable.getFirst().parse(text)) {
+                    case MonetaryDocument.Invoice(var issuer, var statement) -> preview(issuer, statement);
+                    case MonetaryDocument.Statement(var issuer, var statement) -> preview(issuer, statement, accountId);
+                };
+            }
+
+            case Result.Failure(var failure) -> new Result.Failure<>(switch ((ExtractionFailure) failure) {
+                case ExtractionFailure.Encrypted ignored -> new ImportError.PasswordRequired();
+                case ExtractionFailure.WrongPassword ignored -> new ImportError.WrongPassword();
+                case ExtractionFailure.NoTextLayer ignored -> new ImportError.NoTextLayer();
+                case ExtractionFailure.TooManyPages(int pages, int maxPages) -> new ImportError.TooManyPages(pages, maxPages);
+            });
         };
     }
 
     /**
-     * Persists the kept rows on the matched card via {@link MonetaryContext#createImportedTransaction},
+     * Persists the kept rows on each row's own card via {@link MonetaryContext#createImportedTransaction},
      * recognizing already-imported charges so a re-import is idempotent. Parcelado rows are grouped by
      * their deterministic {@link GroupSignature#groupId} and skipped wholesale when that group already
      * exists; à-vista rows are deduped by account/date/amount/normalized-description. The facade emits
      * one transaction-created event per persisted row (drives balance recalc + SSE). Persistence is
      * best-effort: a failure on one row is logged and the loop continues — already-saved rows stand.
+     * Fails fast when a row names an unknown card.
      */
     public Result<ImportResult, DomainError> confirm(ImportConfirmCommand cmd) {
-        return monetaryContext.findAccount(cmd.cardId()).map(card -> {
-            final UUID accountId = card.linkedAccountId() != null ? card.linkedAccountId() : card.id();
-            final LocalDate today = LocalDate.now(clock);
+        val today = LocalDate.now(clock);
 
-            final List<MonetaryTransaction> allTx = monetaryContext.listTransactions().getOrElse(List.of());
-            final List<MonetaryTransaction> seen = allTx.stream()
-                    .filter(t -> accountId.equals(t.accountId()))
-                    .collect(Collectors.toCollection(ArrayList::new));
-            final Set<UUID> existingGroups = allTx.stream()
-                    .map(MonetaryTransaction::groupId)
-                    .filter(Objects::nonNull)
-                    .collect(Collectors.toSet());
-            final Set<UUID> seenGroups = new HashSet<>();
-
-            int created = 0;
-            int skipped = 0;
-
-            final List<ImportConfirmCommand.Row> avista = new ArrayList<>();
-            final Map<UUID, List<ImportConfirmCommand.Row>> parceladoByGroup = new LinkedHashMap<>();
-            for (val row : cmd.rows()) {
-                if (row.installmentTotal() != null && row.installmentNumber() != null) {
-                    final UUID groupId = groupSignature.groupId(
-                            accountId, row.originalDate(), row.installmentTotal(), row.description());
-                    parceladoByGroup.computeIfAbsent(groupId, ignored -> new ArrayList<>()).add(row);
-                } else {
-                    avista.add(row);
-                }
+        // Resolve every referenced card to its destination account up front, failing fast on an unknown
+        // card. The persistence account drives the dedup and group identity, so a mixed invoice spreads
+        // its rows across the right card accounts.
+        val accountByCard = new HashMap<UUID, UUID>();
+        for (val cardId : cmd.rows().stream().map(ImportConfirmCommand.Row::cardId).distinct().toList()) {
+            switch (monetaryContext.findAccount(cardId)) {
+                case Result.Success(var card) -> accountByCard.put(cardId, accountIdOf(card));
+                case Result.Failure(var error) -> { return new Result.Failure<>(error); }
             }
+        }
 
-            for (val entry : parceladoByGroup.entrySet()) {
-                final UUID groupId = entry.getKey();
-                final List<ImportConfirmCommand.Row> group = entry.getValue();
-                if (existingGroups.contains(groupId) || seenGroups.contains(groupId)) {
-                    skipped += group.size();
-                    continue;
-                }
-                for (val row : group) {
-                    final MonetaryTransaction saved = persist(
-                            row, accountId, today, groupId, row.installmentNumber(), row.installmentTotal());
-                    if (saved != null) {
-                        seen.add(saved);
-                        created++;
-                    }
-                }
-                seenGroups.add(groupId);
+        val allTx = monetaryContext.listTransactions().getOrElse(List.of());
+        val seen = new ArrayList<>(allTx);
+        val existingGroups = allTx.stream()
+                .map(MonetaryTransaction::groupId)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet());
+        val seenGroups = new HashSet<UUID>();
+
+        int created = 0;
+        int skipped = 0;
+
+        val avista = new ArrayList<ImportConfirmCommand.Row>();
+        val installmentByGroup = new LinkedHashMap<UUID, List<ImportConfirmCommand.Row>>();
+        for (val row : cmd.rows()) {
+            val accountId = accountOf(accountByCard, row);
+            if (row.installmentTotal() != null && row.installmentNumber() != null) {
+                val groupId = groupSignature.groupId(accountId, row.originalDate(), row.installmentTotal(), row.description());
+                installmentByGroup.computeIfAbsent(groupId, ignored -> new ArrayList<>()).add(row);
+            } else {
+                avista.add(row);
             }
+        }
 
-            for (val row : avista) {
-                if (isAvistaDuplicate(row, accountId, seen)) {
-                    skipped++;
-                    continue;
-                }
-                final MonetaryTransaction saved = persist(row, accountId, today, null, null, null);
+        for (val entry : installmentByGroup.entrySet()) {
+            val groupId = entry.getKey();
+            val group = entry.getValue();
+            if (existingGroups.contains(groupId) || seenGroups.contains(groupId)) {
+                skipped += group.size();
+                continue;
+            }
+            for (val row : group) {
+                val saved = persist(row, accountOf(accountByCard, row), today, groupId, row.installmentNumber(), row.installmentTotal());
                 if (saved != null) {
                     seen.add(saved);
                     created++;
                 }
             }
+            seenGroups.add(groupId);
+        }
 
-            return new ImportResult(created, 0, skipped);
-        });
+        for (val row : avista) {
+            val accountId = accountOf(accountByCard, row);
+            if (isAvistaDuplicate(row, accountId, seen)) {
+                skipped++;
+                continue;
+            }
+
+            val saved = persist(row, accountId, today, null, null, null);
+            if (saved != null) {
+                seen.add(saved);
+                created++;
+            }
+        }
+
+        return new Result.Success<>(new ImportResult(created, 0, skipped));
+    }
+
+    /** Destination account of a row's (required) card; membership is guaranteed by {@link #confirm}'s
+     *  up-front resolution, so the lookup never misses. */
+    private static UUID accountOf(Map<UUID, UUID> accountByCard, ImportConfirmCommand.Row row) {
+        return Objects.requireNonNull(accountByCard.get(row.cardId()));
+    }
+
+    private static UUID accountIdOf(MonetaryAccount card) {
+        return card.linkedAccountId() != null ? card.linkedAccountId() : card.id();
     }
 
     // ── Bank-statement path ────────────────────────────────────────
@@ -151,15 +185,15 @@ public class StatementImportUseCase {
      */
     public Result<ImportResult, DomainError> confirmStatement(BankStatementConfirmCommand cmd) {
         return monetaryContext.findAccount(cmd.accountId()).map(account -> {
-            final UUID accountId = account.id();
-            final LocalDate today = LocalDate.now(clock);
+            val accountId = account.id();
+            val today = LocalDate.now(clock);
 
-            final List<MonetaryTransaction> accountTx = monetaryContext.listTransactions().getOrElse(List.of()).stream()
+            val accountTx = monetaryContext.listTransactions().getOrElse(List.of()).stream()
                     .filter(t -> accountId.equals(t.accountId()))
                     .toList();
 
-            final List<ParsedBankStatementLine> movements = cmd.rows().stream()
-                    .map(r -> new ParsedBankStatementLine(r.date(), r.description(), r.amount()))
+            val movements = cmd.rows().stream()
+                    .map(r -> new ParsedStatementLine(r.date(), r.description(), r.amount()))
                     .toList();
             final List<Classification> classes = classify(movements, accountTx);
 
@@ -209,45 +243,7 @@ public class StatementImportUseCase {
         }
     }
 
-    private Result<ImportPreviewOutcome, ImportError> previewBankStatement(String text, @Nullable UUID accountId) {
-        final Issuer issuer = issuerDetector.detect(text);
-        final Optional<BankStatementParser> parser = bankParsers.forIssuer(issuer);
-        if (parser.isEmpty()) {
-            return new Result.Failure<>(new ImportError.UnknownIssuer());
-        }
-        final ParsedBankStatement statement = parser.get().parse(text);
-
-        final List<MonetaryAccount> candidates = monetaryContext.listAccounts().getOrElse(List.of()).stream()
-                .filter(a -> a.type() != AccountType.CREDIT_CARD && a.active())
-                .toList();
-        final @Nullable UUID selectedAccountId = selectAccount(accountId, candidates);
-
-        final List<MonetaryTransaction> history = monetaryContext.listTransactions().getOrElse(List.of());
-        final List<MonetaryTransaction> accountTx = selectedAccountId != null
-                ? history.stream().filter(t -> selectedAccountId.equals(t.accountId())).toList()
-                : List.of();
-        final UUID fallbackCategoryId = monetaryContext.findOrCreateUncategorizedCategory().id();
-
-        final List<Classification> classes = classify(statement.lines(), accountTx);
-
-        final List<BankStatementPreviewRow> rows = new ArrayList<>();
-        for (int i = 0; i < statement.lines().size(); i++) {
-            rows.add(bankRow(statement.lines().get(i), classes.get(i), history, fallbackCategoryId));
-        }
-
-        return Result.success(new ImportPreviewOutcome.Statement(
-                new BankStatementPreview(issuer, candidates, selectedAccountId, List.copyOf(rows))));
-    }
-
-    /** Sem conta escolhida, usa a única candidata elegível (quando há exatamente uma). */
-    private static @Nullable UUID selectAccount(@Nullable UUID accountId, List<MonetaryAccount> candidates) {
-        if (accountId != null) {
-            return accountId;
-        }
-        return candidates.size() == 1 ? candidates.getFirst().id() : null;
-    }
-
-    private BankStatementPreviewRow bankRow(ParsedBankStatementLine line, Classification cls,
+    private BankStatementPreviewRow bankRow(ParsedStatementLine line, Classification cls,
                                             List<MonetaryTransaction> history, UUID fallbackCategoryId) {
         final String type = line.amount().signum() < 0 ? "expense" : "income";
         final UUID categoryId = cls.state() == RowState.NEW
@@ -264,17 +260,17 @@ public class StatementImportUseCase {
      * pending/scheduled manual transaction with the same signed amount within ±{@value
      * #RECONCILE_WINDOW_DAYS} days (closest date wins) → RECONCILE; otherwise NEW.
      */
-    private List<Classification> classify(List<ParsedBankStatementLine> movements, List<MonetaryTransaction> accountTx) {
+    private List<Classification> classify(List<ParsedStatementLine> movements, List<MonetaryTransaction> accountTx) {
         final Set<UUID> consumed = new HashSet<>();
         final List<Classification> out = new ArrayList<>();
-        for (final ParsedBankStatementLine mv : movements) {
-            final String desc = GroupSignature.normalizeDescription(mv.description());
+        for (val mv : movements) {
+            final String desc = GroupSignature.normalize(mv.description());
 
             final Optional<MonetaryTransaction> dup = accountTx.stream()
                     .filter(t -> !consumed.contains(t.id()))
                     .filter(t -> mv.date().equals(t.date())
                             && t.amount().compareTo(mv.amount()) == 0
-                            && desc.equals(GroupSignature.normalizeDescription(t.description())))
+                            && desc.equals(GroupSignature.normalize(t.description())))
                     .findFirst();
             if (dup.isPresent()) {
                 consumed.add(dup.get().id());
@@ -304,15 +300,16 @@ public class StatementImportUseCase {
     }
 
     @NullMarked
-    private record Classification(RowState state, @Nullable MonetaryTransaction target) {}
+    private record Classification(RowState state, @Nullable MonetaryTransaction target) {
+    }
 
     private static boolean isAvistaDuplicate(ImportConfirmCommand.Row row, UUID accountId, List<MonetaryTransaction> seen) {
-        final String desc = GroupSignature.normalizeDescription(row.description());
+        final String desc = GroupSignature.normalize(row.description());
         return seen.stream().anyMatch(t ->
                 accountId.equals(t.accountId())
                         && row.date().equals(t.date())
                         && t.amount().abs().compareTo(row.amount().abs()) == 0
-                        && desc.equals(GroupSignature.normalizeDescription(t.description())));
+                        && desc.equals(GroupSignature.normalize(t.description())));
     }
 
     @Nullable
@@ -337,72 +334,95 @@ public class StatementImportUseCase {
         }
     }
 
-    private Result<ImportPreviewOutcome, ImportError> previewFromText(String text, @Nullable UUID accountId) {
-        return switch (documentTypeDetector.detect(text)) {
-            case BANK_STATEMENT -> previewBankStatement(text, accountId);
-            case CREDIT_CARD_INVOICE, UNKNOWN -> previewInvoice(text);
-        };
+    private Result<ImportPreviewOutcome, ImportError> preview(Issuer issuer, List<ParsedStatementLine> statement, @Nullable UUID accountId) {
+        val candidates = monetaryContext.listAccounts().getOrElse(List.of()).stream()
+                .filter(a -> a.type() != AccountType.CREDIT_CARD && a.active())
+                .toList();
+        val selectedAccountId = selectAccount(accountId, candidates);
+
+        val history = monetaryContext.listTransactions().getOrElse(List.of());
+        val accountTx = selectedAccountId != null
+                ? history.stream().filter(t -> selectedAccountId.equals(t.accountId())).toList()
+                : Collections.unmodifiableList(new ArrayList<MonetaryTransaction>());
+        val fallbackCategoryId = monetaryContext.findOrCreateUncategorizedCategory().id();
+
+        val classes = classify(statement, accountTx);
+
+        val rows = new ArrayList<BankStatementPreviewRow>();
+        for (int i = 0; i < statement.size(); i++) {
+            rows.add(bankRow(statement.get(i), classes.get(i), history, fallbackCategoryId));
+        }
+
+        return Result.success(new ImportPreviewOutcome.Statement(
+                new BankStatementPreview(issuer, candidates, selectedAccountId, List.copyOf(rows)))
+        );
     }
 
-    private Result<ImportPreviewOutcome, ImportError> previewInvoice(String text) {
-        final Issuer issuer = issuerDetector.detect(text);
-        final Optional<CreditCardStatementParser> parser = parsers.forIssuer(issuer);
-        if (parser.isEmpty()) {
-            return new Result.Failure<>(new ImportError.UnknownIssuer());
+    /**
+     * Sem conta escolhida, usa a única candidata elegível (quando há exatamente uma).
+     */
+    private static @Nullable UUID selectAccount(@Nullable UUID accountId, List<MonetaryAccount> candidates) {
+        if (accountId != null) {
+            return accountId;
         }
-        final ParsedStatement statement = parser.get().parse(text);
-        final List<MonetaryAccount> cards = monetaryContext.listCreditCards().getOrElse(List.of());
-        final CardMatch match = cardMatcher.match(statement.last4s(), cards);
-        final MonetaryAccount matchedCard = (match instanceof CardMatch.Matched(MonetaryAccount card)) ? card : null;
+        return candidates.size() == 1 ? candidates.getFirst().id() : null;
+    }
 
-        final LocalDate today = LocalDate.now(clock);
-        final UUID accountId = resolveAccountId(matchedCard);
+    private Result<ImportPreviewOutcome, ImportError> preview(Issuer issuer, List<ParsedStatementLine> statement) {
+        // Only registered cards present on this statement are offered: linked to a bank account (so the
+        // charges have a destination) and carrying a last4 printed on the invoice. The card is per row,
+        // so an unmatched/ambiguous last4 still leaves every invoice card pickable.
+        val last4s = statement.stream().map(ParsedStatementLine::last4)
+                .filter(Objects::nonNull).collect(Collectors.toSet());
+        val cards = monetaryContext.listCreditCards().getOrElse(List.of()).stream()
+                .filter(card -> card.linkedAccountId() != null)
+                .filter(card -> last4s.contains(card.additionalInfo().getOrDefault("last4", Strings.EMPTY)))
+                .toList();
 
-        final List<MonetaryTransaction> history = monetaryContext.listTransactions().getOrElse(List.of());
-        final List<MonetaryTransaction> existing = matchedCard != null
-                ? history.stream().filter(t -> accountId.equals(t.accountId())).toList()
-                : List.of();
-        final UUID fallbackCategoryId = monetaryContext.findOrCreateUncategorizedCategory().id();
+        // Each charge's last4 is matched to a card individually, so an invoice mixing several cards
+        // pre-selects the right card per row (the user can still override it on confirm).
+        val cardByLast4 = cardMatcher.matchByLast4(last4s, cards);
 
-        final List<PreviewRow> rows = new ArrayList<>();
-        for (var line : statement.lines()) {
-            for (var draft : expander.expand(line, accountId, today)) {
-                final boolean dup = matchedCard != null && isDuplicate(draft, existing);
-                final UUID categoryId = categoryGuesser.guess(draft.description(), history).orElse(fallbackCategoryId);
-                rows.add(new PreviewRow(draft, dup, categoryId));
+        val today = LocalDate.now(clock);
+        val history = monetaryContext.listTransactions().getOrElse(List.of());
+        val fallbackCategoryId = monetaryContext.findOrCreateUncategorizedCategory().id();
+
+        val rows = new ArrayList<PreviewRow>();
+        for (val line : statement) {
+            val suggestedCard = line.last4() != null ? cardByLast4.get(line.last4()) : null;
+            val accountId = resolveAccountId(suggestedCard);
+            val suggestedCardId = suggestedCard != null ? suggestedCard.id() : null;
+            for (val draft : expander.expand(line, accountId, today)) {
+                val dup = suggestedCard != null && isDuplicate(draft, history);
+                val categoryId = categoryGuesser.guess(draft.description(), history).orElse(fallbackCategoryId);
+                rows.add(new PreviewRow(draft, dup, categoryId, suggestedCardId));
             }
         }
 
         return Result.success(new ImportPreviewOutcome.Invoice(
-                new ImportPreview(issuer, statement, matchedCard, cards, List.copyOf(rows))));
+                new ImportPreview(issuer, statement, cards, List.copyOf(rows)))
+        );
     }
 
-    /** Conta de destino dos lançamentos do cartão: a conta vinculada, o próprio cartão, ou sentinela se não casou. */
+    /**
+     * Conta de destino dos lançamentos do cartão: a conta vinculada, o próprio cartão, ou sentinela se não casou.
+     */
     private static UUID resolveAccountId(@Nullable MonetaryAccount card) {
         if (card == null) {
             return new UUID(0L, 0L);
         }
-        return card.linkedAccountId() != null ? card.linkedAccountId() : card.id();
+        return accountIdOf(card);
     }
 
     private boolean isDuplicate(TransactionDraft draft, List<MonetaryTransaction> existing) {
         if (draft.groupId() != null) {
             return existing.stream().anyMatch(t -> draft.groupId().equals(t.groupId()));
         }
-        final String desc = GroupSignature.normalizeDescription(draft.description());
+        final String desc = GroupSignature.normalize(draft.description());
         return existing.stream().anyMatch(t ->
                 draft.accountId().equals(t.accountId())
                         && draft.date().equals(t.date())
                         && t.amount().abs().compareTo(draft.amount().abs()) == 0
-                        && desc.equals(GroupSignature.normalizeDescription(t.description())));
-    }
-
-    private static ImportError toImportError(ExtractionFailure failure) {
-        return switch (failure) {
-            case ExtractionFailure.Encrypted ignored -> new ImportError.PasswordRequired();
-            case ExtractionFailure.WrongPassword ignored -> new ImportError.WrongPassword();
-            case ExtractionFailure.NoTextLayer ignored -> new ImportError.NoTextLayer();
-            case ExtractionFailure.TooManyPages(int pages, int maxPages) -> new ImportError.TooManyPages(pages, maxPages);
-        };
+                        && desc.equals(GroupSignature.normalize(t.description())));
     }
 }

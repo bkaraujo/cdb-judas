@@ -20,6 +20,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.util.Objects;
 import java.util.UUID;
 
 @NullMarked
@@ -69,11 +70,11 @@ public class StatementImportResource {
     }
 
     private ResponseEntity<Object> confirmInvoice(StatementConfirmRequest req) {
-        if (req.cardId() == null) {
-            return problem(HttpStatus.UNPROCESSABLE_CONTENT, "CARD_REQUIRED", "O campo cardId é obrigatório para faturas de cartão.");
+        if (req.rows().stream().anyMatch(row -> row.cardId() == null)) {
+            return problem(HttpStatus.UNPROCESSABLE_CONTENT, "CARD_REQUIRED", "Cada lançamento precisa de um cartão de destino.");
         }
         val rows = req.rows().stream().map(StatementImportResource::toInvoiceRow).toList();
-        val cmd = new ImportConfirmCommand(req.cardId(), rows);
+        val cmd = new ImportConfirmCommand(rows);
 
         return switch (statementImport.confirm(cmd)) {
             case Result.Success(var res) ->
@@ -100,10 +101,12 @@ public class StatementImportResource {
         };
     }
 
+    /** {@code cardId} is guaranteed non-null by the {@code CARD_REQUIRED} guard in {@link #confirmInvoice}. */
     private static ImportConfirmCommand.Row toInvoiceRow(StatementConfirmRequest.Row row) {
         return new ImportConfirmCommand.Row(
                 row.description(), row.amount(), row.date(), row.originalDate(),
-                row.installmentNumber(), row.installmentTotal(), row.categoryId());
+                row.installmentNumber(), row.installmentTotal(), row.categoryId(),
+                Objects.requireNonNull(row.cardId()));
     }
 
     private static String messageOf(DomainError error) {
@@ -117,11 +120,9 @@ public class StatementImportResource {
 
     private static ImportPreviewResponse toResponse(ImportPreview preview) {
         val rows = preview.rows().stream().map(StatementImportResource::toRow).toList();
-        val matchedCard = preview.matchedCard();
-        val matchedCardId = matchedCard != null ? matchedCard.id() : null;
         val candidateCards = preview.candidateCards().stream().map(StatementImportResource::toCardOption).toList();
         return new ImportPreviewResponse(
-                "CREDIT_CARD_INVOICE", preview.issuer().name(), preview.statement().last4s(), rows, matchedCardId, candidateCards);
+                "CREDIT_CARD_INVOICE", preview.issuer().name(), preview.last4s(), rows, candidateCards);
     }
 
     private static BankStatementPreviewResponse toStatementResponse(BankStatementPreview preview) {
@@ -155,7 +156,8 @@ public class StatementImportResource {
                 draft.installmentTotal(),
                 draft.status(),
                 row.duplicate(),
-                row.categoryId());
+                row.categoryId(),
+                row.suggestedCardId());
     }
 
     private static ResponseEntity<Object> problem(ImportError error) {

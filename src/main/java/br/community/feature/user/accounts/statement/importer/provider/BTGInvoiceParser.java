@@ -1,8 +1,9 @@
 package br.community.feature.user.accounts.statement.importer.provider;
 
+import br.community.feature.user.accounts.statement.importer.StatementParser;
 import br.community.feature.user.accounts.statement.importer.preview.ChargeKind;
-import br.community.feature.user.accounts.statement.importer.preview.CreditCardStatementParser;
-import br.community.feature.user.accounts.statement.importer.preview.ParsedStatement;
+import br.community.feature.user.accounts.statement.importer.preview.Issuer;
+import br.community.feature.user.accounts.statement.importer.MonetaryDocument;
 import br.community.feature.user.accounts.statement.importer.preview.ParsedStatementLine;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
@@ -31,7 +32,7 @@ import java.util.regex.Pattern;
  * keeps only the R$ charges.
  */
 @NullMarked
-public class BtgCreditCardStatementParser implements CreditCardStatementParser {
+public class BTGInvoiceParser implements StatementParser {
 
     private static final Pattern CARD_HEADER = Pattern.compile("Final (\\d{4}) Total do cart[ãa]o");
     private static final Pattern SUBTOTAL = Pattern.compile("^-?\\s*(?:R\\$|US\\$)\\s*[\\d.]+,\\d{2}\\s*$");
@@ -46,8 +47,17 @@ public class BtgCreditCardStatementParser implements CreditCardStatementParser {
             Map.entry("mai", 5), Map.entry("jun", 6), Map.entry("jul", 7), Map.entry("ago", 8),
             Map.entry("set", 9), Map.entry("out", 10), Map.entry("nov", 11), Map.entry("dez", 12));
 
+    private static final String CARD_CNPJ_DIGITS = "30306294000145";
+
     @Override
-    public ParsedStatement parse(String text) {
+    public boolean parseable(String raw) {
+        final DocumentText text = new DocumentText(raw);
+        return !BankStatements.isAny(text)
+                && (text.hasCnpj(CARD_CNPJ_DIGITS) || text.nameOnly("BTG PACTUAL", "SANTANDER"));
+    }
+
+    @Override
+    public MonetaryDocument parse(String text) {
         final List<ParsedStatementLine> lines = new ArrayList<>();
         @Nullable String last4 = null;
         boolean keep = false;
@@ -74,7 +84,7 @@ public class BtgCreditCardStatementParser implements CreditCardStatementParser {
             }
         }
 
-        return new ParsedStatement(List.copyOf(lines));
+        return new MonetaryDocument.Invoice(Issuer.BTG, List.copyOf(lines));
     }
 
     /** {@code true}/{@code false} se a linha alterna a seção de interesse; {@code null} caso contrário. */
@@ -101,7 +111,7 @@ public class BtgCreditCardStatementParser implements CreditCardStatementParser {
         final MonthDay date = MonthDay.of(month, Integer.parseInt(m.group(6)));
         final Integer number = m.group(4) == null ? null : Integer.valueOf(m.group(4));
         final Integer total = m.group(5) == null ? null : Integer.valueOf(m.group(5));
-        return new ParsedStatementLine(
+        return ParsedStatementLine.charge(
                 last4, date, m.group(3).trim(), Amounts.brl(m.group(2)), number, total, ChargeKind.PURCHASE);
     }
 

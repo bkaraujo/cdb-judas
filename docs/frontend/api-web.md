@@ -298,15 +298,16 @@ A maioria dos recursos vive sob `/api/{uuid}/...`, onde **`{uuid}` é o `X-User-
       "installmentTotal": null,
       "status": "confirmed",
       "duplicate": false,
-      "categoryId": "uuid-category"
+      "categoryId": "uuid-category",
+      "suggestedCardId": "uuid-card"
     }
   ],
-  "matchedCardId": "uuid-card",
   "candidateCards": [
     { "id": "uuid-card", "name": "Cartão Black", "last4": "1234" }
   ]
 }
 ```
+> Uma fatura pode misturar lançamentos de vários cartões (titular + adicionais). `suggestedCardId` é o cartão cujo `last4` casou unicamente com aquela linha — pré-seleção por linha que o usuário pode trocar antes de confirmar; `null` quando o `last4` não casou com nenhum cartão ou casou com vários. `candidateCards` lista **apenas os cartões cadastrados presentes na fatura** (cujo `last4` aparece no PDF) — são as opções do seletor por linha. Não há cartão padrão: o cartão é definido por transação.
 
 **Extrato bancário — `documentType: "BANK_STATEMENT"`:**
 ```json
@@ -341,7 +342,6 @@ A maioria dos recursos vive sob `/api/{uuid}/...`, onde **`{uuid}` é o `X-User-
 ```json
 {
   "type": "CREDIT_CARD_INVOICE",
-  "cardId": "uuid-card",
   "accountId": null,
   "rows": [
     {
@@ -352,11 +352,13 @@ A maioria dos recursos vive sob `/api/{uuid}/...`, onde **`{uuid}` é o `X-User-
       "installmentNumber": null,
       "installmentTotal": null,
       "transactionType": null,
-      "categoryId": "uuid-category"
+      "categoryId": "uuid-category",
+      "cardId": "uuid-card-adicional"
     }
   ]
 }
 ```
+> `cardId` por linha é **obrigatório** e define o cartão de destino daquele lançamento — o cartão é definido por transação, não há cartão padrão de fatura. A conta de persistência, e portanto a deduplicação/identidade de parcelado, é resolvida por linha a partir desse cartão.
 - **Request (extrato bancário):** `type: "BANK_STATEMENT"` + `accountId` (em vez de `cardId`); cada row usa `transactionType` (`income`/`expense`).
 - **Response (200 OK):**
 ```json
@@ -366,7 +368,7 @@ A maioria dos recursos vive sob `/api/{uuid}/...`, onde **`{uuid}` é o `X-User-
   "skipped": 1
 }
 ```
-> `cardId` obrigatório para `CREDIT_CARD_INVOICE`; `accountId` obrigatório para `BANK_STATEMENT` (senão `422`).
+> Cada row precisa de `cardId` para `CREDIT_CARD_INVOICE` (senão `422 CARD_REQUIRED`); `accountId` obrigatório para `BANK_STATEMENT` (senão `422`).
 
 ---
 

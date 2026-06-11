@@ -2,12 +2,14 @@ package br.commons.tools;
 
 import br.commons.Logger;
 import br.commons.tools.platform.FileSystem;
+import br.commons.tools.platform.Network;
 import br.commons.tools.platform.OS;
 import br.commons.tools.platform.Terminal;
-import br.commons.tools.platform.provider.agnostic.Network;
 import br.commons.tools.platform.provider.linux.LNXFileSystem;
+import br.commons.tools.platform.provider.linux.LNXNetwork;
 import br.commons.tools.platform.provider.linux.LNXTerminal;
 import br.commons.tools.platform.provider.windows.WINFileSystem;
+import br.commons.tools.platform.provider.windows.WINNetwork;
 import br.commons.tools.platform.provider.windows.WINTerminal;
 import lombok.val;
 import org.jspecify.annotations.NullMarked;
@@ -69,9 +71,27 @@ public abstract class Platform {
         return terminal;
     }
 
+    private static @Nullable Network network;
+    @SuppressWarnings("NullAway")
+    public static Network network() {
+        if (network == null) {
+            network = switch (CURRENT) {
+                case LINUX -> new LNXNetwork();
+                case WINDOWS -> new WINNetwork();
+                default -> null;
+            };
+
+            if (network == null) {
+                Logger.fatal("Unsupported platform: %s", CURRENT);
+            }
+        }
+
+        return network;
+    }
+
     /** Verifica se a porta TCP já está em uso no host local. Ver {@link Network#isPortInUse(int)}. */
     public static boolean isPortInUse(int port) {
-        return Network.isPortInUse(port);
+        return network().isPortInUse(port);
     }
 
 }

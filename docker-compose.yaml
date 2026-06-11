@@ -7,8 +7,8 @@ services:
       dockerfile: src/main/docker/Dockerfile.backend
       network: host
       args:
-        APP_VERSION: "0.9.0"
-    image: cdb-judas-backend:0.9.0
+        APP_VERSION: "0.9.1"
+    image: cdb-judas-backend:0.9.1
     container_name: cdb-judas-backend
     environment:
       STORAGE_JSON_PATH: /data
@@ -22,8 +22,8 @@ services:
       context: .
       dockerfile: src/main/docker/Dockerfile.frontend
       args:
-        APP_VERSION: "0.1.0"
-    image: cdb-judas-frontend:0.1.0
+        APP_VERSION: "0.9.1"
+    image: cdb-judas-frontend:0.9.1
     container_name: cdb-judas-frontend
     ports: ["8081:80"]
     depends_on: [backend]

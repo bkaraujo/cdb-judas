@@ -1,9 +1,9 @@
 package br.community.feature.user.accounts.statement.importer.provider;
 
 import br.commons.tools.Strings;
-import br.community.feature.user.accounts.statement.importer.preview.BankStatementParser;
-import br.community.feature.user.accounts.statement.importer.preview.ParsedBankStatement;
-import br.community.feature.user.accounts.statement.importer.preview.ParsedBankStatementLine;
+import br.community.feature.user.accounts.statement.importer.MonetaryDocument;
+import br.community.feature.user.accounts.statement.importer.StatementParser;
+import br.community.feature.user.accounts.statement.importer.preview.*;
 import org.jspecify.annotations.NullMarked;
 
 import java.math.BigDecimal;
@@ -30,17 +30,31 @@ import java.util.regex.Pattern;
  * fatura do cartão} aggregate (already covered, item by item, by the credit-card invoice import).
  */
 @NullMarked
-public class BtgBankStatementParser implements BankStatementParser {
+public class BTGStatementParser implements StatementParser {
 
     private static final Pattern DATE_PREFIX =
             Pattern.compile("^(\\d{2}/\\d{2}/\\d{4})\\s+\\d{2}h\\d{2}\\b(.*)$");
     private static final Pattern TRAILING_VALUE =
             Pattern.compile("(-)?\\s*R\\$\\s*([\\d.]+,\\d{2})\\s*$");
     private static final DateTimeFormatter DATE = DateTimeFormatter.ofPattern("dd/MM/yyyy", Locale.ROOT);
+    private static final String STATEMENT_HEADER = "EXTRATO DA SUA CONTA CORRENTE BTG PACTUAL";
+    private static final String ACCOUNT_CNPJ_DIGITS = "30306294000226";
 
     @Override
-    public ParsedBankStatement parse(String text) {
-        final List<ParsedBankStatementLine> lines = new ArrayList<>();
+    public boolean parseable(String raw) {
+        return looksLikeStatement(new DocumentText(raw));
+    }
+
+    /** BTG's own checking-account header, its account CNPJ, or the Saldo Diário/Data e hora columns. */
+    static boolean looksLikeStatement(DocumentText text) {
+        return text.has(STATEMENT_HEADER)
+                || text.hasCnpj(ACCOUNT_CNPJ_DIGITS)
+                || (text.has("SALDO DIÁRIO") && text.has("DATA E HORA"));
+    }
+
+    @Override
+    public MonetaryDocument parse(String text) {
+        final List<ParsedStatementLine> lines = new ArrayList<>();
 
         LocalDate recordDate = null;
         final StringBuilder buffer = new StringBuilder();
@@ -70,10 +84,10 @@ public class BtgBankStatementParser implements BankStatementParser {
             }
         }
 
-        return new ParsedBankStatement(List.copyOf(lines));
+        return new MonetaryDocument.Statement(Issuer.BTG, List.copyOf(lines));
     }
 
-    private static void finalize(LocalDate date, String record, List<ParsedBankStatementLine> out) {
+    private static void finalize(LocalDate date, String record, List<ParsedStatementLine> out) {
         final Matcher value = TRAILING_VALUE.matcher(record);
         if (!value.find()) {
             return;
@@ -86,7 +100,7 @@ public class BtgBankStatementParser implements BankStatementParser {
         if (value.group(1) != null) {
             amount = amount.negate();
         }
-        out.add(new ParsedBankStatementLine(date, description, amount));
+        out.add(new ParsedStatementLine(date, description, amount));
     }
 
     private static boolean isDropped(String description) {

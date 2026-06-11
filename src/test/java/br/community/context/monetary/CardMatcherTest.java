@@ -76,4 +76,37 @@ class CardMatcherTest {
         var ambiguous = assertInstanceOf(CardMatch.Ambiguous.class, result);
         assertEquals(List.of(titular, adicional), ambiguous.candidates());
     }
+
+    // ── matchByLast4 (per-charge suggestion) ────────────────────────────────────
+
+    @Test
+    void matchByLast4ResolvesEachLast4ToItsOwnCard() {
+        var visa = cardWithLast4("Visa", "0020");
+        var master = cardWithLast4("Master", "9999");
+
+        var result = matcher.matchByLast4(List.of("0020", "9999"), List.of(visa, master));
+
+        assertEquals(Map.of("0020", visa, "9999", master), result);
+    }
+
+    @Test
+    void matchByLast4OmitsLast4MatchedByNoCard() {
+        var visa = cardWithLast4("Visa", "0020");
+
+        var result = matcher.matchByLast4(List.of("0020", "1234"), List.of(visa));
+
+        assertEquals(Map.of("0020", visa), result);
+    }
+
+    @Test
+    void matchByLast4OmitsAmbiguousLast4() {
+        var titular = cardWithLast4("Titular", "0020");
+        var adicional = cardWithLast4("Adicional", "0020");
+        var other = cardWithLast4("Other", "9999");
+
+        var result = matcher.matchByLast4(List.of("0020", "9999"), List.of(titular, adicional, other));
+
+        // 0020 matched by two cards → omitted; 9999 uniquely matched → present.
+        assertEquals(Map.of("9999", other), result);
+    }
 }

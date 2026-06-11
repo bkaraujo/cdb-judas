@@ -1,8 +1,8 @@
 package br.community.context.monetary;
 
-import br.community.feature.user.accounts.statement.importer.preview.ParsedBankStatement;
-import br.community.feature.user.accounts.statement.importer.preview.ParsedBankStatementLine;
-import br.community.feature.user.accounts.statement.importer.provider.SantanderBankStatementParser;
+import br.community.feature.user.accounts.statement.importer.MonetaryDocument;
+import br.community.feature.user.accounts.statement.importer.preview.ParsedStatementLine;
+import br.community.feature.user.accounts.statement.importer.provider.SantanderStatementParser;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
@@ -16,13 +16,13 @@ import java.util.Objects;
 import static org.junit.jupiter.api.Assertions.*;
 
 /** Santander checking-account ("Extrato Consolidado Inteligente") parsing, asserted through the parser's output. */
-class SantanderBankStatementParserTest {
+class SantanderStatementParserTest {
 
-    private final SantanderBankStatementParser parser = new SantanderBankStatementParser();
+    private final SantanderStatementParser parser = new SantanderStatementParser();
 
     @Test
     void signsDebitsNegativeAndCreditsPositive() throws IOException {
-        List<ParsedBankStatementLine> lines = parser.parse(fixture()).lines();
+        List<ParsedStatementLine> lines = movements();
         // Credit (no trailing minus): TED received and a Pix received.
         assertTrue(has(lines, LocalDate.of(2025, 12, 4), "TED RECEBIDA", "14098.27"));
         assertTrue(has(lines, LocalDate.of(2025, 12, 29), "PIX RECEBIDO", "1800.00"));
@@ -33,7 +33,7 @@ class SantanderBankStatementParserTest {
 
     @Test
     void mergesMultiLineDescriptionAndDropsRunningBalance() throws IOException {
-        List<ParsedBankStatementLine> lines = parser.parse(fixture()).lines();
+        List<ParsedStatementLine> lines = movements();
         // Fee: type line + PERIODO continuation + value line carrying movimento and saldo.
         assertTrue(lines.stream().anyMatch(l ->
                 l.date().equals(LocalDate.of(2025, 12, 1))
@@ -46,7 +46,7 @@ class SantanderBankStatementParserTest {
 
     @Test
     void keepsMerchantOriginDateAsDescriptionNotANewRecord() throws IOException {
-        List<ParsedBankStatementLine> lines = parser.parse(fixture()).lines();
+        List<ParsedStatementLine> lines = movements();
         // "02/12  COMPRA CARTAO DEB MC" / "28/11 PADARIA EXEMPLO LTDA" / "330759 23,00-":
         // the merchant line begins with an origin date but is a continuation (single space), so the
         // record stays on 02/12 and the merchant text is merged in.
@@ -61,21 +61,21 @@ class SantanderBankStatementParserTest {
 
     @Test
     void carriesTheDateAcrossAPageBreak() throws IOException {
-        List<ParsedBankStatementLine> lines = parser.parse(fixture()).lines();
+        List<ParsedStatementLine> lines = movements();
         // This movement is printed after a page-break header block; its date (04/12) is the last one seen.
         assertTrue(has(lines, LocalDate.of(2025, 12, 4), "CONTA DE AGUA E ESGOTO", "-165.64"));
     }
 
     @Test
     void parsesValueSharingTheDescriptionLine() throws IOException {
-        List<ParsedBankStatementLine> lines = parser.parse(fixture()).lines();
+        List<ParsedStatementLine> lines = movements();
         // "REMUNERACAO APLICACAO AUTOMATICA - 0,01 1.834,81-": description + value on one line.
         assertTrue(has(lines, LocalDate.of(2025, 12, 11), "REMUNERACAO APLICACAO AUTOMATICA", "0.01"));
     }
 
     @Test
     void dropsTheAggregateCreditCardInvoicePayments() throws IOException {
-        List<ParsedBankStatementLine> lines = parser.parse(fixture()).lines();
+        List<ParsedStatementLine> lines = movements();
         // Santander's own card auto-debit ("PAGAMENTO CARTAO ...") and a card invoice paid by boleto.
         assertTrue(lines.stream().noneMatch(l -> l.description().toUpperCase().contains("PAGAMENTO CARTAO")));
         assertTrue(lines.stream().noneMatch(l -> l.amount().abs().compareTo(new BigDecimal("13366.18")) == 0));
@@ -85,7 +85,7 @@ class SantanderBankStatementParserTest {
 
     @Test
     void ignoresEverythingOutsideTheMovimentacaoTable() throws IOException {
-        List<ParsedBankStatementLine> lines = parser.parse(fixture()).lines();
+        List<ParsedStatementLine> lines = movements();
         // Opening/closing "SALDO EM" balance lines are not movements.
         assertTrue(lines.stream().noneMatch(l -> l.description().contains("SALDO EM")));
         // The "Saldos por Período" / "Débito Automático" / "Transferências" tables that follow carry
@@ -100,12 +100,16 @@ class SantanderBankStatementParserTest {
 
     @Test
     void parsesEveryMovementInTheMonthExactlyOnce() throws IOException {
-        List<ParsedBankStatementLine> lines = parser.parse(fixture()).lines();
+        List<ParsedStatementLine> lines = movements();
         assertEquals(23, lines.size());
         assertTrue(lines.stream().allMatch(l -> l.date().getYear() == 2025 && l.date().getMonthValue() == 12));
     }
 
-    private static boolean has(List<ParsedBankStatementLine> lines, LocalDate date, String descPart, String amount) {
+    private List<ParsedStatementLine> movements() throws IOException {
+        return ((MonetaryDocument.Statement) parser.parse(fixture())).statement();
+    }
+
+    private static boolean has(List<ParsedStatementLine> lines, LocalDate date, String descPart, String amount) {
         return lines.stream().anyMatch(l ->
                 l.date().equals(date)
                         && l.description().contains(descPart)
@@ -113,7 +117,7 @@ class SantanderBankStatementParserTest {
     }
 
     private static String fixture() throws IOException {
-        try (InputStream in = SantanderBankStatementParserTest.class.getResourceAsStream("/extratos/extrato-santander-202512.txt")) {
+        try (InputStream in = SantanderStatementParserTest.class.getResourceAsStream("/extratos/extrato-santander-202512.txt")) {
             return new String(Objects.requireNonNull(in, "fixture").readAllBytes(), StandardCharsets.UTF_8);
         }
     }

@@ -65,7 +65,7 @@
     m.$body.css({ flex: '1', 'overflow-y': 'scroll', 'min-height': '0', display: 'flex', 'flex-direction': 'column' });
 
     let selectedFile = null;
-    let selectedCardId = null;
+    let cardCandidates = [];
     let selectedAccountId = null;
     let previewData = null;
     let statementData = null;
@@ -124,7 +124,26 @@
         'style="width:auto;font-size:12px;padding:4px 6px;">' + options + '</select>';
     }
 
+    function cardOptionShort(card) {
+      return card.last4 ? (card.name + ' — •••• ' + card.last4) : card.name;
+    }
+
+    // Per-row card selector: o cartão é definido por transação. Só os cartões presentes na fatura são
+    // oferecidos. Linha casada por last4 vem pré-selecionada; sem match, um placeholder exige a escolha.
+    function cardSelectHtml(selectedId, idx) {
+      if (!cardCandidates.length) return '—';
+      const hasSel = cardCandidates.some(function (c) { return String(c.id) === String(selectedId); });
+      const placeholder = hasSel ? '' : '<option value="" selected>Selecione</option>';
+      const options = placeholder + cardCandidates.map(function (c) {
+        const sel = String(c.id) === String(selectedId) ? ' selected' : '';
+        return '<option value="' + esc(c.id) + '"' + sel + '>' + esc(cardOptionShort(c)) + '</option>';
+      }).join('');
+      return '<select data-row-card data-idx="' + idx + '" ' +
+        'style="width:auto;font-size:12px;padding:4px 6px;">' + options + '</select>';
+    }
+
     function previewRowHtml(row, idx) {
+      const cardSelected = row.cardId !== undefined ? row.cardId : row.suggestedCardId;
       const hasParcela = row.installmentNumber != null && row.installmentTotal != null;
       const parcela = hasParcela ? esc(row.installmentNumber + '/' + row.installmentTotal) : '—';
       const dup = !!row.duplicate;
@@ -146,9 +165,9 @@
               'style="width:100%;font-size:12px;padding:4px 6px;border:1px solid transparent;background:transparent;color:inherit;outline:none;text-transform:uppercase;" ' +
               'onfocus="this.style.border=\'1px solid var(--border)\';this.style.background=\'var(--bg-card)\'" ' +
               'onblur="this.style.border=\'1px solid transparent\';this.style.background=\'transparent\'" />' +
-            (row.last4 ? ' <span style="color:var(--text-muted);font-size:11px;">•' + esc(row.last4) + '</span>' : '') +
             dupTag +
           '</td>' +
+          '<td style="padding:8px 10px;">' + cardSelectHtml(cardSelected, idx) + '</td>' +
           '<td style="padding:8px 10px;text-align:center;white-space:nowrap;">' + statusTag(row.status) + '</td>' +
           '<td style="padding:8px 10px;text-align:right;font-weight:700;white-space:nowrap;">' + esc(fmt(row.amount)) + '</td>' +
         '</tr>'
@@ -165,8 +184,7 @@
       const rows = (preview && preview.rows) || [];
 
       const candidateCards = (preview && preview.candidateCards) || [];
-      const matchedCardId = (preview && preview.matchedCardId) || null;
-      selectedCardId = matchedCardId;
+      cardCandidates = candidateCards;
 
       const cardsLine = last4s.length
         ? '<p style="font-size:12px;color:var(--text-muted);margin-top:2px;">' +
@@ -174,28 +192,13 @@
           '</p>'
         : '';
 
-      function cardOptionLabel(card) {
-        return card.name + (card.last4 ? ' — •••• ' + card.last4 : '');
-      }
-
-      const matchedCard = candidateCards.filter(function (c) { return c.id === matchedCardId; })[0] || null;
-      const cardHeadline = matchedCard
-        ? 'Cartão detectado: ' + matchedCard.name
-        : 'Cartão não identificado — selecione';
-
-      const optionsHtml = (matchedCardId
-        ? ''
-        : '<option value="" selected>Selecione o cartão</option>') +
-        candidateCards.map(function (card) {
-          const sel = card.id === matchedCardId ? ' selected' : '';
-          return '<option value="' + esc(card.id) + '"' + sel + '>' + esc(cardOptionLabel(card)) + '</option>';
-        }).join('');
-
-      const cardSelectorHtml = candidateCards.length
-        ? '<div class="form-group" style="margin-top:12px;">' +
-            '<label class="form-label" for="' + cardSelectId + '">' + esc(cardHeadline) + '</label>' +
-            '<select id="' + cardSelectId + '" data-region="card-select">' + optionsHtml + '</select>' +
-          '</div>'
+      // Sem cartão padrão: o cartão é escolhido por linha. Se nenhum cartão da fatura está cadastrado,
+      // não há como atribuir os lançamentos — avisa o usuário.
+      const noCardsWarning = (!candidateCards.length && rows.length)
+        ? '<p style="font-size:12px;color:var(--expense);margin-top:12px;">' +
+            'Nenhum cartão cadastrado corresponde aos 4 últimos dígitos desta fatura. ' +
+            'Cadastre o cartão para importar os lançamentos.' +
+          '</p>'
         : '';
 
       function sortIcon(col) {
@@ -215,6 +218,7 @@
                 '<th data-sort="categoryId" style="padding:8px 10px;text-align:left;font-size:11px;color:var(--text-muted);cursor:pointer;">Categoria' + sortIcon('categoryId') + '</th>' +
                 '<th data-sort="installmentNumber" style="padding:8px 10px;text-align:center;font-size:11px;color:var(--text-muted);cursor:pointer;">Parcela' + sortIcon('installmentNumber') + '</th>' +
                 '<th data-sort="description" style="padding:8px 10px;text-align:left;font-size:11px;color:var(--text-muted);cursor:pointer;">Descrição' + sortIcon('description') + '</th>' +
+                '<th data-sort="suggestedCardId" style="padding:8px 10px;text-align:left;font-size:11px;color:var(--text-muted);cursor:pointer;">Cartão' + sortIcon('suggestedCardId') + '</th>' +
                 '<th data-sort="status" style="padding:8px 10px;text-align:center;font-size:11px;color:var(--text-muted);cursor:pointer;">Status' + sortIcon('status') + '</th>' +
                 '<th data-sort="amount" style="padding:8px 10px;text-align:right;font-size:11px;color:var(--text-muted);cursor:pointer;">Valor' + sortIcon('amount') + '</th>' +
               '</tr></thead>' +
@@ -232,16 +236,12 @@
             cardsLine +
           '</div>' +
         '</div>' +
-        cardSelectorHtml +
+        noCardsWarning +
         tableHtml +
         '<p style="font-size:12px;color:var(--text-muted);margin-top:10px;">' +
-          esc(rows.length + ' lançamento(s) encontrado(s). Revise, ajuste as categorias e confirme a importação.') +
+          esc(rows.length + ' lançamento(s) encontrado(s). Revise, ajuste as categorias e o cartão de cada linha e confirme a importação.') +
         '</p>'
       );
-
-      m.$el.find('[data-region=card-select]').on('change', function () {
-        selectedCardId = this.value || null;
-      });
 
       // Swap the upload action for a confirm action (only when there are rows to import).
       m.$el.find('[data-act=do-import]').hide();
@@ -258,9 +258,9 @@
     function confirmImport() {
       const preview = previewData;
       if (!preview) return;
-      if (!selectedCardId) { window.toast('Selecione o cartão de destino', 'error'); return; }
 
       const rows = [];
+      let missingCard = false;
       m.$el.find('[data-row-include]').each(function () {
         if (!this.checked) return;
         const idx = Number($(this).attr('data-idx'));
@@ -268,8 +268,12 @@
         if (!src) return;
         const $cat = m.$el.find('[data-row-category][data-idx="' + idx + '"]');
         const $desc = m.$el.find('[data-row-description][data-idx="' + idx + '"]');
+        const $card = m.$el.find('[data-row-card][data-idx="' + idx + '"]');
         const categoryId = ($cat.val() || src.categoryId) || null;
         const description = ($desc.val() || src.description || '').trim();
+        // O cartão é definido por transação — cada linha incluída precisa de um cartão.
+        const cardId = $card.length ? ($card.val() || null) : null;
+        if (!cardId) { missingCard = true; }
         rows.push({
           description: description,
           amount: src.amount,
@@ -278,13 +282,15 @@
           installmentNumber: src.installmentNumber,
           installmentTotal: src.installmentTotal,
           categoryId: categoryId,
+          cardId: cardId,
         });
       });
 
       if (!rows.length) { window.toast('Selecione ao menos um lançamento', 'error'); return; }
+      if (missingCard) { window.toast('Selecione o cartão de cada lançamento', 'error'); return; }
 
       const $btn = m.$el.find('[data-act=do-confirm]').prop('disabled', true);
-      window.App.TransactionService.importConfirm({ type: 'CREDIT_CARD_INVOICE', cardId: selectedCardId, rows: rows })
+      window.App.TransactionService.importConfirm({ type: 'CREDIT_CARD_INVOICE', rows: rows })
         .then(function (res) {
           const created = (res && res.created) || 0;
           const skipped = (res && res.skipped) || 0;
@@ -561,6 +567,10 @@
       m.$el.find('[data-row-description]').each(function () {
         const idx = Number($(this).attr('data-idx'));
         data.rows[idx].description = this.value;
+      });
+      m.$el.find('[data-row-card]').each(function () {
+        const idx = Number($(this).attr('data-idx'));
+        data.rows[idx].cardId = this.value;
       });
 
       if (sortCol === col) {

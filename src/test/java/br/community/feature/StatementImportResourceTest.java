@@ -90,14 +90,13 @@ class StatementImportResourceTest extends BaseHttpTest {
         String body = """
             {
               "type": "CREDIT_CARD_INVOICE",
-              "cardId": "%s",
               "rows": [
-                {"description":"Mercado","amount":80.00,"date":"2025-07-10","originalDate":"2025-07-10","categoryId":"%s"},
-                {"description":"Geladeira","amount":100.00,"date":"2025-07-15","originalDate":"2025-07-15","installmentNumber":1,"installmentTotal":2,"categoryId":"%s"},
-                {"description":"Geladeira","amount":100.00,"date":"2025-08-15","originalDate":"2025-07-15","installmentNumber":2,"installmentTotal":2,"categoryId":"%s"}
+                {"description":"Mercado","amount":80.00,"date":"2025-07-10","originalDate":"2025-07-10","categoryId":"%s","cardId":"%s"},
+                {"description":"Geladeira","amount":100.00,"date":"2025-07-15","originalDate":"2025-07-15","installmentNumber":1,"installmentTotal":2,"categoryId":"%s","cardId":"%s"},
+                {"description":"Geladeira","amount":100.00,"date":"2025-08-15","originalDate":"2025-07-15","installmentNumber":2,"installmentTotal":2,"categoryId":"%s","cardId":"%s"}
               ]
             }
-            """.formatted(cardId, categoryId, categoryId, categoryId);
+            """.formatted(categoryId, cardId, categoryId, cardId, categoryId, cardId);
 
         mockMvc.perform(post("/api/" + TEST_USER_ID + "/accounts/statement/import/confirm")
                         .contentType(MediaType.APPLICATION_JSON).content(body))
@@ -119,12 +118,11 @@ class StatementImportResourceTest extends BaseHttpTest {
         String body = """
             {
               "type": "CREDIT_CARD_INVOICE",
-              "cardId": "%s",
               "rows": [
-                {"description":"Mercado","amount":80.00,"date":"2025-07-10","originalDate":"2025-07-10","categoryId":"%s"}
+                {"description":"Mercado","amount":80.00,"date":"2025-07-10","originalDate":"2025-07-10","categoryId":"%s","cardId":"%s"}
               ]
             }
-            """.formatted(UUID.randomUUID(), categoryId);
+            """.formatted(categoryId, UUID.randomUUID());
 
         mockMvc.perform(post("/api/" + TEST_USER_ID + "/accounts/statement/import/confirm")
                         .contentType(MediaType.APPLICATION_JSON).content(body))

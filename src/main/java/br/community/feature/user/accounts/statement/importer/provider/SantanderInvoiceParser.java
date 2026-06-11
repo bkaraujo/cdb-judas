@@ -1,8 +1,9 @@
 package br.community.feature.user.accounts.statement.importer.provider;
 
+import br.community.feature.user.accounts.statement.importer.StatementParser;
 import br.community.feature.user.accounts.statement.importer.preview.ChargeKind;
-import br.community.feature.user.accounts.statement.importer.preview.CreditCardStatementParser;
-import br.community.feature.user.accounts.statement.importer.preview.ParsedStatement;
+import br.community.feature.user.accounts.statement.importer.preview.Issuer;
+import br.community.feature.user.accounts.statement.importer.MonetaryDocument;
 import br.community.feature.user.accounts.statement.importer.preview.ParsedStatementLine;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
@@ -30,15 +31,23 @@ import java.util.regex.Pattern;
  * charge, which is the foreign purchase it follows.
  */
 @NullMarked
-public class SantanderCreditCardStatementParser implements CreditCardStatementParser {
+public class SantanderInvoiceParser implements StatementParser {
 
     private static final Pattern CARD_HEADER = Pattern.compile("\\d{4}\\s+X{4}\\s+X{4}\\s+(\\d{4})");
     private static final Pattern TXN = Pattern.compile(
             "^\\s*(?:\\d\\s+)?(\\d{2})/(\\d{2})\\s+(.+?)(?:\\s+(\\d{2})/(\\d{2}))?\\s+(-?[\\d.]+,\\d{2})(?:\\s+-?[\\d.]+,\\d{2})?\\s*$");
     private static final Pattern IOF_LINE = Pattern.compile("^(IOF\\b.*?)\\s+(-?[\\d.]+,\\d{2})$");
+    private static final String CNPJ_DIGITS = "90400888000142";
 
     @Override
-    public ParsedStatement parse(String text) {
+    public boolean parseable(String raw) {
+        final DocumentText text = new DocumentText(raw);
+        return !BankStatements.isAny(text)
+                && (text.hasCnpj(CNPJ_DIGITS) || text.nameOnly("SANTANDER", "BTG PACTUAL"));
+    }
+
+    @Override
+    public MonetaryDocument parse(String text) {
         final List<ParsedStatementLine> lines = new ArrayList<>();
         @Nullable String last4 = null;
         @Nullable MonthDay lastDate = null;
@@ -64,7 +73,7 @@ public class SantanderCreditCardStatementParser implements CreditCardStatementPa
             lastDate = emitLine(line, trimmed, last4, lastDate, lines);
         }
 
-        return new ParsedStatement(List.copyOf(lines));
+        return new MonetaryDocument.Invoice(Issuer.SANTANDER, List.copyOf(lines));
     }
 
     /** {@code true}/{@code false} se a linha alterna a seção de interesse; {@code null} caso contrário. */
@@ -90,7 +99,7 @@ public class SantanderCreditCardStatementParser implements CreditCardStatementPa
         final ParsedStatementLine txn = txnLine(line, last4);
         if (txn != null) {
             lines.add(txn);
-            return txn.date();
+            return MonthDay.from(txn.date());
         }
         return lastDate;
     }
@@ -105,7 +114,7 @@ public class SantanderCreditCardStatementParser implements CreditCardStatementPa
         if (value.signum() < 0 || lastDate == null) {
             return null;
         }
-        return new ParsedStatementLine(last4, lastDate, iof.group(1).trim(), value, null, null, ChargeKind.IOF);
+        return ParsedStatementLine.charge(last4, lastDate, iof.group(1).trim(), value, null, null, ChargeKind.IOF);
     }
 
     private static @Nullable ParsedStatementLine txnLine(String line, String last4) {
@@ -121,7 +130,7 @@ public class SantanderCreditCardStatementParser implements CreditCardStatementPa
         final Integer number = m.group(4) == null ? null : Integer.valueOf(m.group(4));
         final Integer total = m.group(5) == null ? null : Integer.valueOf(m.group(5));
         final String description = m.group(3).trim();
-        return new ParsedStatementLine(last4, date, description, value, number, total, classify(description));
+        return ParsedStatementLine.charge(last4, date, description, value, number, total, classify(description));
     }
 
     private static ChargeKind classify(String description) {

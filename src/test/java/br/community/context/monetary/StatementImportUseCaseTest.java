@@ -27,7 +27,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 /** Bank-statement (extrato) import: detection, signed typing, reconciliation and dedup, driven
  *  through a real {@link br.community.context.monetary.MonetaryContext} over in-memory repositories. */
-class BankStatementImportUseCaseTest {
+class StatementImportUseCaseTest {
 
     private static final long MAX_BYTES = 4096;
     // Fixed today after the fixture dates → every March 2025 movement is "confirmed".
@@ -170,10 +170,10 @@ class BankStatementImportUseCaseTest {
         final GroupSignature groupSignature = new GroupSignature();
         final MonetaryContext monetaryContext = monetaryContext(accounts, transactions, new InMemoryRepositories.Categories());
         return new StatementImportUseCase(
-                monetaryContext, extractor, new DocumentTypeDetector(), new IssuerDetector(),
-                new CreditCardStatementParserRegistry(new SantanderCreditCardStatementParser(), new BtgCreditCardStatementParser()),
-                new BankStatementParserRegistry(new BtgBankStatementParser(), new SantanderBankStatementParser()), new CardMatcher(),
-                new InstallmentExpander(groupSignature), groupSignature, new CategoryGuesser(),
+                monetaryContext, extractor,
+                List.of(new BTGStatementParser(), new SantanderStatementParser(),
+                        new BTGInvoiceParser(), new SantanderInvoiceParser()),
+                new CardMatcher(), new InstallmentExpander(groupSignature), groupSignature, new CategoryGuesser(),
                 CLOCK, MAX_BYTES);
     }
 

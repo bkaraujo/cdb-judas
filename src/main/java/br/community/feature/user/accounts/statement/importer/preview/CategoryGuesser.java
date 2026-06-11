@@ -17,10 +17,10 @@ import java.util.stream.Collectors;
 public class CategoryGuesser {
 
     public Optional<UUID> guess(String description, List<MonetaryTransaction> history) {
-        final String target = GroupSignature.normalizeDescription(description);
+        final String target = GroupSignature.normalize(description);
 
         final List<MonetaryTransaction> matches = history.stream()
-                .filter(t -> target.equals(GroupSignature.normalizeDescription(t.description())))
+                .filter(t -> target.equals(GroupSignature.normalize(t.description())))
                 .toList();
         if (matches.isEmpty()) {
             return Optional.empty();

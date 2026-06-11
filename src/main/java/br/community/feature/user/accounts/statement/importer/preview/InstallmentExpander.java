@@ -31,7 +31,7 @@ public class InstallmentExpander {
         final YearMonth statementPeriod = YearMonth.from(today);
         final int n = line.isInstallment() ? line.installmentNumber() : 1;
         final YearMonth anchor = line.isInstallment() ? statementPeriod.minusMonths(n - 1L) : statementPeriod;
-        final LocalDate originalDate = resolveOriginalDate(line.date(), anchor);
+        final LocalDate originalDate = resolveOriginalDate(MonthDay.from(line.date()), anchor);
 
         if (!line.isInstallment()) {
             return List.of(new TransactionDraft(

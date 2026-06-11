@@ -1,5 +1,6 @@
 package br.community.feature.user.accounts.statement.importer;
 
+import lombok.val;
 import org.jspecify.annotations.NullMarked;
 
 import java.math.BigDecimal;
@@ -20,16 +21,16 @@ import java.util.UUID;
 @NullMarked
 public class GroupSignature {
 
-    public static String normalizeDescription(String description) {
+    public static String normalize(String description) {
         return description.trim().replaceAll("\\s+", " ").toUpperCase(Locale.ROOT);
     }
 
     public UUID groupId(UUID accountId, LocalDate originalDate, int totalInstallments, String description) {
-        final String canonical = accountId + "|" + originalDate + "|" + totalInstallments + "|" + normalizeDescription(description);
+        val canonical = accountId + "|" + originalDate + "|" + totalInstallments + "|" + normalize(description);
         return UUID.nameUUIDFromBytes(canonical.getBytes(StandardCharsets.UTF_8));
     }
 
     public String avistaKey(UUID accountId, LocalDate date, BigDecimal amount, String description) {
-        return accountId + "|" + date + "|" + amount.stripTrailingZeros().toPlainString() + "|" + normalizeDescription(description);
+        return accountId + "|" + date + "|" + amount.stripTrailingZeros().toPlainString() + "|" + normalize(description);
     }
 }

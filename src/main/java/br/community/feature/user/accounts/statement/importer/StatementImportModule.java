@@ -4,15 +4,13 @@ import br.commons.pdf.PdfBoxTextExtractor;
 import br.commons.pdf.PdfTextExtractor;
 import br.community.context.monetary.MonetaryContext;
 import br.community.feature.user.accounts.statement.importer.preview.*;
-import br.community.feature.user.accounts.statement.importer.provider.BtgBankStatementParser;
-import br.community.feature.user.accounts.statement.importer.provider.BtgCreditCardStatementParser;
-import br.community.feature.user.accounts.statement.importer.provider.SantanderBankStatementParser;
-import br.community.feature.user.accounts.statement.importer.provider.SantanderCreditCardStatementParser;
+import br.community.feature.user.accounts.statement.importer.provider.*;
 import org.jspecify.annotations.NullMarked;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 import java.time.Clock;
+import java.util.List;
 
 /**
  * Wires the credit-card statement-import feature: the PDF extractor (technical util), the parsing
@@ -29,27 +27,6 @@ public class StatementImportModule {
     @Bean
     PdfTextExtractor pdfTextExtractor() {
         return new PdfBoxTextExtractor(MAX_STATEMENT_PAGES);
-    }
-
-    @Bean
-    DocumentTypeDetector documentTypeDetector() {
-        return new DocumentTypeDetector();
-    }
-
-    @Bean
-    IssuerDetector issuerDetector() {
-        return new IssuerDetector();
-    }
-
-    @Bean
-    CreditCardStatementParserRegistry creditCardStatementParserRegistry() {
-        return new CreditCardStatementParserRegistry(
-                new SantanderCreditCardStatementParser(), new BtgCreditCardStatementParser());
-    }
-
-    @Bean
-    BankStatementParserRegistry bankStatementParserRegistry() {
-        return new BankStatementParserRegistry(new BtgBankStatementParser(), new SantanderBankStatementParser());
     }
 
     @Bean
@@ -81,17 +58,26 @@ public class StatementImportModule {
     StatementImportUseCase statementImportUseCase(
             MonetaryContext monetaryContext,
             PdfTextExtractor extractor,
-            DocumentTypeDetector documentTypeDetector,
-            IssuerDetector issuerDetector,
-            CreditCardStatementParserRegistry parsers,
-            BankStatementParserRegistry bankParsers,
             CardMatcher cardMatcher,
             InstallmentExpander installmentExpander,
             GroupSignature groupSignature,
             CategoryGuesser categoryGuesser,
-            Clock clock) {
+            Clock clock
+    ) {
         return new StatementImportUseCase(
-                monetaryContext, extractor, documentTypeDetector, issuerDetector, parsers, bankParsers,
-                cardMatcher, installmentExpander, groupSignature, categoryGuesser, clock, MAX_STATEMENT_FILE_BYTES);
+                monetaryContext,
+                extractor,
+                List.of(
+                        new BTGStatementParser(),
+                        new BTGInvoiceParser(),
+                        new SantanderStatementParser(),
+                        new SantanderInvoiceParser()
+                ),
+                cardMatcher,
+                installmentExpander,
+                groupSignature,
+                categoryGuesser,
+                clock,
+                MAX_STATEMENT_FILE_BYTES);
     }
 }

@@ -234,7 +234,7 @@
                 <artifactId>spring-boot-maven-plugin</artifactId>
                 <configuration>
                     <mainClass>br.community.Application</mainClass>
-                    <jvmArguments>--enable-preview</jvmArguments>
+                    <jvmArguments>--enable-preview -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5005</jvmArguments>
                 </configuration>
                 <executions>
                     <execution>

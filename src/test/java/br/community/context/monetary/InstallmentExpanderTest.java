@@ -20,11 +20,11 @@ class InstallmentExpanderTest {
     private final UUID accountId = UUID.fromString("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa");
 
     private static ParsedStatementLine avista(MonthDay date, BigDecimal amount, String description) {
-        return new ParsedStatementLine("0020", date, description, amount, null, null, ChargeKind.PURCHASE);
+        return ParsedStatementLine.charge("0020", date, description, amount, null, null, ChargeKind.PURCHASE);
     }
 
     private static ParsedStatementLine parcelado(MonthDay date, BigDecimal amount, String description, int n, int total) {
-        return new ParsedStatementLine("0020", date, description, amount, n, total, ChargeKind.PURCHASE);
+        return ParsedStatementLine.charge("0020", date, description, amount, n, total, ChargeKind.PURCHASE);
     }
 
     @Test

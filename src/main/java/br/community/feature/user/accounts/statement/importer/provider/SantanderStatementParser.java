@@ -1,9 +1,9 @@
 package br.community.feature.user.accounts.statement.importer.provider;
 
 import br.commons.tools.Strings;
-import br.community.feature.user.accounts.statement.importer.preview.BankStatementParser;
-import br.community.feature.user.accounts.statement.importer.preview.ParsedBankStatement;
-import br.community.feature.user.accounts.statement.importer.preview.ParsedBankStatementLine;
+import br.community.feature.user.accounts.statement.importer.MonetaryDocument;
+import br.community.feature.user.accounts.statement.importer.StatementParser;
+import br.community.feature.user.accounts.statement.importer.preview.*;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 
@@ -45,7 +45,7 @@ import java.util.regex.Pattern;
  * already posts those charges individually onto the linked account.
  */
 @NullMarked
-public class SantanderBankStatementParser implements BankStatementParser {
+public class SantanderStatementParser implements StatementParser {
 
     private static final Pattern MONTH_TOKEN = Pattern.compile(
             "(janeiro|fevereiro|março|abril|maio|junho|julho|agosto|setembro|outubro|novembro|dezembro)/(\\d{4})",
@@ -62,11 +62,23 @@ public class SantanderBankStatementParser implements BankStatementParser {
     private static final Pattern TRAILING_VALUE = Pattern.compile(
             "\\s(?:-|\\d{3,})\\s+(\\d[\\d.]*,\\d{2})(-?)(?:\\s+\\d[\\d.]*,\\d{2}-?)?\\s*$");
 
+    private static final String STATEMENT_MARKER = "EXTRATO CONSOLIDADO INTELIGENTE";
+
     @Override
-    public ParsedBankStatement parse(String text) {
+    public boolean parseable(String raw) {
+        return looksLikeStatement(new DocumentText(raw));
+    }
+
+    /** Santander stamps "Extrato Consolidado Inteligente"; its extrato carries no CNPJ. */
+    static boolean looksLikeStatement(DocumentText text) {
+        return text.has(STATEMENT_MARKER);
+    }
+
+    @Override
+    public MonetaryDocument parse(String text) {
         final int year = referenceYear(text);
         final int refMonth = referenceMonth(text);
-        final List<ParsedBankStatementLine> lines = new ArrayList<>();
+        final List<ParsedStatementLine> lines = new ArrayList<>();
 
         boolean inSection = false;
         @Nullable LocalDate recordDate = null;
@@ -102,7 +114,7 @@ public class SantanderBankStatementParser implements BankStatementParser {
             finalizeIfComplete(recordDate, buffer, lines);
         }
 
-        return new ParsedBankStatement(List.copyOf(lines));
+        return new MonetaryDocument.Statement(Issuer.SANTANDER, List.copyOf(lines));
     }
 
     /** Fim da janela de movimentos: a tabela {@code Saldos por Período} ou o saldo de fechamento. */
@@ -120,7 +132,7 @@ public class SantanderBankStatementParser implements BankStatementParser {
                 || line.isEmpty() || isNoise(line);
     }
 
-    private static void finalizeIfComplete(LocalDate date, StringBuilder buffer, List<ParsedBankStatementLine> out) {
+    private static void finalizeIfComplete(LocalDate date, StringBuilder buffer, List<ParsedStatementLine> out) {
         final Matcher value = TRAILING_VALUE.matcher(buffer);
         if (!value.find()) {
             return;
@@ -134,7 +146,7 @@ public class SantanderBankStatementParser implements BankStatementParser {
         if (description.isEmpty() || isDropped(description)) {
             return;
         }
-        out.add(new ParsedBankStatementLine(date, description, amount));
+        out.add(new ParsedStatementLine(date, description, amount));
     }
 
     private static boolean isDropped(String description) {

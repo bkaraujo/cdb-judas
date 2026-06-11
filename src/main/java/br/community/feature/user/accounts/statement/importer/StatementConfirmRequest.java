@@ -20,7 +20,6 @@ import java.util.UUID;
 @NullMarked
 public record StatementConfirmRequest(
         @NotNull StatementType type,
-        @Nullable UUID cardId,
         @Nullable UUID accountId,
         @NotNull @Valid List<Row> rows
 ) {
@@ -35,6 +34,7 @@ public record StatementConfirmRequest(
             @Nullable Integer installmentNumber,
             @Nullable Integer installmentTotal,
             @Nullable String transactionType,
-            @NotNull UUID categoryId
+            @NotNull UUID categoryId,
+            @Nullable UUID cardId
     ) {}
 }
