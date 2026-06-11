@@ -1,20 +1,23 @@
 package br.community.feature.user.accounts.statement.importer.provider;
 
+import br.commons.tools.Strings;
+import br.community.feature.user.accounts.statement.Amounts;
 import br.community.feature.user.accounts.statement.importer.StatementParser;
 import br.community.feature.user.accounts.statement.importer.preview.ChargeKind;
 import br.community.feature.user.accounts.statement.importer.preview.Issuer;
 import br.community.feature.user.accounts.statement.importer.MonetaryDocument;
 import br.community.feature.user.accounts.statement.importer.preview.ParsedStatementLine;
+import lombok.val;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 
 import java.time.MonthDay;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Locale;
-import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
+import static br.commons.chrono.Dates.MONTHS_ENUS;
 
 /**
  * BTG Pactual statement parser.
@@ -42,43 +45,40 @@ public class BTGInvoiceParser implements StatementParser {
     private static final String KEEP_HEADER = "Total de compras e despesas";
     private static final String CREDIT_HEADER = "Total de créditos recebidos";
 
-    private static final Map<String, Integer> MONTHS = Map.ofEntries(
-            Map.entry("jan", 1), Map.entry("fev", 2), Map.entry("mar", 3), Map.entry("abr", 4),
-            Map.entry("mai", 5), Map.entry("jun", 6), Map.entry("jul", 7), Map.entry("ago", 8),
-            Map.entry("set", 9), Map.entry("out", 10), Map.entry("nov", 11), Map.entry("dez", 12));
-
     private static final String CARD_CNPJ_DIGITS = "30306294000145";
 
     @Override
     public boolean parseable(String raw) {
-        final DocumentText text = new DocumentText(raw);
+        val text = new DocumentText(raw);
         return !BankStatements.isAny(text)
                 && (text.hasCnpj(CARD_CNPJ_DIGITS) || text.nameOnly("BTG PACTUAL", "SANTANDER"));
     }
 
     @Override
     public MonetaryDocument parse(String text) {
-        final List<ParsedStatementLine> lines = new ArrayList<>();
-        @Nullable String last4 = null;
+        val lines = new ArrayList<ParsedStatementLine>();
+        String last4 = null;
         boolean keep = false;
 
-        for (String line : text.split("\\R", -1)) {
-            final Matcher card = CARD_HEADER.matcher(line);
+        for (val line : text.split("\\R", -1)) {
+            val card = CARD_HEADER.matcher(line);
             if (card.find()) {
                 last4 = card.group(1);
                 keep = false;
                 continue;
             }
 
-            final Boolean section = sectionKeep(line);
+            val section = sectionKeep(line);
             if (section != null) {
                 keep = section;
                 continue;
             }
+
             if (!keep || last4 == null) {
                 continue;
             }
-            final ParsedStatementLine txn = txnLine(line, last4);
+
+            val txn = txnLine(line, last4);
             if (txn != null) {
                 lines.add(txn);
             }
@@ -89,7 +89,7 @@ public class BTGInvoiceParser implements StatementParser {
 
     /** {@code true}/{@code false} se a linha alterna a seção de interesse; {@code null} caso contrário. */
     private static @Nullable Boolean sectionKeep(String line) {
-        final String trimmed = line.trim();
+        val trimmed = line.trim();
         if (trimmed.equals(KEEP_HEADER)) {
             return Boolean.TRUE;
         }
@@ -100,22 +100,29 @@ public class BTGInvoiceParser implements StatementParser {
     }
 
     private static @Nullable ParsedStatementLine txnLine(String line, String last4) {
-        final Matcher m = TXN.matcher(line);
+        val m = TXN.matcher(line);
         if (!m.matches() || m.group(1).equals("US$")) {
             return null;
         }
-        final int month = month(m.group(7));
+        val month = month(m.group(7));
         if (month == 0) {
             return null;
         }
-        final MonthDay date = MonthDay.of(month, Integer.parseInt(m.group(6)));
-        final Integer number = m.group(4) == null ? null : Integer.valueOf(m.group(4));
-        final Integer total = m.group(5) == null ? null : Integer.valueOf(m.group(5));
+        val date = MonthDay.of(month, Integer.parseInt(m.group(6)));
+        val number = m.group(4) == null ? null : Integer.valueOf(m.group(4));
+        val total = m.group(5) == null ? null : Integer.valueOf(m.group(5));
         return ParsedStatementLine.charge(
                 last4, date, m.group(3).trim(), Amounts.brl(m.group(2)), number, total, ChargeKind.PURCHASE);
     }
 
     private static int month(String abbr) {
-        return MONTHS.getOrDefault(abbr.toLowerCase(Locale.ROOT), 0);
+        val upper = Strings.upper(abbr);
+        for (val month : MONTHS_ENUS.keySet()) {
+            if (month.startsWith(upper)) {
+                return MONTHS_ENUS.get(month);
+            }
+        }
+
+        return 0;
     }
 }

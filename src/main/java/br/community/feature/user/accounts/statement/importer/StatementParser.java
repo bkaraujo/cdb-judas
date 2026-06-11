@@ -16,8 +16,4 @@ import java.math.BigDecimal;
 @NullMarked
 public interface StatementParser extends Parser<MonetaryDocument> {
 
-    static BigDecimal brl(String raw) {
-        return new BigDecimal(raw.replace(".", "").replace(",", "."));
-    }
-
 }

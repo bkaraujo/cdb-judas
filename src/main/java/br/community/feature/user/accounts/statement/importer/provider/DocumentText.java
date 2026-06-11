@@ -1,5 +1,6 @@
 package br.community.feature.user.accounts.statement.importer.provider;
 
+import br.commons.tools.Strings;
 import org.jspecify.annotations.NullMarked;
 
 import java.util.Locale;
@@ -17,7 +18,7 @@ final class DocumentText {
     private final String digits;
 
     DocumentText(String raw) {
-        this.upper = raw.toUpperCase(Locale.ROOT);
+        this.upper = Strings.upper(raw);
         this.digits = raw.replaceAll("\\D", "");
     }
 

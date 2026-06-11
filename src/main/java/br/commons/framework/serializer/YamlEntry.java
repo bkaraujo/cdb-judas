@@ -1,5 +1,6 @@
 package br.commons.framework.serializer;
 
+import lombok.val;
 import org.jspecify.annotations.NullMarked;
 
 import java.util.Map;
@@ -12,7 +13,7 @@ public record YamlEntry (
 ) {
 
     public Map<String, Object> toMap() {
-        final var map = new ConcurrentSkipListMap<String, Object>();
+        val map = new ConcurrentSkipListMap<String, Object>();
         map.put(key, value);
         return map;
     }

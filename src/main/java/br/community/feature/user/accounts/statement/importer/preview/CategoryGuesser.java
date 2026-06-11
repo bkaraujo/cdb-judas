@@ -2,6 +2,7 @@ package br.community.feature.user.accounts.statement.importer.preview;
 
 import br.community.context.monetary._0_domain.model.MonetaryTransaction;
 import br.community.feature.user.accounts.statement.importer.GroupSignature;
+import lombok.val;
 import org.jspecify.annotations.NullMarked;
 
 import java.time.LocalDate;
@@ -17,22 +18,22 @@ import java.util.stream.Collectors;
 public class CategoryGuesser {
 
     public Optional<UUID> guess(String description, List<MonetaryTransaction> history) {
-        final String target = GroupSignature.normalize(description);
+        val target = GroupSignature.normalize(description);
 
-        final List<MonetaryTransaction> matches = history.stream()
+        val matches = history.stream()
                 .filter(t -> target.equals(GroupSignature.normalize(t.description())))
                 .toList();
         if (matches.isEmpty()) {
             return Optional.empty();
         }
 
-        final Map<UUID, LocalDate> mostRecentByCategory = matches.stream()
+        val mostRecentByCategory = matches.stream()
                 .collect(Collectors.toMap(
                         MonetaryTransaction::categoryId,
                         MonetaryTransaction::date,
                         (a, b) -> a.isAfter(b) ? a : b));
 
-        final Map<UUID, Long> countByCategory = matches.stream()
+        val countByCategory = matches.stream()
                 .collect(Collectors.groupingBy(MonetaryTransaction::categoryId, Collectors.counting()));
 
         return countByCategory.entrySet().stream()

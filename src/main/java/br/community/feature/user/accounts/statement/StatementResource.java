@@ -27,7 +27,7 @@ public class StatementResource {
     @GetMapping("/{accountID}/statements/{yyyyMM}")
     public List<StatementItem> detail(
             @PathVariable UUID accountID,
-            @PathVariable("yyyyMM") String yyyyMM,
+            @PathVariable String yyyyMM,
             @RequestParam(required = false) @Nullable String status
     ) {
         val ym = YearMonth.parse(yyyyMM, YYYYMM);
@@ -39,7 +39,7 @@ public class StatementResource {
 
     @GetMapping("/statements/{yyyyMM}")
     public List<StatementSummary> summary(
-            @PathVariable("yyyyMM") String yyyyMM,
+            @PathVariable String yyyyMM,
             @RequestParam(required = false) @Nullable String status
     ) {
         val ym = YearMonth.parse(yyyyMM, YYYYMM);

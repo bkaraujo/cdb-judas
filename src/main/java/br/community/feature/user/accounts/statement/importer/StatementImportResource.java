@@ -4,7 +4,6 @@ import br.commons.Result;
 import br.community.context.monetary._0_domain.model.MonetaryAccount;
 import br.community.context.monetary._1_application.command.ImportConfirmCommand;
 import br.community.context.shared._0_domain.model.DomainError;
-import br.community.feature.user.accounts.statement.importer.confirm.BankStatementConfirmCommand;
 import br.community.feature.user.accounts.statement.importer.preview.*;
 import br.community.feature.user.accounts.transactions.ImportConfirmResponse;
 import jakarta.validation.Valid;
@@ -145,7 +144,7 @@ public class StatementImportResource {
     }
 
     private static ImportPreviewResponse.Row toRow(PreviewRow row) {
-        final TransactionDraft draft = row.draft();
+        val draft = row.draft();
         return new ImportPreviewResponse.Row(
                 draft.last4(),
                 draft.date().toString(),

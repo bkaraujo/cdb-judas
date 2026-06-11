@@ -141,7 +141,7 @@ public abstract class Meta {
     }
 
     public static @Nullable Field field(Object container, String name) {
-        for (final var field : fields(container)) {
+        for (val field : fields(container)) {
             if (field.getName().equals(name)) {
                 return field;
             }
@@ -160,7 +160,7 @@ public abstract class Meta {
     private static Set<Field> fields(Class<?> container) {
         if (knownFields.containsKey(container)) { return knownFields.get(container); }
 
-        final var fields = new HashSet<Field>();
+        val fields = new HashSet<Field>();
 
         Class<?> klass = container;
         while (klass != null) {

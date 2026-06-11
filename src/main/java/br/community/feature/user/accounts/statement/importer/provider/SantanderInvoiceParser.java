@@ -1,10 +1,12 @@
 package br.community.feature.user.accounts.statement.importer.provider;
 
+import br.community.feature.user.accounts.statement.Amounts;
 import br.community.feature.user.accounts.statement.importer.StatementParser;
 import br.community.feature.user.accounts.statement.importer.preview.ChargeKind;
 import br.community.feature.user.accounts.statement.importer.preview.Issuer;
 import br.community.feature.user.accounts.statement.importer.MonetaryDocument;
 import br.community.feature.user.accounts.statement.importer.preview.ParsedStatementLine;
+import lombok.val;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 
@@ -41,28 +43,28 @@ public class SantanderInvoiceParser implements StatementParser {
 
     @Override
     public boolean parseable(String raw) {
-        final DocumentText text = new DocumentText(raw);
+        val text = new DocumentText(raw);
         return !BankStatements.isAny(text)
                 && (text.hasCnpj(CNPJ_DIGITS) || text.nameOnly("SANTANDER", "BTG PACTUAL"));
     }
 
     @Override
     public MonetaryDocument parse(String text) {
-        final List<ParsedStatementLine> lines = new ArrayList<>();
+        val lines = new ArrayList<ParsedStatementLine>();
         @Nullable String last4 = null;
         @Nullable MonthDay lastDate = null;
         boolean keep = false;
 
         for (String line : text.split("\\R", -1)) {
-            final Matcher card = CARD_HEADER.matcher(line);
+            val card = CARD_HEADER.matcher(line);
             if (card.find()) {
                 last4 = card.group(1);
                 keep = false;
                 continue;
             }
 
-            final String trimmed = line.trim();
-            final Boolean section = sectionKeep(trimmed);
+            val trimmed = line.trim();
+            val section = sectionKeep(trimmed);
             if (section != null) {
                 keep = section;
                 continue;
@@ -91,12 +93,12 @@ public class SantanderInvoiceParser implements StatementParser {
     /** Emite a linha IOF ou de transação (se houver) e devolve a data corrente que ancora o IOF. */
     private static @Nullable MonthDay emitLine(String line, String trimmed, String last4,
                                                @Nullable MonthDay lastDate, List<ParsedStatementLine> lines) {
-        final ParsedStatementLine iof = iofLine(trimmed, last4, lastDate);
+        val iof = iofLine(trimmed, last4, lastDate);
         if (iof != null) {
             lines.add(iof);
             return lastDate;
         }
-        final ParsedStatementLine txn = txnLine(line, last4);
+        val txn = txnLine(line, last4);
         if (txn != null) {
             lines.add(txn);
             return MonthDay.from(txn.date());
@@ -106,11 +108,11 @@ public class SantanderInvoiceParser implements StatementParser {
 
     /** A linha de IOF não traz data própria — é ancorada na última transação (a compra no exterior). */
     private static @Nullable ParsedStatementLine iofLine(String trimmed, String last4, @Nullable MonthDay lastDate) {
-        final Matcher iof = IOF_LINE.matcher(trimmed);
+        val iof = IOF_LINE.matcher(trimmed);
         if (!iof.matches()) {
             return null;
         }
-        final BigDecimal value = Amounts.brl(iof.group(2));
+        val value = Amounts.brl(iof.group(2));
         if (value.signum() < 0 || lastDate == null) {
             return null;
         }
@@ -118,18 +120,18 @@ public class SantanderInvoiceParser implements StatementParser {
     }
 
     private static @Nullable ParsedStatementLine txnLine(String line, String last4) {
-        final Matcher m = TXN.matcher(line);
+        val m = TXN.matcher(line);
         if (!m.matches()) {
             return null;
         }
-        final BigDecimal value = Amounts.brl(m.group(6));
+        val value = Amounts.brl(m.group(6));
         if (value.signum() < 0) {
             return null;
         }
-        final MonthDay date = MonthDay.of(Integer.parseInt(m.group(2)), Integer.parseInt(m.group(1)));
-        final Integer number = m.group(4) == null ? null : Integer.valueOf(m.group(4));
-        final Integer total = m.group(5) == null ? null : Integer.valueOf(m.group(5));
-        final String description = m.group(3).trim();
+        val date = MonthDay.of(Integer.parseInt(m.group(2)), Integer.parseInt(m.group(1)));
+        val number = m.group(4) == null ? null : Integer.valueOf(m.group(4));
+        val total = m.group(5) == null ? null : Integer.valueOf(m.group(5));
+        val description = m.group(3).trim();
         return ParsedStatementLine.charge(last4, date, description, value, number, total, classify(description));
     }
 

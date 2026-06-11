@@ -31,7 +31,8 @@ public record BankStatementPreviewResponse(
             String type,
             String state,
             @Nullable UUID categoryId,
-            @Nullable String reconcileDescription) {}
+            @Nullable String reconcileDescription
+    ) {}
 
     @NullMarked
     public record AccountOption(UUID id, String name) {}

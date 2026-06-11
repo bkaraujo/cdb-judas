@@ -1,5 +1,6 @@
 package br.commons.framework.logger.channel;
 
+import lombok.val;
 import org.jspecify.annotations.NullMarked;
 
 import java.io.BufferedWriter;
@@ -19,7 +20,7 @@ final class Ansi {
     }
 
     static void writeStripped(BufferedWriter writer, String message) throws IOException {
-        final int length = message.length();
+        val length = message.length();
         int lastWritePos = 0;
         int currentPos = 0;
 
@@ -28,11 +29,11 @@ final class Ansi {
                 currentPos++;
                 continue;
             }
-            final int len = currentPos - lastWritePos;
+            val len = currentPos - lastWritePos;
             if (len > 0) {
                 writer.write(message, lastWritePos, len);
             }
-            final int end = sequenceEnd(message, currentPos, length);
+            val end = sequenceEnd(message, currentPos, length);
             if (end < 0) {
                 currentPos++;
                 continue;
@@ -41,7 +42,7 @@ final class Ansi {
             lastWritePos = currentPos;
         }
 
-        final int tailLen = length - lastWritePos;
+        val tailLen = length - lastWritePos;
         if (tailLen > 0) {
             writer.write(message, lastWritePos, tailLen);
         }

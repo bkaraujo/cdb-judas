@@ -1,9 +1,11 @@
 package br.community.feature.user.accounts.statement.importer.provider;
 
 import br.commons.tools.Strings;
+import br.community.feature.user.accounts.statement.Amounts;
 import br.community.feature.user.accounts.statement.importer.MonetaryDocument;
 import br.community.feature.user.accounts.statement.importer.StatementParser;
 import br.community.feature.user.accounts.statement.importer.preview.*;
+import lombok.val;
 import org.jspecify.annotations.NullMarked;
 
 import java.math.BigDecimal;
@@ -54,18 +56,18 @@ public class BTGStatementParser implements StatementParser {
 
     @Override
     public MonetaryDocument parse(String text) {
-        final List<ParsedStatementLine> lines = new ArrayList<>();
+        val lines = new ArrayList<ParsedStatementLine>();
 
         LocalDate recordDate = null;
-        final StringBuilder buffer = new StringBuilder();
+        val buffer = new StringBuilder();
 
         for (String raw : text.split("\\R", -1)) {
-            final String line = raw.trim();
+            val line = raw.trim();
             if (line.isEmpty() || line.regionMatches(true, 0, "Lançamentos", 0, "Lançamentos".length())) {
                 continue;
             }
 
-            final Matcher date = DATE_PREFIX.matcher(line);
+            val date = DATE_PREFIX.matcher(line);
             if (date.find()) {
                 // A new record begins; the previous one is abandoned if it never reached a value
                 // (page headers between the print-date line and the first real movement).
@@ -88,11 +90,11 @@ public class BTGStatementParser implements StatementParser {
     }
 
     private static void finalize(LocalDate date, String record, List<ParsedStatementLine> out) {
-        final Matcher value = TRAILING_VALUE.matcher(record);
+        val value = TRAILING_VALUE.matcher(record);
         if (!value.find()) {
             return;
         }
-        final String description = record.substring(0, value.start()).replaceAll("\\s+", " ").trim();
+        val description = record.substring(0, value.start()).replaceAll("\\s+", " ").trim();
         if (isDropped(description)) {
             return;
         }

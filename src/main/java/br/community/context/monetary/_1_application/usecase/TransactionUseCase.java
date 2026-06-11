@@ -253,7 +253,7 @@ public class TransactionUseCase {
     /** Persists an already-resolved imported movement (sign applied here from {@code type}) and emits
      *  the creation event so balances recalc. Used by the statement-import feature via the facade. */
     public Result<MonetaryTransaction, DomainError> createImported(ImportedTransactionCommand cmd) {
-        final BigDecimal signed = "income".equals(cmd.type())
+        val signed = "income".equals(cmd.type())
                 ? cmd.amount().abs()
                 : cmd.amount().abs().negate();
         val tx = new MonetaryTransaction(

@@ -1,9 +1,12 @@
 package br.community.feature.user.accounts.statement.importer.provider;
 
+import br.commons.chrono.Dates;
 import br.commons.tools.Strings;
+import br.community.feature.user.accounts.statement.Amounts;
 import br.community.feature.user.accounts.statement.importer.MonetaryDocument;
 import br.community.feature.user.accounts.statement.importer.StatementParser;
 import br.community.feature.user.accounts.statement.importer.preview.*;
+import lombok.val;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 
@@ -13,7 +16,6 @@ import java.time.Year;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
-import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -50,11 +52,6 @@ public class SantanderStatementParser implements StatementParser {
     private static final Pattern MONTH_TOKEN = Pattern.compile(
             "(janeiro|fevereiro|março|abril|maio|junho|julho|agosto|setembro|outubro|novembro|dezembro)/(\\d{4})",
             Pattern.CASE_INSENSITIVE);
-    private static final Map<String, Integer> MONTHS = Map.ofEntries(
-            Map.entry("janeiro", 1), Map.entry("fevereiro", 2), Map.entry("março", 3),
-            Map.entry("abril", 4), Map.entry("maio", 5), Map.entry("junho", 6),
-            Map.entry("julho", 7), Map.entry("agosto", 8), Map.entry("setembro", 9),
-            Map.entry("outubro", 10), Map.entry("novembro", 11), Map.entry("dezembro", 12));
 
     /** A posting line: {@code dd/mm} followed by two+ spaces (the Data→Descrição column gap). */
     private static final Pattern DATE_PREFIX = Pattern.compile("^(\\d{2})/(\\d{2})\\s{2,}(\\S.*)$");
@@ -76,16 +73,16 @@ public class SantanderStatementParser implements StatementParser {
 
     @Override
     public MonetaryDocument parse(String text) {
-        final int year = referenceYear(text);
-        final int refMonth = referenceMonth(text);
-        final List<ParsedStatementLine> lines = new ArrayList<>();
+        val year = referenceYear(text);
+        val refMonth = referenceMonth(text);
+        val lines = new ArrayList<ParsedStatementLine>();
 
         boolean inSection = false;
         @Nullable LocalDate recordDate = null;
-        final StringBuilder buffer = new StringBuilder();
+        val buffer = new StringBuilder();
 
         for (String raw : text.split("\\R", -1)) {
-            final String line = raw.strip();
+            val line = raw.strip();
 
             if (!inSection) {
                 inSection = line.contains("Movimento (R"); // the Movimentação column header opens the table
@@ -98,7 +95,7 @@ public class SantanderStatementParser implements StatementParser {
                 continue;
             }
 
-            final Matcher date = DATE_PREFIX.matcher(line);
+            val date = DATE_PREFIX.matcher(line);
             if (date.find()) {
                 recordDate = dateFor(year, refMonth, Integer.parseInt(date.group(2)), Integer.parseInt(date.group(1)));
                 buffer.setLength(0);
@@ -133,11 +130,11 @@ public class SantanderStatementParser implements StatementParser {
     }
 
     private static void finalizeIfComplete(LocalDate date, StringBuilder buffer, List<ParsedStatementLine> out) {
-        final Matcher value = TRAILING_VALUE.matcher(buffer);
+        val value = TRAILING_VALUE.matcher(buffer);
         if (!value.find()) {
             return;
         }
-        final String description = buffer.substring(0, value.start()).replaceAll("\\s+", " ").strip();
+        val description = buffer.substring(0, value.start()).replaceAll("\\s+", " ").strip();
         BigDecimal amount = Amounts.brl(value.group(1));
         if ("-".equals(value.group(2))) {
             amount = amount.negate();
@@ -150,7 +147,7 @@ public class SantanderStatementParser implements StatementParser {
     }
 
     private static boolean isDropped(String description) {
-        final String upper = description.toUpperCase(Locale.ROOT);
+        val upper = description.toUpperCase(Locale.ROOT);
         return upper.contains("PAGAMENTO CARTAO") || upper.contains("PAGAMENTO CARTÃO")
                 || upper.contains("FATURA CARTAO") || upper.contains("FATURA CARTÃO");
     }
@@ -165,18 +162,18 @@ public class SantanderStatementParser implements StatementParser {
 
     /** Calendar-month statements only spill across a year at the Dec/Jan boundary; guard for it. */
     private static LocalDate dateFor(int year, int refMonth, int month, int day) {
-        final int resolved = month > refMonth ? year - 1 : (month < refMonth ? year + 1 : year);
+        val resolved = month > refMonth ? year - 1 : (month < refMonth ? year + 1 : year);
         return LocalDate.of(resolved, month, day);
     }
 
     private static int referenceYear(String text) {
-        final Matcher m = MONTH_TOKEN.matcher(text);
+        val m = MONTH_TOKEN.matcher(text);
         return m.find() ? Integer.parseInt(m.group(2)) : Year.now().getValue();
     }
 
     private static int referenceMonth(String text) {
-        final Matcher m = MONTH_TOKEN.matcher(text);
-        return m.find() ? MONTHS.getOrDefault(m.group(1).toLowerCase(Locale.ROOT), 1) : 1;
+        val m = MONTH_TOKEN.matcher(text);
+        return m.find() ? Dates.MONTHS_PTBR.getOrDefault(m.group(1).toLowerCase(Locale.ROOT), 1) : 1;
     }
 
 }

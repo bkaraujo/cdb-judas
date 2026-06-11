@@ -2,7 +2,7 @@ package br.commons.framework.persistence.json;
 
 import br.commons.Logger;
 import br.commons.framework.persistence.Storage;
-import br.commons.tools.Platform;
+import br.commons.Platform;
 import br.community.core.JsonStorageProperties;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;

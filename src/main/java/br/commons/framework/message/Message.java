@@ -1,6 +1,6 @@
 package br.commons.framework.message;
 
-import br.commons.tools.chrono.Time;
+import br.commons.chrono.Time;
 import org.jspecify.annotations.NullMarked;
 
 @NullMarked

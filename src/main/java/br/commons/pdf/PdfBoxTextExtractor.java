@@ -2,6 +2,7 @@ package br.commons.pdf;
 
 import br.commons.Result;
 import org.apache.pdfbox.Loader;
+import lombok.val;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.encryption.InvalidPasswordException;
 import org.apache.pdfbox.text.PDFTextStripper;
@@ -26,13 +27,13 @@ public final class PdfBoxTextExtractor implements PdfTextExtractor {
 
     @Override
     public Result<String, ExtractionFailure> extract(byte[] bytes, @Nullable String password) {
-        final boolean hasPassword = password != null && !password.isBlank();
+        val hasPassword = password != null && !password.isBlank();
         try (PDDocument document = open(bytes, password, hasPassword)) {
-            final int pages = document.getNumberOfPages();
+            val pages = document.getNumberOfPages();
             if (pages > maxPages) {
                 return new Result.Failure<>(new ExtractionFailure.TooManyPages(pages, maxPages));
             }
-            final String text = new PDFTextStripper().getText(document);
+            val text = new PDFTextStripper().getText(document);
             if (text.isBlank()) {
                 return new Result.Failure<>(new ExtractionFailure.NoTextLayer());
             }

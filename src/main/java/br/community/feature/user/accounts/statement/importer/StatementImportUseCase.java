@@ -12,8 +12,6 @@ import br.community.context.monetary._0_domain.model.MonetaryTransaction;
 import br.community.context.monetary._1_application.command.ImportConfirmCommand;
 import br.community.context.monetary._1_application.command.ImportedTransactionCommand;
 import br.community.context.shared._0_domain.model.DomainError;
-import br.community.feature.user.accounts.statement.importer.confirm.BankStatementConfirmCommand;
-import br.community.feature.user.accounts.statement.importer.confirm.ImportResult;
 import br.community.feature.user.accounts.statement.importer.preview.*;
 import lombok.RequiredArgsConstructor;
 import lombok.val;
@@ -195,18 +193,18 @@ public class StatementImportUseCase {
             val movements = cmd.rows().stream()
                     .map(r -> new ParsedStatementLine(r.date(), r.description(), r.amount()))
                     .toList();
-            final List<Classification> classes = classify(movements, accountTx);
+            val classes = classify(movements, accountTx);
 
             int created = 0;
             int reconciled = 0;
             int skipped = 0;
             for (int i = 0; i < cmd.rows().size(); i++) {
-                final BankStatementConfirmCommand.Row row = cmd.rows().get(i);
-                final Classification cls = classes.get(i);
+                val row = cmd.rows().get(i);
+                val cls = classes.get(i);
                 switch (cls.state()) {
                     case DUPLICATE -> skipped++;
                     case RECONCILE -> {
-                        final MonetaryTransaction target = cls.target();
+                        val target = cls.target();
                         if (target != null) {
                             monetaryContext.updateTransactionStatus(target.id(), "confirmed", row.date());
                             reconciled++;
@@ -225,8 +223,8 @@ public class StatementImportUseCase {
     }
 
     private boolean persistStatementRow(BankStatementConfirmCommand.Row row, UUID accountId, LocalDate today) {
-        final String status = YearMonth.from(row.date()).isAfter(YearMonth.from(today)) ? "scheduled" : "confirmed";
-        final ImportedTransactionCommand command = new ImportedTransactionCommand(
+        val status = YearMonth.from(row.date()).isAfter(YearMonth.from(today)) ? "scheduled" : "confirmed";
+        val command = new ImportedTransactionCommand(
                 accountId, row.description(), row.amount(), row.date(), row.categoryId(),
                 status, row.type(), null, null, null);
         try {
@@ -245,11 +243,11 @@ public class StatementImportUseCase {
 
     private BankStatementPreviewRow bankRow(ParsedStatementLine line, Classification cls,
                                             List<MonetaryTransaction> history, UUID fallbackCategoryId) {
-        final String type = line.amount().signum() < 0 ? "expense" : "income";
-        final UUID categoryId = cls.state() == RowState.NEW
+        val type = line.amount().signum() < 0 ? "expense" : "income";
+        val categoryId = cls.state() == RowState.NEW
                 ? categoryGuesser.guess(line.description(), history).orElse(fallbackCategoryId)
                 : null;
-        final String reconcileDescription = cls.target() != null ? cls.target().description() : null;
+        val reconcileDescription = cls.target() != null ? cls.target().description() : null;
         return new BankStatementPreviewRow(
                 line.date(), line.description(), line.amount(), type, cls.state(), categoryId, reconcileDescription);
     }
@@ -261,12 +259,12 @@ public class StatementImportUseCase {
      * #RECONCILE_WINDOW_DAYS} days (closest date wins) → RECONCILE; otherwise NEW.
      */
     private List<Classification> classify(List<ParsedStatementLine> movements, List<MonetaryTransaction> accountTx) {
-        final Set<UUID> consumed = new HashSet<>();
-        final List<Classification> out = new ArrayList<>();
+        val consumed = new HashSet<UUID>();
+        val out = new ArrayList<Classification>();
         for (val mv : movements) {
-            final String desc = GroupSignature.normalize(mv.description());
+            val desc = GroupSignature.normalize(mv.description());
 
-            final Optional<MonetaryTransaction> dup = accountTx.stream()
+            val dup = accountTx.stream()
                     .filter(t -> !consumed.contains(t.id()))
                     .filter(t -> mv.date().equals(t.date())
                             && t.amount().compareTo(mv.amount()) == 0
@@ -278,7 +276,7 @@ public class StatementImportUseCase {
                 continue;
             }
 
-            final Optional<MonetaryTransaction> rec = accountTx.stream()
+            val rec = accountTx.stream()
                     .filter(t -> !consumed.contains(t.id()))
                     .filter(t -> isReconcilable(t.status()))
                     .filter(t -> t.amount().compareTo(mv.amount()) == 0)
@@ -304,7 +302,7 @@ public class StatementImportUseCase {
     }
 
     private static boolean isAvistaDuplicate(ImportConfirmCommand.Row row, UUID accountId, List<MonetaryTransaction> seen) {
-        final String desc = GroupSignature.normalize(row.description());
+        val desc = GroupSignature.normalize(row.description());
         return seen.stream().anyMatch(t ->
                 accountId.equals(t.accountId())
                         && row.date().equals(t.date())
@@ -316,8 +314,8 @@ public class StatementImportUseCase {
     private MonetaryTransaction persist(ImportConfirmCommand.Row row, UUID accountId, LocalDate today,
                                         @Nullable UUID groupId, @Nullable Integer installmentNumber,
                                         @Nullable Integer totalInstallments) {
-        final String status = YearMonth.from(row.date()).isAfter(YearMonth.from(today)) ? "scheduled" : "confirmed";
-        final ImportedTransactionCommand command = new ImportedTransactionCommand(
+        val status = YearMonth.from(row.date()).isAfter(YearMonth.from(today)) ? "scheduled" : "confirmed";
+        val command = new ImportedTransactionCommand(
                 accountId, row.description(), row.amount(), row.date(), row.categoryId(),
                 status, "expense", groupId, installmentNumber, totalInstallments);
         try {
@@ -418,7 +416,7 @@ public class StatementImportUseCase {
         if (draft.groupId() != null) {
             return existing.stream().anyMatch(t -> draft.groupId().equals(t.groupId()));
         }
-        final String desc = GroupSignature.normalize(draft.description());
+        val desc = GroupSignature.normalize(draft.description());
         return existing.stream().anyMatch(t ->
                 draft.accountId().equals(t.accountId())
                         && draft.date().equals(t.date())

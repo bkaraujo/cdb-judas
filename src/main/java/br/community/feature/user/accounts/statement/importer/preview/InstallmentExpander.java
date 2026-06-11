@@ -2,6 +2,7 @@ package br.community.feature.user.accounts.statement.importer.preview;
 
 import br.community.feature.user.accounts.statement.importer.GroupSignature;
 import lombok.RequiredArgsConstructor;
+import lombok.val;
 import org.jspecify.annotations.NullMarked;
 
 import java.time.LocalDate;
@@ -28,10 +29,10 @@ public class InstallmentExpander {
     private final GroupSignature groupSignature;
 
     public List<TransactionDraft> expand(ParsedStatementLine line, UUID accountId, LocalDate today) {
-        final YearMonth statementPeriod = YearMonth.from(today);
-        final int n = line.isInstallment() ? line.installmentNumber() : 1;
-        final YearMonth anchor = line.isInstallment() ? statementPeriod.minusMonths(n - 1L) : statementPeriod;
-        final LocalDate originalDate = resolveOriginalDate(MonthDay.from(line.date()), anchor);
+        val statementPeriod = YearMonth.from(today);
+        val n = line.isInstallment() ? line.installmentNumber() : 1;
+        val anchor = line.isInstallment() ? statementPeriod.minusMonths(n - 1L) : statementPeriod;
+        val originalDate = resolveOriginalDate(MonthDay.from(line.date()), anchor);
 
         if (!line.isInstallment()) {
             return List.of(new TransactionDraft(
@@ -40,10 +41,10 @@ public class InstallmentExpander {
         }
 
         final int total = line.installmentTotal();
-        final UUID groupId = groupSignature.groupId(accountId, originalDate, total, line.description());
-        final List<TransactionDraft> drafts = new ArrayList<>(total);
+        val groupId = groupSignature.groupId(accountId, originalDate, total, line.description());
+        val drafts = new ArrayList<TransactionDraft>(total);
         for (int k = 1; k <= total; k++) {
-            final LocalDate date = originalDate.plusMonths(k - 1L);
+            val date = originalDate.plusMonths(k - 1L);
             drafts.add(new TransactionDraft(
                     line.last4(), date, originalDate, line.description(), line.amount(),
                     statusFor(date, today), "expense", accountId, groupId, k, total, line.kind()));
@@ -53,7 +54,7 @@ public class InstallmentExpander {
 
     private static LocalDate resolveOriginalDate(MonthDay monthDay, YearMonth anchor) {
         int year = anchor.getYear();
-        final int diff = monthDay.getMonthValue() - anchor.getMonthValue();
+        val diff = monthDay.getMonthValue() - anchor.getMonthValue();
         if (diff > 6) {
             year--;
         } else if (diff < -6) {

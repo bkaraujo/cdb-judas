@@ -14,7 +14,7 @@ import java.nio.file.StandardOpenOption;
 import java.time.LocalDate;
 import java.util.Queue;
 
-import static br.commons.tools.chrono.Dates.MILLIS_IN_DAY;
+import static br.commons.chrono.Dates.MILLIS_IN_DAY;
 
 @NullMarked
 final class RollingFileWriter implements Runnable {
