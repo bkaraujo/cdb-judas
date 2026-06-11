@@ -1,6 +1,6 @@
 package br.community.core.web;
 
-import br.community.core.web.security.LoginResource;
+import br.community.feature.system.auth.LoginResource;
 import io.swagger.v3.oas.models.Components;
 import io.swagger.v3.oas.models.OpenAPI;
 import io.swagger.v3.oas.models.info.Info;

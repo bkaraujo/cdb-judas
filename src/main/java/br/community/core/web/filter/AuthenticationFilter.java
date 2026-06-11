@@ -4,7 +4,7 @@ import br.commons.Logger;
 import br.commons.framework.logger.MDC;
 import br.community.context.security._0_domain.repository.UserRepository;
 import br.community.core.web.RequestUtils;
-import br.community.core.web.security.AccessTokenStore;
+import br.community.feature.system.auth.AccessTokenStore;
 import br.community.core.web.security.AuthenticatedUser;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -20,7 +20,7 @@ import org.springframework.web.filter.OncePerRequestFilter;
 import java.io.IOException;
 import java.util.List;
 
-import static br.community.core.web.security.LoginResource.TOKEN_HEADER;
+import static br.community.feature.system.auth.LoginResource.TOKEN_HEADER;
 
 @NullMarked
 @RequiredArgsConstructor

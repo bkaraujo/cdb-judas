@@ -1,4 +1,4 @@
-package br.community.core.web.security;
+package br.community.feature.system.auth;
 
 import org.jspecify.annotations.NullMarked;
 

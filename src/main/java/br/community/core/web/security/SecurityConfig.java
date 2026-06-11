@@ -3,6 +3,8 @@ package br.community.core.web.security;
 import br.community.context.security._0_domain.repository.UserRepository;
 import br.community.core.web.filter.AuthenticationFilter;
 import br.community.core.web.filter.AuthorizationFilter;
+import br.community.feature.system.auth.AccessTokenStore;
+import br.community.feature.system.auth.LoginResource;
 import lombok.val;
 import org.jspecify.annotations.NullMarked;
 import org.springframework.context.annotation.Bean;
@@ -22,7 +24,7 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 import java.util.List;
 
-import static br.community.core.web.security.LoginResource.TOKEN_HEADER;
+import static br.community.feature.system.auth.LoginResource.TOKEN_HEADER;
 import static org.springframework.security.config.Customizer.withDefaults;
 
 @Configuration

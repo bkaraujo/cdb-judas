@@ -1,4 +1,4 @@
-package br.community.core.web.security;
+package br.community.feature.system.auth;
 
 import br.commons.Logger;
 import jakarta.servlet.http.HttpServletResponse;

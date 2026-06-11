@@ -8,7 +8,7 @@ import br.community.context.security._0_domain.model.User;
 import br.community.core.JsonStorageProperties;
 import br.community.core.web.filter.AuthenticationFilter;
 import br.community.core.web.filter.AuthorizationFilter;
-import br.community.core.web.security.AccessTokenStore;
+import br.community.feature.system.auth.AccessTokenStore;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.val;
 import org.junit.jupiter.api.BeforeEach;
@@ -28,7 +28,7 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.util.List;
 
-import static br.community.core.web.security.LoginResource.TOKEN_HEADER;
+import static br.community.feature.system.auth.LoginResource.TOKEN_HEADER;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;

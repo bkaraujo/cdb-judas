@@ -4,7 +4,7 @@ import br.commons.framework.persistence.inmemory.InMemoryStorage;
 import br.community.context.security._0_domain.model.Preferences;
 import br.community.context.security._0_domain.model.User;
 import br.community.context.security._2_infrastructure.UserJsonRepository;
-import br.community.core.web.security.AccessTokenStore;
+import br.community.feature.system.auth.AccessTokenStore;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
 
