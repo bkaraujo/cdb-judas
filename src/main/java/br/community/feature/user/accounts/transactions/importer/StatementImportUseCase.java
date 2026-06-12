@@ -13,7 +13,6 @@ import br.community.context.monetary._1_application.command.ImportConfirmCommand
 import br.community.context.monetary._1_application.command.ImportedTransactionCommand;
 import br.community.context.shared._0_domain.model.DomainError;
 import br.community.feature.user.accounts.transactions.importer.preview.*;
-import lombok.RequiredArgsConstructor;
 import lombok.val;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
@@ -32,7 +31,6 @@ import java.util.stream.Collectors;
  * monetary context goes through its {@link MonetaryContext} facade — this slice owns no persistence.
  */
 @NullMarked
-@RequiredArgsConstructor
 public class StatementImportUseCase {
 
     private static final int RECONCILE_WINDOW_DAYS = 3;
@@ -40,12 +38,26 @@ public class StatementImportUseCase {
     private final MonetaryContext monetaryContext;
     private final PdfTextExtractor extractor;
     private final List<StatementParser> parsers;
-    private final CardMatcher cardMatcher;
+    private final CardMatcher cardMatcher = new CardMatcher();
     private final InstallmentExpander expander;
-    private final GroupSignature groupSignature;
-    private final CategoryGuesser categoryGuesser;
+    private final GroupSignature groupSignature = new GroupSignature();
+    private final CategoryGuesser categoryGuesser = new CategoryGuesser();
     private final Clock clock;
     private final long maxFileBytes;
+
+    public StatementImportUseCase(MonetaryContext monetaryContext, PdfTextExtractor extractor, List<StatementParser> parsers, long bytes) {
+        this(monetaryContext, extractor, parsers, bytes, Clock.systemDefaultZone());
+    }
+
+    /** Test seam: lets callers pin the clock so date-anchored parsing/status is deterministic. */
+    public StatementImportUseCase(MonetaryContext monetaryContext, PdfTextExtractor extractor, List<StatementParser> parsers, long bytes, Clock clock) {
+        this.monetaryContext = monetaryContext;
+        this.extractor = extractor;
+        this.expander = new InstallmentExpander(groupSignature);
+        this.parsers = parsers;
+        this.maxFileBytes = bytes;
+        this.clock = clock;
+    }
 
     /**
      * Extracts the PDF text and routes by document type. {@code accountId} is honored only by the

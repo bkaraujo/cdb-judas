@@ -11,15 +11,22 @@ import br.community.context.monetary._1_application.usecase.AccountUseCase;
 import br.community.context.monetary._1_application.usecase.MetadataUseCase;
 import br.community.context.monetary._1_application.usecase.TransactionUseCase;
 import br.community.feature.user.accounts.transactions.importer.BankStatementConfirmCommand;
-import br.community.feature.user.accounts.transactions.importer.GroupSignature;
 import br.community.feature.user.accounts.transactions.importer.ImportResult;
 import br.community.feature.user.accounts.transactions.importer.StatementImportUseCase;
-import br.community.feature.user.accounts.transactions.importer.preview.*;
-import br.community.feature.user.accounts.transactions.importer.provider.*;
+import br.community.feature.user.accounts.transactions.importer.preview.BankStatementPreview;
+import br.community.feature.user.accounts.transactions.importer.preview.ImportError;
+import br.community.feature.user.accounts.transactions.importer.preview.ImportPreviewOutcome;
+import br.community.feature.user.accounts.transactions.importer.provider.BTGInvoiceParser;
+import br.community.feature.user.accounts.transactions.importer.provider.BTGStatementParser;
+import br.community.feature.user.accounts.transactions.importer.provider.SantanderInvoiceParser;
+import br.community.feature.user.accounts.transactions.importer.provider.SantanderStatementParser;
 import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;
-import java.time.*;
+import java.time.Clock;
+import java.time.Instant;
+import java.time.LocalDate;
+import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -168,14 +175,12 @@ class StatementImportUseCaseTest {
 
     private StatementImportUseCase useCaseWith(InMemoryRepositories.Accounts accounts, InMemoryRepositories.Transactions transactions) {
         final PdfTextExtractor extractor = (bytes, password) -> Result.success(EXTRATO);
-        final GroupSignature groupSignature = new GroupSignature();
         final MonetaryContext monetaryContext = monetaryContext(accounts, transactions, new InMemoryRepositories.Categories());
         return new StatementImportUseCase(
                 monetaryContext, extractor,
                 List.of(new BTGStatementParser(), new SantanderStatementParser(),
                         new BTGInvoiceParser(), new SantanderInvoiceParser()),
-                new CardMatcher(), new InstallmentExpander(groupSignature), groupSignature, new CategoryGuesser(),
-                CLOCK, MAX_BYTES);
+                MAX_BYTES, CLOCK);
     }
 
     private static MonetaryContext monetaryContext(

@@ -20,7 +20,10 @@ import br.community.feature.user.accounts.transactions.importer.GroupSignature;
 import br.community.feature.user.accounts.transactions.importer.ImportResult;
 import br.community.feature.user.accounts.transactions.importer.StatementImportUseCase;
 import br.community.feature.user.accounts.transactions.importer.preview.*;
-import br.community.feature.user.accounts.transactions.importer.provider.*;
+import br.community.feature.user.accounts.transactions.importer.provider.BTGInvoiceParser;
+import br.community.feature.user.accounts.transactions.importer.provider.BTGStatementParser;
+import br.community.feature.user.accounts.transactions.importer.provider.SantanderInvoiceParser;
+import br.community.feature.user.accounts.transactions.importer.provider.SantanderStatementParser;
 import org.jspecify.annotations.NonNull;
 import org.junit.jupiter.api.Test;
 
@@ -66,14 +69,12 @@ class CreditCardStatementImportUseCaseTest {
             InMemoryRepositories.Accounts accounts,
             InMemoryRepositories.Transactions transactions,
             InMemoryRepositories.Categories categories) {
-        final GroupSignature groupSignature = new GroupSignature();
         final MonetaryContext monetaryContext = monetaryContext(accounts, transactions, categories);
         return new StatementImportUseCase(
                 monetaryContext, extractor,
                 List.of(new BTGStatementParser(), new SantanderStatementParser(),
                         new BTGInvoiceParser(), new SantanderInvoiceParser()),
-                new CardMatcher(), new InstallmentExpander(groupSignature), groupSignature, new CategoryGuesser(),
-                CLOCK, MAX_BYTES);
+                MAX_BYTES, CLOCK);
     }
 
     /** Wires a real monetary facade over in-memory repositories so the import drives actual
@@ -268,7 +269,7 @@ class CreditCardStatementImportUseCaseTest {
         var preview = invoicePreview(useCase.preview(new byte[1], null, null));
 
         assertEquals(10, preview.rows().size());
-        assertTrue(preview.rows().stream().allMatch(r -> r.duplicate()),
+        assertTrue(preview.rows().stream().allMatch(PreviewRow::duplicate),
                 "every installment of the same group should be flagged duplicate");
     }
 

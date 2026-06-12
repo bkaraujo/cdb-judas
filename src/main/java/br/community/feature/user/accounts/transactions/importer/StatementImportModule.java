@@ -30,39 +30,9 @@ public class StatementImportModule {
     }
 
     @Bean
-    CardMatcher cardMatcher() {
-        return new CardMatcher();
-    }
-
-    @Bean
-    GroupSignature groupSignature() {
-        return new GroupSignature();
-    }
-
-    @Bean
-    InstallmentExpander installmentExpander(GroupSignature groupSignature) {
-        return new InstallmentExpander(groupSignature);
-    }
-
-    @Bean
-    CategoryGuesser categoryGuesser() {
-        return new CategoryGuesser();
-    }
-
-    @Bean
-    Clock clock() {
-        return Clock.systemDefaultZone();
-    }
-
-    @Bean
     StatementImportUseCase statementImportUseCase(
             MonetaryContext monetaryContext,
-            PdfTextExtractor extractor,
-            CardMatcher cardMatcher,
-            InstallmentExpander installmentExpander,
-            GroupSignature groupSignature,
-            CategoryGuesser categoryGuesser,
-            Clock clock
+            PdfTextExtractor extractor
     ) {
         return new StatementImportUseCase(
                 monetaryContext,
@@ -73,11 +43,6 @@ public class StatementImportModule {
                         new SantanderStatementParser(),
                         new SantanderInvoiceParser()
                 ),
-                cardMatcher,
-                installmentExpander,
-                groupSignature,
-                categoryGuesser,
-                clock,
                 MAX_STATEMENT_FILE_BYTES);
     }
 }
