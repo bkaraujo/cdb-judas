@@ -25,18 +25,24 @@ public record MonetaryTransaction(
         @Nullable String notes
 ) {
     /**
-     * Natureza de um {@link MonetaryTransaction}: {@link #EXPENSE} (saída, sinal negativo) ou
-     * {@link #INCOME} (entrada, sinal positivo).
-     *
-     * <p>A forma serializada (JSON persistido e contrato da API) é o nome em minúsculas
-     * ({@code "expense"}, {@code "income"}). O mapeamento de/para essa forma vive em
-     * {@code JsonStorageConfig} (persistência, Jackson 2) e {@code WebConfig}
-     * (camada web, Jackson 3), mantendo o domínio livre de dependências de framework.
+     * Natureza de um {@link MonetaryTransaction}
+     * <ul>
+     *     <li>{@link #EXPENSE} (saída, sinal negativo)</li>
+     *     <li>{@link #INCOME} (entrada, sinal positivo)</li>
+     * </ul>
      */
     public enum Type {
         EXPENSE, INCOME
     }
 
+    /**
+     * Situação de um {@link MonetaryTransaction}
+     * <ul>
+     *     <li>{@link #SCHEDULED} Planejado mas ainda não executado</li>
+     *     <li>{@link #CONFIRMED} Executado</li>
+     *     <li>{@link #PENDING} Atrasádo/Pendente de Pagamento</li>
+     * </ul>
+     */
     public enum Status {
         SCHEDULED, CONFIRMED, PENDING
     }

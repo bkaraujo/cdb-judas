@@ -1,7 +1,7 @@
 package br.community.context.monetary;
 
 import br.community.context.monetary._0_domain.model.MonetaryCategory;
-import br.community.context.monetary._0_domain.model.MonetaryNature;
+import br.community.context.monetary._0_domain.model.MonetaryTransaction.Type;
 import br.community.context.monetary._1_application.service.CategoryService;
 import org.junit.jupiter.api.Test;
 
@@ -16,7 +16,7 @@ class CategoryServiceTest {
         var category = service.findOrCreateUncategorizedCategory();
 
         assertEquals("Sem categoria", category.name());
-        assertEquals(MonetaryNature.EXPENSE, category.nature());
+        assertEquals(Type.EXPENSE, category.nature());
         assertNull(category.parentId());
         assertTrue(category.isSystem());
     }

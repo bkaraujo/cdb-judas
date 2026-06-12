@@ -46,7 +46,7 @@ class MetadataUseCaseTest {
                 new TransactionService(txRepo));
     }
 
-    private MonetaryCategory seedRoot(String name, MonetaryNature nature) {
+    private MonetaryCategory seedRoot(String name, MonetaryTransaction.Type nature) {
         return categoryRepo.save(new MonetaryCategory(UUID.randomUUID(), nature, name, null));
     }
 
@@ -56,7 +56,7 @@ class MetadataUseCaseTest {
     @DisplayName("§3 cria categoria raiz")
     void createsRoot() {
         Result<MonetaryCategory, DomainError> r = useCase.createCategory(
-                new CategoryCommand("Casa", MonetaryNature.EXPENSE, null));
+                new CategoryCommand("Casa", MonetaryTransaction.Type.EXPENSE, null));
         assertTrue(r.isSuccess());
         assertNull(((Result.Success<MonetaryCategory, DomainError>) r).value().parentId());
     }
@@ -64,20 +64,20 @@ class MetadataUseCaseTest {
     @Test
     @DisplayName("§3.2 subcategoria com pai raiz e mesma natureza")
     void createsValidSubcategory() {
-        MonetaryCategory root = seedRoot("Casa", MonetaryNature.EXPENSE);
+        MonetaryCategory root = seedRoot("Casa", MonetaryTransaction.Type.EXPENSE);
         Result<MonetaryCategory, DomainError> r = useCase.createCategory(
-                new CategoryCommand("Luz", MonetaryNature.EXPENSE, root.id()));
+                new CategoryCommand("Luz", MonetaryTransaction.Type.EXPENSE, root.id()));
         assertTrue(r.isSuccess());
     }
 
     @Test
     @DisplayName("§3.2 pai que já é subcategoria é proibido (máx 2 níveis)")
     void rejectsGrandchild() {
-        MonetaryCategory root = seedRoot("Casa", MonetaryNature.EXPENSE);
+        MonetaryCategory root = seedRoot("Casa", MonetaryTransaction.Type.EXPENSE);
         MonetaryCategory sub = categoryRepo.save(
-                new MonetaryCategory(UUID.randomUUID(), MonetaryNature.EXPENSE, "Luz", root.id()));
+                new MonetaryCategory(UUID.randomUUID(), MonetaryTransaction.Type.EXPENSE, "Luz", root.id()));
         Result<MonetaryCategory, DomainError> r = useCase.createCategory(
-                new CategoryCommand("Geladeira", MonetaryNature.EXPENSE, sub.id()));
+                new CategoryCommand("Geladeira", MonetaryTransaction.Type.EXPENSE, sub.id()));
         assertTrue(r.isFailure());
         assertInstanceOf(DomainError.BusinessRule.class,
                 ((Result.Failure<MonetaryCategory, DomainError>) r).error());
@@ -86,39 +86,39 @@ class MetadataUseCaseTest {
     @Test
     @DisplayName("§3.2 natureza diferente do pai falha")
     void rejectsNatureMismatch() {
-        MonetaryCategory root = seedRoot("Casa", MonetaryNature.EXPENSE);
+        MonetaryCategory root = seedRoot("Casa", MonetaryTransaction.Type.EXPENSE);
         Result<MonetaryCategory, DomainError> r = useCase.createCategory(
-                new CategoryCommand("Outros", MonetaryNature.REVENUE, root.id()));
+                new CategoryCommand("Outros", MonetaryTransaction.Type.INCOME, root.id()));
         assertTrue(r.isFailure());
     }
 
     @Test
     @DisplayName("§3.4 dois nomes iguais no mesmo nível bloqueia")
     void rejectsDuplicateName() {
-        seedRoot("Casa", MonetaryNature.EXPENSE);
+        seedRoot("Casa", MonetaryTransaction.Type.EXPENSE);
         Result<MonetaryCategory, DomainError> r = useCase.createCategory(
-                new CategoryCommand("casa", MonetaryNature.EXPENSE, null));
+                new CategoryCommand("casa", MonetaryTransaction.Type.EXPENSE, null));
         assertTrue(r.isFailure());
     }
 
     @Test
     @DisplayName("§3.1 update preserva a natureza original")
     void updatePreservesNature() {
-        MonetaryCategory root = seedRoot("Casa", MonetaryNature.EXPENSE);
+        MonetaryCategory root = seedRoot("Casa", MonetaryTransaction.Type.EXPENSE);
         Result<MonetaryCategory, DomainError> r = useCase.updateCategory(root.id(),
-                new CategoryCommand("Casa2", MonetaryNature.REVENUE, null));
+                new CategoryCommand("Casa2", MonetaryTransaction.Type.INCOME, null));
         assertTrue(r.isSuccess());
         MonetaryCategory after = ((Result.Success<MonetaryCategory, DomainError>) r).value();
-        assertEquals(MonetaryNature.EXPENSE, after.nature(), "natureza não muda");
+        assertEquals(MonetaryTransaction.Type.EXPENSE, after.nature(), "natureza não muda");
         assertEquals("Casa2", after.name());
     }
 
     @Test
     @DisplayName("§3.3 delete reatribui transações para 'Outros' e exclui sub-categorias")
     void deleteReassignsTransactionsAndRecursiveSubs() {
-        MonetaryCategory root = seedRoot("Casa", MonetaryNature.EXPENSE);
+        MonetaryCategory root = seedRoot("Casa", MonetaryTransaction.Type.EXPENSE);
         MonetaryCategory sub = categoryRepo.save(
-                new MonetaryCategory(UUID.randomUUID(), MonetaryNature.EXPENSE, "Luz", root.id()));
+                new MonetaryCategory(UUID.randomUUID(), MonetaryTransaction.Type.EXPENSE, "Luz", root.id()));
 
         UUID txId = UUID.randomUUID();
         txRepo.save(new MonetaryTransaction(txId, "x", new BigDecimal("1.00"),
@@ -134,7 +134,7 @@ class MetadataUseCaseTest {
 
         // "Outros" criado, transação reatribuída para ele
         MonetaryCategory others = categoryRepo.findAll().stream()
-                .filter(c -> "Outros".equalsIgnoreCase(c.name()) && c.nature() == MonetaryNature.EXPENSE)
+                .filter(c -> "Outros".equalsIgnoreCase(c.name()) && c.nature() == MonetaryTransaction.Type.EXPENSE)
                 .findFirst().orElseThrow();
         assertEquals(others.id(), txRepo.findById(txId).orElseThrow().categoryId());
     }

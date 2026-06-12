@@ -8,12 +8,12 @@ import java.util.UUID;
 @NullMarked
 public record MonetaryCategory(
         UUID id,
-        MonetaryNature nature,
+        MonetaryTransaction.Type nature,
         String name,
         @Nullable UUID parentId,
         boolean isSystem
 ) {
-    public MonetaryCategory(UUID id, MonetaryNature nature, String name, @Nullable UUID parentId) {
+    public MonetaryCategory(UUID id, MonetaryTransaction.Type nature, String name, @Nullable UUID parentId) {
         this(id, nature, name, parentId, false);
     }
 }

@@ -3,7 +3,6 @@ package br.community.context.monetary;
 import br.commons.Result;
 import br.community.context.monetary._0_domain.model.MonetaryCategory;
 import br.community.context.monetary._0_domain.model.MonetaryCenter;
-import br.community.context.monetary._0_domain.model.MonetaryNature;
 import br.community.context.monetary._0_domain.model.MonetaryTransaction;
 import br.community.context.monetary._1_application.command.TransactionCommand;
 import br.community.context.monetary._1_application.service.CategoryService;
@@ -40,7 +39,7 @@ class TransactionResponseUseCaseTest {
         txRepo = new InMemoryRepositories.Transactions();
         closingRepo = new InMemoryRepositories.Closings();
         InMemoryRepositories.Categories catRepo = new InMemoryRepositories.Categories();
-        catRepo.save(new MonetaryCategory(categoryId, MonetaryNature.EXPENSE, "Subcategoria", UUID.randomUUID()));
+        catRepo.save(new MonetaryCategory(categoryId, MonetaryTransaction.Type.EXPENSE, "Subcategoria", UUID.randomUUID()));
         useCase = new TransactionUseCase(new TransactionService(txRepo), new ClosingService(closingRepo), new CategoryService(catRepo));
     }
 

@@ -1,6 +1,6 @@
 package br.community.feature;
 
-import br.community.context.monetary._0_domain.model.MonetaryNature;
+import br.community.context.monetary._0_domain.model.MonetaryTransaction.Type;
 import br.community.feature.user.categories.core.Category;
 import lombok.val;
 import org.junit.jupiter.api.Test;
@@ -28,7 +28,7 @@ class CategoryResourceTest extends BaseHttpTest {
         createResult.andExpect(status().isCreated())
                 .andExpect(jsonPath("$.id").exists())
                 .andExpect(jsonPath("$.name").value("Alimentação"))
-                .andExpect(jsonPath("$.nature").value(MonetaryNature.EXPENSE.name()));
+                .andExpect(jsonPath("$.nature").value(Type.EXPENSE.name()));
 
         val responseBody = createResult.andReturn().getResponse().getContentAsString();
         val created = objectMapper.readValue(responseBody, Category.class);
@@ -100,7 +100,7 @@ class CategoryResourceTest extends BaseHttpTest {
         val rootId = objectMapper.readTree(rootBody).get("id").asText();
 
         val sub = """
-            {"name": "Salário", "nature": "REVENUE", "parentId": "%s"}
+            {"name": "Salário", "nature": "INCOME", "parentId": "%s"}
             """.formatted(rootId);
         mockMvc.perform(post("/api/" + TEST_USER_ID + "/categories").contentType(MediaType.APPLICATION_JSON).content(sub))
                 .andExpect(status().isBadRequest());
@@ -122,7 +122,7 @@ class CategoryResourceTest extends BaseHttpTest {
         createResult.andExpect(status().isCreated())
                 .andExpect(jsonPath("$.id").exists())
                 .andExpect(jsonPath("$.name").value("Moradia"))
-                .andExpect(jsonPath("$.nature").value(MonetaryNature.EXPENSE.name()));
+                .andExpect(jsonPath("$.nature").value(Type.EXPENSE.name()));
 
         mockMvc.perform(get("/api/" + TEST_USER_ID + "/categories"))
                 .andExpect(status().isOk())
@@ -148,7 +148,7 @@ class CategoryResourceTest extends BaseHttpTest {
                 .andExpect(jsonPath("$.id").exists())
                 .andExpect(jsonPath("$.name").value("Aluguél"))
                 .andExpect(jsonPath("$.parentId").value(moradiaId.toString()))
-                .andExpect(jsonPath("$.nature").value(MonetaryNature.EXPENSE.name()));
+                .andExpect(jsonPath("$.nature").value(Type.EXPENSE.name()));
 
         mockMvc.perform(get("/api/" + TEST_USER_ID + "/categories"))
                 .andExpect(status().isOk())

@@ -1,6 +1,6 @@
 /* _1_domain/category.js — Category entity + hierarchy rules. Pure. */
 (function () {
-  const NATURE = { EXPENSE: 'EXPENSE', REVENUE: 'REVENUE' };
+  const NATURE = { EXPENSE: 'EXPENSE', INCOME: 'INCOME' };
 
   function normalize(raw) {
     if (!raw) return null;
@@ -16,7 +16,7 @@
   }
 
   function isExpense(c) { return !!c && c.nature === NATURE.EXPENSE; }
-  function isRevenue(c) { return !!c && c.nature === NATURE.REVENUE; }
+  function isRevenue(c) { return !!c && c.nature === NATURE.INCOME; }
   function isRoot(c)    { return !!c && c.parentId == null; }
 
   function byId(list, id) {

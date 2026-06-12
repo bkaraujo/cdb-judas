@@ -2,7 +2,7 @@ package br.community.context.monetary._1_application.service;
 
 import br.commons.Result;
 import br.community.context.monetary._0_domain.model.MonetaryCategory;
-import br.community.context.monetary._0_domain.model.MonetaryNature;
+import br.community.context.monetary._0_domain.model.MonetaryTransaction.Type;
 import br.community.context.monetary._0_domain.repository.CategoryRepository;
 import br.community.context.shared._0_domain.model.DomainError;
 import lombok.RequiredArgsConstructor;
@@ -40,11 +40,11 @@ public class CategoryService {
         });
     }
 
-    public MonetaryCategory save(UUID id, MonetaryNature nature, String name, @Nullable UUID parentId) {
+    public MonetaryCategory save(UUID id, Type nature, String name, @Nullable UUID parentId) {
         return save(id, nature, name, parentId, false);
     }
 
-    public MonetaryCategory save(UUID id, MonetaryNature nature, String name, @Nullable UUID parentId, boolean isSystem) {
+    public MonetaryCategory save(UUID id, Type nature, String name, @Nullable UUID parentId, boolean isSystem) {
         return categoryRepository.save(new MonetaryCategory(id, nature, name, parentId, isSystem));
     }
 
@@ -55,7 +55,7 @@ public class CategoryService {
         });
     }
 
-    public Result<Void, DomainError> validateParent(UUID parentId, MonetaryNature nature) {
+    public Result<Void, DomainError> validateParent(UUID parentId, Type nature) {
         return categoryRepository.findById(parentId)
                 .<Result<Void, DomainError>>map(parent -> {
                     if (parent.parentId() != null) {
@@ -83,7 +83,7 @@ public class CategoryService {
         return Result.success();
     }
 
-    public MonetaryCategory findOrCreateOthersCategory(MonetaryNature nature) {
+    public MonetaryCategory findOrCreateOthersCategory(Type nature) {
         return categoryRepository.findAll().stream()
                 .filter(c -> "Outros".equalsIgnoreCase(c.name()) && c.nature() == nature && c.parentId() == null)
                 .findFirst()
@@ -92,20 +92,20 @@ public class CategoryService {
 
     public MonetaryCategory findOrCreateUncategorizedCategory() {
         return categoryRepository.findAll().stream()
-                .filter(c -> "Sem categoria".equalsIgnoreCase(c.name()) && c.nature() == MonetaryNature.EXPENSE && c.parentId() == null)
+                .filter(c -> "Sem categoria".equalsIgnoreCase(c.name()) && c.nature() == Type.EXPENSE && c.parentId() == null)
                 .findFirst()
-                .orElseGet(() -> categoryRepository.save(new MonetaryCategory(UUID.randomUUID(), MonetaryNature.EXPENSE, "Sem categoria", null, true)));
+                .orElseGet(() -> categoryRepository.save(new MonetaryCategory(UUID.randomUUID(), Type.EXPENSE, "Sem categoria", null, true)));
     }
 
     public MonetaryCategory findOrCreateTransferCategory() {
         val others = categoryRepository.findAll().stream()
-                .filter(c -> "Outros".equalsIgnoreCase(c.name()) && c.nature() == MonetaryNature.EXPENSE && c.parentId() == null)
+                .filter(c -> "Outros".equalsIgnoreCase(c.name()) && c.nature() == Type.EXPENSE && c.parentId() == null)
                 .findFirst()
-                .orElseGet(() -> categoryRepository.save(new MonetaryCategory(UUID.randomUUID(), MonetaryNature.EXPENSE, "Outros", null, true)));
+                .orElseGet(() -> categoryRepository.save(new MonetaryCategory(UUID.randomUUID(), Type.EXPENSE, "Outros", null, true)));
 
         return categoryRepository.findAll().stream()
                 .filter(c -> "Transferência".equalsIgnoreCase(c.name()) && others.id().equals(c.parentId()))
                 .findFirst()
-                .orElseGet(() -> categoryRepository.save(new MonetaryCategory(UUID.randomUUID(), MonetaryNature.EXPENSE, "Transferência", others.id(), true)));
+                .orElseGet(() -> categoryRepository.save(new MonetaryCategory(UUID.randomUUID(), Type.EXPENSE, "Transferência", others.id(), true)));
     }
 }
