@@ -4,13 +4,11 @@ import br.commons.Logger;
 import br.commons.framework.persistence.Storage;
 import br.community.context.security._0_domain.repository.UserRepository;
 import br.community.context.security._0_domain.model.User;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.ObjectMapper;
 import lombok.val;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
-
-import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -52,8 +50,8 @@ public final class UserJsonRepository implements UserRepository {
         all.add(user);
         try {
             storage.write(FILE, KEY, mapper.writeValueAsBytes(all));
-        } catch (IOException e) {
-            throw new UncheckedIOException("Erro ao gravar user " + user.username(), e);
+        } catch (JacksonException e) {
+            throw new RuntimeException("Erro ao gravar user " + user.username(), e);
         }
         cache = List.copyOf(all);
         loadedAt = System.currentTimeMillis();
@@ -73,8 +71,8 @@ public final class UserJsonRepository implements UserRepository {
             try {
                 val listType = mapper.getTypeFactory().constructCollectionType(List.class, User.class);
                 list = List.copyOf(mapper.readValue(bytes, listType));
-            } catch (IOException e) {
-                throw new UncheckedIOException("Erro ao ler registro de usuários", e);
+            } catch (JacksonException e) {
+                throw new RuntimeException("Erro ao ler registro de usuários", e);
             }
         }
         cache = list;

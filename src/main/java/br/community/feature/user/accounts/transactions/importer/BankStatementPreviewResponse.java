@@ -1,5 +1,6 @@
 package br.community.feature.user.accounts.transactions.importer;
 
+import br.community.context.monetary._0_domain.model.MonetaryTransaction;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 
@@ -10,7 +11,7 @@ import java.util.UUID;
 /**
  * Preview payload for a bank statement. {@code documentType} is always {@code "BANK_STATEMENT"} so the
  * client can branch from the shared preview endpoint. {@code amount} is signed; {@code type} is
- * {@code "income"}/{@code "expense"}; {@code state} is {@code "NEW"}/{@code "DUPLICATE"}/
+ * {@code INCOME}/{@code EXPENSE}; {@code state} is {@code "NEW"}/{@code "DUPLICATE"}/
  * {@code "RECONCILE"}; {@code reconcileDescription} is the matched manual transaction (RECONCILE only).
  * {@code candidateAccounts} are the destination accounts; {@code selectedAccountId} is the one the
  * states were computed against (null until the user picks one when several exist).
@@ -28,7 +29,7 @@ public record BankStatementPreviewResponse(
             String date,
             String description,
             BigDecimal amount,
-            String type,
+            MonetaryTransaction.Type type,
             String state,
             @Nullable UUID categoryId,
             @Nullable String reconcileDescription

@@ -103,8 +103,8 @@ public class TransactionResource extends AbstractResource {
                         .filter(t -> accId == null || accId.equals(t.accountId()))
                         .filter(t -> dateFrom == null || !t.date().isBefore(dateFrom))
                         .filter(t -> dateTo == null || !t.date().isAfter(dateTo))
-                        .filter(t -> status == null || status.equalsIgnoreCase(t.status()))
-                        .filter(t -> type == null || type.equalsIgnoreCase(t.type()))
+                        .filter(t -> status == null || status.equalsIgnoreCase(t.status().name()))
+                        .filter(t -> type == null || type.equalsIgnoreCase(t.type().name()))
                         .toList();
                 val transactions = (limit != null && limit > 0 && limit < filtered.size())
                         ? filtered.subList(0, limit)

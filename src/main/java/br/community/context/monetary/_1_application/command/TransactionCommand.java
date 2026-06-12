@@ -1,5 +1,6 @@
 package br.community.context.monetary._1_application.command;
 
+import br.community.context.monetary._0_domain.model.MonetaryTransaction;
 import br.community.core.TwoDecimalPlaces;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
@@ -20,8 +21,8 @@ public record TransactionCommand(
         @NotNull UUID categoryId,
         @NotNull UUID accountId,
         @NotNull UUID costCenterId,
-        @NotBlank String status,
-        @NotBlank String type,
+        @NotNull MonetaryTransaction.Status status,
+        @NotNull MonetaryTransaction.Type type,
         @Nullable @Min(1) Integer installments,
         @Nullable String editMode,
         @Nullable @Size(max = 250) String notes

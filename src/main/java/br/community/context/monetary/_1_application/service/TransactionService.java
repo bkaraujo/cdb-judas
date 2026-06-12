@@ -44,7 +44,7 @@ public class TransactionService {
 
     public List<MonetaryTransaction> findPending() {
         return transactionRepository.findAll().stream()
-                .filter(t -> "pending".equalsIgnoreCase(t.status()))
+                .filter(t -> MonetaryTransaction.Status.PENDING.equals(t.status()))
                 .sorted(Comparator.comparing(MonetaryTransaction::date))
                 .toList();
     }
@@ -61,8 +61,8 @@ public class TransactionService {
     public List<MonetaryTransaction> findTransferSiblings(MonetaryTransaction tx) {
         if (tx.groupId() == null) return List.of();
         List<MonetaryTransaction> group = findByGroupId(tx.groupId());
-        boolean hasIncome = group.stream().anyMatch(t -> "income".equalsIgnoreCase(t.type()));
-        boolean hasExpense = group.stream().anyMatch(t -> "expense".equalsIgnoreCase(t.type()));
+        boolean hasIncome = group.stream().anyMatch(t -> MonetaryTransaction.Type.INCOME.equals(t.type()));
+        boolean hasExpense = group.stream().anyMatch(t -> MonetaryTransaction.Type.EXPENSE.equals(t.type()));
         if (!hasIncome || !hasExpense) return List.of();
         return group.stream().filter(t -> !t.id().equals(tx.id())).toList();
     }

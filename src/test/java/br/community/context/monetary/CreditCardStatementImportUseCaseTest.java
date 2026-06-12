@@ -262,7 +262,7 @@ class CreditCardStatementImportUseCaseTest {
         transactions.save(new MonetaryTransaction(
                 UUID.randomUUID(), "Amazonmktplc Megabytem", new BigDecimal("72.99"),
                 LocalDate.of(2024, 7, 15), UUID.randomUUID(), bank.id(),
-                "confirmed", "expense", MonetaryCenter.VARIAVEL_ID, null, groupId, 1, 10, null));
+                MonetaryTransaction.Status.CONFIRMED, MonetaryTransaction.Type.EXPENSE, MonetaryCenter.VARIAVEL_ID, null, groupId, 1, 10, null));
 
         var useCase = useCaseWith((bytes, password) -> Result.success(text), accounts, transactions);
         var preview = invoicePreview(useCase.preview(new byte[1], null, null));
@@ -292,7 +292,7 @@ class CreditCardStatementImportUseCaseTest {
         transactions.save(new MonetaryTransaction(
                 UUID.randomUUID(), "MICROSOFT", new BigDecimal("-60.00"),
                 LocalDate.of(2025, 3, 9), UUID.randomUUID(), bank.id(),
-                "confirmed", "expense", MonetaryCenter.VARIAVEL_ID, null, null, null, null, null));
+                MonetaryTransaction.Status.CONFIRMED, MonetaryTransaction.Type.EXPENSE, MonetaryCenter.VARIAVEL_ID, null, null, null, null, null));
 
         var useCase = useCaseWith((bytes, password) -> Result.success(text), accounts, transactions);
         var preview = invoicePreview(useCase.preview(new byte[1], null, null));
@@ -340,7 +340,7 @@ class CreditCardStatementImportUseCaseTest {
         transactions.save(new MonetaryTransaction(
                 UUID.randomUUID(), "AMAZONMKTPLC MEGABYTEM", new BigDecimal("-99.90"),
                 LocalDate.of(2024, 1, 10), categoryC, card.id(),
-                "confirmed", "expense", MonetaryCenter.VARIAVEL_ID, null, null, null, null, null));
+                MonetaryTransaction.Status.CONFIRMED, MonetaryTransaction.Type.EXPENSE, MonetaryCenter.VARIAVEL_ID, null, null, null, null, null));
 
         var useCase = useCaseWith((bytes, password) -> Result.success(text), accounts, transactions);
         var preview = invoicePreview(useCase.preview(new byte[1], null, null));
@@ -484,14 +484,14 @@ class CreditCardStatementImportUseCaseTest {
         assertEquals(4, saved.size());
         // All land on the card's linkedAccountId, are expenses with negative amounts.
         assertTrue(saved.stream().allMatch(t -> account.id().equals(t.accountId())));
-        assertTrue(saved.stream().allMatch(t -> "expense".equals(t.type())));
+        assertTrue(saved.stream().allMatch(t -> MonetaryTransaction.Type.EXPENSE.equals(t.type())));
         assertTrue(saved.stream().allMatch(t -> t.amount().signum() < 0));
 
         // Status computed by date against fixed today 2025-07-15.
         var mercado = saved.stream().filter(t -> t.description().equals("Mercado")).findFirst().orElseThrow();
-        assertEquals("confirmed", mercado.status());
+        assertEquals(MonetaryTransaction.Status.CONFIRMED, mercado.status());
         var streaming = saved.stream().filter(t -> t.description().equals("Streaming")).findFirst().orElseThrow();
-        assertEquals("scheduled", streaming.status());
+        assertEquals(MonetaryTransaction.Status.SCHEDULED, streaming.status());
 
         // The two parcelado rows share one groupId with their installment numbers/total.
         var parcelas = saved.stream().filter(t -> t.description().equals("Geladeira")).toList();
@@ -502,9 +502,9 @@ class CreditCardStatementImportUseCaseTest {
                 parcelas.stream().map(MonetaryTransaction::installmentNumber).sorted().toList());
         assertTrue(parcelas.stream().allMatch(t -> Integer.valueOf(2).equals(t.totalInstallments())));
         var parcelaConfirmed = parcelas.stream().filter(t -> Integer.valueOf(1).equals(t.installmentNumber())).findFirst().orElseThrow();
-        assertEquals("confirmed", parcelaConfirmed.status());
+        assertEquals(MonetaryTransaction.Status.CONFIRMED, parcelaConfirmed.status());
         var parcelaScheduled = parcelas.stream().filter(t -> Integer.valueOf(2).equals(t.installmentNumber())).findFirst().orElseThrow();
-        assertEquals("scheduled", parcelaScheduled.status());
+        assertEquals(MonetaryTransaction.Status.SCHEDULED, parcelaScheduled.status());
     }
 
     @Test
@@ -592,7 +592,7 @@ class CreditCardStatementImportUseCaseTest {
         transactions.save(new MonetaryTransaction(
                 UUID.randomUUID(), "MERCADO LIVRE", new BigDecimal("-90.00"),
                 LocalDate.of(2025, 7, 4), UUID.randomUUID(), account.id(),
-                "confirmed", "expense", MonetaryCenter.VARIAVEL_ID, null, null, null, null, null));
+                MonetaryTransaction.Status.CONFIRMED, MonetaryTransaction.Type.EXPENSE, MonetaryCenter.VARIAVEL_ID, null, null, null, null, null));
 
         var useCase = useCaseWith(NOOP_EXTRACTOR, accounts, transactions);
 

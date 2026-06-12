@@ -44,22 +44,22 @@ class TransactionResponseUseCaseTest {
         useCase = new TransactionUseCase(new TransactionService(txRepo), new ClosingService(closingRepo), new CategoryService(catRepo));
     }
 
-    private TransactionCommand cmd(LocalDate date, String status, Integer installments) {
+    private TransactionCommand cmd(LocalDate date, MonetaryTransaction.Status status, Integer installments) {
         return new TransactionCommand("desc", new BigDecimal("10.00"), date, categoryId, accountId,
-                costCenterId, status, "expense", installments, null, null);
+                costCenterId, status, MonetaryTransaction.Type.EXPENSE, installments, null, null);
     }
 
     @Test
     @DisplayName("§4.2 1 parcela: salva único lançamento sem groupId")
     void singleInstallmentCreatesOne() {
         Result<MonetaryTransaction, DomainError> r = useCase.createTransaction(
-                cmd(LocalDate.of(2026, 5, 10), "confirmed", null));
+                cmd(LocalDate.of(2026, 5, 10), MonetaryTransaction.Status.CONFIRMED, null));
         assertTrue(r.isSuccess());
         assertEquals(1, txRepo.findAll().size());
         MonetaryTransaction t = txRepo.findAll().get(0);
         assertNull(t.groupId());
         assertNull(t.installmentNumber());
-        assertEquals("confirmed", t.status());
+        assertEquals(MonetaryTransaction.Status.CONFIRMED, t.status());
     }
 
     @Test
@@ -67,7 +67,7 @@ class TransactionResponseUseCaseTest {
     void nInstallmentsExpandsAndShiftsDates() {
         LocalDate base = LocalDate.of(2026, 5, 10);
         Result<MonetaryTransaction, DomainError> r = useCase.createTransaction(
-                cmd(base, "confirmed", 3));
+                cmd(base, MonetaryTransaction.Status.CONFIRMED, 3));
         assertTrue(r.isSuccess());
         List<MonetaryTransaction> all = txRepo.findAll();
         assertEquals(3, all.size());
@@ -78,7 +78,7 @@ class TransactionResponseUseCaseTest {
             assertEquals(3, t.totalInstallments());
             int n = t.installmentNumber();
             assertEquals(base.plusMonths(n - 1), t.date());
-            assertEquals(n == 1 ? "confirmed" : "pending", t.status());
+            assertEquals(n == 1 ? MonetaryTransaction.Status.CONFIRMED : MonetaryTransaction.Status.PENDING, t.status());
         }
     }
 
@@ -87,7 +87,7 @@ class TransactionResponseUseCaseTest {
     void anyInstallmentInClosedPeriodAborts() {
         closingRepo.save(YearMonth.of(2026, 5));
         Result<MonetaryTransaction, DomainError> r = useCase.createTransaction(
-                cmd(LocalDate.of(2026, 5, 10), "confirmed", 3));
+                cmd(LocalDate.of(2026, 5, 10), MonetaryTransaction.Status.CONFIRMED, 3));
         assertTrue(r.isFailure());
         assertEquals(0, txRepo.findAll().size(), "nenhuma parcela persistida");
     }
@@ -97,7 +97,7 @@ class TransactionResponseUseCaseTest {
     void createInClosedPeriodFails() {
         closingRepo.save(YearMonth.of(2026, 5));
         Result<MonetaryTransaction, DomainError> r = useCase.createTransaction(
-                cmd(LocalDate.of(2026, 5, 1), "confirmed", null));
+                cmd(LocalDate.of(2026, 5, 1), MonetaryTransaction.Status.CONFIRMED, null));
         assertTrue(r.isFailure());
     }
 
@@ -106,19 +106,19 @@ class TransactionResponseUseCaseTest {
     void createAfterClosingPeriodOk() {
         closingRepo.save(YearMonth.of(2026, 5));
         Result<MonetaryTransaction, DomainError> r = useCase.createTransaction(
-                cmd(LocalDate.of(2026, 6, 1), "confirmed", null));
+                cmd(LocalDate.of(2026, 6, 1), MonetaryTransaction.Status.CONFIRMED, null));
         assertTrue(r.isSuccess());
     }
 
     @Test
     @DisplayName("§4.3 update default só altera o selecionado")
     void updateDefaultModeOnlyOne() {
-        useCase.createTransaction(cmd(LocalDate.of(2026, 5, 10), "confirmed", 3));
+        useCase.createTransaction(cmd(LocalDate.of(2026, 5, 10), MonetaryTransaction.Status.CONFIRMED, 3));
         List<MonetaryTransaction> all = txRepo.findAll();
         MonetaryTransaction first = all.stream().filter(t -> t.installmentNumber() == 1).findFirst().orElseThrow();
 
         TransactionCommand upd = new TransactionCommand("upd", new BigDecimal("20.00"),
-                LocalDate.of(2026, 5, 15), categoryId, accountId, costCenterId, "confirmed", "expense", null, null, null);
+                LocalDate.of(2026, 5, 15), categoryId, accountId, costCenterId, MonetaryTransaction.Status.CONFIRMED, MonetaryTransaction.Type.EXPENSE, null, null, null);
         Result<MonetaryTransaction, DomainError> r = useCase.updateTransaction(first.id(), upd);
         assertTrue(r.isSuccess());
 
@@ -137,31 +137,31 @@ class TransactionResponseUseCaseTest {
     @Test
     @DisplayName("§4.3 update default valida fechamento da data original e nova")
     void updateDefaultValidatesBothDates() {
-        useCase.createTransaction(cmd(LocalDate.of(2026, 5, 10), "confirmed", null));
+        useCase.createTransaction(cmd(LocalDate.of(2026, 5, 10), MonetaryTransaction.Status.CONFIRMED, null));
         MonetaryTransaction t = txRepo.findAll().get(0);
 
         closingRepo.save(YearMonth.of(2026, 5));
         TransactionCommand upd = new TransactionCommand("x", new BigDecimal("1.00"),
-                LocalDate.of(2026, 6, 1), categoryId, accountId, costCenterId, "confirmed", "expense", null, null, null);
+                LocalDate.of(2026, 6, 1), categoryId, accountId, costCenterId, MonetaryTransaction.Status.CONFIRMED, MonetaryTransaction.Type.EXPENSE, null, null, null);
         assertTrue(useCase.updateTransaction(t.id(), upd).isFailure(), "data original em fechamento");
 
         closingRepo.clear();
         closingRepo.save(YearMonth.of(2026, 7));
         TransactionCommand upd2 = new TransactionCommand("x", new BigDecimal("1.00"),
-                LocalDate.of(2026, 7, 1), categoryId, accountId, costCenterId, "confirmed", "expense", null, null, null);
+                LocalDate.of(2026, 7, 1), categoryId, accountId, costCenterId, MonetaryTransaction.Status.CONFIRMED, MonetaryTransaction.Type.EXPENSE, null, null, null);
         assertTrue(useCase.updateTransaction(t.id(), upd2).isFailure(), "nova data em fechamento");
     }
 
     @Test
     @DisplayName("§4.3 FUTURE: atualiza atual+futuras, preserva status, ajusta datas proporcionalmente")
     void updateFutureModeShiftsDatesAndPreservesStatus() {
-        useCase.createTransaction(cmd(LocalDate.of(2026, 5, 10), "confirmed", 4));
+        useCase.createTransaction(cmd(LocalDate.of(2026, 5, 10), MonetaryTransaction.Status.CONFIRMED, 4));
         MonetaryTransaction second = txRepo.findAll().stream()
                 .filter(t -> t.installmentNumber() == 2).findFirst().orElseThrow();
 
         LocalDate newDate = LocalDate.of(2026, 7, 20);
         TransactionCommand upd = new TransactionCommand("future", new BigDecimal("99.00"),
-                newDate, categoryId, accountId, costCenterId, "confirmed", "expense", null, "FUTURE", null);
+                newDate, categoryId, accountId, costCenterId, MonetaryTransaction.Status.CONFIRMED, MonetaryTransaction.Type.EXPENSE, null, "FUTURE", null);
         Result<MonetaryTransaction, DomainError> r = useCase.updateTransaction(second.id(), upd);
         assertTrue(r.isSuccess());
 
@@ -179,20 +179,20 @@ class TransactionResponseUseCaseTest {
             assertEquals("future", t.description());
             assertEquals(new BigDecimal("99.00"), t.amount());
             assertEquals(newDate.plusMonths(n - 2), t.date());
-            assertEquals("pending", t.status());
+            assertEquals(MonetaryTransaction.Status.PENDING, t.status());
         }
     }
 
     @Test
     @DisplayName("§4.3 FUTURE falha se alguma nova data cai em fechamento")
     void updateFutureFailsOnClosedPeriod() {
-        useCase.createTransaction(cmd(LocalDate.of(2026, 5, 10), "confirmed", 3));
+        useCase.createTransaction(cmd(LocalDate.of(2026, 5, 10), MonetaryTransaction.Status.CONFIRMED, 3));
         MonetaryTransaction first = txRepo.findAll().stream()
                 .filter(t -> t.installmentNumber() == 1).findFirst().orElseThrow();
 
         closingRepo.save(YearMonth.of(2026, 8));
         TransactionCommand upd = new TransactionCommand("desc", new BigDecimal("10.00"),
-                LocalDate.of(2026, 9, 10), categoryId, accountId, costCenterId, "confirmed", "expense", null, "FUTURE", null);
+                LocalDate.of(2026, 9, 10), categoryId, accountId, costCenterId, MonetaryTransaction.Status.CONFIRMED, MonetaryTransaction.Type.EXPENSE, null, "FUTURE", null);
         // existing.date é 2026-05-10 (em fechamento) → falha de imediato
         assertTrue(useCase.updateTransaction(first.id(), upd).isFailure());
     }
@@ -200,20 +200,20 @@ class TransactionResponseUseCaseTest {
     @Test
     @DisplayName("§4.5 updateStatus ignora período fechado")
     void updateStatusBypassesClosing() {
-        useCase.createTransaction(cmd(LocalDate.of(2026, 5, 10), "pending", null));
+        useCase.createTransaction(cmd(LocalDate.of(2026, 5, 10), MonetaryTransaction.Status.PENDING, null));
         MonetaryTransaction t = txRepo.findAll().get(0);
         closingRepo.save(YearMonth.of(2026, 12));
         Result<MonetaryTransaction, DomainError> r = useCase.updateTransactionStatus(
-                t.id(), "confirmed", LocalDate.of(2026, 5, 12));
+                t.id(), MonetaryTransaction.Status.CONFIRMED, LocalDate.of(2026, 5, 12));
         assertTrue(r.isSuccess());
-        assertEquals("confirmed", txRepo.findById(t.id()).orElseThrow().status());
+        assertEquals(MonetaryTransaction.Status.CONFIRMED, txRepo.findById(t.id()).orElseThrow().status());
         assertEquals(LocalDate.of(2026, 5, 12), txRepo.findById(t.id()).orElseThrow().paymentDate());
     }
 
     @Test
     @DisplayName("§4.4 delete default exclui só o lançamento, valida fechamento")
     void deleteDefaultMode() {
-        useCase.createTransaction(cmd(LocalDate.of(2026, 5, 10), "confirmed", 2));
+        useCase.createTransaction(cmd(LocalDate.of(2026, 5, 10), MonetaryTransaction.Status.CONFIRMED, 2));
         MonetaryTransaction first = txRepo.findAll().stream()
                 .filter(t -> t.installmentNumber() == 1).findFirst().orElseThrow();
         Result<Void, DomainError> r = useCase.deleteTransaction(first.id(), null);
@@ -224,7 +224,7 @@ class TransactionResponseUseCaseTest {
     @Test
     @DisplayName("§4.4 delete default falha em período fechado")
     void deleteDefaultClosed() {
-        useCase.createTransaction(cmd(LocalDate.of(2026, 5, 10), "confirmed", null));
+        useCase.createTransaction(cmd(LocalDate.of(2026, 5, 10), MonetaryTransaction.Status.CONFIRMED, null));
         MonetaryTransaction t = txRepo.findAll().get(0);
         closingRepo.save(YearMonth.of(2026, 5));
         assertTrue(useCase.deleteTransaction(t.id(), null).isFailure());
@@ -234,7 +234,7 @@ class TransactionResponseUseCaseTest {
     @Test
     @DisplayName("§4.4 delete FUTURE exclui atual+futuras do grupo")
     void deleteFutureMode() {
-        useCase.createTransaction(cmd(LocalDate.of(2026, 5, 10), "confirmed", 4));
+        useCase.createTransaction(cmd(LocalDate.of(2026, 5, 10), MonetaryTransaction.Status.CONFIRMED, 4));
         MonetaryTransaction second = txRepo.findAll().stream()
                 .filter(t -> t.installmentNumber() == 2).findFirst().orElseThrow();
         Result<Void, DomainError> r = useCase.deleteTransaction(second.id(), "FUTURE");
@@ -246,7 +246,7 @@ class TransactionResponseUseCaseTest {
     @Test
     @DisplayName("§4.4 delete FUTURE falha se alguma futura está em fechamento")
     void deleteFutureFailsOnClosed() {
-        useCase.createTransaction(cmd(LocalDate.of(2026, 5, 10), "confirmed", 3));
+        useCase.createTransaction(cmd(LocalDate.of(2026, 5, 10), MonetaryTransaction.Status.CONFIRMED, 3));
         MonetaryTransaction first = txRepo.findAll().stream()
                 .filter(t -> t.installmentNumber() == 1).findFirst().orElseThrow();
         closingRepo.save(YearMonth.of(2026, 5));
@@ -257,9 +257,9 @@ class TransactionResponseUseCaseTest {
     @Test
     @DisplayName("listTransactions ordena por data desc")
     void listOrdersByDateDesc() {
-        useCase.createTransaction(cmd(LocalDate.of(2026, 5, 10), "confirmed", null));
-        useCase.createTransaction(cmd(LocalDate.of(2026, 6, 10), "confirmed", null));
-        useCase.createTransaction(cmd(LocalDate.of(2026, 4, 10), "confirmed", null));
+        useCase.createTransaction(cmd(LocalDate.of(2026, 5, 10), MonetaryTransaction.Status.CONFIRMED, null));
+        useCase.createTransaction(cmd(LocalDate.of(2026, 6, 10), MonetaryTransaction.Status.CONFIRMED, null));
+        useCase.createTransaction(cmd(LocalDate.of(2026, 4, 10), MonetaryTransaction.Status.CONFIRMED, null));
         List<MonetaryTransaction> list = ((Result.Success<List<MonetaryTransaction>, DomainError>)
                 useCase.listTransactions()).value();
         assertEquals(LocalDate.of(2026, 6, 10), list.get(0).date());
@@ -269,7 +269,7 @@ class TransactionResponseUseCaseTest {
     @Test
     @DisplayName("lançamento criado guarda o centro de custo do comando")
     void persistsCostCenter() {
-        useCase.createTransaction(cmd(LocalDate.of(2026, 5, 10), "confirmed", null));
+        useCase.createTransaction(cmd(LocalDate.of(2026, 5, 10), MonetaryTransaction.Status.CONFIRMED, null));
         assertEquals(costCenterId, txRepo.findAll().get(0).costCenterId());
     }
 
@@ -279,9 +279,9 @@ class TransactionResponseUseCaseTest {
     private UUID saveTransferPair(LocalDate date, UUID fromAccount, UUID toAccount) {
         UUID groupId = UUID.randomUUID();
         txRepo.save(new MonetaryTransaction(UUID.randomUUID(), "Transferência (saída)", new BigDecimal("-50.00"),
-                date, categoryId, fromAccount, "confirmed", "expense", costCenterId, date, groupId, 1, 2, null));
+                date, categoryId, fromAccount, MonetaryTransaction.Status.CONFIRMED, MonetaryTransaction.Type.EXPENSE, costCenterId, date, groupId, 1, 2, null));
         txRepo.save(new MonetaryTransaction(UUID.randomUUID(), "Transferência (entrada)", new BigDecimal("50.00"),
-                date, categoryId, toAccount, "confirmed", "income", costCenterId, date, groupId, 2, 2, null));
+                date, categoryId, toAccount, MonetaryTransaction.Status.CONFIRMED, MonetaryTransaction.Type.INCOME, costCenterId, date, groupId, 2, 2, null));
         return groupId;
     }
 
@@ -290,7 +290,7 @@ class TransactionResponseUseCaseTest {
     void deleteTransferLegRemovesBothLegs() {
         saveTransferPair(LocalDate.of(2026, 5, 10), accountId, UUID.randomUUID());
         MonetaryTransaction entrada = txRepo.findAll().stream()
-                .filter(t -> "income".equals(t.type())).findFirst().orElseThrow();
+                .filter(t -> MonetaryTransaction.Type.INCOME.equals(t.type())).findFirst().orElseThrow();
 
         Result<Void, DomainError> r = useCase.deleteTransaction(entrada.id(), null);
         assertTrue(r.isSuccess());
@@ -302,7 +302,7 @@ class TransactionResponseUseCaseTest {
     void deleteTransferLegIgnoresMode() {
         saveTransferPair(LocalDate.of(2026, 5, 10), accountId, UUID.randomUUID());
         MonetaryTransaction saida = txRepo.findAll().stream()
-                .filter(t -> "expense".equals(t.type())).findFirst().orElseThrow();
+                .filter(t -> MonetaryTransaction.Type.EXPENSE.equals(t.type())).findFirst().orElseThrow();
 
         assertTrue(useCase.deleteTransaction(saida.id(), "FUTURE").isSuccess());
         assertEquals(0, txRepo.findAll().size());
@@ -314,7 +314,7 @@ class TransactionResponseUseCaseTest {
         saveTransferPair(LocalDate.of(2026, 5, 10), accountId, UUID.randomUUID());
         closingRepo.save(YearMonth.of(2026, 5));
         MonetaryTransaction entrada = txRepo.findAll().stream()
-                .filter(t -> "income".equals(t.type())).findFirst().orElseThrow();
+                .filter(t -> MonetaryTransaction.Type.INCOME.equals(t.type())).findFirst().orElseThrow();
 
         assertTrue(useCase.deleteTransaction(entrada.id(), null).isFailure());
         assertEquals(2, txRepo.findAll().size(), "nada removido");
@@ -325,10 +325,10 @@ class TransactionResponseUseCaseTest {
     void updateTransferLegDissolvesPair() {
         saveTransferPair(LocalDate.of(2026, 5, 10), accountId, UUID.randomUUID());
         MonetaryTransaction entrada = txRepo.findAll().stream()
-                .filter(t -> "income".equals(t.type())).findFirst().orElseThrow();
+                .filter(t -> MonetaryTransaction.Type.INCOME.equals(t.type())).findFirst().orElseThrow();
 
         TransactionCommand upd = new TransactionCommand("ajuste", new BigDecimal("70.00"),
-                LocalDate.of(2026, 5, 12), categoryId, accountId, costCenterId, "confirmed", "income", null, null, null);
+                LocalDate.of(2026, 5, 12), categoryId, accountId, costCenterId, MonetaryTransaction.Status.CONFIRMED, MonetaryTransaction.Type.INCOME, null, null, null);
         Result<MonetaryTransaction, DomainError> r = useCase.updateTransaction(entrada.id(), upd);
         assertTrue(r.isSuccess());
 
@@ -345,12 +345,12 @@ class TransactionResponseUseCaseTest {
     @Test
     @DisplayName("grupo de parcelas (tipo único) não é tratado como transferência ao editar")
     void updateInstallmentGroupNotTreatedAsTransfer() {
-        useCase.createTransaction(cmd(LocalDate.of(2026, 5, 10), "confirmed", 3));
+        useCase.createTransaction(cmd(LocalDate.of(2026, 5, 10), MonetaryTransaction.Status.CONFIRMED, 3));
         MonetaryTransaction first = txRepo.findAll().stream()
                 .filter(t -> t.installmentNumber() == 1).findFirst().orElseThrow();
 
         TransactionCommand upd = new TransactionCommand("upd", new BigDecimal("20.00"),
-                LocalDate.of(2026, 5, 15), categoryId, accountId, costCenterId, "confirmed", "expense", null, null, null);
+                LocalDate.of(2026, 5, 15), categoryId, accountId, costCenterId, MonetaryTransaction.Status.CONFIRMED, MonetaryTransaction.Type.EXPENSE, null, null, null);
         assertTrue(useCase.updateTransaction(first.id(), upd).isSuccess());
 
         assertEquals(3, txRepo.findAll().size(), "parcelas preservadas");

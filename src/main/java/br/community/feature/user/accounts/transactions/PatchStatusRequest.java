@@ -1,6 +1,6 @@
 package br.community.feature.user.accounts.transactions;
 
-import jakarta.validation.constraints.NotBlank;
+import br.community.context.monetary._0_domain.model.MonetaryTransaction;
 import jakarta.validation.constraints.NotNull;
 import org.jspecify.annotations.NullMarked;
 
@@ -8,6 +8,6 @@ import java.time.LocalDate;
 
 @NullMarked
 public record PatchStatusRequest(
-        @NotBlank String status,
+        @NotNull MonetaryTransaction.Status status,
         @NotNull LocalDate paymentDate
 ) {}

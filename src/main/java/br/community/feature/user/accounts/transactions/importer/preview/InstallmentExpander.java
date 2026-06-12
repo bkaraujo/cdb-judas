@@ -1,5 +1,6 @@
 package br.community.feature.user.accounts.transactions.importer.preview;
 
+import br.community.context.monetary._0_domain.model.MonetaryTransaction;
 import br.community.feature.user.accounts.transactions.importer.GroupSignature;
 import lombok.RequiredArgsConstructor;
 import lombok.val;
@@ -37,7 +38,7 @@ public class InstallmentExpander {
         if (!line.isInstallment()) {
             return List.of(new TransactionDraft(
                     line.last4(), originalDate, originalDate, line.description(), line.amount(),
-                    statusFor(originalDate, today), "expense", accountId, null, null, null, line.kind()));
+                    statusFor(originalDate, today), MonetaryTransaction.Type.EXPENSE, accountId, null, null, null, line.kind()));
         }
 
         final int total = line.installmentTotal();
@@ -47,7 +48,7 @@ public class InstallmentExpander {
             val date = originalDate.plusMonths(k - 1L);
             drafts.add(new TransactionDraft(
                     line.last4(), date, originalDate, line.description(), line.amount(),
-                    statusFor(date, today), "expense", accountId, groupId, k, total, line.kind()));
+                    statusFor(date, today), MonetaryTransaction.Type.EXPENSE, accountId, groupId, k, total, line.kind()));
         }
         return List.copyOf(drafts);
     }
@@ -63,7 +64,7 @@ public class InstallmentExpander {
         return monthDay.atYear(year);
     }
 
-    private static String statusFor(LocalDate d, LocalDate today) {
-        return YearMonth.from(d).isAfter(YearMonth.from(today)) ? "scheduled" : "confirmed";
+    private static MonetaryTransaction.Status statusFor(LocalDate d, LocalDate today) {
+        return YearMonth.from(d).isAfter(YearMonth.from(today)) ? MonetaryTransaction.Status.SCHEDULED : MonetaryTransaction.Status.CONFIRMED;
     }
 }

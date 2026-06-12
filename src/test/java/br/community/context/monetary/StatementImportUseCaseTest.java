@@ -54,10 +54,10 @@ class StatementImportUseCaseTest {
 
         assertEquals(2, preview.rows().size(), "saldo diário and card payment must be dropped");
         var odonto = preview.rows().stream().filter(r -> r.description().contains("Odontoprev")).findFirst().orElseThrow();
-        assertEquals("expense", odonto.type());
+        assertEquals(MonetaryTransaction.Type.EXPENSE, odonto.type());
         assertEquals(0, odonto.amount().compareTo(new BigDecimal("-161.43")));
         var pix = preview.rows().stream().filter(r -> r.description().contains("Caixa")).findFirst().orElseThrow();
-        assertEquals("income", pix.type());
+        assertEquals(MonetaryTransaction.Type.INCOME, pix.type());
         assertEquals(0, pix.amount().compareTo(new BigDecimal("3000.00")));
         assertEquals(account.id(), preview.selectedAccountId());
     }
@@ -71,8 +71,8 @@ class StatementImportUseCaseTest {
         var useCase = useCaseWith(accounts, transactions);
 
         var cmd = new BankStatementConfirmCommand(account.id(), List.of(
-                new BankStatementConfirmCommand.Row("Odontoprev", new BigDecimal("-161.43"), LocalDate.of(2025, 3, 5), "expense", UUID.randomUUID()),
-                new BankStatementConfirmCommand.Row("Caixa Economica", new BigDecimal("3000.00"), LocalDate.of(2025, 3, 6), "income", UUID.randomUUID())));
+                new BankStatementConfirmCommand.Row("Odontoprev", new BigDecimal("-161.43"), LocalDate.of(2025, 3, 5), MonetaryTransaction.Type.EXPENSE, UUID.randomUUID()),
+                new BankStatementConfirmCommand.Row("Caixa Economica", new BigDecimal("3000.00"), LocalDate.of(2025, 3, 6), MonetaryTransaction.Type.INCOME, UUID.randomUUID())));
         var result = (ImportResult) assertInstanceOf(Result.Success.class, useCase.confirmStatement(cmd)).value();
 
         assertEquals(2, result.created());
@@ -83,11 +83,11 @@ class StatementImportUseCaseTest {
         assertEquals(2, saved.size());
         assertTrue(saved.stream().allMatch(t -> account.id().equals(t.accountId())));
         var odonto = saved.stream().filter(t -> t.description().equals("Odontoprev")).findFirst().orElseThrow();
-        assertEquals("expense", odonto.type());
+        assertEquals(MonetaryTransaction.Type.EXPENSE, odonto.type());
         assertEquals(-1, odonto.amount().signum());
-        assertEquals("confirmed", odonto.status());
+        assertEquals(MonetaryTransaction.Status.CONFIRMED, odonto.status());
         var pix = saved.stream().filter(t -> t.description().equals("Caixa Economica")).findFirst().orElseThrow();
-        assertEquals("income", pix.type());
+        assertEquals(MonetaryTransaction.Type.INCOME, pix.type());
         assertEquals(1, pix.amount().signum(), "imported income must be stored positive");
     }
 
@@ -100,19 +100,19 @@ class StatementImportUseCaseTest {
         // A manual, still-pending expense the user typed with a slightly different date and description.
         var manual = new MonetaryTransaction(
                 UUID.randomUUID(), "Dentista", new BigDecimal("-161.43"), LocalDate.of(2025, 3, 4),
-                UUID.randomUUID(), account.id(), "pending", "expense", MonetaryCenter.VARIAVEL_ID, null, null, null, null, null);
+                UUID.randomUUID(), account.id(), MonetaryTransaction.Status.PENDING, MonetaryTransaction.Type.EXPENSE, MonetaryCenter.VARIAVEL_ID, null, null, null, null, null);
         transactions.save(manual);
         var useCase = useCaseWith(accounts, transactions);
 
         var cmd = new BankStatementConfirmCommand(account.id(), List.of(
-                new BankStatementConfirmCommand.Row("Odontoprev", new BigDecimal("-161.43"), LocalDate.of(2025, 3, 5), "expense", UUID.randomUUID())));
+                new BankStatementConfirmCommand.Row("Odontoprev", new BigDecimal("-161.43"), LocalDate.of(2025, 3, 5), MonetaryTransaction.Type.EXPENSE, UUID.randomUUID())));
         var result = (ImportResult) assertInstanceOf(Result.Success.class, useCase.confirmStatement(cmd)).value();
 
         assertEquals(0, result.created());
         assertEquals(1, result.reconciled());
         assertEquals(0, result.skipped());
         assertEquals(1, transactions.findAll().size(), "reconcile must not insert a second row");
-        assertEquals("confirmed", transactions.findById(manual.id()).orElseThrow().status());
+        assertEquals(MonetaryTransaction.Status.CONFIRMED, transactions.findById(manual.id()).orElseThrow().status());
     }
 
     @Test
@@ -123,18 +123,18 @@ class StatementImportUseCaseTest {
         var transactions = new InMemoryRepositories.Transactions();
         var manual = new MonetaryTransaction(
                 UUID.randomUUID(), "Dentista", new BigDecimal("-161.43"), LocalDate.of(2025, 3, 1),
-                UUID.randomUUID(), account.id(), "pending", "expense", MonetaryCenter.VARIAVEL_ID, null, null, null, null, null);
+                UUID.randomUUID(), account.id(), MonetaryTransaction.Status.PENDING, MonetaryTransaction.Type.EXPENSE, MonetaryCenter.VARIAVEL_ID, null, null, null, null, null);
         transactions.save(manual);
         var useCase = useCaseWith(accounts, transactions);
 
         var cmd = new BankStatementConfirmCommand(account.id(), List.of(
-                new BankStatementConfirmCommand.Row("Odontoprev", new BigDecimal("-161.43"), LocalDate.of(2025, 3, 5), "expense", UUID.randomUUID())));
+                new BankStatementConfirmCommand.Row("Odontoprev", new BigDecimal("-161.43"), LocalDate.of(2025, 3, 5), MonetaryTransaction.Type.EXPENSE, UUID.randomUUID())));
         var result = (ImportResult) assertInstanceOf(Result.Success.class, useCase.confirmStatement(cmd)).value();
 
         assertEquals(1, result.created());
         assertEquals(0, result.reconciled());
         assertEquals(2, transactions.findAll().size());
-        assertEquals("pending", transactions.findById(manual.id()).orElseThrow().status());
+        assertEquals(MonetaryTransaction.Status.PENDING, transactions.findById(manual.id()).orElseThrow().status());
     }
 
     @Test
@@ -145,12 +145,12 @@ class StatementImportUseCaseTest {
         var transactions = new InMemoryRepositories.Transactions();
         var existing = new MonetaryTransaction(
                 UUID.randomUUID(), "Odontoprev", new BigDecimal("-161.43"), LocalDate.of(2025, 3, 5),
-                UUID.randomUUID(), account.id(), "confirmed", "expense", MonetaryCenter.VARIAVEL_ID, null, null, null, null, null);
+                UUID.randomUUID(), account.id(), MonetaryTransaction.Status.CONFIRMED, MonetaryTransaction.Type.EXPENSE, MonetaryCenter.VARIAVEL_ID, null, null, null, null, null);
         transactions.save(existing);
         var useCase = useCaseWith(accounts, transactions);
 
         var cmd = new BankStatementConfirmCommand(account.id(), List.of(
-                new BankStatementConfirmCommand.Row("Odontoprev", new BigDecimal("-161.43"), LocalDate.of(2025, 3, 5), "expense", UUID.randomUUID())));
+                new BankStatementConfirmCommand.Row("Odontoprev", new BigDecimal("-161.43"), LocalDate.of(2025, 3, 5), MonetaryTransaction.Type.EXPENSE, UUID.randomUUID())));
         var result = (ImportResult) assertInstanceOf(Result.Success.class, useCase.confirmStatement(cmd)).value();
 
         assertEquals(0, result.created());

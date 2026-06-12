@@ -99,7 +99,7 @@ public class MonetaryContext implements Facade {
         return ucTransaction.updateTransaction(id, cmd);
     }
 
-    public Result<MonetaryTransaction, DomainError> updateTransactionStatus(UUID id, String status, @Nullable LocalDate paymentDate) {
+    public Result<MonetaryTransaction, DomainError> updateTransactionStatus(UUID id, MonetaryTransaction.Status status, @Nullable LocalDate paymentDate) {
         return ucTransaction.updateTransactionStatus(id, status, paymentDate);
     }
 

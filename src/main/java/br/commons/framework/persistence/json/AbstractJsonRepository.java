@@ -3,13 +3,12 @@ package br.commons.framework.persistence.json;
 import br.commons.Logger;
 import br.commons.framework.persistence.Storage;
 import br.community.core.web.security.CurrentUser;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.ObjectMapper;
 import lombok.val;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 
-import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -128,15 +127,15 @@ public abstract class AbstractJsonRepository<T, ID> implements Repository<T, ID>
             }
 
             return loadFromStorage(now, username);
-        } catch (IOException e) {
-            throw new UncheckedIOException("Error reading " + fileName() + ":" + jsonKey(), e);
+        } catch (JacksonException e) {
+            throw new RuntimeException("Error reading " + fileName() + ":" + jsonKey(), e);
         } finally {
             lock.writeLock().unlock();
         }
     }
 
     /** Lê e desserializa o arquivo, preenchendo o cache. Deve ser chamado sob o write lock. */
-    private List<T> loadFromStorage(long now, String username) throws IOException {
+    private List<T> loadFromStorage(long now, String username) {
         val bytes = storage.read(fileName(), jsonKey());
         List<T> data;
         if (bytes == null || bytes.length == 0) {
@@ -162,13 +161,9 @@ public abstract class AbstractJsonRepository<T, ID> implements Repository<T, ID>
     }
 
     private void writeAll(List<T> entities) {
-        try {
-            storage.write(fileName(), jsonKey(), mapper.writeValueAsBytes(entities));
-            cachedData = List.copyOf(entities);
-            lastAccess = System.currentTimeMillis();
-            lastUser = CurrentUser.getId();
-        } catch (IOException e) {
-            throw new UncheckedIOException("Error writing " + fileName() + ":" + jsonKey(), e);
-        }
+        storage.write(fileName(), jsonKey(), mapper.writeValueAsBytes(entities));
+        cachedData = List.copyOf(entities);
+        lastAccess = System.currentTimeMillis();
+        lastUser = CurrentUser.getId();
     }
 }

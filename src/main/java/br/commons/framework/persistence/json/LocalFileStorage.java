@@ -4,8 +4,8 @@ import br.commons.Logger;
 import br.commons.framework.persistence.Storage;
 import br.commons.Platform;
 import br.community.core.JsonStorageProperties;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ObjectNode;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.node.ObjectNode;
 import lombok.val;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
@@ -33,18 +33,14 @@ public final class LocalFileStorage implements Storage {
 
     @Override
     public byte @Nullable [] read(String file, String jsonKey) {
-        try {
-            val path = resolve(file);
-            if (!Files.exists(path)) return null;
+        val path = resolve(file);
+        if (!Files.exists(path)) return null;
 
-            val rootNode = mapper.readTree(path.toFile());
-            val field = rootNode.get(jsonKey);
-            if (field == null || field.isNull()) return null;
+        val rootNode = mapper.readTree(path.toFile());
+        val field = rootNode.get(jsonKey);
+        if (field == null || field.isNull()) return null;
 
-            return mapper.writeValueAsBytes(field);
-        } catch (IOException e) {
-            throw new UncheckedIOException("Erro ao ler campo " + jsonKey + " em " + file, e);
-        }
+        return mapper.writeValueAsBytes(field);
     }
 
     @Override

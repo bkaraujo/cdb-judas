@@ -5,7 +5,8 @@ import br.community.context.security._0_domain.model.Preferences;
 import br.community.context.security._0_domain.model.User;
 import br.community.context.security._2_infrastructure.UserJsonRepository;
 import br.community.core.web.security.AccessTokenStore;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.json.JsonMapper;
 import org.junit.jupiter.api.Test;
 
 import java.util.UUID;
@@ -15,7 +16,8 @@ import static org.junit.jupiter.api.Assertions.*;
 class UserRegistryTest {
 
     private final InMemoryStorage storage = new InMemoryStorage();
-    private final UserJsonRepository repository = new UserJsonRepository(storage, new ObjectMapper());
+    private final ObjectMapper mapper = JsonMapper.builder().build();
+    private final UserJsonRepository repository = new UserJsonRepository(storage, mapper);
 
     @Test
     void resolvePorUsernameEPorId() {

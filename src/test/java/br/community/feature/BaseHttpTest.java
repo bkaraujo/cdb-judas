@@ -4,7 +4,7 @@ import br.commons.framework.persistence.Storage;
 import br.commons.framework.persistence.json.Repository;
 import br.community.core.JsonStorageProperties;
 import br.community.core.web.security.AuthenticatedUser;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 import lombok.val;
 import org.junit.jupiter.api.BeforeEach;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -48,7 +48,7 @@ abstract class BaseHttpTest {
     @BeforeEach
     void setUpBase() throws IOException {
         this.mockMvc = MockMvcBuilders.webAppContextSetup(this.context).build();
-        
+
         val principal = new AuthenticatedUser(TEST_USER_ID, "admin");
         SecurityContextHolder
                 .getContext()
@@ -66,4 +66,5 @@ abstract class BaseHttpTest {
         // Clear repository caches
         repositories.forEach(Repository::clearCache);
     }
+
 }

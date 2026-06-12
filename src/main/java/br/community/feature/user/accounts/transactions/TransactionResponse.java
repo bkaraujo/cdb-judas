@@ -1,5 +1,6 @@
 package br.community.feature.user.accounts.transactions;
 
+import br.community.context.monetary._0_domain.model.MonetaryTransaction;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 
@@ -15,8 +16,8 @@ public record TransactionResponse(
         LocalDate date,
         UUID categoryId,
         UUID accountId,
-        String status,
-        String type,
+        MonetaryTransaction.Status status,
+        MonetaryTransaction.Type type,
         UUID costCenterId,
         @Nullable LocalDate paymentDate,
         @Nullable UUID groupId,

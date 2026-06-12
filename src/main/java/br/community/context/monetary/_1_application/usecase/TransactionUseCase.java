@@ -68,7 +68,7 @@ public class TransactionUseCase {
 
         for (int i = 1; i <= installmentsCount; i++) {
             val date = cmd.date().plusMonths(i - 1);
-            val status = (i == 1) ? cmd.status() : "pending";
+            val status = (i == 1) ? cmd.status() : MonetaryTransaction.Status.PENDING;
             val valResult = closingService.validateDate(date);
             if (valResult instanceof Result.Failure<Void, DomainError>(DomainError error)) {
                 return Result.failure(error);
@@ -147,7 +147,7 @@ public class TransactionUseCase {
         }));
     }
 
-    public Result<MonetaryTransaction, DomainError> updateTransactionStatus(UUID id, String status, @Nullable LocalDate paymentDate) {
+    public Result<MonetaryTransaction, DomainError> updateTransactionStatus(UUID id, MonetaryTransaction.Status status, @Nullable LocalDate paymentDate) {
         return transactionService.findById(id)
                 .map(existing -> {
                     val saved = transactionService.save(new MonetaryTransaction(
@@ -234,12 +234,12 @@ public class TransactionUseCase {
 
         val outflow = new MonetaryTransaction(
                 outId, "Transferência (saída)", absAmount.negate(), date,
-                transferCat.id(), fromAccountId, "confirmed", "expense", MonetaryCenter.VARIAVEL_ID, date,
+                transferCat.id(), fromAccountId, MonetaryTransaction.Status.CONFIRMED, MonetaryTransaction.Type.EXPENSE, MonetaryCenter.VARIAVEL_ID, date,
                 groupId, 1, 2, null
         );
         val inflow = new MonetaryTransaction(
                 inId, "Transferência (entrada)", absAmount, date,
-                transferCat.id(), toAccountId, "confirmed", "income", MonetaryCenter.VARIAVEL_ID, date,
+                transferCat.id(), toAccountId, MonetaryTransaction.Status.CONFIRMED, MonetaryTransaction.Type.INCOME, MonetaryCenter.VARIAVEL_ID, date,
                 groupId, 2, 2, null
         );
 
@@ -253,7 +253,7 @@ public class TransactionUseCase {
     /** Persists an already-resolved imported movement (sign applied here from {@code type}) and emits
      *  the creation event so balances recalc. Used by the statement-import feature via the facade. */
     public Result<MonetaryTransaction, DomainError> createImported(ImportedTransactionCommand cmd) {
-        val signed = "income".equals(cmd.type())
+        val signed = MonetaryTransaction.Type.INCOME.equals(cmd.type())
                 ? cmd.amount().abs()
                 : cmd.amount().abs().negate();
         val tx = new MonetaryTransaction(
@@ -265,7 +265,7 @@ public class TransactionUseCase {
         return Result.success(saved);
     }
 
-    private MonetaryTransaction toMonetaryTransactionEntity(UUID id, TransactionCommand cmd, LocalDate date, String status,
+    private MonetaryTransaction toMonetaryTransactionEntity(UUID id, TransactionCommand cmd, LocalDate date, MonetaryTransaction.Status status,
                                                             @Nullable UUID groupId, @Nullable Integer installmentNumber, @Nullable Integer totalInstallments) {
         return new MonetaryTransaction(id, cmd.description(), cmd.amount(), date,
                 cmd.categoryId(), cmd.accountId(), status, cmd.type(), cmd.costCenterId(), null,

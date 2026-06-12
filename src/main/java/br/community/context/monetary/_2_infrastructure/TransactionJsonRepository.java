@@ -8,12 +8,10 @@ import br.community.context.monetary._0_domain.model.MonetaryCenter;
 import br.community.context.monetary._0_domain.model.MonetaryTransaction;
 import br.community.context.monetary._0_domain.repository.TransactionRepository;
 import br.community.core.web.security.CurrentUser;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.ObjectMapper;
 import lombok.val;
 import org.jspecify.annotations.NullMarked;
-
-import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -120,16 +118,16 @@ public final class TransactionJsonRepository implements TransactionRepository {
             val listType = mapper.getTypeFactory().constructCollectionType(List.class, MonetaryTransaction.class);
             final List<MonetaryTransaction> parsed = mapper.readValue(bytes, listType);
             return parsed.stream().map(TransactionJsonRepository::withDefaultCostCenter).toList();
-        } catch (IOException e) {
-            throw new UncheckedIOException("Error reading " + file + ":" + JSON_KEY, e);
+        } catch (JacksonException e) {
+            throw new RuntimeException("Error reading " + file + ":" + JSON_KEY, e);
         }
     }
 
     private void writeFile(String file, List<MonetaryTransaction> list) {
         try {
             storage.write(file, JSON_KEY, mapper.writeValueAsBytes(list));
-        } catch (IOException e) {
-            throw new UncheckedIOException("Error writing " + file + ":" + JSON_KEY, e);
+        } catch (JacksonException e) {
+            throw new RuntimeException("Error writing " + file + ":" + JSON_KEY, e);
         }
     }
 

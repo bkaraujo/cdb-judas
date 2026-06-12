@@ -3,8 +3,8 @@ package br.commons.framework.serializer;
 import br.commons.Logger;
 import br.commons.Yaml;
 import br.commons.tools.Tuple;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.dataformat.yaml.YAMLMapper;
 import lombok.val;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
@@ -23,7 +23,7 @@ import java.util.Map;
  */
 @NullMarked
 public final class YamlRoot implements Yaml {
-    private static final ObjectMapper MAPPER = new ObjectMapper(new YAMLFactory());
+    private static final ObjectMapper MAPPER = YAMLMapper.builder().build();
 
     private final YamlReader reader;
     private final YamlWriter writer;

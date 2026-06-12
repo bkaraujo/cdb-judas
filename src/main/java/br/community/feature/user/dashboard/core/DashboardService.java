@@ -2,6 +2,7 @@ package br.community.feature.user.dashboard.core;
 
 import br.commons.Result;
 import br.community.context.monetary.MonetaryContext;
+import br.community.context.monetary._0_domain.model.MonetaryTransaction;
 import br.community.context.shared._0_domain.model.DomainError;
 import lombok.Builder;
 import lombok.RequiredArgsConstructor;
@@ -27,17 +28,17 @@ public class DashboardService {
                     val end = start.plusMonths(1).minusDays(1);
 
                     val confirmedThisMonth = all.stream()
-                            .filter(t -> "confirmed".equals(t.status()))
+                            .filter(t -> MonetaryTransaction.Status.CONFIRMED.equals(t.status()))
                             .filter(t -> !t.date().isBefore(start) && !t.date().isAfter(end))
                             .toList();
 
                     val incomes = confirmedThisMonth.stream()
-                            .filter(t -> "income".equals(t.type()))
+                            .filter(t -> MonetaryTransaction.Type.INCOME.equals(t.type()))
                             .mapToDouble(t -> t.amount().doubleValue())
                             .sum();
 
                     val expenses = confirmedThisMonth.stream()
-                            .filter(t -> "expense".equals(t.type()))
+                            .filter(t -> MonetaryTransaction.Type.EXPENSE.equals(t.type()))
                             .mapToDouble(t -> t.amount().doubleValue())
                             .sum();
 
@@ -55,11 +56,11 @@ public class DashboardService {
                                 .toList();
 
                         val wRec = wConfirmed.stream()
-                                .filter(t -> "income".equals(t.type()))
+                                .filter(t -> MonetaryTransaction.Type.INCOME.equals(t.type()))
                                 .mapToDouble(t -> t.amount().doubleValue()).sum();
 
                         val wDes = wConfirmed.stream()
-                                .filter(t -> "expense".equals(t.type()))
+                                .filter(t -> MonetaryTransaction.Type.EXPENSE.equals(t.type()))
                                 .mapToDouble(t -> Math.abs(t.amount().doubleValue())).sum();
 
                         history.add(new HistoricalResult("S" + w, wRec, wDes));

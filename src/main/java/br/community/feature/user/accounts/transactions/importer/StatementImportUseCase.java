@@ -233,7 +233,7 @@ public class StatementImportUseCase {
                     case RECONCILE -> {
                         val target = cls.target();
                         if (target != null) {
-                            monetaryContext.updateTransactionStatus(target.id(), "confirmed", row.date());
+                            monetaryContext.updateTransactionStatus(target.id(), MonetaryTransaction.Status.CONFIRMED, row.date());
                             reconciled++;
                         }
                     }
@@ -250,7 +250,7 @@ public class StatementImportUseCase {
     }
 
     private boolean persistStatementRow(BankStatementConfirmCommand.Row row, UUID accountId, LocalDate today) {
-        val status = YearMonth.from(row.date()).isAfter(YearMonth.from(today)) ? "scheduled" : "confirmed";
+        val status = YearMonth.from(row.date()).isAfter(YearMonth.from(today)) ? MonetaryTransaction.Status.SCHEDULED : MonetaryTransaction.Status.CONFIRMED;
         val command = new ImportedTransactionCommand(
                 accountId, row.description(), row.amount(), row.date(), row.categoryId(),
                 status, row.type(), null, null, null);
@@ -270,7 +270,7 @@ public class StatementImportUseCase {
 
     private BankStatementPreviewRow bankRow(ParsedStatementLine line, Classification cls,
                                             List<MonetaryTransaction> history, UUID fallbackCategoryId) {
-        val type = line.amount().signum() < 0 ? "expense" : "income";
+        val type = line.amount().signum() < 0 ? MonetaryTransaction.Type.EXPENSE : MonetaryTransaction.Type.INCOME;
         val categoryId = cls.state() == RowState.NEW
                 ? categoryGuesser.guess(line.description(), history).orElse(fallbackCategoryId)
                 : null;
@@ -320,8 +320,8 @@ public class StatementImportUseCase {
         return out;
     }
 
-    private static boolean isReconcilable(String status) {
-        return "pending".equals(status) || "scheduled".equals(status);
+    private static boolean isReconcilable(MonetaryTransaction.Status status) {
+        return MonetaryTransaction.Status.PENDING.equals(status) || MonetaryTransaction.Status.SCHEDULED.equals(status);
     }
 
     @NullMarked
@@ -340,11 +340,12 @@ public class StatementImportUseCase {
     @Nullable
     private MonetaryTransaction persist(ImportConfirmCommand.Row row, UUID accountId, LocalDate today,
                                         @Nullable UUID groupId, @Nullable Integer installmentNumber,
-                                        @Nullable Integer totalInstallments) {
-        val status = YearMonth.from(row.date()).isAfter(YearMonth.from(today)) ? "scheduled" : "confirmed";
+                                        @Nullable Integer totalInstallments
+    ) {
+        val status = YearMonth.from(row.date()).isAfter(YearMonth.from(today)) ? MonetaryTransaction.Status.SCHEDULED : MonetaryTransaction.Status.CONFIRMED;
         val command = new ImportedTransactionCommand(
                 accountId, row.description(), row.amount(), row.date(), row.categoryId(),
-                status, "expense", groupId, installmentNumber, totalInstallments);
+                status, MonetaryTransaction.Type.EXPENSE, groupId, installmentNumber, totalInstallments);
         try {
             return switch (monetaryContext.createImportedTransaction(command)) {
                 case Result.Success(var saved) -> saved;

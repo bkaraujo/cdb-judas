@@ -21,7 +21,7 @@ class CategoryGuesserTest {
     private static MonetaryTransaction tx(String description, UUID categoryId, LocalDate date) {
         return new MonetaryTransaction(
                 UUID.randomUUID(), description, new BigDecimal("-10.00"), date, categoryId,
-                UUID.randomUUID(), "confirmed", "expense", MonetaryCenter.VARIAVEL_ID, null, null, null, null, null);
+                UUID.randomUUID(), MonetaryTransaction.Status.CONFIRMED, MonetaryTransaction.Type.EXPENSE, MonetaryCenter.VARIAVEL_ID, null, null, null, null, null);
     }
 
     @Test
