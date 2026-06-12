@@ -15,15 +15,15 @@ class DatesTest {
     }
 
     @Test
-    void abreviacoes_allTwelveMonths() {
-        assertEquals(12, Dates.ABREVIACOES.size());
+    void monthsPtbr_allTwelveMonths() {
+        assertEquals(12, Dates.MONTHS_PTBR.size());
     }
 
     @Test
-    void abreviacoes_correctMappings() {
-        assertEquals(1, Dates.ABREVIACOES.get("JAN"));
-        assertEquals(6, Dates.ABREVIACOES.get("JUN"));
-        assertEquals(12, Dates.ABREVIACOES.get("DEZ"));
+    void monthsPtbr_correctMappings() {
+        assertEquals(1, Dates.MONTHS_PTBR.get("JANEIRO"));
+        assertEquals(6, Dates.MONTHS_PTBR.get("JUNHO"));
+        assertEquals(12, Dates.MONTHS_PTBR.get("DEZEMBRO"));
     }
 
     @Test

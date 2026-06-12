@@ -4,7 +4,7 @@ import br.commons.Logger;
 import br.commons.framework.logger.MDC;
 import br.community.context.security._0_domain.repository.UserRepository;
 import br.community.core.web.RequestUtils;
-import br.community.feature.system.auth.AccessTokenStore;
+import br.community.core.web.security.AccessTokenStore;
 import br.community.core.web.security.AuthenticatedUser;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;

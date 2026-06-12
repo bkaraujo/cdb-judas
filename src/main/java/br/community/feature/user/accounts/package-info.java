@@ -14,8 +14,7 @@
  * <ul>
  *   <li>{@link br.community.feature.user.accounts.balance}      — saldo mensal/anual por conta</li>
  *   <li>{@link br.community.feature.user.accounts.closing}      — período de fechamento de fatura</li>
- *   <li>{@link br.community.feature.user.accounts.statement}    — extrato mensal por conta</li>
- *   <li>{@link br.community.feature.user.accounts.transactions} — lançamentos financeiros</li>
+ *   <li>{@link br.community.feature.user.accounts.transactions} — lançamentos financeiros (inclui importação de extrato/fatura)</li>
  * </ul>
  *
  * <p>A feature delega toda a lógica de domínio ao {@code MonetaryContext}

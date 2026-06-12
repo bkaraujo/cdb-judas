@@ -1,7 +1,7 @@
 package br.community.context.monetary;
 
-import br.community.feature.user.accounts.statement.importer.GroupSignature;
-import br.community.feature.user.accounts.statement.importer.preview.*;
+import br.community.feature.user.accounts.transactions.importer.GroupSignature;
+import br.community.feature.user.accounts.transactions.importer.preview.*;
 import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;

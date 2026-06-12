@@ -25,7 +25,7 @@
     'tag-repository.js',
     'cost-center-repository.js',
     'transaction-repository.js',
-    'statement-repository.js',
+    'balance-repository.js',
     'budget-repository.js',
     'closing-repository.js',
     'dashboard-repository.js',

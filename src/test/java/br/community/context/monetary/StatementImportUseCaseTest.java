@@ -10,12 +10,12 @@ import br.community.context.monetary._1_application.service.*;
 import br.community.context.monetary._1_application.usecase.AccountUseCase;
 import br.community.context.monetary._1_application.usecase.MetadataUseCase;
 import br.community.context.monetary._1_application.usecase.TransactionUseCase;
-import br.community.feature.user.accounts.statement.importer.BankStatementConfirmCommand;
-import br.community.feature.user.accounts.statement.importer.GroupSignature;
-import br.community.feature.user.accounts.statement.importer.ImportResult;
-import br.community.feature.user.accounts.statement.importer.StatementImportUseCase;
-import br.community.feature.user.accounts.statement.importer.preview.*;
-import br.community.feature.user.accounts.statement.importer.provider.*;
+import br.community.feature.user.accounts.transactions.importer.BankStatementConfirmCommand;
+import br.community.feature.user.accounts.transactions.importer.GroupSignature;
+import br.community.feature.user.accounts.transactions.importer.ImportResult;
+import br.community.feature.user.accounts.transactions.importer.StatementImportUseCase;
+import br.community.feature.user.accounts.transactions.importer.preview.*;
+import br.community.feature.user.accounts.transactions.importer.provider.*;
 import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;

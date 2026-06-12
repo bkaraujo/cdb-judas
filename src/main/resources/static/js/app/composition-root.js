@@ -17,7 +17,7 @@
     tags:         window.Infra.TagRepository.create(http),
     costCenters:  window.Infra.CostCenterRepository.create(http),
     transactions: window.Infra.TransactionRepository.create(http),
-    statement:    window.Infra.StatementRepository.create(http),
+    balance:      window.Infra.BalanceRepository.create(http),
     budget:       window.Infra.BudgetRepository.create(http),
     closing:      window.Infra.ClosingRepository.create(http),
     dashboard:    window.Infra.DashboardRepository.create(http),
@@ -46,7 +46,8 @@
   window.App.CostCenterService.init  ({ repo: repos.costCenters,  cache: window.App.CacheStore });
   window.App.TransactionService.init ({ repo: repos.transactions });
   window.App.PayableService.init     ({ repo: repos.transactions });
-  window.App.StatementService.init   ({ repo: repos.statement });
+  window.App.BalanceService.init     ({ repo: repos.balance });
+  window.App.StatementService.init   ({ txRepo: repos.transactions, balance: window.App.BalanceService, cache: window.App.CacheStore });
   window.App.BudgetService.init      ({ repo: repos.budget });
   window.App.CreditCardService.init  ({ txRepo: repos.transactions, cache: window.App.CacheStore });
   window.App.ClosingService.init     ({ repo: repos.closing });

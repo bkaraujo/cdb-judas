@@ -1,9 +1,10 @@
 /* pages/statement.js — Extrato de Contas.
  * Layout 280px / 1fr: lista de contas (esquerda) + Card de lançamentos com saldo corrente (direita).
- * Conta selecionável; período navegável (mês/ano). Backend: API.statement.list(accountId, month, year)
- * retorna StatementItem[] = { date, description, amount, status, runningBal, categoryId?, balance? }.
+ * Conta selecionável; período navegável (mês/ano). App.StatementService monta os itens no cliente
+ * (transações do período + snapshot de saldo mensal): StatementItem[] = { date, description, amount,
+ * status, runningBal, categoryId? }. A coluna da esquerda usa App.StatementService.summary.
  * Coluna fixa categoria/subcategoria (largura = maior label possível) entre data e descrição.
- * Status 'balance' => linha "Saldo anterior" (sem amount, runningBal = balance).
+ * Status 'balance' => linha "Saldo anterior" (sem amount, runningBal = saldo de abertura).
  */
 (function () {
   window.Pages = window.Pages || {};
@@ -115,7 +116,7 @@
       accs.forEach(function (a) {
         const active = String(a.id) === String(state.accountId);
         const sum = state.summary[String(a.id)];
-        const bal = sum ? (Number(sum.closingBalance) || 0) : (Number(a.balance) || 0);
+        const bal = sum ? (Number(sum.closingBalance) || 0) : window.Domain.Account.currentBalance(a);
         const btnStyle =
           'padding:14px 16px;border-radius:var(--radius);text-align:left;' +
           'background:' + (active ? 'var(--accent-light)' : 'var(--bg-card)') + ';' +

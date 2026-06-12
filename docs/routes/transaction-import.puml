@@ -1,12 +1,12 @@
 @startuml
-title Statement Import Routes
+title Transaction Import Routes
 
 actor Client
 participant "StatementImportResource" as Resource
 participant "StatementImportUseCase" as UseCase
 
-== POST /api/{uuid}/accounts/statement/import/preview ==
-Client -> Resource: POST /api/{uuid}/accounts/statement/import/preview (MultipartFile)
+== POST /api/{uuid}/accounts/transactions/import/preview ==
+Client -> Resource: POST /api/{uuid}/accounts/transactions/import/preview (MultipartFile)
 activate Resource
 Resource -> UseCase: preview(bytes, password, accountId)
 activate UseCase
@@ -15,8 +15,8 @@ deactivate UseCase
 Resource --> Client: 200 OK (ImportPreviewResponse or BankStatementPreviewResponse)
 deactivate Resource
 
-== POST /api/{uuid}/accounts/statement/import/confirm ==
-Client -> Resource: POST /api/{uuid}/accounts/statement/import/confirm (StatementConfirmRequest)
+== POST /api/{uuid}/accounts/transactions/import/confirm ==
+Client -> Resource: POST /api/{uuid}/accounts/transactions/import/confirm (StatementConfirmRequest)
 activate Resource
 
 alt type = CREDIT_CARD_INVOICE

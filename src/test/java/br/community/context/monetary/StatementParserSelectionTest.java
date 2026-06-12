@@ -1,7 +1,7 @@
 package br.community.context.monetary;
 
-import br.community.feature.user.accounts.statement.importer.StatementParser;
-import br.community.feature.user.accounts.statement.importer.provider.*;
+import br.community.feature.user.accounts.transactions.importer.StatementParser;
+import br.community.feature.user.accounts.transactions.importer.provider.*;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;

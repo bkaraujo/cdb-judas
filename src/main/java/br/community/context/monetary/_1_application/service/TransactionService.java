@@ -24,7 +24,7 @@ public class TransactionService {
     public Result<MonetaryTransaction, DomainError> findById(UUID id) {
         return transactionRepository.findById(id)
                 .<Result<MonetaryTransaction, DomainError>>map(Result::success)
-                .orElseGet(() -> Result.failure(new DomainError.NotFound("Transaction not found: " + id)));
+                .orElseGet(() -> Result.failure(new DomainError.NotFound("TransactionResponse not found: " + id)));
     }
 
     public MonetaryTransaction save(MonetaryTransaction transaction) {

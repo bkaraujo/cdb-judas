@@ -24,6 +24,11 @@
     };
   }
 
+  /* "yyyyMM" — the period key used by the monthly-balance endpoint. */
+  function yyyymm(p) {
+    return '' + p.year + pad2(p.month);
+  }
+
   function containsDate(p, dateLike) {
     const d = (dateLike instanceof Date) ? dateLike : new Date(dateLike);
     return d.getFullYear() === p.year && (d.getMonth() + 1) === p.month;
@@ -39,6 +44,7 @@
     currentMonth: currentMonth,
     shift: shift,
     bounds: bounds,
+    yyyymm: yyyymm,
     containsDate: containsDate,
     equals: equals,
   };

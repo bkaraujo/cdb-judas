@@ -229,54 +229,10 @@ A maioria dos recursos vive sob `/api/{uuid}/...`, onde **`{uuid}` é o `X-User-
 
 ---
 
-## 4. Extrato Bancário (`/api/{uuid}/accounts/...`)
-
-### Detalhe do Extrato (por conta)
-- **Endpoint:** `GET /api/{uuid}/accounts/{accountID}/statements/{yyyyMM}?status=confirmed`
-- **Response (200 OK):**
-```json
-[
-  {
-    "date": "2024-03-01",
-    "description": "Saldo Anterior",
-    "amount": 0.0,
-    "status": "confirmed",
-    "runningBal": 1000.00,
-    "categoryId": null
-  },
-  {
-    "date": "2024-03-05",
-    "description": "Compra Amazon",
-    "amount": -250.00,
-    "status": "confirmed",
-    "runningBal": 750.00,
-    "categoryId": "uuid-category"
-  }
-]
-```
-
-### Resumo do Extrato (todas as contas)
-- **Endpoint:** `GET /api/{uuid}/accounts/statements/{yyyyMM}?status=confirmed`
-- **Response (200 OK):**
-```json
-[
-  {
-    "accountId": "uuid-account",
-    "accountName": "Conta Corrente",
-    "openingBalance": 1000.00,
-    "closingBalance": 1500.00,
-    "totalIn": 800.00,
-    "totalOut": -300.00
-  }
-]
-```
-
----
-
-## 5. Importação de Extrato/Fatura (`/api/{uuid}/accounts/statement/import`)
+## 4. Importação de Extrato/Fatura (`/api/{uuid}/accounts/transactions/import`)
 
 ### Pré-visualização (upload)
-- **Endpoint:** `POST /api/{uuid}/accounts/statement/import/preview`
+- **Endpoint:** `POST /api/{uuid}/accounts/transactions/import/preview`
 - **Content-Type:** `multipart/form-data`
 - **Campos:** `file` (PDF, obrigatório), `password` (opcional), `accountId` (opcional).
 - **Response (200 OK):** discriminada por `documentType`.
@@ -336,7 +292,7 @@ A maioria dos recursos vive sob `/api/{uuid}/...`, onde **`{uuid}` é o `X-User-
 - **Erros de preview:** `ProblemDetail` com propriedade extra `code` (ex.: `FILE_REQUIRED`, `PASSWORD_REQUIRED`, `WRONG_PASSWORD`, `UNKNOWN_ISSUER`, `NO_TEXT_LAYER`, `TOO_MANY_PAGES` → 422; `FILE_TOO_LARGE` → 413).
 
 ### Confirmação
-- **Endpoint:** `POST /api/{uuid}/accounts/statement/import/confirm`
+- **Endpoint:** `POST /api/{uuid}/accounts/transactions/import/confirm`
 - **Content-Type:** `application/json`
 - **Request (fatura de cartão):**
 ```json
@@ -372,7 +328,7 @@ A maioria dos recursos vive sob `/api/{uuid}/...`, onde **`{uuid}` é o `X-User-
 
 ---
 
-## 6. Fechamento de Período (`/api/{uuid}/accounts/closing`)
+## 5. Fechamento de Período (`/api/{uuid}/accounts/closing`)
 
 ### Consultar período de fechamento
 - **Endpoint:** `GET /api/{uuid}/accounts/closing`
@@ -395,7 +351,7 @@ A maioria dos recursos vive sob `/api/{uuid}/...`, onde **`{uuid}` é o `X-User-
 
 ---
 
-## 7. Categorias (`/api/{uuid}/categories`)
+## 6. Categorias (`/api/{uuid}/categories`)
 
 `nature` ∈ `REVENUE` | `EXPENSE` (árvore via `parentId`).
 
@@ -441,7 +397,7 @@ A maioria dos recursos vive sob `/api/{uuid}/...`, onde **`{uuid}` é o `X-User-
 
 ---
 
-## 8. Tags (`/api/{uuid}/tags`)
+## 7. Tags (`/api/{uuid}/tags`)
 
 ### Listar
 - **Endpoint:** `GET /api/{uuid}/tags`
@@ -464,7 +420,7 @@ A maioria dos recursos vive sob `/api/{uuid}/...`, onde **`{uuid}` é o `X-User-
 
 ---
 
-## 9. Dashboard (`/api/{uuid}/dashboard`)
+## 8. Dashboard (`/api/{uuid}/dashboard`)
 
 ### Resultado Mensal
 - **Endpoint:** `GET /api/{uuid}/dashboard/result?month=3&year=2024`
@@ -483,7 +439,7 @@ A maioria dos recursos vive sob `/api/{uuid}/...`, onde **`{uuid}` é o `X-User-
 
 ---
 
-## 10. Centros de Custo (`/api/cost-center`)
+## 9. Centros de Custo (`/api/cost-center`)
 
 Dado fixo do sistema: rota **global** e **somente leitura**.
 
@@ -499,7 +455,7 @@ Dado fixo do sistema: rota **global** e **somente leitura**.
 
 ---
 
-## 11. Stream de Eventos (`/api/{uuid}/stream`)
+## 10. Stream de Eventos (`/api/{uuid}/stream`)
 
 - **Endpoint:** `GET /api/{uuid}/stream`
 - **Content-Type:** `text/event-stream` (Server-Sent Events).
@@ -507,7 +463,7 @@ Dado fixo do sistema: rota **global** e **somente leitura**.
 
 ---
 
-## 12. Versão (`/api/version`)
+## 11. Versão (`/api/version`)
 
 - **Endpoint:** `GET /api/version` (global)
 - **Response (200 OK):**
@@ -517,7 +473,7 @@ Dado fixo do sistema: rota **global** e **somente leitura**.
 
 ---
 
-## 13. Estrutura de Erros (RFC 7807)
+## 12. Estrutura de Erros (RFC 7807)
 
 O sistema usa `ProblemDetail` para reportar erros. Mapeamento de domínio → HTTP:
 
@@ -563,6 +519,6 @@ Outros: `401` (não autenticado), `403` (guarda de propriedade), `405` (método 
   "status": 422,
   "detail": "Selecione um arquivo PDF.",
   "code": "FILE_REQUIRED",
-  "instance": "/api/u-123/accounts/statement/import/preview"
+  "instance": "/api/u-123/accounts/transactions/import/preview"
 }
 ```

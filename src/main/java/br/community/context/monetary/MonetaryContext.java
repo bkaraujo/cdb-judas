@@ -81,7 +81,7 @@ public class MonetaryContext implements Facade {
         return ucAccount.deleteCreditCard(id);
     }
 
-    // ── Transaction operations ─────────────────────────────────────
+    // ── TransactionResponse operations ─────────────────────────────────────
 
     public Result<List<MonetaryTransaction>, DomainError> listTransactions() {
         return ucTransaction.listTransactions();

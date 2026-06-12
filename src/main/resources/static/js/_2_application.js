@@ -15,6 +15,7 @@
     'cost-center-service.js',
     'transaction-service.js',
     'payable-service.js',
+    'balance-service.js',
     'statement-service.js',
     'budget-service.js',
     'credit-card-service.js',

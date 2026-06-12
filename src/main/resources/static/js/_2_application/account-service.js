@@ -9,7 +9,6 @@
   function create(data)        { return repo.create(data); }
   function update(id, data)    { return repo.update(id, data); }
   function remove(id)          { return repo.remove(id); }
-  function getBalance(id, p)   { return repo.getBalance(id, p); }
 
   /* List from cache (no network) — used by views that need accounts in sync
      with SSE updates. */
@@ -31,7 +30,6 @@
     create: create,
     update: update,
     remove: remove,
-    getBalance: getBalance,
     linkableCheckings: linkableCheckings,
     findById: findById,
     onChange: onChange,

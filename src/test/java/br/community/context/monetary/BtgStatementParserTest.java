@@ -1,8 +1,8 @@
 package br.community.context.monetary;
 
-import br.community.feature.user.accounts.statement.importer.MonetaryDocument;
-import br.community.feature.user.accounts.statement.importer.provider.BTGStatementParser;
-import br.community.feature.user.accounts.statement.importer.preview.ParsedStatementLine;
+import br.community.feature.user.accounts.transactions.importer.MonetaryDocument;
+import br.community.feature.user.accounts.transactions.importer.provider.BTGStatementParser;
+import br.community.feature.user.accounts.transactions.importer.preview.ParsedStatementLine;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
