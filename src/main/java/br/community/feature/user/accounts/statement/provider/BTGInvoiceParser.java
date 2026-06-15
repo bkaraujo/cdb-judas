@@ -1,12 +1,12 @@
-package br.community.feature.user.accounts.transactions.importer.provider;
+package br.community.feature.user.accounts.statement.provider;
 
 import br.commons.tools.Strings;
+import br.community.feature.user.accounts.statement.Issuer;
+import br.community.feature.user.accounts.statement.MonetaryDocument;
+import br.community.feature.user.accounts.statement.MonetaryDocumentEntry;
+import br.community.feature.user.accounts.statement.StatementParser;
+import br.community.feature.user.accounts.transactions.core.ChargeKind;
 import br.community.feature.user.accounts.transactions.importer.Amounts;
-import br.community.feature.user.accounts.transactions.importer.StatementParser;
-import br.community.feature.user.accounts.transactions.importer.preview.ChargeKind;
-import br.community.feature.user.accounts.transactions.importer.preview.Issuer;
-import br.community.feature.user.accounts.transactions.importer.MonetaryDocument;
-import br.community.feature.user.accounts.transactions.importer.preview.ParsedStatementLine;
 import lombok.val;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
@@ -14,7 +14,6 @@ import org.jspecify.annotations.Nullable;
 import java.time.MonthDay;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import static br.commons.chrono.Dates.MONTHS_PTBR;
@@ -39,26 +38,26 @@ public class BTGInvoiceParser implements StatementParser {
 
     private static final Pattern CARD_HEADER = Pattern.compile("Final (\\d{4}) Total do cart[ãa]o");
     private static final Pattern SUBTOTAL = Pattern.compile("^-?\\s*(?:R\\$|US\\$)\\s*[\\d.]+,\\d{2}\\s*$");
-    private static final Pattern TXN = Pattern.compile(
-            "^\\s*(R\\$|US\\$)\\s*([\\d.]+,\\d{2})(.+?)(?:\\((\\d+)/(\\d+)\\))?(\\d{2}) ([A-Za-z]{3})$");
+    private static final Pattern TXN = Pattern.compile("^\\s*(R\\$|US\\$)\\s*([\\d.]+,\\d{2})(.+?)(?:\\((\\d+)/(\\d+)\\))?(\\d{2}) ([A-Za-z]{3})$");
 
     private static final String KEEP_HEADER = "Total de compras e despesas";
     private static final String CREDIT_HEADER = "Total de créditos recebidos";
 
-    private static final String CARD_CNPJ_DIGITS = "30306294000145";
+    /** BTG's card-issuer CNPJ (…0001-45), distinct from the checking-account CNPJ (…0002-26) on the extrato. */
+    private static final String ISSUER_CNPJ = "30306294000145";
 
     @Override
     public boolean parseable(String raw) {
         val text = new DocumentText(raw);
         return !BankStatements.isAny(text)
-                && (text.hasCnpj(CARD_CNPJ_DIGITS) || text.nameOnly("BTG PACTUAL", "SANTANDER"));
+                && (text.hasCnpj(ISSUER_CNPJ) || text.nameOnly("BTG PACTUAL", "SANTANDER"));
     }
 
     @Override
     public MonetaryDocument parse(String text) {
-        val lines = new ArrayList<ParsedStatementLine>();
+        val lines = new ArrayList<MonetaryDocumentEntry>();
         String last4 = null;
-        boolean keep = false;
+        var keep = false;
 
         for (val line : text.split("\\R", -1)) {
             val card = CARD_HEADER.matcher(line);
@@ -99,7 +98,7 @@ public class BTGInvoiceParser implements StatementParser {
         return null;
     }
 
-    private static @Nullable ParsedStatementLine txnLine(String line, String last4) {
+    private static @Nullable MonetaryDocumentEntry txnLine(String line, String last4) {
         val m = TXN.matcher(line);
         if (!m.matches() || m.group(1).equals("US$")) {
             return null;
@@ -111,7 +110,7 @@ public class BTGInvoiceParser implements StatementParser {
         val date = MonthDay.of(month, Integer.parseInt(m.group(6)));
         val number = m.group(4) == null ? null : Integer.valueOf(m.group(4));
         val total = m.group(5) == null ? null : Integer.valueOf(m.group(5));
-        return ParsedStatementLine.charge(
+        return MonetaryDocumentEntry.charge(
                 last4, date, m.group(3).trim(), Amounts.brl(m.group(2)), number, total, ChargeKind.PURCHASE);
     }
 

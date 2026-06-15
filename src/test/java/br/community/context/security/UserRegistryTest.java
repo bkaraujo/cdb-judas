@@ -5,9 +5,9 @@ import br.community.context.security._0_domain.model.Preferences;
 import br.community.context.security._0_domain.model.User;
 import br.community.context.security._2_infrastructure.UserJsonRepository;
 import br.community.core.web.security.AccessTokenStore;
+import org.junit.jupiter.api.Test;
 import tools.jackson.databind.ObjectMapper;
 import tools.jackson.databind.json.JsonMapper;
-import org.junit.jupiter.api.Test;
 
 import java.util.UUID;
 

@@ -1,4 +1,4 @@
-package br.community.feature.system.stream;
+package br.community.feature.user.stream;
 
 import org.jspecify.annotations.NullMarked;
 import org.springframework.context.annotation.Bean;

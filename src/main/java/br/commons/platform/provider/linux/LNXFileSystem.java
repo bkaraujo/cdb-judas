@@ -1,7 +1,7 @@
 package br.commons.platform.provider.linux;
 
-import br.commons.tools.Strings;
 import br.commons.platform.FileSystem;
+import br.commons.tools.Strings;
 import org.jspecify.annotations.NullMarked;
 
 import java.nio.file.Path;

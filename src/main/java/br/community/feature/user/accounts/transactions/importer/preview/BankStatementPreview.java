@@ -1,6 +1,7 @@
 package br.community.feature.user.accounts.transactions.importer.preview;
 
 import br.community.context.monetary._0_domain.model.MonetaryAccount;
+import br.community.feature.user.accounts.statement.Issuer;
 import br.community.feature.user.accounts.transactions.importer.RowState;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;

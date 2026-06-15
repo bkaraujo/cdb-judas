@@ -3,13 +3,14 @@ package br.community.feature.user.accounts.transactions.importer;
 import br.commons.pdf.PdfBoxTextExtractor;
 import br.commons.pdf.PdfTextExtractor;
 import br.community.context.monetary.MonetaryContext;
-import br.community.feature.user.accounts.transactions.importer.preview.*;
-import br.community.feature.user.accounts.transactions.importer.provider.*;
+import br.community.feature.user.accounts.statement.provider.BTGInvoiceParser;
+import br.community.feature.user.accounts.statement.provider.BTGStatementParser;
+import br.community.feature.user.accounts.statement.provider.SantanderInvoiceParser;
+import br.community.feature.user.accounts.statement.provider.SantanderStatementParser;
 import org.jspecify.annotations.NullMarked;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
-import java.time.Clock;
 import java.util.List;
 
 /**

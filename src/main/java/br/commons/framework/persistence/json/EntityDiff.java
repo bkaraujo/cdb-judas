@@ -1,9 +1,9 @@
 package br.commons.framework.persistence.json;
 
-import tools.jackson.databind.ObjectMapper;
 import lombok.val;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
+import tools.jackson.databind.ObjectMapper;
 
 import java.util.Map;
 import java.util.Objects;

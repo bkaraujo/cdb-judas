@@ -16,14 +16,20 @@ import br.community.context.monetary._1_application.service.*;
 import br.community.context.monetary._1_application.usecase.AccountUseCase;
 import br.community.context.monetary._1_application.usecase.MetadataUseCase;
 import br.community.context.monetary._1_application.usecase.TransactionUseCase;
+import br.community.feature.user.accounts.statement.Issuer;
+import br.community.feature.user.accounts.statement.MonetaryDocumentEntry;
+import br.community.feature.user.accounts.statement.provider.BTGInvoiceParser;
+import br.community.feature.user.accounts.statement.provider.BTGStatementParser;
+import br.community.feature.user.accounts.statement.provider.SantanderInvoiceParser;
+import br.community.feature.user.accounts.statement.provider.SantanderStatementParser;
+import br.community.feature.user.accounts.transactions.core.ChargeKind;
 import br.community.feature.user.accounts.transactions.importer.GroupSignature;
+import br.community.feature.user.accounts.transactions.importer.ImportError;
 import br.community.feature.user.accounts.transactions.importer.ImportResult;
 import br.community.feature.user.accounts.transactions.importer.StatementImportUseCase;
-import br.community.feature.user.accounts.transactions.importer.preview.*;
-import br.community.feature.user.accounts.transactions.importer.provider.BTGInvoiceParser;
-import br.community.feature.user.accounts.transactions.importer.provider.BTGStatementParser;
-import br.community.feature.user.accounts.transactions.importer.provider.SantanderInvoiceParser;
-import br.community.feature.user.accounts.transactions.importer.provider.SantanderStatementParser;
+import br.community.feature.user.accounts.transactions.importer.preview.ImportPreview;
+import br.community.feature.user.accounts.transactions.importer.preview.ImportPreviewOutcome;
+import br.community.feature.user.accounts.transactions.importer.preview.PreviewRow;
 import org.jspecify.annotations.NonNull;
 import org.junit.jupiter.api.Test;
 
@@ -169,7 +175,7 @@ class CreditCardStatementImportUseCaseTest {
         assertEquals(java.util.List.of("0020"), preview.last4s());
         assertEquals(1, preview.statement().size());
 
-        ParsedStatementLine row = preview.statement().getFirst();
+        MonetaryDocumentEntry row = preview.statement().getFirst();
         assertEquals("Amazonmktplc Megabytem", row.description());
         assertEquals(0, row.amount().compareTo(new BigDecimal("72.99")));
         assertEquals(MonthDay.of(7, 15), MonthDay.from(row.date()));
@@ -214,7 +220,7 @@ class CreditCardStatementImportUseCaseTest {
         var useCase = useCaseWith((bytes, password) -> Result.success(text));
 
         var preview = invoicePreview(useCase.preview(new byte[1], null, null));
-        ParsedStatementLine row = preview.statement().getFirst();
+        MonetaryDocumentEntry row = preview.statement().getFirst();
         assertNull(row.installmentNumber());
         assertNull(row.installmentTotal());
     }

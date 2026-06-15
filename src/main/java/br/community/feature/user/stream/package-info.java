@@ -6,7 +6,7 @@
  *
  * <p>Permite que o frontend mantenha uma conexão persistente e receba notificações
  * de eventos de domínio sem polling — ex.: importação concluída, sincronização de dados.
- * Cada conexão é registrada no {@link br.community.feature.system.stream.SseService}
+ * Cada conexão é registrada no {@link br.community.feature.user.stream.SseService}
  * e descartada automaticamente ao término ou timeout.
  *
  * <p>O segmento {@code {uuid}} está presente na rota por convenção de roteamento,
@@ -14,6 +14,6 @@
  * externamente.
  */
 @NullMarked
-package br.community.feature.system.stream;
+package br.community.feature.user.stream;
 
 import org.jspecify.annotations.NullMarked;

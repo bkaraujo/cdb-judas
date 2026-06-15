@@ -8,7 +8,7 @@ import br.community.context.monetary._0_domain.event.MonetaryEvent;
 import br.community.context.monetary._0_domain.model.MonetaryAccount;
 import br.community.context.monetary._0_domain.model.MonetaryTransaction;
 import br.community.core.web.security.CurrentUser;
-import br.community.feature.system.stream.SSE;
+import br.community.feature.user.stream.SSE;
 import lombok.RequiredArgsConstructor;
 import lombok.val;
 import org.jspecify.annotations.NullMarked;

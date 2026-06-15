@@ -1,7 +1,7 @@
 package br.commons.framework.logger;
 
-import br.commons.tools.Strings;
 import br.commons.platform.terminal.TerminalColor;
+import br.commons.tools.Strings;
 import org.jspecify.annotations.NullMarked;
 
 @NullMarked

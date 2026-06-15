@@ -1,21 +1,19 @@
-package br.community.feature.user.accounts.transactions.importer.provider;
+package br.community.feature.user.accounts.statement.provider;
 
+import br.community.feature.user.accounts.statement.Issuer;
+import br.community.feature.user.accounts.statement.MonetaryDocument;
+import br.community.feature.user.accounts.statement.MonetaryDocumentEntry;
+import br.community.feature.user.accounts.statement.StatementParser;
+import br.community.feature.user.accounts.transactions.core.ChargeKind;
 import br.community.feature.user.accounts.transactions.importer.Amounts;
-import br.community.feature.user.accounts.transactions.importer.StatementParser;
-import br.community.feature.user.accounts.transactions.importer.preview.ChargeKind;
-import br.community.feature.user.accounts.transactions.importer.preview.Issuer;
-import br.community.feature.user.accounts.transactions.importer.MonetaryDocument;
-import br.community.feature.user.accounts.transactions.importer.preview.ParsedStatementLine;
 import lombok.val;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 
-import java.math.BigDecimal;
 import java.time.MonthDay;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
-import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
@@ -50,7 +48,7 @@ public class SantanderInvoiceParser implements StatementParser {
 
     @Override
     public MonetaryDocument parse(String text) {
-        val lines = new ArrayList<ParsedStatementLine>();
+        val lines = new ArrayList<MonetaryDocumentEntry>();
         @Nullable String last4 = null;
         @Nullable MonthDay lastDate = null;
         boolean keep = false;
@@ -92,7 +90,7 @@ public class SantanderInvoiceParser implements StatementParser {
 
     /** Emite a linha IOF ou de transação (se houver) e devolve a data corrente que ancora o IOF. */
     private static @Nullable MonthDay emitLine(String line, String trimmed, String last4,
-                                               @Nullable MonthDay lastDate, List<ParsedStatementLine> lines) {
+                                               @Nullable MonthDay lastDate, List<MonetaryDocumentEntry> lines) {
         val iof = iofLine(trimmed, last4, lastDate);
         if (iof != null) {
             lines.add(iof);
@@ -107,7 +105,7 @@ public class SantanderInvoiceParser implements StatementParser {
     }
 
     /** A linha de IOF não traz data própria — é ancorada na última transação (a compra no exterior). */
-    private static @Nullable ParsedStatementLine iofLine(String trimmed, String last4, @Nullable MonthDay lastDate) {
+    private static @Nullable MonetaryDocumentEntry iofLine(String trimmed, String last4, @Nullable MonthDay lastDate) {
         val iof = IOF_LINE.matcher(trimmed);
         if (!iof.matches()) {
             return null;
@@ -116,10 +114,10 @@ public class SantanderInvoiceParser implements StatementParser {
         if (value.signum() < 0 || lastDate == null) {
             return null;
         }
-        return ParsedStatementLine.charge(last4, lastDate, iof.group(1).trim(), value, null, null, ChargeKind.IOF);
+        return MonetaryDocumentEntry.charge(last4, lastDate, iof.group(1).trim(), value, null, null, ChargeKind.IOF);
     }
 
-    private static @Nullable ParsedStatementLine txnLine(String line, String last4) {
+    private static @Nullable MonetaryDocumentEntry txnLine(String line, String last4) {
         val m = TXN.matcher(line);
         if (!m.matches()) {
             return null;
@@ -132,7 +130,7 @@ public class SantanderInvoiceParser implements StatementParser {
         val number = m.group(4) == null ? null : Integer.valueOf(m.group(4));
         val total = m.group(5) == null ? null : Integer.valueOf(m.group(5));
         val description = m.group(3).trim();
-        return ParsedStatementLine.charge(last4, date, description, value, number, total, classify(description));
+        return MonetaryDocumentEntry.charge(last4, date, description, value, number, total, classify(description));
     }
 
     private static ChargeKind classify(String description) {

@@ -5,9 +5,9 @@ import br.commons.framework.logger.LogForwarder;
 import br.commons.framework.logger.LogLevel;
 import br.commons.framework.logger.LogRecord;
 import br.commons.framework.logger.MDC;
+import br.commons.platform.terminal.TerminalColor;
 import br.commons.tools.Meta;
 import br.commons.tools.meta.StackFrame;
-import br.commons.platform.terminal.TerminalColor;
 import lombok.val;
 import org.jspecify.annotations.NullMarked;
 

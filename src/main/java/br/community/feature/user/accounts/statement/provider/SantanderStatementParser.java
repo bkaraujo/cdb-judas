@@ -1,11 +1,12 @@
-package br.community.feature.user.accounts.transactions.importer.provider;
+package br.community.feature.user.accounts.statement.provider;
 
 import br.commons.chrono.Dates;
 import br.commons.tools.Strings;
+import br.community.feature.user.accounts.statement.Issuer;
+import br.community.feature.user.accounts.statement.MonetaryDocument;
+import br.community.feature.user.accounts.statement.MonetaryDocumentEntry;
+import br.community.feature.user.accounts.statement.StatementParser;
 import br.community.feature.user.accounts.transactions.importer.Amounts;
-import br.community.feature.user.accounts.transactions.importer.MonetaryDocument;
-import br.community.feature.user.accounts.transactions.importer.StatementParser;
-import br.community.feature.user.accounts.transactions.importer.preview.*;
 import lombok.val;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
@@ -16,7 +17,6 @@ import java.time.Year;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
-import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
@@ -75,7 +75,7 @@ public class SantanderStatementParser implements StatementParser {
     public MonetaryDocument parse(String text) {
         val year = referenceYear(text);
         val refMonth = referenceMonth(text);
-        val lines = new ArrayList<ParsedStatementLine>();
+        val lines = new ArrayList<MonetaryDocumentEntry>();
 
         boolean inSection = false;
         @Nullable LocalDate recordDate = null;
@@ -129,7 +129,7 @@ public class SantanderStatementParser implements StatementParser {
                 || line.isEmpty() || isNoise(line);
     }
 
-    private static void finalizeIfComplete(LocalDate date, StringBuilder buffer, List<ParsedStatementLine> out) {
+    private static void finalizeIfComplete(LocalDate date, StringBuilder buffer, List<MonetaryDocumentEntry> out) {
         val value = TRAILING_VALUE.matcher(buffer);
         if (!value.find()) {
             return;
@@ -143,7 +143,7 @@ public class SantanderStatementParser implements StatementParser {
         if (description.isEmpty() || isDropped(description)) {
             return;
         }
-        out.add(new ParsedStatementLine(date, description, amount));
+        out.add(new MonetaryDocumentEntry(date, description, amount));
     }
 
     private static boolean isDropped(String description) {

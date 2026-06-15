@@ -1,9 +1,7 @@
-package br.community.feature.user.accounts.transactions.importer;
+package br.community.feature.user.accounts.statement;
 
 import br.commons.tools.Parser;
 import org.jspecify.annotations.NullMarked;
-
-import java.math.BigDecimal;
 
 /**
  * A bank-specific statement parser and the central piece of the import architecture: the use case

@@ -14,6 +14,7 @@
  * <ul>
  *   <li>{@link br.community.feature.user.accounts.balance}      — saldo mensal/anual por conta</li>
  *   <li>{@link br.community.feature.user.accounts.closing}      — período de fechamento de fatura</li>
+ *   <li>{@link br.community.feature.user.accounts.statement}    — parsing de extratos/faturas PDF (suporte à importação, sem rota própria)</li>
  *   <li>{@link br.community.feature.user.accounts.transactions} — lançamentos financeiros (inclui importação de extrato/fatura)</li>
  * </ul>
  *

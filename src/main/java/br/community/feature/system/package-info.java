@@ -5,8 +5,9 @@
  * pois representam dados ou canais de infraestrutura compartilhados.
  *
  * <ul>
+ *   <li>{@link br.community.feature.system.auth} — autenticação: login e emissão de sessão ({@code POST /login})</li>
  *   <li>{@link br.community.feature.system.costcenter} — catálogo somente-leitura de centros de custo</li>
- *   <li>{@link br.community.feature.system.stream} — canal SSE para push de eventos de domínio</li>
+ *   <li>{@link br.community.feature.system.VersionResource} — versão da aplicação ({@code GET /api/version})</li>
  * </ul>
  */
 @NullMarked

@@ -5,7 +5,7 @@ import br.commons.framework.message.MessageResult;
 import br.community.context.monetary._0_domain.event.MonetaryEvent;
 import br.community.context.monetary._0_domain.model.MonetaryCategory;
 import br.community.core.web.security.CurrentUser;
-import br.community.feature.system.stream.SSE;
+import br.community.feature.user.stream.SSE;
 import lombok.RequiredArgsConstructor;
 import org.jspecify.annotations.NullMarked;
 

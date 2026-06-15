@@ -3,10 +3,11 @@ package br.community.context.monetary._2_infrastructure;
 import br.commons.framework.persistence.Storage;
 import br.community.context.monetary._0_domain.repository.ClosingRepository;
 import br.community.core.web.security.CurrentUser;
-import tools.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.val;
 import org.jspecify.annotations.NullMarked;
+import tools.jackson.databind.ObjectMapper;
+
 import java.time.YearMonth;
 import java.util.Optional;
 
@@ -25,7 +26,7 @@ public class ClosingJsonRepository implements ClosingRepository {
         if (bytes == null) return Optional.empty();
 
         val s = mapper.readValue(bytes, String.class);
-        return Optional.ofNullable(s).map(YearMonth::parse);
+        return Optional.of(s).map(YearMonth::parse);
     }
 
     @Override

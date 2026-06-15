@@ -1,12 +1,13 @@
 package br.community.context.security;
 
 import br.commons.Result;
-import br.community.context.security._0_domain.repository.UserRepository;
 import br.community.context.security._0_domain.model.Preferences;
 import br.community.context.security._0_domain.model.PreferencesPatch;
 import br.community.context.security._0_domain.model.User;
+import br.community.context.security._0_domain.repository.UserRepository;
 import br.community.context.security._1_application.usecase.UserUseCase;
 import br.community.context.shared._0_domain.model.DomainError;
+import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 

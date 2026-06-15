@@ -4,7 +4,6 @@ import br.commons.framework.persistence.Storage;
 import br.commons.framework.persistence.json.Repository;
 import br.community.core.JsonStorageProperties;
 import br.community.core.web.security.AuthenticatedUser;
-import tools.jackson.databind.ObjectMapper;
 import lombok.val;
 import org.junit.jupiter.api.BeforeEach;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -16,6 +15,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.util.FileSystemUtils;
 import org.springframework.web.context.WebApplicationContext;
+import tools.jackson.databind.ObjectMapper;
 
 import java.io.File;
 import java.io.IOException;

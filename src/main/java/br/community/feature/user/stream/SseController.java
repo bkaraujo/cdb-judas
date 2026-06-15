@@ -1,4 +1,4 @@
-package br.community.feature.system.stream;
+package br.community.feature.user.stream;
 
 import lombok.RequiredArgsConstructor;
 import org.jspecify.annotations.NullMarked;

@@ -1,9 +1,7 @@
-package br.community.feature.user.accounts.transactions.importer.provider;
+package br.community.feature.user.accounts.statement.provider;
 
 import br.commons.tools.Strings;
 import org.jspecify.annotations.NullMarked;
-
-import java.util.Locale;
 
 /**
  * Text primitives shared by the parsers' {@code parseable} checks: the uppercased text (for

@@ -1,4 +1,4 @@
-package br.community.feature.system.stream;
+package br.community.feature.user.stream;
 
 import br.community.core.web.security.CurrentUser;
 import lombok.val;

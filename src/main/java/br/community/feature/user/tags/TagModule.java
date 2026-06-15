@@ -1,7 +1,7 @@
 package br.community.feature.user.tags;
 
 import br.commons.MessageBus;
-import br.community.feature.system.stream.SSE;
+import br.community.feature.user.stream.SSE;
 import br.community.feature.user.tags.core.TagStreamListener;
 import lombok.val;
 import org.jspecify.annotations.NullMarked;

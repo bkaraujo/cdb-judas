@@ -4,6 +4,8 @@ import br.commons.Result;
 import br.community.context.monetary._0_domain.model.MonetaryAccount;
 import br.community.context.monetary._1_application.command.ImportConfirmCommand;
 import br.community.context.shared._0_domain.model.DomainError;
+import br.community.feature.user.accounts.transactions.importer.confirm.BankStatementConfirmCommand;
+import br.community.feature.user.accounts.transactions.importer.confirm.ImportConfirmResponse;
 import br.community.feature.user.accounts.transactions.importer.preview.*;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;

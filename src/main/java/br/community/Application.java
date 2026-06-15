@@ -1,10 +1,10 @@
 package br.community;
 
 import br.commons.Logger;
+import br.commons.Platform;
 import br.commons.RT;
 import br.commons.framework.logger.LogLevel;
 import br.commons.framework.logger.channel.ConsoleChannel;
-import br.commons.Platform;
 import br.commons.tools.Strings;
 import br.community.context.monetary.MonetaryModule;
 import br.community.context.security.SecurityModule;

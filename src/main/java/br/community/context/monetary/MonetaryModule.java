@@ -10,10 +10,10 @@ import br.community.context.monetary._1_application.usecase.AccountUseCase;
 import br.community.context.monetary._1_application.usecase.MetadataUseCase;
 import br.community.context.monetary._1_application.usecase.TransactionUseCase;
 import br.community.context.monetary._2_infrastructure.*;
-import tools.jackson.databind.ObjectMapper;
 import org.jspecify.annotations.NullMarked;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import tools.jackson.databind.ObjectMapper;
 
 @Configuration
 @NullMarked

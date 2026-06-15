@@ -1,7 +1,10 @@
 package br.community.context.monetary;
 
-import br.community.feature.user.accounts.transactions.importer.StatementParser;
-import br.community.feature.user.accounts.transactions.importer.provider.*;
+import br.community.feature.user.accounts.statement.StatementParser;
+import br.community.feature.user.accounts.statement.provider.BTGInvoiceParser;
+import br.community.feature.user.accounts.statement.provider.BTGStatementParser;
+import br.community.feature.user.accounts.statement.provider.SantanderInvoiceParser;
+import br.community.feature.user.accounts.statement.provider.SantanderStatementParser;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
@@ -10,9 +13,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Objects;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertInstanceOf;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * The {@code parseable}-based routing that replaced DocumentTypeDetector + IssuerDetector + the two

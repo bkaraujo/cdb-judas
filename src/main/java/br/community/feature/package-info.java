@@ -9,18 +9,22 @@
  * <pre>
  * feature
  * ├── system   — recursos transversais, sem namespace de usuário ({uuid})
- * │   ├── costcenter   GET /api/cost-center
- * │   └── stream       GET /api/{uuid}/stream  (Server-Sent Events)
- * └── user     — recursos escopados por usuário/workspace ({uuid})
+ * │   ├── auth         POST /login
+ * │   ├── costcenter   GET  /api/cost-center
+ * │   └── version      GET  /api/version
+ * └── user     — recursos do usuário autenticado (a maioria sob /api/{uuid}/…)
  *     ├── accounts     CRUD /api/{uuid}/accounts  + sub-recursos
  *     │   ├── balance       GET  …/balance?period=|year=
  *     │   ├── closing       GET/POST/DELETE …/closing
- *     │   ├── statement     GET  …/statements/{yyyyMM}
- *     │   │   └── importer  POST …/transactions/import/preview|confirm
+ *     │   ├── statement     parsing de extrato/fatura PDF (suporte, sem rota)
  *     │   └── transactions  CRUD …/{accId}/transactions
+ *     │       ├── transfer  POST …/transactions/transfer
+ *     │       └── importer  POST …/transactions/import/preview|confirm
  *     ├── categories   CRUD /api/{uuid}/categories
  *     ├── dashboard    GET  /api/{uuid}/dashboard/result
- *     └── tags         CRUD /api/{uuid}/tags
+ *     ├── tags         CRUD /api/{uuid}/tags
+ *     ├── stream       GET  /api/{uuid}/stream  (Server-Sent Events)
+ *     └── profile      GET/PATCH /api/me
  * </pre>
  */
 @NullMarked

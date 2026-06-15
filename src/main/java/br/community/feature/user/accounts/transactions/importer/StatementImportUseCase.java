@@ -12,6 +12,11 @@ import br.community.context.monetary._0_domain.model.MonetaryTransaction;
 import br.community.context.monetary._1_application.command.ImportConfirmCommand;
 import br.community.context.monetary._1_application.command.ImportedTransactionCommand;
 import br.community.context.shared._0_domain.model.DomainError;
+import br.community.feature.user.accounts.statement.Issuer;
+import br.community.feature.user.accounts.statement.MonetaryDocument;
+import br.community.feature.user.accounts.statement.MonetaryDocumentEntry;
+import br.community.feature.user.accounts.statement.StatementParser;
+import br.community.feature.user.accounts.transactions.importer.confirm.BankStatementConfirmCommand;
 import br.community.feature.user.accounts.transactions.importer.preview.*;
 import lombok.val;
 import org.jspecify.annotations.NullMarked;
@@ -230,7 +235,7 @@ public class StatementImportUseCase {
                     .toList();
 
             val movements = cmd.rows().stream()
-                    .map(r -> new ParsedStatementLine(r.date(), r.description(), r.amount()))
+                    .map(r -> new MonetaryDocumentEntry(r.date(), r.description(), r.amount()))
                     .toList();
             val classes = classify(movements, accountTx);
 
@@ -280,7 +285,7 @@ public class StatementImportUseCase {
         }
     }
 
-    private BankStatementPreviewRow bankRow(ParsedStatementLine line, Classification cls,
+    private BankStatementPreviewRow bankRow(MonetaryDocumentEntry line, Classification cls,
                                             List<MonetaryTransaction> history, UUID fallbackCategoryId) {
         val type = line.amount().signum() < 0 ? MonetaryTransaction.Type.EXPENSE : MonetaryTransaction.Type.INCOME;
         val categoryId = cls.state() == RowState.NEW
@@ -297,7 +302,7 @@ public class StatementImportUseCase {
      * pending/scheduled manual transaction with the same signed amount within ±{@value
      * #RECONCILE_WINDOW_DAYS} days (closest date wins) → RECONCILE; otherwise NEW.
      */
-    private List<Classification> classify(List<ParsedStatementLine> movements, List<MonetaryTransaction> accountTx) {
+    private List<Classification> classify(List<MonetaryDocumentEntry> movements, List<MonetaryTransaction> accountTx) {
         val consumed = new HashSet<UUID>();
         val out = new ArrayList<Classification>();
         for (val mv : movements) {
@@ -372,7 +377,7 @@ public class StatementImportUseCase {
         }
     }
 
-    private Result<ImportPreviewOutcome, ImportError> preview(Issuer issuer, List<ParsedStatementLine> statement, @Nullable UUID accountId) {
+    private Result<ImportPreviewOutcome, ImportError> preview(Issuer issuer, List<MonetaryDocumentEntry> statement, @Nullable UUID accountId) {
         val candidates = monetaryContext.listAccounts().getOrElse(List.of()).stream()
                 .filter(a -> a.type() != AccountType.CREDIT_CARD && a.active())
                 .toList();
@@ -406,11 +411,11 @@ public class StatementImportUseCase {
         return candidates.size() == 1 ? candidates.getFirst().id() : null;
     }
 
-    private Result<ImportPreviewOutcome, ImportError> preview(Issuer issuer, List<ParsedStatementLine> statement) {
+    private Result<ImportPreviewOutcome, ImportError> preview(Issuer issuer, List<MonetaryDocumentEntry> statement) {
         // Only registered cards present on this statement are offered: linked to a bank account (so the
         // charges have a destination) and carrying a last4 printed on the invoice. The card is per row,
         // so an unmatched/ambiguous last4 still leaves every invoice card pickable.
-        val last4s = statement.stream().map(ParsedStatementLine::last4)
+        val last4s = statement.stream().map(MonetaryDocumentEntry::last4)
                 .filter(Objects::nonNull).collect(Collectors.toSet());
         val cards = monetaryContext.listCreditCards().getOrElse(List.of()).stream()
                 .filter(card -> card.linkedAccountId() != null)

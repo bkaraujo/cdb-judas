@@ -1,18 +1,22 @@
 /**
- * Abstrações de análise (parsing) e pré-processamento de extratos PDF.
+ * Projeção do preview da importação: as estruturas que o use case devolve após rotear o documento por
+ * tipo e os DTOs que a borda HTTP serializa.
  *
- * <p>Responsabilidades:
+ * <p>O parsing do PDF vive em {@link br.community.feature.user.accounts.statement}; o casamento de
+ * cartão/categoria e a expansão de parcelas, em {@code transactions.importer}. Aqui ficam apenas as
+ * visões prontas para confirmação.
+ *
  * <ul>
- *   <li>Fazer o parse do PDF em linhas estruturadas: os {@code StatementParser} (em {@code provider})
- *       reconhecem o documento via {@code parseable} e produzem um {@code MonetaryDocument}</li>
- *   <li>Expandir parcelas em lançamentos individuais ({@code InstallmentExpander})</li>
- *   <li>Sugerir categoria automaticamente com base em palavras-chave ({@code CategoryGuesser})</li>
- *   <li>Identificar o cartão associado à fatura ({@code CardMatcher})</li>
+ *   <li>{@code ImportPreviewOutcome} — resultado selado, discriminado entre {@code Invoice}
+ *       ({@code ImportPreview}) e {@code Statement} ({@code BankStatementPreview})</li>
+ *   <li>{@code ImportPreview} / {@code PreviewRow} — preview de fatura: cartões candidatos, last4s e
+ *       linhas expandidas (uma por compra à-vista, {@code N} por parcelada) com flag de duplicata e
+ *       cartão sugerido por linha</li>
+ *   <li>{@code BankStatementPreview} / {@code BankStatementPreviewRow} — preview de extrato: contas de
+ *       destino candidatas, conta selecionada e movimentos com estado (novo/duplicado/reconciliável)</li>
+ *   <li>{@code ImportPreviewResponse} / {@code BankStatementPreviewResponse} — DTOs de resposta HTTP,
+ *       marcados com o tipo de documento</li>
  * </ul>
- *
- * <p>O {@code MonetaryDocument} (discriminado entre {@code Invoice} e {@code Statement}) é
- * processado pelo use case e encapsulado em {@code ImportPreviewOutcome}, discriminado entre
- * {@code Invoice} (fatura de cartão) e {@code Statement} (extrato bancário).
  */
 @NullMarked
 package br.community.feature.user.accounts.transactions.importer.preview;

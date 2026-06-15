@@ -1,8 +1,8 @@
 package br.commons.platform.provider.windows;
 
 import br.commons.Logger;
-import br.commons.tools.Strings;
 import br.commons.platform.FileSystem;
+import br.commons.tools.Strings;
 import lombok.val;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;

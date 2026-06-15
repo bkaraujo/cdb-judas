@@ -1,8 +1,8 @@
 package br.community.context.monetary;
 
-import br.community.feature.user.accounts.transactions.importer.MonetaryDocument;
-import br.community.feature.user.accounts.transactions.importer.provider.BTGStatementParser;
-import br.community.feature.user.accounts.transactions.importer.preview.ParsedStatementLine;
+import br.community.feature.user.accounts.statement.MonetaryDocument;
+import br.community.feature.user.accounts.statement.MonetaryDocumentEntry;
+import br.community.feature.user.accounts.statement.provider.BTGStatementParser;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
@@ -13,7 +13,7 @@ import java.time.LocalDate;
 import java.util.List;
 import java.util.Objects;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /** BTG bank-statement parsing asserted through the parser's public output, against the 2025 fixture. */
 class BtgStatementParserTest {
@@ -22,7 +22,7 @@ class BtgStatementParserTest {
 
     @Test
     void dropsBalanceCardPaymentAndHeaderLines() throws IOException {
-        List<ParsedStatementLine> st = parsed();
+        List<MonetaryDocumentEntry> st = parsed();
         assertTrue(st.stream().noneMatch(l -> l.description().contains("Saldo Diário")));
         assertTrue(st.stream().noneMatch(l -> l.description().contains("Saldo final")));
         assertTrue(st.stream().noneMatch(l -> l.description().contains("Pagamento de fatura do cartão")));
@@ -33,7 +33,7 @@ class BtgStatementParserTest {
 
     @Test
     void signsDebitsNegativeAndCreditsPositive() throws IOException {
-        List<ParsedStatementLine> st = parsed();
+        List<MonetaryDocumentEntry> st = parsed();
         // Debit: Odontoprev -R$ 161,43 on 02/01/2025.
         assertTrue(st.stream().anyMatch(l ->
                 l.date().equals(LocalDate.of(2025, 1, 2))
@@ -48,7 +48,7 @@ class BtgStatementParserTest {
 
     @Test
     void keepsMultiLineWrappedRecords() throws IOException {
-        List<ParsedStatementLine> st = parsed();
+        List<MonetaryDocumentEntry> st = parsed();
         // Category wrap: "Impostos e / Tributos / IOF limite da conta ... -R$ 2,46".
         assertTrue(st.stream().anyMatch(l ->
                 l.description().contains("IOF limite da conta")
@@ -64,8 +64,8 @@ class BtgStatementParserTest {
 
     @Test
     void parsesEveryMonthOfTheYear() throws IOException {
-        List<ParsedStatementLine> st = parsed();
-        List<ParsedStatementLine> lines = st;
+        List<MonetaryDocumentEntry> st = parsed();
+        List<MonetaryDocumentEntry> lines = st;
         assertTrue(lines.size() > 100, "expected the full-year statement, got " + lines.size());
         for (int month = 1; month <= 12; month++) {
             final int m = month;
@@ -74,7 +74,7 @@ class BtgStatementParserTest {
         }
     }
 
-    private List<ParsedStatementLine> parsed() throws IOException {
+    private List<MonetaryDocumentEntry> parsed() throws IOException {
         return ((MonetaryDocument.Statement) parser.parse(fixture())).statement();
     }
 

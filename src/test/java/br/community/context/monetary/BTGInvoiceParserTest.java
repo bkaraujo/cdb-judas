@@ -1,9 +1,9 @@
 package br.community.context.monetary;
 
-import br.community.feature.user.accounts.transactions.importer.MonetaryDocument;
-import br.community.feature.user.accounts.transactions.importer.provider.BTGInvoiceParser;
-import br.community.feature.user.accounts.transactions.importer.preview.ChargeKind;
-import br.community.feature.user.accounts.transactions.importer.preview.ParsedStatementLine;
+import br.community.feature.user.accounts.statement.MonetaryDocument;
+import br.community.feature.user.accounts.statement.MonetaryDocumentEntry;
+import br.community.feature.user.accounts.statement.provider.BTGInvoiceParser;
+import br.community.feature.user.accounts.transactions.core.ChargeKind;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
@@ -23,14 +23,14 @@ class BTGInvoiceParserTest {
 
     @Test
     void readsLast4sOfCardsThatHaveKeptCharges() throws IOException {
-        List<ParsedStatementLine> st = parsed("fatura-btg-abril.txt");
+        List<MonetaryDocumentEntry> st = parsed("fatura-btg-abril.txt");
         // Charges live under the sub-cards (físico/virtual), not the account-level "final 5115".
         assertEquals(List.of("0020", "9822"), last4s(st));
     }
 
     @Test
     void keepsOnlyComprasLinesUnderEachCard() throws IOException {
-        List<ParsedStatementLine> st = parsed("fatura-btg-abril.txt");
+        List<MonetaryDocumentEntry> st = parsed("fatura-btg-abril.txt");
         assertEquals(24, st.size());
         assertTrue(st.stream().allMatch(l -> l.kind() == ChargeKind.PURCHASE));
         assertTrue(st.stream().noneMatch(l -> l.amount().signum() < 0));
@@ -38,7 +38,7 @@ class BTGInvoiceParserTest {
 
     @Test
     void parsesInstallmentAndOriginalDateAndAmount() throws IOException {
-        List<ParsedStatementLine> st = parsed("fatura-btg-abril.txt");
+        List<MonetaryDocumentEntry> st = parsed("fatura-btg-abril.txt");
         assertTrue(st.stream().anyMatch(l ->
                 l.description().equals("Amazonmktplc Megabytem")
                         && Integer.valueOf(9).equals(l.installmentNumber())
@@ -50,7 +50,7 @@ class BTGInvoiceParserTest {
 
     @Test
     void aVistaLineHasNoInstallment() throws IOException {
-        List<ParsedStatementLine> st = parsed("fatura-btg-abril.txt");
+        List<MonetaryDocumentEntry> st = parsed("fatura-btg-abril.txt");
         assertTrue(st.stream().anyMatch(l ->
                 l.description().equals("Microsoft")
                         && l.installmentNumber() == null
@@ -62,7 +62,7 @@ class BTGInvoiceParserTest {
 
     @Test
     void dropsPaymentsFaturaFinancingCreditsAndSummary() throws IOException {
-        List<ParsedStatementLine> st = parsed("fatura-btg-abril.txt");
+        List<MonetaryDocumentEntry> st = parsed("fatura-btg-abril.txt");
         assertFalse(st.stream().anyMatch(l -> l.description().contains("Pagamento de fatura")));
         assertFalse(st.stream().anyMatch(l -> l.description().startsWith("Parcelamento da Fatura")));
         assertFalse(st.stream().anyMatch(l -> l.description().contains("Desconto")));
@@ -71,7 +71,7 @@ class BTGInvoiceParserTest {
 
     @Test
     void crossMonthInstallmentAdvancesKeepingDateAndAmount() throws IOException {
-        List<ParsedStatementLine> st = parsed("fatura-btg-maio.txt");
+        List<MonetaryDocumentEntry> st = parsed("fatura-btg-maio.txt");
         assertEquals(List.of("0020", "9822"), last4s(st));
         assertEquals(17, st.size());
         // Same purchase as April, now billed 10/10, original date and amount unchanged.
@@ -85,18 +85,18 @@ class BTGInvoiceParserTest {
 
     @Test
     void dropsInternationalUsdLineAndCreditCardBlock() throws IOException {
-        List<ParsedStatementLine> st = parsed("fatura-btg-maio.txt");
+        List<MonetaryDocumentEntry> st = parsed("fatura-btg-maio.txt");
         // US$ line: BRL not on the line, not emitted in this slice.
         assertFalse(st.stream().anyMatch(l -> l.description().contains("Amazon Web Services")));
         // The "Total de créditos recebidos" card (Final 5115) is entirely dropped.
         assertFalse(st.stream().anyMatch(l -> l.last4().equals("5115")));
     }
 
-    private static List<String> last4s(List<ParsedStatementLine> lines) {
-        return lines.stream().map(ParsedStatementLine::last4).distinct().toList();
+    private static List<String> last4s(List<MonetaryDocumentEntry> lines) {
+        return lines.stream().map(MonetaryDocumentEntry::last4).distinct().toList();
     }
 
-    private List<ParsedStatementLine> parsed(String name) throws IOException {
+    private List<MonetaryDocumentEntry> parsed(String name) throws IOException {
         return ((MonetaryDocument.Invoice) parser.parse(fixture(name))).statement();
     }
 

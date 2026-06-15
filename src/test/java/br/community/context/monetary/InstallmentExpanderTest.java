@@ -1,8 +1,11 @@
 package br.community.context.monetary;
 
 import br.community.context.monetary._0_domain.model.MonetaryTransaction;
+import br.community.feature.user.accounts.statement.MonetaryDocumentEntry;
+import br.community.feature.user.accounts.transactions.core.ChargeKind;
 import br.community.feature.user.accounts.transactions.importer.GroupSignature;
-import br.community.feature.user.accounts.transactions.importer.preview.*;
+import br.community.feature.user.accounts.transactions.importer.InstallmentExpander;
+import br.community.feature.user.accounts.transactions.importer.TransactionDraft;
 import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;
@@ -20,12 +23,12 @@ class InstallmentExpanderTest {
     private final InstallmentExpander expander = new InstallmentExpander(new GroupSignature());
     private final UUID accountId = UUID.fromString("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa");
 
-    private static ParsedStatementLine avista(MonthDay date, BigDecimal amount, String description) {
-        return ParsedStatementLine.charge("0020", date, description, amount, null, null, ChargeKind.PURCHASE);
+    private static MonetaryDocumentEntry avista(MonthDay date, BigDecimal amount, String description) {
+        return MonetaryDocumentEntry.charge("0020", date, description, amount, null, null, ChargeKind.PURCHASE);
     }
 
-    private static ParsedStatementLine parcelado(MonthDay date, BigDecimal amount, String description, int n, int total) {
-        return ParsedStatementLine.charge("0020", date, description, amount, n, total, ChargeKind.PURCHASE);
+    private static MonetaryDocumentEntry parcelado(MonthDay date, BigDecimal amount, String description, int n, int total) {
+        return MonetaryDocumentEntry.charge("0020", date, description, amount, n, total, ChargeKind.PURCHASE);
     }
 
     @Test

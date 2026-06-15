@@ -1,7 +1,7 @@
-package br.community.feature.user.accounts.transactions.importer.preview;
+package br.community.feature.user.accounts.transactions.importer;
 
 import br.community.context.monetary._0_domain.model.MonetaryTransaction;
-import br.community.feature.user.accounts.transactions.importer.GroupSignature;
+import br.community.feature.user.accounts.statement.MonetaryDocumentEntry;
 import lombok.RequiredArgsConstructor;
 import lombok.val;
 import org.jspecify.annotations.NullMarked;
@@ -29,7 +29,7 @@ public class InstallmentExpander {
 
     private final GroupSignature groupSignature;
 
-    public List<TransactionDraft> expand(ParsedStatementLine line, UUID accountId, LocalDate today) {
+    public List<TransactionDraft> expand(MonetaryDocumentEntry line, UUID accountId, LocalDate today) {
         val statementPeriod = YearMonth.from(today);
         val n = line.isInstallment() ? line.installmentNumber() : 1;
         val anchor = line.isInstallment() ? statementPeriod.minusMonths(n - 1L) : statementPeriod;

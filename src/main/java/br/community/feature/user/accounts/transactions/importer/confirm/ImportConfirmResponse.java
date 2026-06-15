@@ -1,4 +1,4 @@
-package br.community.feature.user.accounts.transactions.importer;
+package br.community.feature.user.accounts.transactions.importer.confirm;
 
 import org.jspecify.annotations.NullMarked;
 

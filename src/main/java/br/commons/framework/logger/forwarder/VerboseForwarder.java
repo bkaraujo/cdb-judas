@@ -1,8 +1,8 @@
 package br.commons.framework.logger.forwarder;
 
+import br.commons.chrono.Time;
 import br.commons.framework.logger.LogLevel;
 import br.commons.framework.logger.LogRecord;
-import br.commons.chrono.Time;
 import org.jspecify.annotations.NullMarked;
 
 import java.util.function.Supplier;

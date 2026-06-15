@@ -1,10 +1,11 @@
-package br.community.feature.user.accounts.transactions.importer.provider;
+package br.community.feature.user.accounts.statement.provider;
 
 import br.commons.tools.Strings;
+import br.community.feature.user.accounts.statement.Issuer;
+import br.community.feature.user.accounts.statement.MonetaryDocument;
+import br.community.feature.user.accounts.statement.MonetaryDocumentEntry;
+import br.community.feature.user.accounts.statement.StatementParser;
 import br.community.feature.user.accounts.transactions.importer.Amounts;
-import br.community.feature.user.accounts.transactions.importer.MonetaryDocument;
-import br.community.feature.user.accounts.transactions.importer.StatementParser;
-import br.community.feature.user.accounts.transactions.importer.preview.*;
 import lombok.val;
 import org.jspecify.annotations.NullMarked;
 
@@ -14,7 +15,6 @@ import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
-import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
@@ -34,29 +34,29 @@ import java.util.regex.Pattern;
 @NullMarked
 public class BTGStatementParser implements StatementParser {
 
-    private static final Pattern DATE_PREFIX =
-            Pattern.compile("^(\\d{2}/\\d{2}/\\d{4})\\s+\\d{2}h\\d{2}\\b(.*)$");
-    private static final Pattern TRAILING_VALUE =
-            Pattern.compile("(-)?\\s*R\\$\\s*([\\d.]+,\\d{2})\\s*$");
+    private static final Pattern DATE_PREFIX = Pattern.compile("^(\\d{2}/\\d{2}/\\d{4})\\s+\\d{2}h\\d{2}\\b(.*)$");
+    private static final Pattern TRAILING_VALUE = Pattern.compile("(-)?\\s*R\\$\\s*([\\d.]+,\\d{2})\\s*$");
     private static final DateTimeFormatter DATE = DateTimeFormatter.ofPattern("dd/MM/yyyy", Locale.ROOT);
-    private static final String STATEMENT_HEADER = "EXTRATO DA SUA CONTA CORRENTE BTG PACTUAL";
-    private static final String ACCOUNT_CNPJ_DIGITS = "30306294000226";
 
     @Override
     public boolean parseable(String raw) {
         return looksLikeStatement(new DocumentText(raw));
     }
 
-    /** BTG's own checking-account header, its account CNPJ, or the Saldo Diário/Data e hora columns. */
+    /** BTG's checking-account CNPJ (…0002-26), distinct from the card-issuer CNPJ (…0001-45) on the invoice. */
+    private static final String ACCOUNT_CNPJ = "30306294000226";
+
+    /** BTG's own checking-account header, its Saldo Diário/Data e hora columns, or its account CNPJ —
+     *  each identifies the extrato on its own (the card-issuer CNPJ does not, and is left to the invoice). */
     static boolean looksLikeStatement(DocumentText text) {
-        return text.has(STATEMENT_HEADER)
-                || text.hasCnpj(ACCOUNT_CNPJ_DIGITS)
-                || (text.has("SALDO DIÁRIO") && text.has("DATA E HORA"));
+        return text.has("EXTRATO DA SUA CONTA CORRENTE BTG PACTUAL")
+                || (text.has("SALDO DIÁRIO") && text.has("DATA E HORA"))
+                || text.hasCnpj(ACCOUNT_CNPJ);
     }
 
     @Override
     public MonetaryDocument parse(String text) {
-        val lines = new ArrayList<ParsedStatementLine>();
+        val lines = new ArrayList<MonetaryDocumentEntry>();
 
         LocalDate recordDate = null;
         val buffer = new StringBuilder();
@@ -89,7 +89,7 @@ public class BTGStatementParser implements StatementParser {
         return new MonetaryDocument.Statement(Issuer.BTG, List.copyOf(lines));
     }
 
-    private static void finalize(LocalDate date, String record, List<ParsedStatementLine> out) {
+    private static void finalize(LocalDate date, String record, List<MonetaryDocumentEntry> out) {
         val value = TRAILING_VALUE.matcher(record);
         if (!value.find()) {
             return;
@@ -102,7 +102,7 @@ public class BTGStatementParser implements StatementParser {
         if (value.group(1) != null) {
             amount = amount.negate();
         }
-        out.add(new ParsedStatementLine(date, description, amount));
+        out.add(new MonetaryDocumentEntry(date, description, amount));
     }
 
     private static boolean isDropped(String description) {

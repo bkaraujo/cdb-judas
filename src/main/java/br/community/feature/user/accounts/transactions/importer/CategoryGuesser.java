@@ -1,11 +1,9 @@
-package br.community.feature.user.accounts.transactions.importer.preview;
+package br.community.feature.user.accounts.transactions.importer;
 
 import br.community.context.monetary._0_domain.model.MonetaryTransaction;
-import br.community.feature.user.accounts.transactions.importer.GroupSignature;
 import lombok.val;
 import org.jspecify.annotations.NullMarked;
 
-import java.time.LocalDate;
 import java.util.*;
 import java.util.stream.Collectors;
 

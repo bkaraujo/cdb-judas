@@ -1,9 +1,9 @@
 package br.community.context.monetary;
 
-import br.community.feature.user.accounts.transactions.importer.preview.ChargeKind;
-import br.community.feature.user.accounts.transactions.importer.MonetaryDocument;
-import br.community.feature.user.accounts.transactions.importer.preview.ParsedStatementLine;
-import br.community.feature.user.accounts.transactions.importer.provider.SantanderInvoiceParser;
+import br.community.feature.user.accounts.statement.MonetaryDocument;
+import br.community.feature.user.accounts.statement.MonetaryDocumentEntry;
+import br.community.feature.user.accounts.statement.provider.SantanderInvoiceParser;
+import br.community.feature.user.accounts.transactions.core.ChargeKind;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
@@ -23,13 +23,13 @@ class SantanderInvoiceParserTest {
 
     @Test
     void readsEachCardLast4FromMaskedPan() throws IOException {
-        List<ParsedStatementLine> st = parsed("fatura-santander-abril.txt");
+        List<MonetaryDocumentEntry> st = parsed("fatura-santander-abril.txt");
         assertEquals(List.of("1258", "2884"), last4s(st));
     }
 
     @Test
     void parsesParcelamentoLineWithInstallmentDateAndAmount() throws IOException {
-        List<ParsedStatementLine> st = parsed("fatura-santander-abril.txt");
+        List<MonetaryDocumentEntry> st = parsed("fatura-santander-abril.txt");
         assertTrue(st.stream().anyMatch(l ->
                 l.description().equals("DECATHLON")
                         && Integer.valueOf(8).equals(l.installmentNumber())
@@ -42,7 +42,7 @@ class SantanderInvoiceParserTest {
 
     @Test
     void parsesAVistaDespesaWithoutInstallment() throws IOException {
-        List<ParsedStatementLine> st = parsed("fatura-santander-abril.txt");
+        List<MonetaryDocumentEntry> st = parsed("fatura-santander-abril.txt");
         assertTrue(st.stream().anyMatch(l ->
                 l.description().equals("NETFLIX COM")
                         && l.installmentNumber() == null
@@ -53,7 +53,7 @@ class SantanderInvoiceParserTest {
 
     @Test
     void keepsAnnuityAsFeeAndForeignIofAnchoredToItsPurchaseDate() throws IOException {
-        List<ParsedStatementLine> st = parsed("fatura-santander-abril.txt");
+        List<MonetaryDocumentEntry> st = parsed("fatura-santander-abril.txt");
         // ANUIDADE DIFERENCIADA (R$ 0,00) kept as a FEE charge.
         assertTrue(st.stream().anyMatch(l ->
                 l.kind() == ChargeKind.FEE
@@ -69,7 +69,7 @@ class SantanderInvoiceParserTest {
 
     @Test
     void dropsPaymentsCreditsRefundsAndSummary() throws IOException {
-        List<ParsedStatementLine> st = parsed("fatura-santander-abril.txt");
+        List<MonetaryDocumentEntry> st = parsed("fatura-santander-abril.txt");
         assertFalse(st.stream().anyMatch(l -> l.description().contains("PAGAMENTO DE FATURA")));
         assertFalse(st.stream().anyMatch(l -> l.description().contains("Saldo")));
         assertFalse(st.stream().anyMatch(l -> l.amount().signum() < 0));
@@ -77,13 +77,13 @@ class SantanderInvoiceParserTest {
 
     @Test
     void parsesAllCardsAcrossTwoCardholders() throws IOException {
-        List<ParsedStatementLine> st = parsed("fatura-santander-maio.txt");
+        List<MonetaryDocumentEntry> st = parsed("fatura-santander-maio.txt");
         assertEquals(List.of("4628", "1258", "2884", "1922", "8376"), last4s(st));
     }
 
     @Test
     void crossMonthInstallmentAdvancesKeepingOriginalDate() throws IOException {
-        List<ParsedStatementLine> st = parsed("fatura-santander-maio.txt");
+        List<MonetaryDocumentEntry> st = parsed("fatura-santander-maio.txt");
         // DECATHLON now 09/10; original purchase date unchanged from April (03/08).
         assertTrue(st.stream().anyMatch(l ->
                 l.description().equals("DECATHLON")
@@ -98,11 +98,11 @@ class SantanderInvoiceParserTest {
                         && l.amount().compareTo(new BigDecimal("231.79")) == 0));
     }
 
-    private static List<String> last4s(List<ParsedStatementLine> lines) {
-        return lines.stream().map(ParsedStatementLine::last4).distinct().toList();
+    private static List<String> last4s(List<MonetaryDocumentEntry> lines) {
+        return lines.stream().map(MonetaryDocumentEntry::last4).distinct().toList();
     }
 
-    private List<ParsedStatementLine> parsed(String name) throws IOException {
+    private List<MonetaryDocumentEntry> parsed(String name) throws IOException {
         return ((MonetaryDocument.Invoice) parser.parse(fixture(name))).statement();
     }
 

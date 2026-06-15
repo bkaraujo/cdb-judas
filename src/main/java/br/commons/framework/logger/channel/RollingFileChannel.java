@@ -1,7 +1,7 @@
 package br.commons.framework.logger.channel;
 
-import br.commons.framework.logger.LogChannel;
 import br.commons.Platform;
+import br.commons.framework.logger.LogChannel;
 import br.commons.tools.Threads;
 import lombok.val;
 import org.jspecify.annotations.NullMarked;

@@ -2,13 +2,14 @@ package br.community.context.security._2_infrastructure;
 
 import br.commons.Logger;
 import br.commons.framework.persistence.Storage;
-import br.community.context.security._0_domain.repository.UserRepository;
 import br.community.context.security._0_domain.model.User;
-import tools.jackson.core.JacksonException;
-import tools.jackson.databind.ObjectMapper;
+import br.community.context.security._0_domain.repository.UserRepository;
 import lombok.val;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.ObjectMapper;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;

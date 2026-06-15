@@ -1,8 +1,8 @@
 package br.commons.pdf;
 
 import br.commons.Result;
-import org.apache.pdfbox.Loader;
 import lombok.val;
+import org.apache.pdfbox.Loader;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.encryption.InvalidPasswordException;
 import org.apache.pdfbox.text.PDFTextStripper;

@@ -1,5 +1,6 @@
-package br.community.feature.user.accounts.transactions.importer.preview;
+package br.community.feature.user.accounts.statement;
 
+import br.community.feature.user.accounts.transactions.core.ChargeKind;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 
@@ -20,7 +21,7 @@ import java.time.MonthDay;
  * card for a charge and is {@code null} for a bank movement.
  */
 @NullMarked
-public record ParsedStatementLine(
+public record MonetaryDocumentEntry(
         @Nullable String last4,
         LocalDate date,
         String description,
@@ -37,15 +38,15 @@ public record ParsedStatementLine(
     private static final int CARD_PLACEHOLDER_YEAR = 2000;
 
     /** A checking-account movement: absolute date, no card, no installment. */
-    public ParsedStatementLine(LocalDate date, String description, BigDecimal amount) {
+    public MonetaryDocumentEntry(LocalDate date, String description, BigDecimal amount) {
         this(null, date, description, amount, null, null, ChargeKind.PURCHASE);
     }
 
     /** A credit-card charge printed year-less ({@link MonthDay}); the year is a {@link #CARD_PLACEHOLDER_YEAR placeholder}. */
-    public static ParsedStatementLine charge(@Nullable String last4, MonthDay date, String description,
-                                             BigDecimal amount, @Nullable Integer installmentNumber,
-                                             @Nullable Integer installmentTotal, ChargeKind kind) {
-        return new ParsedStatementLine(last4, date.atYear(CARD_PLACEHOLDER_YEAR), description, amount,
+    public static MonetaryDocumentEntry charge(@Nullable String last4, MonthDay date, String description,
+                                               BigDecimal amount, @Nullable Integer installmentNumber,
+                                               @Nullable Integer installmentTotal, ChargeKind kind) {
+        return new MonetaryDocumentEntry(last4, date.atYear(CARD_PLACEHOLDER_YEAR), description, amount,
                 installmentNumber, installmentTotal, kind);
     }
 

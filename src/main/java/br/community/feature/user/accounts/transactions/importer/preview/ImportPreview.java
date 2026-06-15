@@ -1,6 +1,8 @@
 package br.community.feature.user.accounts.transactions.importer.preview;
 
 import br.community.context.monetary._0_domain.model.MonetaryAccount;
+import br.community.feature.user.accounts.statement.Issuer;
+import br.community.feature.user.accounts.statement.MonetaryDocumentEntry;
 import org.jspecify.annotations.NullMarked;
 
 import java.util.List;
@@ -14,7 +16,7 @@ import java.util.List;
 @NullMarked
 public record ImportPreview(
         Issuer issuer,
-        List<ParsedStatementLine> statement,
+        List<MonetaryDocumentEntry> statement,
         List<MonetaryAccount> candidateCards,
         List<PreviewRow> rows) {
 
@@ -24,6 +26,6 @@ public record ImportPreview(
      * to be a single one.
      */
     public List<String> last4s() {
-        return statement.stream().map(ParsedStatementLine::last4).distinct().toList();
+        return statement.stream().map(MonetaryDocumentEntry::last4).distinct().toList();
     }
 }

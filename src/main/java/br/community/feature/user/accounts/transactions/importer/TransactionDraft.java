@@ -1,6 +1,7 @@
-package br.community.feature.user.accounts.transactions.importer.preview;
+package br.community.feature.user.accounts.transactions.importer;
 
 import br.community.context.monetary._0_domain.model.MonetaryTransaction;
+import br.community.feature.user.accounts.transactions.core.ChargeKind;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 

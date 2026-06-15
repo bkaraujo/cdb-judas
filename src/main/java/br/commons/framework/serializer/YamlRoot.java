@@ -3,11 +3,11 @@ package br.commons.framework.serializer;
 import br.commons.Logger;
 import br.commons.Yaml;
 import br.commons.tools.Tuple;
-import tools.jackson.databind.ObjectMapper;
-import tools.jackson.dataformat.yaml.YAMLMapper;
 import lombok.val;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.dataformat.yaml.YAMLMapper;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
