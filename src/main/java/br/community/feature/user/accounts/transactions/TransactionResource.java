@@ -3,7 +3,8 @@ package br.community.feature.user.accounts.transactions;
 import br.commons.Result;
 import br.community.context.monetary.MonetaryContext;
 import br.community.context.shared._1_application.DomainException;
-import br.community.feature.user.accounts.transactions.core.AbstractResource;
+import br.community.feature.user.accounts.closing.ClosingService;
+import br.community.feature.user.accounts.transactions.core.TransactionMapper;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.val;
@@ -22,9 +23,10 @@ import java.util.UUID;
 @RestController
 @RequiredArgsConstructor
 @RequestMapping(value = "/api/{uuid}/accounts", produces = MediaType.APPLICATION_JSON_VALUE)
-public class TransactionResource extends AbstractResource {
+public class TransactionResource {
 
     private final MonetaryContext monetaryContext;
+    private final ClosingService closingService;
 
     // ── Cross-account collection ───────────────────────────────────
 
@@ -56,16 +58,21 @@ public class TransactionResource extends AbstractResource {
     @PostMapping("/{accId}/transactions")
     @ResponseStatus(HttpStatus.CREATED)
     public TransactionResponse create(@PathVariable UUID accId, @RequestBody @Valid TransactionRequest req) {
-        return switch (monetaryContext.createTransaction(toCommand(accId, req))) {
-            case Result.Success(var t) -> toDto(t);
+        guardClosing(req.date());
+        return switch (monetaryContext.createTransaction(TransactionMapper.toCommand(accId, req))) {
+            case Result.Success(var t) -> TransactionMapper.toDto(t);
             case Result.Failure(var error) -> throw new DomainException(error);
         };
     }
 
     @PatchMapping("/{accId}/transactions/{txId}")
     public TransactionResponse update(@PathVariable UUID accId, @PathVariable UUID txId, @RequestBody @Valid TransactionRequest req) {
-        return switch (monetaryContext.updateTransaction(txId, toCommand(accId, req))) {
-            case Result.Success(var t) -> toDto(t);
+        if (monetaryContext.findTransaction(txId) instanceof Result.Success(var existing)) {
+            guardClosing(existing.date());
+            guardClosing(req.date());
+        }
+        return switch (monetaryContext.updateTransaction(txId, TransactionMapper.toCommand(accId, req))) {
+            case Result.Success(var t) -> TransactionMapper.toDto(t);
             case Result.Failure(var error) -> throw new DomainException(error);
         };
     }
@@ -73,7 +80,7 @@ public class TransactionResource extends AbstractResource {
     @PatchMapping("/{accId}/transactions/{txId}/status")
     public TransactionResponse patchStatus(@PathVariable UUID txId, @RequestBody @Valid PatchStatusRequest req) {
         return switch (monetaryContext.updateTransactionStatus(txId, req.status(), req.paymentDate())) {
-            case Result.Success(var t) -> toDto(t);
+            case Result.Success(var t) -> TransactionMapper.toDto(t);
             case Result.Failure(var error) -> throw new DomainException(error);
         };
     }
@@ -81,12 +88,21 @@ public class TransactionResource extends AbstractResource {
     @DeleteMapping("/{accId}/transactions/{txId}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void delete(@PathVariable UUID txId, @Nullable @RequestParam(required = false) String mode) {
+        if (monetaryContext.findTransaction(txId) instanceof Result.Success(var existing)) {
+            guardClosing(existing.date());
+        }
         if (monetaryContext.deleteTransaction(txId, mode) instanceof Result.Failure(var error)) {
             throw new DomainException(error);
         }
     }
 
     // ── Shared query + mapping ─────────────────────────────────────
+
+    private void guardClosing(LocalDate date) {
+        if (closingService.validateDate(date) instanceof Result.Failure(var error)) {
+            throw new DomainException(error);
+        }
+    }
 
     private List<TransactionResponse> query(
             @Nullable UUID accId,
@@ -109,7 +125,7 @@ public class TransactionResource extends AbstractResource {
                 val transactions = (limit != null && limit > 0 && limit < filtered.size())
                         ? filtered.subList(0, limit)
                         : filtered;
-                yield transactions.stream().map(this::toDto).toList();
+                yield transactions.stream().map(TransactionMapper::toDto).toList();
             }
         };
     }

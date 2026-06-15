@@ -1,4 +1,4 @@
-package br.community.context.monetary._0_domain.repository;
+package br.community.feature.user.accounts.closing;
 
 import org.jspecify.annotations.NullMarked;
 

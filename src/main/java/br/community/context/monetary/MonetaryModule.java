@@ -48,11 +48,6 @@ public class MonetaryModule {
         return new TransactionService(transactionRepository);
     }
 
-    @Bean
-    ClosingService closingService(ClosingRepository closingRepository) {
-        return new ClosingService(closingRepository);
-    }
-
     // ── Use Cases ──────────────────────────────────────────────
 
     @Bean
@@ -63,17 +58,16 @@ public class MonetaryModule {
     @Bean
     MetadataUseCase metadataUseCase(
             TagService tagService,
-            ClosingService closingService,
             CategoryService categoryService,
             CostCenterService costCenterService,
             TransactionService transactionService
     ) {
-        return new MetadataUseCase(tagService, closingService, categoryService, costCenterService, transactionService);
+        return new MetadataUseCase(tagService, categoryService, costCenterService, transactionService);
     }
 
     @Bean
-    TransactionUseCase transactionUseCase(TransactionService transactionService, ClosingService closingService, CategoryService categoryService) {
-        return new TransactionUseCase(transactionService, closingService, categoryService);
+    TransactionUseCase transactionUseCase(TransactionService transactionService, CategoryService categoryService) {
+        return new TransactionUseCase(transactionService, categoryService);
     }
 
     // ── Event Listeners ──────────────────────────────────────────

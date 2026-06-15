@@ -8,7 +8,6 @@ import br.community.context.monetary._0_domain.model.MonetaryTransaction;
 import br.community.context.monetary._1_application.command.ImportedTransactionCommand;
 import br.community.context.monetary._1_application.command.TransactionCommand;
 import br.community.context.monetary._1_application.service.CategoryService;
-import br.community.context.monetary._1_application.service.ClosingService;
 import br.community.context.monetary._1_application.service.TransactionService;
 import br.community.context.shared._0_domain.model.DomainError;
 import lombok.RequiredArgsConstructor;
@@ -27,7 +26,6 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class TransactionUseCase {
     private final TransactionService transactionService;
-    private final ClosingService closingService;
     private final CategoryService categoryService;
 
     public Result<List<MonetaryTransaction>, DomainError> listTransactions() {
@@ -39,6 +37,10 @@ public class TransactionUseCase {
 
     public Result<List<MonetaryTransaction>, DomainError> listPendingTransactions() {
         return Result.success(transactionService.findPending());
+    }
+
+    public Result<MonetaryTransaction, DomainError> findTransaction(UUID id) {
+        return transactionService.findById(id);
     }
 
     public Result<MonetaryTransaction, DomainError> createTransaction(TransactionCommand cmd) {
@@ -54,12 +56,9 @@ public class TransactionUseCase {
     }
 
     private Result<MonetaryTransaction, DomainError> createSingle(TransactionCommand cmd) {
-        return closingService.validateDate(cmd.date())
-                .map(ignored -> {
-                    val saved = transactionService.save(toMonetaryTransactionEntity(UUID.randomUUID(), cmd, cmd.date(), cmd.status(), null, null, null));
-                    MessageBus.submit(new MonetaryEvent.TransactionCreated(saved));
-                    return saved;
-                });
+        val saved = transactionService.save(toMonetaryTransactionEntity(UUID.randomUUID(), cmd, cmd.date(), cmd.status(), null, null, null));
+        MessageBus.submit(new MonetaryEvent.TransactionCreated(saved));
+        return Result.success(saved);
     }
 
     private Result<MonetaryTransaction, DomainError> createInstallments(TransactionCommand cmd, int installmentsCount) {
@@ -69,10 +68,6 @@ public class TransactionUseCase {
         for (int i = 1; i <= installmentsCount; i++) {
             val date = cmd.date().plusMonths(i - 1);
             val status = (i == 1) ? cmd.status() : MonetaryTransaction.Status.PENDING;
-            val valResult = closingService.validateDate(date);
-            if (valResult instanceof Result.Failure<Void, DomainError>(DomainError error)) {
-                return Result.failure(error);
-            }
             batch.add(toMonetaryTransactionEntity(UUID.randomUUID(), cmd, date, status, groupId, i, installmentsCount));
         }
 
@@ -94,25 +89,21 @@ public class TransactionUseCase {
 
             if (!isFuture) {
                 val transferSiblings = transactionService.findTransferSiblings(existing);
-                return closingService.validateDate(existing.date())
-                        .flatMap(ignored -> closingService.validateDate(cmd.date()))
-                        .map(ignored -> {
-                            // Editing one leg of a transfer dissolves the pair: the edited leg becomes a
-                            // standalone entry (group metadata dropped) and the opposite leg is removed so
-                            // its amount no longer lingers on the other account.
-                            val keepGroup = transferSiblings.isEmpty();
-                            val updated = transactionService.save(toMonetaryTransactionEntity(id, cmd, cmd.date(), cmd.status(),
-                                    keepGroup ? existing.groupId() : null,
-                                    keepGroup ? existing.installmentNumber() : null,
-                                    keepGroup ? existing.totalInstallments() : null));
-                            MessageBus.submit(new MonetaryEvent.TransactionUpdated(existing));
-                            MessageBus.submit(new MonetaryEvent.TransactionUpdated(updated));
-                            for (val sib : transferSiblings) {
-                                transactionService.deleteById(sib.id());
-                                MessageBus.submit(new MonetaryEvent.TransactionDeleted(sib));
-                            }
-                            return updated;
-                        });
+                // Editing one leg of a transfer dissolves the pair: the edited leg becomes a
+                // standalone entry (group metadata dropped) and the opposite leg is removed so
+                // its amount no longer lingers on the other account.
+                val keepGroup = transferSiblings.isEmpty();
+                val updated = transactionService.save(toMonetaryTransactionEntity(id, cmd, cmd.date(), cmd.status(),
+                        keepGroup ? existing.groupId() : null,
+                        keepGroup ? existing.installmentNumber() : null,
+                        keepGroup ? existing.totalInstallments() : null));
+                MessageBus.submit(new MonetaryEvent.TransactionUpdated(existing));
+                MessageBus.submit(new MonetaryEvent.TransactionUpdated(updated));
+                for (val sib : transferSiblings) {
+                    transactionService.deleteById(sib.id());
+                    MessageBus.submit(new MonetaryEvent.TransactionDeleted(sib));
+                }
+                return Result.<MonetaryTransaction, DomainError>success(updated);
             }
 
             val groupId = existing.groupId();
@@ -128,10 +119,6 @@ public class TransactionUseCase {
             for (val t : all) {
                 val currentNumber = t.installmentNumber();
                 val newDate = cmd.date().plusMonths(currentNumber - installmentNumber);
-                val valRes = closingService.validateDate(t.date()).flatMap(ig -> closingService.validateDate(newDate));
-                if (valRes instanceof Result.Failure<Void, DomainError>(DomainError error)) {
-                    return Result.<MonetaryTransaction>failure(error);
-                }
                 val updated = transactionService.save(toMonetaryTransactionEntity(t.id(), cmd, newDate, t.status(),
                         t.groupId(), t.installmentNumber(), t.totalInstallments()));
                 if (t.id().equals(id)) firstSaved = updated;
@@ -167,8 +154,7 @@ public class TransactionUseCase {
             val isFuture = "FUTURE".equalsIgnoreCase(mode) && existing.groupId() != null;
 
             if (!isFuture) {
-                return closingService.validateDate(existing.date())
-                        .flatMap(ignored -> transactionService.deleteById(id))
+                return transactionService.deleteById(id)
                         .ifSuccess(ignored -> MessageBus.submit(new MonetaryEvent.TransactionDeleted(existing)));
             }
 
@@ -182,11 +168,6 @@ public class TransactionUseCase {
             val toDelete = transactionService.findByGroupId(groupId).stream()
                     .filter(t -> t.installmentNumber() >= installmentNumber)
                     .toList();
-
-            for (val t : toDelete) {
-                val valRes = closingService.validateDate(t.date());
-                if (valRes instanceof Result.Failure<Void, DomainError>(DomainError error)) return Result.<Void>failure(error);
-            }
 
             for (val t : toDelete) {
                 val delRes = transactionService.deleteById(t.id());
@@ -205,11 +186,6 @@ public class TransactionUseCase {
         legs.add(leg);
         legs.addAll(siblings);
         for (val t : legs) {
-            if (closingService.validateDate(t.date()) instanceof Result.Failure<Void, DomainError>(DomainError error)) {
-                return Result.failure(error);
-            }
-        }
-        for (val t : legs) {
             if (transactionService.deleteById(t.id()) instanceof Result.Failure<Void, DomainError>(DomainError error)) {
                 return Result.failure(error);
             }
@@ -222,8 +198,6 @@ public class TransactionUseCase {
         if (fromAccountId.equals(toAccountId)) {
             return Result.failure(new DomainError.BusinessRule("Conta de origem e destino devem ser diferentes"));
         }
-        val validation = closingService.validateDate(date);
-        if (validation instanceof Result.Failure<Void, DomainError>(DomainError error)) return Result.failure(error);
 
         val transferCat = categoryService.findOrCreateTransferCategory();
         val groupId = UUID.randomUUID();

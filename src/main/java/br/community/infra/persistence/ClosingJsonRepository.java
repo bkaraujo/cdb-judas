@@ -1,7 +1,7 @@
 package br.community.infra.persistence;
 
 import br.commons.framework.persistence.Storage;
-import br.community.context.monetary._0_domain.repository.ClosingRepository;
+import br.community.feature.user.accounts.closing.ClosingRepository;
 import br.community.core.web.security.CurrentUser;
 import lombok.RequiredArgsConstructor;
 import lombok.val;

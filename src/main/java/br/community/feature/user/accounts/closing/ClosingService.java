@@ -1,7 +1,6 @@
-package br.community.context.monetary._1_application.service;
+package br.community.feature.user.accounts.closing;
 
 import br.commons.Result;
-import br.community.context.monetary._0_domain.repository.ClosingRepository;
 import br.community.context.shared._0_domain.model.DomainError;
 import lombok.RequiredArgsConstructor;
 import lombok.val;

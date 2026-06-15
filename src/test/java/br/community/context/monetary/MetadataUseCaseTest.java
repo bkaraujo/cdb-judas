@@ -17,13 +17,12 @@ import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
-import java.time.YearMonth;
 import java.util.List;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-/** Cobre §3 (categorias), §5 (fechamento), §9 (centro de custo / tags). */
+/** Cobre §3 (categorias), §9 (centro de custo / tags). */
 
 class MetadataUseCaseTest {
 
@@ -31,7 +30,6 @@ class MetadataUseCaseTest {
     private InMemoryRepositories.Tags tagRepo;
     private InMemoryRepositories.CostCenters costCenterRepo;
     private InMemoryRepositories.Transactions txRepo;
-    private InMemoryRepositories.Closings closingRepo;
     private MetadataUseCase useCase;
 
     @BeforeEach
@@ -40,10 +38,8 @@ class MetadataUseCaseTest {
         tagRepo = new InMemoryRepositories.Tags();
         costCenterRepo = new InMemoryRepositories.CostCenters();
         txRepo = new InMemoryRepositories.Transactions();
-        closingRepo = new InMemoryRepositories.Closings();
         useCase = new MetadataUseCase(
                 new TagService(tagRepo),
-                new ClosingService(closingRepo),
                 new CategoryService(categoryRepo),
                 new CostCenterService(costCenterRepo),
                 new TransactionService(txRepo));
@@ -148,26 +144,6 @@ class MetadataUseCaseTest {
         Result<Void, DomainError> r = useCase.deleteCategory(UUID.randomUUID());
         assertTrue(r.isFailure());
         assertInstanceOf(DomainError.NotFound.class, ((Result.Failure<Void, DomainError>) r).error());
-    }
-
-    // ── §5 Closing ────────────────────────────────────────────────
-
-    @Test
-    @DisplayName("§5 set / clear closing")
-    void closingLifecycle() {
-        useCase.setClosingPeriod(YearMonth.of(2026, 4));
-        assertEquals(YearMonth.of(2026, 4), useCase.getClosingPeriod().orElseThrow());
-        useCase.clearClosingPeriod();
-        assertTrue(useCase.getClosingPeriod().isEmpty());
-    }
-
-    @Test
-    @DisplayName("§5 validateDate: data ≤ fechamento → falha; depois → sucesso")
-    void closingValidateDate() {
-        useCase.setClosingPeriod(YearMonth.of(2026, 5));
-        assertTrue(useCase.validateDate(LocalDate.of(2026, 5, 31)).isFailure());
-        assertTrue(useCase.validateDate(LocalDate.of(2026, 4, 1)).isFailure());
-        assertTrue(useCase.validateDate(LocalDate.of(2026, 6, 1)).isSuccess());
     }
 
     // ── §9 CostCenter / Tags ─────────────────────────────────────

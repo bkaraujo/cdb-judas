@@ -9,9 +9,11 @@ import org.jspecify.annotations.NullMarked;
 import java.util.UUID;
 
 @NullMarked
-public abstract class AbstractResource {
+public final class TransactionMapper {
 
-    protected final TransactionResponse toDto(MonetaryTransaction t) {
+    private TransactionMapper() {}
+
+    public static TransactionResponse toDto(MonetaryTransaction t) {
         return new TransactionResponse(
                 t.id(),
                 t.description(),
@@ -30,7 +32,7 @@ public abstract class AbstractResource {
         );
     }
 
-    protected final TransactionCommand toCommand(UUID accId, TransactionRequest req) {
+    public static TransactionCommand toCommand(UUID accId, TransactionRequest req) {
         return new TransactionCommand(
                 req.description(),
                 req.amount(),

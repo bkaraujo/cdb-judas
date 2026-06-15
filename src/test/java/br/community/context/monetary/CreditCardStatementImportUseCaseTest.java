@@ -93,13 +93,12 @@ class CreditCardStatementImportUseCaseTest {
         final BalanceService balanceService = new BalanceService(new InMemoryRepositories.Balances());
         final TransactionService transactionService = new TransactionService(transactions);
         final CategoryService categoryService = new CategoryService(categories);
-        final ClosingService closingService = new ClosingService(new InMemoryRepositories.Closings());
         final TagService tagService = new TagService(new InMemoryRepositories.Tags());
         final CostCenterService costCenterService = new CostCenterService(new InMemoryRepositories.CostCenters());
         final AccountUseCase ucAccount = new AccountUseCase(accountService, balanceService);
-        final TransactionUseCase ucTransaction = new TransactionUseCase(transactionService, closingService, categoryService);
+        final TransactionUseCase ucTransaction = new TransactionUseCase(transactionService, categoryService);
         final MetadataUseCase ucMetadata =
-                new MetadataUseCase(tagService, closingService, categoryService, costCenterService, transactionService);
+                new MetadataUseCase(tagService, categoryService, costCenterService, transactionService);
         return new MonetaryContext(ucAccount, ucTransaction, ucMetadata);
     }
 

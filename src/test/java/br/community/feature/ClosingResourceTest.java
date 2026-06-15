@@ -68,4 +68,69 @@ class ClosingResourceTest extends BaseHttpTest {
                 .contentType(MediaType.APPLICATION_JSON).content(okJson))
                 .andExpect(status().isCreated());
     }
+
+    @Test
+    void deveBloquearEdicaoEExclusaoEmPeriodoFechado() throws Exception {
+        UUID accountId = UUID.fromString(objectMapper.readTree(
+                mockMvc.perform(post("/api/{u}/accounts", TEST_USER_ID).contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"name\":\"Conta E\",\"balance\":0.00,\"type\":\"CHECKING\",\"color\":\"#000000\",\"active\":true}"))
+                        .andReturn().getResponse().getContentAsString()).get("id").asText());
+
+        UUID macroId = UUID.fromString(objectMapper.readTree(
+                mockMvc.perform(post("/api/" + TEST_USER_ID + "/categories").contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"name\":\"Geral\",\"nature\":\"EXPENSE\"}"))
+                        .andReturn().getResponse().getContentAsString()).get("id").asText());
+        UUID categoryId = UUID.fromString(objectMapper.readTree(
+                mockMvc.perform(post("/api/" + TEST_USER_ID + "/categories").contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"name\":\"Sub\",\"nature\":\"EXPENSE\",\"parentId\":\"" + macroId + "\"}"))
+                        .andReturn().getResponse().getContentAsString()).get("id").asText());
+
+        // lançamento criado ANTES de fechar o período
+        String txJson = """
+            {"description":"Antes","amount":-50.00,"date":"2024-06-15","categoryId":"%s","costCenterId":"d0000000-0000-0000-0000-000000000002","status":"pending","type":"expense"}
+            """.formatted(categoryId);
+        UUID txId = UUID.fromString(objectMapper.readTree(
+                mockMvc.perform(post("/api/{u}/accounts/{acc}/transactions", TEST_USER_ID, accountId)
+                        .contentType(MediaType.APPLICATION_JSON).content(txJson))
+                        .andExpect(status().isCreated())
+                        .andReturn().getResponse().getContentAsString()).get("id").asText());
+
+        // fecha o período que cobre o lançamento
+        mockMvc.perform(post("/api/{u}/accounts/closing", TEST_USER_ID)
+                .contentType(MediaType.APPLICATION_JSON).content("{\"period\":\"2024-06\"}"))
+                .andExpect(status().isOk());
+
+        String updJson = """
+            {"description":"Tentativa","amount":-60.00,"date":"2024-06-15","categoryId":"%s","costCenterId":"d0000000-0000-0000-0000-000000000002","status":"pending","type":"expense"}
+            """.formatted(categoryId);
+        mockMvc.perform(patch("/api/{u}/accounts/{acc}/transactions/{tx}", TEST_USER_ID, accountId, txId)
+                .contentType(MediaType.APPLICATION_JSON).content(updJson))
+                .andExpect(status().isBadRequest());
+
+        mockMvc.perform(delete("/api/{u}/accounts/{acc}/transactions/{tx}", TEST_USER_ID, accountId, txId))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void deveBloquearTransferenciaEmPeriodoFechado() throws Exception {
+        UUID from = UUID.fromString(objectMapper.readTree(
+                mockMvc.perform(post("/api/{u}/accounts", TEST_USER_ID).contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"name\":\"Origem\",\"balance\":100.00,\"type\":\"CHECKING\",\"color\":\"#000000\",\"active\":true}"))
+                        .andReturn().getResponse().getContentAsString()).get("id").asText());
+        UUID to = UUID.fromString(objectMapper.readTree(
+                mockMvc.perform(post("/api/{u}/accounts", TEST_USER_ID).contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"name\":\"Destino\",\"balance\":0.00,\"type\":\"CHECKING\",\"color\":\"#000000\",\"active\":true}"))
+                        .andReturn().getResponse().getContentAsString()).get("id").asText());
+
+        mockMvc.perform(post("/api/{u}/accounts/closing", TEST_USER_ID)
+                .contentType(MediaType.APPLICATION_JSON).content("{\"period\":\"2024-06\"}"))
+                .andExpect(status().isOk());
+
+        String transfer = """
+            {"fromAccountId":"%s","toAccountId":"%s","date":"2024-06-10","amount":30.00}
+            """.formatted(from, to);
+        mockMvc.perform(post("/api/{u}/accounts/transactions/transfer", TEST_USER_ID)
+                .contentType(MediaType.APPLICATION_JSON).content(transfer))
+                .andExpect(status().isBadRequest());
+    }
 }

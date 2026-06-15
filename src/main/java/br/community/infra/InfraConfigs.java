@@ -3,6 +3,7 @@ package br.community.infra;
 import br.commons.framework.persistence.Storage;
 import br.community.context.monetary._0_domain.repository.*;
 import br.community.context.security._0_domain.repository.UserRepository;
+import br.community.feature.user.accounts.closing.ClosingRepository;
 import br.community.infra.persistence.*;
 import org.jspecify.annotations.NullMarked;
 import org.springframework.context.annotation.Bean;

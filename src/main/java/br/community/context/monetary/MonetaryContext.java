@@ -16,7 +16,6 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.YearMonth;
 import java.util.List;
-import java.util.Optional;
 import java.util.UUID;
 
 @NullMarked
@@ -89,6 +88,10 @@ public class MonetaryContext implements Facade {
 
     public Result<List<MonetaryTransaction>, DomainError> listPendingTransactions() {
         return ucTransaction.listPendingTransactions();
+    }
+
+    public Result<MonetaryTransaction, DomainError> findTransaction(UUID id) {
+        return ucTransaction.findTransaction(id);
     }
 
     public Result<MonetaryTransaction, DomainError> createTransaction(TransactionCommand cmd) {
@@ -177,19 +180,5 @@ public class MonetaryContext implements Facade {
 
     public Result<Void, DomainError> deleteTag(UUID id) {
         return ucMetadata.deleteTag(id);
-    }
-
-    // ── Closing operations ─────────────────────────────────────────
-
-    public Optional<YearMonth> getClosingPeriod() {
-        return ucMetadata.getClosingPeriod();
-    }
-
-    public YearMonth setClosingPeriod(YearMonth ym) {
-        return ucMetadata.setClosingPeriod(ym);
-    }
-
-    public void clearClosingPeriod() {
-        ucMetadata.clearClosingPeriod();
     }
 }

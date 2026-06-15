@@ -16,10 +16,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.val;
 import org.jspecify.annotations.NullMarked;
 
-import java.time.LocalDate;
-import java.time.YearMonth;
 import java.util.List;
-import java.util.Optional;
 import java.util.UUID;
 
 @NullMarked
@@ -27,7 +24,6 @@ import java.util.UUID;
 public class MetadataUseCase {
 
     private final TagService tagService;
-    private final ClosingService closingService;
     private final CategoryService categoryService;
     private final CostCenterService costCenterService;
     private final TransactionService transactionService;
@@ -116,22 +112,6 @@ public class MetadataUseCase {
 
         categoryService.deleteById(id);
         MessageBus.submit(new MonetaryEvent.CategoryDeleted(id));
-    }
-
-    public Optional<YearMonth> getClosingPeriod() {
-        return closingService.find();
-    }
-
-    public YearMonth setClosingPeriod(YearMonth ym) {
-        return closingService.save(ym);
-    }
-
-    public void clearClosingPeriod() {
-        closingService.clear();
-    }
-
-    public Result<Void, DomainError> validateDate(LocalDate date) {
-        return closingService.validateDate(date);
     }
 
     public Result<List<MonetaryCenter>, DomainError> listCostCenters() {

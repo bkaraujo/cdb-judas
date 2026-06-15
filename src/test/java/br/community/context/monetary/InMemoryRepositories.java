@@ -2,6 +2,7 @@ package br.community.context.monetary;
 
 import br.community.context.monetary._0_domain.model.*;
 import br.community.context.monetary._0_domain.repository.*;
+import br.community.feature.user.accounts.closing.ClosingRepository;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 
