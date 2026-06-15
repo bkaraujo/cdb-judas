@@ -57,7 +57,8 @@ class TransactionResponseUseCaseTest {
         assertEquals(1, txRepo.findAll().size());
         MonetaryTransaction t = txRepo.findAll().get(0);
         assertNull(t.groupId());
-        assertNull(t.installmentNumber());
+        assertEquals(1, t.installmentNumber());
+        assertEquals(1, t.totalInstallments());
         assertEquals(MonetaryTransaction.Status.CONFIRMED, t.status());
     }
 
@@ -336,8 +337,8 @@ class TransactionResponseUseCaseTest {
         MonetaryTransaction survivor = all.get(0);
         assertEquals(entrada.id(), survivor.id());
         assertNull(survivor.groupId(), "lançamento degrupado (avulso)");
-        assertNull(survivor.installmentNumber());
-        assertNull(survivor.totalInstallments());
+        assertEquals(1, survivor.installmentNumber());
+        assertEquals(1, survivor.totalInstallments());
         assertEquals(new BigDecimal("70.00"), survivor.amount());
     }
 

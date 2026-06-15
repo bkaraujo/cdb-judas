@@ -100,18 +100,15 @@ public class BTGInvoiceParser implements StatementParser {
 
     private static @Nullable MonetaryDocumentEntry txnLine(String line, String last4) {
         val m = TXN.matcher(line);
-        if (!m.matches() || m.group(1).equals("US$")) {
-            return null;
-        }
+        if (!m.matches() || m.group(1).equals("US$")) { return null; }
+
         val month = month(m.group(7));
-        if (month == 0) {
-            return null;
-        }
+        if (month == 0) { return null; }
+
         val date = MonthDay.of(month, Integer.parseInt(m.group(6)));
-        val number = m.group(4) == null ? null : Integer.valueOf(m.group(4));
-        val total = m.group(5) == null ? null : Integer.valueOf(m.group(5));
-        return MonetaryDocumentEntry.charge(
-                last4, date, m.group(3).trim(), Amounts.brl(m.group(2)), number, total, ChargeKind.PURCHASE);
+        val number = m.group(4) == null ? 1 : Integer.parseInt(m.group(4));
+        val total = m.group(5) == null ? 1 : Integer.parseInt(m.group(5));
+        return MonetaryDocumentEntry.charge(last4, date, m.group(3).trim(), Amounts.brl(m.group(2)), number, total, ChargeKind.PURCHASE);
     }
 
     private static int month(String abbr) {

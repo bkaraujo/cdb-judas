@@ -114,7 +114,7 @@ public class SantanderInvoiceParser implements StatementParser {
         if (value.signum() < 0 || lastDate == null) {
             return null;
         }
-        return MonetaryDocumentEntry.charge(last4, lastDate, iof.group(1).trim(), value, null, null, ChargeKind.IOF);
+        return MonetaryDocumentEntry.charge(last4, lastDate, iof.group(1).trim(), value, ChargeKind.IOF);
     }
 
     private static @Nullable MonetaryDocumentEntry txnLine(String line, String last4) {
@@ -127,8 +127,8 @@ public class SantanderInvoiceParser implements StatementParser {
             return null;
         }
         val date = MonthDay.of(Integer.parseInt(m.group(2)), Integer.parseInt(m.group(1)));
-        val number = m.group(4) == null ? null : Integer.valueOf(m.group(4));
-        val total = m.group(5) == null ? null : Integer.valueOf(m.group(5));
+        val number = m.group(4) == null ? 1 : Integer.parseInt(m.group(4));
+        val total = m.group(5) == null ? 1 : Integer.parseInt(m.group(5));
         val description = m.group(3).trim();
         return MonetaryDocumentEntry.charge(last4, date, description, value, number, total, classify(description));
     }

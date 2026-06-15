@@ -45,7 +45,7 @@ class SantanderInvoiceParserTest {
         List<MonetaryDocumentEntry> st = parsed("fatura-santander-abril.txt");
         assertTrue(st.stream().anyMatch(l ->
                 l.description().equals("NETFLIX COM")
-                        && l.installmentNumber() == null
+                        && l.installmentNumber() == 1
                         && MonthDay.from(l.date()).equals(MonthDay.of(3, 6))
                         && l.amount().compareTo(new BigDecimal("72.80")) == 0
                         && l.last4().equals("1258")));

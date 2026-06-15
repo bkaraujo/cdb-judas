@@ -20,8 +20,8 @@ public record MonetaryTransaction(
         UUID costCenterId,
         @Nullable LocalDate paymentDate,
         @Nullable UUID groupId,
-        @Nullable Integer installmentNumber,
-        @Nullable Integer totalInstallments,
+        int installmentNumber,
+        int totalInstallments,
         @Nullable String notes
 ) {
     /**

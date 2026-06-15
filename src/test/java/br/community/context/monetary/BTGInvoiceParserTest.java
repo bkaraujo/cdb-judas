@@ -53,8 +53,8 @@ class BTGInvoiceParserTest {
         List<MonetaryDocumentEntry> st = parsed("fatura-btg-abril.txt");
         assertTrue(st.stream().anyMatch(l ->
                 l.description().equals("Microsoft")
-                        && l.installmentNumber() == null
-                        && l.installmentTotal() == null
+                        && l.installmentNumber() == 1
+                        && l.installmentTotal() == 1
                         && MonthDay.from(l.date()).equals(MonthDay.of(3, 9))
                         && l.amount().compareTo(new BigDecimal("60.00")) == 0
                         && l.last4().equals("9822")));

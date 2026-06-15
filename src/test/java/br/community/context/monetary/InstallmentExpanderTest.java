@@ -24,7 +24,7 @@ class InstallmentExpanderTest {
     private final UUID accountId = UUID.fromString("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa");
 
     private static MonetaryDocumentEntry avista(MonthDay date, BigDecimal amount, String description) {
-        return MonetaryDocumentEntry.charge("0020", date, description, amount, null, null, ChargeKind.PURCHASE);
+        return MonetaryDocumentEntry.charge("0020", date, description, amount, ChargeKind.PURCHASE);
     }
 
     private static MonetaryDocumentEntry parcelado(MonthDay date, BigDecimal amount, String description, int n, int total) {

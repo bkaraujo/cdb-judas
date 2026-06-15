@@ -221,8 +221,8 @@ class CreditCardStatementImportUseCaseTest {
 
         var preview = invoicePreview(useCase.preview(new byte[1], null, null));
         MonetaryDocumentEntry row = preview.statement().getFirst();
-        assertNull(row.installmentNumber());
-        assertNull(row.installmentTotal());
+        assertEquals(1, row.installmentNumber());
+        assertEquals(1, row.installmentTotal());
     }
 
     @Test
@@ -299,7 +299,7 @@ class CreditCardStatementImportUseCaseTest {
         transactions.save(new MonetaryTransaction(
                 UUID.randomUUID(), "MICROSOFT", new BigDecimal("-60.00"),
                 LocalDate.of(2025, 3, 9), UUID.randomUUID(), bank.id(),
-                MonetaryTransaction.Status.CONFIRMED, MonetaryTransaction.Type.EXPENSE, MonetaryCenter.VARIAVEL_ID, null, null, null, null, null));
+                MonetaryTransaction.Status.CONFIRMED, MonetaryTransaction.Type.EXPENSE, MonetaryCenter.VARIAVEL_ID, null, null, 1, 1, null));
 
         var useCase = useCaseWith((bytes, password) -> Result.success(text), accounts, transactions);
         var preview = invoicePreview(useCase.preview(new byte[1], null, null));
@@ -347,7 +347,7 @@ class CreditCardStatementImportUseCaseTest {
         transactions.save(new MonetaryTransaction(
                 UUID.randomUUID(), "AMAZONMKTPLC MEGABYTEM", new BigDecimal("-99.90"),
                 LocalDate.of(2024, 1, 10), categoryC, card.id(),
-                MonetaryTransaction.Status.CONFIRMED, MonetaryTransaction.Type.EXPENSE, MonetaryCenter.VARIAVEL_ID, null, null, null, null, null));
+                MonetaryTransaction.Status.CONFIRMED, MonetaryTransaction.Type.EXPENSE, MonetaryCenter.VARIAVEL_ID, null, null, 1, 1, null));
 
         var useCase = useCaseWith((bytes, password) -> Result.success(text), accounts, transactions);
         var preview = invoicePreview(useCase.preview(new byte[1], null, null));
@@ -505,8 +505,7 @@ class CreditCardStatementImportUseCaseTest {
         assertEquals(2, parcelas.size());
         assertEquals(1L, parcelas.stream().map(MonetaryTransaction::groupId).distinct().count());
         assertTrue(parcelas.stream().allMatch(t -> t.groupId() != null));
-        assertEquals(List.of(1, 2),
-                parcelas.stream().map(MonetaryTransaction::installmentNumber).sorted().toList());
+        assertEquals(List.of(1, 2), parcelas.stream().map(MonetaryTransaction::installmentNumber).sorted().toList());
         assertTrue(parcelas.stream().allMatch(t -> Integer.valueOf(2).equals(t.totalInstallments())));
         var parcelaConfirmed = parcelas.stream().filter(t -> Integer.valueOf(1).equals(t.installmentNumber())).findFirst().orElseThrow();
         assertEquals(MonetaryTransaction.Status.CONFIRMED, parcelaConfirmed.status());
@@ -599,7 +598,7 @@ class CreditCardStatementImportUseCaseTest {
         transactions.save(new MonetaryTransaction(
                 UUID.randomUUID(), "MERCADO LIVRE", new BigDecimal("-90.00"),
                 LocalDate.of(2025, 7, 4), UUID.randomUUID(), account.id(),
-                MonetaryTransaction.Status.CONFIRMED, MonetaryTransaction.Type.EXPENSE, MonetaryCenter.VARIAVEL_ID, null, null, null, null, null));
+                MonetaryTransaction.Status.CONFIRMED, MonetaryTransaction.Type.EXPENSE, MonetaryCenter.VARIAVEL_ID, null, null, 1, 1, null));
 
         var useCase = useCaseWith(NOOP_EXTRACTOR, accounts, transactions);
 

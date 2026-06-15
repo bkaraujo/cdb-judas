@@ -107,7 +107,7 @@ class StatementImportUseCaseTest {
         // A manual, still-pending expense the user typed with a slightly different date and description.
         var manual = new MonetaryTransaction(
                 UUID.randomUUID(), "Dentista", new BigDecimal("-161.43"), LocalDate.of(2025, 3, 4),
-                UUID.randomUUID(), account.id(), MonetaryTransaction.Status.PENDING, MonetaryTransaction.Type.EXPENSE, MonetaryCenter.VARIAVEL_ID, null, null, null, null, null);
+                UUID.randomUUID(), account.id(), MonetaryTransaction.Status.PENDING, MonetaryTransaction.Type.EXPENSE, MonetaryCenter.VARIAVEL_ID, null, null, 1, 1, null);
         transactions.save(manual);
         var useCase = useCaseWith(accounts, transactions);
 
@@ -130,7 +130,7 @@ class StatementImportUseCaseTest {
         var transactions = new InMemoryRepositories.Transactions();
         var manual = new MonetaryTransaction(
                 UUID.randomUUID(), "Dentista", new BigDecimal("-161.43"), LocalDate.of(2025, 3, 1),
-                UUID.randomUUID(), account.id(), MonetaryTransaction.Status.PENDING, MonetaryTransaction.Type.EXPENSE, MonetaryCenter.VARIAVEL_ID, null, null, null, null, null);
+                UUID.randomUUID(), account.id(), MonetaryTransaction.Status.PENDING, MonetaryTransaction.Type.EXPENSE, MonetaryCenter.VARIAVEL_ID, null, null, 1, 1, null);
         transactions.save(manual);
         var useCase = useCaseWith(accounts, transactions);
 
@@ -152,7 +152,7 @@ class StatementImportUseCaseTest {
         var transactions = new InMemoryRepositories.Transactions();
         var existing = new MonetaryTransaction(
                 UUID.randomUUID(), "Odontoprev", new BigDecimal("-161.43"), LocalDate.of(2025, 3, 5),
-                UUID.randomUUID(), account.id(), MonetaryTransaction.Status.CONFIRMED, MonetaryTransaction.Type.EXPENSE, MonetaryCenter.VARIAVEL_ID, null, null, null, null, null);
+                UUID.randomUUID(), account.id(), MonetaryTransaction.Status.CONFIRMED, MonetaryTransaction.Type.EXPENSE, MonetaryCenter.VARIAVEL_ID, null, null, 1, 1, null);
         transactions.save(existing);
         var useCase = useCaseWith(accounts, transactions);
 

@@ -117,17 +117,16 @@ public class TransactionUseCase {
 
             val groupId = existing.groupId();
             val installmentNumber = existing.installmentNumber();
-            if (groupId == null || installmentNumber == null) return Result.<MonetaryTransaction, DomainError>success(existing);
+            if (groupId == null) return Result.<MonetaryTransaction, DomainError>success(existing);
 
             val all = transactionService.findByGroupId(groupId).stream()
-                    .filter(t -> t.installmentNumber() != null && t.installmentNumber() >= installmentNumber)
+                    .filter(t -> t.installmentNumber() >= installmentNumber)
                     .sorted(Comparator.comparing(MonetaryTransaction::installmentNumber))
                     .toList();
 
             MonetaryTransaction firstSaved = null;
             for (val t : all) {
-                Integer currentNumber = t.installmentNumber();
-                if (currentNumber == null) continue;
+                val currentNumber = t.installmentNumber();
                 val newDate = cmd.date().plusMonths(currentNumber - installmentNumber);
                 val valRes = closingService.validateDate(t.date()).flatMap(ig -> closingService.validateDate(newDate));
                 if (valRes instanceof Result.Failure<Void, DomainError>(DomainError error)) {
@@ -175,13 +174,13 @@ public class TransactionUseCase {
 
             val groupId = existing.groupId();
             val installmentNumber = existing.installmentNumber();
-            if (groupId == null || installmentNumber == null) {
+            if (groupId == null) {
                 return transactionService.deleteById(id)
                         .ifSuccess(ignored -> MessageBus.submit(new MonetaryEvent.TransactionDeleted(existing)));
             }
 
             val toDelete = transactionService.findByGroupId(groupId).stream()
-                    .filter(t -> t.installmentNumber() != null && t.installmentNumber() >= installmentNumber)
+                    .filter(t -> t.installmentNumber() >= installmentNumber)
                     .toList();
 
             for (val t : toDelete) {
@@ -259,7 +258,7 @@ public class TransactionUseCase {
         val tx = new MonetaryTransaction(
                 UUID.randomUUID(), cmd.description(), signed, cmd.date(),
                 cmd.categoryId(), cmd.accountId(), cmd.status(), cmd.type(), MonetaryCenter.VARIAVEL_ID, null,
-                cmd.groupId(), cmd.installmentNumber(), cmd.totalInstallments(), null);
+                cmd.groupId(), installmentOrDefault(cmd.installmentNumber()), installmentOrDefault(cmd.totalInstallments()), null);
         val saved = transactionService.save(tx);
         MessageBus.submit(new MonetaryEvent.TransactionCreated(saved));
         return Result.success(saved);
@@ -269,7 +268,13 @@ public class TransactionUseCase {
                                                             @Nullable UUID groupId, @Nullable Integer installmentNumber, @Nullable Integer totalInstallments) {
         return new MonetaryTransaction(id, cmd.description(), cmd.amount(), date,
                 cmd.categoryId(), cmd.accountId(), status, cmd.type(), cmd.costCenterId(), null,
-                groupId, installmentNumber, totalInstallments, cmd.notes());
+                groupId, installmentOrDefault(installmentNumber), installmentOrDefault(totalInstallments), cmd.notes());
+    }
+
+    /** Installment metadata is optional upstream (à-vista charges and standalone entries carry none); the
+     *  domain models a single charge as installment 1 of 1, so an absent value resolves to 1. */
+    private static int installmentOrDefault(@Nullable Integer value) {
+        return value == null ? 1 : value;
     }
 
 }

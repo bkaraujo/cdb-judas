@@ -16,8 +16,9 @@ import java.time.MonthDay;
  * is a {@link #charge placeholder}: the real year is inferred later by the InstallmentExpander
  * (statement period + installment offset), which reads only the month/day and never the placeholder.
  *
- * <p>{@code installmentNumber}/{@code installmentTotal} are present only for parcelado card lines
- * ("n/N"); à-vista charges and bank movements carry {@code null} for both. {@code last4} carries the
+ * <p>{@code installmentNumber}/{@code installmentTotal} carry the "n/N" of a parcelado card line;
+ * à-vista charges and bank movements are a single installment ({@code 1}/{@code 1}), so
+ * {@link #isInstallment()} (total &gt; 1) tells the two apart. {@code last4} carries the
  * card for a charge and is {@code null} for a bank movement.
  */
 @NullMarked
@@ -26,8 +27,8 @@ public record MonetaryDocumentEntry(
         LocalDate date,
         String description,
         BigDecimal amount,
-        @Nullable Integer installmentNumber,
-        @Nullable Integer installmentTotal,
+        int installmentNumber,
+        int installmentTotal,
         ChargeKind kind
 ) {
     /**
@@ -39,18 +40,20 @@ public record MonetaryDocumentEntry(
 
     /** A checking-account movement: absolute date, no card, no installment. */
     public MonetaryDocumentEntry(LocalDate date, String description, BigDecimal amount) {
-        this(null, date, description, amount, null, null, ChargeKind.PURCHASE);
+        this(null, date, description, amount, 1, 1, ChargeKind.PURCHASE);
     }
 
     /** A credit-card charge printed year-less ({@link MonthDay}); the year is a {@link #CARD_PLACEHOLDER_YEAR placeholder}. */
-    public static MonetaryDocumentEntry charge(@Nullable String last4, MonthDay date, String description,
-                                               BigDecimal amount, @Nullable Integer installmentNumber,
-                                               @Nullable Integer installmentTotal, ChargeKind kind) {
-        return new MonetaryDocumentEntry(last4, date.atYear(CARD_PLACEHOLDER_YEAR), description, amount,
-                installmentNumber, installmentTotal, kind);
+    public static MonetaryDocumentEntry charge(@Nullable String last4, MonthDay date, String description, BigDecimal amount, int installmentNumber, int installmentTotal, ChargeKind kind) {
+        return new MonetaryDocumentEntry(last4, date.atYear(CARD_PLACEHOLDER_YEAR), description, amount, installmentNumber, installmentTotal, kind);
+    }
+
+    /** A credit-card charge printed year-less ({@link MonthDay}); the year is a {@link #CARD_PLACEHOLDER_YEAR placeholder}. */
+    public static MonetaryDocumentEntry charge(@Nullable String last4, MonthDay date, String description, BigDecimal amount, ChargeKind kind) {
+        return charge(last4, date, description, amount, 1, 1, kind);
     }
 
     public boolean isInstallment() {
-        return installmentNumber != null && installmentTotal != null;
+        return installmentTotal > 1;
     }
 }
