@@ -7,7 +7,6 @@ import br.community.context.security._0_domain.model.User;
 import br.community.context.security._0_domain.repository.UserRepository;
 import br.community.context.security._1_application.usecase.UserUseCase;
 import br.community.context.shared._0_domain.model.DomainError;
-import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 

@@ -9,6 +9,7 @@ import br.commons.tools.Strings;
 import br.community.context.monetary.MonetaryModule;
 import br.community.context.security.SecurityModule;
 import br.community.context.shared.SharedModule;
+import br.community.infra.InfraConfigs;
 import lombok.val;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
@@ -24,7 +25,7 @@ import java.util.List;
 @NullMarked
 @SpringBootApplication(scanBasePackages = {"br.community"})
 @ConfigurationPropertiesScan
-@Import({SharedModule.class, SecurityModule.class, MonetaryModule.class})
+@Import({InfraConfigs.class, SharedModule.class, SecurityModule.class, MonetaryModule.class})
 public class Application {
 
     /** Prefixo das variáveis de ambiente que configuram o log. */

@@ -1,4 +1,4 @@
-package br.community.context.monetary._2_infrastructure;
+package br.community.infra.persistence;
 
 import br.commons.Logger;
 import br.commons.framework.persistence.Storage;
