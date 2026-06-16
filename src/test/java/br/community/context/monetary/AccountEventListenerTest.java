@@ -1,7 +1,6 @@
 package br.community.context.monetary;
 
 import br.community.context.monetary._0_domain.event.MonetaryEvent;
-import br.community.context.monetary._0_domain.model.AccountType;
 import br.community.context.monetary._0_domain.model.MonetaryAccount;
 import br.community.context.monetary._1_application.event.AccountEventListener;
 import br.community.context.monetary._1_application.service.AccountService;
@@ -27,7 +26,7 @@ class AccountEventListenerTest {
 
     private MonetaryAccount seedChecking(String color) {
         UUID id = UUID.randomUUID();
-        MonetaryAccount acc = new MonetaryAccount(id, "Banco", AccountType.CHECKING,
+        MonetaryAccount acc = new MonetaryAccount(id, "Banco", MonetaryAccount.Type.CHECKING,
                 new BigDecimal("100.00"), color, true, null);
         return accountRepo.save(acc);
     }
@@ -38,14 +37,14 @@ class AccountEventListenerTest {
         MonetaryAccount checking = seedChecking("#112233");
         UUID c1 = UUID.randomUUID();
         UUID c2 = UUID.randomUUID();
-        accountRepo.save(new MonetaryAccount(c1, "C1", AccountType.CREDIT_CARD,
+        accountRepo.save(new MonetaryAccount(c1, "C1", MonetaryAccount.Type.CREDIT_CARD,
                 new BigDecimal("100.00"), "#112233", true, checking.id()));
-        accountRepo.save(new MonetaryAccount(c2, "C2", AccountType.CREDIT_CARD,
+        accountRepo.save(new MonetaryAccount(c2, "C2", MonetaryAccount.Type.CREDIT_CARD,
                 new BigDecimal("200.00"), "#112233", true, checking.id()));
 
         // Simula conta atualizada com nova cor
         MonetaryAccount updatedChecking = new MonetaryAccount(
-                checking.id(), "Banco", AccountType.CHECKING,
+                checking.id(), "Banco", MonetaryAccount.Type.CHECKING,
                 new BigDecimal("100.00"), "#FF0000", true, null);
         accountRepo.save(updatedChecking);
 
@@ -62,7 +61,7 @@ class AccountEventListenerTest {
     void doesNotUpdateCardsWithSameColor() {
         MonetaryAccount checking = seedChecking("#112233");
         UUID c1 = UUID.randomUUID();
-        MonetaryAccount card = new MonetaryAccount(c1, "C1", AccountType.CREDIT_CARD,
+        MonetaryAccount card = new MonetaryAccount(c1, "C1", MonetaryAccount.Type.CREDIT_CARD,
                 new BigDecimal("100.00"), "#112233", true, checking.id());
         accountRepo.save(card);
 
@@ -79,12 +78,12 @@ class AccountEventListenerTest {
         MonetaryAccount checking1 = seedChecking("#112233");
         MonetaryAccount checking2 = seedChecking("#AABBCC");
         UUID c1 = UUID.randomUUID();
-        accountRepo.save(new MonetaryAccount(c1, "C1", AccountType.CREDIT_CARD,
+        accountRepo.save(new MonetaryAccount(c1, "C1", MonetaryAccount.Type.CREDIT_CARD,
                 new BigDecimal("100.00"), "#AABBCC", true, checking2.id()));
 
         // Atualiza checking1 com nova cor
         MonetaryAccount updated = new MonetaryAccount(
-                checking1.id(), "Banco", AccountType.CHECKING,
+                checking1.id(), "Banco", MonetaryAccount.Type.CHECKING,
                 new BigDecimal("100.00"), "#FF0000", true, null);
         accountRepo.save(updated);
 

@@ -14,6 +14,7 @@ public class SseService implements SSE {
 
     private final Map<String, CopyOnWriteArrayList<SseEmitter>> emitters = new ConcurrentHashMap<>();
 
+    @Override
     public SseEmitter subscribe() {
         val userId = CurrentUser.getId();
         val emitter = new SseEmitter(Long.MAX_VALUE); // Infinite timeout
@@ -37,6 +38,7 @@ public class SseService implements SSE {
         return emitter;
     }
 
+    @Override
     public void dispatch(String username, SSE.Event type, Object payload) {
         val userEmitters = emitters.get(username);
         if (userEmitters == null) return;

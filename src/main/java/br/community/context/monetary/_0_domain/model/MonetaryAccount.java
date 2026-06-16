@@ -13,7 +13,7 @@ public record MonetaryAccount(
         UUID id,
         String name,
         BigDecimal balance,
-        AccountType type,
+        Type type,
         String color,
         boolean active,
         @Nullable UUID linkedAccountId,
@@ -23,7 +23,13 @@ public record MonetaryAccount(
         if (additionalInfo == null) additionalInfo = new HashMap<>();
     }
 
-    public MonetaryAccount(UUID id, String name, AccountType type, BigDecimal balance, String color, boolean active, @Nullable UUID linkedAccountId) {
+    public MonetaryAccount(UUID id, String name, Type type, BigDecimal balance, String color, boolean active, @Nullable UUID linkedAccountId) {
         this(id, name, balance, type, color, active, linkedAccountId, new HashMap<>());
+    }
+
+    public enum Type {
+        CHECKING,
+        INVESTMENT,
+        CREDIT_CARD
     }
 }

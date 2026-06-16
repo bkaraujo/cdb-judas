@@ -3,7 +3,7 @@ package br.community.feature.user.categories;
 import br.commons.Result;
 import br.commons.tools.Strings;
 import br.community.context.monetary.MonetaryContext;
-import br.community.context.monetary._0_domain.model.MonetaryTransaction.Type;
+import br.community.context.monetary._0_domain.model.MonetaryTransaction;
 import br.community.context.monetary._1_application.command.CategoryCommand;
 import br.community.context.shared._1_application.DomainException;
 import br.community.feature.user.categories.core.Category;
@@ -39,7 +39,7 @@ public class CategoryResource {
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public Category create(@RequestBody @Valid CreateRequest req) {
-        val nature = Type.valueOf(Strings.upper(req.nature()));
+        val nature = MonetaryTransaction.Type.valueOf(Strings.upper(req.nature()));
         val command = new CategoryCommand(req.name(), nature, req.parentId());
 
         return switch (monetaryContext.createCategory(command)) {

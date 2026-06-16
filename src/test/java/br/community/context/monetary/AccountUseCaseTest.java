@@ -1,7 +1,6 @@
 package br.community.context.monetary;
 
 import br.commons.Result;
-import br.community.context.monetary._0_domain.model.AccountType;
 import br.community.context.monetary._0_domain.model.MonetaryAccount;
 import br.community.context.monetary._1_application.command.AccountCommand;
 import br.community.context.monetary._1_application.command.CreditCardCommand;
@@ -34,7 +33,7 @@ class AccountUseCaseTest {
 
     private MonetaryAccount seedChecking(String color) {
         UUID id = UUID.randomUUID();
-        MonetaryAccount acc = new MonetaryAccount(id, "Banco", AccountType.CHECKING,
+        MonetaryAccount acc = new MonetaryAccount(id, "Banco", MonetaryAccount.Type.CHECKING,
                 new BigDecimal("100.00"), color, true, null);
         return accountRepo.save(acc);
     }
@@ -65,7 +64,7 @@ class AccountUseCaseTest {
     @DisplayName("§2.1 CREDIT_CARD ligado a não-CHECKING falha")
     void creditCardLinkedToNonChecking() {
         UUID invId = UUID.randomUUID();
-        accountRepo.save(new MonetaryAccount(invId, "Inv", AccountType.INVESTMENT,
+        accountRepo.save(new MonetaryAccount(invId, "Inv", MonetaryAccount.Type.INVESTMENT,
                 new BigDecimal("0.00"), "#aabbcc", true, null));
         AccountCommand cmd = new AccountCommand("Card", new BigDecimal("500.00"),
                 "CREDIT_CARD", "#aabbcc", true, invId, null);
@@ -103,7 +102,7 @@ class AccountUseCaseTest {
         assertTrue(r.isSuccess());
         MonetaryAccount card = ((Result.Success<MonetaryAccount, DomainError>) r).value();
         assertNotNull(card);
-        assertEquals(AccountType.CREDIT_CARD, card.type());
+        assertEquals(MonetaryAccount.Type.CREDIT_CARD, card.type());
         assertEquals(checking.id(), card.linkedAccountId());
         assertEquals("1234", card.additionalInfo().get("last4"));
         assertEquals(20, card.additionalInfo().get("dueDay"));
@@ -124,7 +123,7 @@ class AccountUseCaseTest {
     void updateCreditCardRequiresLink() {
         MonetaryAccount checking = seedChecking("#112233");
         UUID cardId = UUID.randomUUID();
-        accountRepo.save(new MonetaryAccount(cardId, "Card", AccountType.CREDIT_CARD,
+        accountRepo.save(new MonetaryAccount(cardId, "Card", MonetaryAccount.Type.CREDIT_CARD,
                 new BigDecimal("500.00"), "#112233", true, checking.id()));
         AccountCommand cmd = new AccountCommand("Card", new BigDecimal("500.00"),
                 "CREDIT_CARD", "#112233", true, null, null);
@@ -154,9 +153,9 @@ class AccountUseCaseTest {
         MonetaryAccount checking = seedChecking("#112233");
         UUID c1 = UUID.randomUUID();
         UUID c2 = UUID.randomUUID();
-        accountRepo.save(new MonetaryAccount(c1, "C1", AccountType.CREDIT_CARD,
+        accountRepo.save(new MonetaryAccount(c1, "C1", MonetaryAccount.Type.CREDIT_CARD,
                 new BigDecimal("100.00"), "#112233", true, checking.id()));
-        accountRepo.save(new MonetaryAccount(c2, "C2", AccountType.CREDIT_CARD,
+        accountRepo.save(new MonetaryAccount(c2, "C2", MonetaryAccount.Type.CREDIT_CARD,
                 new BigDecimal("100.00"), "#112233", true, UUID.randomUUID()));
         Result<java.util.List<MonetaryAccount>, DomainError> r = useCase.listCreditCardsByAccount(checking.id());
         assertTrue(r.isSuccess());

@@ -1,7 +1,6 @@
 package br.community.context.monetary._1_application.service;
 
 import br.commons.Result;
-import br.community.context.monetary._0_domain.model.AccountType;
 import br.community.context.monetary._0_domain.model.MonetaryAccount;
 import br.community.context.monetary._0_domain.repository.AccountRepository;
 import br.community.context.shared._0_domain.model.DomainError;
@@ -40,7 +39,7 @@ public class AccountService {
 
     public List<MonetaryAccount> findCreditCards() {
         return accountRepository.findAll().stream()
-                .filter(a -> a.type() == AccountType.CREDIT_CARD)
+                .filter(a -> a.type() == MonetaryAccount.Type.CREDIT_CARD)
                 .toList();
     }
 

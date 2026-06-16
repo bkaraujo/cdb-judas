@@ -1,6 +1,5 @@
 package br.community.context.monetary;
 
-import br.community.context.monetary._0_domain.model.AccountType;
 import br.community.context.monetary._0_domain.model.MonetaryAccount;
 import br.community.feature.user.accounts.transactions.importer.CardMatch;
 import br.community.feature.user.accounts.transactions.importer.CardMatcher;
@@ -20,7 +19,7 @@ class CardMatcherTest {
 
     private static MonetaryAccount card(String name, Map<String, Object> additionalInfo) {
         return new MonetaryAccount(
-                UUID.randomUUID(), name, BigDecimal.ZERO, AccountType.CREDIT_CARD,
+                UUID.randomUUID(), name, BigDecimal.ZERO, MonetaryAccount.Type.CREDIT_CARD,
                 "#000", true, null, additionalInfo);
     }
 

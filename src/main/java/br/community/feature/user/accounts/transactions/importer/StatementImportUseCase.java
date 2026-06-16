@@ -6,7 +6,6 @@ import br.commons.pdf.ExtractionFailure;
 import br.commons.pdf.PdfTextExtractor;
 import br.commons.tools.Strings;
 import br.community.context.monetary.MonetaryContext;
-import br.community.context.monetary._0_domain.model.AccountType;
 import br.community.context.monetary._0_domain.model.MonetaryAccount;
 import br.community.context.monetary._0_domain.model.MonetaryTransaction;
 import br.community.context.monetary._1_application.command.ImportConfirmCommand;
@@ -379,7 +378,7 @@ public class StatementImportUseCase {
 
     private Result<ImportPreviewOutcome, ImportError> preview(Issuer issuer, List<MonetaryDocumentEntry> statement, @Nullable UUID accountId) {
         val candidates = monetaryContext.listAccounts().getOrElse(List.of()).stream()
-                .filter(a -> a.type() != AccountType.CREDIT_CARD && a.active())
+                .filter(a -> a.type() != MonetaryAccount.Type.CREDIT_CARD && a.active())
                 .toList();
         val selectedAccountId = selectAccount(accountId, candidates);
 

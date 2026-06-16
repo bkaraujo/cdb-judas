@@ -2,7 +2,6 @@ package br.community.context.monetary;
 
 import br.commons.Result;
 import br.commons.pdf.PdfTextExtractor;
-import br.community.context.monetary._0_domain.model.AccountType;
 import br.community.context.monetary._0_domain.model.MonetaryAccount;
 import br.community.context.monetary._0_domain.model.MonetaryCenter;
 import br.community.context.monetary._0_domain.model.MonetaryTransaction;
@@ -202,6 +201,6 @@ class StatementImportUseCaseTest {
 
     private static MonetaryAccount checking(String name) {
         return new MonetaryAccount(
-                UUID.randomUUID(), name, BigDecimal.ZERO, AccountType.CHECKING, "#000", true, null, Map.of());
+                UUID.randomUUID(), name, BigDecimal.ZERO, MonetaryAccount.Type.CHECKING, "#000", true, null, Map.of());
     }
 }

@@ -4,7 +4,6 @@ import br.commons.MessageBus;
 import br.commons.Result;
 import br.commons.tools.Strings;
 import br.community.context.monetary._0_domain.event.MonetaryEvent;
-import br.community.context.monetary._0_domain.model.AccountType;
 import br.community.context.monetary._0_domain.model.MonetaryAccount;
 import br.community.context.monetary._0_domain.model.MonthlyBalance;
 import br.community.context.monetary._1_application.command.AccountCommand;
@@ -46,7 +45,7 @@ public class AccountUseCase {
     }
 
     public Result<MonetaryAccount, DomainError> createAccount(AccountCommand cmd) {
-        if (AccountType.CREDIT_CARD.name().equalsIgnoreCase(cmd.type())) {
+        if (MonetaryAccount.Type.CREDIT_CARD.name().equalsIgnoreCase(cmd.type())) {
             if (cmd.linkedAccountId() == null) {
                 return Result.failure(new DomainError.BusinessRule("Credit card must be linked to a checking account"));
             }
@@ -61,7 +60,7 @@ public class AccountUseCase {
     public Result<MonetaryAccount, DomainError> updateAccount(UUID accountId, AccountCommand cmd) {
         return accountService.findById(accountId)
                 .flatMap(existing -> {
-                    if (AccountType.CREDIT_CARD.name().equalsIgnoreCase(cmd.type())) {
+                    if (MonetaryAccount.Type.CREDIT_CARD.name().equalsIgnoreCase(cmd.type())) {
                         if (cmd.linkedAccountId() == null) {
                             return Result.failure(new DomainError.BusinessRule("Credit card must be linked to a checking account"));
                         }
@@ -82,7 +81,7 @@ public class AccountUseCase {
     }
 
     private MonetaryAccount parse(UUID accountId, AccountCommand cmd) {
-        val account = new MonetaryAccount(accountId, cmd.name(), AccountType.valueOf(Strings.upper(cmd.type())),
+        val account = new MonetaryAccount(accountId, cmd.name(), MonetaryAccount.Type.valueOf(Strings.upper(cmd.type())),
                 cmd.balance(), cmd.color(), cmd.active(), cmd.linkedAccountId());
 
         if (cmd.additionalInfo() != null) account.additionalInfo().putAll(cmd.additionalInfo());
@@ -117,7 +116,7 @@ public class AccountUseCase {
     private Result<Void, DomainError> validateCreditCardAccount(UUID accountId, String color) {
         return findAccount(accountId)
                 .flatMap(account -> {
-                    if (!AccountType.CHECKING.equals(account.type())) {
+                    if (!MonetaryAccount.Type.CHECKING.equals(account.type())) {
                         return Result.failure(new DomainError.BusinessRule("Credit card must be linked to a checking account"));
                     }
                     if (!account.color().equalsIgnoreCase(color)) {
@@ -128,7 +127,7 @@ public class AccountUseCase {
     }
 
     private MonetaryAccount toCreditCardEntity(UUID id, CreditCardCommand cmd) {
-        val account = new MonetaryAccount(id, cmd.name(), AccountType.CREDIT_CARD, cmd.limit(), cmd.color(), cmd.active(), cmd.accountId());
+        val account = new MonetaryAccount(id, cmd.name(), MonetaryAccount.Type.CREDIT_CARD, cmd.limit(), cmd.color(), cmd.active(), cmd.accountId());
         account.additionalInfo().put("last4", cmd.last4());
         account.additionalInfo().put("dueDay", cmd.dueDay());
         account.additionalInfo().put("closingDay", cmd.closingDay());

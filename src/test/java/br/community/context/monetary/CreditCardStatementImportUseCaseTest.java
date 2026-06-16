@@ -7,7 +7,6 @@ import br.commons.framework.message.MessageResult;
 import br.commons.pdf.ExtractionFailure;
 import br.commons.pdf.PdfTextExtractor;
 import br.community.context.monetary._0_domain.event.MonetaryEvent;
-import br.community.context.monetary._0_domain.model.AccountType;
 import br.community.context.monetary._0_domain.model.MonetaryAccount;
 import br.community.context.monetary._0_domain.model.MonetaryCenter;
 import br.community.context.monetary._0_domain.model.MonetaryTransaction;
@@ -104,19 +103,19 @@ class CreditCardStatementImportUseCaseTest {
 
     private static MonetaryAccount creditCard(String name, String last4) {
         return new MonetaryAccount(
-                UUID.randomUUID(), name, BigDecimal.ZERO, AccountType.CREDIT_CARD,
+                UUID.randomUUID(), name, BigDecimal.ZERO, MonetaryAccount.Type.CREDIT_CARD,
                 "#000", true, null, Map.of("last4", last4));
     }
 
     private static MonetaryAccount creditCardLinkedTo(String name, String last4, UUID linkedAccountId) {
         return new MonetaryAccount(
-                UUID.randomUUID(), name, BigDecimal.ZERO, AccountType.CREDIT_CARD,
+                UUID.randomUUID(), name, BigDecimal.ZERO, MonetaryAccount.Type.CREDIT_CARD,
                 "#000", true, linkedAccountId, Map.of("last4", last4));
     }
 
     private static MonetaryAccount checking(String name) {
         return new MonetaryAccount(
-                UUID.randomUUID(), name, BigDecimal.ZERO, AccountType.CHECKING,
+                UUID.randomUUID(), name, BigDecimal.ZERO, MonetaryAccount.Type.CHECKING,
                 "#000", true, null, Map.of());
     }
 
