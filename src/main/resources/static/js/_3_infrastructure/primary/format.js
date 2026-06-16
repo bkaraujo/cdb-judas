@@ -116,7 +116,7 @@ window.flatCategories = function (natureFilter, excludeRoots) {
       if (!natureFilter) return true;
       return String(c.nature || '').toUpperCase() === natureFilter;
     })
-    .map(function (c) { return { id: c.id, label: window.categoryLabel(c) }; })
+    .map(function (c) { return { id: c.id, label: window.categoryLabel(c), nature: c.nature }; })
     .sort(function (a, b) {
       return a.label.toLowerCase().localeCompare(b.label.toLowerCase(), 'pt-BR');
     });

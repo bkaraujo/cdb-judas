@@ -223,25 +223,55 @@ class TransactionResponseUseCaseTest {
     }
 
     @Test
-    @DisplayName("editar uma perna desfaz o par: sobra avulsa, oposta removida")
-    void updateTransferLegDissolvesPair() {
-        saveTransferPair(LocalDate.of(2026, 5, 10), accountId, UUID.randomUUID());
+    @DisplayName("editar uma perna mantém o par: data/valor em ambas, conta só na editada")
+    void updateTransferLegKeepsPairAndMirrors() {
+        UUID toAccount = UUID.randomUUID();
+        UUID groupId = saveTransferPair(LocalDate.of(2026, 5, 10), accountId, toAccount);
         MonetaryTransaction entrada = txRepo.findAll().stream()
                 .filter(t -> MonetaryTransaction.Type.INCOME.equals(t.type())).findFirst().orElseThrow();
+        MonetaryTransaction saida = txRepo.findAll().stream()
+                .filter(t -> MonetaryTransaction.Type.EXPENSE.equals(t.type())).findFirst().orElseThrow();
 
+        UUID newAccount = UUID.randomUUID();
         TransactionCommand upd = new TransactionCommand("ajuste", new BigDecimal("70.00"),
-                LocalDate.of(2026, 5, 12), categoryId, accountId, costCenterId, MonetaryTransaction.Status.CONFIRMED, MonetaryTransaction.Type.INCOME, null, null, null);
+                LocalDate.of(2026, 5, 12), categoryId, newAccount, costCenterId,
+                MonetaryTransaction.Status.CONFIRMED, MonetaryTransaction.Type.INCOME, null, null, null);
         Result<MonetaryTransaction, DomainError> r = useCase.updateTransaction(entrada.id(), upd);
         assertTrue(r.isSuccess());
 
-        List<MonetaryTransaction> all = txRepo.findAll();
-        assertEquals(1, all.size(), "perna oposta removida");
-        MonetaryTransaction survivor = all.get(0);
-        assertEquals(entrada.id(), survivor.id());
-        assertNull(survivor.groupId(), "lançamento degrupado (avulso)");
-        assertEquals(1, survivor.installmentNumber());
-        assertEquals(1, survivor.totalInstallments());
-        assertEquals(new BigDecimal("70.00"), survivor.amount());
+        assertEquals(2, txRepo.findAll().size(), "par preservado");
+        MonetaryTransaction newEntrada = txRepo.findById(entrada.id()).orElseThrow();
+        MonetaryTransaction newSaida = txRepo.findById(saida.id()).orElseThrow();
+
+        // par intacto
+        assertEquals(groupId, newEntrada.groupId());
+        assertEquals(groupId, newSaida.groupId());
+
+        // data e valor espelhados em ambas as pernas
+        assertEquals(LocalDate.of(2026, 5, 12), newEntrada.date());
+        assertEquals(LocalDate.of(2026, 5, 12), newSaida.date());
+        assertEquals(0, new BigDecimal("70.00").compareTo(newEntrada.amount()));
+        assertEquals(0, new BigDecimal("-70.00").compareTo(newSaida.amount()), "saída mantém sinal negativo");
+
+        // troca de conta atinge só a perna editada
+        assertEquals(newAccount, newEntrada.accountId());
+        assertEquals(accountId, newSaida.accountId(), "perna oposta mantém a conta");
+    }
+
+    @Test
+    @DisplayName("mover a perna editada para a conta da oposta é rejeitado (origem == destino)")
+    void updateTransferRejectsCollapsingToSameAccount() {
+        UUID toAccount = UUID.randomUUID();
+        saveTransferPair(LocalDate.of(2026, 5, 10), accountId, toAccount);
+        MonetaryTransaction saida = txRepo.findAll().stream()
+                .filter(t -> MonetaryTransaction.Type.EXPENSE.equals(t.type())).findFirst().orElseThrow();
+
+        TransactionCommand upd = new TransactionCommand("x", new BigDecimal("50.00"),
+                LocalDate.of(2026, 5, 10), categoryId, toAccount, costCenterId,
+                MonetaryTransaction.Status.CONFIRMED, MonetaryTransaction.Type.EXPENSE, null, null, null);
+        assertTrue(useCase.updateTransaction(saida.id(), upd).isFailure());
+        assertEquals(2, txRepo.findAll().size(), "nada alterado");
+        assertEquals(accountId, txRepo.findById(saida.id()).orElseThrow().accountId(), "conta intacta");
     }
 
     @Test

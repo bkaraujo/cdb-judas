@@ -85,24 +85,17 @@ public class TransactionUseCase {
     public Result<MonetaryTransaction, DomainError> updateTransaction(UUID id, TransactionCommand cmd) {
         return categoryService.validateNotMacroCategory(cmd.categoryId())
                 .flatMap(catOk -> transactionService.findById(id).flatMap(existing -> {
+            val transferSiblings = transactionService.findTransferSiblings(existing);
+            if (!transferSiblings.isEmpty()) return updateTransfer(existing, transferSiblings, cmd);
+
             val isFuture = "FUTURE".equalsIgnoreCase(cmd.editMode()) && existing.groupId() != null;
 
             if (!isFuture) {
-                val transferSiblings = transactionService.findTransferSiblings(existing);
-                // Editing one leg of a transfer dissolves the pair: the edited leg becomes a
-                // standalone entry (group metadata dropped) and the opposite leg is removed so
-                // its amount no longer lingers on the other account.
-                val keepGroup = transferSiblings.isEmpty();
+                // A standalone entry, or a single-mode edit of an installment, keeps its own group metadata.
                 val updated = transactionService.save(toMonetaryTransactionEntity(id, cmd, cmd.date(), cmd.status(),
-                        keepGroup ? existing.groupId() : null,
-                        keepGroup ? existing.installmentNumber() : null,
-                        keepGroup ? existing.totalInstallments() : null));
+                        existing.groupId(), existing.installmentNumber(), existing.totalInstallments()));
                 MessageBus.submit(new MonetaryEvent.TransactionUpdated(existing));
                 MessageBus.submit(new MonetaryEvent.TransactionUpdated(updated));
-                for (val sib : transferSiblings) {
-                    transactionService.deleteById(sib.id());
-                    MessageBus.submit(new MonetaryEvent.TransactionDeleted(sib));
-                }
                 return Result.<MonetaryTransaction, DomainError>success(updated);
             }
 
@@ -131,6 +124,41 @@ public class TransactionUseCase {
 
             return Result.success(firstSaved);
         }));
+    }
+
+    /** A transfer stays an inseparable pair when edited: date, amount magnitude and status mirror to
+     *  both legs (each keeps the sign dictated by its own type), while the account change applies only
+     *  to the edited leg — moving that side of the transfer. The opposite leg keeps its own account.
+     *  Description, category, cost center, type and group metadata are preserved per leg. */
+    private Result<MonetaryTransaction, DomainError> updateTransfer(MonetaryTransaction edited, List<MonetaryTransaction> siblings, TransactionCommand cmd) {
+        val newAccount = cmd.accountId();
+        if (siblings.stream().anyMatch(sib -> newAccount.equals(sib.accountId()))) {
+            return Result.failure(new DomainError.BusinessRule("Conta de origem e destino devem ser diferentes"));
+        }
+
+        val absAmount = cmd.amount().abs();
+        val updatedEdited = transactionService.save(withTransferEdits(edited, newAccount, absAmount, cmd.date(), cmd.status()));
+        // The pre-edit snapshot recalculates the leg's former account when the account moved.
+        MessageBus.submit(new MonetaryEvent.TransactionUpdated(edited));
+        MessageBus.submit(new MonetaryEvent.TransactionUpdated(updatedEdited));
+
+        for (val sib : siblings) {
+            val updatedSib = transactionService.save(withTransferEdits(sib, sib.accountId(), absAmount, cmd.date(), cmd.status()));
+            MessageBus.submit(new MonetaryEvent.TransactionUpdated(updatedSib));
+        }
+        return Result.success(updatedEdited);
+    }
+
+    /** Rebuilds a transfer leg keeping its identity, description, category, cost center, type and group
+     *  metadata; applies the (possibly new) account, the shared date/status and the signed amount. A
+     *  confirmed leg keeps {@code paymentDate} aligned with its date, matching how transfers are created. */
+    private static MonetaryTransaction withTransferEdits(MonetaryTransaction leg, UUID accountId, BigDecimal absAmount, LocalDate date, MonetaryTransaction.Status status) {
+        val signed = MonetaryTransaction.Type.EXPENSE.equals(leg.type()) ? absAmount.negate() : absAmount;
+        return new MonetaryTransaction(
+                leg.id(), leg.description(), signed, date,
+                leg.categoryId(), accountId, status, leg.type(), leg.costCenterId(),
+                MonetaryTransaction.Status.CONFIRMED.equals(status) ? date : null,
+                leg.groupId(), leg.installmentNumber(), leg.totalInstallments(), leg.notes());
     }
 
     public Result<MonetaryTransaction, DomainError> updateTransactionStatus(UUID id, MonetaryTransaction.Status status, @Nullable LocalDate paymentDate) {
