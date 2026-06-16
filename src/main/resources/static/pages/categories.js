@@ -3,7 +3,7 @@
   window.Pages = window.Pages || {};
 
   const NATURE_EXPENSE = 'EXPENSE';
-  const NATURE_REVENUE = 'REVENUE';
+  const NATURE_REVENUE = 'INCOME';
 
   // ── State (per mount, captured in closure) ────────────────
   let state = null;

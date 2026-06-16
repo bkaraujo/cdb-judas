@@ -60,7 +60,7 @@
     if (!initial.accountId && accs.length) initial.accountId = String(accs[0].id);
 
     function natureForType(t) {
-      if (t === 'income') return 'REVENUE';
+      if (t === 'income') return 'INCOME';
       if (t === 'expense') return 'EXPENSE';
       return null;
     }
@@ -404,7 +404,7 @@
     const uniq = Date.now();
     const nameId = 'qcat-name-' + uniq;
     const parentSelId = 'qcat-parent-' + uniq;
-    const natureLabel = nature === 'REVENUE' ? 'Receita' : 'Despesa';
+    const natureLabel = nature === 'INCOME' ? 'Receita' : 'Despesa';
 
     const roots = window.App.CacheStore.categories().filter(function (c) {
       return String(c.nature || '').toUpperCase() === nature && !c.parentId;

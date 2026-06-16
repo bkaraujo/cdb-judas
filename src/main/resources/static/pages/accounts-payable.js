@@ -272,7 +272,7 @@
     });
     if (!initial.accountId && accs.length) initial.accountId = String(accs[0].id);
 
-    function natureForType(t) { return t === 'RECEIVABLE' ? 'REVENUE' : 'EXPENSE'; }
+    function natureForType(t) { return t === 'RECEIVABLE' ? 'INCOME' : 'EXPENSE'; }
 
     function buildCatOptions(t, selectedId) {
       const cats = flatCategories(natureForType(t), true);

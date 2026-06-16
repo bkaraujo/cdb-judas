@@ -105,7 +105,7 @@
 
     // Import category set for a given movement type (statement rows can be income or expense).
     function importCategoriesFor(type) {
-      const nature = type === 'income' ? 'REVENUE' : 'EXPENSE';
+      const nature = type === 'income' ? 'INCOME' : 'EXPENSE';
       const byNature = flatCategories(nature, true);
       return byNature.length ? byNature : flatCategories(null, true);
     }
