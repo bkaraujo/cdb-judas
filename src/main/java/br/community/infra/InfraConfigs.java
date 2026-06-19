@@ -18,8 +18,8 @@ import tools.jackson.databind.ObjectMapper;
 public class InfraConfigs {
 
     @Bean
-    UserRepository userRepository(DataSource dataSource, ObjectMapper mapper) {
-        return new UserJDBCRepository(dataSource, mapper);
+    UserRepository userRepository(DataSource dataSource) {
+        return new UserJDBCRepository(dataSource);
     }
 
     @Bean

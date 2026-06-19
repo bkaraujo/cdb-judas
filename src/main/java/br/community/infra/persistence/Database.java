@@ -127,9 +127,23 @@ public abstract class Database {
                 CREATE TABLE SEC_USER (
                     ID CHAR(36) PRIMARY KEY,
                     TXT_USERNAME VARCHAR(255) NOT NULL,
-                    TXT_NAME VARCHAR(255),
+                    COD_PERSON CHAR(36) NOT NULL
+                )
+                """,
+                """
+                CREATE TABLE USER_CREDENTIAL (
+                    ID CHAR(36) PRIMARY KEY,
+                    COD_USER CHAR(36) NOT NULL,
                     TXT_PASSWORD VARCHAR(255) NOT NULL,
-                    TXT_PREFERENCES VARCHAR(4000)
+                    TMS_CREATE_AT TIMESTAMP NOT NULL
+                )
+                """,
+                """
+                CREATE TABLE USER_PREFERENCES (
+                    COD_USER CHAR(36) NOT NULL,
+                    TXT_KEY VARCHAR(50) NOT NULL,
+                    TXT_VALUE VARCHAR(255),
+                    PRIMARY KEY (COD_USER, TXT_KEY)
                 )
                 """,
                 """
