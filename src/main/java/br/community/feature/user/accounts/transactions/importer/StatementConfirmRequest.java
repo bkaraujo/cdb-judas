@@ -1,6 +1,6 @@
 package br.community.feature.user.accounts.transactions.importer;
 
-import br.community.context.monetary._0_domain.model.MonetaryTransaction;
+import br.community.context.monetary._0_domain.model.Transaction;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -34,7 +34,7 @@ public record StatementConfirmRequest(
             @Nullable LocalDate originalDate,
             @Nullable Integer installmentNumber,
             @Nullable Integer installmentTotal,
-            MonetaryTransaction.@Nullable Type transactionType,
+            Transaction.@Nullable Type transactionType,
             @NotNull UUID categoryId,
             @Nullable UUID cardId
     ) {}

@@ -1,10 +1,9 @@
 package br.community.feature.user.profile;
 
 import br.commons.Result;
-import br.community.context.security.SecurityContext;
-import br.community.context.security._0_domain.model.PreferencesPatch;
 import br.community.context.shared._1_application.DomainException;
 import br.community.core.web.security.CurrentUser;
+import br.community.core.web.security.PreferencesPatch;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.val;
@@ -22,11 +21,11 @@ import org.springframework.web.bind.annotation.*;
 @RequestMapping(value = "/api/me", produces = MediaType.APPLICATION_JSON_VALUE)
 public class SelfResource {
 
-    private final SecurityContext securityContext;
+    private final UserService userService;
 
     @GetMapping
     public MeResponse getMe() {
-        return switch (securityContext.getMe(CurrentUser.getId())) {
+        return switch (userService.getMe(CurrentUser.getId())) {
             case Result.Success(var user) -> MeResponse.from(user);
             case Result.Failure(var error) -> throw new DomainException(error);
         };
@@ -38,13 +37,13 @@ public class SelfResource {
         val id = CurrentUser.getId();
 
         var result = req.name() != null
-                ? securityContext.updateName(id, req.name())
-                : securityContext.getMe(id);
+                ? userService.updateName(id, req.name())
+                : userService.getMe(id);
 
         val prefs = req.preferences();
         if (prefs != null) {
             val patch = new PreferencesPatch(prefs.theme(), prefs.language(), prefs.locale(), prefs.sidebarCollapsed());
-            result = result.flatMap(ignored -> securityContext.updatePreferences(id, patch));
+            result = result.flatMap(ignored -> userService.updatePreferences(id, patch));
         }
 
         return switch (result) {

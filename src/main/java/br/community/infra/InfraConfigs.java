@@ -1,8 +1,11 @@
 package br.community.infra;
 
 import br.commons.framework.persistence.Storage;
+import br.commons.framework.persistence.jdbc.DataSource;
 import br.community.context.monetary._0_domain.repository.*;
-import br.community.context.security._0_domain.repository.UserRepository;
+import br.community.context.people._0_domain.repository.PersonAccountRepository;
+import br.community.context.people._0_domain.repository.PersonRepository;
+import br.community.core.web.security.UserRepository;
 import br.community.feature.user.accounts.closing.ClosingRepository;
 import br.community.infra.persistence.*;
 import org.jspecify.annotations.NullMarked;
@@ -15,43 +18,53 @@ import tools.jackson.databind.ObjectMapper;
 public class InfraConfigs {
 
     @Bean
-    UserRepository userRepository(Storage storage, ObjectMapper mapper) {
-        return new UserJsonRepository(storage, mapper);
+    UserRepository userRepository(DataSource dataSource, ObjectMapper mapper) {
+        return new UserJDBCRepository(dataSource, mapper);
     }
 
     @Bean
-    AccountRepository accountRepository(ObjectMapper mapper, Storage storage) {
-        return new AccountJsonRepository(mapper, storage);
+    AccountRepository accountRepository(ObjectMapper mapper, DataSource dataSource) {
+        return new AccountJDBCRepository(dataSource, mapper);
     }
 
     @Bean
-    CategoryRepository categoryRepository(ObjectMapper mapper, Storage storage) {
-        return new CategoryJsonRepository(mapper, storage);
+    CategoryRepository categoryRepository(DataSource dataSource) {
+        return new CategoryJDBCRepository(dataSource);
     }
 
     @Bean
-    CostCenterRepository costCenterRepository(ObjectMapper mapper, Storage storage) {
-        return new CostCenterJsonRepository(mapper, storage);
+    CostCenterRepository costCenterRepository(DataSource dataSource) {
+        return new CostCenterJDBCRepository(dataSource);
     }
 
     @Bean
-    BalanceRepository balanceRepository(ObjectMapper mapper, Storage storage) {
-        return new MonthlyBalanceJsonRepository(mapper, storage);
+    BalanceRepository balanceRepository(DataSource dataSource) {
+        return new MonthlyBalanceJDBCRepository(dataSource);
     }
 
     @Bean
-    TagRepository tagRepository(ObjectMapper mapper, Storage storage) {
-        return new TagJsonRepository(mapper, storage);
+    TagRepository tagRepository(DataSource dataSource) {
+        return new TagJDBCRepository(dataSource);
     }
 
     @Bean
-    TransactionRepository transactionRepository(ObjectMapper mapper, Storage storage) {
-        return new TransactionJsonRepository(mapper, storage);
+    TransactionRepository transactionRepository(DataSource dataSource) {
+        return new TransactionJDBCRepository(dataSource);
     }
 
     @Bean
     ClosingRepository closingRepository(ObjectMapper mapper, Storage storage) {
         return new ClosingJsonRepository(mapper, storage);
+    }
+
+    @Bean
+    PersonRepository personRepository(DataSource dataSource) {
+        return new PersonJDBCRepository(dataSource);
+    }
+
+    @Bean
+    PersonAccountRepository personAccountRepository(DataSource dataSource) {
+        return new PersonAccountJDBCRepository(dataSource);
     }
 
 }

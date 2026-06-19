@@ -1,6 +1,6 @@
 package br.community.feature.user.accounts.transactions.importer;
 
-import br.community.context.monetary._0_domain.model.MonetaryTransaction;
+import br.community.context.monetary._0_domain.model.Transaction;
 import br.community.feature.user.accounts.transactions.core.ChargeKind;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
@@ -26,8 +26,8 @@ public record TransactionDraft(
         LocalDate originalDate,
         String description,
         BigDecimal amount,
-        MonetaryTransaction.Status status,
-        MonetaryTransaction.Type type,
+        Transaction.Status status,
+        Transaction.Type type,
         UUID accountId,
         @Nullable UUID groupId,
         @Nullable Integer installmentNumber,

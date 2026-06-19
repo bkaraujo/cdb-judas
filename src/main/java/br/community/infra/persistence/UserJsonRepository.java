@@ -2,8 +2,8 @@ package br.community.infra.persistence;
 
 import br.commons.Logger;
 import br.commons.framework.persistence.Storage;
-import br.community.context.security._0_domain.model.User;
-import br.community.context.security._0_domain.repository.UserRepository;
+import br.community.core.web.security.User;
+import br.community.core.web.security.UserRepository;
 import lombok.val;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;

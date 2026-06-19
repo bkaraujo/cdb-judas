@@ -6,10 +6,10 @@ import br.commons.framework.message.MessageListener;
 import br.commons.framework.message.MessageResult;
 import br.commons.pdf.ExtractionFailure;
 import br.commons.pdf.PdfTextExtractor;
-import br.community.context.monetary._0_domain.event.MonetaryEvent;
-import br.community.context.monetary._0_domain.model.MonetaryAccount;
-import br.community.context.monetary._0_domain.model.MonetaryCenter;
-import br.community.context.monetary._0_domain.model.MonetaryTransaction;
+import br.community.context.monetary._0_domain.event.TransactionEvents;
+import br.community.context.monetary._0_domain.model.Account;
+import br.community.context.monetary._0_domain.model.CostCenter;
+import br.community.context.monetary._0_domain.model.Transaction;
 import br.community.context.monetary._1_application.command.ImportConfirmCommand;
 import br.community.context.monetary._1_application.service.*;
 import br.community.context.monetary._1_application.usecase.AccountUseCase;
@@ -101,21 +101,21 @@ class CreditCardStatementImportUseCaseTest {
         return new MonetaryContext(ucAccount, ucTransaction, ucMetadata);
     }
 
-    private static MonetaryAccount creditCard(String name, String last4) {
-        return new MonetaryAccount(
-                UUID.randomUUID(), name, BigDecimal.ZERO, MonetaryAccount.Type.CREDIT_CARD,
+    private static Account creditCard(String name, String last4) {
+        return new Account(
+                UUID.randomUUID(), name, BigDecimal.ZERO, Account.Type.CREDIT_CARD,
                 "#000", true, null, Map.of("last4", last4));
     }
 
-    private static MonetaryAccount creditCardLinkedTo(String name, String last4, UUID linkedAccountId) {
-        return new MonetaryAccount(
-                UUID.randomUUID(), name, BigDecimal.ZERO, MonetaryAccount.Type.CREDIT_CARD,
+    private static Account creditCardLinkedTo(String name, String last4, UUID linkedAccountId) {
+        return new Account(
+                UUID.randomUUID(), name, BigDecimal.ZERO, Account.Type.CREDIT_CARD,
                 "#000", true, linkedAccountId, Map.of("last4", last4));
     }
 
-    private static MonetaryAccount checking(String name) {
-        return new MonetaryAccount(
-                UUID.randomUUID(), name, BigDecimal.ZERO, MonetaryAccount.Type.CHECKING,
+    private static Account checking(String name) {
+        return new Account(
+                UUID.randomUUID(), name, BigDecimal.ZERO, Account.Type.CHECKING,
                 "#000", true, null, Map.of());
     }
 
@@ -264,10 +264,10 @@ class CreditCardStatementImportUseCaseTest {
         // Pre-compute the parcelado group id the expander will assign: originalDate 2024-07-15, N=10.
         var groupId = new GroupSignature().groupId(bank.id(), LocalDate.of(2024, 7, 15), 10, "Amazonmktplc Megabytem");
         var transactions = new InMemoryRepositories.Transactions();
-        transactions.save(new MonetaryTransaction(
+        transactions.save(new Transaction(
                 UUID.randomUUID(), "Amazonmktplc Megabytem", new BigDecimal("72.99"),
                 LocalDate.of(2024, 7, 15), UUID.randomUUID(), bank.id(),
-                MonetaryTransaction.Status.CONFIRMED, MonetaryTransaction.Type.EXPENSE, MonetaryCenter.VARIAVEL_ID, null, groupId, 1, 10, null));
+                Transaction.Status.CONFIRMED, Transaction.Type.EXPENSE, CostCenter.VARIAVEL_ID, null, groupId, 1, 10, null));
 
         var useCase = useCaseWith((bytes, password) -> Result.success(text), accounts, transactions);
         var preview = invoicePreview(useCase.preview(new byte[1], null, null));
@@ -294,10 +294,10 @@ class CreditCardStatementImportUseCaseTest {
 
         // à-vista "09 Mar" with today 2025-07-15 → anchor 2025-07, diff 3-7=-4 → year 2025 → 2025-03-09.
         var transactions = new InMemoryRepositories.Transactions();
-        transactions.save(new MonetaryTransaction(
+        transactions.save(new Transaction(
                 UUID.randomUUID(), "MICROSOFT", new BigDecimal("-60.00"),
                 LocalDate.of(2025, 3, 9), UUID.randomUUID(), bank.id(),
-                MonetaryTransaction.Status.CONFIRMED, MonetaryTransaction.Type.EXPENSE, MonetaryCenter.VARIAVEL_ID, null, null, 1, 1, null));
+                Transaction.Status.CONFIRMED, Transaction.Type.EXPENSE, CostCenter.VARIAVEL_ID, null, null, 1, 1, null));
 
         var useCase = useCaseWith((bytes, password) -> Result.success(text), accounts, transactions);
         var preview = invoicePreview(useCase.preview(new byte[1], null, null));
@@ -342,10 +342,10 @@ class CreditCardStatementImportUseCaseTest {
 
         var categoryC = UUID.randomUUID();
         var transactions = new InMemoryRepositories.Transactions();
-        transactions.save(new MonetaryTransaction(
+        transactions.save(new Transaction(
                 UUID.randomUUID(), "AMAZONMKTPLC MEGABYTEM", new BigDecimal("-99.90"),
                 LocalDate.of(2024, 1, 10), categoryC, card.id(),
-                MonetaryTransaction.Status.CONFIRMED, MonetaryTransaction.Type.EXPENSE, MonetaryCenter.VARIAVEL_ID, null, null, 1, 1, null));
+                Transaction.Status.CONFIRMED, Transaction.Type.EXPENSE, CostCenter.VARIAVEL_ID, null, null, 1, 1, null));
 
         var useCase = useCaseWith((bytes, password) -> Result.success(text), accounts, transactions);
         var preview = invoicePreview(useCase.preview(new byte[1], null, null));
@@ -489,26 +489,26 @@ class CreditCardStatementImportUseCaseTest {
         assertEquals(4, saved.size());
         // All land on the card's linkedAccountId, are expenses with negative amounts.
         assertTrue(saved.stream().allMatch(t -> account.id().equals(t.accountId())));
-        assertTrue(saved.stream().allMatch(t -> MonetaryTransaction.Type.EXPENSE.equals(t.type())));
+        assertTrue(saved.stream().allMatch(t -> Transaction.Type.EXPENSE.equals(t.type())));
         assertTrue(saved.stream().allMatch(t -> t.amount().signum() < 0));
 
         // Status computed by date against fixed today 2025-07-15.
         var mercado = saved.stream().filter(t -> t.description().equals("Mercado")).findFirst().orElseThrow();
-        assertEquals(MonetaryTransaction.Status.CONFIRMED, mercado.status());
+        assertEquals(Transaction.Status.CONFIRMED, mercado.status());
         var streaming = saved.stream().filter(t -> t.description().equals("Streaming")).findFirst().orElseThrow();
-        assertEquals(MonetaryTransaction.Status.SCHEDULED, streaming.status());
+        assertEquals(Transaction.Status.SCHEDULED, streaming.status());
 
         // The two parcelado rows share one groupId with their installment numbers/total.
         var parcelas = saved.stream().filter(t -> t.description().equals("Geladeira")).toList();
         assertEquals(2, parcelas.size());
-        assertEquals(1L, parcelas.stream().map(MonetaryTransaction::groupId).distinct().count());
+        assertEquals(1L, parcelas.stream().map(Transaction::groupId).distinct().count());
         assertTrue(parcelas.stream().allMatch(t -> t.groupId() != null));
-        assertEquals(List.of(1, 2), parcelas.stream().map(MonetaryTransaction::installmentNumber).sorted().toList());
+        assertEquals(List.of(1, 2), parcelas.stream().map(Transaction::installmentNumber).sorted().toList());
         assertTrue(parcelas.stream().allMatch(t -> Integer.valueOf(2).equals(t.totalInstallments())));
         var parcelaConfirmed = parcelas.stream().filter(t -> Integer.valueOf(1).equals(t.installmentNumber())).findFirst().orElseThrow();
-        assertEquals(MonetaryTransaction.Status.CONFIRMED, parcelaConfirmed.status());
+        assertEquals(Transaction.Status.CONFIRMED, parcelaConfirmed.status());
         var parcelaScheduled = parcelas.stream().filter(t -> Integer.valueOf(2).equals(t.installmentNumber())).findFirst().orElseThrow();
-        assertEquals(MonetaryTransaction.Status.SCHEDULED, parcelaScheduled.status());
+        assertEquals(Transaction.Status.SCHEDULED, parcelaScheduled.status());
     }
 
     @Test
@@ -526,7 +526,7 @@ class CreditCardStatementImportUseCaseTest {
         var counter = new AtomicInteger(0);
         MessageBus.subscribe(new Object() {
             @MessageListener
-            public MessageResult on(MonetaryEvent.TransactionCreated event) {
+            public MessageResult on(TransactionEvents.Created event) {
                 counter.incrementAndGet();
                 return MessageResult.AVAILABLE;
             }
@@ -593,10 +593,10 @@ class CreditCardStatementImportUseCaseTest {
 
         var transactions = new InMemoryRepositories.Transactions();
         // Pre-existing à-vista tx on the linked account: same date/amount/normalized-description.
-        transactions.save(new MonetaryTransaction(
+        transactions.save(new Transaction(
                 UUID.randomUUID(), "MERCADO LIVRE", new BigDecimal("-90.00"),
                 LocalDate.of(2025, 7, 4), UUID.randomUUID(), account.id(),
-                MonetaryTransaction.Status.CONFIRMED, MonetaryTransaction.Type.EXPENSE, MonetaryCenter.VARIAVEL_ID, null, null, 1, 1, null));
+                Transaction.Status.CONFIRMED, Transaction.Type.EXPENSE, CostCenter.VARIAVEL_ID, null, null, 1, 1, null));
 
         var useCase = useCaseWith(NOOP_EXTRACTOR, accounts, transactions);
 
@@ -633,7 +633,7 @@ class CreditCardStatementImportUseCaseTest {
         // A transactions double whose save throws on the "BOOM" row but persists the others.
         var transactions = new InMemoryRepositories.Transactions() {
             @Override
-            public MonetaryTransaction save(@NonNull MonetaryTransaction e) {
+            public Transaction save(@NonNull Transaction e) {
                 if ("BOOM".equals(e.description())) throw new RuntimeException("simulated save failure");
                 return super.save(e);
             }

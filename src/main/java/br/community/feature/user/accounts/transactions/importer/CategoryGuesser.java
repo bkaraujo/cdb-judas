@@ -1,6 +1,6 @@
 package br.community.feature.user.accounts.transactions.importer;
 
-import br.community.context.monetary._0_domain.model.MonetaryTransaction;
+import br.community.context.monetary._0_domain.model.Transaction;
 import lombok.val;
 import org.jspecify.annotations.NullMarked;
 
@@ -15,7 +15,7 @@ import java.util.stream.Collectors;
 @NullMarked
 public class CategoryGuesser {
 
-    public Optional<UUID> guess(String description, List<MonetaryTransaction> history) {
+    public Optional<UUID> guess(String description, List<Transaction> history) {
         val target = GroupSignature.normalize(description);
 
         val matches = history.stream()
@@ -27,12 +27,12 @@ public class CategoryGuesser {
 
         val mostRecentByCategory = matches.stream()
                 .collect(Collectors.toMap(
-                        MonetaryTransaction::categoryId,
-                        MonetaryTransaction::date,
+                        Transaction::categoryId,
+                        Transaction::date,
                         (a, b) -> a.isAfter(b) ? a : b));
 
         val countByCategory = matches.stream()
-                .collect(Collectors.groupingBy(MonetaryTransaction::categoryId, Collectors.counting()));
+                .collect(Collectors.groupingBy(Transaction::categoryId, Collectors.counting()));
 
         return countByCategory.entrySet().stream()
                 .max(Comparator

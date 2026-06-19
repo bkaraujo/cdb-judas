@@ -1,7 +1,7 @@
 package br.community.context.monetary;
 
-import br.community.context.monetary._0_domain.model.MonetaryCenter;
-import br.community.context.monetary._0_domain.model.MonetaryTransaction;
+import br.community.context.monetary._0_domain.model.CostCenter;
+import br.community.context.monetary._0_domain.model.Transaction;
 import br.community.feature.user.accounts.transactions.importer.CategoryGuesser;
 import org.junit.jupiter.api.Test;
 
@@ -18,10 +18,10 @@ class CategoryGuesserTest {
 
     private final CategoryGuesser guesser = new CategoryGuesser();
 
-    private static MonetaryTransaction tx(String description, UUID categoryId, LocalDate date) {
-        return new MonetaryTransaction(
+    private static Transaction tx(String description, UUID categoryId, LocalDate date) {
+        return new Transaction(
                 UUID.randomUUID(), description, new BigDecimal("-10.00"), date, categoryId,
-                UUID.randomUUID(), MonetaryTransaction.Status.CONFIRMED, MonetaryTransaction.Type.EXPENSE, MonetaryCenter.VARIAVEL_ID, null, null, 1, 1, null);
+                UUID.randomUUID(), Transaction.Status.CONFIRMED, Transaction.Type.EXPENSE, CostCenter.VARIAVEL_ID, null, null, 1, 1, null);
     }
 
     @Test

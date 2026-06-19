@@ -4,8 +4,13 @@ import br.commons.Logger;
 import br.commons.Result;
 import br.commons.framework.persistence.jdbc.pool.ConnectionPool;
 import br.commons.framework.persistence.jdbc.primitives.JDBCConnection;
+import br.commons.framework.persistence.jdbc.primitives.JDBCPreparedParameter;
+import br.commons.framework.persistence.jdbc.primitives.JDBCResultSet;
 import lombok.Getter;
 import org.jspecify.annotations.NullMarked;
+
+import java.util.List;
+import java.util.function.Function;
 
 /**
  * Represents a named JDBC data source with connection pooling capabilities.
@@ -32,6 +37,75 @@ public class DataSource {
         this.closed = false;
 
         Logger.info("DataSource '%s' created", name);
+    }
+
+
+    /** Executa uma função sobre uma conexão do pool, garantindo a devolução (close) ao final. */
+    private <T> Result<T, String> withConnection(Function<JDBCConnection, Result<T, String>> work) {
+        return switch (getConnection()) {
+            case Result.Failure(var error) -> new Result.Failure<>(error);
+            case Result.Success(var conn) -> {
+                try { yield work.apply(conn); }
+                finally { conn.close(); }
+            }
+        };
+    }
+
+    public <T> Result<T, String> executeQuery(String query, Function<JDBCResultSet, T> function) {
+        return withConnection(conn -> switch (conn.createStatement()) {
+            case Result.Failure(var error) -> new Result.Failure<>(error);
+            case Result.Success(var stmt) -> {
+                try {
+                    yield switch (stmt.executeQuery(query)) {
+                        case Result.Failure(var error) -> new Result.Failure<>(error);
+                        case Result.Success(var rs) -> {
+                            try { yield new Result.Success<>(function.apply(rs)); }
+                            finally { rs.close(); }
+                        }
+                    };
+                } finally { stmt.close(); }
+            }
+        });
+    }
+
+    public Result<Boolean, String> execute(String query) {
+        return withConnection(conn -> switch (conn.createStatement()) {
+            case Result.Failure(var error) -> new Result.Failure<>(error);
+            case Result.Success(var stmt) -> {
+                try { yield stmt.execute(query); }
+                finally { stmt.close(); }
+            }
+        });
+    }
+
+    public <T> Result<T, String> executeQuery(String sql, List<JDBCPreparedParameter> parameters, Function<JDBCResultSet, T> function) {
+        return withConnection(conn -> switch (conn.prepareStatement(sql)) {
+            case Result.Failure(var error) -> new Result.Failure<>(error);
+            case Result.Success(var pstmt) -> {
+                try {
+                    for (var i = 0; i < parameters.size(); i++) pstmt.setObject(i + 1, parameters.get(i).value());
+                    yield switch (pstmt.executeQuery()) {
+                        case Result.Failure(var error) -> new Result.Failure<>(error);
+                        case Result.Success(var rs) -> {
+                            try { yield new Result.Success<>(function.apply(rs)); }
+                            finally { rs.close(); }
+                        }
+                    };
+                } finally { pstmt.close(); }
+            }
+        });
+    }
+
+    public Result<Boolean, String> execute(String sql, JDBCPreparedParameter... parameters) {
+        return withConnection(conn -> switch (conn.prepareStatement(sql)) {
+            case Result.Failure(var error) -> new Result.Failure<>(error);
+            case Result.Success(var pstmt) -> {
+                try {
+                    for (var i = 0; i < parameters.length; i++) pstmt.setObject(i + 1, parameters[i].value());
+                    yield pstmt.execute();
+                } finally { pstmt.close(); }
+            }
+        });
     }
 
     /**

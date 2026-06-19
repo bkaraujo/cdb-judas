@@ -1,7 +1,7 @@
 package br.community.context.monetary._1_application.service;
 
 import br.commons.Result;
-import br.community.context.monetary._0_domain.model.MonetaryTransaction;
+import br.community.context.monetary._0_domain.model.Transaction;
 import br.community.context.monetary._0_domain.repository.TransactionRepository;
 import br.community.context.shared._0_domain.model.DomainError;
 import lombok.RequiredArgsConstructor;
@@ -17,17 +17,17 @@ public class TransactionService {
 
     private final TransactionRepository transactionRepository;
 
-    public List<MonetaryTransaction> findAll() {
+    public List<Transaction> findAll() {
         return transactionRepository.findAll();
     }
 
-    public Result<MonetaryTransaction, DomainError> findById(UUID id) {
+    public Result<Transaction, DomainError> findById(UUID id) {
         return transactionRepository.findById(id)
-                .<Result<MonetaryTransaction, DomainError>>map(Result::success)
+                .<Result<Transaction, DomainError>>map(Result::success)
                 .orElseGet(() -> Result.failure(new DomainError.NotFound("TransactionResponse not found: " + id)));
     }
 
-    public MonetaryTransaction save(MonetaryTransaction transaction) {
+    public Transaction save(Transaction transaction) {
         return transactionRepository.save(transaction);
     }
 
@@ -36,20 +36,20 @@ public class TransactionService {
         return Result.success();
     }
 
-    public List<MonetaryTransaction> findByAccount(UUID accountId) {
+    public List<Transaction> findByAccount(UUID accountId) {
         return transactionRepository.findAll().stream()
                 .filter(t -> accountId.equals(t.accountId()))
                 .toList();
     }
 
-    public List<MonetaryTransaction> findPending() {
+    public List<Transaction> findPending() {
         return transactionRepository.findAll().stream()
-                .filter(t -> MonetaryTransaction.Status.PENDING.equals(t.status()))
-                .sorted(Comparator.comparing(MonetaryTransaction::date))
+                .filter(t -> Transaction.Status.PENDING.equals(t.status()))
+                .sorted(Comparator.comparing(Transaction::date))
                 .toList();
     }
 
-    public List<MonetaryTransaction> findByGroupId(UUID groupId) {
+    public List<Transaction> findByGroupId(UUID groupId) {
         return transactionRepository.findAll().stream()
                 .filter(t -> groupId.equals(t.groupId()))
                 .toList();
@@ -58,11 +58,11 @@ public class TransactionService {
     /** Returns the opposite leg(s) of a transfer when {@code tx} belongs to a transfer group.
      *  A transfer group mixes one income and one expense leg under a shared groupId, unlike an
      *  installment group whose members share a single type. Empty when {@code tx} is not a transfer. */
-    public List<MonetaryTransaction> findTransferSiblings(MonetaryTransaction tx) {
+    public List<Transaction> findTransferSiblings(Transaction tx) {
         if (tx.groupId() == null) return List.of();
-        List<MonetaryTransaction> group = findByGroupId(tx.groupId());
-        boolean hasIncome = group.stream().anyMatch(t -> MonetaryTransaction.Type.INCOME.equals(t.type()));
-        boolean hasExpense = group.stream().anyMatch(t -> MonetaryTransaction.Type.EXPENSE.equals(t.type()));
+        List<Transaction> group = findByGroupId(tx.groupId());
+        boolean hasIncome = group.stream().anyMatch(t -> Transaction.Type.INCOME.equals(t.type()));
+        boolean hasExpense = group.stream().anyMatch(t -> Transaction.Type.EXPENSE.equals(t.type()));
         if (!hasIncome || !hasExpense) return List.of();
         return group.stream().filter(t -> !t.id().equals(tx.id())).toList();
     }

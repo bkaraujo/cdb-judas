@@ -1,7 +1,7 @@
 package br.community.context.monetary;
 
-import br.community.context.monetary._0_domain.event.MonetaryEvent;
-import br.community.context.monetary._0_domain.model.MonetaryAccount;
+import br.community.context.monetary._0_domain.event.AccountEvents;
+import br.community.context.monetary._0_domain.model.Account;
 import br.community.context.monetary._1_application.event.AccountEventListener;
 import br.community.context.monetary._1_application.service.AccountService;
 import org.junit.jupiter.api.BeforeEach;
@@ -24,9 +24,9 @@ class AccountEventListenerTest {
         listener = new AccountEventListener(new AccountService(accountRepo));
     }
 
-    private MonetaryAccount seedChecking(String color) {
+    private Account seedChecking(String color) {
         UUID id = UUID.randomUUID();
-        MonetaryAccount acc = new MonetaryAccount(id, "Banco", MonetaryAccount.Type.CHECKING,
+        Account acc = new Account(id, "Banco", Account.Type.CHECKING,
                 new BigDecimal("100.00"), color, true, null);
         return accountRepo.save(acc);
     }
@@ -34,24 +34,24 @@ class AccountEventListenerTest {
     @Test
     @DisplayName("onAccountUpdated propaga cor para cartões vinculados")
     void propagatesColorToLinkedCreditCards() {
-        MonetaryAccount checking = seedChecking("#112233");
+        Account checking = seedChecking("#112233");
         UUID c1 = UUID.randomUUID();
         UUID c2 = UUID.randomUUID();
-        accountRepo.save(new MonetaryAccount(c1, "C1", MonetaryAccount.Type.CREDIT_CARD,
+        accountRepo.save(new Account(c1, "C1", Account.Type.CREDIT_CARD,
                 new BigDecimal("100.00"), "#112233", true, checking.id()));
-        accountRepo.save(new MonetaryAccount(c2, "C2", MonetaryAccount.Type.CREDIT_CARD,
+        accountRepo.save(new Account(c2, "C2", Account.Type.CREDIT_CARD,
                 new BigDecimal("200.00"), "#112233", true, checking.id()));
 
         // Simula conta atualizada com nova cor
-        MonetaryAccount updatedChecking = new MonetaryAccount(
-                checking.id(), "Banco", MonetaryAccount.Type.CHECKING,
+        Account updatedChecking = new Account(
+                checking.id(), "Banco", Account.Type.CHECKING,
                 new BigDecimal("100.00"), "#FF0000", true, null);
         accountRepo.save(updatedChecking);
 
-        listener.onAccountUpdated(new MonetaryEvent.AccountUpdated(updatedChecking));
+        listener.onAccountUpdated(new AccountEvents.Updated(updatedChecking));
 
-        MonetaryAccount updatedC1 = accountRepo.findById(c1).orElseThrow();
-        MonetaryAccount updatedC2 = accountRepo.findById(c2).orElseThrow();
+        Account updatedC1 = accountRepo.findById(c1).orElseThrow();
+        Account updatedC2 = accountRepo.findById(c2).orElseThrow();
         assertEquals("#FF0000", updatedC1.color());
         assertEquals("#FF0000", updatedC2.color());
     }
@@ -59,38 +59,38 @@ class AccountEventListenerTest {
     @Test
     @DisplayName("onAccountUpdated não altera cartões que já têm a mesma cor")
     void doesNotUpdateCardsWithSameColor() {
-        MonetaryAccount checking = seedChecking("#112233");
+        Account checking = seedChecking("#112233");
         UUID c1 = UUID.randomUUID();
-        MonetaryAccount card = new MonetaryAccount(c1, "C1", MonetaryAccount.Type.CREDIT_CARD,
+        Account card = new Account(c1, "C1", Account.Type.CREDIT_CARD,
                 new BigDecimal("100.00"), "#112233", true, checking.id());
         accountRepo.save(card);
 
-        listener.onAccountUpdated(new MonetaryEvent.AccountUpdated(checking));
+        listener.onAccountUpdated(new AccountEvents.Updated(checking));
 
         // Cartão permanece inalterado (mesma instância no repo)
-        MonetaryAccount unchanged = accountRepo.findById(c1).orElseThrow();
+        Account unchanged = accountRepo.findById(c1).orElseThrow();
         assertEquals("#112233", unchanged.color());
     }
 
     @Test
     @DisplayName("onAccountUpdated não afeta cartões de outras contas")
     void doesNotAffectCardsFromOtherAccounts() {
-        MonetaryAccount checking1 = seedChecking("#112233");
-        MonetaryAccount checking2 = seedChecking("#AABBCC");
+        Account checking1 = seedChecking("#112233");
+        Account checking2 = seedChecking("#AABBCC");
         UUID c1 = UUID.randomUUID();
-        accountRepo.save(new MonetaryAccount(c1, "C1", MonetaryAccount.Type.CREDIT_CARD,
+        accountRepo.save(new Account(c1, "C1", Account.Type.CREDIT_CARD,
                 new BigDecimal("100.00"), "#AABBCC", true, checking2.id()));
 
         // Atualiza checking1 com nova cor
-        MonetaryAccount updated = new MonetaryAccount(
-                checking1.id(), "Banco", MonetaryAccount.Type.CHECKING,
+        Account updated = new Account(
+                checking1.id(), "Banco", Account.Type.CHECKING,
                 new BigDecimal("100.00"), "#FF0000", true, null);
         accountRepo.save(updated);
 
-        listener.onAccountUpdated(new MonetaryEvent.AccountUpdated(updated));
+        listener.onAccountUpdated(new AccountEvents.Updated(updated));
 
         // Cartão de checking2 não é afetado
-        MonetaryAccount unchanged = accountRepo.findById(c1).orElseThrow();
+        Account unchanged = accountRepo.findById(c1).orElseThrow();
         assertEquals("#AABBCC", unchanged.color());
     }
 }

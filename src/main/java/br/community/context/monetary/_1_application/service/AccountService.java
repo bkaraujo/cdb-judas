@@ -1,7 +1,7 @@
 package br.community.context.monetary._1_application.service;
 
 import br.commons.Result;
-import br.community.context.monetary._0_domain.model.MonetaryAccount;
+import br.community.context.monetary._0_domain.model.Account;
 import br.community.context.monetary._0_domain.repository.AccountRepository;
 import br.community.context.shared._0_domain.model.DomainError;
 import lombok.RequiredArgsConstructor;
@@ -16,17 +16,17 @@ public class AccountService {
 
     private final AccountRepository accountRepository;
 
-    public List<MonetaryAccount> findAll() {
+    public List<Account> findAll() {
         return accountRepository.findAll();
     }
 
-    public Result<MonetaryAccount, DomainError> findById(UUID accountId) {
+    public Result<Account, DomainError> findById(UUID accountId) {
         return accountRepository.findById(accountId)
-                .<Result<MonetaryAccount, DomainError>>map(Result::success)
+                .<Result<Account, DomainError>>map(Result::success)
                 .orElseGet(() -> Result.failure(new DomainError.NotFound("Account not found: " + accountId)));
     }
 
-    public MonetaryAccount save(MonetaryAccount account) {
+    public Account save(Account account) {
         return accountRepository.save(account);
     }
 
@@ -37,13 +37,13 @@ public class AccountService {
         });
     }
 
-    public List<MonetaryAccount> findCreditCards() {
+    public List<Account> findCreditCards() {
         return accountRepository.findAll().stream()
-                .filter(a -> a.type() == MonetaryAccount.Type.CREDIT_CARD)
+                .filter(a -> a.type() == Account.Type.CREDIT_CARD)
                 .toList();
     }
 
-    public List<MonetaryAccount> findCreditCardsByAccount(UUID accountId) {
+    public List<Account> findCreditCardsByAccount(UUID accountId) {
         return findCreditCards().stream()
                 .filter(c -> accountId.equals(c.linkedAccountId()))
                 .toList();

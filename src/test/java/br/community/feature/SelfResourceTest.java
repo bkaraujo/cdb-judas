@@ -2,10 +2,10 @@ package br.community.feature;
 
 import br.commons.framework.persistence.Storage;
 import br.commons.framework.persistence.json.Repository;
-import br.community.context.security._0_domain.model.Preferences;
-import br.community.context.security._0_domain.model.User;
-import br.community.context.security._0_domain.repository.UserRepository;
 import br.community.core.JsonStorageProperties;
+import br.community.core.web.security.Preferences;
+import br.community.core.web.security.User;
+import br.community.core.web.security.UserRepository;
 import br.community.core.web.filter.AuthenticationFilter;
 import br.community.core.web.filter.AuthorizationFilter;
 import br.community.core.web.security.AccessTokenStore;

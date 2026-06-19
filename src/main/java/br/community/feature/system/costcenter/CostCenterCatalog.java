@@ -1,7 +1,7 @@
 package br.community.feature.system.costcenter;
 
 import br.commons.framework.persistence.Storage;
-import br.community.context.monetary._0_domain.model.MonetaryCenter;
+import br.community.context.monetary._0_domain.model.CostCenter;
 import lombok.RequiredArgsConstructor;
 import lombok.val;
 import org.jspecify.annotations.NullMarked;
@@ -23,11 +23,11 @@ public class CostCenterCatalog {
     private final Storage storage;
     private final ObjectMapper mapper;
 
-    public List<MonetaryCenter> list() {
+    public List<CostCenter> list() {
         val bytes = storage.read(FILE, KEY);
         if (bytes == null || bytes.length == 0) return List.of();
         try {
-            val listType = mapper.getTypeFactory().constructCollectionType(List.class, MonetaryCenter.class);
+            val listType = mapper.getTypeFactory().constructCollectionType(List.class, CostCenter.class);
             return mapper.readValue(bytes, listType);
         } catch (JacksonException e) {
             throw new RuntimeException("Erro ao ler centros de custo globais", e);

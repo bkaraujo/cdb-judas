@@ -1,6 +1,5 @@
 package br.community.core.web.security;
 
-import br.community.context.security._0_domain.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.jspecify.annotations.NullMarked;
 import org.springframework.security.core.userdetails.UserDetails;

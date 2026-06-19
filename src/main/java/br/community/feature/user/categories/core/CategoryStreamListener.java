@@ -2,8 +2,8 @@ package br.community.feature.user.categories.core;
 
 import br.commons.framework.message.MessageListener;
 import br.commons.framework.message.MessageResult;
-import br.community.context.monetary._0_domain.event.MonetaryEvent;
-import br.community.context.monetary._0_domain.model.MonetaryCategory;
+import br.community.context.monetary._0_domain.event.CategoryEvents;
+import br.community.context.monetary._0_domain.model.Category;
 import br.community.core.web.security.CurrentUser;
 import br.community.feature.user.stream.SSE;
 import lombok.RequiredArgsConstructor;
@@ -22,27 +22,27 @@ public class CategoryStreamListener {
     private final SSE sse;
 
     @MessageListener
-    public MessageResult onCategoryCreated(MonetaryEvent.CategoryCreated event) {
+    public MessageResult onCategoryCreated(CategoryEvents.Created event) {
         upsert(event.category());
         return MessageResult.CONSUMED;
     }
 
     @MessageListener
-    public MessageResult onCategoryUpdated(MonetaryEvent.CategoryUpdated event) {
+    public MessageResult onCategoryUpdated(CategoryEvents.Updated event) {
         upsert(event.category());
         return MessageResult.CONSUMED;
     }
 
     @MessageListener
-    public MessageResult onCategoryDeleted(MonetaryEvent.CategoryDeleted event) {
+    public MessageResult onCategoryDeleted(CategoryEvents.Deleted event) {
         delete(event.categoryId());
         return MessageResult.CONSUMED;
     }
 
     @SuppressWarnings("EmptyCatch")
-    private void upsert(MonetaryCategory category) {
+    private void upsert(Category category) {
         try {
-            sse.dispatch(CurrentUser.getId(), SSE.Event.UPSERT, Map.of("type", TYPE, "payload", Category.from(category)));
+            sse.dispatch(CurrentUser.getId(), SSE.Event.UPSERT, Map.of("type", TYPE, "payload", CategoryResponse.from(category)));
         } catch (Exception ignored) {}
     }
 

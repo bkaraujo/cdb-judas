@@ -1,6 +1,6 @@
 package br.community.context.monetary._1_application;
 
-import br.community.context.monetary._0_domain.model.MonetaryAccount;
+import br.community.context.monetary._0_domain.model.Account;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 
@@ -19,14 +19,14 @@ public record AccountView(
         UUID id,
         String name,
         BigDecimal balance,
-        MonetaryAccount.Type type,
+        Account.Type type,
         String color,
         boolean active,
         @Nullable UUID linkedAccountId,
         Map<String, Object> additionalInfo,
         BigDecimal currentBalance
 ) {
-    public static AccountView of(MonetaryAccount account, BigDecimal currentBalance) {
+    public static AccountView of(Account account, BigDecimal currentBalance) {
         return new AccountView(
                 account.id(),
                 account.name(),

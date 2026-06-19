@@ -2,7 +2,7 @@ package br.community.feature.user.accounts.core;
 
 import br.commons.Result;
 import br.community.context.monetary.MonetaryContext;
-import br.community.context.monetary._0_domain.model.MonetaryTransaction;
+import br.community.context.monetary._0_domain.model.Transaction;
 import br.community.context.monetary._1_application.command.AccountCommand;
 import br.community.context.shared._1_application.DomainException;
 import jakarta.validation.Valid;
@@ -26,11 +26,11 @@ public class AccountResource {
     private final MonetaryContext monetaryContext;
 
     @GetMapping
-    public List<Account> listAll(@RequestParam(required = false) @Nullable String type) {
+    public List<AccountResponse> listAll(@RequestParam(required = false) @Nullable String type) {
         val result = isCardType(type) ? monetaryContext.listCreditCards() : monetaryContext.listAccounts();
         val transactions = allTransactions();
         return switch (result) {
-            case Result.Success(var accounts) -> accounts.stream().map(a -> Account.from(a, transactions)).toList();
+            case Result.Success(var accounts) -> accounts.stream().map(a -> AccountResponse.from(a, transactions)).toList();
             case Result.Failure(var error) -> throw new DomainException(error);
         };
     }
@@ -42,27 +42,27 @@ public class AccountResource {
     }
 
     @GetMapping("/{id}")
-    public Account getById(@PathVariable UUID id) {
+    public AccountResponse getById(@PathVariable UUID id) {
         return switch (monetaryContext.findAccount(id)) {
-            case Result.Success(var c) -> Account.from(c, allTransactions());
+            case Result.Success(var c) -> AccountResponse.from(c, allTransactions());
             case Result.Failure(var error) -> throw new DomainException(error);
         };
     }
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public Account create(@RequestBody @Valid AccountRequest req) {
+    public AccountResponse create(@RequestBody @Valid AccountRequest req) {
         return switch (monetaryContext.createAccount(toCommand(req))) {
-            case Result.Success(var c) -> Account.from(c, allTransactions());
+            case Result.Success(var c) -> AccountResponse.from(c, allTransactions());
             case Result.Failure(var error) -> throw new DomainException(error);
         };
     }
 
     @PatchMapping("/{id}")
-    public Account update(@PathVariable UUID id, @RequestBody @Valid AccountRequest req) {
+    public AccountResponse update(@PathVariable UUID id, @RequestBody @Valid AccountRequest req) {
         return switch (monetaryContext.updateAccount(id, toCommand(req))) {
             case Result.Failure(var error) -> throw new DomainException(error);
-            case Result.Success(var c) -> Account.from(c, allTransactions());
+            case Result.Success(var c) -> AccountResponse.from(c, allTransactions());
         };
     }
 
@@ -79,7 +79,7 @@ public class AccountResource {
         return new AccountCommand(req.name(), req.balance(), req.type(), req.color(), req.active(), req.linkedAccountId(), req.additionalInfo());
     }
 
-    private List<MonetaryTransaction> allTransactions() {
+    private List<Transaction> allTransactions() {
         return monetaryContext.listTransactions().getOrElse(List.of());
     }
 }

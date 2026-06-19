@@ -2,7 +2,7 @@ package br.community.core.persistence;
 
 import br.commons.framework.persistence.Storage;
 import br.commons.framework.persistence.json.LocalFileStorage;
-import br.community.context.monetary._0_domain.model.MonetaryTransaction;
+import br.community.context.monetary._0_domain.model.Transaction;
 import br.community.core.JsonStorageProperties;
 import org.jspecify.annotations.NullMarked;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -46,28 +46,28 @@ class JsonStorageConfig {
     @Bean
     JacksonModule transactionEnumModule() {
         SimpleModule module = new SimpleModule("transactionEnum");
-        module.addSerializer(MonetaryTransaction.Status.class, new ValueSerializer<>() {
+        module.addSerializer(Transaction.Status.class, new ValueSerializer<>() {
             @Override
-            public void serialize(MonetaryTransaction.Status value, JsonGenerator gen, SerializationContext serializers) {
+            public void serialize(Transaction.Status value, JsonGenerator gen, SerializationContext serializers) {
                 gen.writeString(value.name().toLowerCase(Locale.ROOT));
             }
         });
-        module.addDeserializer(MonetaryTransaction.Status.class, new ValueDeserializer<>() {
+        module.addDeserializer(Transaction.Status.class, new ValueDeserializer<>() {
             @Override
-            public MonetaryTransaction.Status deserialize(JsonParser p, DeserializationContext ctxt) {
-                return MonetaryTransaction.Status.valueOf(p.getValueAsString().toUpperCase(Locale.ROOT));
+            public Transaction.Status deserialize(JsonParser p, DeserializationContext ctxt) {
+                return Transaction.Status.valueOf(p.getValueAsString().toUpperCase(Locale.ROOT));
             }
         });
-        module.addSerializer(MonetaryTransaction.Type.class, new ValueSerializer<>() {
+        module.addSerializer(Transaction.Type.class, new ValueSerializer<>() {
             @Override
-            public void serialize(MonetaryTransaction.Type value, JsonGenerator gen, SerializationContext serializers) {
+            public void serialize(Transaction.Type value, JsonGenerator gen, SerializationContext serializers) {
                 gen.writeString(value.name().toLowerCase(Locale.ROOT));
             }
         });
-        module.addDeserializer(MonetaryTransaction.Type.class, new ValueDeserializer<>() {
+        module.addDeserializer(Transaction.Type.class, new ValueDeserializer<>() {
             @Override
-            public MonetaryTransaction.Type deserialize(JsonParser p, DeserializationContext ctxt) {
-                return MonetaryTransaction.Type.valueOf(p.getValueAsString().toUpperCase(Locale.ROOT));
+            public Transaction.Type deserialize(JsonParser p, DeserializationContext ctxt) {
+                return Transaction.Type.valueOf(p.getValueAsString().toUpperCase(Locale.ROOT));
             }
         });
         return module;

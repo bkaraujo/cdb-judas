@@ -1,6 +1,6 @@
 package br.community.feature.user.accounts.transactions.importer.confirm;
 
-import br.community.context.monetary._0_domain.model.MonetaryTransaction;
+import br.community.context.monetary._0_domain.model.Transaction;
 import org.jspecify.annotations.NullMarked;
 
 import java.math.BigDecimal;
@@ -22,7 +22,7 @@ public record BankStatementConfirmCommand(UUID accountId, List<Row> rows) {
             String description,
             BigDecimal amount,
             LocalDate date,
-            MonetaryTransaction.Type type,
+            Transaction.Type type,
             UUID categoryId
     ) {}
 }

@@ -1,8 +1,8 @@
 package br.community.infra.persistence;
 
 import br.commons.framework.persistence.Storage;
-import br.community.feature.user.accounts.closing.ClosingRepository;
 import br.community.core.web.security.CurrentUser;
+import br.community.feature.user.accounts.closing.ClosingRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.val;
 import org.jspecify.annotations.NullMarked;

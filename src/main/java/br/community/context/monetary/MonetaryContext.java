@@ -28,19 +28,19 @@ public class MonetaryContext implements Facade {
 
     // ── Account operations ─────────────────────────────────────────
 
-    public Result<List<MonetaryAccount>, DomainError> listAccounts() {
+    public Result<List<Account>, DomainError> listAccounts() {
         return ucAccount.listAccounts();
     }
 
-    public Result<MonetaryAccount, DomainError> findAccount(UUID id) {
+    public Result<Account, DomainError> findAccount(UUID id) {
         return ucAccount.findAccount(id);
     }
 
-    public Result<MonetaryAccount, DomainError> createAccount(AccountCommand cmd) {
+    public Result<Account, DomainError> createAccount(AccountCommand cmd) {
         return ucAccount.createAccount(cmd);
     }
 
-    public Result<MonetaryAccount, DomainError> updateAccount(UUID id, AccountCommand cmd) {
+    public Result<Account, DomainError> updateAccount(UUID id, AccountCommand cmd) {
         return ucAccount.updateAccount(id, cmd);
     }
 
@@ -60,19 +60,19 @@ public class MonetaryContext implements Facade {
 
     // ── Credit card operations ─────────────────────────────────────
 
-    public Result<List<MonetaryAccount>, DomainError> listCreditCards() {
+    public Result<List<Account>, DomainError> listCreditCards() {
         return ucAccount.listCreditCards();
     }
 
-    public Result<List<MonetaryAccount>, DomainError> listCreditCardsByAccount(UUID accountId) {
+    public Result<List<Account>, DomainError> listCreditCardsByAccount(UUID accountId) {
         return ucAccount.listCreditCardsByAccount(accountId);
     }
 
-    public Result<MonetaryAccount, DomainError> createCreditCard(CreditCardCommand cmd) {
+    public Result<Account, DomainError> createCreditCard(CreditCardCommand cmd) {
         return ucAccount.createCreditCard(cmd);
     }
 
-    public Result<MonetaryAccount, DomainError> updateCreditCard(UUID id, CreditCardCommand cmd) {
+    public Result<Account, DomainError> updateCreditCard(UUID id, CreditCardCommand cmd) {
         return ucAccount.updateCreditCard(id, cmd);
     }
 
@@ -82,27 +82,27 @@ public class MonetaryContext implements Facade {
 
     // ── TransactionResponse operations ─────────────────────────────────────
 
-    public Result<List<MonetaryTransaction>, DomainError> listTransactions() {
+    public Result<List<Transaction>, DomainError> listTransactions() {
         return ucTransaction.listTransactions();
     }
 
-    public Result<List<MonetaryTransaction>, DomainError> listPendingTransactions() {
+    public Result<List<Transaction>, DomainError> listPendingTransactions() {
         return ucTransaction.listPendingTransactions();
     }
 
-    public Result<MonetaryTransaction, DomainError> findTransaction(UUID id) {
+    public Result<Transaction, DomainError> findTransaction(UUID id) {
         return ucTransaction.findTransaction(id);
     }
 
-    public Result<MonetaryTransaction, DomainError> createTransaction(TransactionCommand cmd) {
+    public Result<Transaction, DomainError> createTransaction(TransactionCommand cmd) {
         return ucTransaction.createTransaction(cmd);
     }
 
-    public Result<MonetaryTransaction, DomainError> updateTransaction(UUID id, TransactionCommand cmd) {
+    public Result<Transaction, DomainError> updateTransaction(UUID id, TransactionCommand cmd) {
         return ucTransaction.updateTransaction(id, cmd);
     }
 
-    public Result<MonetaryTransaction, DomainError> updateTransactionStatus(UUID id, MonetaryTransaction.Status status, @Nullable LocalDate paymentDate) {
+    public Result<Transaction, DomainError> updateTransactionStatus(UUID id, Transaction.Status status, @Nullable LocalDate paymentDate) {
         return ucTransaction.updateTransactionStatus(id, status, paymentDate);
     }
 
@@ -110,49 +110,49 @@ public class MonetaryContext implements Facade {
         return ucTransaction.deleteTransaction(id, mode);
     }
 
-    public Result<MonetaryTransaction, DomainError> createTransfer(UUID fromAccountId, UUID toAccountId, LocalDate date, BigDecimal amount) {
+    public Result<Transaction, DomainError> createTransfer(UUID fromAccountId, UUID toAccountId, LocalDate date, BigDecimal amount) {
         return ucTransaction.createTransfer(fromAccountId, toAccountId, date, amount);
     }
 
     // ── Imported transactions (used by the statement-import feature) ─
 
-    public Result<MonetaryTransaction, DomainError> createImportedTransaction(ImportedTransactionCommand cmd) {
+    public Result<Transaction, DomainError> createImportedTransaction(ImportedTransactionCommand cmd) {
         return ucTransaction.createImported(cmd);
     }
 
     // ── Cost center operations ─────────────────────────────────────
 
-    public Result<List<MonetaryCenter>, DomainError> listCostCenters() {
+    public Result<List<CostCenter>, DomainError> listCostCenters() {
         return ucMetadata.listCostCenters();
     }
 
-    public Result<MonetaryCenter, DomainError> createCostCenter(CostCenterCommand cmd) {
+    public Result<CostCenter, DomainError> createCostCenter(CostCenterCommand cmd) {
         return ucMetadata.createCostCenter(cmd);
     }
 
-    public Result<MonetaryCenter, DomainError> updateCostCenter(UUID id, CostCenterCommand cmd) {
+    public Result<CostCenter, DomainError> updateCostCenter(UUID id, CostCenterCommand cmd) {
         return ucMetadata.updateCostCenter(id, cmd);
     }
 
     // ── Category operations ────────────────────────────────────────
 
-    public Result<List<MonetaryCategory>, DomainError> listCategories() {
+    public Result<List<Category>, DomainError> listCategories() {
         return ucMetadata.listCategories();
     }
 
-    public Result<MonetaryCategory, DomainError> findCategoryById(UUID id) {
+    public Result<Category, DomainError> findCategoryById(UUID id) {
         return ucMetadata.findCategoryById(id);
     }
 
-    public Result<MonetaryCategory, DomainError> createCategory(CategoryCommand cmd) {
+    public Result<Category, DomainError> createCategory(CategoryCommand cmd) {
         return ucMetadata.createCategory(cmd);
     }
 
-    public Result<MonetaryCategory, DomainError> updateCategory(UUID id, CategoryCommand cmd) {
+    public Result<Category, DomainError> updateCategory(UUID id, CategoryCommand cmd) {
         return ucMetadata.updateCategory(id, cmd);
     }
 
-    public MonetaryCategory findOrCreateUncategorizedCategory() {
+    public Category findOrCreateUncategorizedCategory() {
         return ucMetadata.findOrCreateUncategorizedCategory();
     }
 

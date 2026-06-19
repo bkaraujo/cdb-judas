@@ -1,6 +1,6 @@
 package br.community.feature.user.accounts.transactions.importer.preview;
 
-import br.community.context.monetary._0_domain.model.MonetaryAccount;
+import br.community.context.monetary._0_domain.model.Account;
 import br.community.feature.user.accounts.statement.Issuer;
 import br.community.feature.user.accounts.statement.MonetaryDocumentEntry;
 import org.jspecify.annotations.NullMarked;
@@ -17,7 +17,7 @@ import java.util.List;
 public record ImportPreview(
         Issuer issuer,
         List<MonetaryDocumentEntry> statement,
-        List<MonetaryAccount> candidateCards,
+        List<Account> candidateCards,
         List<PreviewRow> rows) {
 
     /**

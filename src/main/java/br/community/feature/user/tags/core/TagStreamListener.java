@@ -2,7 +2,7 @@ package br.community.feature.user.tags.core;
 
 import br.commons.framework.message.MessageListener;
 import br.commons.framework.message.MessageResult;
-import br.community.context.monetary._0_domain.event.MonetaryEvent;
+import br.community.context.monetary._0_domain.event.TagEvents;
 import br.community.context.monetary._0_domain.model.Tag;
 import br.community.core.web.security.CurrentUser;
 import br.community.feature.user.stream.SSE;
@@ -23,19 +23,19 @@ public class TagStreamListener {
     private final SSE sse;
 
     @MessageListener
-    public MessageResult onTagCreated(MonetaryEvent.TagCreated event) {
+    public MessageResult onTagCreated(TagEvents.Created event) {
         upsert(event.tag());
         return MessageResult.CONSUMED;
     }
 
     @MessageListener
-    public MessageResult onTagUpdated(MonetaryEvent.TagUpdated event) {
+    public MessageResult onTagUpdated(TagEvents.Updated event) {
         upsert(event.tag());
         return MessageResult.CONSUMED;
     }
 
     @MessageListener
-    public MessageResult onTagDeleted(MonetaryEvent.TagDeleted event) {
+    public MessageResult onTagDeleted(TagEvents.Deleted event) {
         delete(event.tagId());
         return MessageResult.CONSUMED;
     }

@@ -3,7 +3,7 @@
  *
  * <p>Contém:
  * <ul>
- *   <li>{@code Account} — DTO de resposta que projeta {@code MonetaryAccount} + saldo calculado</li>
+ *   <li>{@code AccountResponse} — DTO de resposta que projeta {@code Account} + saldo calculado</li>
  *   <li>{@code AccountRequest} — payload de criação/atualização de conta</li>
  *   <li>{@code AccountStreamListener} — ouve eventos SSE do domínio e propaga atualizações ao frontend</li>
  * </ul>

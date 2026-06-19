@@ -6,8 +6,8 @@ import br.commons.pdf.ExtractionFailure;
 import br.commons.pdf.PdfTextExtractor;
 import br.commons.tools.Strings;
 import br.community.context.monetary.MonetaryContext;
-import br.community.context.monetary._0_domain.model.MonetaryAccount;
-import br.community.context.monetary._0_domain.model.MonetaryTransaction;
+import br.community.context.monetary._0_domain.model.Account;
+import br.community.context.monetary._0_domain.model.Transaction;
 import br.community.context.monetary._1_application.command.ImportConfirmCommand;
 import br.community.context.monetary._1_application.command.ImportedTransactionCommand;
 import br.community.context.shared._0_domain.model.DomainError;
@@ -112,11 +112,11 @@ public class StatementImportUseCase {
             val today = LocalDate.now(clock);
             val seen = Collections.unmodifiableList(monetaryContext.listTransactions().getOrElse(List.of()));
             val existingGroups = seen.stream()
-                    .map(MonetaryTransaction::groupId)
+                    .map(Transaction::groupId)
                     .filter(Objects::nonNull)
                     .collect(Collectors.toSet());
 
-            val saved = new ArrayList<MonetaryTransaction>();
+            val saved = new ArrayList<Transaction>();
             val installments = persistInstallments(partitionInstallments(cmd, accountByCard), accountByCard, today, existingGroups, saved);
             val avista = persistAvista(cmd, accountByCard, today, seen, saved);
 
@@ -157,7 +157,7 @@ public class StatementImportUseCase {
      *  against them. */
     private Counts persistInstallments(Map<UUID, List<ImportConfirmCommand.Row>> installmentByGroup,
                                        Map<UUID, UUID> accountByCard, LocalDate today,
-                                       Set<UUID> existingGroups, List<MonetaryTransaction> saved) {
+                                       Set<UUID> existingGroups, List<Transaction> saved) {
         val seenGroups = new HashSet<UUID>();
         int created = 0;
         int skipped = 0;
@@ -184,7 +184,7 @@ public class StatementImportUseCase {
      *  description against {@code seen} (the pre-existing transactions) plus {@code saved} (the rows
      *  persisted earlier in this run, including the parcelado ones). */
     private Counts persistAvista(ImportConfirmCommand cmd, Map<UUID, UUID> accountByCard, LocalDate today,
-                                 List<MonetaryTransaction> seen, List<MonetaryTransaction> saved) {
+                                 List<Transaction> seen, List<Transaction> saved) {
         int created = 0;
         int skipped = 0;
         for (val row : cmd.rows()) {
@@ -249,7 +249,7 @@ public class StatementImportUseCase {
                     case RECONCILE -> {
                         val target = cls.target();
                         if (target != null) {
-                            monetaryContext.updateTransactionStatus(target.id(), MonetaryTransaction.Status.CONFIRMED, row.date());
+                            monetaryContext.updateTransactionStatus(target.id(), Transaction.Status.CONFIRMED, row.date());
                             reconciled++;
                         }
                     }
@@ -266,7 +266,7 @@ public class StatementImportUseCase {
     }
 
     private boolean persistStatementRow(BankStatementConfirmCommand.Row row, UUID accountId, LocalDate today) {
-        val status = YearMonth.from(row.date()).isAfter(YearMonth.from(today)) ? MonetaryTransaction.Status.SCHEDULED : MonetaryTransaction.Status.CONFIRMED;
+        val status = YearMonth.from(row.date()).isAfter(YearMonth.from(today)) ? Transaction.Status.SCHEDULED : Transaction.Status.CONFIRMED;
         val command = new ImportedTransactionCommand(
                 accountId, row.description(), row.amount(), row.date(), row.categoryId(),
                 status, row.type(), null, null, null);
@@ -285,8 +285,8 @@ public class StatementImportUseCase {
     }
 
     private BankStatementPreviewRow bankRow(MonetaryDocumentEntry line, Classification cls,
-                                            List<MonetaryTransaction> history, UUID fallbackCategoryId) {
-        val type = line.amount().signum() < 0 ? MonetaryTransaction.Type.EXPENSE : MonetaryTransaction.Type.INCOME;
+                                            List<Transaction> history, UUID fallbackCategoryId) {
+        val type = line.amount().signum() < 0 ? Transaction.Type.EXPENSE : Transaction.Type.INCOME;
         val categoryId = cls.state() == RowState.NEW
                 ? categoryGuesser.guess(line.description(), history).orElse(fallbackCategoryId)
                 : null;
@@ -301,7 +301,7 @@ public class StatementImportUseCase {
      * pending/scheduled manual transaction with the same signed amount within ±{@value
      * #RECONCILE_WINDOW_DAYS} days (closest date wins) → RECONCILE; otherwise NEW.
      */
-    private List<Classification> classify(List<MonetaryDocumentEntry> movements, List<MonetaryTransaction> accountTx) {
+    private List<Classification> classify(List<MonetaryDocumentEntry> movements, List<Transaction> accountTx) {
         val consumed = new HashSet<UUID>();
         val out = new ArrayList<Classification>();
         for (val mv : movements) {
@@ -336,15 +336,15 @@ public class StatementImportUseCase {
         return out;
     }
 
-    private static boolean isReconcilable(MonetaryTransaction.Status status) {
-        return MonetaryTransaction.Status.PENDING.equals(status) || MonetaryTransaction.Status.SCHEDULED.equals(status);
+    private static boolean isReconcilable(Transaction.Status status) {
+        return Transaction.Status.PENDING.equals(status) || Transaction.Status.SCHEDULED.equals(status);
     }
 
     @NullMarked
-    private record Classification(RowState state, @Nullable MonetaryTransaction target) {
+    private record Classification(RowState state, @Nullable Transaction target) {
     }
 
-    private static boolean isAvistaDuplicate(ImportConfirmCommand.Row row, UUID accountId, List<MonetaryTransaction> seen) {
+    private static boolean isAvistaDuplicate(ImportConfirmCommand.Row row, UUID accountId, List<Transaction> seen) {
         val desc = GroupSignature.normalize(row.description());
         return seen.stream().anyMatch(t ->
                 accountId.equals(t.accountId())
@@ -354,14 +354,14 @@ public class StatementImportUseCase {
     }
 
     @Nullable
-    private MonetaryTransaction persist(ImportConfirmCommand.Row row, UUID accountId, LocalDate today,
+    private Transaction persist(ImportConfirmCommand.Row row, UUID accountId, LocalDate today,
                                         @Nullable UUID groupId, @Nullable Integer installmentNumber,
                                         @Nullable Integer totalInstallments
     ) {
-        val status = YearMonth.from(row.date()).isAfter(YearMonth.from(today)) ? MonetaryTransaction.Status.SCHEDULED : MonetaryTransaction.Status.CONFIRMED;
+        val status = YearMonth.from(row.date()).isAfter(YearMonth.from(today)) ? Transaction.Status.SCHEDULED : Transaction.Status.CONFIRMED;
         val command = new ImportedTransactionCommand(
                 accountId, row.description(), row.amount(), row.date(), row.categoryId(),
-                status, MonetaryTransaction.Type.EXPENSE, groupId, installmentNumber, totalInstallments);
+                status, Transaction.Type.EXPENSE, groupId, installmentNumber, totalInstallments);
         try {
             return switch (monetaryContext.createImportedTransaction(command)) {
                 case Result.Success(var saved) -> saved;
@@ -378,14 +378,14 @@ public class StatementImportUseCase {
 
     private Result<ImportPreviewOutcome, ImportError> preview(Issuer issuer, List<MonetaryDocumentEntry> statement, @Nullable UUID accountId) {
         val candidates = monetaryContext.listAccounts().getOrElse(List.of()).stream()
-                .filter(a -> a.type() != MonetaryAccount.Type.CREDIT_CARD && a.active())
+                .filter(a -> a.type() != Account.Type.CREDIT_CARD && a.active())
                 .toList();
         val selectedAccountId = selectAccount(accountId, candidates);
 
         val history = monetaryContext.listTransactions().getOrElse(List.of());
         val accountTx = selectedAccountId != null
                 ? history.stream().filter(t -> selectedAccountId.equals(t.accountId())).toList()
-                : Collections.unmodifiableList(new ArrayList<MonetaryTransaction>());
+                : Collections.unmodifiableList(new ArrayList<Transaction>());
         val fallbackCategoryId = monetaryContext.findOrCreateUncategorizedCategory().id();
 
         val classes = classify(statement, accountTx);
@@ -403,7 +403,7 @@ public class StatementImportUseCase {
     /**
      * Sem conta escolhida, usa a única candidata elegível (quando há exatamente uma).
      */
-    private static @Nullable UUID selectAccount(@Nullable UUID accountId, List<MonetaryAccount> candidates) {
+    private static @Nullable UUID selectAccount(@Nullable UUID accountId, List<Account> candidates) {
         if (accountId != null) {
             return accountId;
         }
@@ -449,18 +449,18 @@ public class StatementImportUseCase {
     /**
      * Conta de destino dos lançamentos do cartão: a conta vinculada, o próprio cartão, ou sentinela se não casou.
      */
-    private static UUID resolveAccountId(@Nullable MonetaryAccount card) {
+    private static UUID resolveAccountId(@Nullable Account card) {
         if (card == null) {
             return new UUID(0L, 0L);
         }
         return accountIdOf(card);
     }
 
-    private static UUID accountIdOf(MonetaryAccount card) {
+    private static UUID accountIdOf(Account card) {
         return card.linkedAccountId() != null ? card.linkedAccountId() : card.id();
     }
 
-    private boolean isDuplicate(TransactionDraft draft, List<MonetaryTransaction> existing) {
+    private boolean isDuplicate(TransactionDraft draft, List<Transaction> existing) {
         if (draft.groupId() != null) {
             return existing.stream().anyMatch(t -> draft.groupId().equals(t.groupId()));
         }

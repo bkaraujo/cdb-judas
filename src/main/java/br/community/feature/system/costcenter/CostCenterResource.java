@@ -1,6 +1,6 @@
 package br.community.feature.system.costcenter;
 
-import br.community.context.monetary._0_domain.model.MonetaryCenter;
+import br.community.context.monetary._0_domain.model.CostCenter;
 import lombok.RequiredArgsConstructor;
 import org.jspecify.annotations.NullMarked;
 import org.springframework.http.MediaType;
@@ -20,7 +20,7 @@ public class CostCenterResource {
     private final CostCenterCatalog catalog;
 
     @GetMapping
-    public List<MonetaryCenter> list() {
+    public List<CostCenter> list() {
         return catalog.list();
     }
 }

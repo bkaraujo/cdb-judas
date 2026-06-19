@@ -1,7 +1,7 @@
 package br.community.context.monetary;
 
-import br.community.context.monetary._0_domain.model.MonetaryCategory;
-import br.community.context.monetary._0_domain.model.MonetaryTransaction.Type;
+import br.community.context.monetary._0_domain.model.Category;
+import br.community.context.monetary._0_domain.model.Transaction.Type;
 import br.community.context.monetary._1_application.service.CategoryService;
 import org.junit.jupiter.api.Test;
 
@@ -29,7 +29,7 @@ class CategoryServiceTest {
         assertEquals(first.id(), second.id());
         assertEquals(1L, service.findAll().stream()
                 .filter(c -> "Sem categoria".equalsIgnoreCase(c.name()))
-                .map(MonetaryCategory::id)
+                .map(Category::id)
                 .distinct()
                 .count());
     }

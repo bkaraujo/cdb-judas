@@ -1,7 +1,7 @@
 package br.community.feature.user.accounts.transactions.importer;
 
 import br.commons.Result;
-import br.community.context.monetary._0_domain.model.MonetaryAccount;
+import br.community.context.monetary._0_domain.model.Account;
 import br.community.context.monetary._1_application.command.ImportConfirmCommand;
 import br.community.context.shared._0_domain.model.DomainError;
 import br.community.feature.user.accounts.transactions.importer.confirm.BankStatementConfirmCommand;
@@ -138,7 +138,7 @@ public class StatementImportResource {
                 "BANK_STATEMENT", preview.issuer().name(), accounts, preview.selectedAccountId(), rows);
     }
 
-    private static ImportPreviewResponse.CardOption toCardOption(MonetaryAccount card) {
+    private static ImportPreviewResponse.CardOption toCardOption(Account card) {
         val last4 = card.additionalInfo().get("last4");
         return new ImportPreviewResponse.CardOption(
                 card.id(), card.name(), last4 != null ? String.valueOf(last4) : null);

@@ -1,6 +1,6 @@
 package br.community.feature;
 
-import br.community.feature.user.accounts.core.Account;
+import br.community.feature.user.accounts.core.AccountResponse;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.MediaType;
 
@@ -37,7 +37,7 @@ class AccountResourceTest extends BaseHttpTest {
                 .andExpect(jsonPath("$.balance").value(1250.50))
                 .andReturn().getResponse().getContentAsString();
 
-        Account created = objectMapper.readValue(response, Account.class);
+        AccountResponse created = objectMapper.readValue(response, AccountResponse.class);
         UUID id = created.id();
 
         mockMvc.perform(get("/api/{u}/accounts/{id}", TEST_USER_ID, id))
@@ -108,7 +108,7 @@ class AccountResourceTest extends BaseHttpTest {
                 .contentType(MediaType.APPLICATION_JSON).content(checkingJson))
                 .andExpect(status().isCreated())
                 .andReturn().getResponse().getContentAsString();
-        UUID checkingId = objectMapper.readValue(checkingResp, Account.class).id();
+        UUID checkingId = objectMapper.readValue(checkingResp, AccountResponse.class).id();
 
         String cardJson = """
             {
@@ -124,7 +124,7 @@ class AccountResourceTest extends BaseHttpTest {
                 .andExpect(jsonPath("$.linkedAccountId").value(checkingId.toString()))
                 .andExpect(jsonPath("$.additionalInfo.last4").value("1234"))
                 .andReturn().getResponse().getContentAsString();
-        UUID cardId = objectMapper.readValue(cardResp, Account.class).id();
+        UUID cardId = objectMapper.readValue(cardResp, AccountResponse.class).id();
 
         // Listar apenas cartões via filtro de tipo.
         mockMvc.perform(get("/api/{u}/accounts", TEST_USER_ID).param("type", "card"))

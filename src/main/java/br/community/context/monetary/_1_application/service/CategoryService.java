@@ -1,8 +1,8 @@
 package br.community.context.monetary._1_application.service;
 
 import br.commons.Result;
-import br.community.context.monetary._0_domain.model.MonetaryCategory;
-import br.community.context.monetary._0_domain.model.MonetaryTransaction.Type;
+import br.community.context.monetary._0_domain.model.Category;
+import br.community.context.monetary._0_domain.model.Transaction.Type;
 import br.community.context.monetary._0_domain.repository.CategoryRepository;
 import br.community.context.shared._0_domain.model.DomainError;
 import lombok.RequiredArgsConstructor;
@@ -20,13 +20,13 @@ public class CategoryService {
 
     private final CategoryRepository categoryRepository;
 
-    public List<MonetaryCategory> findAll() {
+    public List<Category> findAll() {
         return categoryRepository.findAll();
     }
 
-    public Result<MonetaryCategory, DomainError> findById(UUID id) {
+    public Result<Category, DomainError> findById(UUID id) {
         return categoryRepository.findById(id)
-                .<Result<MonetaryCategory, DomainError>>map(Result::success)
+                .<Result<Category, DomainError>>map(Result::success)
                 .orElseGet(() -> Result.failure(new DomainError.NotFound("Category not found: " + id)));
     }
 
@@ -40,12 +40,12 @@ public class CategoryService {
         });
     }
 
-    public MonetaryCategory save(UUID id, Type nature, String name, @Nullable UUID parentId) {
+    public Category save(UUID id, Type nature, String name, @Nullable UUID parentId) {
         return save(id, nature, name, parentId, false);
     }
 
-    public MonetaryCategory save(UUID id, Type nature, String name, @Nullable UUID parentId, boolean isSystem) {
-        return categoryRepository.save(new MonetaryCategory(id, nature, name, parentId, isSystem));
+    public Category save(UUID id, Type nature, String name, @Nullable UUID parentId, boolean isSystem) {
+        return categoryRepository.save(new Category(id, nature, name, parentId, isSystem));
     }
 
     public Result<Void, DomainError> deleteById(UUID id) {
@@ -83,29 +83,29 @@ public class CategoryService {
         return Result.success();
     }
 
-    public MonetaryCategory findOrCreateOthersCategory(Type nature) {
+    public Category findOrCreateOthersCategory(Type nature) {
         return categoryRepository.findAll().stream()
                 .filter(c -> "Outros".equalsIgnoreCase(c.name()) && c.nature() == nature && c.parentId() == null)
                 .findFirst()
-                .orElseGet(() -> categoryRepository.save(new MonetaryCategory(UUID.randomUUID(), nature, "Outros", null)));
+                .orElseGet(() -> categoryRepository.save(new Category(UUID.randomUUID(), nature, "Outros", null)));
     }
 
-    public MonetaryCategory findOrCreateUncategorizedCategory() {
+    public Category findOrCreateUncategorizedCategory() {
         return categoryRepository.findAll().stream()
                 .filter(c -> "Sem categoria".equalsIgnoreCase(c.name()) && c.nature() == Type.EXPENSE && c.parentId() == null)
                 .findFirst()
-                .orElseGet(() -> categoryRepository.save(new MonetaryCategory(UUID.randomUUID(), Type.EXPENSE, "Sem categoria", null, true)));
+                .orElseGet(() -> categoryRepository.save(new Category(UUID.randomUUID(), Type.EXPENSE, "Sem categoria", null, true)));
     }
 
-    public MonetaryCategory findOrCreateTransferCategory() {
+    public Category findOrCreateTransferCategory() {
         val others = categoryRepository.findAll().stream()
                 .filter(c -> "Outros".equalsIgnoreCase(c.name()) && c.nature() == Type.EXPENSE && c.parentId() == null)
                 .findFirst()
-                .orElseGet(() -> categoryRepository.save(new MonetaryCategory(UUID.randomUUID(), Type.EXPENSE, "Outros", null, true)));
+                .orElseGet(() -> categoryRepository.save(new Category(UUID.randomUUID(), Type.EXPENSE, "Outros", null, true)));
 
         return categoryRepository.findAll().stream()
                 .filter(c -> "Transferência".equalsIgnoreCase(c.name()) && others.id().equals(c.parentId()))
                 .findFirst()
-                .orElseGet(() -> categoryRepository.save(new MonetaryCategory(UUID.randomUUID(), Type.EXPENSE, "Transferência", others.id(), true)));
+                .orElseGet(() -> categoryRepository.save(new Category(UUID.randomUUID(), Type.EXPENSE, "Transferência", others.id(), true)));
     }
 }

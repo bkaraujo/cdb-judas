@@ -1,6 +1,6 @@
 package br.community.feature.user.accounts.transactions.importer.preview;
 
-import br.community.context.monetary._0_domain.model.MonetaryTransaction;
+import br.community.context.monetary._0_domain.model.Transaction;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 
@@ -33,7 +33,7 @@ public record ImportPreviewResponse(
             BigDecimal amount,
             @Nullable Integer installmentNumber,
             @Nullable Integer installmentTotal,
-            MonetaryTransaction.Status status,
+            Transaction.Status status,
             boolean duplicate,
             @Nullable UUID categoryId,
             @Nullable UUID suggestedCardId) {}

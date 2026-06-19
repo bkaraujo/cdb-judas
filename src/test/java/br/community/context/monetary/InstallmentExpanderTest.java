@@ -1,6 +1,6 @@
 package br.community.context.monetary;
 
-import br.community.context.monetary._0_domain.model.MonetaryTransaction;
+import br.community.context.monetary._0_domain.model.Transaction;
 import br.community.feature.user.accounts.statement.MonetaryDocumentEntry;
 import br.community.feature.user.accounts.transactions.core.ChargeKind;
 import br.community.feature.user.accounts.transactions.importer.GroupSignature;
@@ -39,13 +39,13 @@ class InstallmentExpanderTest {
 
         assertEquals(1, drafts.size());
         TransactionDraft d = drafts.getFirst();
-        assertEquals(MonetaryTransaction.Type.EXPENSE, d.type());
+        assertEquals(Transaction.Type.EXPENSE, d.type());
         assertNull(d.installmentNumber());
         assertNull(d.installmentTotal());
         assertNull(d.groupId());
         assertEquals(LocalDate.of(2025, 3, 9), d.date());
         assertEquals(d.originalDate(), d.date(), "à-vista date equals its original date");
-        assertEquals(MonetaryTransaction.Status.CONFIRMED, d.status());
+        assertEquals(Transaction.Status.CONFIRMED, d.status());
     }
 
     @Test
@@ -63,7 +63,7 @@ class InstallmentExpanderTest {
             assertEquals(10, d.installmentTotal());
             assertEquals(originalDate.plusMonths(k - 1L), d.date(), "installment k dated originalDate + (k-1) months");
             assertEquals(originalDate, d.originalDate());
-            assertEquals(MonetaryTransaction.Type.EXPENSE, d.type());
+            assertEquals(Transaction.Type.EXPENSE, d.type());
         }
         Set<UUID> groupIds = drafts.stream().map(TransactionDraft::groupId).collect(Collectors.toSet());
         assertEquals(1, groupIds.size(), "all installments share one group id");
@@ -77,10 +77,10 @@ class InstallmentExpanderTest {
                 parcelado(MonthDay.of(6, 15), new BigDecimal("100.00"), "Curso", 1, 4), accountId, today);
 
         assertEquals(4, drafts.size());
-        assertEquals(MonetaryTransaction.Status.CONFIRMED, drafts.get(0).status(), "Jun 2025 < today month → confirmed");
-        assertEquals(MonetaryTransaction.Status.CONFIRMED, drafts.get(1).status(), "Jul 2025 == today month → confirmed");
-        assertEquals(MonetaryTransaction.Status.SCHEDULED, drafts.get(2).status(), "Aug 2025 > today month → scheduled");
-        assertEquals(MonetaryTransaction.Status.SCHEDULED, drafts.get(3).status(), "Sep 2025 > today month → scheduled");
+        assertEquals(Transaction.Status.CONFIRMED, drafts.get(0).status(), "Jun 2025 < today month → confirmed");
+        assertEquals(Transaction.Status.CONFIRMED, drafts.get(1).status(), "Jul 2025 == today month → confirmed");
+        assertEquals(Transaction.Status.SCHEDULED, drafts.get(2).status(), "Aug 2025 > today month → scheduled");
+        assertEquals(Transaction.Status.SCHEDULED, drafts.get(3).status(), "Sep 2025 > today month → scheduled");
     }
 
     @Test

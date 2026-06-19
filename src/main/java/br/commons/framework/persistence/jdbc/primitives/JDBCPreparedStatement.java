@@ -3,6 +3,7 @@ package br.commons.framework.persistence.jdbc.primitives;
 import br.commons.Result;
 import br.commons.tools.Strings;
 import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
 
 import java.io.InputStream;
 import java.io.Reader;
@@ -116,7 +117,7 @@ public record JDBCPreparedStatement(
         catch (SQLException ex) { return Result.failure(Strings.orEmpty(ex.getMessage())); }
     }
 
-    public Result<Void, String> setObject(int parameterIndex, Object x) {
+    public Result<Void, String> setObject(int parameterIndex, @Nullable Object x) {
         try { delegate.setObject(parameterIndex, x); return Result.success(); }
         catch (SQLException ex) { return Result.failure(Strings.orEmpty(ex.getMessage())); }
     }

@@ -1,7 +1,7 @@
 package br.community.feature.user.accounts.transactions.importer;
 
 import br.commons.tools.Strings;
-import br.community.context.monetary._0_domain.model.MonetaryAccount;
+import br.community.context.monetary._0_domain.model.Account;
 import lombok.val;
 import org.jspecify.annotations.NullMarked;
 
@@ -19,7 +19,7 @@ import java.util.Map;
 @NullMarked
 public class CardMatcher {
 
-    public CardMatch match(Collection<String> last4s, List<MonetaryAccount> cards) {
+    public CardMatch match(Collection<String> last4s, List<Account> cards) {
         val matching = cards.stream()
                 .filter(card -> last4s
                         .contains((String) card.additionalInfo().getOrDefault("last4", Strings.EMPTY))
@@ -39,8 +39,8 @@ public class CardMatcher {
      * when exactly one registered card carries that last4 — a last4 matched by zero or several cards is
      * left absent (the user picks manually). Cards without a last4 are skipped.
      */
-    public Map<String, MonetaryAccount> matchByLast4(Collection<String> last4s, List<MonetaryAccount> cards) {
-        val byLast4 = new HashMap<String, MonetaryAccount>();
+    public Map<String, Account> matchByLast4(Collection<String> last4s, List<Account> cards) {
+        val byLast4 = new HashMap<String, Account>();
         for (val last4 : last4s) {
             val matching = cards.stream()
                     .filter(card -> last4.equals(card.additionalInfo().getOrDefault("last4", Strings.EMPTY)))

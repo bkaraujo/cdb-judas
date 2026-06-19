@@ -1,7 +1,7 @@
 package br.community.feature.user.profile;
 
-import br.community.context.security._0_domain.model.Preferences;
-import br.community.context.security._0_domain.model.User;
+import br.community.core.web.security.Preferences;
+import br.community.core.web.security.User;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 

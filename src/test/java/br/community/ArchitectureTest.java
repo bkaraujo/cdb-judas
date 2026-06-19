@@ -55,6 +55,12 @@ class ArchitectureTest {
                     .should().accessClassesThat(contextClassNotExposedViaFacade())
                     .because("feature deve acessar context exclusivamente via Facade, modelos de domínio (_0_domain.model) ou eventos de domínio (_0_domain.event)");
 
+    @ArchTest
+    static final ArchRule context_must_not_depend_on_spring =
+            noClasses().that().resideInAPackage("..context..")
+                    .should().dependOnClassesThat().resideInAPackage("org.springframework..")
+                    .because("o contexto é livre de framework: a injeção é via Registry e o Spring fica na borda (feature/core)");
+
     private static DescribedPredicate<JavaClass> contextClassNotExposedViaFacade() {
         return resideInAPackage("..context..")
                 .and(not(resideInAPackage("..context..shared..")))

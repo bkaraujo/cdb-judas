@@ -1,6 +1,6 @@
 package br.community.feature.user.accounts.transactions;
 
-import br.community.context.monetary._0_domain.model.MonetaryTransaction;
+import br.community.context.monetary._0_domain.model.Transaction;
 import br.community.core.TwoDecimalPlaces;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
@@ -21,8 +21,8 @@ public record TransactionRequest(
         @NotNull UUID categoryId,
         @Nullable UUID accountId,
         @NotNull UUID costCenterId,
-        @NotNull MonetaryTransaction.Status status,
-        @NotNull MonetaryTransaction.Type type,
+        @NotNull Transaction.Status status,
+        @NotNull Transaction.Type type,
         @Nullable @Min(1) Integer installments,
         @Nullable String editMode,
         @Nullable String deleteMode,

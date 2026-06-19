@@ -1,7 +1,7 @@
 package br.community.feature;
 
-import br.community.context.monetary._0_domain.model.MonetaryTransaction.Type;
-import br.community.feature.user.categories.core.Category;
+import br.community.context.monetary._0_domain.model.Transaction.Type;
+import br.community.feature.user.categories.core.CategoryResponse;
 import lombok.val;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.MediaType;
@@ -31,7 +31,7 @@ class CategoryResourceTest extends BaseHttpTest {
                 .andExpect(jsonPath("$.nature").value(Type.EXPENSE.name()));
 
         val responseBody = createResult.andReturn().getResponse().getContentAsString();
-        val created = objectMapper.readValue(responseBody, Category.class);
+        val created = objectMapper.readValue(responseBody, CategoryResponse.class);
         val id = created.id();
 
         mockMvc.perform(get("/api/" + TEST_USER_ID + "/categories"))
@@ -129,7 +129,7 @@ class CategoryResourceTest extends BaseHttpTest {
                 .andExpect(jsonPath("$.length()").value(1));
 
         val moradiaResponseBody = createResult.andReturn().getResponse().getContentAsString();
-        val moradiaCreated = objectMapper.readValue(moradiaResponseBody, Category.class);
+        val moradiaCreated = objectMapper.readValue(moradiaResponseBody, CategoryResponse.class);
         val moradiaId = moradiaCreated.id();
 
         val aluguelJson = """

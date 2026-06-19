@@ -1,6 +1,6 @@
 package br.community.feature.user.accounts.transactions.importer.preview;
 
-import br.community.context.monetary._0_domain.model.MonetaryAccount;
+import br.community.context.monetary._0_domain.model.Account;
 import br.community.feature.user.accounts.statement.Issuer;
 import br.community.feature.user.accounts.transactions.importer.RowState;
 import org.jspecify.annotations.NullMarked;
@@ -18,6 +18,6 @@ import java.util.UUID;
 @NullMarked
 public record BankStatementPreview(
         Issuer issuer,
-        List<MonetaryAccount> candidateAccounts,
+        List<Account> candidateAccounts,
         @Nullable UUID selectedAccountId,
         List<BankStatementPreviewRow> rows) {}

@@ -3,8 +3,9 @@ package br.community.context.monetary._1_application.event;
 import br.commons.Logger;
 import br.commons.framework.message.MessageListener;
 import br.commons.framework.message.MessageResult;
-import br.community.context.monetary._0_domain.event.MonetaryEvent;
-import br.community.context.monetary._0_domain.model.MonetaryBalance;
+import br.community.context.monetary._0_domain.event.AccountEvents;
+import br.community.context.monetary._0_domain.event.TransactionEvents;
+import br.community.context.monetary._0_domain.model.Balance;
 import br.community.context.monetary._0_domain.model.MonthlyBalance;
 import br.community.context.monetary._1_application.service.AccountService;
 import br.community.context.monetary._1_application.service.BalanceService;
@@ -29,25 +30,25 @@ public class TransactionEventListener {
     private final TransactionService transactionService;
 
     @MessageListener
-    public MessageResult onTransaction(MonetaryEvent.TransactionCreated transaction) {
+    public MessageResult onTransaction(TransactionEvents.Created transaction) {
         triggerRecalculate(transaction.transaction().accountId());
         return MessageResult.CONSUMED;
     }
 
     @MessageListener
-    public MessageResult onTransaction(MonetaryEvent.TransactionUpdated transaction) {
+    public MessageResult onTransaction(TransactionEvents.Updated transaction) {
         triggerRecalculate(transaction.transaction().accountId());
         return MessageResult.CONSUMED;
     }
 
     @MessageListener
-    public MessageResult onTransaction(MonetaryEvent.TransactionDeleted transaction) {
+    public MessageResult onTransaction(TransactionEvents.Deleted transaction) {
         triggerRecalculate(transaction.transaction().accountId());
         return MessageResult.CONSUMED;
     }
 
     @MessageListener
-    public MessageResult onAccountDeleted(MonetaryEvent.AccountDeleted event) {
+    public MessageResult onAccountDeleted(AccountEvents.Deleted event) {
         val accountId = event.accountId();
 
         transactionService.findByAccount(accountId)
@@ -69,13 +70,13 @@ public class TransactionEventListener {
         val account = accountResult.getOrThrow();
         val initialBalance = account.balance();
         val transactions = transactionService.findByAccount(accountId).stream()
-                .map(t -> new MonetaryBalance(t.date(), t.amount()))
+                .map(t -> new Balance(t.date(), t.amount()))
                 .toList();
 
         recalculateBalance(accountId, initialBalance, transactions);
     }
 
-    private void recalculateBalance(UUID accountId, BigDecimal initialBalance, List<MonetaryBalance> transactions) {
+    private void recalculateBalance(UUID accountId, BigDecimal initialBalance, List<Balance> transactions) {
         val existingBalances = balanceService.findByAccount(accountId);
 
         if (transactions.isEmpty()) {
@@ -114,7 +115,7 @@ public class TransactionEventListener {
             val finalCurrent = current;
             val monthSum = transactions.stream()
                     .filter(t -> YearMonth.from(t.date()).equals(finalCurrent))
-                    .map(MonetaryBalance::amount)
+                    .map(Balance::amount)
                     .reduce(BigDecimal.ZERO, BigDecimal::add);
 
             runningBalance = runningBalance.add(monthSum);

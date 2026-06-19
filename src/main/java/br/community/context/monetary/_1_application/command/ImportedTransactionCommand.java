@@ -1,6 +1,6 @@
 package br.community.context.monetary._1_application.command;
 
-import br.community.context.monetary._0_domain.model.MonetaryTransaction;
+import br.community.context.monetary._0_domain.model.Transaction;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 
@@ -22,8 +22,8 @@ public record ImportedTransactionCommand(
         BigDecimal amount,
         LocalDate date,
         UUID categoryId,
-        MonetaryTransaction.Status status,
-        MonetaryTransaction.Type type,
+        Transaction.Status status,
+        Transaction.Type type,
         @Nullable UUID groupId,
         @Nullable Integer installmentNumber,
         @Nullable Integer totalInstallments) {}

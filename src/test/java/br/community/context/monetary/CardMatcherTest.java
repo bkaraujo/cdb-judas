@@ -1,6 +1,6 @@
 package br.community.context.monetary;
 
-import br.community.context.monetary._0_domain.model.MonetaryAccount;
+import br.community.context.monetary._0_domain.model.Account;
 import br.community.feature.user.accounts.transactions.importer.CardMatch;
 import br.community.feature.user.accounts.transactions.importer.CardMatcher;
 import org.junit.jupiter.api.Test;
@@ -17,13 +17,13 @@ class CardMatcherTest {
 
     private final CardMatcher matcher = new CardMatcher();
 
-    private static MonetaryAccount card(String name, Map<String, Object> additionalInfo) {
-        return new MonetaryAccount(
-                UUID.randomUUID(), name, BigDecimal.ZERO, MonetaryAccount.Type.CREDIT_CARD,
+    private static Account card(String name, Map<String, Object> additionalInfo) {
+        return new Account(
+                UUID.randomUUID(), name, BigDecimal.ZERO, Account.Type.CREDIT_CARD,
                 "#000", true, null, additionalInfo);
     }
 
-    private static MonetaryAccount cardWithLast4(String name, String last4) {
+    private static Account cardWithLast4(String name, String last4) {
         return card(name, Map.of("last4", last4));
     }
 

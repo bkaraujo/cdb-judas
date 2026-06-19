@@ -4,9 +4,10 @@ import br.commons.Result;
 import br.commons.framework.message.MessageListener;
 import br.commons.framework.message.MessageResult;
 import br.community.context.monetary.MonetaryContext;
-import br.community.context.monetary._0_domain.event.MonetaryEvent;
-import br.community.context.monetary._0_domain.model.MonetaryAccount;
-import br.community.context.monetary._0_domain.model.MonetaryTransaction;
+import br.community.context.monetary._0_domain.event.AccountEvents;
+import br.community.context.monetary._0_domain.event.TransactionEvents;
+import br.community.context.monetary._0_domain.model.Account;
+import br.community.context.monetary._0_domain.model.Transaction;
 import br.community.core.web.security.CurrentUser;
 import br.community.feature.user.stream.SSE;
 import lombok.RequiredArgsConstructor;
@@ -33,37 +34,37 @@ public class AccountStreamListener {
     private final MonetaryContext monetaryContext;
 
     @MessageListener
-    public MessageResult onAccountCreated(MonetaryEvent.AccountCreated event) {
+    public MessageResult onAccountCreated(AccountEvents.Created event) {
         upsert(event.account());
         return MessageResult.CONSUMED;
     }
 
     @MessageListener
-    public MessageResult onAccountUpdated(MonetaryEvent.AccountUpdated event) {
+    public MessageResult onAccountUpdated(AccountEvents.Updated event) {
         upsert(event.account());
         return MessageResult.CONSUMED;
     }
 
     @MessageListener
-    public MessageResult onAccountDeleted(MonetaryEvent.AccountDeleted event) {
+    public MessageResult onAccountDeleted(AccountEvents.Deleted event) {
         delete(event.accountId());
         return MessageResult.CONSUMED;
     }
 
     @MessageListener
-    public MessageResult onTransactionCreated(MonetaryEvent.TransactionCreated event) {
+    public MessageResult onTransactionCreated(TransactionEvents.Created event) {
         refreshAccount(event.transaction().accountId());
         return MessageResult.CONSUMED;
     }
 
     @MessageListener
-    public MessageResult onTransactionUpdated(MonetaryEvent.TransactionUpdated event) {
+    public MessageResult onTransactionUpdated(TransactionEvents.Updated event) {
         refreshAccount(event.transaction().accountId());
         return MessageResult.CONSUMED;
     }
 
     @MessageListener
-    public MessageResult onTransactionDeleted(MonetaryEvent.TransactionDeleted event) {
+    public MessageResult onTransactionDeleted(TransactionEvents.Deleted event) {
         refreshAccount(event.transaction().accountId());
         return MessageResult.CONSUMED;
     }
@@ -76,9 +77,9 @@ public class AccountStreamListener {
     }
 
     @SuppressWarnings("EmptyCatch")
-    private void upsert(MonetaryAccount account) {
+    private void upsert(Account account) {
         try {
-            val dto = Account.from(account, allTransactions());
+            val dto = AccountResponse.from(account, allTransactions());
             sse.dispatch(CurrentUser.getId(), SSE.Event.UPSERT, Map.of("type", TYPE, "payload", dto));
         } catch (Exception ignored) {}
     }
@@ -90,7 +91,7 @@ public class AccountStreamListener {
         } catch (Exception ignored) {}
     }
 
-    private List<MonetaryTransaction> allTransactions() {
+    private List<Transaction> allTransactions() {
         return monetaryContext.listTransactions().getOrElse(List.of());
     }
 }

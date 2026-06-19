@@ -1,9 +1,11 @@
 package br.community.feature;
 
 import br.commons.framework.persistence.Storage;
+import br.commons.framework.persistence.jdbc.DataSource;
 import br.commons.framework.persistence.json.Repository;
 import br.community.core.JsonStorageProperties;
 import br.community.core.web.security.AuthenticatedUser;
+import br.community.infra.persistence.Database;
 import lombok.val;
 import org.junit.jupiter.api.BeforeEach;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -45,6 +47,9 @@ abstract class BaseHttpTest {
     @Autowired
     protected List<Repository<?, ?>> repositories;
 
+    @Autowired
+    protected DataSource dataSource;
+
     @BeforeEach
     void setUpBase() throws IOException {
         this.mockMvc = MockMvcBuilders.webAppContextSetup(this.context).build();
@@ -65,6 +70,13 @@ abstract class BaseHttpTest {
 
         // Clear repository caches
         repositories.forEach(Repository::clearCache);
+
+        // Reset relational tables — H2 in-memory é compartilhado entre métodos de teste
+        val conn = dataSource.getConnection().getOrThrow();
+        val stmt = conn.createStatement().getOrThrow();
+        for (val sql : Database.reset()) stmt.execute(sql);
+        stmt.close();
+        conn.close();
     }
 
 }

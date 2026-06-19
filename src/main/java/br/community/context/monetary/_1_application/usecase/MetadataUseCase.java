@@ -2,15 +2,19 @@ package br.community.context.monetary._1_application.usecase;
 
 import br.commons.MessageBus;
 import br.commons.Result;
-import br.community.context.monetary._0_domain.event.MonetaryEvent;
-import br.community.context.monetary._0_domain.model.MonetaryCategory;
-import br.community.context.monetary._0_domain.model.MonetaryCenter;
-import br.community.context.monetary._0_domain.model.MonetaryTransaction;
+import br.community.context.monetary._0_domain.event.CategoryEvents;
+import br.community.context.monetary._0_domain.event.TagEvents;
+import br.community.context.monetary._0_domain.model.Category;
+import br.community.context.monetary._0_domain.model.CostCenter;
 import br.community.context.monetary._0_domain.model.Tag;
+import br.community.context.monetary._0_domain.model.Transaction;
 import br.community.context.monetary._1_application.command.CategoryCommand;
 import br.community.context.monetary._1_application.command.CostCenterCommand;
 import br.community.context.monetary._1_application.command.TagCommand;
-import br.community.context.monetary._1_application.service.*;
+import br.community.context.monetary._1_application.service.CategoryService;
+import br.community.context.monetary._1_application.service.CostCenterService;
+import br.community.context.monetary._1_application.service.TagService;
+import br.community.context.monetary._1_application.service.TransactionService;
 import br.community.context.shared._0_domain.model.DomainError;
 import lombok.RequiredArgsConstructor;
 import lombok.val;
@@ -28,19 +32,19 @@ public class MetadataUseCase {
     private final CostCenterService costCenterService;
     private final TransactionService transactionService;
 
-    public Result<List<MonetaryCategory>, DomainError> listCategories() {
+    public Result<List<Category>, DomainError> listCategories() {
         return Result.success(categoryService.findAll());
     }
 
-    public Result<MonetaryCategory, DomainError> findCategoryById(UUID id) {
+    public Result<Category, DomainError> findCategoryById(UUID id) {
         return categoryService.findById(id);
     }
 
-    public MonetaryCategory findOrCreateUncategorizedCategory() {
+    public Category findOrCreateUncategorizedCategory() {
         return categoryService.findOrCreateUncategorizedCategory();
     }
 
-    public Result<MonetaryCategory, DomainError> createCategory(CategoryCommand cmd) {
+    public Result<Category, DomainError> createCategory(CategoryCommand cmd) {
         if (cmd.parentId() != null) {
             val validation = categoryService.validateParent(cmd.parentId(), cmd.nature());
             if (validation instanceof Result.Failure<Void, DomainError>(var error)) return Result.failure(error);
@@ -50,27 +54,27 @@ public class MetadataUseCase {
         if (nameConflict instanceof Result.Failure<Void, DomainError>(var error)) return Result.failure(error);
 
         val created = categoryService.save(UUID.randomUUID(), cmd.nature(), cmd.name(), cmd.parentId());
-        MessageBus.submit(new MonetaryEvent.CategoryCreated(created));
+        MessageBus.submit(new CategoryEvents.Created(created));
         return Result.success(created);
     }
 
-    public Result<MonetaryCategory, DomainError> updateCategory(UUID id, CategoryCommand cmd) {
+    public Result<Category, DomainError> updateCategory(UUID id, CategoryCommand cmd) {
         return categoryService.findById(id)
                 .flatMap(existing -> {
                     if (existing.isSystem()) {
-                        return Result.<MonetaryCategory>failure(new DomainError.BusinessRule("Categoria de sistema não pode ser modificada"));
+                        return Result.<Category>failure(new DomainError.BusinessRule("Categoria de sistema não pode ser modificada"));
                     }
                     if (cmd.parentId() != null) {
                         val validation = categoryService.validateParent(cmd.parentId(), existing.nature());
-                        if (validation instanceof Result.Failure<Void, DomainError>(var error)) return Result.<MonetaryCategory>failure(error);
+                        if (validation instanceof Result.Failure<Void, DomainError>(var error)) return Result.<Category>failure(error);
                     }
 
                     val nameConflict = categoryService.validateUniqueName(cmd.name(), cmd.parentId(), id);
-                    if (nameConflict instanceof Result.Failure<Void, DomainError>(var error)) return Result.<MonetaryCategory>failure(error);
+                    if (nameConflict instanceof Result.Failure<Void, DomainError>(var error)) return Result.<Category>failure(error);
 
                     val updated = categoryService.save(id, existing.nature(), cmd.name(), cmd.parentId(), existing.isSystem());
-                    MessageBus.submit(new MonetaryEvent.CategoryUpdated(updated));
-                    return Result.<MonetaryCategory, DomainError>success(updated);
+                    MessageBus.submit(new CategoryEvents.Updated(updated));
+                    return Result.<Category, DomainError>success(updated);
                 });
     }
 
@@ -85,20 +89,20 @@ public class MetadataUseCase {
         val nature = root.get().nature();
         val others = categoryService.findOrCreateOthersCategory(nature);
         if (!others.id().equals(id)) {
-            MessageBus.submit(new MonetaryEvent.CategoryUpdated(others));
+            MessageBus.submit(new CategoryEvents.Updated(others));
         }
 
         deleteRecursive(id, others.id(), all);
         return Result.success();
     }
 
-    private void deleteRecursive(UUID id, UUID othersId, List<MonetaryCategory> all) {
+    private void deleteRecursive(UUID id, UUID othersId, List<Category> all) {
         if (id.equals(othersId)) return;
 
         transactionService.findAll().stream()
                 .filter(t -> id.equals(t.categoryId()))
                 .forEach(t -> {
-                    val updated = new MonetaryTransaction(
+                    val updated = new Transaction(
                             t.id(), t.description(), t.amount(), t.date(),
                             othersId, t.accountId(), t.status(), t.type(), t.costCenterId(), t.paymentDate(),
                             t.groupId(), t.installmentNumber(), t.totalInstallments(), t.notes()
@@ -111,19 +115,19 @@ public class MetadataUseCase {
                 .forEach(c -> deleteRecursive(c.id(), othersId, all));
 
         categoryService.deleteById(id);
-        MessageBus.submit(new MonetaryEvent.CategoryDeleted(id));
+        MessageBus.submit(new CategoryEvents.Deleted(id));
     }
 
-    public Result<List<MonetaryCenter>, DomainError> listCostCenters() {
+    public Result<List<CostCenter>, DomainError> listCostCenters() {
         return Result.success(costCenterService.findAll());
     }
 
-    public Result<MonetaryCenter, DomainError> createCostCenter(CostCenterCommand cmd) {
+    public Result<CostCenter, DomainError> createCostCenter(CostCenterCommand cmd) {
         val created = costCenterService.save(UUID.randomUUID(), cmd.description());
         return Result.success(created);
     }
 
-    public Result<MonetaryCenter, DomainError> updateCostCenter(UUID id, CostCenterCommand cmd) {
+    public Result<CostCenter, DomainError> updateCostCenter(UUID id, CostCenterCommand cmd) {
         val updated = costCenterService.save(id, cmd.description());
         return Result.success(updated);
     }
@@ -139,7 +143,7 @@ public class MetadataUseCase {
 
     public Result<Tag, DomainError> createTag(TagCommand cmd) {
         val created = tagService.save(UUID.randomUUID(), cmd.name(), cmd.color());
-        MessageBus.submit(new MonetaryEvent.TagCreated(created));
+        MessageBus.submit(new TagEvents.Created(created));
         return Result.success(created);
     }
 
@@ -147,13 +151,13 @@ public class MetadataUseCase {
         return tagService.findById(id)
                 .map(existing -> {
                     val updated = tagService.save(id, cmd.name(), cmd.color());
-                    MessageBus.submit(new MonetaryEvent.TagUpdated(updated));
+                    MessageBus.submit(new TagEvents.Updated(updated));
                     return updated;
                 });
     }
 
     public Result<Void, DomainError> deleteTag(UUID id) {
         return tagService.deleteById(id)
-                .ifSuccess(ignored -> MessageBus.submit(new MonetaryEvent.TagDeleted(id)));
+                .ifSuccess(ignored -> MessageBus.submit(new TagEvents.Deleted(id)));
     }
 }

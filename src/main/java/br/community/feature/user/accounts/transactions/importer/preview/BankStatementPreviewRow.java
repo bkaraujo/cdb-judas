@@ -1,6 +1,6 @@
 package br.community.feature.user.accounts.transactions.importer.preview;
 
-import br.community.context.monetary._0_domain.model.MonetaryTransaction;
+import br.community.context.monetary._0_domain.model.Transaction;
 import br.community.feature.user.accounts.transactions.importer.RowState;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
@@ -22,7 +22,7 @@ public record BankStatementPreviewRow(
         LocalDate date,
         String description,
         BigDecimal amount,
-        MonetaryTransaction.Type type,
+        Transaction.Type type,
         RowState state,
         @Nullable UUID categoryId,
         @Nullable String reconcileDescription) {}
