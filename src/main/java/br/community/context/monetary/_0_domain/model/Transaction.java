@@ -5,6 +5,7 @@ import org.jspecify.annotations.Nullable;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.UUID;
 
 @NullMarked
@@ -22,7 +23,9 @@ public record Transaction(
         @Nullable UUID groupId,
         int installmentNumber,
         int totalInstallments,
-        @Nullable String notes
+        @Nullable String notes,
+        @Nullable LocalDateTime createdAt,
+        @Nullable LocalDateTime updatedAt
 ) {
     /**
      * Natureza de um {@link Transaction}
@@ -45,5 +48,13 @@ public record Transaction(
      */
     public enum Status {
         SCHEDULED, CONFIRMED, PENDING
+    }
+
+    public Transaction(UUID id, String description, BigDecimal amount, LocalDate date,
+            UUID categoryId, UUID accountId, Status status, Type type,
+            UUID costCenterId, @Nullable LocalDate paymentDate, @Nullable UUID groupId,
+            int installmentNumber, int totalInstallments, @Nullable String notes) {
+        this(id, description, amount, date, categoryId, accountId, status, type,
+                costCenterId, paymentDate, groupId, installmentNumber, totalInstallments, notes, null, null);
     }
 }

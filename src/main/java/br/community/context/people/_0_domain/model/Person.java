@@ -1,7 +1,9 @@
 package br.community.context.people._0_domain.model;
 
 import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
 
+import java.time.LocalDateTime;
 import java.util.UUID;
 
 /**
@@ -14,5 +16,11 @@ public record Person(
         UUID id,
         String name,
         String locale,
-        String language
-) {}
+        String language,
+        @Nullable LocalDateTime createdAt,
+        @Nullable LocalDateTime updatedAt
+) {
+    public Person(UUID id, String name, String locale, String language) {
+        this(id, name, locale, language, null, null);
+    }
+}

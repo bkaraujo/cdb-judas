@@ -7,7 +7,10 @@ import br.community.context.people._0_domain.model.Person;
 import br.community.context.people._0_domain.repository.PersonRepository;
 import lombok.val;
 import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
 
+import java.sql.Timestamp;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -17,7 +20,7 @@ import java.util.UUID;
 @NullMarked
 public final class PersonJDBCRepository implements PersonRepository {
 
-    private static final String COLUMNS = "ID, TXT_NAME, TXT_LOCALE, TXT_LANGUAGE";
+    private static final String COLUMNS = "ID, TXT_NAME, TXT_LOCALE, TXT_LANGUAGE, TMS_CREATE_AT, TMS_UPDATED_AT";
 
     private final DataSource dataSource;
 
@@ -44,21 +47,26 @@ public final class PersonJDBCRepository implements PersonRepository {
         val existing = findById(entity.id());
         if (existing.isPresent() && existing.get().equals(entity)) return entity;
 
+        val now = Timestamp.valueOf(LocalDateTime.now());
+
         if (existing.isEmpty()) {
             dataSource.execute(
-                    "INSERT INTO PEP_PERSON (" + COLUMNS + ") VALUES (?, ?, ?, ?)",
+                    "INSERT INTO PEP_PERSON (" + COLUMNS + ") VALUES (?, ?, ?, ?, ?, ?)",
                     new JDBCPreparedParameter(1, entity.id().toString()),
                     new JDBCPreparedParameter(2, entity.name()),
                     new JDBCPreparedParameter(3, entity.locale()),
-                    new JDBCPreparedParameter(4, entity.language())
+                    new JDBCPreparedParameter(4, entity.language()),
+                    new JDBCPreparedParameter(5, now),
+                    new JDBCPreparedParameter(6, now)
             ).getOrThrow();
         } else {
             dataSource.execute(
-                    "UPDATE PEP_PERSON SET TXT_NAME = ?, TXT_LOCALE = ?, TXT_LANGUAGE = ? WHERE ID = ?",
+                    "UPDATE PEP_PERSON SET TXT_NAME = ?, TXT_LOCALE = ?, TXT_LANGUAGE = ?, TMS_UPDATED_AT = ? WHERE ID = ?",
                     new JDBCPreparedParameter(1, entity.name()),
                     new JDBCPreparedParameter(2, entity.locale()),
                     new JDBCPreparedParameter(3, entity.language()),
-                    new JDBCPreparedParameter(4, entity.id().toString())
+                    new JDBCPreparedParameter(4, now),
+                    new JDBCPreparedParameter(5, entity.id().toString())
             ).getOrThrow();
         }
         return entity;
@@ -82,11 +90,18 @@ public final class PersonJDBCRepository implements PersonRepository {
     }
 
     private Person toPerson(JDBCResultSet rs) {
+        @Nullable Timestamp createRaw = rs.getTimestamp("TMS_CREATE_AT").getOrThrow();
+        @Nullable LocalDateTime createdAt = createRaw == null ? null : createRaw.toLocalDateTime();
+        @Nullable Timestamp updateRaw = rs.getTimestamp("TMS_UPDATED_AT").getOrThrow();
+        @Nullable LocalDateTime updatedAt = updateRaw == null ? null : updateRaw.toLocalDateTime();
+
         return new Person(
                 UUID.fromString(rs.getString("ID").getOrThrow()),
                 rs.getString("TXT_NAME").getOrThrow(),
                 rs.getString("TXT_LOCALE").getOrThrow(),
-                rs.getString("TXT_LANGUAGE").getOrThrow()
+                rs.getString("TXT_LANGUAGE").getOrThrow(),
+                createdAt,
+                updatedAt
         );
     }
 }

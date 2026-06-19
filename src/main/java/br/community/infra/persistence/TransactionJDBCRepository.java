@@ -10,7 +10,9 @@ import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 
 import java.sql.Date;
+import java.sql.Timestamp;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -18,15 +20,17 @@ import java.util.UUID;
 
 /**
  * Adaptador JDBC (H2) da porta {@link TransactionRepository}; tabela {@code MON_TRANSACTION}.
- * Enums como string, datas como {@code DATE}; {@code paymentDate}/{@code groupId}/{@code notes}
- * são opcionais. Os filtros (por conta, grupo, status) ficam no serviço sobre {@link #findAll()}.
+ * Enums como string, datas como {@code DATE}, timestamps como {@code TIMESTAMP};
+ * {@code paymentDate}/{@code groupId}/{@code notes} são opcionais. Os filtros (por conta, grupo,
+ * status) ficam no serviço sobre {@link #findAll()}.
  */
 @NullMarked
 public final class TransactionJDBCRepository implements TransactionRepository {
 
     private static final String COLUMNS =
             "ID, TXT_DESCRIPTION, DEC_AMOUNT, DAT_DATE, COD_CATEGORY, COD_ACCOUNT, TXT_STATUS, TXT_TYPE, "
-            + "COD_COST_CENTER, DAT_PAYMENT, COD_GROUP, NUM_INSTALLMENT, NUM_TOTAL_INSTALLMENTS, TXT_NOTES";
+            + "COD_COST_CENTER, DAT_PAYMENT, COD_GROUP, NUM_INSTALLMENT, NUM_TOTAL_INSTALLMENTS, TXT_NOTES, "
+            + "TMS_CREATE_AT, TMS_UPDATED_AT";
 
     private final DataSource dataSource;
 
@@ -57,9 +61,11 @@ public final class TransactionJDBCRepository implements TransactionRepository {
         val group = entity.groupId();
         @Nullable Date paymentDate = payment == null ? null : Date.valueOf(payment);
         @Nullable String groupStr = group == null ? null : group.toString();
+        val now = Timestamp.valueOf(LocalDateTime.now());
+
         if (existing.isEmpty()) {
             dataSource.execute(
-                    "INSERT INTO MON_TRANSACTION (" + COLUMNS + ") VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                    "INSERT INTO MON_TRANSACTION (" + COLUMNS + ") VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
                     new JDBCPreparedParameter(1, entity.id().toString()),
                     new JDBCPreparedParameter(2, entity.description()),
                     new JDBCPreparedParameter(3, entity.amount()),
@@ -73,13 +79,15 @@ public final class TransactionJDBCRepository implements TransactionRepository {
                     new JDBCPreparedParameter(11, groupStr),
                     new JDBCPreparedParameter(12, entity.installmentNumber()),
                     new JDBCPreparedParameter(13, entity.totalInstallments()),
-                    new JDBCPreparedParameter(14, entity.notes())
+                    new JDBCPreparedParameter(14, entity.notes()),
+                    new JDBCPreparedParameter(15, now),
+                    new JDBCPreparedParameter(16, now)
             ).getOrThrow();
         } else {
             dataSource.execute(
                     "UPDATE MON_TRANSACTION SET TXT_DESCRIPTION = ?, DEC_AMOUNT = ?, DAT_DATE = ?, COD_CATEGORY = ?, "
                             + "COD_ACCOUNT = ?, TXT_STATUS = ?, TXT_TYPE = ?, COD_COST_CENTER = ?, DAT_PAYMENT = ?, "
-                            + "COD_GROUP = ?, NUM_INSTALLMENT = ?, NUM_TOTAL_INSTALLMENTS = ?, TXT_NOTES = ? WHERE ID = ?",
+                            + "COD_GROUP = ?, NUM_INSTALLMENT = ?, NUM_TOTAL_INSTALLMENTS = ?, TXT_NOTES = ?, TMS_UPDATED_AT = ? WHERE ID = ?",
                     new JDBCPreparedParameter(1, entity.description()),
                     new JDBCPreparedParameter(2, entity.amount()),
                     new JDBCPreparedParameter(3, Date.valueOf(entity.date())),
@@ -93,7 +101,8 @@ public final class TransactionJDBCRepository implements TransactionRepository {
                     new JDBCPreparedParameter(11, entity.installmentNumber()),
                     new JDBCPreparedParameter(12, entity.totalInstallments()),
                     new JDBCPreparedParameter(13, entity.notes()),
-                    new JDBCPreparedParameter(14, entity.id().toString())
+                    new JDBCPreparedParameter(14, now),
+                    new JDBCPreparedParameter(15, entity.id().toString())
             ).getOrThrow();
         }
         return entity;
@@ -138,7 +147,12 @@ public final class TransactionJDBCRepository implements TransactionRepository {
 
         @Nullable String notes = rs.getString("TXT_NOTES").getOrThrow();
 
+        @Nullable Timestamp createRaw = rs.getTimestamp("TMS_CREATE_AT").getOrThrow();
+        @Nullable LocalDateTime createdAt = createRaw == null ? null : createRaw.toLocalDateTime();
+        @Nullable Timestamp updateRaw = rs.getTimestamp("TMS_UPDATED_AT").getOrThrow();
+        @Nullable LocalDateTime updatedAt = updateRaw == null ? null : updateRaw.toLocalDateTime();
+
         return new Transaction(id, description, amount, date, categoryId, accountId, status, type,
-                costCenterId, paymentDate, groupId, installmentNumber, totalInstallments, notes);
+                costCenterId, paymentDate, groupId, installmentNumber, totalInstallments, notes, createdAt, updatedAt);
     }
 }
