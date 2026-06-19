@@ -251,7 +251,8 @@ class TransactionResponseUseCaseTest {
         assertEquals(LocalDate.of(2026, 5, 12), newEntrada.date());
         assertEquals(LocalDate.of(2026, 5, 12), newSaida.date());
         assertEquals(0, new BigDecimal("70.00").compareTo(newEntrada.amount()));
-        assertEquals(0, new BigDecimal("-70.00").compareTo(newSaida.amount()), "saída mantém sinal negativo");
+        assertEquals(0, new BigDecimal("70.00").compareTo(newSaida.amount()), "saída mantém valor absoluto");
+        assertEquals(-1, newSaida.signal());
 
         // troca de conta atinge só a perna editada
         assertEquals(newAccount, newEntrada.accountId());

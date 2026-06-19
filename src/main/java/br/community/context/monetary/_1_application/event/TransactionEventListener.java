@@ -70,7 +70,7 @@ public class TransactionEventListener {
         val account = accountResult.getOrThrow();
         val initialBalance = account.balance();
         val transactions = transactionService.findByAccount(accountId).stream()
-                .map(t -> new Balance(t.date(), t.amount()))
+                .map(t -> new Balance(t.date(), BigDecimal.valueOf(t.signal()).multiply(t.amount())))
                 .toList();
 
         recalculateBalance(accountId, initialBalance, transactions);

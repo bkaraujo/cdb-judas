@@ -21,6 +21,7 @@ import lombok.val;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 
+import java.math.BigDecimal;
 import java.time.Clock;
 import java.time.LocalDate;
 import java.time.YearMonth;
@@ -310,7 +311,7 @@ public class StatementImportUseCase {
             val dup = accountTx.stream()
                     .filter(t -> !consumed.contains(t.id()))
                     .filter(t -> mv.date().equals(t.date())
-                            && t.amount().compareTo(mv.amount()) == 0
+                            && BigDecimal.valueOf(t.signal()).multiply(t.amount()).compareTo(mv.amount()) == 0
                             && desc.equals(GroupSignature.normalize(t.description())))
                     .findFirst();
             if (dup.isPresent()) {
@@ -322,7 +323,7 @@ public class StatementImportUseCase {
             val rec = accountTx.stream()
                     .filter(t -> !consumed.contains(t.id()))
                     .filter(t -> isReconcilable(t.status()))
-                    .filter(t -> t.amount().compareTo(mv.amount()) == 0)
+                    .filter(t -> BigDecimal.valueOf(t.signal()).multiply(t.amount()).compareTo(mv.amount()) == 0)
                     .filter(t -> Math.abs(ChronoUnit.DAYS.between(t.date(), mv.date())) <= RECONCILE_WINDOW_DAYS)
                     .min(Comparator.comparingLong(t -> Math.abs(ChronoUnit.DAYS.between(t.date(), mv.date()))));
             if (rec.isPresent()) {

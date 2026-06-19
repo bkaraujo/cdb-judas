@@ -12,8 +12,9 @@ import java.util.UUID;
 public record Transaction(
         UUID id,
         String description,
+        int signal,
         BigDecimal amount,
-        LocalDate date,
+        LocalDateTime purchasedAt,
         UUID categoryId,
         UUID accountId,
         Status status,
@@ -27,6 +28,8 @@ public record Transaction(
         @Nullable LocalDateTime createdAt,
         @Nullable LocalDateTime updatedAt
 ) {
+    /** Convenience accessor returning the purchase date part, for code not yet migrated to LocalDateTime. */
+    public LocalDate date() { return purchasedAt.toLocalDate(); }
     /**
      * Natureza de um {@link Transaction}
      * <ul>
@@ -54,7 +57,8 @@ public record Transaction(
             UUID categoryId, UUID accountId, Status status, Type type,
             UUID costCenterId, @Nullable LocalDate paymentDate, @Nullable UUID groupId,
             int installmentNumber, int totalInstallments, @Nullable String notes) {
-        this(id, description, amount, date, categoryId, accountId, status, type,
-                costCenterId, paymentDate, groupId, installmentNumber, totalInstallments, notes, null, null);
+        this(id, description, type == Type.INCOME ? 1 : -1, amount.abs(), date.atStartOfDay(),
+                categoryId, accountId, status, type, costCenterId, paymentDate, groupId,
+                installmentNumber, totalInstallments, notes, null, null);
     }
 }

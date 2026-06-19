@@ -487,10 +487,11 @@ class CreditCardStatementImportUseCaseTest {
 
         var saved = transactions.findAll();
         assertEquals(4, saved.size());
-        // All land on the card's linkedAccountId, are expenses with negative amounts.
+        // All land on the card's linkedAccountId, are expenses with positive stored amounts and signal=-1.
         assertTrue(saved.stream().allMatch(t -> account.id().equals(t.accountId())));
         assertTrue(saved.stream().allMatch(t -> Transaction.Type.EXPENSE.equals(t.type())));
-        assertTrue(saved.stream().allMatch(t -> t.amount().signum() < 0));
+        assertTrue(saved.stream().allMatch(t -> t.amount().signum() > 0));
+        assertTrue(saved.stream().allMatch(t -> t.signal() == -1));
 
         // Status computed by date against fixed today 2025-07-15.
         var mercado = saved.stream().filter(t -> t.description().equals("Mercado")).findFirst().orElseThrow();

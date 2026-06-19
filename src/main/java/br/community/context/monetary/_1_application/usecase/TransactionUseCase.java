@@ -153,9 +153,8 @@ public class TransactionUseCase {
      *  metadata; applies the (possibly new) account, the shared date/status and the signed amount. A
      *  confirmed leg keeps {@code paymentDate} aligned with its date, matching how transfers are created. */
     private static Transaction withTransferEdits(Transaction leg, UUID accountId, BigDecimal absAmount, LocalDate date, Transaction.Status status) {
-        val signed = Transaction.Type.EXPENSE.equals(leg.type()) ? absAmount.negate() : absAmount;
         return new Transaction(
-                leg.id(), leg.description(), signed, date,
+                leg.id(), leg.description(), absAmount, date,
                 leg.categoryId(), accountId, status, leg.type(), leg.costCenterId(),
                 Transaction.Status.CONFIRMED.equals(status) ? date : null,
                 leg.groupId(), leg.installmentNumber(), leg.totalInstallments(), leg.notes());
@@ -234,7 +233,7 @@ public class TransactionUseCase {
         val inId = UUID.randomUUID();
 
         val outflow = new Transaction(
-                outId, "Transferência (saída)", absAmount.negate(), date,
+                outId, "Transferência (saída)", absAmount, date,
                 transferCat.id(), fromAccountId, Transaction.Status.CONFIRMED, Transaction.Type.EXPENSE, CostCenter.VARIAVEL_ID, date,
                 groupId, 1, 2, null
         );
@@ -254,11 +253,8 @@ public class TransactionUseCase {
     /** Persists an already-resolved imported movement (sign applied here from {@code type}) and emits
      *  the creation event so balances recalc. Used by the statement-import feature via the facade. */
     public Result<Transaction, DomainError> createImported(ImportedTransactionCommand cmd) {
-        val signed = Transaction.Type.INCOME.equals(cmd.type())
-                ? cmd.amount().abs()
-                : cmd.amount().abs().negate();
         val tx = new Transaction(
-                UUID.randomUUID(), cmd.description(), signed, cmd.date(),
+                UUID.randomUUID(), cmd.description(), cmd.amount().abs(), cmd.date(),
                 cmd.categoryId(), cmd.accountId(), cmd.status(), cmd.type(), CostCenter.VARIAVEL_ID, null,
                 cmd.groupId(), installmentOrDefault(cmd.installmentNumber()), installmentOrDefault(cmd.totalInstallments()), null);
         val saved = transactionService.save(tx);
@@ -268,7 +264,7 @@ public class TransactionUseCase {
 
     private Transaction toMonetaryTransactionEntity(UUID id, TransactionCommand cmd, LocalDate date, Transaction.Status status,
                                                             @Nullable UUID groupId, @Nullable Integer installmentNumber, @Nullable Integer totalInstallments) {
-        return new Transaction(id, cmd.description(), cmd.amount(), date,
+        return new Transaction(id, cmd.description(), cmd.amount().abs(), date,
                 cmd.categoryId(), cmd.accountId(), status, cmd.type(), cmd.costCenterId(), null,
                 groupId, installmentOrDefault(installmentNumber), installmentOrDefault(totalInstallments), cmd.notes());
     }

@@ -28,7 +28,7 @@ public record AccountResponse(
     public static AccountResponse from(Account monetary, List<Transaction> transactions) {
         var sum = BigDecimal.ZERO;
         for (var t : transactions) {
-            if (monetary.id().equals(t.accountId())) sum = sum.add(t.amount());
+            if (monetary.id().equals(t.accountId())) sum = sum.add(BigDecimal.valueOf(t.signal()).multiply(t.amount()));
         }
         return new AccountResponse(
                 monetary.id(),

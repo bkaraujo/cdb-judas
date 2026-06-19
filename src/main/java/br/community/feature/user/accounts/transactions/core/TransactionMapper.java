@@ -6,6 +6,7 @@ import br.community.feature.user.accounts.transactions.TransactionRequest;
 import br.community.feature.user.accounts.transactions.TransactionResponse;
 import org.jspecify.annotations.NullMarked;
 
+import java.math.BigDecimal;
 import java.util.UUID;
 
 @NullMarked
@@ -17,7 +18,7 @@ public final class TransactionMapper {
         return new TransactionResponse(
                 t.id(),
                 t.description(),
-                t.amount(),
+                BigDecimal.valueOf(t.signal()).multiply(t.amount()),
                 t.date(),
                 t.categoryId(),
                 t.accountId(),

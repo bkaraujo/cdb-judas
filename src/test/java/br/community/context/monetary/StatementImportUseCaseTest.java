@@ -90,7 +90,8 @@ class StatementImportUseCaseTest {
         assertTrue(saved.stream().allMatch(t -> account.id().equals(t.accountId())));
         var odonto = saved.stream().filter(t -> t.description().equals("Odontoprev")).findFirst().orElseThrow();
         assertEquals(Transaction.Type.EXPENSE, odonto.type());
-        assertEquals(-1, odonto.amount().signum());
+        assertEquals(1, odonto.amount().signum(), "stored amount is always positive");
+        assertEquals(-1, odonto.signal());
         assertEquals(Transaction.Status.CONFIRMED, odonto.status());
         var pix = saved.stream().filter(t -> t.description().equals("Caixa Economica")).findFirst().orElseThrow();
         assertEquals(Transaction.Type.INCOME, pix.type());

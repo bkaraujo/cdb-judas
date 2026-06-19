@@ -61,7 +61,7 @@ public class DashboardService {
 
                         val wDes = wConfirmed.stream()
                                 .filter(t -> Transaction.Type.EXPENSE.equals(t.type()))
-                                .mapToDouble(t -> Math.abs(t.amount().doubleValue())).sum();
+                                .mapToDouble(t -> t.amount().doubleValue()).sum();
 
                         history.add(new HistoricalResult("S" + w, wRec, wDes));
                         if (wEnd.equals(end)) break;
