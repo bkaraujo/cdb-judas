@@ -5,6 +5,7 @@ import br.community.context.monetary.MonetaryContext;
 import br.community.feature.user.accounts.closing.ClosingRepository;
 import br.community.feature.user.accounts.closing.ClosingService;
 import br.community.feature.user.accounts.core.AccountStreamListener;
+import br.community.feature.user.accounts.core.UserAccountService;
 import br.community.feature.user.categories.core.CategoryStreamListener;
 import br.community.feature.user.stream.SSE;
 import br.community.feature.user.stream.SseController;
@@ -36,8 +37,8 @@ public class FeatureModule {
     }
 
     @Bean
-    AccountStreamListener accountStreamListener(SSE sse, MonetaryContext monetaryContext) {
-        val listener = new AccountStreamListener(sse, monetaryContext);
+    AccountStreamListener accountStreamListener(SSE sse, MonetaryContext monetaryContext, UserAccountService userAccountService) {
+        val listener = new AccountStreamListener(sse, monetaryContext, userAccountService);
         MessageBus.subscribe(listener);
         return listener;
     }

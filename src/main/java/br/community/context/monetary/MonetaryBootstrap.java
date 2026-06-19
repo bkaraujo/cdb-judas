@@ -3,7 +3,6 @@ package br.community.context.monetary;
 import br.commons.MessageBus;
 import br.commons.Registry;
 import br.community.context.monetary._0_domain.repository.*;
-import br.community.context.monetary._1_application.event.AccountEventListener;
 import br.community.context.monetary._1_application.event.TransactionEventListener;
 import br.community.context.monetary._1_application.service.*;
 import br.community.context.monetary._1_application.usecase.AccountUseCase;
@@ -44,7 +43,6 @@ public final class MonetaryBootstrap {
         val metadataUseCase = new MetadataUseCase(tagService, categoryService, costCenterService, transactionService);
         val transactionUseCase = new TransactionUseCase(transactionService, categoryService);
 
-        MessageBus.subscribe(new AccountEventListener(accountService));
         MessageBus.subscribe(new TransactionEventListener(accountService, balanceService, transactionService));
 
         Registry.set(MonetaryContext.class, new MonetaryContext(accountUseCase, transactionUseCase, metadataUseCase));

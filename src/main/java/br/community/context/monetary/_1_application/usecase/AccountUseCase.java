@@ -16,6 +16,7 @@ import lombok.val;
 import org.jspecify.annotations.NullMarked;
 
 import java.time.YearMonth;
+import java.util.HashMap;
 import java.util.List;
 import java.util.UUID;
 
@@ -49,7 +50,7 @@ public class AccountUseCase {
             if (cmd.linkedAccountId() == null) {
                 return Result.failure(new DomainError.BusinessRule("Credit card must be linked to a checking account"));
             }
-            val validation = validateCreditCardAccount(cmd.linkedAccountId(), cmd.color());
+            val validation = validateCreditCardAccount(cmd.linkedAccountId());
             if (validation instanceof Result.Failure<Void, DomainError>(var error)) return Result.failure(error);
         }
         val created = accountService.save(parse(UUID.randomUUID(), cmd));
@@ -64,7 +65,7 @@ public class AccountUseCase {
                         if (cmd.linkedAccountId() == null) {
                             return Result.failure(new DomainError.BusinessRule("Credit card must be linked to a checking account"));
                         }
-                        val validation = validateCreditCardAccount(cmd.linkedAccountId(), cmd.color());
+                        val validation = validateCreditCardAccount(cmd.linkedAccountId());
                         if (validation instanceof Result.Failure<Void, DomainError>(var error)) return Result.failure(error);
                     }
                     val updated = accountService.save(parse(accountId, cmd));
@@ -73,8 +74,6 @@ public class AccountUseCase {
                 });
     }
 
-
-
     public Result<Void, DomainError> deleteAccount(UUID accountId) {
         return accountService.deleteById(accountId)
                 .ifSuccess(ignored -> MessageBus.submit(new AccountEvents.Deleted(accountId)));
@@ -82,8 +81,7 @@ public class AccountUseCase {
 
     private Account parse(UUID accountId, AccountCommand cmd) {
         val account = new Account(accountId, cmd.name(), Account.Type.valueOf(Strings.upper(cmd.type())),
-                cmd.balance(), cmd.color(), cmd.active(), cmd.linkedAccountId());
-
+                cmd.active(), cmd.linkedAccountId(), new HashMap<>());
         if (cmd.additionalInfo() != null) account.additionalInfo().putAll(cmd.additionalInfo());
         return account;
     }
@@ -99,13 +97,13 @@ public class AccountUseCase {
     }
 
     public Result<Account, DomainError> createCreditCard(CreditCardCommand cmd) {
-        return validateCreditCardAccount(cmd.accountId(), cmd.color())
+        return validateCreditCardAccount(cmd.accountId())
                 .map(ignored -> accountService.save(toCreditCardEntity(UUID.randomUUID(), cmd)));
     }
 
     public Result<Account, DomainError> updateCreditCard(UUID accountId, CreditCardCommand cmd) {
         return accountService.findById(accountId)
-                .flatMap(existing -> validateCreditCardAccount(cmd.accountId(), cmd.color())
+                .flatMap(existing -> validateCreditCardAccount(cmd.accountId())
                         .map(ignored -> accountService.save(toCreditCardEntity(accountId, cmd))));
     }
 
@@ -113,21 +111,18 @@ public class AccountUseCase {
         return accountService.deleteById(accountId);
     }
 
-    private Result<Void, DomainError> validateCreditCardAccount(UUID accountId, String color) {
+    private Result<Void, DomainError> validateCreditCardAccount(UUID accountId) {
         return findAccount(accountId)
                 .flatMap(account -> {
                     if (!Account.Type.CHECKING.equals(account.type())) {
                         return Result.failure(new DomainError.BusinessRule("Credit card must be linked to a checking account"));
-                    }
-                    if (!account.color().equalsIgnoreCase(color)) {
-                        return Result.failure(new DomainError.BusinessRule("Credit card color must match the linked account color"));
                     }
                     return Result.success();
                 });
     }
 
     private Account toCreditCardEntity(UUID id, CreditCardCommand cmd) {
-        val account = new Account(id, cmd.name(), Account.Type.CREDIT_CARD, cmd.limit(), cmd.color(), cmd.active(), cmd.accountId());
+        val account = new Account(id, cmd.name(), Account.Type.CREDIT_CARD, cmd.active(), cmd.accountId(), new HashMap<>());
         account.additionalInfo().put("last4", cmd.last4());
         account.additionalInfo().put("dueDay", cmd.dueDay());
         account.additionalInfo().put("closingDay", cmd.closingDay());

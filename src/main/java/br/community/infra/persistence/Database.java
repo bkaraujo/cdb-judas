@@ -59,14 +59,22 @@ public abstract class Database {
                 CREATE TABLE MON_ACCOUNT (
                     ID CHAR(36) PRIMARY KEY,
                     TXT_NAME VARCHAR(255) NOT NULL,
-                    DEC_BALANCE DECIMAL(19, 2) NOT NULL,
                     TXT_TYPE CHAR(36) NOT NULL REFERENCES MON_ACCOUNT_TYPE(ID),
-                    TXT_COLOR VARCHAR(20) NOT NULL,
                     FLG_ACTIVE CHAR(1) NOT NULL,
                     COD_LINKED_ACCOUNT CHAR(36),
                     TXT_ADDITIONAL_INFO VARCHAR(4000),
                     TMS_CREATE_AT TIMESTAMP NOT NULL,
                     TMS_UPDATED_AT TIMESTAMP NOT NULL
+                )
+                """,
+                """
+                CREATE TABLE USER_ACCOUNT (
+                    COD_USER CHAR(36) NOT NULL,
+                    COD_ACCOUNT CHAR(36) NOT NULL,
+                    DEC_OPENING_BALANCE DECIMAL(19, 2) NOT NULL,
+                    TXT_COLOR VARCHAR(20) NOT NULL,
+                    FLG_ACTIVE CHAR(1) NOT NULL,
+                    PRIMARY KEY (COD_USER, COD_ACCOUNT)
                 )
                 """,
                 """
@@ -95,10 +103,11 @@ public abstract class Database {
                 )
                 """,
                 """
-                CREATE TABLE MON_MONTHLY_BALANCE (
+                CREATE TABLE USER_ACCOUNT_BALANCE (
                     ID CHAR(36) PRIMARY KEY,
+                    COD_USER CHAR(36) NOT NULL,
                     COD_ACCOUNT CHAR(36) NOT NULL,
-                    TXT_PERIOD VARCHAR(7) NOT NULL,
+                    NUM_PERIOD INT NOT NULL,
                     DEC_BALANCE DECIMAL(19, 2) NOT NULL
                 )
                 """,
@@ -155,13 +164,6 @@ public abstract class Database {
                     TMS_CREATE_AT TIMESTAMP NOT NULL,
                     TMS_UPDATED_AT TIMESTAMP NOT NULL
                 )
-                """,
-                """
-                CREATE TABLE PEP_PERSON_ACCOUNT (
-                    COD_PERSON CHAR(36) NOT NULL,
-                    COD_ACCOUNT CHAR(36) NOT NULL,
-                    PRIMARY KEY (COD_PERSON, COD_ACCOUNT)
-                )
                 """
         );
     }
@@ -173,9 +175,9 @@ public abstract class Database {
                 "DELETE FROM MON_CATEGORY",
                 "DELETE FROM MON_COST_CENTER",
                 "DELETE FROM MON_TAG",
-                "DELETE FROM MON_MONTHLY_BALANCE",
-                "DELETE FROM MON_TRANSACTION",
-                "DELETE FROM PEP_PERSON_ACCOUNT"
+                "DELETE FROM USER_ACCOUNT_BALANCE",
+                "DELETE FROM USER_ACCOUNT",
+                "DELETE FROM MON_TRANSACTION"
         );
     }
 }

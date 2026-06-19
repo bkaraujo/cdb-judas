@@ -23,9 +23,11 @@ public record AccountResponse(
         Map<String, Object> additionalInfo,
         BigDecimal currentBalance
 ) {
-    /** Saldo atual = saldo de abertura + todas as transações da conta. Espelha a derivação do
-     *  extrato para que todas as telas de leitura (REST e SSE) concordem. */
-    public static AccountResponse from(Account monetary, List<Transaction> transactions) {
+    /** Saldo atual = saldo de abertura + todas as transações da conta. */
+    public static AccountResponse from(Account monetary, @Nullable UserAccount ua, List<Transaction> transactions) {
+        BigDecimal opening = ua != null ? ua.openingBalance() : BigDecimal.ZERO;
+        String color = ua != null ? ua.color() : "#000000";
+        boolean active = ua != null ? ua.active() : monetary.active();
         var sum = BigDecimal.ZERO;
         for (var t : transactions) {
             if (monetary.id().equals(t.accountId())) sum = sum.add(BigDecimal.valueOf(t.signal()).multiply(t.amount()));
@@ -33,13 +35,13 @@ public record AccountResponse(
         return new AccountResponse(
                 monetary.id(),
                 monetary.name(),
-                monetary.balance(),
+                opening,
                 Strings.upper(monetary.type().name()),
-                monetary.color(),
-                monetary.active(),
+                color,
+                active,
                 monetary.linkedAccountId(),
                 monetary.additionalInfo(),
-                monetary.balance().add(sum)
+                opening.add(sum)
         );
     }
 }

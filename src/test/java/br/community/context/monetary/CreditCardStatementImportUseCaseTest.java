@@ -102,21 +102,15 @@ class CreditCardStatementImportUseCaseTest {
     }
 
     private static Account creditCard(String name, String last4) {
-        return new Account(
-                UUID.randomUUID(), name, BigDecimal.ZERO, Account.Type.CREDIT_CARD,
-                "#000", true, null, Map.of("last4", last4));
+        return new Account(UUID.randomUUID(), name, Account.Type.CREDIT_CARD, true, null, Map.of("last4", last4));
     }
 
     private static Account creditCardLinkedTo(String name, String last4, UUID linkedAccountId) {
-        return new Account(
-                UUID.randomUUID(), name, BigDecimal.ZERO, Account.Type.CREDIT_CARD,
-                "#000", true, linkedAccountId, Map.of("last4", last4));
+        return new Account(UUID.randomUUID(), name, Account.Type.CREDIT_CARD, true, linkedAccountId, Map.of("last4", last4));
     }
 
     private static Account checking(String name) {
-        return new Account(
-                UUID.randomUUID(), name, BigDecimal.ZERO, Account.Type.CHECKING,
-                "#000", true, null, Map.of());
+        return new Account(UUID.randomUUID(), name, Account.Type.CHECKING, true, null, Map.of());
     }
 
     private static final PdfTextExtractor NOOP_EXTRACTOR =

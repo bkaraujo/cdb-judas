@@ -15,17 +15,14 @@ import java.time.LocalDateTime;
 import java.util.*;
 
 /**
- * Adaptador JDBC (H2) da porta {@link AccountRepository}. Mapeia o agregado {@link Account}
- * para a tabela {@code MON_ACCOUNT} (ver {@link Database}): {@code Account.Type} para UUID via
- * {@link AccountTypeMapper}, {@code additionalInfo} como JSON na coluna
- * {@code TXT_ADDITIONAL_INFO}. Usa a API {@code DataSource.executeQuery/execute} (a conexão é
- * devolvida ao pool internamente).
+ * Adaptador JDBC (H2) da porta {@link AccountRepository}. Mapeia {@link Account} para
+ * {@code MON_ACCOUNT} (metadados globais). Saldo e cor são geridos por {@code USER_ACCOUNT}.
  */
 @NullMarked
 public final class AccountJDBCRepository implements AccountRepository {
 
     private static final String COLUMNS =
-            "ID, TXT_NAME, DEC_BALANCE, TXT_TYPE, TXT_COLOR, FLG_ACTIVE, COD_LINKED_ACCOUNT, TXT_ADDITIONAL_INFO, TMS_CREATE_AT, TMS_UPDATED_AT";
+            "ID, TXT_NAME, TXT_TYPE, FLG_ACTIVE, COD_LINKED_ACCOUNT, TXT_ADDITIONAL_INFO, TMS_CREATE_AT, TMS_UPDATED_AT";
 
     private final DataSource dataSource;
     private final ObjectMapper mapper;
@@ -63,31 +60,27 @@ public final class AccountJDBCRepository implements AccountRepository {
 
         if (existing.isEmpty()) {
             dataSource.execute(
-                    "INSERT INTO MON_ACCOUNT (" + COLUMNS + ") VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                    "INSERT INTO MON_ACCOUNT (" + COLUMNS + ") VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
                     new JDBCPreparedParameter(1, entity.id().toString()),
                     new JDBCPreparedParameter(2, entity.name()),
-                    new JDBCPreparedParameter(3, entity.balance()),
-                    new JDBCPreparedParameter(4, typeId),
-                    new JDBCPreparedParameter(5, entity.color()),
-                    new JDBCPreparedParameter(6, activeFlag),
-                    new JDBCPreparedParameter(7, linkedStr),
-                    new JDBCPreparedParameter(8, infoJson),
-                    new JDBCPreparedParameter(9, now),
-                    new JDBCPreparedParameter(10, now)
+                    new JDBCPreparedParameter(3, typeId),
+                    new JDBCPreparedParameter(4, activeFlag),
+                    new JDBCPreparedParameter(5, linkedStr),
+                    new JDBCPreparedParameter(6, infoJson),
+                    new JDBCPreparedParameter(7, now),
+                    new JDBCPreparedParameter(8, now)
             ).getOrThrow();
         } else {
             dataSource.execute(
-                    "UPDATE MON_ACCOUNT SET TXT_NAME = ?, DEC_BALANCE = ?, TXT_TYPE = ?, TXT_COLOR = ?, "
-                            + "FLG_ACTIVE = ?, COD_LINKED_ACCOUNT = ?, TXT_ADDITIONAL_INFO = ?, TMS_UPDATED_AT = ? WHERE ID = ?",
+                    "UPDATE MON_ACCOUNT SET TXT_NAME = ?, TXT_TYPE = ?, FLG_ACTIVE = ?,"
+                            + " COD_LINKED_ACCOUNT = ?, TXT_ADDITIONAL_INFO = ?, TMS_UPDATED_AT = ? WHERE ID = ?",
                     new JDBCPreparedParameter(1, entity.name()),
-                    new JDBCPreparedParameter(2, entity.balance()),
-                    new JDBCPreparedParameter(3, typeId),
-                    new JDBCPreparedParameter(4, entity.color()),
-                    new JDBCPreparedParameter(5, activeFlag),
-                    new JDBCPreparedParameter(6, linkedStr),
-                    new JDBCPreparedParameter(7, infoJson),
-                    new JDBCPreparedParameter(8, now),
-                    new JDBCPreparedParameter(9, entity.id().toString())
+                    new JDBCPreparedParameter(2, typeId),
+                    new JDBCPreparedParameter(3, activeFlag),
+                    new JDBCPreparedParameter(4, linkedStr),
+                    new JDBCPreparedParameter(5, infoJson),
+                    new JDBCPreparedParameter(6, now),
+                    new JDBCPreparedParameter(7, entity.id().toString())
             ).getOrThrow();
         }
         return entity;
@@ -113,9 +106,7 @@ public final class AccountJDBCRepository implements AccountRepository {
     private Account toAccount(JDBCResultSet rs) {
         val id = UUID.fromString(rs.getString("ID").getOrThrow());
         val name = rs.getString("TXT_NAME").getOrThrow();
-        val balance = rs.getBigDecimal("DEC_BALANCE").getOrThrow();
         val type = AccountTypeMapper.fromId(rs.getString("TXT_TYPE").getOrThrow());
-        val color = rs.getString("TXT_COLOR").getOrThrow();
         final boolean active = "Y".equals(rs.getString("FLG_ACTIVE").getOrThrow());
 
         @Nullable String linkedRaw = rs.getString("COD_LINKED_ACCOUNT").getOrThrow();
@@ -129,7 +120,7 @@ public final class AccountJDBCRepository implements AccountRepository {
         @Nullable Timestamp updateRaw = rs.getTimestamp("TMS_UPDATED_AT").getOrThrow();
         @Nullable LocalDateTime updatedAt = updateRaw == null ? null : updateRaw.toLocalDateTime();
 
-        return new Account(id, name, balance, type, color, active, linkedAccountId, additionalInfo, createdAt, updatedAt);
+        return new Account(id, name, type, active, linkedAccountId, additionalInfo, createdAt, updatedAt);
     }
 
     @SuppressWarnings("unchecked")

@@ -18,12 +18,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
-/**
- * Converte eventos de domínio de conta em mensagens SSE para o frontend (tipo {@code ACCOUNT};
- * cartões viajam sob o mesmo tipo). Mudanças de transação também disparam um UPSERT da conta
- * afetada, pois o saldo atual derivado muda. Todos os handlers retornam {@code CONSUMED} para não
- * interromper a cadeia de assinantes; falhas no envio são engolidas (entrega best-effort).
- */
 @NullMarked
 @RequiredArgsConstructor
 public class AccountStreamListener {
@@ -32,6 +26,7 @@ public class AccountStreamListener {
 
     private final SSE sse;
     private final MonetaryContext monetaryContext;
+    private final UserAccountService userAccountService;
 
     @MessageListener
     public MessageResult onAccountCreated(AccountEvents.Created event) {
@@ -79,8 +74,10 @@ public class AccountStreamListener {
     @SuppressWarnings("EmptyCatch")
     private void upsert(Account account) {
         try {
-            val dto = AccountResponse.from(account, allTransactions());
-            sse.dispatch(CurrentUser.getId(), SSE.Event.UPSERT, Map.of("type", TYPE, "payload", dto));
+            val userId = CurrentUser.getId();
+            val ua = userAccountService.find(userId, account.id());
+            val dto = AccountResponse.from(account, ua, allTransactions());
+            sse.dispatch(userId, SSE.Event.UPSERT, Map.of("type", TYPE, "payload", dto));
         } catch (Exception ignored) {}
     }
 

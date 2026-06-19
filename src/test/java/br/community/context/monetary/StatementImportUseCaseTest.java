@@ -201,7 +201,6 @@ class StatementImportUseCaseTest {
     }
 
     private static Account checking(String name) {
-        return new Account(
-                UUID.randomUUID(), name, BigDecimal.ZERO, Account.Type.CHECKING, "#000", true, null, Map.of());
+        return new Account(UUID.randomUUID(), name, Account.Type.CHECKING, true, null, Map.of());
     }
 }

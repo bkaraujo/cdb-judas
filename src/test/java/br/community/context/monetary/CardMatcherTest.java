@@ -5,7 +5,7 @@ import br.community.feature.user.accounts.transactions.importer.CardMatch;
 import br.community.feature.user.accounts.transactions.importer.CardMatcher;
 import org.junit.jupiter.api.Test;
 
-import java.math.BigDecimal;
+
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -18,9 +18,7 @@ class CardMatcherTest {
     private final CardMatcher matcher = new CardMatcher();
 
     private static Account card(String name, Map<String, Object> additionalInfo) {
-        return new Account(
-                UUID.randomUUID(), name, BigDecimal.ZERO, Account.Type.CREDIT_CARD,
-                "#000", true, null, additionalInfo);
+        return new Account(UUID.randomUUID(), name, Account.Type.CREDIT_CARD, true, null, additionalInfo);
     }
 
     private static Account cardWithLast4(String name, String last4) {

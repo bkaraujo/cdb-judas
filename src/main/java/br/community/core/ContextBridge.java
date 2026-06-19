@@ -6,7 +6,6 @@ import br.community.context.monetary.MonetaryContext;
 import br.community.context.monetary._0_domain.repository.*;
 import br.community.context.people.PeopleBootstrap;
 import br.community.context.people.PeopleContext;
-import br.community.context.people._0_domain.repository.PersonAccountRepository;
 import br.community.context.people._0_domain.repository.PersonRepository;
 import org.jspecify.annotations.NullMarked;
 import org.springframework.context.annotation.Bean;
@@ -14,14 +13,6 @@ import org.springframework.context.annotation.Configuration;
 
 /**
  * Costura entre a borda Spring (feature) e os contextos ligados por {@link Registry}.
- *
- * <p>No modelo híbrido acordado, {@code context/*} é ligado por {@code Registry} (DI manual)
- * e {@code feature/*} permanece em Spring. Esta classe é o único ponto onde os dois mundos se
- * encontram: ela recebe os beans de persistência do Spring ({@code InfraConfigs}), publica-os
- * como portas no {@code Registry}, dispara o composition root do contexto
- * ({@link MonetaryBootstrap#register()}) e reexpõe a {@link MonetaryContext} como bean Spring,
- * de modo que os {@code Resource}s de feature continuem injetando a facade por construtor,
- * sem mudança — preservando a regra ArchUnit {@code feature → context só via Facade}.</p>
  */
 @NullMarked
 @Configuration
@@ -48,12 +39,8 @@ public class ContextBridge {
     }
 
     @Bean
-    public PeopleContext peopleContext(
-            PersonRepository personRepository,
-            PersonAccountRepository personAccountRepository
-    ) {
+    public PeopleContext peopleContext(PersonRepository personRepository) {
         Registry.set(PersonRepository.class, personRepository);
-        Registry.set(PersonAccountRepository.class, personAccountRepository);
         PeopleBootstrap.register();
         return Registry.get(PeopleContext.class);
     }

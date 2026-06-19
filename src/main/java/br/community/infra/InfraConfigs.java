@@ -3,7 +3,6 @@ package br.community.infra;
 import br.commons.framework.persistence.Storage;
 import br.commons.framework.persistence.jdbc.DataSource;
 import br.community.context.monetary._0_domain.repository.*;
-import br.community.context.people._0_domain.repository.PersonAccountRepository;
 import br.community.context.people._0_domain.repository.PersonRepository;
 import br.community.core.web.security.UserRepository;
 import br.community.feature.user.accounts.closing.ClosingRepository;
@@ -28,6 +27,16 @@ public class InfraConfigs {
     }
 
     @Bean
+    BalanceRepository balanceRepository(DataSource dataSource) {
+        return new UserAccountBalanceJDBCRepository(dataSource);
+    }
+
+    @Bean
+    UserAccountJDBCRepository userAccountRepository(DataSource dataSource) {
+        return new UserAccountJDBCRepository(dataSource);
+    }
+
+    @Bean
     CategoryRepository categoryRepository(DataSource dataSource) {
         return new CategoryJDBCRepository(dataSource);
     }
@@ -35,11 +44,6 @@ public class InfraConfigs {
     @Bean
     CostCenterRepository costCenterRepository(DataSource dataSource) {
         return new CostCenterJDBCRepository(dataSource);
-    }
-
-    @Bean
-    BalanceRepository balanceRepository(DataSource dataSource) {
-        return new MonthlyBalanceJDBCRepository(dataSource);
     }
 
     @Bean
@@ -60,11 +64,6 @@ public class InfraConfigs {
     @Bean
     PersonRepository personRepository(DataSource dataSource) {
         return new PersonJDBCRepository(dataSource);
-    }
-
-    @Bean
-    PersonAccountRepository personAccountRepository(DataSource dataSource) {
-        return new PersonAccountJDBCRepository(dataSource);
     }
 
 }

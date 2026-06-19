@@ -31,10 +31,9 @@ class AccountUseCaseTest {
         useCase = new AccountUseCase(new AccountService(accountRepo), new BalanceService(balanceRepo));
     }
 
-    private Account seedChecking(String color) {
+    private Account seedChecking() {
         UUID id = UUID.randomUUID();
-        Account acc = new Account(id, "Banco", Account.Type.CHECKING,
-                new BigDecimal("100.00"), color, true, null);
+        Account acc = new Account(id, "Banco", Account.Type.CHECKING, true, null);
         return accountRepo.save(acc);
     }
 
@@ -64,8 +63,7 @@ class AccountUseCaseTest {
     @DisplayName("§2.1 CREDIT_CARD ligado a não-CHECKING falha")
     void creditCardLinkedToNonChecking() {
         UUID invId = UUID.randomUUID();
-        accountRepo.save(new Account(invId, "Inv", Account.Type.INVESTMENT,
-                new BigDecimal("0.00"), "#aabbcc", true, null));
+        accountRepo.save(new Account(invId, "Inv", Account.Type.INVESTMENT, true, null));
         AccountCommand cmd = new AccountCommand("Card", new BigDecimal("500.00"),
                 "CREDIT_CARD", "#aabbcc", true, invId, null);
         Result<Account, DomainError> r = useCase.createAccount(cmd);
@@ -73,29 +71,19 @@ class AccountUseCaseTest {
     }
 
     @Test
-    @DisplayName("§2.2 cor do cartão deve casar com conta vinculada")
-    void creditCardColorMismatch() {
-        Account checking = seedChecking("#aabbcc");
+    @DisplayName("§2.2 CREDIT_CARD ligado a CHECKING (qualquer cor) tem sucesso")
+    void creditCardLinkedToCheckingSucceeds() {
+        Account checking = seedChecking();
         AccountCommand cmd = new AccountCommand("Card", new BigDecimal("500.00"),
                 "CREDIT_CARD", "#000000", true, checking.id(), null);
-        Result<Account, DomainError> r = useCase.createAccount(cmd);
-        assertTrue(r.isFailure());
-    }
-
-    @Test
-    @DisplayName("§2.2 comparação de cor é case-insensitive")
-    void creditCardColorCaseInsensitive() {
-        Account checking = seedChecking("#aabbcc");
-        AccountCommand cmd = new AccountCommand("Card", new BigDecimal("500.00"),
-                "CREDIT_CARD", "#AABBCC", true, checking.id(), null);
         Result<Account, DomainError> r = useCase.createAccount(cmd);
         assertTrue(r.isSuccess());
     }
 
     @Test
-    @DisplayName("§2 createCreditCard valida conta vinculada CHECKING e cor")
+    @DisplayName("§2 createCreditCard valida conta vinculada CHECKING")
     void createCreditCardViaCommand() {
-        Account checking = seedChecking("#ff0000");
+        Account checking = seedChecking();
         CreditCardCommand cmd = new CreditCardCommand(checking.id(), "Card", "1234",
                 new BigDecimal("1000.00"), 10, 20, "#ff0000", true);
         Result<Account, DomainError> r = useCase.createCreditCard(cmd);
@@ -110,21 +98,11 @@ class AccountUseCaseTest {
     }
 
     @Test
-    @DisplayName("§2 createCreditCard com cor diferente falha")
-    void createCreditCardColorMismatch() {
-        Account checking = seedChecking("#ff0000");
-        CreditCardCommand cmd = new CreditCardCommand(checking.id(), "Card", "1234",
-                new BigDecimal("1000.00"), 10, 20, "#00ff00", true);
-        assertTrue(useCase.createCreditCard(cmd).isFailure());
-    }
-
-    @Test
     @DisplayName("update CREDIT_CARD sem linkedAccountId falha")
     void updateCreditCardRequiresLink() {
-        Account checking = seedChecking("#112233");
+        Account checking = seedChecking();
         UUID cardId = UUID.randomUUID();
-        accountRepo.save(new Account(cardId, "Card", Account.Type.CREDIT_CARD,
-                new BigDecimal("500.00"), "#112233", true, checking.id()));
+        accountRepo.save(new Account(cardId, "Card", Account.Type.CREDIT_CARD, true, checking.id()));
         AccountCommand cmd = new AccountCommand("Card", new BigDecimal("500.00"),
                 "CREDIT_CARD", "#112233", true, null, null);
         assertTrue(useCase.updateAccount(cardId, cmd).isFailure());
@@ -141,7 +119,7 @@ class AccountUseCaseTest {
     @Test
     @DisplayName("deleteAccount sucesso remove do repo")
     void deleteAccountSuccess() {
-        Account checking = seedChecking("#112233");
+        Account checking = seedChecking();
         Result<Void, DomainError> r = useCase.deleteAccount(checking.id());
         assertTrue(r.isSuccess());
         assertTrue(accountRepo.findAll().isEmpty());
@@ -150,16 +128,13 @@ class AccountUseCaseTest {
     @Test
     @DisplayName("listCreditCardsByAccount filtra por linkedAccountId")
     void listCreditCardsByAccount() {
-        Account checking = seedChecking("#112233");
+        Account checking = seedChecking();
         UUID c1 = UUID.randomUUID();
         UUID c2 = UUID.randomUUID();
-        accountRepo.save(new Account(c1, "C1", Account.Type.CREDIT_CARD,
-                new BigDecimal("100.00"), "#112233", true, checking.id()));
-        accountRepo.save(new Account(c2, "C2", Account.Type.CREDIT_CARD,
-                new BigDecimal("100.00"), "#112233", true, UUID.randomUUID()));
+        accountRepo.save(new Account(c1, "C1", Account.Type.CREDIT_CARD, true, checking.id()));
+        accountRepo.save(new Account(c2, "C2", Account.Type.CREDIT_CARD, true, UUID.randomUUID()));
         Result<java.util.List<Account>, DomainError> r = useCase.listCreditCardsByAccount(checking.id());
         assertTrue(r.isSuccess());
         assertEquals(1, ((Result.Success<java.util.List<Account>, DomainError>) r).value().size());
     }
 }
-
