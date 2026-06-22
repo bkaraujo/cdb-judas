@@ -56,17 +56,12 @@ public class CategoryService {
     }
 
     public Result<Void, DomainError> validateParent(UUID parentId, Type nature) {
-        return categoryRepository.findById(parentId)
-                .<Result<Void, DomainError>>map(parent -> {
-                    if (parent.parentId() != null) {
-                        return Result.failure(new DomainError.BusinessRule("Subcategoria não pode ter outra subcategoria como pai"));
-                    }
-                    if (parent.nature() != nature) {
-                        return Result.failure(new DomainError.BusinessRule("Natureza da subcategoria deve ser igual à do pai"));
-                    }
-                    return Result.success();
-                })
-                .orElseGet(() -> Result.failure(new DomainError.NotFound("Category not found: " + parentId)));
+        val found = categoryRepository.findById(parentId);
+        if (found.isEmpty()) return Result.failure(new DomainError.NotFound("Category not found: " + parentId));
+        val parent = found.get();
+        if (parent.parentId() != null) return Result.failure(new DomainError.BusinessRule("Subcategoria não pode ter outra subcategoria como pai"));
+        if (parent.nature() != nature) return Result.failure(new DomainError.BusinessRule("Natureza da subcategoria deve ser igual à do pai"));
+        return Result.success();
     }
 
     public Result<Void, DomainError> validateUniqueName(String name, @Nullable UUID parentId, @Nullable UUID excludeId) {
