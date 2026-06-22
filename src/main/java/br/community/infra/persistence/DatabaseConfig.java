@@ -32,6 +32,8 @@ public class DatabaseConfig {
         properties.password(Strings.EMPTY);
         properties.autoCommit(true);
         properties.validationQuery("SELECT 1");
+        properties.minPoolSize(5);
+        properties.maxPoolSize(20);
 
         return Registry.tryGet(DataSource.class, () -> {
             val datasource = new DataSource(properties);

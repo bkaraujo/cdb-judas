@@ -31,7 +31,6 @@ public class MDCLoggingFilter extends OncePerRequestFilter {
         if (xRequestId == null) { xRequestId = UUID.randomUUID().toString(); }
 
         MDC.push("X-REQUEST-ID", xRequestId);
-        try { filterChain.doFilter(request, response); }
-        finally { MDC.pop("X-REQUEST-ID"); }
+        filterChain.doFilter(request, response);
     }
 }

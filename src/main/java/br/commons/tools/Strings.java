@@ -370,4 +370,9 @@ public abstract class Strings {
         if (!buffer.isEmpty()) buffer.append(' ');
         buffer.append(part);
     }
+
+    public static String or(@Nullable Object value, String fallback) {
+        if (value == null) return fallback;
+        return value.toString();
+    }
 }

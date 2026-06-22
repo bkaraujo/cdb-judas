@@ -12,6 +12,7 @@ import lombok.val;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 
+import javax.sql.PooledConnection;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
@@ -37,7 +38,9 @@ public final class ConnectionPool {
         closed = false;
         totalConnections = new AtomicInteger(0);
         activeConnections = new ConcurrentHashMap<>();
-        availableConnections = new LinkedBlockingQueue<>(properties.maxPoolSize());
+        // Ilimitada: nunca pode haver mais conexões devolvidas do que o total criado (<= max),
+        // e um offer() recusado em silêncio perderia a conexão sem decrementar o total (starve).
+        availableConnections = new LinkedBlockingQueue<>();
 
         // Initialize minimum pool size
         try {
@@ -66,7 +69,19 @@ public final class ConnectionPool {
         }
     }
 
+    /** Cria uma conexão e contabiliza-a no total. Usado por initialize()/manutenção. */
     private PooledConnection createConnection() throws SQLException {
+        val pooled = openConnection();
+        totalConnections.incrementAndGet();
+
+        Logger.debug("Created new connection for pool '%s' (total=%d)",
+                properties.name(), totalConnections.get());
+
+        return pooled;
+    }
+
+    /** Abre uma conexão crua sem mexer no contador (o chamador já reservou o lugar). */
+    private PooledConnection openConnection() throws SQLException {
         if (closed) {
             throw new SQLException("Connection pool is closed");
         }
@@ -86,13 +101,7 @@ public final class ConnectionPool {
 
         rawConnection.setAutoCommit(properties.autoCommit());
 
-        val pooled = new PooledConnection(rawConnection);
-        totalConnections.incrementAndGet();
-
-        Logger.debug("Created new connection for pool '%s' (total=%d)",
-                properties.name(), totalConnections.get());
-
-        return pooled;
+        return new PooledConnection(rawConnection);
     }
 
     public Result<JDBCConnection, String> aquire() {
@@ -133,14 +142,33 @@ public final class ConnectionPool {
         }
     }
 
-    /** Tira uma conexão do pool (aguardando até {@code timeoutMs}); se vazio e abaixo do máximo, cria nova. */
+    /**
+     * Tira uma conexão do pool. Primeiro tenta uma conexão ociosa de imediato; se não houver e
+     * ainda houver espaço (&lt; max), cria já uma nova — sem bloquear pelo timeout. Só quando o
+     * pool está no máximo é que espera (até {@code timeoutMs}) por uma devolução.
+     */
     @Nullable
     private PooledConnection obtain(long timeoutMs) throws InterruptedException, SQLException {
-        PooledConnection pooled = availableConnections.poll(timeoutMs, TimeUnit.MILLISECONDS);
-        if (pooled == null && totalConnections.get() < properties.maxPoolSize()) {
-            pooled = createConnection();
+        // 1) Caminho rápido: uma conexão ociosa, se existir.
+        PooledConnection pooled = availableConnections.poll();
+        if (pooled != null) return pooled;
+
+        // 2) Cresce de imediato se houver lugar — reserva a vaga via CAS (não excede o máximo).
+        while (true) {
+            int current = totalConnections.get();
+            if (current >= properties.maxPoolSize()) break;
+            if (totalConnections.compareAndSet(current, current + 1)) {
+                try {
+                    return openConnection();
+                } catch (SQLException ex) {
+                    totalConnections.decrementAndGet(); // desfaz a reserva se a criação falhar
+                    throw ex;
+                }
+            }
         }
-        return pooled;
+
+        // 3) No máximo: espera por uma conexão devolvida.
+        return availableConnections.poll(timeoutMs, TimeUnit.MILLISECONDS);
     }
 
     void release(Connection connection) {
@@ -158,7 +186,9 @@ public final class ConnectionPool {
             }
 
             pooled.updateLastAccess();
-            availableConnections.offer(pooled);
+            if (!availableConnections.offer(pooled)) {
+                closeConnection(pooled); // fila cheia (não devia ocorrer): fecha e decrementa, nunca perde a contagem
+            }
 
             Logger.trace("Connection released to pool '%s' (active=%d, available=%d)",
                     properties.name(), activeConnections.size(), availableConnections.size());
@@ -179,7 +209,11 @@ public final class ConnectionPool {
 
             // Use validation query if provided
             if (properties.validationQuery() != null) {
-                try (val stmt = pooled.connection().createStatement()) {
+                // NÃO fechar a conexão do pool: apenas o Statement/ResultSet. O try-with-resources
+                // sobre pooled.connection() fechava a conexão física a cada validação, deixando o pool
+                // com conexões mortas (mas ainda contadas) → churn e starvation sob concorrência.
+                val connection = pooled.connection();
+                try (val stmt = connection.createStatement()) {
                     stmt.executeQuery(properties.validationQuery()).close();
                 }
                 return true;

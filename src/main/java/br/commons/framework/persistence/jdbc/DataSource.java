@@ -6,7 +6,9 @@ import br.commons.framework.persistence.jdbc.pool.ConnectionPool;
 import br.commons.framework.persistence.jdbc.primitives.JDBCConnection;
 import br.commons.framework.persistence.jdbc.primitives.JDBCPreparedParameter;
 import br.commons.framework.persistence.jdbc.primitives.JDBCResultSet;
+import br.commons.tools.Strings;
 import lombok.Getter;
+import lombok.val;
 import org.jspecify.annotations.NullMarked;
 
 import java.util.List;
@@ -45,6 +47,8 @@ public class DataSource {
         return switch (getConnection()) {
             case Result.Failure(var error) -> new Result.Failure<>(error);
             case Result.Success(var conn) -> {
+                if (conn == null) yield new Result.Failure<>("Connection is null");
+
                 try { yield work.apply(conn); }
                 finally { conn.close(); }
             }
@@ -55,7 +59,10 @@ public class DataSource {
         return withConnection(conn -> switch (conn.createStatement()) {
             case Result.Failure(var error) -> new Result.Failure<>(error);
             case Result.Success(var stmt) -> {
+                if (stmt == null) yield new Result.Failure<>("PreparedStatement is null");
+
                 try {
+                    Logger.verbose(query);
                     yield switch (stmt.executeQuery(query)) {
                         case Result.Failure(var error) -> new Result.Failure<>(error);
                         case Result.Success(var rs) -> {
@@ -72,21 +79,36 @@ public class DataSource {
         return withConnection(conn -> switch (conn.createStatement()) {
             case Result.Failure(var error) -> new Result.Failure<>(error);
             case Result.Success(var stmt) -> {
-                try { yield stmt.execute(query); }
-                finally { stmt.close(); }
+                if (stmt == null) yield new Result.Failure<>("PreparedStatement is null");
+                try {
+                    Logger.trace(query);
+                    yield stmt.execute(query);
+                } finally {
+                    stmt.close();
+                }
             }
         });
     }
 
-    public <T> Result<T, String> executeQuery(String sql, List<JDBCPreparedParameter> parameters, Function<JDBCResultSet, T> function) {
-        return withConnection(conn -> switch (conn.prepareStatement(sql)) {
+    public <T> Result<T, String> executeQuery(String query, List<JDBCPreparedParameter> parameters, Function<JDBCResultSet, T> function) {
+        return withConnection(conn -> switch (conn.prepareStatement(query)) {
             case Result.Failure(var error) -> new Result.Failure<>(error);
             case Result.Success(var pstmt) -> {
+                if (pstmt == null) yield new Result.Failure<>("PreparedStatement is null");
+
                 try {
-                    for (var i = 0; i < parameters.size(); i++) pstmt.setObject(i + 1, parameters.get(i).value());
+                    Logger.trace(query);
+
+                    for (var i = 0; i < parameters.size(); i++) {
+                        val parameter = parameters.get(i);
+                        Logger.verbose(" %d = %s", i + 1, Strings.or(parameter.value(), "null"));
+                        pstmt.setObject(i + 1, parameter.value());
+                    }
+
                     yield switch (pstmt.executeQuery()) {
                         case Result.Failure(var error) -> new Result.Failure<>(error);
                         case Result.Success(var rs) -> {
+                            if (rs == null) yield new Result.Failure<>("ResultSet is null");
                             try { yield new Result.Success<>(function.apply(rs)); }
                             finally { rs.close(); }
                         }
@@ -100,8 +122,16 @@ public class DataSource {
         return withConnection(conn -> switch (conn.prepareStatement(sql)) {
             case Result.Failure(var error) -> new Result.Failure<>(error);
             case Result.Success(var pstmt) -> {
+                if (pstmt == null) yield new Result.Failure<>("PreparedStatement is null");
+
                 try {
-                    for (var i = 0; i < parameters.length; i++) pstmt.setObject(i + 1, parameters[i].value());
+                    Logger.trace(sql);
+                    for (var i = 0; i < parameters.length; i++) {
+                        val parameter = parameters[i];
+                        Logger.verbose(" %d = %s", i + 1,Strings.or(parameter.value(), "null"));
+                        pstmt.setObject(i + 1, parameter.value());
+                    }
+
                     yield pstmt.execute();
                 } finally { pstmt.close(); }
             }
