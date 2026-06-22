@@ -1,6 +1,6 @@
 package br.community.feature.user.categories.core;
 
-import br.community.context.monetary._0_domain.model.Category;
+import br.community.feature.user.categories.UserCategory;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 
@@ -14,7 +14,7 @@ public record CategoryResponse(
         @Nullable UUID parentId,
         boolean isSystem
 ) {
-    public static CategoryResponse from(Category entity) {
+    public static CategoryResponse from(UserCategory entity) {
         return new CategoryResponse(
                 entity.id(),
                 entity.name(),

@@ -1,9 +1,6 @@
 package br.community.feature.user.tags;
 
 import br.commons.Result;
-import br.community.context.monetary.MonetaryContext;
-import br.community.context.monetary._0_domain.model.Tag;
-import br.community.context.monetary._1_application.command.TagCommand;
 import br.community.context.shared._1_application.DomainException;
 import br.community.feature.user.tags.core.TagRequest;
 import jakarta.validation.Valid;
@@ -22,28 +19,22 @@ import java.util.UUID;
 @RequestMapping(value = "/api/{uuid}/tags", produces = MediaType.APPLICATION_JSON_VALUE)
 public class TagResource {
 
-    private final MonetaryContext monetaryContext;
+    private final UserTagService userTagService;
 
     @GetMapping
-    public List<Tag> listAll() {
-        return switch (monetaryContext.listTags()) {
-            case Result.Success(var list) -> list;
-            case Result.Failure(var error) -> throw new DomainException(error);
-        };
+    public List<UserTag> listAll(@PathVariable UUID uuid) {
+        return userTagService.findAll(uuid);
     }
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public Tag create(@RequestBody @Valid TagRequest req) {
-        return switch (monetaryContext.createTag(new TagCommand(req.name(), req.color()))) {
-            case Result.Success(var t) -> t;
-            case Result.Failure(var error) -> throw new DomainException(error);
-        };
+    public UserTag create(@PathVariable UUID uuid, @RequestBody @Valid TagRequest req) {
+        return userTagService.create(uuid, req.name(), req.color());
     }
 
     @PatchMapping("/{id}")
-    public Tag update(@PathVariable UUID id, @RequestBody @Valid TagRequest req) {
-        return switch (monetaryContext.updateTag(id, new TagCommand(req.name(), req.color()))) {
+    public UserTag update(@PathVariable UUID uuid, @PathVariable UUID id, @RequestBody @Valid TagRequest req) {
+        return switch (userTagService.update(id, req.name(), req.color())) {
             case Result.Success(var t) -> t;
             case Result.Failure(var error) -> throw new DomainException(error);
         };
@@ -51,8 +42,8 @@ public class TagResource {
 
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void delete(@PathVariable UUID id) {
-        switch (monetaryContext.deleteTag(id)) {
+    public void delete(@PathVariable UUID uuid, @PathVariable UUID id) {
+        switch (userTagService.deleteById(id)) {
             case Result.Success(var ignored) -> {}
             case Result.Failure(var error) -> throw new DomainException(error);
         }

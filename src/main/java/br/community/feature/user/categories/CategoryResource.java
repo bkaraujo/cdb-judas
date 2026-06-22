@@ -2,9 +2,8 @@ package br.community.feature.user.categories;
 
 import br.commons.Result;
 import br.commons.tools.Strings;
-import br.community.context.monetary.MonetaryContext;
 import br.community.context.monetary._0_domain.model.Transaction;
-import br.community.context.monetary._1_application.command.CategoryCommand;
+import br.community.context.shared._0_domain.model.DomainError;
 import br.community.context.shared._1_application.DomainException;
 import br.community.feature.user.categories.core.CategoryResponse;
 import br.community.feature.user.categories.core.CreateRequest;
@@ -26,48 +25,52 @@ import java.util.UUID;
 @RequestMapping(value = "/api/{uuid}/categories", produces = MediaType.APPLICATION_JSON_VALUE)
 public class CategoryResource {
 
-    private final MonetaryContext monetaryContext;
+    private final UserCategoryService userCategoryService;
 
     @GetMapping
-    public List<CategoryResponse> listAll() {
-        return switch (monetaryContext.listCategories()) {
-            case Result.Success(var categories) -> categories.stream().map(CategoryResponse::from).toList();
-            case Result.Failure(var error) -> throw new DomainException(error);
-        };
+    public List<CategoryResponse> listAll(@PathVariable UUID uuid) {
+        return userCategoryService.findAll(uuid).stream().map(CategoryResponse::from).toList();
     }
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public CategoryResponse create(@RequestBody @Valid CreateRequest req) {
+    public CategoryResponse create(@PathVariable UUID uuid, @RequestBody @Valid CreateRequest req) {
         val nature = Transaction.Type.valueOf(Strings.upper(req.nature()));
-        val command = new CategoryCommand(req.name(), nature, req.parentId());
 
-        return switch (monetaryContext.createCategory(command)) {
-            case Result.Success(var c) -> CategoryResponse.from(c);
-            case Result.Failure(var error) -> throw new DomainException(error);
-        };
+        if (req.parentId() != null) {
+            guardResult(userCategoryService.validateParent(req.parentId(), nature));
+        }
+        guardResult(userCategoryService.validateUniqueName(uuid, req.name(), req.parentId(), null));
+
+        return CategoryResponse.from(userCategoryService.create(uuid, req.name(), nature, req.parentId()));
     }
 
     @PatchMapping("/{id}")
-    public CategoryResponse update(@PathVariable UUID id, @RequestBody @Valid UpdateRequest req) {
-        return switch (monetaryContext.findCategoryById(id)) {
+    public CategoryResponse update(@PathVariable UUID uuid, @PathVariable UUID id, @RequestBody @Valid UpdateRequest req) {
+        return switch (userCategoryService.findById(id)) {
             case Result.Failure(var error) -> throw new DomainException(error);
             case Result.Success(var existing) -> {
-                val command = new CategoryCommand(req.name(), existing.nature(), req.parentId());
-                yield switch (monetaryContext.updateCategory(id, command)) {
-                    case Result.Success(var c) -> CategoryResponse.from(c);
-                    case Result.Failure(var error) -> throw new DomainException(error);
-                };
+                if (existing.isSystem()) {
+                    throw new DomainException(new DomainError.BusinessRule("Categoria de sistema não pode ser modificada"));
+                }
+                guardResult(userCategoryService.validateUniqueName(uuid, req.name(), req.parentId(), id));
+                yield CategoryResponse.from(userCategoryService.update(id, req.name(), req.parentId()));
             }
         };
     }
 
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void delete(@PathVariable UUID id) {
-        switch (monetaryContext.deleteCategory(id)) {
+    public void delete(@PathVariable UUID uuid, @PathVariable UUID id) {
+        switch (userCategoryService.deleteById(id, uuid)) {
             case Result.Success(var ignored) -> {}
             case Result.Failure(var error) -> throw new DomainException(error);
+        }
+    }
+
+    private static void guardResult(Result<Void, DomainError> result) {
+        if (result instanceof Result.Failure<Void, DomainError>(var error)) {
+            throw new DomainException(error);
         }
     }
 }

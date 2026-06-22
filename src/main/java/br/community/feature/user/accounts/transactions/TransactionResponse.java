@@ -14,7 +14,7 @@ public record TransactionResponse(
         String description,
         BigDecimal amount,
         LocalDate date,
-        UUID categoryId,
+        @Nullable UUID categoryId,
         UUID accountId,
         Transaction.Status status,
         Transaction.Type type,

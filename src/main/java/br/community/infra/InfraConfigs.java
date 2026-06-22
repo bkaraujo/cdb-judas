@@ -6,6 +6,9 @@ import br.community.context.monetary._0_domain.repository.*;
 import br.community.context.people._0_domain.repository.PersonRepository;
 import br.community.core.web.security.UserRepository;
 import br.community.feature.user.accounts.closing.ClosingRepository;
+import br.community.feature.user.accounts.transactions.UserTransactionRepository;
+import br.community.feature.user.categories.UserCategoryRepository;
+import br.community.feature.user.tags.UserTagRepository;
 import br.community.infra.persistence.*;
 import org.jspecify.annotations.NullMarked;
 import org.springframework.context.annotation.Bean;
@@ -37,23 +40,28 @@ public class InfraConfigs {
     }
 
     @Bean
-    CategoryRepository categoryRepository(DataSource dataSource) {
-        return new CategoryJDBCRepository(dataSource);
-    }
-
-    @Bean
     CostCenterRepository costCenterRepository(DataSource dataSource) {
         return new CostCenterJDBCRepository(dataSource);
     }
 
     @Bean
-    TagRepository tagRepository(DataSource dataSource) {
-        return new TagJDBCRepository(dataSource);
+    TransactionRepository transactionRepository(DataSource dataSource) {
+        return new TransactionJDBCRepository(dataSource);
     }
 
     @Bean
-    TransactionRepository transactionRepository(DataSource dataSource) {
-        return new TransactionJDBCRepository(dataSource);
+    UserCategoryRepository userCategoryRepository(DataSource dataSource) {
+        return new UserCategoryJDBCRepository(dataSource);
+    }
+
+    @Bean
+    UserTagRepository userTagRepository(DataSource dataSource) {
+        return new UserTagJDBCRepository(dataSource);
+    }
+
+    @Bean
+    UserTransactionRepository userTransactionRepository(DataSource dataSource) {
+        return new UserTransactionJDBCRepository(dataSource);
     }
 
     @Bean
@@ -65,5 +73,4 @@ public class InfraConfigs {
     PersonRepository personRepository(DataSource dataSource) {
         return new PersonJDBCRepository(dataSource);
     }
-
 }

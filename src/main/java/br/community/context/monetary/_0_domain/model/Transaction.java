@@ -15,10 +15,8 @@ public record Transaction(
         int signal,
         BigDecimal amount,
         LocalDateTime purchasedAt,
-        UUID categoryId,
         UUID accountId,
         Status status,
-        Type type,
         UUID costCenterId,
         @Nullable LocalDate paymentDate,
         @Nullable UUID groupId,
@@ -28,8 +26,12 @@ public record Transaction(
         @Nullable LocalDateTime createdAt,
         @Nullable LocalDateTime updatedAt
 ) {
-    /** Convenience accessor returning the purchase date part, for code not yet migrated to LocalDateTime. */
+    /** Convenience accessor returning the purchase date part. */
     public LocalDate date() { return purchasedAt.toLocalDate(); }
+
+    /** Derived from signal: positive signal = INCOME, non-positive = EXPENSE. */
+    public Type type() { return signal > 0 ? Type.INCOME : Type.EXPENSE; }
+
     /**
      * Natureza de um {@link Transaction}
      * <ul>
@@ -53,12 +55,13 @@ public record Transaction(
         SCHEDULED, CONFIRMED, PENDING
     }
 
+    /** Convenience constructor: derives signal from type, takes absolute amount, uses start-of-day. */
     public Transaction(UUID id, String description, BigDecimal amount, LocalDate date,
-            UUID categoryId, UUID accountId, Status status, Type type,
+            UUID accountId, Status status, Type type,
             UUID costCenterId, @Nullable LocalDate paymentDate, @Nullable UUID groupId,
             int installmentNumber, int totalInstallments, @Nullable String notes) {
         this(id, description, type == Type.INCOME ? 1 : -1, amount.abs(), date.atStartOfDay(),
-                categoryId, accountId, status, type, costCenterId, paymentDate, groupId,
+                accountId, status, costCenterId, paymentDate, groupId,
                 installmentNumber, totalInstallments, notes, null, null);
     }
 }

@@ -2,8 +2,6 @@ package br.community.context.monetary;
 
 import br.commons.MessageBus;
 import br.commons.Result;
-import br.commons.framework.message.MessageListener;
-import br.commons.framework.message.MessageResult;
 import br.commons.pdf.ExtractionFailure;
 import br.commons.pdf.PdfTextExtractor;
 import br.community.context.monetary._0_domain.event.TransactionEvents;
@@ -45,7 +43,6 @@ class CreditCardStatementImportUseCaseTest {
 
     private static final long MAX_BYTES = 4096;
 
-    // Fixed "today" → 2025-07-15, so the BTG fixtures' "15 Jul" anchors deterministically.
     private static final Clock CLOCK = Clock.fixed(Instant.parse("2025-07-15T12:00:00Z"), ZoneOffset.UTC);
 
     private static ImportPreview invoicePreview(Result<ImportPreviewOutcome, ImportError> result) {
@@ -66,15 +63,7 @@ class CreditCardStatementImportUseCaseTest {
             PdfTextExtractor extractor,
             InMemoryRepositories.Accounts accounts,
             InMemoryRepositories.Transactions transactions) {
-        return useCaseWith(extractor, accounts, transactions, new InMemoryRepositories.Categories());
-    }
-
-    private StatementImportUseCase useCaseWith(
-            PdfTextExtractor extractor,
-            InMemoryRepositories.Accounts accounts,
-            InMemoryRepositories.Transactions transactions,
-            InMemoryRepositories.Categories categories) {
-        final MonetaryContext monetaryContext = monetaryContext(accounts, transactions, categories);
+        final MonetaryContext monetaryContext = monetaryContext(accounts, transactions);
         return new StatementImportUseCase(
                 monetaryContext, extractor,
                 List.of(new BTGStatementParser(), new SantanderStatementParser(),
@@ -82,22 +71,16 @@ class CreditCardStatementImportUseCaseTest {
                 MAX_BYTES, CLOCK);
     }
 
-    /** Wires a real monetary facade over in-memory repositories so the import drives actual
-     *  persistence/dedup/event behaviour through {@link MonetaryContext}. */
     private static MonetaryContext monetaryContext(
             InMemoryRepositories.Accounts accounts,
-            InMemoryRepositories.Transactions transactions,
-            InMemoryRepositories.Categories categories) {
+            InMemoryRepositories.Transactions transactions) {
         final AccountService accountService = new AccountService(accounts);
         final BalanceService balanceService = new BalanceService(new InMemoryRepositories.Balances());
         final TransactionService transactionService = new TransactionService(transactions);
-        final CategoryService categoryService = new CategoryService(categories);
-        final TagService tagService = new TagService(new InMemoryRepositories.Tags());
         final CostCenterService costCenterService = new CostCenterService(new InMemoryRepositories.CostCenters());
         final AccountUseCase ucAccount = new AccountUseCase(accountService, balanceService);
-        final TransactionUseCase ucTransaction = new TransactionUseCase(transactionService, categoryService);
-        final MetadataUseCase ucMetadata =
-                new MetadataUseCase(tagService, categoryService, costCenterService, transactionService);
+        final TransactionUseCase ucTransaction = new TransactionUseCase(transactionService);
+        final MetadataUseCase ucMetadata = new MetadataUseCase(costCenterService);
         return new MonetaryContext(ucAccount, ucTransaction, ucMetadata);
     }
 
@@ -195,8 +178,6 @@ class CreditCardStatementImportUseCaseTest {
 
         var preview = invoicePreview(useCase.preview(new byte[1], null, null));
 
-        // Only cards whose last4 is printed on the invoice are offered — the 9999 card is excluded even
-        // though it is registered and linked to the same bank account.
         assertEquals(java.util.List.of(matchingCard), preview.candidateCards());
     }
 
@@ -230,9 +211,7 @@ class CreditCardStatementImportUseCaseTest {
 
         var preview = invoicePreview(useCase.preview(new byte[1], null, null));
 
-        // The raw statement still carries the single printed line.
         assertEquals(1, preview.statement().size());
-        // The expanded schedule is all N=10 installments.
         assertEquals(10, preview.rows().size());
         assertEquals(1, preview.rows().getFirst().draft().installmentNumber());
         assertEquals(10, preview.rows().getLast().draft().installmentNumber());
@@ -251,16 +230,15 @@ class CreditCardStatementImportUseCaseTest {
                 """;
         var accounts = new InMemoryRepositories.Accounts();
         var bank = checking("Conta");
-        var card = creditCardLinkedTo("Cartão BTG", "0020", bank.id()); // drafts use the linked account
+        var card = creditCardLinkedTo("Cartão BTG", "0020", bank.id());
         accounts.save(bank);
         accounts.save(card);
 
-        // Pre-compute the parcelado group id the expander will assign: originalDate 2024-07-15, N=10.
         var groupId = new GroupSignature().groupId(bank.id(), LocalDate.of(2024, 7, 15), 10, "Amazonmktplc Megabytem");
         var transactions = new InMemoryRepositories.Transactions();
         transactions.save(new Transaction(
                 UUID.randomUUID(), "Amazonmktplc Megabytem", new BigDecimal("72.99"),
-                LocalDate.of(2024, 7, 15), UUID.randomUUID(), bank.id(),
+                LocalDate.of(2024, 7, 15), bank.id(),
                 Transaction.Status.CONFIRMED, Transaction.Type.EXPENSE, CostCenter.VARIAVEL_ID, null, groupId, 1, 10, null));
 
         var useCase = useCaseWith((bytes, password) -> Result.success(text), accounts, transactions);
@@ -286,11 +264,10 @@ class CreditCardStatementImportUseCaseTest {
         accounts.save(bank);
         accounts.save(card);
 
-        // à-vista "09 Mar" with today 2025-07-15 → anchor 2025-07, diff 3-7=-4 → year 2025 → 2025-03-09.
         var transactions = new InMemoryRepositories.Transactions();
         transactions.save(new Transaction(
                 UUID.randomUUID(), "MICROSOFT", new BigDecimal("-60.00"),
-                LocalDate.of(2025, 3, 9), UUID.randomUUID(), bank.id(),
+                LocalDate.of(2025, 3, 9), bank.id(),
                 Transaction.Status.CONFIRMED, Transaction.Type.EXPENSE, CostCenter.VARIAVEL_ID, null, null, 1, 1, null));
 
         var useCase = useCaseWith((bytes, password) -> Result.success(text), accounts, transactions);
@@ -302,7 +279,7 @@ class CreditCardStatementImportUseCaseTest {
     }
 
     @Test
-    void everyPreviewRowCarriesFallbackCategoryWhenNoHistory() {
+    void previewRowsCategoryIdIsNullWhenNoHistory() {
         var text = """
                 BTG Pactual S.A CNPJ 30.306.294/0001-45
                 Lançamentos do cartão físico | Fulano | Final 0020 Total do cartão: R$ 72,99
@@ -315,14 +292,12 @@ class CreditCardStatementImportUseCaseTest {
         var preview = invoicePreview(useCase.preview(new byte[1], null, null));
 
         assertEquals(10, preview.rows().size());
-        assertTrue(preview.rows().stream().allMatch(r -> r.categoryId() != null),
-                "with no history every row should fall back to the 'Sem categoria' id");
-        // All fall back to the same single find-or-created category.
-        assertEquals(1L, preview.rows().stream().map(r -> r.categoryId()).distinct().count());
+        // Category guessing is now done at the feature layer; invoice preview returns null categoryId.
+        assertTrue(preview.rows().stream().allMatch(r -> r.categoryId() == null));
     }
 
     @Test
-    void guessesCategoryFromMatchingHistory() {
+    void previewRunsSuccessfullyEvenWithTransactionHistory() {
         var text = """
                 BTG Pactual S.A CNPJ 30.306.294/0001-45
                 Lançamentos do cartão físico | Fulano | Final 0020 Total do cartão: R$ 72,99
@@ -331,22 +306,20 @@ class CreditCardStatementImportUseCaseTest {
                 R$ 72,99
                 """;
         var accounts = new InMemoryRepositories.Accounts();
-        var card = creditCard("Cartão BTG", "0020"); // no linkedAccountId → drafts use card.id()
+        var card = creditCard("Cartão BTG", "0020");
         accounts.save(card);
 
-        var categoryC = UUID.randomUUID();
         var transactions = new InMemoryRepositories.Transactions();
         transactions.save(new Transaction(
                 UUID.randomUUID(), "AMAZONMKTPLC MEGABYTEM", new BigDecimal("-99.90"),
-                LocalDate.of(2024, 1, 10), categoryC, card.id(),
+                LocalDate.of(2024, 1, 10), card.id(),
                 Transaction.Status.CONFIRMED, Transaction.Type.EXPENSE, CostCenter.VARIAVEL_ID, null, null, 1, 1, null));
 
         var useCase = useCaseWith((bytes, password) -> Result.success(text), accounts, transactions);
         var preview = invoicePreview(useCase.preview(new byte[1], null, null));
 
+        // Preview succeeds; category guessing from history is done at the feature layer.
         assertEquals(10, preview.rows().size());
-        assertTrue(preview.rows().stream().allMatch(r -> categoryC.equals(r.categoryId())),
-                "every installment of the matched line should inherit the historical category C");
     }
 
     @Test
@@ -425,7 +398,6 @@ class CreditCardStatementImportUseCaseTest {
         var useCase = useCaseWith(NOOP_EXTRACTOR, accounts, transactions);
         var categoryId = UUID.randomUUID();
 
-        // Each row names its own card: row A → card A, row B → card B.
         var rowA = new ImportConfirmCommand.Row(
                 "Compra A", new BigDecimal("50.00"), LocalDate.of(2025, 7, 3), LocalDate.of(2025, 7, 3),
                 null, null, categoryId, cardA.id());
@@ -456,7 +428,6 @@ class CreditCardStatementImportUseCaseTest {
         var useCase = useCaseWith(NOOP_EXTRACTOR, accounts, transactions);
         var categoryId = UUID.randomUUID();
 
-        // Two à-vista rows + one parcelado purchase expanded into 2 installment rows.
         var avistaConfirmed = new ImportConfirmCommand.Row(
                 "Mercado", new BigDecimal("80.00"), LocalDate.of(2025, 7, 10), LocalDate.of(2025, 7, 10),
                 null, null, categoryId, card.id());
@@ -470,7 +441,6 @@ class CreditCardStatementImportUseCaseTest {
                 "Geladeira", new BigDecimal("100.00"), LocalDate.of(2025, 8, 15), LocalDate.of(2025, 7, 15),
                 2, 2, categoryId, card.id());
 
-        // preview persists nothing — nothing exists before confirm.
         assertTrue(transactions.findAll().isEmpty());
 
         var cmd = new ImportConfirmCommand(List.of(avistaConfirmed, avistaScheduled, parc1, parc2));
@@ -481,19 +451,16 @@ class CreditCardStatementImportUseCaseTest {
 
         var saved = transactions.findAll();
         assertEquals(4, saved.size());
-        // All land on the card's linkedAccountId, are expenses with positive stored amounts and signal=-1.
         assertTrue(saved.stream().allMatch(t -> account.id().equals(t.accountId())));
         assertTrue(saved.stream().allMatch(t -> Transaction.Type.EXPENSE.equals(t.type())));
         assertTrue(saved.stream().allMatch(t -> t.amount().signum() > 0));
         assertTrue(saved.stream().allMatch(t -> t.signal() == -1));
 
-        // Status computed by date against fixed today 2025-07-15.
         var mercado = saved.stream().filter(t -> t.description().equals("Mercado")).findFirst().orElseThrow();
         assertEquals(Transaction.Status.CONFIRMED, mercado.status());
         var streaming = saved.stream().filter(t -> t.description().equals("Streaming")).findFirst().orElseThrow();
         assertEquals(Transaction.Status.SCHEDULED, streaming.status());
 
-        // The two parcelado rows share one groupId with their installment numbers/total.
         var parcelas = saved.stream().filter(t -> t.description().equals("Geladeira")).toList();
         assertEquals(2, parcelas.size());
         assertEquals(1L, parcelas.stream().map(Transaction::groupId).distinct().count());
@@ -520,10 +487,10 @@ class CreditCardStatementImportUseCaseTest {
 
         var counter = new AtomicInteger(0);
         MessageBus.subscribe(new Object() {
-            @MessageListener
-            public MessageResult on(TransactionEvents.Created event) {
+            @br.commons.framework.message.MessageListener
+            public br.commons.framework.message.MessageResult on(TransactionEvents.Created event) {
                 counter.incrementAndGet();
-                return MessageResult.AVAILABLE;
+                return br.commons.framework.message.MessageResult.AVAILABLE;
             }
         });
 
@@ -539,7 +506,6 @@ class CreditCardStatementImportUseCaseTest {
                 useCase.confirm(new ImportConfirmCommand(List.of(row1, row2)))).value();
 
         assertEquals(2, result.created());
-        // One TransactionCreated per created row (delta, robust against other subscribers/state).
         assertEquals(2, counter.get() - before);
     }
 
@@ -571,7 +537,6 @@ class CreditCardStatementImportUseCaseTest {
         assertEquals(0, first.skipped());
         assertEquals(3, transactions.findAll().size());
 
-        // Same command again → recognized by groupId (parcelado) + à-vista key, nothing re-expanded.
         var second = (ImportResult) assertInstanceOf(Result.Success.class, useCase.confirm(cmd)).value();
         assertEquals(0, second.created());
         assertEquals(cmd.rows().size(), second.skipped());
@@ -587,10 +552,9 @@ class CreditCardStatementImportUseCaseTest {
         accounts.save(card);
 
         var transactions = new InMemoryRepositories.Transactions();
-        // Pre-existing à-vista tx on the linked account: same date/amount/normalized-description.
         transactions.save(new Transaction(
                 UUID.randomUUID(), "MERCADO LIVRE", new BigDecimal("-90.00"),
-                LocalDate.of(2025, 7, 4), UUID.randomUUID(), account.id(),
+                LocalDate.of(2025, 7, 4), account.id(),
                 Transaction.Status.CONFIRMED, Transaction.Type.EXPENSE, CostCenter.VARIAVEL_ID, null, null, 1, 1, null));
 
         var useCase = useCaseWith(NOOP_EXTRACTOR, accounts, transactions);
@@ -625,7 +589,6 @@ class CreditCardStatementImportUseCaseTest {
         accounts.save(account);
         accounts.save(card);
 
-        // A transactions double whose save throws on the "BOOM" row but persists the others.
         var transactions = new InMemoryRepositories.Transactions() {
             @Override
             public Transaction save(@NonNull Transaction e) {
@@ -649,7 +612,6 @@ class CreditCardStatementImportUseCaseTest {
         var result = (ImportResult) assertInstanceOf(Result.Success.class,
                 useCase.confirm(new ImportConfirmCommand(List.of(ok1, boom, ok2)))).value();
 
-        // The failing row is swallowed; the rows around it persist and stand.
         assertEquals(2, result.created());
         var saved = transactions.findAll();
         assertEquals(2, saved.size());

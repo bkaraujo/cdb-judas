@@ -2,6 +2,7 @@ package br.community.feature.user.accounts.transactions.importer.confirm;
 
 import br.community.context.monetary._0_domain.model.Transaction;
 import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -9,10 +10,8 @@ import java.util.List;
 import java.util.UUID;
 
 /**
- * Confirm a bank-statement import: the chosen destination account and the rows the user kept.
- * {@code amount} is signed (debit negative, credit positive); {@code type} mirrors the sign. The
- * server re-derives each row's fate (insert / reconcile / skip) against the account's current
- * transactions, so the import is idempotent and authoritative regardless of the preview.
+ * Confirm a bank-statement import. {@code type} may be null when the sign of {@code amount}
+ * unambiguously determines the direction (positive = income, negative = expense).
  */
 @NullMarked
 public record BankStatementConfirmCommand(UUID accountId, List<Row> rows) {
@@ -22,7 +21,7 @@ public record BankStatementConfirmCommand(UUID accountId, List<Row> rows) {
             String description,
             BigDecimal amount,
             LocalDate date,
-            Transaction.Type type,
+            Transaction.@Nullable Type type,
             UUID categoryId
     ) {}
 }

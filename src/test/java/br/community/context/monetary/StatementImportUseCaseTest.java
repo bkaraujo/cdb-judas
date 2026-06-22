@@ -32,12 +32,10 @@ import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-/** Bank-statement (extrato) import: detection, signed typing, reconciliation and dedup, driven
- *  through a real {@link br.community.context.monetary.MonetaryContext} over in-memory repositories. */
+/** Bank-statement (extrato) import: detection, signed typing, reconciliation and dedup. */
 class StatementImportUseCaseTest {
 
     private static final long MAX_BYTES = 4096;
-    // Fixed today after the fixture dates → every March 2025 movement is "confirmed".
     private static final Clock CLOCK = Clock.fixed(Instant.parse("2025-07-15T12:00:00Z"), ZoneOffset.UTC);
 
     private static final String EXTRATO = String.join("\n",
@@ -104,10 +102,9 @@ class StatementImportUseCaseTest {
         var account = checking("Conta BTG");
         accounts.save(account);
         var transactions = new InMemoryRepositories.Transactions();
-        // A manual, still-pending expense the user typed with a slightly different date and description.
         var manual = new Transaction(
                 UUID.randomUUID(), "Dentista", new BigDecimal("-161.43"), LocalDate.of(2025, 3, 4),
-                UUID.randomUUID(), account.id(), Transaction.Status.PENDING, Transaction.Type.EXPENSE, CostCenter.VARIAVEL_ID, null, null, 1, 1, null);
+                account.id(), Transaction.Status.PENDING, Transaction.Type.EXPENSE, CostCenter.VARIAVEL_ID, null, null, 1, 1, null);
         transactions.save(manual);
         var useCase = useCaseWith(accounts, transactions);
 
@@ -130,7 +127,7 @@ class StatementImportUseCaseTest {
         var transactions = new InMemoryRepositories.Transactions();
         var manual = new Transaction(
                 UUID.randomUUID(), "Dentista", new BigDecimal("-161.43"), LocalDate.of(2025, 3, 1),
-                UUID.randomUUID(), account.id(), Transaction.Status.PENDING, Transaction.Type.EXPENSE, CostCenter.VARIAVEL_ID, null, null, 1, 1, null);
+                account.id(), Transaction.Status.PENDING, Transaction.Type.EXPENSE, CostCenter.VARIAVEL_ID, null, null, 1, 1, null);
         transactions.save(manual);
         var useCase = useCaseWith(accounts, transactions);
 
@@ -152,7 +149,7 @@ class StatementImportUseCaseTest {
         var transactions = new InMemoryRepositories.Transactions();
         var existing = new Transaction(
                 UUID.randomUUID(), "Odontoprev", new BigDecimal("-161.43"), LocalDate.of(2025, 3, 5),
-                UUID.randomUUID(), account.id(), Transaction.Status.CONFIRMED, Transaction.Type.EXPENSE, CostCenter.VARIAVEL_ID, null, null, 1, 1, null);
+                account.id(), Transaction.Status.CONFIRMED, Transaction.Type.EXPENSE, CostCenter.VARIAVEL_ID, null, null, 1, 1, null);
         transactions.save(existing);
         var useCase = useCaseWith(accounts, transactions);
 
@@ -175,7 +172,7 @@ class StatementImportUseCaseTest {
 
     private StatementImportUseCase useCaseWith(InMemoryRepositories.Accounts accounts, InMemoryRepositories.Transactions transactions) {
         final PdfTextExtractor extractor = (bytes, password) -> Result.success(EXTRATO);
-        final MonetaryContext monetaryContext = monetaryContext(accounts, transactions, new InMemoryRepositories.Categories());
+        final MonetaryContext monetaryContext = monetaryContext(accounts, transactions);
         return new StatementImportUseCase(
                 monetaryContext, extractor,
                 List.of(new BTGStatementParser(), new SantanderStatementParser(),
@@ -185,18 +182,14 @@ class StatementImportUseCaseTest {
 
     private static MonetaryContext monetaryContext(
             InMemoryRepositories.Accounts accounts,
-            InMemoryRepositories.Transactions transactions,
-            InMemoryRepositories.Categories categories) {
+            InMemoryRepositories.Transactions transactions) {
         final AccountService accountService = new AccountService(accounts);
         final BalanceService balanceService = new BalanceService(new InMemoryRepositories.Balances());
         final TransactionService transactionService = new TransactionService(transactions);
-        final CategoryService categoryService = new CategoryService(categories);
-        final TagService tagService = new TagService(new InMemoryRepositories.Tags());
         final CostCenterService costCenterService = new CostCenterService(new InMemoryRepositories.CostCenters());
         final AccountUseCase ucAccount = new AccountUseCase(accountService, balanceService);
-        final TransactionUseCase ucTransaction = new TransactionUseCase(transactionService, categoryService);
-        final MetadataUseCase ucMetadata =
-                new MetadataUseCase(tagService, categoryService, costCenterService, transactionService);
+        final TransactionUseCase ucTransaction = new TransactionUseCase(transactionService);
+        final MetadataUseCase ucMetadata = new MetadataUseCase(costCenterService);
         return new MonetaryContext(ucAccount, ucTransaction, ucMetadata);
     }
 

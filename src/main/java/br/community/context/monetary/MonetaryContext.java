@@ -80,7 +80,7 @@ public class MonetaryContext implements Facade {
         return ucAccount.deleteCreditCard(id);
     }
 
-    // ── TransactionResponse operations ─────────────────────────────────────
+    // ── Transaction operations ─────────────────────────────────────
 
     public Result<List<Transaction>, DomainError> listTransactions() {
         return ucTransaction.listTransactions();
@@ -114,8 +114,6 @@ public class MonetaryContext implements Facade {
         return ucTransaction.createTransfer(fromAccountId, toAccountId, date, amount);
     }
 
-    // ── Imported transactions (used by the statement-import feature) ─
-
     public Result<Transaction, DomainError> createImportedTransaction(ImportedTransactionCommand cmd) {
         return ucTransaction.createImported(cmd);
     }
@@ -134,51 +132,7 @@ public class MonetaryContext implements Facade {
         return ucMetadata.updateCostCenter(id, cmd);
     }
 
-    // ── Category operations ────────────────────────────────────────
-
-    public Result<List<Category>, DomainError> listCategories() {
-        return ucMetadata.listCategories();
-    }
-
-    public Result<Category, DomainError> findCategoryById(UUID id) {
-        return ucMetadata.findCategoryById(id);
-    }
-
-    public Result<Category, DomainError> createCategory(CategoryCommand cmd) {
-        return ucMetadata.createCategory(cmd);
-    }
-
-    public Result<Category, DomainError> updateCategory(UUID id, CategoryCommand cmd) {
-        return ucMetadata.updateCategory(id, cmd);
-    }
-
-    public Category findOrCreateUncategorizedCategory() {
-        return ucMetadata.findOrCreateUncategorizedCategory();
-    }
-
-    public Result<Void, DomainError> deleteCategory(UUID id) {
-        return ucMetadata.deleteCategory(id);
-    }
-
     public Result<Void, DomainError> deleteCostCenter(UUID id) {
         return ucMetadata.deleteCostCenter(id);
-    }
-
-    // ── Tag operations ─────────────────────────────────────────────
-
-    public Result<List<Tag>, DomainError> listTags() {
-        return ucMetadata.listTags();
-    }
-
-    public Result<Tag, DomainError> createTag(TagCommand cmd) {
-        return ucMetadata.createTag(cmd);
-    }
-
-    public Result<Tag, DomainError> updateTag(UUID id, TagCommand cmd) {
-        return ucMetadata.updateTag(id, cmd);
-    }
-
-    public Result<Void, DomainError> deleteTag(UUID id) {
-        return ucMetadata.deleteTag(id);
     }
 }

@@ -22,16 +22,12 @@ public class ContextBridge {
     public MonetaryContext monetaryContext(
             AccountRepository accountRepository,
             BalanceRepository balanceRepository,
-            CategoryRepository categoryRepository,
             CostCenterRepository costCenterRepository,
-            TagRepository tagRepository,
             TransactionRepository transactionRepository
     ) {
         Registry.set(AccountRepository.class, accountRepository);
         Registry.set(BalanceRepository.class, balanceRepository);
-        Registry.set(CategoryRepository.class, categoryRepository);
         Registry.set(CostCenterRepository.class, costCenterRepository);
-        Registry.set(TagRepository.class, tagRepository);
         Registry.set(TransactionRepository.class, transactionRepository);
 
         MonetaryBootstrap.register();

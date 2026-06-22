@@ -18,7 +18,6 @@ public record TransactionCommand(
         @NotBlank String description,
         @NotNull @TwoDecimalPlaces BigDecimal amount,
         @NotNull LocalDate date,
-        @NotNull UUID categoryId,
         @NotNull UUID accountId,
         @NotNull UUID costCenterId,
         @NotNull Transaction.Status status,

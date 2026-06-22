@@ -31,14 +31,6 @@ final class InMemoryRepositories {
         public Transaction save(Transaction e) { data.put(e.id(), e); return e; }
     }
 
-    static class Categories extends BaseRepo<Category, UUID> implements CategoryRepository {
-        public Category save(Category e) { data.put(e.id(), e); return e; }
-    }
-
-    static class Tags extends BaseRepo<Tag, UUID> implements TagRepository {
-        public Tag save(Tag e) { data.put(e.id(), e); return e; }
-    }
-
     static class CostCenters extends BaseRepo<CostCenter, UUID> implements CostCenterRepository {
         public CostCenter save(CostCenter e) { data.put(e.id(), e); return e; }
     }

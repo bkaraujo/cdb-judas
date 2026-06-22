@@ -33,17 +33,18 @@ public class DatabaseConfig {
         properties.autoCommit(true);
         properties.validationQuery("SELECT 1");
 
-        val datasource = new DataSource(properties);
-        datasource.getConnection().ifSuccess(conn -> {
-            val stmt = conn.createStatement().getOrThrow();
-            for (val command : Database.model()) {
-                stmt.execute(command).ifFailure(reason -> Logger.error("Erro ao criar schema: %s", reason));
-            }
-            stmt.close();
-            conn.close();
-        });
+        return Registry.tryGet(DataSource.class, () -> {
+            val datasource = new DataSource(properties);
+            datasource.getConnection().ifSuccess(conn -> {
+                val stmt = conn.createStatement().getOrThrow();
+                for (val command : Database.model()) {
+                    stmt.execute(command).ifFailure(reason -> Logger.error("Erro ao criar schema: %s", reason));
+                }
+                stmt.close();
+                conn.close();
+            });
 
-        Registry.set(DataSource.class, datasource);
-        return datasource;
+            return datasource;
+        });
     }
 }

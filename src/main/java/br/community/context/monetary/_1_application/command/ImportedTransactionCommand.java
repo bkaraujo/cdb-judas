@@ -9,11 +9,9 @@ import java.time.LocalDate;
 import java.util.UUID;
 
 /**
- * Persist one already-resolved imported movement. {@code amount} is the POSITIVE value — the server
- * applies the sign from {@code type} ({@code EXPENSE} → negative, {@code INCOME} → positive).
- * {@code status} ({@code CONFIRMED}/{@code SCHEDULED}) and the optional {@code groupId}/installment
- * fields are computed by the import orchestration and stored as given. Credit-card invoices always
- * pass {@code EXPENSE}; bank statements pass the type derived from the printed sign.
+ * Persist one already-resolved imported movement. {@code amount} is the signed value — the server
+ * derives the signal from the sign. {@code status} ({@code CONFIRMED}/{@code SCHEDULED}) and the
+ * optional {@code groupId}/installment fields are computed by the import orchestration.
  */
 @NullMarked
 public record ImportedTransactionCommand(
@@ -21,7 +19,6 @@ public record ImportedTransactionCommand(
         String description,
         BigDecimal amount,
         LocalDate date,
-        UUID categoryId,
         Transaction.Status status,
         Transaction.Type type,
         @Nullable UUID groupId,

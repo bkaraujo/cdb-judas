@@ -30,10 +30,8 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 /**
- * Orchestrates the credit-card statement import as a feature-level use of the monetary context.
- * Wires PDF extraction → issuer detection → per-bank parser → card matching → installment expansion
- * → category guessing into a preview, and persists the kept rows on confirm. All access to the
- * monetary context goes through its {@link MonetaryContext} facade — this slice owns no persistence.
+ * Orchestrates credit-card statement import via the monetary context facade.
+ * Category assignment is done by the feature layer on top of USER_TRANSACTION (not here).
  */
 @NullMarked
 public class StatementImportUseCase {
@@ -54,7 +52,6 @@ public class StatementImportUseCase {
         this(monetaryContext, extractor, parsers, bytes, Clock.systemDefaultZone());
     }
 
-    /** Test seam: lets callers pin the clock so date-anchored parsing/status is deterministic. */
     public StatementImportUseCase(MonetaryContext monetaryContext, PdfTextExtractor extractor, List<StatementParser> parsers, long bytes, Clock clock) {
         this.monetaryContext = monetaryContext;
         this.extractor = extractor;
@@ -64,11 +61,6 @@ public class StatementImportUseCase {
         this.clock = clock;
     }
 
-    /**
-     * Extracts the PDF text and routes by document type. {@code accountId} is honored only by the
-     * bank-statement path — it lets the preview compute per-row duplicate/reconcile states against the
-     * chosen destination account (the credit-card path matches its card by last4 instead).
-     */
     public Result<ImportPreviewOutcome, ImportError> preview(byte[] fileBytes, @Nullable String password, @Nullable UUID accountId) {
         if (fileBytes.length > maxFileBytes) {
             return new Result.Failure<>(new ImportError.FileTooLarge(fileBytes.length, maxFileBytes));
@@ -99,15 +91,6 @@ public class StatementImportUseCase {
         };
     }
 
-    /**
-     * Persists the kept rows on each row's own card via {@link MonetaryContext#createImportedTransaction},
-     * recognizing already-imported charges so a re-import is idempotent. Parcelado rows are grouped by
-     * their deterministic {@link GroupSignature#groupId} and skipped wholesale when that group already
-     * exists; à-vista rows are deduped by account/date/amount/normalized-description. The facade emits
-     * one transaction-created event per persisted row (drives balance recalc + SSE). Persistence is
-     * best-effort: a failure on one row is logged and the loop continues — already-saved rows stand.
-     * Fails fast when a row names an unknown card.
-     */
     public Result<ImportResult, DomainError> confirm(ImportConfirmCommand cmd) {
         return resolveAccountsByCard(cmd).map(accountByCard -> {
             val today = LocalDate.now(clock);
@@ -125,9 +108,6 @@ public class StatementImportUseCase {
         });
     }
 
-    /** Resolves every referenced card to its destination account up front, failing fast on an unknown
-     *  card so a partial import never starts. The account drives dedup and group identity, so a mixed
-     *  invoice spreads its rows across the right card accounts. */
     private Result<Map<UUID, UUID>, DomainError> resolveAccountsByCard(ImportConfirmCommand cmd) {
         val accountByCard = new HashMap<UUID, UUID>();
         for (val cardId : cmd.rows().stream().map(ImportConfirmCommand.Row::cardId).distinct().toList()) {
@@ -139,8 +119,6 @@ public class StatementImportUseCase {
         return new Result.Success<>(accountByCard);
     }
 
-    /** Groups the parcelado rows by their deterministic {@link GroupSignature#groupId}, preserving
-     *  first-seen order; à-vista rows are left to {@link #persistAvista}. */
     private Map<UUID, List<ImportConfirmCommand.Row>> partitionInstallments(ImportConfirmCommand cmd, Map<UUID, UUID> accountByCard) {
         val installmentByGroup = new LinkedHashMap<UUID, List<ImportConfirmCommand.Row>>();
         for (val row : cmd.rows()) {
@@ -153,9 +131,6 @@ public class StatementImportUseCase {
         return installmentByGroup;
     }
 
-    /** Persists each new parcelado group on its card, skipping wholesale a group whose id already exists
-     *  (re-import idempotence). Appends the saved rows to {@code saved} so the à-vista pass dedups
-     *  against them. */
     private Counts persistInstallments(Map<UUID, List<ImportConfirmCommand.Row>> installmentByGroup,
                                        Map<UUID, UUID> accountByCard, LocalDate today,
                                        Set<UUID> existingGroups, List<Transaction> saved) {
@@ -181,9 +156,6 @@ public class StatementImportUseCase {
         return new Counts(created, skipped);
     }
 
-    /** Persists the à-vista rows (non-parcelado), deduping each by account/date/amount/normalized
-     *  description against {@code seen} (the pre-existing transactions) plus {@code saved} (the rows
-     *  persisted earlier in this run, including the parcelado ones). */
     private Counts persistAvista(ImportConfirmCommand cmd, Map<UUID, UUID> accountByCard, LocalDate today,
                                  List<Transaction> seen, List<Transaction> saved) {
         int created = 0;
@@ -207,24 +179,14 @@ public class StatementImportUseCase {
     }
 
     @NullMarked
-    private record Counts(int created, int skipped) {
-    }
+    private record Counts(int created, int skipped) {}
 
-    /** Destination account of a row's (required) card; membership is guaranteed by {@link #confirm}'s
-     *  up-front resolution, so the lookup never misses. */
     private static UUID accountOf(Map<UUID, UUID> accountByCard, ImportConfirmCommand.Row row) {
         return Objects.requireNonNull(accountByCard.get(row.cardId()));
     }
 
     // ── Bank-statement path ────────────────────────────────────────
 
-    /**
-     * Persists the kept bank-statement rows on the chosen account. Each row's fate is re-derived
-     * against the account's current transactions ({@link #classify}): an already-imported identical
-     * row is skipped; a row that matches a pending/scheduled manual transaction promotes that one to
-     * {@code confirmed} (reconciliation, no insert); otherwise a new transaction is created with the
-     * sign-derived type. Best-effort: a failure on one row is logged and the loop continues.
-     */
     public Result<ImportResult, DomainError> confirmStatement(BankStatementConfirmCommand cmd) {
         return monetaryContext.findAccount(cmd.accountId()).map(account -> {
             val accountId = account.id();
@@ -268,9 +230,10 @@ public class StatementImportUseCase {
 
     private boolean persistStatementRow(BankStatementConfirmCommand.Row row, UUID accountId, LocalDate today) {
         val status = YearMonth.from(row.date()).isAfter(YearMonth.from(today)) ? Transaction.Status.SCHEDULED : Transaction.Status.CONFIRMED;
+        val type = row.type() != null ? row.type() : (row.amount().signum() < 0 ? Transaction.Type.EXPENSE : Transaction.Type.INCOME);
         val command = new ImportedTransactionCommand(
-                accountId, row.description(), row.amount(), row.date(), row.categoryId(),
-                status, row.type(), null, null, null);
+                accountId, row.description(), row.amount(), row.date(),
+                status, type, null, null, null);
         try {
             return switch (monetaryContext.createImportedTransaction(command)) {
                 case Result.Success(var ignored) -> true;
@@ -285,23 +248,16 @@ public class StatementImportUseCase {
         }
     }
 
-    private BankStatementPreviewRow bankRow(MonetaryDocumentEntry line, Classification cls,
-                                            List<Transaction> history, UUID fallbackCategoryId) {
+    private BankStatementPreviewRow bankRow(MonetaryDocumentEntry line, Classification cls, List<CategoryGuesser.Entry> historyEntries) {
         val type = line.amount().signum() < 0 ? Transaction.Type.EXPENSE : Transaction.Type.INCOME;
         val categoryId = cls.state() == RowState.NEW
-                ? categoryGuesser.guess(line.description(), history).orElse(fallbackCategoryId)
+                ? categoryGuesser.guess(line.description(), historyEntries).orElse(null)
                 : null;
         val reconcileDescription = cls.target() != null ? cls.target().description() : null;
         return new BankStatementPreviewRow(
                 line.date(), line.description(), line.amount(), type, cls.state(), categoryId, reconcileDescription);
     }
 
-    /**
-     * Classifies each statement movement against the chosen account's transactions, consuming each
-     * existing transaction at most once (1:1): an identical already-imported row → DUPLICATE; a
-     * pending/scheduled manual transaction with the same signed amount within ±{@value
-     * #RECONCILE_WINDOW_DAYS} days (closest date wins) → RECONCILE; otherwise NEW.
-     */
     private List<Classification> classify(List<MonetaryDocumentEntry> movements, List<Transaction> accountTx) {
         val consumed = new HashSet<UUID>();
         val out = new ArrayList<Classification>();
@@ -342,8 +298,7 @@ public class StatementImportUseCase {
     }
 
     @NullMarked
-    private record Classification(RowState state, @Nullable Transaction target) {
-    }
+    private record Classification(RowState state, @Nullable Transaction target) {}
 
     private static boolean isAvistaDuplicate(ImportConfirmCommand.Row row, UUID accountId, List<Transaction> seen) {
         val desc = GroupSignature.normalize(row.description());
@@ -361,7 +316,7 @@ public class StatementImportUseCase {
     ) {
         val status = YearMonth.from(row.date()).isAfter(YearMonth.from(today)) ? Transaction.Status.SCHEDULED : Transaction.Status.CONFIRMED;
         val command = new ImportedTransactionCommand(
-                accountId, row.description(), row.amount(), row.date(), row.categoryId(),
+                accountId, row.description(), row.amount(), row.date(),
                 status, Transaction.Type.EXPENSE, groupId, installmentNumber, totalInstallments);
         try {
             return switch (monetaryContext.createImportedTransaction(command)) {
@@ -387,13 +342,12 @@ public class StatementImportUseCase {
         val accountTx = selectedAccountId != null
                 ? history.stream().filter(t -> selectedAccountId.equals(t.accountId())).toList()
                 : Collections.unmodifiableList(new ArrayList<Transaction>());
-        val fallbackCategoryId = monetaryContext.findOrCreateUncategorizedCategory().id();
 
         val classes = classify(statement, accountTx);
 
         val rows = new ArrayList<BankStatementPreviewRow>();
         for (int i = 0; i < statement.size(); i++) {
-            rows.add(bankRow(statement.get(i), classes.get(i), history, fallbackCategoryId));
+            rows.add(bankRow(statement.get(i), classes.get(i), List.of()));
         }
 
         return Result.success(new ImportPreviewOutcome.Statement(
@@ -401,9 +355,6 @@ public class StatementImportUseCase {
         );
     }
 
-    /**
-     * Sem conta escolhida, usa a única candidata elegível (quando há exatamente uma).
-     */
     private static @Nullable UUID selectAccount(@Nullable UUID accountId, List<Account> candidates) {
         if (accountId != null) {
             return accountId;
@@ -412,9 +363,6 @@ public class StatementImportUseCase {
     }
 
     private Result<ImportPreviewOutcome, ImportError> preview(Issuer issuer, List<MonetaryDocumentEntry> statement) {
-        // Only registered cards present on this statement are offered: linked to a bank account (so the
-        // charges have a destination) and carrying a last4 printed on the invoice. The card is per row,
-        // so an unmatched/ambiguous last4 still leaves every invoice card pickable.
         val last4s = statement.stream().map(MonetaryDocumentEntry::last4)
                 .filter(Objects::nonNull).collect(Collectors.toSet());
         val cards = monetaryContext.listCreditCards().getOrElse(List.of()).stream()
@@ -422,13 +370,10 @@ public class StatementImportUseCase {
                 .filter(card -> last4s.contains(card.additionalInfo().getOrDefault("last4", Strings.EMPTY)))
                 .toList();
 
-        // Each charge's last4 is matched to a card individually, so an invoice mixing several cards
-        // pre-selects the right card per row (the user can still override it on confirm).
         val cardByLast4 = cardMatcher.matchByLast4(last4s, cards);
 
         val today = LocalDate.now(clock);
         val history = monetaryContext.listTransactions().getOrElse(List.of());
-        val fallbackCategoryId = monetaryContext.findOrCreateUncategorizedCategory().id();
 
         val rows = new ArrayList<PreviewRow>();
         for (val line : statement) {
@@ -437,8 +382,7 @@ public class StatementImportUseCase {
             val suggestedCardId = suggestedCard != null ? suggestedCard.id() : null;
             for (val draft : expander.expand(line, accountId, today)) {
                 val dup = suggestedCard != null && isDuplicate(draft, history);
-                val categoryId = categoryGuesser.guess(draft.description(), history).orElse(fallbackCategoryId);
-                rows.add(new PreviewRow(draft, dup, categoryId, suggestedCardId));
+                rows.add(new PreviewRow(draft, dup, null, suggestedCardId));
             }
         }
 
@@ -447,9 +391,6 @@ public class StatementImportUseCase {
         );
     }
 
-    /**
-     * Conta de destino dos lançamentos do cartão: a conta vinculada, o próprio cartão, ou sentinela se não casou.
-     */
     private static UUID resolveAccountId(@Nullable Account card) {
         if (card == null) {
             return new UUID(0L, 0L);

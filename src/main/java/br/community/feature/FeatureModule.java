@@ -6,7 +6,6 @@ import br.community.feature.user.accounts.closing.ClosingRepository;
 import br.community.feature.user.accounts.closing.ClosingService;
 import br.community.feature.user.accounts.core.AccountStreamListener;
 import br.community.feature.user.accounts.core.UserAccountService;
-import br.community.feature.user.categories.core.CategoryStreamListener;
 import br.community.feature.user.stream.SSE;
 import br.community.feature.user.stream.SseController;
 import br.community.feature.user.stream.SseService;
@@ -27,13 +26,6 @@ public class FeatureModule {
     @Bean
     public SseController sseController(SSE sse) {
         return new SseController(sse);
-    }
-
-    @Bean
-    CategoryStreamListener categoryStreamListener(SSE sse) {
-        val listener = new CategoryStreamListener(sse);
-        MessageBus.subscribe(listener);
-        return listener;
     }
 
     @Bean

@@ -7,7 +7,6 @@ import br.community.context.monetary._0_domain.model.CostCenter;
 import br.community.context.monetary._0_domain.model.Transaction;
 import br.community.context.monetary._1_application.command.ImportedTransactionCommand;
 import br.community.context.monetary._1_application.command.TransactionCommand;
-import br.community.context.monetary._1_application.service.CategoryService;
 import br.community.context.monetary._1_application.service.TransactionService;
 import br.community.context.shared._0_domain.model.DomainError;
 import lombok.RequiredArgsConstructor;
@@ -26,7 +25,6 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class TransactionUseCase {
     private final TransactionService transactionService;
-    private final CategoryService categoryService;
 
     public Result<List<Transaction>, DomainError> listTransactions() {
         val all = transactionService.findAll().stream()
@@ -44,11 +42,8 @@ public class TransactionUseCase {
     }
 
     public Result<Transaction, DomainError> createTransaction(TransactionCommand cmd) {
-        return categoryService.validateNotMacroCategory(cmd.categoryId())
-                .flatMap(ignored -> {
-                    val count = installmentCount(cmd);
-                    return count == 1 ? createSingle(cmd) : createInstallments(cmd, count);
-                });
+        val count = installmentCount(cmd);
+        return count == 1 ? createSingle(cmd) : createInstallments(cmd, count);
     }
 
     private static int installmentCount(TransactionCommand cmd) {
@@ -56,7 +51,7 @@ public class TransactionUseCase {
     }
 
     private Result<Transaction, DomainError> createSingle(TransactionCommand cmd) {
-        val saved = transactionService.save(toMonetaryTransactionEntity(UUID.randomUUID(), cmd, cmd.date(), cmd.status(), null, null, null));
+        val saved = transactionService.save(toEntity(UUID.randomUUID(), cmd, cmd.date(), cmd.status(), null, null, null));
         MessageBus.submit(new TransactionEvents.Created(saved));
         return Result.success(saved);
     }
@@ -68,7 +63,7 @@ public class TransactionUseCase {
         for (int i = 1; i <= installmentsCount; i++) {
             val date = cmd.date().plusMonths(i - 1);
             val status = (i == 1) ? cmd.status() : Transaction.Status.PENDING;
-            batch.add(toMonetaryTransactionEntity(UUID.randomUUID(), cmd, date, status, groupId, i, installmentsCount));
+            batch.add(toEntity(UUID.randomUUID(), cmd, date, status, groupId, i, installmentsCount));
         }
 
         Transaction first = null;
@@ -83,16 +78,14 @@ public class TransactionUseCase {
     }
 
     public Result<Transaction, DomainError> updateTransaction(UUID id, TransactionCommand cmd) {
-        return categoryService.validateNotMacroCategory(cmd.categoryId())
-                .flatMap(catOk -> transactionService.findById(id).flatMap(existing -> {
+        return transactionService.findById(id).flatMap(existing -> {
             val transferSiblings = transactionService.findTransferSiblings(existing);
             if (!transferSiblings.isEmpty()) return updateTransfer(existing, transferSiblings, cmd);
 
             val isFuture = "FUTURE".equalsIgnoreCase(cmd.editMode()) && existing.groupId() != null;
 
             if (!isFuture) {
-                // A standalone entry, or a single-mode edit of an installment, keeps its own group metadata.
-                val updated = transactionService.save(toMonetaryTransactionEntity(id, cmd, cmd.date(), cmd.status(),
+                val updated = transactionService.save(toEntity(id, cmd, cmd.date(), cmd.status(),
                         existing.groupId(), existing.installmentNumber(), existing.totalInstallments()));
                 MessageBus.submit(new TransactionEvents.Updated(existing));
                 MessageBus.submit(new TransactionEvents.Updated(updated));
@@ -112,7 +105,7 @@ public class TransactionUseCase {
             for (val t : all) {
                 val currentNumber = t.installmentNumber();
                 val newDate = cmd.date().plusMonths(currentNumber - installmentNumber);
-                val updated = transactionService.save(toMonetaryTransactionEntity(t.id(), cmd, newDate, t.status(),
+                val updated = transactionService.save(toEntity(t.id(), cmd, newDate, t.status(),
                         t.groupId(), t.installmentNumber(), t.totalInstallments()));
                 if (t.id().equals(id)) firstSaved = updated;
             }
@@ -123,13 +116,10 @@ public class TransactionUseCase {
             }
 
             return Result.success(firstSaved);
-        }));
+        });
     }
 
-    /** A transfer stays an inseparable pair when edited: date, amount magnitude and status mirror to
-     *  both legs (each keeps the sign dictated by its own type), while the account change applies only
-     *  to the edited leg — moving that side of the transfer. The opposite leg keeps its own account.
-     *  Description, category, cost center, type and group metadata are preserved per leg. */
+    /** A transfer stays an inseparable pair when edited. */
     private Result<Transaction, DomainError> updateTransfer(Transaction edited, List<Transaction> siblings, TransactionCommand cmd) {
         val newAccount = cmd.accountId();
         if (siblings.stream().anyMatch(sib -> newAccount.equals(sib.accountId()))) {
@@ -138,7 +128,6 @@ public class TransactionUseCase {
 
         val absAmount = cmd.amount().abs();
         val updatedEdited = transactionService.save(withTransferEdits(edited, newAccount, absAmount, cmd.date(), cmd.status()));
-        // The pre-edit snapshot recalculates the leg's former account when the account moved.
         MessageBus.submit(new TransactionEvents.Updated(edited));
         MessageBus.submit(new TransactionEvents.Updated(updatedEdited));
 
@@ -149,13 +138,10 @@ public class TransactionUseCase {
         return Result.success(updatedEdited);
     }
 
-    /** Rebuilds a transfer leg keeping its identity, description, category, cost center, type and group
-     *  metadata; applies the (possibly new) account, the shared date/status and the signed amount. A
-     *  confirmed leg keeps {@code paymentDate} aligned with its date, matching how transfers are created. */
     private static Transaction withTransferEdits(Transaction leg, UUID accountId, BigDecimal absAmount, LocalDate date, Transaction.Status status) {
         return new Transaction(
                 leg.id(), leg.description(), absAmount, date,
-                leg.categoryId(), accountId, status, leg.type(), leg.costCenterId(),
+                accountId, status, leg.type(), leg.costCenterId(),
                 Transaction.Status.CONFIRMED.equals(status) ? date : null,
                 leg.groupId(), leg.installmentNumber(), leg.totalInstallments(), leg.notes());
     }
@@ -165,7 +151,7 @@ public class TransactionUseCase {
                 .map(existing -> {
                     val saved = transactionService.save(new Transaction(
                             existing.id(), existing.description(), existing.amount(), existing.date(),
-                            existing.categoryId(), existing.accountId(), status, existing.type(), existing.costCenterId(), paymentDate,
+                            existing.accountId(), status, existing.type(), existing.costCenterId(), paymentDate,
                             existing.groupId(), existing.installmentNumber(), existing.totalInstallments(), existing.notes()
                     ));
                     MessageBus.submit(new TransactionEvents.Updated(saved));
@@ -206,8 +192,6 @@ public class TransactionUseCase {
         });
     }
 
-    /** A transfer is an inseparable pair: removing either leg removes both so balances on both
-     *  accounts stay consistent. Delete mode (SINGLE/FUTURE/ALL) is irrelevant for transfers. */
     private Result<Void, DomainError> deleteTransferGroup(Transaction leg, List<Transaction> siblings) {
         val legs = new ArrayList<Transaction>();
         legs.add(leg);
@@ -226,7 +210,6 @@ public class TransactionUseCase {
             return Result.failure(new DomainError.BusinessRule("Conta de origem e destino devem ser diferentes"));
         }
 
-        val transferCat = categoryService.findOrCreateTransferCategory();
         val groupId = UUID.randomUUID();
         val absAmount = amount.abs();
         val outId = UUID.randomUUID();
@@ -234,12 +217,12 @@ public class TransactionUseCase {
 
         val outflow = new Transaction(
                 outId, "Transferência (saída)", absAmount, date,
-                transferCat.id(), fromAccountId, Transaction.Status.CONFIRMED, Transaction.Type.EXPENSE, CostCenter.VARIAVEL_ID, date,
+                fromAccountId, Transaction.Status.CONFIRMED, Transaction.Type.EXPENSE, CostCenter.VARIAVEL_ID, date,
                 groupId, 1, 2, null
         );
         val inflow = new Transaction(
                 inId, "Transferência (entrada)", absAmount, date,
-                transferCat.id(), toAccountId, Transaction.Status.CONFIRMED, Transaction.Type.INCOME, CostCenter.VARIAVEL_ID, date,
+                toAccountId, Transaction.Status.CONFIRMED, Transaction.Type.INCOME, CostCenter.VARIAVEL_ID, date,
                 groupId, 2, 2, null
         );
 
@@ -250,29 +233,24 @@ public class TransactionUseCase {
         return Result.success(savedOut);
     }
 
-    /** Persists an already-resolved imported movement (sign applied here from {@code type}) and emits
-     *  the creation event so balances recalc. Used by the statement-import feature via the facade. */
     public Result<Transaction, DomainError> createImported(ImportedTransactionCommand cmd) {
         val tx = new Transaction(
                 UUID.randomUUID(), cmd.description(), cmd.amount().abs(), cmd.date(),
-                cmd.categoryId(), cmd.accountId(), cmd.status(), cmd.type(), CostCenter.VARIAVEL_ID, null,
+                cmd.accountId(), cmd.status(), cmd.type(), CostCenter.VARIAVEL_ID, null,
                 cmd.groupId(), installmentOrDefault(cmd.installmentNumber()), installmentOrDefault(cmd.totalInstallments()), null);
         val saved = transactionService.save(tx);
         MessageBus.submit(new TransactionEvents.Created(saved));
         return Result.success(saved);
     }
 
-    private Transaction toMonetaryTransactionEntity(UUID id, TransactionCommand cmd, LocalDate date, Transaction.Status status,
-                                                            @Nullable UUID groupId, @Nullable Integer installmentNumber, @Nullable Integer totalInstallments) {
+    private Transaction toEntity(UUID id, TransactionCommand cmd, LocalDate date, Transaction.Status status,
+                                 @Nullable UUID groupId, @Nullable Integer installmentNumber, @Nullable Integer totalInstallments) {
         return new Transaction(id, cmd.description(), cmd.amount().abs(), date,
-                cmd.categoryId(), cmd.accountId(), status, cmd.type(), cmd.costCenterId(), null,
+                cmd.accountId(), status, cmd.type(), cmd.costCenterId(), null,
                 groupId, installmentOrDefault(installmentNumber), installmentOrDefault(totalInstallments), cmd.notes());
     }
 
-    /** Installment metadata is optional upstream (à-vista charges and standalone entries carry none); the
-     *  domain models a single charge as installment 1 of 1, so an absent value resolves to 1. */
     private static int installmentOrDefault(@Nullable Integer value) {
         return value == null ? 1 : value;
     }
-
 }

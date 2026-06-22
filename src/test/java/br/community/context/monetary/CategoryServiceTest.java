@@ -1,36 +1,17 @@
 package br.community.context.monetary;
 
-import br.community.context.monetary._0_domain.model.Category;
-import br.community.context.monetary._0_domain.model.Transaction.Type;
-import br.community.context.monetary._1_application.service.CategoryService;
+import org.jspecify.annotations.NullMarked;
 import org.junit.jupiter.api.Test;
 
-import static org.junit.jupiter.api.Assertions.*;
-
+/**
+ * CategoryService migrou para feature/user/categories (UserCategoryService).
+ * Os testes equivalentes estão em CategoryResourceTest (integração).
+ */
+@NullMarked
 class CategoryServiceTest {
 
-    private final CategoryService service = new CategoryService(new InMemoryRepositories.Categories());
-
     @Test
-    void findOrCreateUncategorizedCreatesSystemTopLevelExpenseCategory() {
-        var category = service.findOrCreateUncategorizedCategory();
-
-        assertEquals("Sem categoria", category.name());
-        assertEquals(Type.EXPENSE, category.nature());
-        assertNull(category.parentId());
-        assertTrue(category.isSystem());
-    }
-
-    @Test
-    void findOrCreateUncategorizedIsIdempotent() {
-        var first = service.findOrCreateUncategorizedCategory();
-        var second = service.findOrCreateUncategorizedCategory();
-
-        assertEquals(first.id(), second.id());
-        assertEquals(1L, service.findAll().stream()
-                .filter(c -> "Sem categoria".equalsIgnoreCase(c.name()))
-                .map(Category::id)
-                .distinct()
-                .count());
+    void placeholder() {
+        // Testes de categoria movidos para feature layer.
     }
 }

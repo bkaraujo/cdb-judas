@@ -21,14 +21,14 @@ import java.util.UUID;
 /**
  * Adaptador JDBC (H2) da porta {@link TransactionRepository}; tabela {@code MON_TRANSACTION}.
  * Enums como string, datas como {@code DATE}, timestamps como {@code TIMESTAMP};
- * {@code paymentDate}/{@code groupId}/{@code notes} são opcionais. Os filtros (por conta, grupo,
- * status) ficam no serviço sobre {@link #findAll()}.
+ * {@code paymentDate}/{@code groupId}/{@code notes} são opcionais.
+ * Categoria e tipo (income/expense) saíram para a camada feature (USER_TRANSACTION).
  */
 @NullMarked
 public final class TransactionJDBCRepository implements TransactionRepository {
 
     private static final String COLUMNS =
-            "ID, TXT_DESCRIPTION, NUM_SIGNAL, DEC_AMOUNT, TMS_PURCHASE, COD_CATEGORY, COD_ACCOUNT, COD_STATUS, TXT_TYPE, "
+            "ID, TXT_DESCRIPTION, NUM_SIGNAL, DEC_AMOUNT, TMS_PURCHASE, COD_ACCOUNT, COD_STATUS, "
             + "COD_COST_CENTER, DAT_PAYMENT, GROUP_ID, NUM_INSTALLMENT, NUM_INSTALLMENT_TOTAL, TXT_NOTES, "
             + "TMS_CREATE_AT, TMS_UPDATED_AT";
 
@@ -65,46 +65,42 @@ public final class TransactionJDBCRepository implements TransactionRepository {
 
         if (existing.isEmpty()) {
             dataSource.execute(
-                    "INSERT INTO MON_TRANSACTION (" + COLUMNS + ") VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                    "INSERT INTO MON_TRANSACTION (" + COLUMNS + ") VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
                     new JDBCPreparedParameter(1, entity.id().toString()),
                     new JDBCPreparedParameter(2, entity.description()),
                     new JDBCPreparedParameter(3, entity.signal()),
                     new JDBCPreparedParameter(4, entity.amount()),
                     new JDBCPreparedParameter(5, Timestamp.valueOf(entity.purchasedAt())),
-                    new JDBCPreparedParameter(6, entity.categoryId().toString()),
-                    new JDBCPreparedParameter(7, entity.accountId().toString()),
-                    new JDBCPreparedParameter(8, entity.status().name()),
-                    new JDBCPreparedParameter(9, entity.type().name()),
-                    new JDBCPreparedParameter(10, entity.costCenterId().toString()),
-                    new JDBCPreparedParameter(11, paymentDate),
-                    new JDBCPreparedParameter(12, groupStr),
-                    new JDBCPreparedParameter(13, entity.installmentNumber()),
-                    new JDBCPreparedParameter(14, entity.totalInstallments()),
-                    new JDBCPreparedParameter(15, entity.notes()),
-                    new JDBCPreparedParameter(16, now),
-                    new JDBCPreparedParameter(17, now)
+                    new JDBCPreparedParameter(6, entity.accountId().toString()),
+                    new JDBCPreparedParameter(7, entity.status().name()),
+                    new JDBCPreparedParameter(8, entity.costCenterId().toString()),
+                    new JDBCPreparedParameter(9, paymentDate),
+                    new JDBCPreparedParameter(10, groupStr),
+                    new JDBCPreparedParameter(11, entity.installmentNumber()),
+                    new JDBCPreparedParameter(12, entity.totalInstallments()),
+                    new JDBCPreparedParameter(13, entity.notes()),
+                    new JDBCPreparedParameter(14, now),
+                    new JDBCPreparedParameter(15, now)
             ).getOrThrow();
         } else {
             dataSource.execute(
-                    "UPDATE MON_TRANSACTION SET TXT_DESCRIPTION = ?, NUM_SIGNAL = ?, DEC_AMOUNT = ?, TMS_PURCHASE = ?, COD_CATEGORY = ?, "
-                            + "COD_ACCOUNT = ?, COD_STATUS = ?, TXT_TYPE = ?, COD_COST_CENTER = ?, DAT_PAYMENT = ?, "
+                    "UPDATE MON_TRANSACTION SET TXT_DESCRIPTION = ?, NUM_SIGNAL = ?, DEC_AMOUNT = ?, TMS_PURCHASE = ?, "
+                            + "COD_ACCOUNT = ?, COD_STATUS = ?, COD_COST_CENTER = ?, DAT_PAYMENT = ?, "
                             + "GROUP_ID = ?, NUM_INSTALLMENT = ?, NUM_INSTALLMENT_TOTAL = ?, TXT_NOTES = ?, TMS_UPDATED_AT = ? WHERE ID = ?",
                     new JDBCPreparedParameter(1, entity.description()),
                     new JDBCPreparedParameter(2, entity.signal()),
                     new JDBCPreparedParameter(3, entity.amount()),
                     new JDBCPreparedParameter(4, Timestamp.valueOf(entity.purchasedAt())),
-                    new JDBCPreparedParameter(5, entity.categoryId().toString()),
-                    new JDBCPreparedParameter(6, entity.accountId().toString()),
-                    new JDBCPreparedParameter(7, entity.status().name()),
-                    new JDBCPreparedParameter(8, entity.type().name()),
-                    new JDBCPreparedParameter(9, entity.costCenterId().toString()),
-                    new JDBCPreparedParameter(10, paymentDate),
-                    new JDBCPreparedParameter(11, groupStr),
-                    new JDBCPreparedParameter(12, entity.installmentNumber()),
-                    new JDBCPreparedParameter(13, entity.totalInstallments()),
-                    new JDBCPreparedParameter(14, entity.notes()),
-                    new JDBCPreparedParameter(15, now),
-                    new JDBCPreparedParameter(16, entity.id().toString())
+                    new JDBCPreparedParameter(5, entity.accountId().toString()),
+                    new JDBCPreparedParameter(6, entity.status().name()),
+                    new JDBCPreparedParameter(7, entity.costCenterId().toString()),
+                    new JDBCPreparedParameter(8, paymentDate),
+                    new JDBCPreparedParameter(9, groupStr),
+                    new JDBCPreparedParameter(10, entity.installmentNumber()),
+                    new JDBCPreparedParameter(11, entity.totalInstallments()),
+                    new JDBCPreparedParameter(12, entity.notes()),
+                    new JDBCPreparedParameter(13, now),
+                    new JDBCPreparedParameter(14, entity.id().toString())
             ).getOrThrow();
         }
         return entity;
@@ -134,10 +130,8 @@ public final class TransactionJDBCRepository implements TransactionRepository {
         val amount = rs.getBigDecimal("DEC_AMOUNT").getOrThrow();
         @Nullable Timestamp purchaseRaw = rs.getTimestamp("TMS_PURCHASE").getOrThrow();
         val purchasedAt = purchaseRaw == null ? LocalDateTime.now() : purchaseRaw.toLocalDateTime();
-        val categoryId = UUID.fromString(rs.getString("COD_CATEGORY").getOrThrow());
         val accountId = UUID.fromString(rs.getString("COD_ACCOUNT").getOrThrow());
         val status = Transaction.Status.valueOf(rs.getString("COD_STATUS").getOrThrow());
-        val type = Transaction.Type.valueOf(rs.getString("TXT_TYPE").getOrThrow());
         val costCenterId = UUID.fromString(rs.getString("COD_COST_CENTER").getOrThrow());
 
         @Nullable Date paymentRaw = rs.getDate("DAT_PAYMENT").getOrThrow();
@@ -156,7 +150,8 @@ public final class TransactionJDBCRepository implements TransactionRepository {
         @Nullable Timestamp updateRaw = rs.getTimestamp("TMS_UPDATED_AT").getOrThrow();
         @Nullable LocalDateTime updatedAt = updateRaw == null ? null : updateRaw.toLocalDateTime();
 
-        return new Transaction(id, description, signal, amount, purchasedAt, categoryId, accountId, status, type,
-                costCenterId, paymentDate, groupId, installmentNumber, totalInstallments, notes, createdAt, updatedAt);
+        return new Transaction(id, description, signal, amount, purchasedAt,
+                accountId, status, costCenterId, paymentDate, groupId,
+                installmentNumber, totalInstallments, notes, createdAt, updatedAt);
     }
 }

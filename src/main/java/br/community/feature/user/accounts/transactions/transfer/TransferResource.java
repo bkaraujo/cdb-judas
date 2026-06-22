@@ -29,9 +29,8 @@ public class TransferResource {
             throw new DomainException(error);
         }
         return switch (monetaryContext.createTransfer(req.fromAccountId(), req.toAccountId(), req.date(), req.amount())) {
-            case Result.Success(var t) -> TransactionMapper.toDto(t);
+            case Result.Success(var t) -> TransactionMapper.toDto(t, null);
             case Result.Failure(var error) -> throw new DomainException(error);
         };
     }
-
 }
