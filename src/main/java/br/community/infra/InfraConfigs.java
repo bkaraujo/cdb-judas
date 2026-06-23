@@ -11,6 +11,7 @@ import br.community.infra.persistence.*;
 import org.jspecify.annotations.NullMarked;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.DependsOn;
 import tools.jackson.databind.ObjectMapper;
 
 import java.util.concurrent.locks.ReadWriteLock;
@@ -18,6 +19,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 @NullMarked
 @Configuration
+@DependsOn("dataSource")
 public class InfraConfigs {
 
     @Bean

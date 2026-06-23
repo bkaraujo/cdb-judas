@@ -201,7 +201,8 @@ public abstract class Database {
                 "DELETE FROM USER_TRANSACTION_TAG",
                 "DELETE FROM USER_ACCOUNT_BALANCE",
                 "DELETE FROM USER_ACCOUNT",
-                "DELETE FROM MON_TRANSACTION"
+                "DELETE FROM MON_TRANSACTION",
+                "DELETE FROM USER_PREFERENCES"
         );
     }
 }
