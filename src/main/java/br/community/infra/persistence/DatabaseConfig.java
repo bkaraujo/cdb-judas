@@ -16,8 +16,8 @@ import org.springframework.context.annotation.Configuration;
  * adaptadores JDBC do contexto.
  *
  * <p>Roda como bean Spring (e não no {@code main()}) para que o banco esteja disponível tanto
- * no app quanto nos testes {@code @SpringBootTest}. {@code autoCommit=true}: cada operação do
- * repositório confirma de imediato (sem isso o pool faz rollback ao devolver a conexão).</p>
+ * no app quanto nos testes {@code @SpringBootTest}. {@code autoCommit=false}: cada {@code execute()}
+ * commita explicitamente; o schema é commitado em bloco ao final da inicialização.</p>
  */
 @NullMarked
 @Configuration
@@ -30,7 +30,6 @@ public class DatabaseConfig {
         properties.url("jdbc:h2:mem:cdb;DB_CLOSE_DELAY=-1");
         properties.username("sa");
         properties.password(Strings.EMPTY);
-        properties.autoCommit(true);
         properties.validationQuery("SELECT 1");
         properties.minPoolSize(5);
         properties.maxPoolSize(20);
@@ -43,6 +42,7 @@ public class DatabaseConfig {
                     stmt.execute(command).ifFailure(reason -> Logger.error("Erro ao criar schema: %s", reason));
                 }
                 stmt.close();
+                conn.commit();
                 conn.close();
             });
 

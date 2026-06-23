@@ -76,6 +76,7 @@ abstract class BaseHttpTest {
         val stmt = conn.createStatement().getOrThrow();
         for (val sql : Database.reset()) stmt.execute(sql);
         stmt.close();
+        conn.commit();
         conn.close();
     }
 

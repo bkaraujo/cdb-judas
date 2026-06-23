@@ -1,5 +1,6 @@
 package br.community.infra.persistence;
 
+import br.commons.Result;
 import br.commons.framework.persistence.jdbc.DataSource;
 import br.commons.framework.persistence.jdbc.primitives.JDBCPreparedParameter;
 import br.commons.framework.persistence.jdbc.primitives.JDBCResultSet;
@@ -56,61 +57,63 @@ public final class UserJDBCRepository implements UserRepository {
 
     @Override
     public User save(User user) {
-        val now = Timestamp.valueOf(LocalDateTime.now());
-        @Nullable String existingPersonId = findPersonId(user.id());
-        @Nullable String rawName = user.name();
-        String personName = rawName != null ? rawName : user.username();
+        return dataSource.transaction(tx -> {
+            val now = Timestamp.valueOf(LocalDateTime.now());
+            @Nullable String existingPersonId = findPersonId(tx, user.id());
+            @Nullable String rawName = user.name();
+            String personName = rawName != null ? rawName : user.username();
 
-        String personId;
-        if (existingPersonId == null) {
-            personId = UUID.randomUUID().toString();
-            dataSource.execute(
-                    "INSERT INTO PEP_PERSON (ID, TXT_NAME, TXT_LOCALE, TXT_LANGUAGE, TMS_CREATE_AT, TMS_UPDATED_AT)"
-                            + " VALUES (?, ?, ?, ?, ?, ?)",
-                    new JDBCPreparedParameter(1, personId),
-                    new JDBCPreparedParameter(2, personName),
-                    new JDBCPreparedParameter(3, "pt-BR"),
-                    new JDBCPreparedParameter(4, "pt-BR"),
-                    new JDBCPreparedParameter(5, now),
-                    new JDBCPreparedParameter(6, now)
-            ).getOrThrow();
-        } else {
-            personId = existingPersonId;
-            dataSource.execute(
-                    "UPDATE PEP_PERSON SET TXT_NAME = ?, TMS_UPDATED_AT = ? WHERE ID = ?",
-                    new JDBCPreparedParameter(1, personName),
-                    new JDBCPreparedParameter(2, now),
+            String personId;
+            if (existingPersonId == null) {
+                personId = UUID.randomUUID().toString();
+                tx.execute(
+                        "INSERT INTO PEP_PERSON (ID, TXT_NAME, TXT_LOCALE, TXT_LANGUAGE, TMS_CREATE_AT, TMS_UPDATED_AT)"
+                                + " VALUES (?, ?, ?, ?, ?, ?)",
+                        new JDBCPreparedParameter(1, personId),
+                        new JDBCPreparedParameter(2, personName),
+                        new JDBCPreparedParameter(3, "pt-BR"),
+                        new JDBCPreparedParameter(4, "pt-BR"),
+                        new JDBCPreparedParameter(5, now),
+                        new JDBCPreparedParameter(6, now)
+                ).getOrThrow();
+            } else {
+                personId = existingPersonId;
+                tx.execute(
+                        "UPDATE PEP_PERSON SET TXT_NAME = ?, TMS_UPDATED_AT = ? WHERE ID = ?",
+                        new JDBCPreparedParameter(1, personName),
+                        new JDBCPreparedParameter(2, now),
+                        new JDBCPreparedParameter(3, personId)
+                ).getOrThrow();
+            }
+
+            tx.execute(
+                    "MERGE INTO SEC_USER (ID, TXT_USERNAME, COD_PERSON) KEY(ID) VALUES (?, ?, ?)",
+                    new JDBCPreparedParameter(1, user.id()),
+                    new JDBCPreparedParameter(2, user.username()),
                     new JDBCPreparedParameter(3, personId)
             ).getOrThrow();
-        }
 
-        dataSource.execute(
-                "MERGE INTO SEC_USER (ID, TXT_USERNAME, COD_PERSON) KEY(ID) VALUES (?, ?, ?)",
-                new JDBCPreparedParameter(1, user.id()),
-                new JDBCPreparedParameter(2, user.username()),
-                new JDBCPreparedParameter(3, personId)
-        ).getOrThrow();
+            tx.execute(
+                    "INSERT INTO USER_CREDENTIAL (ID, COD_USER, TXT_PASSWORD, TMS_CREATE_AT) VALUES (?, ?, ?, ?)",
+                    new JDBCPreparedParameter(1, UUID.randomUUID().toString()),
+                    new JDBCPreparedParameter(2, user.id()),
+                    new JDBCPreparedParameter(3, user.password()),
+                    new JDBCPreparedParameter(4, now)
+            ).getOrThrow();
 
-        dataSource.execute(
-                "INSERT INTO USER_CREDENTIAL (ID, COD_USER, TXT_PASSWORD, TMS_CREATE_AT) VALUES (?, ?, ?, ?)",
-                new JDBCPreparedParameter(1, UUID.randomUUID().toString()),
-                new JDBCPreparedParameter(2, user.id()),
-                new JDBCPreparedParameter(3, user.password()),
-                new JDBCPreparedParameter(4, now)
-        ).getOrThrow();
+            val prefs = user.preferences();
+            upsertPref(tx, user.id(), "theme", prefs.theme());
+            upsertPref(tx, user.id(), "language", prefs.language());
+            upsertPref(tx, user.id(), "locale", prefs.locale());
+            upsertPref(tx, user.id(), "sidebarCollapsed", String.valueOf(prefs.sidebarCollapsed()));
 
-        val prefs = user.preferences();
-        upsertPref(user.id(), "theme", prefs.theme());
-        upsertPref(user.id(), "language", prefs.language());
-        upsertPref(user.id(), "locale", prefs.locale());
-        upsertPref(user.id(), "sidebarCollapsed", String.valueOf(prefs.sidebarCollapsed()));
-
-        return user;
+            return Result.success(user);
+        }).getOrThrow();
     }
 
     @Nullable
-    private String findPersonId(String userId) {
-        val results = dataSource.executeQuery(
+    private String findPersonId(DataSource.Tx tx, String userId) {
+        val results = tx.executeQuery(
                 "SELECT COD_PERSON FROM SEC_USER WHERE ID = ?",
                 List.of(new JDBCPreparedParameter(1, userId)),
                 rs -> {
@@ -125,8 +128,8 @@ public final class UserJDBCRepository implements UserRepository {
         return results.isEmpty() ? null : results.get(0);
     }
 
-    private void upsertPref(String userId, String key, @Nullable String value) {
-        dataSource.execute(
+    private void upsertPref(DataSource.Tx tx, String userId, String key, @Nullable String value) {
+        tx.execute(
                 "MERGE INTO USER_PREFERENCES (COD_USER, TXT_KEY, TXT_VALUE) KEY(COD_USER, TXT_KEY) VALUES (?, ?, ?)",
                 new JDBCPreparedParameter(1, userId),
                 new JDBCPreparedParameter(2, key),

@@ -55,6 +55,65 @@ public class DataSource {
         };
     }
 
+    /** Escrita: commita em sucesso, faz rollback em falha/exceção, fecha a conexão. */
+    private <T> Result<T, String> withWriteConnection(Function<JDBCConnection, Result<T, String>> work) {
+        return switch (getConnection()) {
+            case Result.Failure(var error) -> new Result.Failure<>(error);
+            case Result.Success(var conn) -> {
+                if (conn == null) yield new Result.Failure<>("Connection is null");
+                try {
+                    val r = work.apply(conn);
+                    if (r.isSuccess()) conn.commit(); else conn.rollback();
+                    yield r;
+                } catch (RuntimeException ex) { conn.rollback(); throw ex; }
+                finally { conn.close(); }
+            }
+        };
+    }
+
+    private static Result<Boolean, String> doExecute(JDBCConnection conn, String sql, JDBCPreparedParameter... parameters) {
+        return switch (conn.prepareStatement(sql)) {
+            case Result.Failure(var error) -> new Result.Failure<>(error);
+            case Result.Success(var pstmt) -> {
+                if (pstmt == null) yield new Result.Failure<>("PreparedStatement is null");
+                try {
+                    Logger.trace(sql);
+                    for (var i = 0; i < parameters.length; i++) {
+                        val parameter = parameters[i];
+                        Logger.verbose(" %d = %s", i + 1, Strings.or(parameter.value(), "null"));
+                        pstmt.setObject(i + 1, parameter.value());
+                    }
+                    yield pstmt.execute();
+                } finally { pstmt.close(); }
+            }
+        };
+    }
+
+    private static <T> Result<T, String> doQuery(JDBCConnection conn, String query, List<JDBCPreparedParameter> parameters, Function<JDBCResultSet, T> function) {
+        return switch (conn.prepareStatement(query)) {
+            case Result.Failure(var error) -> new Result.Failure<>(error);
+            case Result.Success(var pstmt) -> {
+                if (pstmt == null) yield new Result.Failure<>("PreparedStatement is null");
+                try {
+                    Logger.trace(query);
+                    for (var i = 0; i < parameters.size(); i++) {
+                        val parameter = parameters.get(i);
+                        Logger.verbose(" %d = %s", i + 1, Strings.or(parameter.value(), "null"));
+                        pstmt.setObject(i + 1, parameter.value());
+                    }
+                    yield switch (pstmt.executeQuery()) {
+                        case Result.Failure(var error) -> new Result.Failure<>(error);
+                        case Result.Success(var rs) -> {
+                            if (rs == null) yield new Result.Failure<>("ResultSet is null");
+                            try { yield new Result.Success<>(function.apply(rs)); }
+                            finally { rs.close(); }
+                        }
+                    };
+                } finally { pstmt.close(); }
+            }
+        };
+    }
+
     public <T> Result<T, String> executeQuery(String query, Function<JDBCResultSet, T> function) {
         return withConnection(conn -> switch (conn.createStatement()) {
             case Result.Failure(var error) -> new Result.Failure<>(error);
@@ -76,7 +135,7 @@ public class DataSource {
     }
 
     public Result<Boolean, String> execute(String query) {
-        return withConnection(conn -> switch (conn.createStatement()) {
+        return withWriteConnection(conn -> switch (conn.createStatement()) {
             case Result.Failure(var error) -> new Result.Failure<>(error);
             case Result.Success(var stmt) -> {
                 if (stmt == null) yield new Result.Failure<>("PreparedStatement is null");
@@ -91,51 +150,30 @@ public class DataSource {
     }
 
     public <T> Result<T, String> executeQuery(String query, List<JDBCPreparedParameter> parameters, Function<JDBCResultSet, T> function) {
-        return withConnection(conn -> switch (conn.prepareStatement(query)) {
-            case Result.Failure(var error) -> new Result.Failure<>(error);
-            case Result.Success(var pstmt) -> {
-                if (pstmt == null) yield new Result.Failure<>("PreparedStatement is null");
-
-                try {
-                    Logger.trace(query);
-
-                    for (var i = 0; i < parameters.size(); i++) {
-                        val parameter = parameters.get(i);
-                        Logger.verbose(" %d = %s", i + 1, Strings.or(parameter.value(), "null"));
-                        pstmt.setObject(i + 1, parameter.value());
-                    }
-
-                    yield switch (pstmt.executeQuery()) {
-                        case Result.Failure(var error) -> new Result.Failure<>(error);
-                        case Result.Success(var rs) -> {
-                            if (rs == null) yield new Result.Failure<>("ResultSet is null");
-                            try { yield new Result.Success<>(function.apply(rs)); }
-                            finally { rs.close(); }
-                        }
-                    };
-                } finally { pstmt.close(); }
-            }
-        });
+        return withConnection(conn -> doQuery(conn, query, parameters, function));
     }
 
     public Result<Boolean, String> execute(String sql, JDBCPreparedParameter... parameters) {
-        return withConnection(conn -> switch (conn.prepareStatement(sql)) {
-            case Result.Failure(var error) -> new Result.Failure<>(error);
-            case Result.Success(var pstmt) -> {
-                if (pstmt == null) yield new Result.Failure<>("PreparedStatement is null");
+        return withWriteConnection(conn -> doExecute(conn, sql, parameters));
+    }
 
-                try {
-                    Logger.trace(sql);
-                    for (var i = 0; i < parameters.length; i++) {
-                        val parameter = parameters[i];
-                        Logger.verbose(" %d = %s", i + 1,Strings.or(parameter.value(), "null"));
-                        pstmt.setObject(i + 1, parameter.value());
-                    }
+    public <T> Result<T, String> transaction(Function<Tx, Result<T, String>> work) {
+        return withWriteConnection(conn -> work.apply(new Tx(conn)));
+    }
 
-                    yield pstmt.execute();
-                } finally { pstmt.close(); }
-            }
-        });
+    @NullMarked
+    public static final class Tx {
+        private final JDBCConnection conn;
+
+        Tx(JDBCConnection conn) { this.conn = conn; }
+
+        public Result<Boolean, String> execute(String sql, JDBCPreparedParameter... parameters) {
+            return DataSource.doExecute(conn, sql, parameters);
+        }
+
+        public <T> Result<T, String> executeQuery(String query, List<JDBCPreparedParameter> parameters, Function<JDBCResultSet, T> function) {
+            return DataSource.doQuery(conn, query, parameters, function);
+        }
     }
 
     /**
