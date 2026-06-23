@@ -167,7 +167,6 @@
                     <encoding>${maven.resources.encoding}</encoding>
                     <parameters>true</parameters>
                     <compilerArgs>
-                        <arg>--enable-preview</arg>
                         <arg>-parameters</arg>
                         <arg>-XDcompilePolicy=simple</arg>
                         <arg>--should-stop=ifError=FLOW</arg>
@@ -204,7 +203,6 @@
                     <includes>
                         <include>**/*Test.java</include>
                     </includes>
-                    <argLine>--enable-preview</argLine>
                 </configuration>
             </plugin>
             <!-- ############################################################## -->
@@ -236,7 +234,7 @@
                 <artifactId>spring-boot-maven-plugin</artifactId>
                 <configuration>
                     <mainClass>br.community.Application</mainClass>
-                    <jvmArguments>--enable-preview -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5005</jvmArguments>
+                    <jvmArguments>-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5005</jvmArguments>
                 </configuration>
                 <executions>
                     <execution>

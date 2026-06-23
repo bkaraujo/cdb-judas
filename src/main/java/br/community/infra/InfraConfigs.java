@@ -1,6 +1,5 @@
 package br.community.infra;
 
-import br.commons.framework.persistence.Storage;
 import br.commons.framework.persistence.jdbc.DataSource;
 import br.community.context.monetary._0_domain.repository.*;
 import br.community.context.people._0_domain.repository.PersonRepository;
@@ -65,8 +64,8 @@ public class InfraConfigs {
     }
 
     @Bean
-    ClosingRepository closingRepository(ObjectMapper mapper, Storage storage) {
-        return new ClosingJsonRepository(mapper, storage);
+    ClosingRepository closingRepository(DataSource dataSource) {
+        return new ClosingJDBCRepository(dataSource);
     }
 
     @Bean
