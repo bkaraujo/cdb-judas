@@ -30,6 +30,11 @@ public class AuthenticationFilter extends OncePerRequestFilter {
     private final UserRepository userRepository;
 
     @Override
+    protected boolean shouldNotFilter(HttpServletRequest request) {
+        return RequestUtils.isStatic(request);
+    }
+
+    @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
         val token = request.getHeader(TOKEN_HEADER);
         if (token != null) {
