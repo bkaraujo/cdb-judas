@@ -2,6 +2,7 @@ package br.community.infra.persistence;
 
 import br.commons.Result;
 import br.commons.framework.persistence.jdbc.DataSource;
+import br.commons.framework.persistence.jdbc.JDBCTransaction;
 import br.commons.framework.persistence.jdbc.primitives.JDBCPreparedParameter;
 import br.commons.framework.persistence.jdbc.primitives.JDBCResultSet;
 import br.community.core.web.security.Preferences;
@@ -35,7 +36,7 @@ public final class UserJDBCRepository implements UserRepository {
 
     @Override
     public Optional<User> findByUsername(String username) {
-        return dataSource.executeQuery(
+        return dataSource.query(
                 "SELECT U.ID, U.TXT_USERNAME, P.TXT_NAME"
                         + " FROM SEC_USER U JOIN PEP_PERSON P ON P.ID = U.COD_PERSON"
                         + " WHERE U.TXT_USERNAME = ?",
@@ -46,7 +47,7 @@ public final class UserJDBCRepository implements UserRepository {
 
     @Override
     public Optional<User> findById(String id) {
-        return dataSource.executeQuery(
+        return dataSource.query(
                 "SELECT U.ID, U.TXT_USERNAME, P.TXT_NAME"
                         + " FROM SEC_USER U JOIN PEP_PERSON P ON P.ID = U.COD_PERSON"
                         + " WHERE U.ID = ?",
@@ -112,8 +113,8 @@ public final class UserJDBCRepository implements UserRepository {
     }
 
     @Nullable
-    private String findPersonId(DataSource.Tx tx, String userId) {
-        val results = tx.executeQuery(
+    private String findPersonId(JDBCTransaction tx, String userId) {
+        val results = tx.query(
                 "SELECT COD_PERSON FROM SEC_USER WHERE ID = ?",
                 List.of(new JDBCPreparedParameter(1, userId)),
                 rs -> {
@@ -128,7 +129,7 @@ public final class UserJDBCRepository implements UserRepository {
         return results.isEmpty() ? null : results.get(0);
     }
 
-    private void upsertPref(DataSource.Tx tx, String userId, String key, @Nullable String value) {
+    private void upsertPref(JDBCTransaction tx, String userId, String key, @Nullable String value) {
         tx.execute(
                 "MERGE INTO USER_PREFERENCES (COD_USER, TXT_KEY, TXT_VALUE) KEY(COD_USER, TXT_KEY) VALUES (?, ?, ?)",
                 new JDBCPreparedParameter(1, userId),
@@ -153,7 +154,7 @@ public final class UserJDBCRepository implements UserRepository {
     }
 
     private String findLatestPassword(String userId) {
-        val results = dataSource.executeQuery(
+        val results = dataSource.query(
                 "SELECT TXT_PASSWORD FROM USER_CREDENTIAL WHERE COD_USER = ? ORDER BY TMS_CREATE_AT DESC LIMIT 1",
                 List.of(new JDBCPreparedParameter(1, userId)),
                 rs -> {
@@ -169,7 +170,7 @@ public final class UserJDBCRepository implements UserRepository {
     }
 
     private Preferences loadPreferences(String userId) {
-        val map = dataSource.executeQuery(
+        val map = dataSource.query(
                 "SELECT TXT_KEY, TXT_VALUE FROM USER_PREFERENCES WHERE COD_USER = ?",
                 List.of(new JDBCPreparedParameter(1, userId)),
                 rs -> {

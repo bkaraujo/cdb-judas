@@ -72,7 +72,7 @@ public class DataSource {
         };
     }
 
-    public <T> Result<T, String> executeQuery(String query, Function<JDBCResultSet, T> function) {
+    public <T> Result<T, String> query(String query, Function<JDBCResultSet, T> function) {
         return withReadConnection(tx -> tx.query(query, function));
     }
 
@@ -80,7 +80,7 @@ public class DataSource {
         return withWriteConnection(tx -> tx.execute(query));
     }
 
-    public <T> Result<T, String> executeQuery(String query, List<JDBCPreparedParameter> parameters, Function<JDBCResultSet, T> function) {
+    public <T> Result<T, String> query(String query, List<JDBCPreparedParameter> parameters, Function<JDBCResultSet, T> function) {
         return withReadConnection(tx -> tx.query(query, parameters, function));
     }
 
@@ -88,23 +88,8 @@ public class DataSource {
         return withWriteConnection(tx -> tx.execute(sql, List.of(parameters)));
     }
 
-    public <T> Result<T, String> transaction(Function<Tx, Result<T, String>> work) {
-        return withWriteConnection(tx -> work.apply(new Tx(tx)));
-    }
-
-    @NullMarked
-    public static final class Tx {
-        private final JDBCTransaction tx;
-
-        Tx(JDBCTransaction tx) { this.tx = tx; }
-
-        public Result<Boolean, String> execute(String sql, JDBCPreparedParameter... parameters) {
-            return tx.execute(sql, List.of(parameters));
-        }
-
-        public <T> Result<T, String> executeQuery(String query, List<JDBCPreparedParameter> parameters, Function<JDBCResultSet, T> function) {
-            return tx.query(query, parameters, function);
-        }
+    public <T> Result<T, String> transaction(Function<JDBCTransaction, Result<T, String>> work) {
+        return withWriteConnection(work);
     }
 
     /**
