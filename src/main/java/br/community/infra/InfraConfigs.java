@@ -14,13 +14,21 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import tools.jackson.databind.ObjectMapper;
 
+import java.util.concurrent.locks.ReadWriteLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
+
 @NullMarked
 @Configuration
 public class InfraConfigs {
 
     @Bean
-    UserRepository userRepository(DataSource dataSource) {
-        return new UserJDBCRepository(dataSource);
+    ReadWriteLock databaseLock() {
+        return new ReentrantReadWriteLock(false);
+    }
+
+    @Bean
+    UserRepository userRepository(DataSource dataSource, ReadWriteLock databaseLock) {
+        return new CachingUserRepository(new UserJDBCRepository(dataSource), databaseLock);
     }
 
     @Bean
@@ -69,7 +77,7 @@ public class InfraConfigs {
     }
 
     @Bean
-    PersonRepository personRepository(DataSource dataSource) {
-        return new PersonJDBCRepository(dataSource);
+    PersonRepository personRepository(DataSource dataSource, ReadWriteLock databaseLock) {
+        return new CachingPersonRepository(new PersonJDBCRepository(dataSource), databaseLock);
     }
 }
