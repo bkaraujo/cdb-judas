@@ -1,10 +1,10 @@
 package br.community.infra.persistence;
 
+import br.commons.Registry;
 import br.commons.framework.persistence.jdbc.DataSource;
 import br.commons.framework.persistence.jdbc.primitives.JDBCPreparedParameter;
 import br.community.core.web.security.CurrentUser;
 import br.community.feature.user.accounts.closing.ClosingRepository;
-import lombok.RequiredArgsConstructor;
 import lombok.val;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
@@ -15,17 +15,16 @@ import java.util.List;
 import java.util.Optional;
 
 @NullMarked
-@RequiredArgsConstructor
 public class ClosingJDBCRepository implements ClosingRepository {
 
     private static final String KEY = "closing";
 
-    private final DataSource dataSource;
+    private final DataSource dataSource = Registry.get(DataSource.class);
 
     @Override
     public Optional<YearMonth> find() {
         val userId = CurrentUser.getId();
-        val results = dataSource.executeQuery(
+        val results = dataSource.query(
                 "SELECT TXT_VALUE FROM USER_PREFERENCES WHERE COD_USER = ? AND TXT_KEY = ?",
                 List.of(
                         new JDBCPreparedParameter(1, userId),

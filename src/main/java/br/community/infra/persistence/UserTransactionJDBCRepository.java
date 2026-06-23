@@ -1,5 +1,6 @@
 package br.community.infra.persistence;
 
+import br.commons.Registry;
 import br.commons.framework.persistence.jdbc.DataSource;
 import br.commons.framework.persistence.jdbc.primitives.JDBCPreparedParameter;
 import br.commons.framework.persistence.jdbc.primitives.JDBCResultSet;
@@ -22,15 +23,11 @@ public final class UserTransactionJDBCRepository implements UserTransactionRepos
 
     private static final String COLUMNS = "COD_TRANSACTION, COD_USER, COD_CATEGORY, TMS_CREATE_AT, TMS_UPDATED_AT";
 
-    private final DataSource dataSource;
-
-    public UserTransactionJDBCRepository(DataSource dataSource) {
-        this.dataSource = dataSource;
-    }
+    private final DataSource dataSource = Registry.get(DataSource.class);
 
     @Override
     public Optional<UserTransaction> findByTransactionAndUser(UUID transactionId, UUID userId) {
-        return dataSource.executeQuery(
+        return dataSource.query(
                 "SELECT " + COLUMNS + " FROM USER_TRANSACTION WHERE COD_TRANSACTION = ? AND COD_USER = ?",
                 List.of(new JDBCPreparedParameter(1, transactionId.toString()),
                         new JDBCPreparedParameter(2, userId.toString())),
@@ -40,7 +37,7 @@ public final class UserTransactionJDBCRepository implements UserTransactionRepos
 
     @Override
     public List<UserTransaction> findAllByUser(UUID userId) {
-        return dataSource.executeQuery(
+        return dataSource.query(
                 "SELECT " + COLUMNS + " FROM USER_TRANSACTION WHERE COD_USER = ?",
                 List.of(new JDBCPreparedParameter(1, userId.toString())),
                 this::toUserTransactions

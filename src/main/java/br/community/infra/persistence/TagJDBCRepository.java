@@ -1,5 +1,6 @@
 package br.community.infra.persistence;
 
+import br.commons.Registry;
 import br.commons.framework.persistence.jdbc.DataSource;
 import br.commons.framework.persistence.jdbc.primitives.JDBCPreparedParameter;
 import br.commons.framework.persistence.jdbc.primitives.JDBCResultSet;
@@ -19,20 +20,16 @@ public final class TagJDBCRepository implements TagRepository {
 
     private static final String COLUMNS = "ID, TXT_NAME, TXT_COLOR";
 
-    private final DataSource dataSource;
-
-    public TagJDBCRepository(DataSource dataSource) {
-        this.dataSource = dataSource;
-    }
+    private final DataSource dataSource = Registry.get(DataSource.class);
 
     @Override
     public List<Tag> findAll() {
-        return dataSource.executeQuery("SELECT " + COLUMNS + " FROM MON_TAG", this::toTags).getOrThrow();
+        return dataSource.query("SELECT " + COLUMNS + " FROM MON_TAG", this::toTags).getOrThrow();
     }
 
     @Override
     public Optional<Tag> findById(UUID id) {
-        return dataSource.executeQuery(
+        return dataSource.query(
                 "SELECT " + COLUMNS + " FROM MON_TAG WHERE ID = ?",
                 List.of(new JDBCPreparedParameter(1, id.toString())),
                 this::toTags

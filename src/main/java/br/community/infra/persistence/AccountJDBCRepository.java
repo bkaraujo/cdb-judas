@@ -1,5 +1,6 @@
 package br.community.infra.persistence;
 
+import br.commons.Registry;
 import br.commons.framework.persistence.jdbc.DataSource;
 import br.commons.framework.persistence.jdbc.primitives.JDBCPreparedParameter;
 import br.commons.framework.persistence.jdbc.primitives.JDBCResultSet;
@@ -24,22 +25,21 @@ public final class AccountJDBCRepository implements AccountRepository {
     private static final String COLUMNS =
             "ID, TXT_NAME, TXT_TYPE, FLG_ACTIVE, COD_LINKED_ACCOUNT, TXT_ADDITIONAL_INFO, TMS_CREATE_AT, TMS_UPDATED_AT";
 
-    private final DataSource dataSource;
+    private final DataSource dataSource = Registry.get(DataSource.class);
     private final ObjectMapper mapper;
 
-    public AccountJDBCRepository(DataSource dataSource, ObjectMapper mapper) {
-        this.dataSource = dataSource;
+    public AccountJDBCRepository(ObjectMapper mapper) {
         this.mapper = mapper;
     }
 
     @Override
     public List<Account> findAll() {
-        return dataSource.executeQuery("SELECT " + COLUMNS + " FROM MON_ACCOUNT", this::toAccounts).getOrThrow();
+        return dataSource.query("SELECT " + COLUMNS + " FROM MON_ACCOUNT", this::toAccounts).getOrThrow();
     }
 
     @Override
     public Optional<Account> findById(UUID id) {
-        return dataSource.executeQuery(
+        return dataSource.query(
                 "SELECT " + COLUMNS + " FROM MON_ACCOUNT WHERE ID = ?",
                 List.of(new JDBCPreparedParameter(1, id.toString())),
                 this::toAccounts

@@ -1,6 +1,5 @@
 package br.community.infra;
 
-import br.commons.framework.persistence.jdbc.DataSource;
 import br.community.context.monetary._0_domain.repository.*;
 import br.community.context.people._0_domain.repository.PersonRepository;
 import br.community.core.web.security.UserRepository;
@@ -27,57 +26,57 @@ public class InfraConfigs {
     }
 
     @Bean
-    UserRepository userRepository(DataSource dataSource, ReadWriteLock databaseLock) {
-        return new CachingUserRepository(new UserJDBCRepository(dataSource), databaseLock);
+    UserRepository userRepository(ReadWriteLock databaseLock) {
+        return new CachingUserRepository(new UserJDBCRepository(), databaseLock);
     }
 
     @Bean
-    AccountRepository accountRepository(ObjectMapper mapper, DataSource dataSource) {
-        return new AccountJDBCRepository(dataSource, mapper);
+    AccountRepository accountRepository(ObjectMapper mapper) {
+        return new AccountJDBCRepository(mapper);
     }
 
     @Bean
-    BalanceRepository balanceRepository(DataSource dataSource) {
-        return new UserAccountBalanceJDBCRepository(dataSource);
+    BalanceRepository balanceRepository() {
+        return new UserAccountBalanceJDBCRepository();
     }
 
     @Bean
-    UserAccountJDBCRepository userAccountRepository(DataSource dataSource) {
-        return new UserAccountJDBCRepository(dataSource);
+    UserAccountJDBCRepository userAccountRepository() {
+        return new UserAccountJDBCRepository();
     }
 
     @Bean
-    CostCenterRepository costCenterRepository(DataSource dataSource) {
-        return new CostCenterJDBCRepository(dataSource);
+    CostCenterRepository costCenterRepository() {
+        return new CostCenterJDBCRepository();
     }
 
     @Bean
-    TransactionRepository transactionRepository(DataSource dataSource) {
-        return new TransactionJDBCRepository(dataSource);
+    TransactionRepository transactionRepository() {
+        return new TransactionJDBCRepository();
     }
 
     @Bean
-    UserCategoryRepository userCategoryRepository(DataSource dataSource) {
-        return new UserCategoryJDBCRepository(dataSource);
+    UserCategoryRepository userCategoryRepository() {
+        return new UserCategoryJDBCRepository();
     }
 
     @Bean
-    UserTagRepository userTagRepository(DataSource dataSource) {
-        return new UserTagJDBCRepository(dataSource);
+    UserTagRepository userTagRepository() {
+        return new UserTagJDBCRepository();
     }
 
     @Bean
-    UserTransactionRepository userTransactionRepository(DataSource dataSource) {
-        return new UserTransactionJDBCRepository(dataSource);
+    UserTransactionRepository userTransactionRepository() {
+        return new UserTransactionJDBCRepository();
     }
 
     @Bean
-    ClosingRepository closingRepository(DataSource dataSource) {
-        return new ClosingJDBCRepository(dataSource);
+    ClosingRepository closingRepository() {
+        return new ClosingJDBCRepository();
     }
 
     @Bean
-    PersonRepository personRepository(DataSource dataSource, ReadWriteLock databaseLock) {
-        return new CachingPersonRepository(new PersonJDBCRepository(dataSource), databaseLock);
+    PersonRepository personRepository(ReadWriteLock databaseLock) {
+        return new CachingPersonRepository(new PersonJDBCRepository(), databaseLock);
     }
 }

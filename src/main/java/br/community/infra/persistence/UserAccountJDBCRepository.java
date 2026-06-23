@@ -1,5 +1,6 @@
 package br.community.infra.persistence;
 
+import br.commons.Registry;
 import br.commons.framework.persistence.jdbc.DataSource;
 import br.commons.framework.persistence.jdbc.primitives.JDBCPreparedParameter;
 import br.commons.framework.persistence.jdbc.primitives.JDBCResultSet;
@@ -20,14 +21,10 @@ public final class UserAccountJDBCRepository {
 
     private static final String COLUMNS = "COD_USER, COD_ACCOUNT, DEC_OPENING_BALANCE, TXT_COLOR, FLG_ACTIVE";
 
-    private final DataSource dataSource;
-
-    public UserAccountJDBCRepository(DataSource dataSource) {
-        this.dataSource = dataSource;
-    }
+    private final DataSource dataSource = Registry.get(DataSource.class);
 
     public Optional<UserAccount> find(String userId, UUID accountId) {
-        return dataSource.executeQuery(
+        return dataSource.query(
                 "SELECT " + COLUMNS + " FROM USER_ACCOUNT WHERE COD_USER = ? AND COD_ACCOUNT = ?",
                 List.of(new JDBCPreparedParameter(1, userId), new JDBCPreparedParameter(2, accountId.toString())),
                 this::toUserAccounts
@@ -35,7 +32,7 @@ public final class UserAccountJDBCRepository {
     }
 
     public List<UserAccount> findByUser(String userId) {
-        return dataSource.executeQuery(
+        return dataSource.query(
                 "SELECT " + COLUMNS + " FROM USER_ACCOUNT WHERE COD_USER = ?",
                 List.of(new JDBCPreparedParameter(1, userId)),
                 this::toUserAccounts

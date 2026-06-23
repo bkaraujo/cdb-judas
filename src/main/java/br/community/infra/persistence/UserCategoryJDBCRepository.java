@@ -1,5 +1,6 @@
 package br.community.infra.persistence;
 
+import br.commons.Registry;
 import br.commons.framework.persistence.jdbc.DataSource;
 import br.commons.framework.persistence.jdbc.primitives.JDBCPreparedParameter;
 import br.commons.framework.persistence.jdbc.primitives.JDBCResultSet;
@@ -23,15 +24,11 @@ public final class UserCategoryJDBCRepository implements UserCategoryRepository 
 
     private static final String COLUMNS = "ID, COD_USER, TXT_NATURE, TXT_NAME, COD_PARENT, BOL_SYSTEM, FLG_ACTIVE, TMS_CREATE_AT, TMS_UPDATED_AT";
 
-    private final DataSource dataSource;
-
-    public UserCategoryJDBCRepository(DataSource dataSource) {
-        this.dataSource = dataSource;
-    }
+    private final DataSource dataSource = Registry.get(DataSource.class);
 
     @Override
     public List<UserCategory> findAllByUser(UUID userId) {
-        return dataSource.executeQuery(
+        return dataSource.query(
                 "SELECT " + COLUMNS + " FROM USER_CATEGORY WHERE COD_USER = ?",
                 List.of(new JDBCPreparedParameter(1, userId.toString())),
                 this::toCategories
@@ -40,7 +37,7 @@ public final class UserCategoryJDBCRepository implements UserCategoryRepository 
 
     @Override
     public Optional<UserCategory> findById(UUID id) {
-        return dataSource.executeQuery(
+        return dataSource.query(
                 "SELECT " + COLUMNS + " FROM USER_CATEGORY WHERE ID = ?",
                 List.of(new JDBCPreparedParameter(1, id.toString())),
                 this::toCategories

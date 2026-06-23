@@ -1,5 +1,6 @@
 package br.community.infra.persistence;
 
+import br.commons.Registry;
 import br.commons.framework.persistence.jdbc.DataSource;
 import br.commons.framework.persistence.jdbc.primitives.JDBCPreparedParameter;
 import br.commons.framework.persistence.jdbc.primitives.JDBCResultSet;
@@ -22,20 +23,16 @@ public final class CostCenterJDBCRepository implements CostCenterRepository {
 
     private static final String COLUMNS = "ID, TXT_DESCRIPTION, TMS_CREATE_AT, TMS_UPDATED_AT";
 
-    private final DataSource dataSource;
-
-    public CostCenterJDBCRepository(DataSource dataSource) {
-        this.dataSource = dataSource;
-    }
+    private final DataSource dataSource = Registry.get(DataSource.class);
 
     @Override
     public List<CostCenter> findAll() {
-        return dataSource.executeQuery("SELECT " + COLUMNS + " FROM MON_COST_CENTER", this::toCostCenters).getOrThrow();
+        return dataSource.query("SELECT " + COLUMNS + " FROM MON_COST_CENTER", this::toCostCenters).getOrThrow();
     }
 
     @Override
     public Optional<CostCenter> findById(UUID id) {
-        return dataSource.executeQuery(
+        return dataSource.query(
                 "SELECT " + COLUMNS + " FROM MON_COST_CENTER WHERE ID = ?",
                 List.of(new JDBCPreparedParameter(1, id.toString())),
                 this::toCostCenters

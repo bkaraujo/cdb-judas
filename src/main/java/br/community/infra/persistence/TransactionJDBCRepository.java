@@ -1,5 +1,6 @@
 package br.community.infra.persistence;
 
+import br.commons.Registry;
 import br.commons.framework.persistence.jdbc.DataSource;
 import br.commons.framework.persistence.jdbc.primitives.JDBCPreparedParameter;
 import br.commons.framework.persistence.jdbc.primitives.JDBCResultSet;
@@ -32,20 +33,16 @@ public final class TransactionJDBCRepository implements TransactionRepository {
             + "COD_COST_CENTER, DAT_PAYMENT, GROUP_ID, NUM_INSTALLMENT, NUM_INSTALLMENT_TOTAL, TXT_NOTES, "
             + "TMS_CREATE_AT, TMS_UPDATED_AT";
 
-    private final DataSource dataSource;
-
-    public TransactionJDBCRepository(DataSource dataSource) {
-        this.dataSource = dataSource;
-    }
+    private final DataSource dataSource = Registry.get(DataSource.class);
 
     @Override
     public List<Transaction> findAll() {
-        return dataSource.executeQuery("SELECT " + COLUMNS + " FROM MON_TRANSACTION", this::toTransactions).getOrThrow();
+        return dataSource.query("SELECT " + COLUMNS + " FROM MON_TRANSACTION", this::toTransactions).getOrThrow();
     }
 
     @Override
     public Optional<Transaction> findById(UUID id) {
-        return dataSource.executeQuery(
+        return dataSource.query(
                 "SELECT " + COLUMNS + " FROM MON_TRANSACTION WHERE ID = ?",
                 List.of(new JDBCPreparedParameter(1, id.toString())),
                 this::toTransactions

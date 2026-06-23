@@ -1,5 +1,6 @@
 package br.community.infra.persistence;
 
+import br.commons.Registry;
 import br.commons.Result;
 import br.commons.framework.persistence.jdbc.DataSource;
 import br.commons.framework.persistence.jdbc.JDBCTransaction;
@@ -28,11 +29,7 @@ import java.util.UUID;
 @NullMarked
 public final class UserJDBCRepository implements UserRepository {
 
-    private final DataSource dataSource;
-
-    public UserJDBCRepository(DataSource dataSource) {
-        this.dataSource = dataSource;
-    }
+    private final DataSource dataSource = Registry.get(DataSource.class);
 
     @Override
     public Optional<User> findByUsername(String username) {

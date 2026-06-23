@@ -1,5 +1,6 @@
 package br.community.infra.persistence;
 
+import br.commons.Registry;
 import br.commons.framework.persistence.jdbc.DataSource;
 import br.commons.framework.persistence.jdbc.primitives.JDBCPreparedParameter;
 import br.commons.framework.persistence.jdbc.primitives.JDBCResultSet;
@@ -18,11 +19,7 @@ import java.util.UUID;
 @NullMarked
 public final class PersonAccountJDBCRepository implements PersonAccountRepository {
 
-    private final DataSource dataSource;
-
-    public PersonAccountJDBCRepository(DataSource dataSource) {
-        this.dataSource = dataSource;
-    }
+    private final DataSource dataSource = Registry.get(DataSource.class);
 
     @Override
     public void link(UUID personId, UUID accountId) {
@@ -44,7 +41,7 @@ public final class PersonAccountJDBCRepository implements PersonAccountRepositor
 
     @Override
     public List<UUID> accountIdsOf(UUID personId) {
-        return dataSource.executeQuery(
+        return dataSource.query(
                 "SELECT COD_ACCOUNT FROM PEP_PERSON_ACCOUNT WHERE COD_PERSON = ?",
                 List.of(new JDBCPreparedParameter(1, personId.toString())),
                 this::toAccountIds
@@ -53,7 +50,7 @@ public final class PersonAccountJDBCRepository implements PersonAccountRepositor
 
     @Override
     public boolean owns(UUID personId, UUID accountId) {
-        return !dataSource.executeQuery(
+        return !dataSource.query(
                 "SELECT COD_ACCOUNT FROM PEP_PERSON_ACCOUNT WHERE COD_PERSON = ? AND COD_ACCOUNT = ?",
                 List.of(
                         new JDBCPreparedParameter(1, personId.toString()),

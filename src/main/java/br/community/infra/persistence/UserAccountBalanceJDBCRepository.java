@@ -1,5 +1,6 @@
 package br.community.infra.persistence;
 
+import br.commons.Registry;
 import br.commons.framework.persistence.jdbc.DataSource;
 import br.commons.framework.persistence.jdbc.primitives.JDBCPreparedParameter;
 import br.commons.framework.persistence.jdbc.primitives.JDBCResultSet;
@@ -26,20 +27,16 @@ public final class UserAccountBalanceJDBCRepository implements BalanceRepository
 
     private static final String COLUMNS = "ID, COD_USER, COD_ACCOUNT, NUM_PERIOD, DEC_BALANCE";
 
-    private final DataSource dataSource;
-
-    public UserAccountBalanceJDBCRepository(DataSource dataSource) {
-        this.dataSource = dataSource;
-    }
+    private final DataSource dataSource = Registry.get(DataSource.class);
 
     @Override
     public List<MonthlyBalance> findAll() {
-        return dataSource.executeQuery("SELECT " + COLUMNS + " FROM USER_ACCOUNT_BALANCE", this::toBalances).getOrThrow();
+        return dataSource.query("SELECT " + COLUMNS + " FROM USER_ACCOUNT_BALANCE", this::toBalances).getOrThrow();
     }
 
     @Override
     public Optional<MonthlyBalance> findById(UUID id) {
-        return dataSource.executeQuery(
+        return dataSource.query(
                 "SELECT " + COLUMNS + " FROM USER_ACCOUNT_BALANCE WHERE ID = ?",
                 List.of(new JDBCPreparedParameter(1, id.toString())),
                 this::toBalances
@@ -48,7 +45,7 @@ public final class UserAccountBalanceJDBCRepository implements BalanceRepository
 
     @Override
     public List<MonthlyBalance> findByAccount(UUID accountId) {
-        return dataSource.executeQuery(
+        return dataSource.query(
                 "SELECT " + COLUMNS + " FROM USER_ACCOUNT_BALANCE WHERE COD_ACCOUNT = ?",
                 List.of(new JDBCPreparedParameter(1, accountId.toString())),
                 this::toBalances
@@ -57,7 +54,7 @@ public final class UserAccountBalanceJDBCRepository implements BalanceRepository
 
     @Override
     public BigDecimal findOpeningBalance(UUID accountId) {
-        val results = dataSource.executeQuery(
+        val results = dataSource.query(
                 "SELECT DEC_OPENING_BALANCE FROM USER_ACCOUNT WHERE COD_ACCOUNT = ? LIMIT 1",
                 List.of(new JDBCPreparedParameter(1, accountId.toString())),
                 rs -> {
@@ -114,7 +111,7 @@ public final class UserAccountBalanceJDBCRepository implements BalanceRepository
     }
 
     private String findUserIdForAccount(UUID accountId) {
-        val results = dataSource.executeQuery(
+        val results = dataSource.query(
                 "SELECT COD_USER FROM USER_ACCOUNT WHERE COD_ACCOUNT = ? LIMIT 1",
                 List.of(new JDBCPreparedParameter(1, accountId.toString())),
                 rs -> {

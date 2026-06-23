@@ -1,5 +1,6 @@
 package br.community.infra.persistence;
 
+import br.commons.Registry;
 import br.commons.framework.persistence.jdbc.DataSource;
 import br.commons.framework.persistence.jdbc.primitives.JDBCPreparedParameter;
 import br.commons.framework.persistence.jdbc.primitives.JDBCResultSet;
@@ -21,20 +22,16 @@ public final class CategoryJDBCRepository implements CategoryRepository {
 
     private static final String COLUMNS = "ID, TXT_NATURE, TXT_NAME, COD_PARENT, BOL_SYSTEM";
 
-    private final DataSource dataSource;
-
-    public CategoryJDBCRepository(DataSource dataSource) {
-        this.dataSource = dataSource;
-    }
+    private final DataSource dataSource = Registry.get(DataSource.class);
 
     @Override
     public List<Category> findAll() {
-        return dataSource.executeQuery("SELECT " + COLUMNS + " FROM MON_CATEGORY", this::toCategories).getOrThrow();
+        return dataSource.query("SELECT " + COLUMNS + " FROM MON_CATEGORY", this::toCategories).getOrThrow();
     }
 
     @Override
     public Optional<Category> findById(UUID id) {
-        return dataSource.executeQuery(
+        return dataSource.query(
                 "SELECT " + COLUMNS + " FROM MON_CATEGORY WHERE ID = ?",
                 List.of(new JDBCPreparedParameter(1, id.toString())),
                 this::toCategories

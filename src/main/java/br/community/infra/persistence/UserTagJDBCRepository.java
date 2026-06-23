@@ -1,5 +1,6 @@
 package br.community.infra.persistence;
 
+import br.commons.Registry;
 import br.commons.framework.persistence.jdbc.DataSource;
 import br.commons.framework.persistence.jdbc.primitives.JDBCPreparedParameter;
 import br.commons.framework.persistence.jdbc.primitives.JDBCResultSet;
@@ -22,15 +23,11 @@ public final class UserTagJDBCRepository implements UserTagRepository {
 
     private static final String COLUMNS = "ID, COD_USER, TXT_DESCRIPTION, TXT_COLOR, TMS_CREATE_AT";
 
-    private final DataSource dataSource;
-
-    public UserTagJDBCRepository(DataSource dataSource) {
-        this.dataSource = dataSource;
-    }
+    private final DataSource dataSource = Registry.get(DataSource.class);
 
     @Override
     public List<UserTag> findAllByUser(UUID userId) {
-        return dataSource.executeQuery(
+        return dataSource.query(
                 "SELECT " + COLUMNS + " FROM USER_TAG WHERE COD_USER = ?",
                 List.of(new JDBCPreparedParameter(1, userId.toString())),
                 this::toTags
@@ -39,7 +36,7 @@ public final class UserTagJDBCRepository implements UserTagRepository {
 
     @Override
     public Optional<UserTag> findById(UUID id) {
-        return dataSource.executeQuery(
+        return dataSource.query(
                 "SELECT " + COLUMNS + " FROM USER_TAG WHERE ID = ?",
                 List.of(new JDBCPreparedParameter(1, id.toString())),
                 this::toTags
