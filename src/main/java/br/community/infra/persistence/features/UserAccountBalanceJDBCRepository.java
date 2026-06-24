@@ -1,14 +1,13 @@
-package br.community.infra.persistence;
+package br.community.infra.persistence.features;
 
 import br.commons.Registry;
 import br.commons.framework.persistence.jdbc.DataSource;
-import br.commons.framework.persistence.jdbc.primitives.JDBCPreparedParameter;
+import br.commons.framework.persistence.jdbc.primitives.JDBCParameter;
 import br.commons.framework.persistence.jdbc.primitives.JDBCResultSet;
 import br.community.context.monetary._0_domain.model.MonthlyBalance;
 import br.community.context.monetary._0_domain.repository.BalanceRepository;
 import lombok.val;
 import org.jspecify.annotations.NullMarked;
-import org.jspecify.annotations.Nullable;
 
 import java.math.BigDecimal;
 import java.time.YearMonth;
@@ -31,41 +30,41 @@ public final class UserAccountBalanceJDBCRepository implements BalanceRepository
 
     @Override
     public List<MonthlyBalance> findAll() {
-        return dataSource.query("SELECT " + COLUMNS + " FROM USER_ACCOUNT_BALANCE", this::toBalances).getOrThrow();
+        return dataSource.query("SELECT " + COLUMNS + " FROM USER_ACCOUNT_BALANCE", this::toBalances);
     }
 
     @Override
     public Optional<MonthlyBalance> findById(UUID id) {
         return dataSource.query(
                 "SELECT " + COLUMNS + " FROM USER_ACCOUNT_BALANCE WHERE ID = ?",
-                List.of(new JDBCPreparedParameter(1, id.toString())),
+                JDBCParameter.of(id.toString()),
                 this::toBalances
-        ).getOrThrow().stream().findFirst();
+        ).stream().findFirst();
     }
 
     @Override
     public List<MonthlyBalance> findByAccount(UUID accountId) {
         return dataSource.query(
                 "SELECT " + COLUMNS + " FROM USER_ACCOUNT_BALANCE WHERE COD_ACCOUNT = ?",
-                List.of(new JDBCPreparedParameter(1, accountId.toString())),
+                JDBCParameter.of(accountId.toString()),
                 this::toBalances
-        ).getOrThrow();
+        );
     }
 
     @Override
     public BigDecimal findOpeningBalance(UUID accountId) {
         val results = dataSource.query(
                 "SELECT DEC_OPENING_BALANCE FROM USER_ACCOUNT WHERE COD_ACCOUNT = ? LIMIT 1",
-                List.of(new JDBCPreparedParameter(1, accountId.toString())),
+                JDBCParameter.of(accountId.toString()),
                 rs -> {
                     val list = new ArrayList<BigDecimal>();
-                    while (Boolean.TRUE.equals(rs.next().getOrThrow())) {
-                        @Nullable BigDecimal b = rs.getBigDecimal("DEC_OPENING_BALANCE").getOrThrow();
-                        if (b != null) list.add(b);
+                    while (rs.next().get()) {
+                        val b = rs.getBigDecimal("DEC_OPENING_BALANCE").get();
+                        list.add(b);
                     }
                     return list;
                 }
-        ).getOrThrow();
+        );
         return results.isEmpty() ? BigDecimal.ZERO : results.get(0);
     }
 
@@ -80,29 +79,32 @@ public final class UserAccountBalanceJDBCRepository implements BalanceRepository
         if (existing.isEmpty()) {
             dataSource.execute(
                     "INSERT INTO USER_ACCOUNT_BALANCE (" + COLUMNS + ") VALUES (?, ?, ?, ?, ?)",
-                    new JDBCPreparedParameter(1, entity.id().toString()),
-                    new JDBCPreparedParameter(2, userId),
-                    new JDBCPreparedParameter(3, entity.accountId().toString()),
-                    new JDBCPreparedParameter(4, numPeriod),
-                    new JDBCPreparedParameter(5, entity.balance())
-            ).getOrThrow();
+                    JDBCParameter.of(
+                            entity.id().toString(),
+                            userId,
+                            entity.accountId().toString(),
+                            numPeriod,
+                            entity.balance()
+                    )
+            );
         } else {
             dataSource.execute(
                     "UPDATE USER_ACCOUNT_BALANCE SET COD_USER = ?, COD_ACCOUNT = ?, NUM_PERIOD = ?, DEC_BALANCE = ? WHERE ID = ?",
-                    new JDBCPreparedParameter(1, userId),
-                    new JDBCPreparedParameter(2, entity.accountId().toString()),
-                    new JDBCPreparedParameter(3, numPeriod),
-                    new JDBCPreparedParameter(4, entity.balance()),
-                    new JDBCPreparedParameter(5, entity.id().toString())
-            ).getOrThrow();
+                    JDBCParameter.of(
+                            userId,
+                            entity.accountId().toString(),
+                            numPeriod,
+                            entity.balance(),
+                            entity.id().toString()
+                    )
+            );
         }
         return entity;
     }
 
     @Override
     public void deleteById(UUID id) {
-        dataSource.execute("DELETE FROM USER_ACCOUNT_BALANCE WHERE ID = ?",
-                new JDBCPreparedParameter(1, id.toString())).getOrThrow();
+        dataSource.execute("DELETE FROM USER_ACCOUNT_BALANCE WHERE ID = ?", JDBCParameter.of(id.toString()));
     }
 
     @Override
@@ -113,16 +115,16 @@ public final class UserAccountBalanceJDBCRepository implements BalanceRepository
     private String findUserIdForAccount(UUID accountId) {
         val results = dataSource.query(
                 "SELECT COD_USER FROM USER_ACCOUNT WHERE COD_ACCOUNT = ? LIMIT 1",
-                List.of(new JDBCPreparedParameter(1, accountId.toString())),
+                JDBCParameter.of(accountId.toString()),
                 rs -> {
                     val list = new ArrayList<String>();
-                    while (Boolean.TRUE.equals(rs.next().getOrThrow())) {
-                        @Nullable String u = rs.getString("COD_USER").getOrThrow();
-                        if (u != null) list.add(u);
+                    while (rs.next().get()) {
+                        val u = rs.getString("COD_USER").get();
+                        list.add(u);
                     }
                     return list;
                 }
-        ).getOrThrow();
+        );
         return results.isEmpty() ? "" : results.get(0);
     }
 
@@ -136,16 +138,16 @@ public final class UserAccountBalanceJDBCRepository implements BalanceRepository
 
     private List<MonthlyBalance> toBalances(JDBCResultSet rs) {
         val balances = new ArrayList<MonthlyBalance>();
-        while (Boolean.TRUE.equals(rs.next().getOrThrow())) balances.add(toBalance(rs));
+        while (rs.next().get()) balances.add(toBalance(rs));
         return balances;
     }
 
     private MonthlyBalance toBalance(JDBCResultSet rs) {
         return new MonthlyBalance(
-                UUID.fromString(rs.getString("ID").getOrThrow()),
-                UUID.fromString(rs.getString("COD_ACCOUNT").getOrThrow()),
-                fromNumPeriod(rs.getInt("NUM_PERIOD").getOrThrow()),
-                rs.getBigDecimal("DEC_BALANCE").getOrThrow()
+                UUID.fromString(rs.getString("ID").get()),
+                UUID.fromString(rs.getString("COD_ACCOUNT").get()),
+                fromNumPeriod(rs.getInt("NUM_PERIOD").get()),
+                rs.getBigDecimal("DEC_BALANCE").get()
         );
     }
 }

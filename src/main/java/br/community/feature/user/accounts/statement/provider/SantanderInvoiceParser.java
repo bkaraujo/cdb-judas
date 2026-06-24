@@ -53,7 +53,7 @@ public class SantanderInvoiceParser implements StatementParser {
         @Nullable MonthDay lastDate = null;
         boolean keep = false;
 
-        for (String line : text.split("\\R", -1)) {
+        for (val line : text.split("\\R", -1)) {
             val card = CARD_HEADER.matcher(line);
             if (card.find()) {
                 last4 = card.group(1);

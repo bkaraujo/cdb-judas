@@ -1,5 +1,6 @@
 package br.community.infra.persistence;
 
+import br.community.infra.persistence.monetary.AccountTypeMapper;
 import org.jspecify.annotations.NullMarked;
 
 import java.util.List;

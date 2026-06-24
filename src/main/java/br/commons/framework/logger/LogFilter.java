@@ -1,5 +1,6 @@
 package br.commons.framework.logger;
 
+import lombok.val;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 
@@ -138,13 +139,13 @@ public final class LogFilter {
      */
     public LogLevel getEffectiveLevel(String className) {
         // Tenta cache primeiro
-        LogLevel cached = cache.get(className);
+        val cached = cache.get(className);
         if (cached != null) {
             return cached;
         }
 
         // Calcula nível efetivo
-        LogLevel effective = computeEffectiveLevel(className);
+        val effective = computeEffectiveLevel(className);
         cache.put(className, effective);
         return effective;
     }
@@ -167,13 +168,13 @@ public final class LogFilter {
 
         String current = className;
         while (true) {
-            LogLevel level = packageFilters.get(current);
+            val level = packageFilters.get(current);
             if (level != null) {
                 return level;
             }
 
             // Remove último segmento
-            int lastDot = current.lastIndexOf('.');
+            val lastDot = current.lastIndexOf('.');
             if (lastDot == -1) {
                 break;
             }

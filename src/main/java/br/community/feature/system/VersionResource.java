@@ -3,6 +3,7 @@ package br.community.feature.system;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
+import lombok.val;
 import org.jspecify.annotations.NullMarked;
 import org.springframework.boot.info.BuildProperties;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -27,7 +28,7 @@ public class VersionResource {
     @GetMapping
     @Operation(summary = "Retorna a versão do sistema extraída do pom.xml")
     public Map<String, String> getVersion() {
-        String version = buildProperties
+        val version = buildProperties
                 .map(BuildProperties::getVersion)
                 .orElse(fallbackVersion);
         return Map.of("version", version);

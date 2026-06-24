@@ -81,7 +81,7 @@ public class SantanderStatementParser implements StatementParser {
         @Nullable LocalDate recordDate = null;
         val buffer = new StringBuilder();
 
-        for (String raw : text.split("\\R", -1)) {
+        for (val raw : text.split("\\R", -1)) {
             val line = raw.strip();
 
             if (!inSection) {

@@ -199,7 +199,7 @@ public abstract class Meta {
                             .map(StackWalker.StackFrame::getDeclaringClass)
                             // Filtra classes que NÃO são de infraestrutura
                             .filter(clazz -> {
-                                String name = clazz.getName();
+                                val name = clazz.getName();
                                 return RT.packages.stream().noneMatch(name::startsWith);
                             })
                             // Queremos o "fundo" da pilha filtrada (o ponto de entrada do usuário)

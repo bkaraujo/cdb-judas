@@ -4,6 +4,7 @@ import br.commons.framework.persistence.Storage;
 import br.commons.framework.persistence.json.LocalFileStorage;
 import br.community.context.monetary._0_domain.model.Transaction;
 import br.community.core.JsonStorageProperties;
+import lombok.val;
 import org.jspecify.annotations.NullMarked;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
@@ -29,7 +30,7 @@ class JsonStorageConfig {
 
     @Bean
     JacksonModule bigDecimalModule() {
-        SimpleModule module = new SimpleModule("bigDecimal");
+        val module = new SimpleModule("bigDecimal");
         module.addSerializer(BigDecimal.class, new ValueSerializer<>() {
             @Override
             public void serialize(BigDecimal value, JsonGenerator gen, SerializationContext serializers) {
@@ -45,7 +46,7 @@ class JsonStorageConfig {
      */
     @Bean
     JacksonModule transactionEnumModule() {
-        SimpleModule module = new SimpleModule("transactionEnum");
+        val module = new SimpleModule("transactionEnum");
         module.addSerializer(Transaction.Status.class, new ValueSerializer<>() {
             @Override
             public void serialize(Transaction.Status value, JsonGenerator gen, SerializationContext serializers) {

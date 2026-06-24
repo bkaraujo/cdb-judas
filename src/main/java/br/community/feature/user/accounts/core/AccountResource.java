@@ -1,8 +1,8 @@
 package br.community.feature.user.accounts.core;
 
 import br.commons.Result;
+import br.commons.tools.Strings;
 import br.community.context.monetary.MonetaryContext;
-import br.community.context.monetary._0_domain.model.Account;
 import br.community.context.monetary._0_domain.model.Transaction;
 import br.community.context.monetary._1_application.command.AccountCommand;
 import br.community.context.shared._1_application.DomainException;
@@ -17,7 +17,6 @@ import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.Map;
 import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -47,7 +46,7 @@ public class AccountResource {
 
     private boolean isCardType(@Nullable String type) {
         if (type == null) return false;
-        val t = type.replace('-', '_').toUpperCase();
+        val t = Strings.upper(type.replace('-', '_'));
         return t.equals("CARD") || t.equals("CREDIT_CARD");
     }
 

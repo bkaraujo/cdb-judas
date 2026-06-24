@@ -12,7 +12,6 @@ import lombok.val;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 
-import javax.sql.PooledConnection;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
@@ -150,12 +149,12 @@ public final class ConnectionPool {
     @Nullable
     private PooledConnection obtain(long timeoutMs) throws InterruptedException, SQLException {
         // 1) Caminho rápido: uma conexão ociosa, se existir.
-        PooledConnection pooled = availableConnections.poll();
+        val pooled = availableConnections.poll();
         if (pooled != null) return pooled;
 
         // 2) Cresce de imediato se houver lugar — reserva a vaga via CAS (não excede o máximo).
         while (true) {
-            int current = totalConnections.get();
+            val current = totalConnections.get();
             if (current >= properties.maxPoolSize()) break;
             if (totalConnections.compareAndSet(current, current + 1)) {
                 try {

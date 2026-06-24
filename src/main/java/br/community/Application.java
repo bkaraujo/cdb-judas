@@ -6,10 +6,8 @@ import br.commons.RT;
 import br.commons.framework.logger.LogLevel;
 import br.commons.framework.logger.channel.ConsoleChannel;
 import br.commons.tools.Strings;
-import br.community.core.ContextBridge;
 import br.community.feature.FeatureModule;
 import br.community.infra.InfraConfigs;
-import br.community.infra.persistence.DatabaseConfig;
 import lombok.val;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
@@ -25,7 +23,7 @@ import java.util.List;
 @NullMarked
 @SpringBootApplication(scanBasePackages = {"br.community"})
 @ConfigurationPropertiesScan
-@Import({DatabaseConfig.class, InfraConfigs.class, ContextBridge.class, FeatureModule.class})
+@Import({InfraConfigs.class, FeatureModule.class})
 public class Application {
 
     /** Prefixo das variáveis de ambiente que configuram o log. */

@@ -1,6 +1,7 @@
 package br.commons.framework.persistence.inmemory;
 
 import br.commons.framework.persistence.Storage;
+import lombok.val;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 
@@ -16,7 +17,7 @@ public class InMemoryStorage implements Storage {
 
     @Override
     public byte @Nullable [] read(String file, String jsonKey) {
-        Map<String, byte[]> fileContent = data.get(file);
+        val fileContent = data.get(file);
         if (fileContent != null) {
             return fileContent.get(jsonKey);
         }

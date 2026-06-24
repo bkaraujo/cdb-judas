@@ -97,7 +97,7 @@ class SLF4JBridge extends LegacyAbstractLogger {
                         }
 
                         sb.append(Strings.LINE_SEPARATOR);
-                        for (StackTraceElement element : cause.getStackTrace()) {
+                        for (val element : cause.getStackTrace()) {
                             sb.append("  at ").append(element).append(Strings.LINE_SEPARATOR);
                         }
                     }

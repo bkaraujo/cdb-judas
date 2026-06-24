@@ -12,7 +12,8 @@ import org.junit.jupiter.api.Test;
 
 import java.util.UUID;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /** Cobre §9 (centro de custo). Categorias e tags migraram para a camada feature (USER_CATEGORY / USER_TAG). */
 

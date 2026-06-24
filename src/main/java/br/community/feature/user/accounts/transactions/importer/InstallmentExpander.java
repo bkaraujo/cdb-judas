@@ -41,7 +41,7 @@ public class InstallmentExpander {
                     statusFor(originalDate, today), Transaction.Type.EXPENSE, accountId, null, null, null, line.kind()));
         }
 
-        final int total = line.installmentTotal();
+        val total = line.installmentTotal();
         val groupId = groupSignature.groupId(accountId, originalDate, total, line.description());
         val drafts = new ArrayList<TransactionDraft>(total);
         for (int k = 1; k <= total; k++) {

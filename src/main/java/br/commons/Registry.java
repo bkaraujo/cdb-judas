@@ -47,6 +47,13 @@ public abstract class Registry {
         });
     }
 
+    public static <T> void set(Class<T> type, Supplier<T> instance) {
+        Threads.locked(lock, () -> {
+            Logger.verbose("Registering %s", type);
+            registry.put(type, instance.get());
+        });
+    }
+
     public static <T> void set(Class<T> type) {
         Threads.locked(lock, () -> set(type, Meta.instance(type)));
     }

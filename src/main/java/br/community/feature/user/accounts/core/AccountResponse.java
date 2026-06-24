@@ -3,6 +3,7 @@ package br.community.feature.user.accounts.core;
 import br.commons.tools.Strings;
 import br.community.context.monetary._0_domain.model.Account;
 import br.community.context.monetary._0_domain.model.Transaction;
+import lombok.val;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 
@@ -25,11 +26,11 @@ public record AccountResponse(
 ) {
     /** Saldo atual = saldo de abertura + todas as transações da conta. */
     public static AccountResponse from(Account monetary, @Nullable UserAccount ua, List<Transaction> transactions) {
-        BigDecimal opening = ua != null ? ua.openingBalance() : BigDecimal.ZERO;
-        String color = ua != null ? ua.color() : "#000000";
-        boolean active = ua != null ? ua.active() : monetary.active();
+        val opening = ua != null ? ua.openingBalance() : BigDecimal.ZERO;
+        val color = ua != null ? ua.color() : "#000000";
+        val active = ua != null ? ua.active() : monetary.active();
         var sum = BigDecimal.ZERO;
-        for (var t : transactions) {
+        for (val t : transactions) {
             if (monetary.id().equals(t.accountId())) sum = sum.add(BigDecimal.valueOf(t.signal()).multiply(t.amount()));
         }
         return new AccountResponse(

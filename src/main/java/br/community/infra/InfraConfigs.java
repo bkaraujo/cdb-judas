@@ -1,35 +1,39 @@
 package br.community.infra;
 
-import br.community.context.monetary._0_domain.repository.*;
+import br.community.context.monetary._0_domain.repository.AccountRepository;
+import br.community.context.monetary._0_domain.repository.BalanceRepository;
+import br.community.context.monetary._0_domain.repository.CostCenterRepository;
+import br.community.context.monetary._0_domain.repository.TransactionRepository;
 import br.community.context.people._0_domain.repository.PersonRepository;
+import br.community.core.ContextBridge;
 import br.community.core.web.security.UserRepository;
 import br.community.feature.user.accounts.closing.ClosingRepository;
 import br.community.feature.user.accounts.transactions.UserTransactionRepository;
 import br.community.feature.user.categories.UserCategoryRepository;
 import br.community.feature.user.tags.UserTagRepository;
-import br.community.infra.persistence.*;
+import br.community.infra.persistence.CachingPersonRepository;
+import br.community.infra.persistence.CachingUserRepository;
+import br.community.infra.persistence.features.*;
+import br.community.infra.persistence.monetary.AccountJDBCRepository;
+import br.community.infra.persistence.monetary.CostCenterJDBCRepository;
+import br.community.infra.persistence.monetary.TransactionJDBCRepository;
+import br.community.infra.persistence.person.PersonJDBCRepository;
 import org.jspecify.annotations.NullMarked;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.DependsOn;
+import org.springframework.context.annotation.Import;
 import tools.jackson.databind.ObjectMapper;
-
-import java.util.concurrent.locks.ReadWriteLock;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 @NullMarked
 @Configuration
+@Import(ContextBridge.class)
 @DependsOn("dataSource")
 public class InfraConfigs {
 
     @Bean
-    ReadWriteLock databaseLock() {
-        return new ReentrantReadWriteLock(false);
-    }
-
-    @Bean
-    UserRepository userRepository(ReadWriteLock databaseLock) {
-        return new CachingUserRepository(new UserJDBCRepository(), databaseLock);
+    UserRepository userRepository() {
+        return new CachingUserRepository(new UserJDBCRepository());
     }
 
     @Bean
@@ -78,7 +82,7 @@ public class InfraConfigs {
     }
 
     @Bean
-    PersonRepository personRepository(ReadWriteLock databaseLock) {
-        return new CachingPersonRepository(new PersonJDBCRepository(), databaseLock);
+    PersonRepository personRepository() {
+        return new CachingPersonRepository(new PersonJDBCRepository());
     }
 }

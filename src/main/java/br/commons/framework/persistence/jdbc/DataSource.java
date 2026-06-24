@@ -4,7 +4,7 @@ import br.commons.Logger;
 import br.commons.Result;
 import br.commons.framework.persistence.jdbc.pool.ConnectionPool;
 import br.commons.framework.persistence.jdbc.primitives.JDBCConnection;
-import br.commons.framework.persistence.jdbc.primitives.JDBCPreparedParameter;
+import br.commons.framework.persistence.jdbc.primitives.JDBCParameter;
 import br.commons.framework.persistence.jdbc.primitives.JDBCResultSet;
 import lombok.Getter;
 import lombok.val;
@@ -44,62 +44,18 @@ public class DataSource {
         return getConnection().map(JDBCTransaction::new);
     }
 
-    /** Leitura: executa work e fecha a transação ao final. */
-    private <T> Result<T, String> withReadConnection(Function<JDBCTransaction, Result<T, String>> work) {
-        return switch (begin()) {
-            case Result.Failure(var error) -> new Result.Failure<>(error);
-            case Result.Success(var tx) -> {
-                if (tx == null) yield new Result.Failure<>("Transaction is null");
-                try { yield work.apply(tx); }
-                finally { tx.close(); }
-            }
-        };
-    }
-
-    /** Escrita: commita em sucesso, faz rollback em falha/exceção, fecha a transação. */
-    private <T> Result<T, String> withWriteConnection(Function<JDBCTransaction, Result<T, String>> work) {
-        return switch (begin()) {
-            case Result.Failure(var error) -> new Result.Failure<>(error);
-            case Result.Success(var tx) -> {
-                if (tx == null) yield new Result.Failure<>("Transaction is null");
-                try {
-                    val r = work.apply(tx);
-                    if (r.isSuccess()) tx.commit(); else tx.rollback();
-                    yield r;
-                } catch (RuntimeException ex) { tx.rollback(); throw ex; }
-                finally { tx.close(); }
-            }
-        };
-    }
-
-    public <T> Result<T, String> query(String query, Function<JDBCResultSet, T> function) {
-        return withReadConnection(tx -> tx.query(query, function));
-    }
-
-    public Result<Boolean, String> execute(String query) {
-        return withWriteConnection(tx -> tx.execute(query));
-    }
-
-    public <T> Result<T, String> query(String query, List<JDBCPreparedParameter> parameters, Function<JDBCResultSet, T> function) {
-        return withReadConnection(tx -> tx.query(query, parameters, function));
-    }
-
-    public Result<Boolean, String> execute(String sql, JDBCPreparedParameter... parameters) {
-        return withWriteConnection(tx -> tx.execute(sql, List.of(parameters)));
-    }
-
-    public <T> Result<T, String> transaction(Function<JDBCTransaction, Result<T, String>> work) {
-        return withWriteConnection(work);
-    }
-
     /**
      * Acquires a connection from the pool using the default timeout.
      *
      * @return Result containing a pooled database connection or error message
      */
-    public Result<JDBCConnection, String> getConnection() {
+    private Result<JDBCConnection, String> getConnection() {
         if (closed) return Results.resourceIsClosed(name);
         return pool.aquire();
+    }
+
+    public Result<JDBCTransaction, String> begin(long timeout) {
+        return getConnection(timeout).map(JDBCTransaction::new);
     }
 
     /**
@@ -108,15 +64,87 @@ public class DataSource {
      * @param timeoutMs Maximum time to wait for a connection in milliseconds
      * @return Result containing a pooled database connection or error message
      */
-    public Result<JDBCConnection, String> getConnection(long timeoutMs) {
+    private Result<JDBCConnection, String> getConnection(long timeoutMs) {
         if (closed) return Results.resourceIsClosed(name);
         return pool.aquire(timeoutMs);
+    }
+
+    private <T> T readOnly(Function<JDBCTransaction, Result<T, String>> work) {
+        return switch (begin()) {
+            case Result.Failure(var error) -> {
+                Logger.fatal(error);
+                throw new RuntimeException("Unreachable");
+            }
+            case Result.Success(var transaction) -> {
+                if (transaction == null) {
+                    Logger.fatal("Transaction is null");
+                    throw new RuntimeException("Unreachable");
+                }
+
+                try {
+                    val result =  work.apply(transaction);
+                    transaction.rollback();
+
+                    yield result.get();
+                } finally { transaction.close(); }
+            }
+        };
+    }
+
+    private <T> T mutating(Function<JDBCTransaction, Result<T, String>> work) {
+        return switch (begin()) {
+            case Result.Failure(var error) -> {
+                Logger.fatal(error);
+                throw new RuntimeException("Unreachable");
+            }
+            case Result.Success(var transaction) -> {
+                if (transaction == null) {
+                    Logger.fatal("Transaction is null");
+                    throw new RuntimeException("Unreachable");
+                }
+                try {
+                    val result = work.apply(transaction);
+                    if (result.isSuccess()) transaction.commit(); else transaction.rollback();
+                    yield result.get();
+                } catch (RuntimeException ex) {
+                    transaction.rollback();
+                    Logger.fatal(ex.toString());
+                    throw new RuntimeException("Unreachable");
+                } finally { transaction.close(); }
+            }
+        };
+    }
+
+    public <T> T query(String query, Function<JDBCResultSet, T> function) {
+        return readOnly(transaction -> transaction.query(query, function));
+    }
+
+    public <T> T query(String query, List<JDBCParameter> parameters, Function<JDBCResultSet, T> function) {
+        return readOnly(transaction -> transaction.query(query, parameters, function));
+    }
+
+    public boolean execute(String query) {
+        return mutating(transaction -> transaction.execute(query));
+    }
+
+    public boolean execute(String sql, JDBCParameter... parameters) {
+        return mutating(transaction -> transaction.execute(sql, List.of(parameters)));
+    }
+
+    public boolean execute(String sql, List<JDBCParameter> parameters) {
+        return mutating(transaction -> transaction.execute(sql, parameters));
+    }
+
+    public <T> T transaction(Function<JDBCTransaction, Result<T, String>> work) {
+        return mutating(work);
     }
 
     /**
      * Gets the number of currently active connections.
      *
      * @return Number of active connections
+     * @see #getAvailableConnections()
+     * @see #getTotalConnections()
      */
     public int getActiveConnections() {
         return pool.getActiveCount();
@@ -126,6 +154,8 @@ public class DataSource {
      * Gets the number of available connections in the pool.
      *
      * @return Number of available connections
+     * @see #getTotalConnections()
+     * @see #getActiveConnections()
      */
     public int getAvailableConnections() {
         return pool.getAvailableCount();
@@ -135,6 +165,8 @@ public class DataSource {
      * Gets the total number of connections (active + available).
      *
      * @return Total number of connections
+     * @see #getActiveConnections()
+     * @see #getAvailableConnections()
      */
     public int getTotalConnections() {
         return pool.getTotalCount();
@@ -153,9 +185,20 @@ public class DataSource {
      * Checks if this data source is closed.
      *
      * @return true if closed, false otherwise
+     * @see #isOpened()
      */
     public boolean isClosed() {
         return closed;
+    }
+
+    /**
+     * Checks if this data source is open.
+     *
+     * @return true if open, false otherwise
+     * @see #isClosed()
+     */
+    public boolean isOpened() {
+        return !closed;
     }
 
     /**

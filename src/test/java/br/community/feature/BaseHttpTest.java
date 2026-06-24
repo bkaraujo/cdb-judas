@@ -72,12 +72,9 @@ abstract class BaseHttpTest {
         repositories.forEach(Repository::clearCache);
 
         // Reset relational tables — H2 in-memory é compartilhado entre métodos de teste
-        val conn = dataSource.getConnection().getOrThrow();
-        val stmt = conn.createStatement().getOrThrow();
-        for (val sql : Database.reset()) stmt.execute(sql);
-        stmt.close();
-        conn.commit();
-        conn.close();
+        val tx = dataSource.begin().get();
+        for (val sql : Database.reset()) tx.execute(sql).get();
+        tx.commit().get();
     }
 
 }

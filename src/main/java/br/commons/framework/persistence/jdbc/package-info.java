@@ -35,7 +35,7 @@
  *     try (conn) {
  *         try (val stmt = conn.prepareStatement("SELECT * FROM users WHERE id = ?")) {
  *             stmt.setLong(1, userId);
- *             try (val rs = stmt.executeQuery()) {
+ *             try (val rs = stmt.query()) {
  *                 // Process results...
  *             }
  *         }

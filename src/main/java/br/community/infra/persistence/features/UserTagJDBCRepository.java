@@ -1,14 +1,13 @@
-package br.community.infra.persistence;
+package br.community.infra.persistence.features;
 
 import br.commons.Registry;
 import br.commons.framework.persistence.jdbc.DataSource;
-import br.commons.framework.persistence.jdbc.primitives.JDBCPreparedParameter;
+import br.commons.framework.persistence.jdbc.primitives.JDBCParameter;
 import br.commons.framework.persistence.jdbc.primitives.JDBCResultSet;
 import br.community.feature.user.tags.UserTag;
 import br.community.feature.user.tags.UserTagRepository;
 import lombok.val;
 import org.jspecify.annotations.NullMarked;
-import org.jspecify.annotations.Nullable;
 
 import java.sql.Timestamp;
 import java.time.LocalDateTime;
@@ -29,18 +28,18 @@ public final class UserTagJDBCRepository implements UserTagRepository {
     public List<UserTag> findAllByUser(UUID userId) {
         return dataSource.query(
                 "SELECT " + COLUMNS + " FROM USER_TAG WHERE COD_USER = ?",
-                List.of(new JDBCPreparedParameter(1, userId.toString())),
+                JDBCParameter.of(userId.toString()),
                 this::toTags
-        ).getOrThrow();
+        );
     }
 
     @Override
     public Optional<UserTag> findById(UUID id) {
         return dataSource.query(
                 "SELECT " + COLUMNS + " FROM USER_TAG WHERE ID = ?",
-                List.of(new JDBCPreparedParameter(1, id.toString())),
+                JDBCParameter.of(id.toString()),
                 this::toTags
-        ).getOrThrow().stream().findFirst();
+        ).stream().findFirst();
     }
 
     @Override
@@ -53,19 +52,23 @@ public final class UserTagJDBCRepository implements UserTagRepository {
         if (existing.isEmpty()) {
             dataSource.execute(
                     "INSERT INTO USER_TAG (" + COLUMNS + ") VALUES (?, ?, ?, ?, ?)",
-                    new JDBCPreparedParameter(1, entity.id().toString()),
-                    new JDBCPreparedParameter(2, entity.userId().toString()),
-                    new JDBCPreparedParameter(3, entity.name()),
-                    new JDBCPreparedParameter(4, entity.color()),
-                    new JDBCPreparedParameter(5, now)
-            ).getOrThrow();
+                    JDBCParameter.of (
+                            entity.id().toString(),
+                            entity.userId().toString(),
+                            entity.name(),
+                            entity.color(),
+                            now
+                    )
+            );
         } else {
             dataSource.execute(
                     "UPDATE USER_TAG SET TXT_DESCRIPTION = ?, TXT_COLOR = ? WHERE ID = ?",
-                    new JDBCPreparedParameter(1, entity.name()),
-                    new JDBCPreparedParameter(2, entity.color()),
-                    new JDBCPreparedParameter(3, entity.id().toString())
-            ).getOrThrow();
+                    JDBCParameter.of (
+                            entity.name(),
+                            entity.color(),
+                            entity.id().toString()
+                    )
+            );
         }
         return entity;
     }
@@ -73,22 +76,22 @@ public final class UserTagJDBCRepository implements UserTagRepository {
     @Override
     public void deleteById(UUID id) {
         dataSource.execute("DELETE FROM USER_TAG WHERE ID = ?",
-                new JDBCPreparedParameter(1, id.toString())).getOrThrow();
+                JDBCParameter.of(id.toString()));
     }
 
     private List<UserTag> toTags(JDBCResultSet rs) {
         val tags = new ArrayList<UserTag>();
-        while (Boolean.TRUE.equals(rs.next().getOrThrow())) tags.add(toTag(rs));
+        while (rs.next().get()) tags.add(toTag(rs));
         return tags;
     }
 
     private UserTag toTag(JDBCResultSet rs) {
-        val id = UUID.fromString(rs.getString("ID").getOrThrow());
-        val userId = UUID.fromString(rs.getString("COD_USER").getOrThrow());
-        val name = rs.getString("TXT_DESCRIPTION").getOrThrow();
-        val color = rs.getString("TXT_COLOR").getOrThrow();
-        @Nullable Timestamp createRaw = rs.getTimestamp("TMS_CREATE_AT").getOrThrow();
-        @Nullable LocalDateTime createdAt = createRaw == null ? null : createRaw.toLocalDateTime();
+        val id = UUID.fromString(rs.getString("ID").get());
+        val userId = UUID.fromString(rs.getString("COD_USER").get());
+        val name = rs.getString("TXT_DESCRIPTION").get();
+        val color = rs.getString("TXT_COLOR").get();
+        val createRaw = rs.getTimestamp("TMS_CREATE_AT").get();
+        val createdAt = createRaw.toLocalDateTime();
         return new UserTag(id, userId, name, color, createdAt);
     }
 }

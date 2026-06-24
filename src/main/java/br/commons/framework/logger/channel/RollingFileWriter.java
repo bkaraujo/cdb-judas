@@ -35,7 +35,7 @@ final class RollingFileWriter implements Runnable {
         rotateWriter();
 
         while (RT.running) {
-            long nowDay = System.currentTimeMillis() / MILLIS_IN_DAY;
+            val nowDay = System.currentTimeMillis() / MILLIS_IN_DAY;
             if (nowDay != currentDayCached) { rotateWriter(); }
 
             if (messages.isEmpty()) {
@@ -66,7 +66,7 @@ final class RollingFileWriter implements Runnable {
             }
 
             // Atualiza o cache do dia atual
-            long nowMillis = System.currentTimeMillis();
+            val nowMillis = System.currentTimeMillis();
             currentDayCached = nowMillis / MILLIS_IN_DAY;
 
             // Cria o novo nome de arquivo: ex: "log-2026-02-06.txt"

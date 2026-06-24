@@ -3,8 +3,8 @@ package br.community.core.web.security;
 import br.commons.Logger;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import lombok.val;
 import org.jspecify.annotations.NullMarked;
-import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.HandlerInterceptor;
@@ -20,14 +20,14 @@ public class OwnershipInterceptor implements HandlerInterceptor {
 
     @Override
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) {
-        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        val auth = SecurityContextHolder.getContext().getAuthentication();
         if (auth == null || !auth.isAuthenticated() || !(auth.getPrincipal() instanceof AuthenticatedUser user)) {
             Logger.debug("OWNERSHIP %s %s => 401 (não autenticado)", request.getMethod(), request.getRequestURI());
             response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
             return false;
         }
 
-        String routeUserId = firstSegment(request.getRequestURI());
+        val routeUserId = firstSegment(request.getRequestURI());
         if (!user.id().equals(routeUserId)) {
             Logger.debug("OWNERSHIP %s %s => 403 (rota '%s' != usuário '%s')",
                     request.getMethod(), request.getRequestURI(), routeUserId, user.id());
@@ -38,10 +38,10 @@ public class OwnershipInterceptor implements HandlerInterceptor {
     }
 
     private String firstSegment(String uri) {
-        int idx = uri.indexOf("/api/");
+        val idx = uri.indexOf("/api/");
         if (idx < 0) return "";
-        String rest = uri.substring(idx + 5);
-        int slash = rest.indexOf('/');
+        val rest = uri.substring(idx + 5);
+        val slash = rest.indexOf('/');
         return slash >= 0 ? rest.substring(0, slash) : rest;
     }
 }

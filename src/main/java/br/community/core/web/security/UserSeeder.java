@@ -5,6 +5,7 @@ import br.commons.framework.persistence.Storage;
 import br.commons.tools.Strings;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
+import lombok.val;
 import org.jspecify.annotations.NullMarked;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
@@ -35,7 +36,7 @@ public final class UserSeeder {
     @PostConstruct
     public void seed() {
         if (repository.findByUsername("admin").isEmpty()) {
-            String id = UUID.randomUUID().toString();
+            val id = UUID.randomUUID().toString();
             repository.save(new User(
                     id,
                     "admin",

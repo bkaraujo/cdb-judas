@@ -1,8 +1,8 @@
-package br.community.infra.persistence;
+package br.community.infra.persistence.monetary;
 
 import br.community.context.monetary._0_domain.model.Account;
+import lombok.val;
 import org.jspecify.annotations.NullMarked;
-import org.jspecify.annotations.Nullable;
 
 import java.util.Map;
 
@@ -29,13 +29,13 @@ public abstract class AccountTypeMapper {
     );
 
     public static String toId(Account.Type type) {
-        @Nullable String id = TO_ID.get(type);
+        val id = TO_ID.get(type);
         if (id == null) throw new IllegalArgumentException("Unknown Account.Type: " + type);
         return id;
     }
 
     public static Account.Type fromId(String id) {
-        Account.@Nullable Type type = FROM_ID.get(id);
+        val type = FROM_ID.get(id);
         if (type == null) throw new IllegalArgumentException("Unknown Account.Type ID: " + id);
         return type;
     }

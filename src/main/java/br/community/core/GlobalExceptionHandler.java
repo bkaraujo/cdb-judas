@@ -24,7 +24,7 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(DomainException.class)
     public ProblemDetail handleDomain(DomainException ex, HttpServletRequest req) {
-        HttpStatus status = switch (ex.getError()) {
+        val status = switch (ex.getError()) {
             case DomainError.NotFound ignored -> HttpStatus.NOT_FOUND;
             case DomainError.Conflict ignored -> HttpStatus.CONFLICT;
             case DomainError.Validation ignored -> HttpStatus.UNPROCESSABLE_CONTENT;

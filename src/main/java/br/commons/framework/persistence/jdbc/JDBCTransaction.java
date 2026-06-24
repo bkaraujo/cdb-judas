@@ -3,7 +3,7 @@ package br.commons.framework.persistence.jdbc;
 import br.commons.Logger;
 import br.commons.Result;
 import br.commons.framework.persistence.jdbc.primitives.JDBCConnection;
-import br.commons.framework.persistence.jdbc.primitives.JDBCPreparedParameter;
+import br.commons.framework.persistence.jdbc.primitives.JDBCParameter;
 import br.commons.framework.persistence.jdbc.primitives.JDBCResultSet;
 import br.commons.tools.Strings;
 import lombok.val;
@@ -26,11 +26,11 @@ public class JDBCTransaction {
         finally { close(); }
     }
 
-    public Result<Boolean, String> execute(String sql, JDBCPreparedParameter... parameters) {
+    public Result<Boolean, String> execute(String sql, JDBCParameter... parameters) {
         return execute(sql, List.of(parameters));
     }
 
-    public Result<Boolean, String> execute(String statement, List<JDBCPreparedParameter> parameters) {
+    public Result<Boolean, String> execute(String statement, List<JDBCParameter> parameters) {
         return switch (connection.prepareStatement(statement)) {
             case Result.Failure(var error) -> new Result.Failure<>(error);
             case Result.Success(var pstmt) -> {
@@ -64,7 +64,7 @@ public class JDBCTransaction {
         };
     }
 
-    public <T> Result<T, String> query(String query, List<JDBCPreparedParameter> parameters, Function<JDBCResultSet, T> function) {
+    public <T> Result<T, String> query(String query, List<JDBCParameter> parameters, Function<JDBCResultSet, T> function) {
         return switch (connection.prepareStatement(query)) {
             case Result.Failure(var error) -> new Result.Failure<>(error);
             case Result.Success(var pstmt) -> {

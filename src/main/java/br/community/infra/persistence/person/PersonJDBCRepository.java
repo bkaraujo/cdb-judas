@@ -1,14 +1,13 @@
-package br.community.infra.persistence;
+package br.community.infra.persistence.person;
 
 import br.commons.Registry;
 import br.commons.framework.persistence.jdbc.DataSource;
-import br.commons.framework.persistence.jdbc.primitives.JDBCPreparedParameter;
+import br.commons.framework.persistence.jdbc.primitives.JDBCParameter;
 import br.commons.framework.persistence.jdbc.primitives.JDBCResultSet;
 import br.community.context.people._0_domain.model.Person;
 import br.community.context.people._0_domain.repository.PersonRepository;
 import lombok.val;
 import org.jspecify.annotations.NullMarked;
-import org.jspecify.annotations.Nullable;
 
 import java.sql.Timestamp;
 import java.time.LocalDateTime;
@@ -27,16 +26,16 @@ public final class PersonJDBCRepository implements PersonRepository {
 
     @Override
     public List<Person> findAll() {
-        return dataSource.query("SELECT " + COLUMNS + " FROM PEP_PERSON", this::toPersons).getOrThrow();
+        return dataSource.query("SELECT " + COLUMNS + " FROM PEP_PERSON", this::toPersons);
     }
 
     @Override
     public Optional<Person> findById(UUID id) {
         return dataSource.query(
                 "SELECT " + COLUMNS + " FROM PEP_PERSON WHERE ID = ?",
-                List.of(new JDBCPreparedParameter(1, id.toString())),
+                JDBCParameter.of(id.toString()),
                 this::toPersons
-        ).getOrThrow().stream().findFirst();
+        ).stream().findFirst();
     }
 
     @Override
@@ -49,30 +48,38 @@ public final class PersonJDBCRepository implements PersonRepository {
         if (existing.isEmpty()) {
             dataSource.execute(
                     "INSERT INTO PEP_PERSON (" + COLUMNS + ") VALUES (?, ?, ?, ?, ?, ?)",
-                    new JDBCPreparedParameter(1, entity.id().toString()),
-                    new JDBCPreparedParameter(2, entity.name()),
-                    new JDBCPreparedParameter(3, entity.locale()),
-                    new JDBCPreparedParameter(4, entity.language()),
-                    new JDBCPreparedParameter(5, now),
-                    new JDBCPreparedParameter(6, now)
-            ).getOrThrow();
+                    JDBCParameter.of (
+                            entity.id().toString(),
+                            entity.name(),
+                            entity.locale(),
+                            entity.language(),
+                            now,
+                            now
+                    )
+            );
         } else {
             dataSource.execute(
                     "UPDATE PEP_PERSON SET TXT_NAME = ?, TXT_LOCALE = ?, TXT_LANGUAGE = ?, TMS_UPDATED_AT = ? WHERE ID = ?",
-                    new JDBCPreparedParameter(1, entity.name()),
-                    new JDBCPreparedParameter(2, entity.locale()),
-                    new JDBCPreparedParameter(3, entity.language()),
-                    new JDBCPreparedParameter(4, now),
-                    new JDBCPreparedParameter(5, entity.id().toString())
-            ).getOrThrow();
+                    JDBCParameter.of (
+                            entity.name(),
+                            entity.locale(),
+                            entity.language(),
+                            now,
+                            entity.id().toString()
+                    )
+            );
         }
         return entity;
     }
 
     @Override
     public void deleteById(UUID id) {
-        dataSource.execute("DELETE FROM PEP_PERSON WHERE ID = ?",
-                new JDBCPreparedParameter(1, id.toString())).getOrThrow();
+        dataSource.execute(
+                "DELETE FROM PEP_PERSON WHERE ID = ?",
+                JDBCParameter.of(
+                        id.toString()
+                )
+        );
     }
 
     @Override
@@ -82,21 +89,21 @@ public final class PersonJDBCRepository implements PersonRepository {
 
     private List<Person> toPersons(JDBCResultSet rs) {
         val persons = new ArrayList<Person>();
-        while (Boolean.TRUE.equals(rs.next().getOrThrow())) persons.add(toPerson(rs));
+        while (rs.next().get()) persons.add(toPerson(rs));
         return persons;
     }
 
     private Person toPerson(JDBCResultSet rs) {
-        @Nullable Timestamp createRaw = rs.getTimestamp("TMS_CREATE_AT").getOrThrow();
-        @Nullable LocalDateTime createdAt = createRaw == null ? null : createRaw.toLocalDateTime();
-        @Nullable Timestamp updateRaw = rs.getTimestamp("TMS_UPDATED_AT").getOrThrow();
-        @Nullable LocalDateTime updatedAt = updateRaw == null ? null : updateRaw.toLocalDateTime();
+        val createRaw = rs.getTimestamp("TMS_CREATE_AT").get();
+        val createdAt = createRaw.toLocalDateTime();
+        val updateRaw = rs.getTimestamp("TMS_UPDATED_AT").get();
+        val updatedAt = updateRaw.toLocalDateTime();
 
         return new Person(
-                UUID.fromString(rs.getString("ID").getOrThrow()),
-                rs.getString("TXT_NAME").getOrThrow(),
-                rs.getString("TXT_LOCALE").getOrThrow(),
-                rs.getString("TXT_LANGUAGE").getOrThrow(),
+                UUID.fromString(rs.getString("ID").get()),
+                rs.getString("TXT_NAME").get(),
+                rs.getString("TXT_LOCALE").get(),
+                rs.getString("TXT_LANGUAGE").get(),
                 createdAt,
                 updatedAt
         );

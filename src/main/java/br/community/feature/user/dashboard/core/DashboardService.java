@@ -81,7 +81,7 @@ public class DashboardService {
         public double historyMax() {
             double max = 1.0;
             if (history == null) return max;
-            for (HistoricalResult h : history) {
+            for (val h : history) {
                 if (h.incomes() > max) max = h.incomes();
                 if (h.expenses() > max) max = h.expenses();
             }

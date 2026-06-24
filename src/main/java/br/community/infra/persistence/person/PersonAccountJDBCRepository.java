@@ -1,8 +1,8 @@
-package br.community.infra.persistence;
+package br.community.infra.persistence.person;
 
 import br.commons.Registry;
 import br.commons.framework.persistence.jdbc.DataSource;
-import br.commons.framework.persistence.jdbc.primitives.JDBCPreparedParameter;
+import br.commons.framework.persistence.jdbc.primitives.JDBCParameter;
 import br.commons.framework.persistence.jdbc.primitives.JDBCResultSet;
 import br.community.context.people._0_domain.repository.PersonAccountRepository;
 import lombok.val;
@@ -25,44 +25,48 @@ public final class PersonAccountJDBCRepository implements PersonAccountRepositor
     public void link(UUID personId, UUID accountId) {
         dataSource.execute(
                 "MERGE INTO PEP_PERSON_ACCOUNT (COD_PERSON, COD_ACCOUNT) KEY(COD_PERSON, COD_ACCOUNT) VALUES (?, ?)",
-                new JDBCPreparedParameter(1, personId.toString()),
-                new JDBCPreparedParameter(2, accountId.toString())
-        ).getOrThrow();
+                JDBCParameter.of (
+                        personId.toString(),
+                        accountId.toString()
+                )
+        );
     }
 
     @Override
     public void unlink(UUID personId, UUID accountId) {
         dataSource.execute(
                 "DELETE FROM PEP_PERSON_ACCOUNT WHERE COD_PERSON = ? AND COD_ACCOUNT = ?",
-                new JDBCPreparedParameter(1, personId.toString()),
-                new JDBCPreparedParameter(2, accountId.toString())
-        ).getOrThrow();
+                JDBCParameter.of (
+                        personId.toString(),
+                        accountId.toString()
+                )
+        );
     }
 
     @Override
     public List<UUID> accountIdsOf(UUID personId) {
         return dataSource.query(
                 "SELECT COD_ACCOUNT FROM PEP_PERSON_ACCOUNT WHERE COD_PERSON = ?",
-                List.of(new JDBCPreparedParameter(1, personId.toString())),
+                JDBCParameter.of(personId.toString()),
                 this::toAccountIds
-        ).getOrThrow();
+        );
     }
 
     @Override
     public boolean owns(UUID personId, UUID accountId) {
         return !dataSource.query(
                 "SELECT COD_ACCOUNT FROM PEP_PERSON_ACCOUNT WHERE COD_PERSON = ? AND COD_ACCOUNT = ?",
-                List.of(
-                        new JDBCPreparedParameter(1, personId.toString()),
-                        new JDBCPreparedParameter(2, accountId.toString())
+                JDBCParameter.of (
+                        personId.toString(),
+                        accountId.toString()
                 ),
                 this::toAccountIds
-        ).getOrThrow().isEmpty();
+        ).isEmpty();
     }
 
     private List<UUID> toAccountIds(JDBCResultSet rs) {
         val ids = new ArrayList<UUID>();
-        while (Boolean.TRUE.equals(rs.next().getOrThrow())) ids.add(UUID.fromString(rs.getString("COD_ACCOUNT").getOrThrow()));
+        while (rs.next().get()) ids.add(UUID.fromString(rs.getString("COD_ACCOUNT").get()));
         return ids;
     }
 }

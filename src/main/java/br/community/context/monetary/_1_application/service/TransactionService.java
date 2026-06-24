@@ -5,6 +5,7 @@ import br.community.context.monetary._0_domain.model.Transaction;
 import br.community.context.monetary._0_domain.repository.TransactionRepository;
 import br.community.context.shared._0_domain.model.DomainError;
 import lombok.RequiredArgsConstructor;
+import lombok.val;
 import org.jspecify.annotations.NullMarked;
 
 import java.util.Comparator;
@@ -60,9 +61,9 @@ public class TransactionService {
      *  installment group whose members share a single type. Empty when {@code tx} is not a transfer. */
     public List<Transaction> findTransferSiblings(Transaction tx) {
         if (tx.groupId() == null) return List.of();
-        List<Transaction> group = findByGroupId(tx.groupId());
-        boolean hasIncome = group.stream().anyMatch(t -> Transaction.Type.INCOME.equals(t.type()));
-        boolean hasExpense = group.stream().anyMatch(t -> Transaction.Type.EXPENSE.equals(t.type()));
+        val group = findByGroupId(tx.groupId());
+        val hasIncome = group.stream().anyMatch(t -> Transaction.Type.INCOME.equals(t.type()));
+        val hasExpense = group.stream().anyMatch(t -> Transaction.Type.EXPENSE.equals(t.type()));
         if (!hasIncome || !hasExpense) return List.of();
         return group.stream().filter(t -> !t.id().equals(tx.id())).toList();
     }

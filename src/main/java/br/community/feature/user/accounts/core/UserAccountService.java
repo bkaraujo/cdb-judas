@@ -1,6 +1,6 @@
 package br.community.feature.user.accounts.core;
 
-import br.community.infra.persistence.UserAccountJDBCRepository;
+import br.community.infra.persistence.features.UserAccountJDBCRepository;
 import lombok.RequiredArgsConstructor;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;

@@ -39,6 +39,16 @@ public sealed interface Result<T, E> permits Result.Success, Result.Failure {
         return this instanceof Failure<T, E>;
     }
 
+    default T get() {
+        return switch (this) {
+            case Success<T, E>(T v) -> v;
+            case Failure<T, E>(E e) -> {
+                Logger.fatal(e.toString());
+                throw new RuntimeException("Result is a failure: " + e);
+            }
+        };
+    }
+
     default T getOrThrow() {
         return switch (this) {
             case Success<T, E>(T v) -> v;

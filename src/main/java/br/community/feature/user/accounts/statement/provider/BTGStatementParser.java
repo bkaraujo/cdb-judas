@@ -61,7 +61,7 @@ public class BTGStatementParser implements StatementParser {
         LocalDate recordDate = null;
         val buffer = new StringBuilder();
 
-        for (String raw : text.split("\\R", -1)) {
+        for (val raw : text.split("\\R", -1)) {
             val line = raw.trim();
             if (line.isEmpty() || line.regionMatches(true, 0, "Lançamentos", 0, "Lançamentos".length())) {
                 continue;

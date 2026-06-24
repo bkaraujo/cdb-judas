@@ -1,8 +1,8 @@
-package br.community.infra.persistence;
+package br.community.infra.persistence.monetary;
 
 import br.commons.Registry;
 import br.commons.framework.persistence.jdbc.DataSource;
-import br.commons.framework.persistence.jdbc.primitives.JDBCPreparedParameter;
+import br.commons.framework.persistence.jdbc.primitives.JDBCParameter;
 import br.commons.framework.persistence.jdbc.primitives.JDBCResultSet;
 import br.community.context.monetary._0_domain.model.Tag;
 import br.community.context.monetary._0_domain.repository.TagRepository;
@@ -24,16 +24,16 @@ public final class TagJDBCRepository implements TagRepository {
 
     @Override
     public List<Tag> findAll() {
-        return dataSource.query("SELECT " + COLUMNS + " FROM MON_TAG", this::toTags).getOrThrow();
+        return dataSource.query("SELECT " + COLUMNS + " FROM MON_TAG", this::toTags);
     }
 
     @Override
     public Optional<Tag> findById(UUID id) {
         return dataSource.query(
                 "SELECT " + COLUMNS + " FROM MON_TAG WHERE ID = ?",
-                List.of(new JDBCPreparedParameter(1, id.toString())),
+                JDBCParameter.of(id.toString()),
                 this::toTags
-        ).getOrThrow().stream().findFirst();
+        ).stream().findFirst();
     }
 
     @Override
@@ -44,17 +44,21 @@ public final class TagJDBCRepository implements TagRepository {
         if (existing.isEmpty()) {
             dataSource.execute(
                     "INSERT INTO MON_TAG (" + COLUMNS + ") VALUES (?, ?, ?)",
-                    new JDBCPreparedParameter(1, entity.id().toString()),
-                    new JDBCPreparedParameter(2, entity.name()),
-                    new JDBCPreparedParameter(3, entity.color())
-            ).getOrThrow();
+                    JDBCParameter.of (
+                            entity.id().toString(),
+                            entity.name(),
+                            entity.color()
+                    )
+            );
         } else {
             dataSource.execute(
                     "UPDATE MON_TAG SET TXT_NAME = ?, TXT_COLOR = ? WHERE ID = ?",
-                    new JDBCPreparedParameter(1, entity.name()),
-                    new JDBCPreparedParameter(2, entity.color()),
-                    new JDBCPreparedParameter(3, entity.id().toString())
-            ).getOrThrow();
+                    JDBCParameter.of (
+                            entity.name(),
+                            entity.color(),
+                            entity.id().toString()
+                    )
+            );
         }
         return entity;
     }
@@ -62,7 +66,7 @@ public final class TagJDBCRepository implements TagRepository {
     @Override
     public void deleteById(UUID id) {
         dataSource.execute("DELETE FROM MON_TAG WHERE ID = ?",
-                new JDBCPreparedParameter(1, id.toString())).getOrThrow();
+                JDBCParameter.of(id.toString()));
     }
 
     @Override
@@ -72,15 +76,15 @@ public final class TagJDBCRepository implements TagRepository {
 
     private List<Tag> toTags(JDBCResultSet rs) {
         val tags = new ArrayList<Tag>();
-        while (Boolean.TRUE.equals(rs.next().getOrThrow())) tags.add(toTag(rs));
+        while (rs.next().get()) tags.add(toTag(rs));
         return tags;
     }
 
     private Tag toTag(JDBCResultSet rs) {
         return new Tag(
-                UUID.fromString(rs.getString("ID").getOrThrow()),
-                rs.getString("TXT_NAME").getOrThrow(),
-                rs.getString("TXT_COLOR").getOrThrow()
+                UUID.fromString(rs.getString("ID").get()),
+                rs.getString("TXT_NAME").get(),
+                rs.getString("TXT_COLOR").get()
         );
     }
 }

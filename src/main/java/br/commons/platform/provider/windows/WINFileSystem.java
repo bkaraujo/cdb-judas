@@ -44,7 +44,7 @@ public class WINFileSystem implements FileSystem {
         try (Arena arena = Arena.ofConfined()) {
             // Allocate buffer for wide characters (2 bytes per char)
             val pathBuffer = arena.allocate(WinAPI.MAX_PATH * 2L);
-            int result = Shell32.SHGetFolderPathW(
+            val result = Shell32.SHGetFolderPathW(
                     MemorySegment.NULL,  // hwnd
                     csidl,               // csidl
                     MemorySegment.NULL,  // hToken
