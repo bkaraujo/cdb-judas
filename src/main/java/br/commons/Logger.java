@@ -23,22 +23,14 @@ import java.util.function.Supplier;
 public abstract class Logger {
     private Logger() {}
 
-    private static LogForwarder forwarder = new InfoForwarder();
-    private static final Map<LogLevel, LogForwarder> forwarders = Map.of(
-            LogLevel.OFF, new LogForwarder() {},
-            LogLevel.VERBOSE, new VerboseForwarder(),
-            LogLevel.TRACE, new TraceForwarder(),
-            LogLevel.DEBUG, new DebugForwarder(),
-            LogLevel.INFO, new InfoForwarder(),
-            LogLevel.WARN, new WarnForwarder(),
-            LogLevel.ERROR, new ErrorForwarder(),
-            LogLevel.FATAL, new FatalForwarder());
+    // Forwarder único que emite qualquer nível. A decisão de emitir/ignorar é do gate
+    // (blocked), baseado no nível efetivo por pacote — o forwarder nunca filtra por nível.
+    private static final LogForwarder forwarder = new VerboseForwarder();
 
     private static final LogFilter filter = new LogFilter(LogLevel.INFO);
 
     static {
         level(LogLevel.INFO);
-        forwarder = forwarders.getOrDefault(LogLevel.INFO, new InfoForwarder());
 
         JULBridgeHandler.install();
 
@@ -75,7 +67,6 @@ public abstract class Logger {
     public static void level(LogLevel desired) {
         level = desired;
         filter.level(desired);
-        forwarder = forwarders.getOrDefault(desired, new InfoForwarder());
     }
 
     private static final List<LogChannel> channels = new CopyOnWriteArrayList<>(List.of(new ConsoleChannel()));
@@ -138,35 +129,29 @@ public abstract class Logger {
     }
 
     /**
-     * Determines if a log message should be logged based on package filters.
+     * Guard compartilhado pelos métodos de log. O nível efetivo (override por pacote, ou o nível
+     * global como fallback) é a única autoridade sobre emitir/ignorar — totalmente independente do
+     * rootlogger quando há override de pacote para o caller.
      *
-     * @param callerClass  Caller class name
-     * @param messageLevel Level of the message
-     * @return true if should log, false otherwise
-     */
-    private static boolean shouldLog(String callerClass, LogLevel messageLevel) {
-        // Fast path: se filtro global rejeita, retorna imediatamente
-        if (messageLevel.ordinal < filter.level().ordinal) {
-            return false;
-        }
-
-        // Se não há filtros específicos, aceita
-        if (!filter.hasPackageFilters()) {
-            return true;
-        }
-
-        // Slow path: verifica filtro por pacote
-        val effectiveLevel = filter.getEffectiveLevel(callerClass);
-        return messageLevel.ordinal >= effectiveLevel.ordinal;
-    }
-
-    /**
-     * Guard compartilhado pelos métodos de log: só resolve o caller (StackWalker, caro) quando há
-     * filtros por pacote ativos. Como {@code resolveCallerClass} pula os frames de infraestrutura
+     * <p>Sem filtros por pacote o gate usa apenas o nível global e evita o StackWalker (caro). Com
+     * filtros ativos resolve o caller e usa {@link LogFilter#getEffectiveLevel}. Como
+     * {@code resolveCallerClass} pula os frames de infraestrutura
      * ({@link br.commons.tools.Meta#stackFrame}), chamá-lo daqui não altera o caller resolvido.
      */
     private static boolean blocked(LogLevel messageLevel) {
-        return filter.hasPackageFilters() && !shouldLog(resolveCallerClass(), messageLevel);
+        if (!filter.hasPackageFilters()) {
+            return !enabled(filter.level(), messageLevel);
+        }
+        return !enabled(filter.getEffectiveLevel(resolveCallerClass()), messageLevel);
+    }
+
+    /**
+     * Decide se {@code messageLevel} atinge o limiar {@code threshold}. OFF (ordinal 0, o menor)
+     * significa silêncio total — precisa de tratamento explícito, pois a comparação por ordinal
+     * sozinha aceitaria tudo.
+     */
+    private static boolean enabled(LogLevel threshold, LogLevel messageLevel) {
+        return threshold != LogLevel.OFF && messageLevel.ordinal >= threshold.ordinal;
     }
 
     /**
@@ -178,8 +163,6 @@ public abstract class Logger {
     }
 
     public static void verbose(String message, Object... args) {
-        // OTIMIZAÇÃO: Só resolve caller se há filtros por pacote
-        // O forwarder já filtra por nível (VerboseForwarder.verbose() vs default vazio)
         if (blocked(LogLevel.VERBOSE)) return;
         forwarder.verbose(() -> message.formatted(Meta.evaluate(args)));
     }
