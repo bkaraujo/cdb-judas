@@ -5,7 +5,6 @@ import br.commons.Result;
 import br.commons.framework.persistence.jdbc.primitives.JDBCConnection;
 import br.commons.framework.persistence.jdbc.primitives.JDBCParameter;
 import br.commons.framework.persistence.jdbc.primitives.JDBCResultSet;
-import br.commons.tools.Strings;
 import lombok.val;
 import org.jspecify.annotations.NullMarked;
 
@@ -36,11 +35,8 @@ public class JDBCTransaction {
             case Result.Success(var pstmt) -> {
                 if (pstmt == null) yield new Result.Failure<>("PreparedStatement is null");
                 try {
-
-                    Logger.trace(statement);
                     for (var i = 0; i < parameters.size(); i++) {
                         val parameter = parameters.get(i);
-                        Logger.verbose(" %d = %s", i + 1, Strings.or(parameter.value(), "null"));
                         pstmt.setObject(i + 1, parameter.value());
                     }
 
@@ -55,11 +51,8 @@ public class JDBCTransaction {
             case Result.Failure(var error) -> new Result.Failure<>(error);
             case Result.Success(var pstmt) -> {
                 if (pstmt == null) yield new Result.Failure<>("PreparedStatement is null");
-                try {
-
-                    Logger.trace(statement);
-                    yield pstmt.execute(statement);
-                } finally { pstmt.close(); }
+                try { yield pstmt.execute(statement); }
+                finally { pstmt.close(); }
             }
         };
     }
@@ -70,10 +63,8 @@ public class JDBCTransaction {
             case Result.Success(var pstmt) -> {
                 if (pstmt == null) yield new Result.Failure<>("PreparedStatement is null");
                 try {
-                    Logger.trace(query);
                     for (var i = 0; i < parameters.size(); i++) {
                         val parameter = parameters.get(i);
-                        Logger.verbose(" %d = %s", i + 1, Strings.or(parameter.value(), "null"));
                         pstmt.setObject(i + 1, parameter.value());
                     }
                     yield switch (pstmt.executeQuery()) {
@@ -96,7 +87,6 @@ public class JDBCTransaction {
                 if (stmt == null) yield new Result.Failure<>("Statement is null");
 
                 try {
-                    Logger.verbose(query);
                     yield switch (stmt.executeQuery(query)) {
                         case Result.Failure(var error) -> new Result.Failure<>(error);
                         case Result.Success(var rs) -> {
@@ -111,6 +101,7 @@ public class JDBCTransaction {
     }
 
     public Result<Boolean, String> commit() {
+        Logger.debug("Committing transaction");
         return connection.commit().map(c -> {
             connection.close() ;
             return true;
@@ -118,6 +109,7 @@ public class JDBCTransaction {
     }
 
     public Result<Boolean, String> rollback() {
+        Logger.debug("Rolling back transaction");
         return connection.rollback().map(c -> {
             connection.close() ;
             return true;

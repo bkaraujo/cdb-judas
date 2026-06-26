@@ -113,6 +113,7 @@ public abstract class MessageBus {
 
     public static <T extends Message> void submit(T message) {
         val messageClass = message.getClass();
+        Logger.verbose("Dispatching %s", lazy(() -> Meta.fqn(messageClass)));
         val processorList = dispatchCache.computeIfAbsent(messageClass, MessageBus::buildDispatchList);
 
         for (val processor : processorList) {

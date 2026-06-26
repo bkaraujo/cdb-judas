@@ -6,7 +6,7 @@ import br.commons.framework.logger.LogForwarder;
 import br.commons.framework.logger.LogLevel;
 import br.commons.framework.logger.bridge.JULBridgeHandler;
 import br.commons.framework.logger.channel.ConsoleChannel;
-import br.commons.framework.logger.forwarder.*;
+import br.commons.framework.logger.forwarder.VerboseForwarder;
 import br.commons.tools.Meta;
 import br.commons.tools.Strings;
 import lombok.val;

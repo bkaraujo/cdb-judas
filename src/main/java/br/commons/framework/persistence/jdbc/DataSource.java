@@ -37,11 +37,17 @@ public class DataSource {
         this.pool = new ConnectionPool(properties);
         this.closed = false;
 
-        Logger.info("DataSource '%s' created", name);
+        Logger.debug("DataSource '%s' created", name);
     }
 
     public Result<JDBCTransaction, String> begin() {
+        Logger.debug("Initializing transaction");
         return getConnection().map(JDBCTransaction::new);
+    }
+
+    public Result<JDBCTransaction, String> begin(long timeout) {
+        Logger.debug("Initializing transaction with timeout: %d");
+        return getConnection(timeout).map(JDBCTransaction::new);
     }
 
     /**
@@ -50,12 +56,9 @@ public class DataSource {
      * @return Result containing a pooled database connection or error message
      */
     private Result<JDBCConnection, String> getConnection() {
+        Logger.debug("Acquiring connection");
         if (closed) return Results.resourceIsClosed(name);
         return pool.aquire();
-    }
-
-    public Result<JDBCTransaction, String> begin(long timeout) {
-        return getConnection(timeout).map(JDBCTransaction::new);
     }
 
     /**
@@ -65,6 +68,7 @@ public class DataSource {
      * @return Result containing a pooled database connection or error message
      */
     private Result<JDBCConnection, String> getConnection(long timeoutMs) {
+        Logger.debug("Acquiring connection with timeout: %d", timeoutMs);
         if (closed) return Results.resourceIsClosed(name);
         return pool.aquire(timeoutMs);
     }
@@ -206,14 +210,11 @@ public class DataSource {
      * After calling this method, no more connections can be acquired.
      */
     public void close() {
-        if (closed) {
-            return;
-        }
+        Logger.debug("Closing DataSource '%s'", name);
+        if (closed) { return; }
 
         closed = true;
-        Logger.info("Closing DataSource '%s'", name);
         pool.close();
-        Logger.info("DataSource '%s' closed", name);
     }
 
     @Override

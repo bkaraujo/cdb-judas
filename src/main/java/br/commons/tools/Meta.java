@@ -110,11 +110,12 @@ public abstract class Meta {
      * @param args Mixed array of values and Suppliers
      * @return Array with all Suppliers evaluated
      */
-    public static Object[] evaluate(Object[] args) {
+    public static Object[] evaluate(@Nullable Object[] args) {
         val evaluated = new Object[args.length];
 
         for (var i = 0; i < args.length; i++) {
             evaluated[i] = switch (args[i]) {
+                case null -> null;
                 case Supplier<?> supplier -> supplier.get();
                 default -> args[i];
             };
