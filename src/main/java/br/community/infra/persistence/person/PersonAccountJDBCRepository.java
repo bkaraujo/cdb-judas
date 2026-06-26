@@ -1,6 +1,7 @@
 package br.community.infra.persistence.person;
 
 import br.commons.Registry;
+import br.commons.Result;
 import br.commons.framework.persistence.jdbc.DataSource;
 import br.commons.framework.persistence.jdbc.primitives.JDBCParameter;
 import br.commons.framework.persistence.jdbc.primitives.JDBCResultSet;
@@ -23,14 +24,24 @@ public final class PersonAccountJDBCRepository implements PersonAccountRepositor
 
     @Override
     public void link(UUID personId, UUID accountId) {
-        if (owns(personId, accountId)) return;
-        dataSource.execute(
-                "INSERT INTO PEP_PERSON_ACCOUNT (COD_PERSON, COD_ACCOUNT) VALUES (?, ?)",
-                JDBCParameter.of (
-                        personId.toString(),
-                        accountId.toString()
-                )
-        );
+        // Check + insert na mesma transação: sem isso, dois links concorrentes do mesmo par
+        // (pessoa, conta) abrem janela de corrida. PEP_PERSON_ACCOUNT não tem PK no schema, então
+        // não há backstop do banco contra duplicado — a atomicidade aqui é a única proteção.
+        dataSource.transaction(tx -> {
+            val exists = tx.query(
+                    "SELECT COD_ACCOUNT FROM PEP_PERSON_ACCOUNT WHERE COD_PERSON = ? AND COD_ACCOUNT = ?",
+                    JDBCParameter.of(personId.toString(), accountId.toString()),
+                    rs -> rs.next().get()
+            ).get();
+
+            if (!exists) {
+                tx.execute(
+                        "INSERT INTO PEP_PERSON_ACCOUNT (COD_PERSON, COD_ACCOUNT) VALUES (?, ?)",
+                        JDBCParameter.of(personId.toString(), accountId.toString())
+                ).get();
+            }
+            return Result.success(true);
+        });
     }
 
     @Override

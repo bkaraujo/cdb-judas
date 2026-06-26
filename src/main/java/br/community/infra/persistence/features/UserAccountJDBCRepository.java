@@ -1,6 +1,7 @@
 package br.community.infra.persistence.features;
 
 import br.commons.Registry;
+import br.commons.Result;
 import br.commons.framework.persistence.jdbc.DataSource;
 import br.commons.framework.persistence.jdbc.primitives.JDBCParameter;
 import br.commons.framework.persistence.jdbc.primitives.JDBCResultSet;
@@ -40,30 +41,41 @@ public final class UserAccountJDBCRepository {
 
     public void save(UserAccount ua) {
         val active = ua.active() ? "Y" : "N";
-        if (find(ua.userId(), ua.accountId()).isPresent()) {
-            dataSource.execute(
-                    "UPDATE USER_ACCOUNT SET DEC_OPENING_BALANCE = ?, TXT_COLOR = ?, FLG_ACTIVE = ?"
-                            + " WHERE COD_USER = ? AND COD_ACCOUNT = ?",
-                    JDBCParameter.of(
-                            ua.openingBalance(),
-                            ua.color(),
-                            active,
-                            ua.userId(),
-                            ua.accountId().toString()
-                    )
-            );
-        } else {
-            dataSource.execute(
-                    "INSERT INTO USER_ACCOUNT (" + COLUMNS + ") VALUES (?, ?, ?, ?, ?)",
-                    JDBCParameter.of(
-                            ua.userId(),
-                            ua.accountId().toString(),
-                            ua.openingBalance(),
-                            ua.color(),
-                            active
-                    )
-            );
-        }
+        // Check + write na mesma transação: evita janela de corrida entre SELECT e INSERT/UPDATE
+        // na mesma chave (COD_USER, COD_ACCOUNT). A PK composta no banco é o backstop final.
+        dataSource.transaction(tx -> {
+            val exists = tx.query(
+                    "SELECT COD_ACCOUNT FROM USER_ACCOUNT WHERE COD_USER = ? AND COD_ACCOUNT = ?",
+                    JDBCParameter.of(ua.userId(), ua.accountId().toString()),
+                    rs -> rs.next().get()
+            ).get();
+
+            if (exists) {
+                tx.execute(
+                        "UPDATE USER_ACCOUNT SET DEC_OPENING_BALANCE = ?, TXT_COLOR = ?, FLG_ACTIVE = ?"
+                                + " WHERE COD_USER = ? AND COD_ACCOUNT = ?",
+                        JDBCParameter.of(
+                                ua.openingBalance(),
+                                ua.color(),
+                                active,
+                                ua.userId(),
+                                ua.accountId().toString()
+                        )
+                ).get();
+            } else {
+                tx.execute(
+                        "INSERT INTO USER_ACCOUNT (" + COLUMNS + ") VALUES (?, ?, ?, ?, ?)",
+                        JDBCParameter.of(
+                                ua.userId(),
+                                ua.accountId().toString(),
+                                ua.openingBalance(),
+                                ua.color(),
+                                active
+                        )
+                ).get();
+            }
+            return Result.success(true);
+        });
     }
 
     public void delete(String userId, UUID accountId) {
