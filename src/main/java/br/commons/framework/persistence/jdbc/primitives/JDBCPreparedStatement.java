@@ -11,6 +11,7 @@ import java.io.Reader;
 import java.math.BigDecimal;
 import java.net.URL;
 import java.sql.*;
+import java.util.Arrays;
 import java.util.Calendar;
 
 @NullMarked
@@ -19,19 +20,19 @@ public record JDBCPreparedStatement(
 ) {
 
     public Result<JDBCResultSet, String> executeQuery() {
-        Logger.trace("executeQuery");
+        Logger.trace("executeQuery()");
         try { return Result.success(new JDBCResultSet(delegate.executeQuery())); }
         catch (SQLException ex) { return Result.failure(Strings.orEmpty(ex.getMessage())); }
     }
 
     public Result<Integer, String> executeUpdate() {
-        Logger.trace("executeUpdate");
+        Logger.trace("executeUpdate()");
         try { return Result.success(delegate.executeUpdate()); }
         catch (SQLException ex) { return Result.failure(Strings.orEmpty(ex.getMessage())); }
     }
 
     public Result<Void, String> setNull(int parameterIndex, int sqlType) {
-        Logger.verbose("%d = %d", parameterIndex, sqlType);
+        Logger.verbose("%d = %s", parameterIndex, Logger.lazy(() -> JDBCConstants.sqlType(sqlType)));
         try { delegate.setNull(parameterIndex, sqlType); return Result.success(); }
         catch (SQLException ex) { return Result.failure(Strings.orEmpty(ex.getMessage())); }
     }
@@ -127,7 +128,7 @@ public record JDBCPreparedStatement(
     }
 
     public Result<Void, String> clearParameters() {
-        Logger.trace("clearParameters");
+        Logger.trace("clearParameters()");
         try { delegate.clearParameters(); return Result.success(); }
         catch (SQLException ex) { return Result.failure(Strings.orEmpty(ex.getMessage())); }
     }
@@ -145,19 +146,19 @@ public record JDBCPreparedStatement(
     }
 
     public Result<Boolean, String> execute() {
-        Logger.trace("execute");
+        Logger.trace("execute()");
         try { return Result.success(delegate.execute()); }
         catch (SQLException ex) { return Result.failure(Strings.orEmpty(ex.getMessage())); }
     }
 
     public Result<Void, String> addBatch() {
-        Logger.trace("addBatch");
+        Logger.trace("addBatch()");
         try { delegate.addBatch(); return Result.success(); }
         catch (SQLException ex) { return Result.failure(Strings.orEmpty(ex.getMessage())); }
     }
 
     public Result<Void, String> setCharacterStream(int parameterIndex, Reader reader, int length) {
-        Logger.trace("setCharacterStream");
+        Logger.trace("setCharacterStream(%s, %s, %s)", parameterIndex, reader, length);
         try { delegate.setCharacterStream(parameterIndex, reader, length); return Result.success(); }
         catch (SQLException ex) { return Result.failure(Strings.orEmpty(ex.getMessage())); }
     }
@@ -211,7 +212,7 @@ public record JDBCPreparedStatement(
     }
 
     public Result<Void, String> setNull(int parameterIndex, int sqlType, String typeName) {
-        Logger.verbose("%d = %s %s", parameterIndex, sqlType, typeName);
+        Logger.verbose("%d = %s %s", parameterIndex, Logger.lazy(() -> JDBCConstants.sqlType(sqlType)), typeName);
         try { delegate.setNull(parameterIndex, sqlType, typeName); return Result.success(); }
         catch (SQLException ex) { return Result.failure(Strings.orEmpty(ex.getMessage())); }
     }
@@ -336,7 +337,7 @@ public record JDBCPreparedStatement(
     }
 
     public Result<Void, String> close() {
-        Logger.trace("close");
+        Logger.trace("close()");
         try { delegate.close(); return Result.success(); }
         catch (SQLException ex) { return Result.failure(Strings.orEmpty(ex.getMessage())); }
     }
@@ -359,13 +360,13 @@ public record JDBCPreparedStatement(
     }
 
     public Result<Void, String> setMaxRows(int max) {
-        Logger.trace("setMaxRows");
+        Logger.trace("setMaxRows(%s)", max);
         try { delegate.setMaxRows(max); return Result.success(); }
         catch (SQLException ex) { return Result.failure(Strings.orEmpty(ex.getMessage())); }
     }
 
     public Result<Void, String> setEscapeProcessing(boolean enable) {
-        Logger.trace("setEscapeProcessing");
+        Logger.trace("setEscapeProcessing(%s)", enable);
         try { delegate.setEscapeProcessing(enable); return Result.success(); }
         catch (SQLException ex) { return Result.failure(Strings.orEmpty(ex.getMessage())); }
     }
@@ -377,13 +378,13 @@ public record JDBCPreparedStatement(
     }
 
     public Result<Void, String> setQueryTimeout(int seconds) {
-        Logger.trace("setQueryTimeout");
+        Logger.trace("setQueryTimeout(%s)", seconds);
         try { delegate.setQueryTimeout(seconds); return Result.success(); }
         catch (SQLException ex) { return Result.failure(Strings.orEmpty(ex.getMessage())); }
     }
 
     public Result<Void, String> cancel() {
-        Logger.trace("cancel");
+        Logger.trace("cancel()");
         try { delegate.cancel(); return Result.success(); }
         catch (SQLException ex) { return Result.failure(Strings.orEmpty(ex.getMessage())); }
     }
@@ -395,13 +396,13 @@ public record JDBCPreparedStatement(
     }
 
     public Result<Void, String> clearWarnings() {
-        Logger.trace("clearWarnings");
+        Logger.trace("clearWarnings()");
         try { delegate.clearWarnings(); return Result.success(); }
         catch (SQLException ex) { return Result.failure(Strings.orEmpty(ex.getMessage())); }
     }
 
     public Result<Void, String> setCursorName(String name) {
-        Logger.trace("setCursorName");
+        Logger.trace("setCursorName(%s)", name);
         try { delegate.setCursorName(name); return Result.success(); }
         catch (SQLException ex) { return Result.failure(Strings.orEmpty(ex.getMessage())); }
     }
@@ -425,7 +426,7 @@ public record JDBCPreparedStatement(
     }
 
     public Result<Void, String> setFetchDirection(int direction) {
-        Logger.trace("setFetchDirection");
+        Logger.trace("setFetchDirection(%s)", Logger.lazy(() -> JDBCConstants.fetchDirection(direction)));
         try { delegate.setFetchDirection(direction); return Result.success(); }
         catch (SQLException ex) { return Result.failure(Strings.orEmpty(ex.getMessage())); }
     }
@@ -437,7 +438,7 @@ public record JDBCPreparedStatement(
     }
 
     public Result<Void, String> setFetchSize(int rows) {
-        Logger.trace("setFetchSize");
+        Logger.trace("setFetchSize(%s)", rows);
         try { delegate.setFetchSize(rows); return Result.success(); }
         catch (SQLException ex) { return Result.failure(Strings.orEmpty(ex.getMessage())); }
     }
@@ -461,20 +462,20 @@ public record JDBCPreparedStatement(
     }
 
     public Result<Void, String> addBatch(String sql) {
-        Logger.trace("addBatch");
+        Logger.trace("addBatch()");
         Logger.verbose(sql);
         try { delegate.addBatch(sql); return Result.success(); }
         catch (SQLException ex) { return Result.failure(Strings.orEmpty(ex.getMessage())); }
     }
 
     public Result<Void, String> clearBatch() {
-        Logger.trace("clearBatch");
+        Logger.trace("clearBatch()");
         try { delegate.clearBatch(); return Result.success(); }
         catch (SQLException ex) { return Result.failure(Strings.orEmpty(ex.getMessage())); }
     }
 
     public Result<int[], String> executeBatch() {
-        Logger.trace("executeBatch");
+        Logger.trace("executeBatch()");
         try { return Result.success(delegate.executeBatch()); }
         catch (SQLException ex) { return Result.failure(Strings.orEmpty(ex.getMessage())); }
     }
@@ -498,42 +499,42 @@ public record JDBCPreparedStatement(
     }
 
     public Result<Integer, String> executeUpdate(String sql, int autoGeneratedKeys) {
-        Logger.trace("executeUpdate");
+        Logger.trace("executeUpdate(%s)", Logger.lazy(() -> JDBCConstants.generatedKeys(autoGeneratedKeys)));
         Logger.verbose(sql);
         try { return Result.success(delegate.executeUpdate(sql, autoGeneratedKeys)); }
         catch (SQLException ex) { return Result.failure(Strings.orEmpty(ex.getMessage())); }
     }
 
     public Result<Integer, String> executeUpdate(String sql, int[] columnIndexes) {
-        Logger.trace("executeUpdate");
+        Logger.trace("executeUpdate(%s)", Logger.lazy(() -> Arrays.toString(columnIndexes)));
         Logger.verbose(sql);
         try { return Result.success(delegate.executeUpdate(sql, columnIndexes)); }
         catch (SQLException ex) { return Result.failure(Strings.orEmpty(ex.getMessage())); }
     }
 
     public Result<Integer, String> executeUpdate(String sql, String[] columnNames) {
-        Logger.trace("executeUpdate");
+        Logger.trace("executeUpdate(%s)", Logger.lazy(() -> Arrays.toString(columnNames)));
         Logger.verbose(sql);
         try { return Result.success(delegate.executeUpdate(sql, columnNames)); }
         catch (SQLException ex) { return Result.failure(Strings.orEmpty(ex.getMessage())); }
     }
 
     public Result<Boolean, String> execute(String sql, int autoGeneratedKeys) {
-        Logger.trace("execute");
+        Logger.trace("execute(%s)", Logger.lazy(() -> JDBCConstants.generatedKeys(autoGeneratedKeys)));
         Logger.verbose(sql);
         try { return Result.success(delegate.execute(sql, autoGeneratedKeys)); }
         catch (SQLException ex) { return Result.failure(Strings.orEmpty(ex.getMessage())); }
     }
 
     public Result<Boolean, String> execute(String sql, int[] columnIndexes) {
-        Logger.trace("execute");
+        Logger.trace("execute(%s)", Logger.lazy(() -> Arrays.toString(columnIndexes)));
         Logger.verbose(sql);
         try { return Result.success(delegate.execute(sql, columnIndexes)); }
         catch (SQLException ex) { return Result.failure(Strings.orEmpty(ex.getMessage())); }
     }
 
     public Result<Boolean, String> execute(String sql, String[] columnNames) {
-        Logger.trace("execute");
+        Logger.trace("execute(%s)", Logger.lazy(() -> Arrays.toString(columnNames)));
         Logger.verbose(sql);
         try { return Result.success(delegate.execute(sql, columnNames)); }
         catch (SQLException ex) { return Result.failure(Strings.orEmpty(ex.getMessage())); }
@@ -546,43 +547,43 @@ public record JDBCPreparedStatement(
     }
 
     public Result<Boolean, String> isClosed() {
-        Logger.trace("isClosed");
+        Logger.trace("isClosed()");
         try { return Result.success(delegate.isClosed()); }
         catch (SQLException ex) { return Result.failure(Strings.orEmpty(ex.getMessage())); }
     }
 
     public Result<Void, String> setPoolable(boolean poolable) {
-        Logger.trace("setPoolable");
+        Logger.trace("setPoolable(%s)", poolable);
         try { delegate.setPoolable(poolable); return Result.success(); }
         catch (SQLException ex) { return Result.failure(Strings.orEmpty(ex.getMessage())); }
     }
 
     public Result<Boolean, String> isPoolable() {
-        Logger.trace("isPoolable");
+        Logger.trace("isPoolable()");
         try { return Result.success(delegate.isPoolable()); }
         catch (SQLException ex) { return Result.failure(Strings.orEmpty(ex.getMessage())); }
     }
 
     public Result<Void, String> closeOnCompletion() {
-        Logger.trace("closeOnCompletion");
+        Logger.trace("closeOnCompletion()");
         try { delegate.closeOnCompletion(); return Result.success(); }
         catch (SQLException ex) { return Result.failure(Strings.orEmpty(ex.getMessage())); }
     }
 
     public Result<Boolean, String> isCloseOnCompletion() {
-        Logger.trace("isCloseOnCompletion");
+        Logger.trace("isCloseOnCompletion()");
         try { return Result.success(delegate.isCloseOnCompletion()); }
         catch (SQLException ex) { return Result.failure(Strings.orEmpty(ex.getMessage())); }
     }
 
     public <T> Result<T, String> unwrap(Class<T> iface) {
-        Logger.trace("unwrap");
+        Logger.trace("unwrap(%s)", iface);
         try { return Result.success(delegate.unwrap(iface)); }
         catch (SQLException ex) { return Result.failure(Strings.orEmpty(ex.getMessage())); }
     }
 
     public Result<Boolean, String> isWrapperFor(Class<?> iface) {
-        Logger.trace("isWrapperFor");
+        Logger.trace("isWrapperFor(%s)", iface);
         try { return Result.success(delegate.isWrapperFor(iface)); }
         catch (SQLException ex) { return Result.failure(Strings.orEmpty(ex.getMessage())); }
     }

@@ -14,13 +14,13 @@ public record JDBCMetaData(
 ) {
 
     public Result<Boolean, String> allProceduresAreCallable() {
-        Logger.trace("allProceduresAreCallable");
+        Logger.trace("allProceduresAreCallable()");
         try { return Result.success(delegate.allProceduresAreCallable()); }
         catch (SQLException ex) { return Result.failure(Strings.orEmpty(ex.getMessage())); }
     }
 
     public Result<Boolean, String> allTablesAreSelectable() {
-        Logger.trace("allTablesAreSelectable");
+        Logger.trace("allTablesAreSelectable()");
         try { return Result.success(delegate.allTablesAreSelectable()); }
         catch (SQLException ex) { return Result.failure(Strings.orEmpty(ex.getMessage())); }
     }
@@ -38,31 +38,31 @@ public record JDBCMetaData(
     }
 
     public Result<Boolean, String> isReadOnly() {
-        Logger.trace("isReadOnly");
+        Logger.trace("isReadOnly()");
         try { return Result.success(delegate.isReadOnly()); }
         catch (SQLException ex) { return Result.failure(Strings.orEmpty(ex.getMessage())); }
     }
 
     public Result<Boolean, String> nullsAreSortedHigh() {
-        Logger.trace("nullsAreSortedHigh");
+        Logger.trace("nullsAreSortedHigh()");
         try { return Result.success(delegate.nullsAreSortedHigh()); }
         catch (SQLException ex) { return Result.failure(Strings.orEmpty(ex.getMessage())); }
     }
 
     public Result<Boolean, String> nullsAreSortedLow() {
-        Logger.trace("nullsAreSortedLow");
+        Logger.trace("nullsAreSortedLow()");
         try { return Result.success(delegate.nullsAreSortedLow()); }
         catch (SQLException ex) { return Result.failure(Strings.orEmpty(ex.getMessage())); }
     }
 
     public Result<Boolean, String> nullsAreSortedAtStart() {
-        Logger.trace("nullsAreSortedAtStart");
+        Logger.trace("nullsAreSortedAtStart()");
         try { return Result.success(delegate.nullsAreSortedAtStart()); }
         catch (SQLException ex) { return Result.failure(Strings.orEmpty(ex.getMessage())); }
     }
 
     public Result<Boolean, String> nullsAreSortedAtEnd() {
-        Logger.trace("nullsAreSortedAtEnd");
+        Logger.trace("nullsAreSortedAtEnd()");
         try { return Result.success(delegate.nullsAreSortedAtEnd()); }
         catch (SQLException ex) { return Result.failure(Strings.orEmpty(ex.getMessage())); }
     }
@@ -102,37 +102,37 @@ public record JDBCMetaData(
     }
 
     public Result<Boolean, String> usesLocalFiles() {
-        Logger.trace("usesLocalFiles");
+        Logger.trace("usesLocalFiles()");
         try { return Result.success(delegate.usesLocalFiles()); }
         catch (SQLException ex) { return Result.failure(Strings.orEmpty(ex.getMessage())); }
     }
 
     public Result<Boolean, String> usesLocalFilePerTable() {
-        Logger.trace("usesLocalFilePerTable");
+        Logger.trace("usesLocalFilePerTable()");
         try { return Result.success(delegate.usesLocalFilePerTable()); }
         catch (SQLException ex) { return Result.failure(Strings.orEmpty(ex.getMessage())); }
     }
 
     public Result<Boolean, String> supportsMixedCaseIdentifiers() {
-        Logger.trace("supportsMixedCaseIdentifiers");
+        Logger.trace("supportsMixedCaseIdentifiers()");
         try { return Result.success(delegate.supportsMixedCaseIdentifiers()); }
         catch (SQLException ex) { return Result.failure(Strings.orEmpty(ex.getMessage())); }
     }
 
     public Result<Boolean, String> storesUpperCaseIdentifiers() {
-        Logger.trace("storesUpperCaseIdentifiers");
+        Logger.trace("storesUpperCaseIdentifiers()");
         try { return Result.success(delegate.storesUpperCaseIdentifiers()); }
         catch (SQLException ex) { return Result.failure(Strings.orEmpty(ex.getMessage())); }
     }
 
     public Result<Boolean, String> storesLowerCaseIdentifiers() {
-        Logger.trace("storesLowerCaseIdentifiers");
+        Logger.trace("storesLowerCaseIdentifiers()");
         try { return Result.success(delegate.storesLowerCaseIdentifiers()); }
         catch (SQLException ex) { return Result.failure(Strings.orEmpty(ex.getMessage())); }
     }
 
     public Result<Boolean, String> storesMixedCaseIdentifiers() {
-        Logger.trace("storesMixedCaseIdentifiers");
+        Logger.trace("storesMixedCaseIdentifiers()");
         try { return Result.success(delegate.storesMixedCaseIdentifiers()); }
         catch (SQLException ex) { return Result.failure(Strings.orEmpty(ex.getMessage())); }
     }
@@ -186,25 +186,25 @@ public record JDBCMetaData(
     }
 
     public Result<Boolean, String> supportsAlterTableWithAddColumn() {
-        Logger.trace("supportsAlterTableWithAddColumn");
+        Logger.trace("supportsAlterTableWithAddColumn()");
         try { return Result.success(delegate.supportsAlterTableWithAddColumn()); }
         catch (SQLException ex) { return Result.failure(Strings.orEmpty(ex.getMessage())); }
     }
 
     public Result<Boolean, String> supportsAlterTableWithDropColumn() {
-        Logger.trace("supportsAlterTableWithDropColumn");
+        Logger.trace("supportsAlterTableWithDropColumn()");
         try { return Result.success(delegate.supportsAlterTableWithDropColumn()); }
         catch (SQLException ex) { return Result.failure(Strings.orEmpty(ex.getMessage())); }
     }
 
     public Result<Boolean, String> supportsColumnAliasing() {
-        Logger.trace("supportsColumnAliasing");
+        Logger.trace("supportsColumnAliasing()");
         try { return Result.success(delegate.supportsColumnAliasing()); }
         catch (SQLException ex) { return Result.failure(Strings.orEmpty(ex.getMessage())); }
     }
 
     public Result<Boolean, String> supportsTransactions() {
-        Logger.trace("supportsTransactions");
+        Logger.trace("supportsTransactions()");
         try { return Result.success(delegate.supportsTransactions()); }
         catch (SQLException ex) { return Result.failure(Strings.orEmpty(ex.getMessage())); }
     }
@@ -216,13 +216,13 @@ public record JDBCMetaData(
     }
 
     public Result<Boolean, String> supportsTransactionIsolationLevel(int level) {
-        Logger.trace("supportsTransactionIsolationLevel");
+        Logger.trace("supportsTransactionIsolationLevel(%s)", Logger.lazy(() -> JDBCConstants.transactionIsolation(level)));
         try { return Result.success(delegate.supportsTransactionIsolationLevel(level)); }
         catch (SQLException ex) { return Result.failure(Strings.orEmpty(ex.getMessage())); }
     }
 
     public Result<Boolean, String> supportsStoredProcedures() {
-        Logger.trace("supportsStoredProcedures");
+        Logger.trace("supportsStoredProcedures()");
         try { return Result.success(delegate.supportsStoredProcedures()); }
         catch (SQLException ex) { return Result.failure(Strings.orEmpty(ex.getMessage())); }
     }
@@ -402,73 +402,73 @@ public record JDBCMetaData(
     }
 
     public Result<Boolean, String> supportsResultSetType(int type) {
-        Logger.trace("supportsResultSetType");
+        Logger.trace("supportsResultSetType(%s)", Logger.lazy(() -> JDBCConstants.resultSetType(type)));
         try { return Result.success(delegate.supportsResultSetType(type)); }
         catch (SQLException ex) { return Result.failure(Strings.orEmpty(ex.getMessage())); }
     }
 
     public Result<Boolean, String> supportsResultSetConcurrency(int type, int concurrency) {
-        Logger.trace("supportsResultSetConcurrency");
+        Logger.trace("supportsResultSetConcurrency(%s, %s)", Logger.lazy(() -> JDBCConstants.resultSetType(type)), Logger.lazy(() -> JDBCConstants.concurrency(concurrency)));
         try { return Result.success(delegate.supportsResultSetConcurrency(type, concurrency)); }
         catch (SQLException ex) { return Result.failure(Strings.orEmpty(ex.getMessage())); }
     }
 
     public Result<Boolean, String> ownUpdatesAreVisible(int type) {
-        Logger.trace("ownUpdatesAreVisible");
+        Logger.trace("ownUpdatesAreVisible(%s)", Logger.lazy(() -> JDBCConstants.resultSetType(type)));
         try { return Result.success(delegate.ownUpdatesAreVisible(type)); }
         catch (SQLException ex) { return Result.failure(Strings.orEmpty(ex.getMessage())); }
     }
 
     public Result<Boolean, String> ownDeletesAreVisible(int type) {
-        Logger.trace("ownDeletesAreVisible");
+        Logger.trace("ownDeletesAreVisible(%s)", Logger.lazy(() -> JDBCConstants.resultSetType(type)));
         try { return Result.success(delegate.ownDeletesAreVisible(type)); }
         catch (SQLException ex) { return Result.failure(Strings.orEmpty(ex.getMessage())); }
     }
 
     public Result<Boolean, String> ownInsertsAreVisible(int type) {
-        Logger.trace("ownInsertsAreVisible");
+        Logger.trace("ownInsertsAreVisible(%s)", Logger.lazy(() -> JDBCConstants.resultSetType(type)));
         try { return Result.success(delegate.ownInsertsAreVisible(type)); }
         catch (SQLException ex) { return Result.failure(Strings.orEmpty(ex.getMessage())); }
     }
 
     public Result<Boolean, String> othersUpdatesAreVisible(int type) {
-        Logger.trace("othersUpdatesAreVisible");
+        Logger.trace("othersUpdatesAreVisible(%s)", Logger.lazy(() -> JDBCConstants.resultSetType(type)));
         try { return Result.success(delegate.othersUpdatesAreVisible(type)); }
         catch (SQLException ex) { return Result.failure(Strings.orEmpty(ex.getMessage())); }
     }
 
     public Result<Boolean, String> othersDeletesAreVisible(int type) {
-        Logger.trace("othersDeletesAreVisible");
+        Logger.trace("othersDeletesAreVisible(%s)", Logger.lazy(() -> JDBCConstants.resultSetType(type)));
         try { return Result.success(delegate.othersDeletesAreVisible(type)); }
         catch (SQLException ex) { return Result.failure(Strings.orEmpty(ex.getMessage())); }
     }
 
     public Result<Boolean, String> othersInsertsAreVisible(int type) {
-        Logger.trace("othersInsertsAreVisible");
+        Logger.trace("othersInsertsAreVisible(%s)", Logger.lazy(() -> JDBCConstants.resultSetType(type)));
         try { return Result.success(delegate.othersInsertsAreVisible(type)); }
         catch (SQLException ex) { return Result.failure(Strings.orEmpty(ex.getMessage())); }
     }
 
     public Result<Boolean, String> updatesAreDetected(int type) {
-        Logger.trace("updatesAreDetected");
+        Logger.trace("updatesAreDetected(%s)", Logger.lazy(() -> JDBCConstants.resultSetType(type)));
         try { return Result.success(delegate.updatesAreDetected(type)); }
         catch (SQLException ex) { return Result.failure(Strings.orEmpty(ex.getMessage())); }
     }
 
     public Result<Boolean, String> deletesAreDetected(int type) {
-        Logger.trace("deletesAreDetected");
+        Logger.trace("deletesAreDetected(%s)", Logger.lazy(() -> JDBCConstants.resultSetType(type)));
         try { return Result.success(delegate.deletesAreDetected(type)); }
         catch (SQLException ex) { return Result.failure(Strings.orEmpty(ex.getMessage())); }
     }
 
     public Result<Boolean, String> insertsAreDetected(int type) {
-        Logger.trace("insertsAreDetected");
+        Logger.trace("insertsAreDetected(%s)", Logger.lazy(() -> JDBCConstants.resultSetType(type)));
         try { return Result.success(delegate.insertsAreDetected(type)); }
         catch (SQLException ex) { return Result.failure(Strings.orEmpty(ex.getMessage())); }
     }
 
     public Result<Boolean, String> supportsBatchUpdates() {
-        Logger.trace("supportsBatchUpdates");
+        Logger.trace("supportsBatchUpdates()");
         try { return Result.success(delegate.supportsBatchUpdates()); }
         catch (SQLException ex) { return Result.failure(Strings.orEmpty(ex.getMessage())); }
     }
@@ -480,25 +480,25 @@ public record JDBCMetaData(
     }
 
     public Result<Boolean, String> supportsSavepoints() {
-        Logger.trace("supportsSavepoints");
+        Logger.trace("supportsSavepoints()");
         try { return Result.success(delegate.supportsSavepoints()); }
         catch (SQLException ex) { return Result.failure(Strings.orEmpty(ex.getMessage())); }
     }
 
     public Result<Boolean, String> supportsNamedParameters() {
-        Logger.trace("supportsNamedParameters");
+        Logger.trace("supportsNamedParameters()");
         try { return Result.success(delegate.supportsNamedParameters()); }
         catch (SQLException ex) { return Result.failure(Strings.orEmpty(ex.getMessage())); }
     }
 
     public Result<Boolean, String> supportsMultipleOpenResults() {
-        Logger.trace("supportsMultipleOpenResults");
+        Logger.trace("supportsMultipleOpenResults()");
         try { return Result.success(delegate.supportsMultipleOpenResults()); }
         catch (SQLException ex) { return Result.failure(Strings.orEmpty(ex.getMessage())); }
     }
 
     public Result<Boolean, String> supportsGetGeneratedKeys() {
-        Logger.trace("supportsGetGeneratedKeys");
+        Logger.trace("supportsGetGeneratedKeys()");
         try { return Result.success(delegate.supportsGetGeneratedKeys()); }
         catch (SQLException ex) { return Result.failure(Strings.orEmpty(ex.getMessage())); }
     }
@@ -522,7 +522,7 @@ public record JDBCMetaData(
     }
 
     public Result<Boolean, String> supportsResultSetHoldability(int holdability) {
-        Logger.trace("supportsResultSetHoldability");
+        Logger.trace("supportsResultSetHoldability(%s)", Logger.lazy(() -> JDBCConstants.holdability(holdability)));
         try { return Result.success(delegate.supportsResultSetHoldability(holdability)); }
         catch (SQLException ex) { return Result.failure(Strings.orEmpty(ex.getMessage())); }
     }
@@ -564,13 +564,13 @@ public record JDBCMetaData(
     }
 
     public Result<Boolean, String> locatorsUpdateCopy() {
-        Logger.trace("locatorsUpdateCopy");
+        Logger.trace("locatorsUpdateCopy()");
         try { return Result.success(delegate.locatorsUpdateCopy()); }
         catch (SQLException ex) { return Result.failure(Strings.orEmpty(ex.getMessage())); }
     }
 
     public Result<Boolean, String> supportsStatementPooling() {
-        Logger.trace("supportsStatementPooling");
+        Logger.trace("supportsStatementPooling()");
         try { return Result.success(delegate.supportsStatementPooling()); }
         catch (SQLException ex) { return Result.failure(Strings.orEmpty(ex.getMessage())); }
     }
@@ -582,13 +582,13 @@ public record JDBCMetaData(
     }
 
     public Result<Boolean, String> supportsStoredFunctionsUsingCallSyntax() {
-        Logger.trace("supportsStoredFunctionsUsingCallSyntax");
+        Logger.trace("supportsStoredFunctionsUsingCallSyntax()");
         try { return Result.success(delegate.supportsStoredFunctionsUsingCallSyntax()); }
         catch (SQLException ex) { return Result.failure(Strings.orEmpty(ex.getMessage())); }
     }
 
     public Result<Boolean, String> autoCommitFailureClosesAllResultSets() {
-        Logger.trace("autoCommitFailureClosesAllResultSets");
+        Logger.trace("autoCommitFailureClosesAllResultSets()");
         try { return Result.success(delegate.autoCommitFailureClosesAllResultSets()); }
         catch (SQLException ex) { return Result.failure(Strings.orEmpty(ex.getMessage())); }
     }
@@ -618,19 +618,19 @@ public record JDBCMetaData(
     }
 
     public Result<Boolean, String> generatedKeyAlwaysReturned() {
-        Logger.trace("generatedKeyAlwaysReturned");
+        Logger.trace("generatedKeyAlwaysReturned()");
         try { return Result.success(delegate.generatedKeyAlwaysReturned()); }
         catch (SQLException ex) { return Result.failure(Strings.orEmpty(ex.getMessage())); }
     }
 
     public <T> Result<T, String> unwrap(Class<T> iface) {
-        Logger.trace("unwrap");
+        Logger.trace("unwrap(%s)", iface);
         try { return Result.success(delegate.unwrap(iface)); }
         catch (SQLException ex) { return Result.failure(Strings.orEmpty(ex.getMessage())); }
     }
 
     public Result<Boolean, String> isWrapperFor(Class<?> iface) {
-        Logger.trace("isWrapperFor");
+        Logger.trace("isWrapperFor(%s)", iface);
         try { return Result.success(delegate.isWrapperFor(iface)); }
         catch (SQLException ex) { return Result.failure(Strings.orEmpty(ex.getMessage())); }
     }
