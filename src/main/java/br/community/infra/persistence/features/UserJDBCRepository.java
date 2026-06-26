@@ -84,14 +84,25 @@ public final class UserJDBCRepository implements UserRepository {
                 ).get();
             }
 
-            tx.execute(
-                    "MERGE INTO SEC_USER (ID, TXT_USERNAME, COD_PERSON) KEY(ID) VALUES (?, ?, ?)",
-                    JDBCParameter.of(
-                            user.id(),
-                            user.username(),
-                            personId
-                    )
-            ).get();
+            if (existingPersonId == null) {
+                tx.execute(
+                        "INSERT INTO SEC_USER (ID, TXT_USERNAME, COD_PERSON) VALUES (?, ?, ?)",
+                        JDBCParameter.of(
+                                user.id(),
+                                user.username(),
+                                personId
+                        )
+                ).get();
+            } else {
+                tx.execute(
+                        "UPDATE SEC_USER SET TXT_USERNAME = ?, COD_PERSON = ? WHERE ID = ?",
+                        JDBCParameter.of(
+                                user.username(),
+                                personId,
+                                user.id()
+                        )
+                ).get();
+            }
 
             tx.execute(
                     "INSERT INTO USER_CREDENTIAL (ID, COD_USER, TXT_PASSWORD, TMS_CREATE_AT) VALUES (?, ?, ?, ?)",
@@ -131,14 +142,23 @@ public final class UserJDBCRepository implements UserRepository {
     }
 
     private void upsertPref(JDBCTransaction tx, String userId, String key, @Nullable String value) {
-        tx.execute(
-                "MERGE INTO USER_PREFERENCES (COD_USER, TXT_KEY, TXT_VALUE) KEY(COD_USER, TXT_KEY) VALUES (?, ?, ?)",
-                JDBCParameter.of(
-                        userId,
-                        key,
-                        value
-                )
+        val exists = tx.query(
+                "SELECT TXT_VALUE FROM USER_PREFERENCES WHERE COD_USER = ? AND TXT_KEY = ?",
+                JDBCParameter.of(userId, key),
+                rs -> rs.next().get()
         ).get();
+
+        if (exists) {
+            tx.execute(
+                    "UPDATE USER_PREFERENCES SET TXT_VALUE = ? WHERE COD_USER = ? AND TXT_KEY = ?",
+                    JDBCParameter.of(value, userId, key)
+            ).get();
+        } else {
+            tx.execute(
+                    "INSERT INTO USER_PREFERENCES (COD_USER, TXT_KEY, TXT_VALUE) VALUES (?, ?, ?)",
+                    JDBCParameter.of(userId, key, value)
+            ).get();
+        }
     }
 
     private List<User> toUsers(JDBCResultSet rs) {

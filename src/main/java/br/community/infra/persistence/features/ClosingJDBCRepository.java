@@ -44,14 +44,25 @@ public class ClosingJDBCRepository implements ClosingRepository {
     @Override
     public void save(YearMonth ym) {
         val userId = CurrentUser.getId();
-        dataSource.execute(
-                "MERGE INTO USER_PREFERENCES (COD_USER, TXT_KEY, TXT_VALUE) KEY(COD_USER, TXT_KEY) VALUES (?, ?, ?)",
-                JDBCParameter.of (
-                        userId,
-                        KEY,
-                        ym.toString()
-                )
-        );
+        if (find().isPresent()) {
+            dataSource.execute(
+                    "UPDATE USER_PREFERENCES SET TXT_VALUE = ? WHERE COD_USER = ? AND TXT_KEY = ?",
+                    JDBCParameter.of (
+                            ym.toString(),
+                            userId,
+                            KEY
+                    )
+            );
+        } else {
+            dataSource.execute(
+                    "INSERT INTO USER_PREFERENCES (COD_USER, TXT_KEY, TXT_VALUE) VALUES (?, ?, ?)",
+                    JDBCParameter.of (
+                            userId,
+                            KEY,
+                            ym.toString()
+                    )
+            );
+        }
     }
 
     @Override

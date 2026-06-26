@@ -39,16 +39,31 @@ public final class UserAccountJDBCRepository {
     }
 
     public void save(UserAccount ua) {
-        dataSource.execute(
-                "MERGE INTO USER_ACCOUNT (" + COLUMNS + ") KEY(COD_USER, COD_ACCOUNT) VALUES (?, ?, ?, ?, ?)",
-                JDBCParameter.of(
-                        ua.userId(),
-                        ua.accountId().toString(),
-                        ua.openingBalance(),
-                        ua.color(),
-                        ua.active() ? "Y" : "N"
-                )
-        );
+        val active = ua.active() ? "Y" : "N";
+        if (find(ua.userId(), ua.accountId()).isPresent()) {
+            dataSource.execute(
+                    "UPDATE USER_ACCOUNT SET DEC_OPENING_BALANCE = ?, TXT_COLOR = ?, FLG_ACTIVE = ?"
+                            + " WHERE COD_USER = ? AND COD_ACCOUNT = ?",
+                    JDBCParameter.of(
+                            ua.openingBalance(),
+                            ua.color(),
+                            active,
+                            ua.userId(),
+                            ua.accountId().toString()
+                    )
+            );
+        } else {
+            dataSource.execute(
+                    "INSERT INTO USER_ACCOUNT (" + COLUMNS + ") VALUES (?, ?, ?, ?, ?)",
+                    JDBCParameter.of(
+                            ua.userId(),
+                            ua.accountId().toString(),
+                            ua.openingBalance(),
+                            ua.color(),
+                            active
+                    )
+            );
+        }
     }
 
     public void delete(String userId, UUID accountId) {

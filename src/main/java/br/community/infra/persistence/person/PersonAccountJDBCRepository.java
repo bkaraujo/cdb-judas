@@ -23,8 +23,9 @@ public final class PersonAccountJDBCRepository implements PersonAccountRepositor
 
     @Override
     public void link(UUID personId, UUID accountId) {
+        if (owns(personId, accountId)) return;
         dataSource.execute(
-                "MERGE INTO PEP_PERSON_ACCOUNT (COD_PERSON, COD_ACCOUNT) KEY(COD_PERSON, COD_ACCOUNT) VALUES (?, ?)",
+                "INSERT INTO PEP_PERSON_ACCOUNT (COD_PERSON, COD_ACCOUNT) VALUES (?, ?)",
                 JDBCParameter.of (
                         personId.toString(),
                         accountId.toString()
