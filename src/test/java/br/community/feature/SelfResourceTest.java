@@ -5,10 +5,11 @@ import br.commons.framework.persistence.json.Repository;
 import br.community.core.JsonStorageProperties;
 import br.community.core.web.filter.AuthenticationFilter;
 import br.community.core.web.filter.AuthorizationFilter;
-import br.community.core.web.security.AccessTokenStore;
-import br.community.core.web.security.Preferences;
+import br.community.core.web.security.core.AccessTokenStore;
 import br.community.core.web.security.User;
 import br.community.core.web.security.UserRepository;
+import br.community.feature.user.profile.Preferences;
+import br.community.feature.user.profile.PreferencesRepository;
 import lombok.val;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -52,6 +53,7 @@ class SelfResourceTest {
     @Autowired ObjectMapper objectMapper;
     @Autowired AccessTokenStore tokenStore;
     @Autowired UserRepository userRepository;
+    @Autowired PreferencesRepository preferencesRepository;
 
     private MockMvc mockMvc;
     private String token;
@@ -64,7 +66,8 @@ class SelfResourceTest {
         repositories.forEach(Repository::clearCache);
         SecurityContextHolder.clearContext();
 
-        userRepository.save(new User(USER_ID, "tester", "Tester", "hash", Preferences.defaults()));
+        userRepository.save(new User(USER_ID, "tester", "Tester", "hash"));
+        preferencesRepository.save(USER_ID, Preferences.defaults());
         token = tokenStore.issue(USER_ID);
 
         mockMvc = MockMvcBuilders.webAppContextSetup(context)
@@ -93,8 +96,8 @@ class SelfResourceTest {
 
     @Test
     void patchSomenteNomeNaoAfetaPreferencias() throws Exception {
-        userRepository.save(new User(USER_ID, "tester", "Tester", "hash",
-                new Preferences("dark", "pt-BR", "pt-BR", false)));
+        userRepository.save(new User(USER_ID, "tester", "Tester", "hash"));
+        preferencesRepository.save(USER_ID, new Preferences("dark", "pt-BR", "pt-BR", false));
 
         mockMvc.perform(patch("/api/me").header(TOKEN_HEADER, token)
                         .contentType(MediaType.APPLICATION_JSON)
@@ -107,7 +110,7 @@ class SelfResourceTest {
 
     @Test
     void patchSomentePreferenciasNaoAfetaNome() throws Exception {
-        userRepository.save(new User(USER_ID, "tester", "Mantido", "hash", Preferences.defaults()));
+        userRepository.save(new User(USER_ID, "tester", "Mantido", "hash"));
 
         mockMvc.perform(patch("/api/me").header(TOKEN_HEADER, token)
                         .contentType(MediaType.APPLICATION_JSON)

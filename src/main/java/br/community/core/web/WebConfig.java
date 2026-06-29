@@ -1,6 +1,6 @@
 package br.community.core.web;
 
-import br.community.core.web.security.OwnershipInterceptor;
+import br.community.core.web.security.interceptor.OwnershipInterceptor;
 import org.jspecify.annotations.NullMarked;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.servlet.config.annotation.InterceptorRegistry;

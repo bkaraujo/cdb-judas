@@ -3,7 +3,6 @@ package br.community.feature.user.profile;
 import br.commons.Result;
 import br.community.context.shared._1_application.DomainException;
 import br.community.core.web.security.CurrentUser;
-import br.community.core.web.security.PreferencesPatch;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.val;
@@ -25,8 +24,8 @@ public class SelfResource {
 
     @GetMapping
     public MeResponse getMe() {
-        return switch (userService.getMe(CurrentUser.getId())) {
-            case Result.Success(var user) -> MeResponse.from(user);
+        return switch (userService.getProfile(CurrentUser.getId())) {
+            case Result.Success(var profile) -> MeResponse.from(profile);
             case Result.Failure(var error) -> throw new DomainException(error);
         };
     }
@@ -38,7 +37,7 @@ public class SelfResource {
 
         var result = req.name() != null
                 ? userService.updateName(id, req.name())
-                : userService.getMe(id);
+                : userService.getProfile(id);
 
         val prefs = req.preferences();
         if (prefs != null) {
@@ -47,7 +46,7 @@ public class SelfResource {
         }
 
         return switch (result) {
-            case Result.Success(var user) -> MeResponse.from(user);
+            case Result.Success(var profile) -> MeResponse.from(profile);
             case Result.Failure(var error) -> throw new DomainException(error);
         };
     }

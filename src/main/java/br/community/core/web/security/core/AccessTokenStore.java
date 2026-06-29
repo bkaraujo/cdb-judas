@@ -1,4 +1,4 @@
-package br.community.core.web.security;
+package br.community.core.web.security.core;
 
 import lombok.val;
 import org.jspecify.annotations.NullMarked;

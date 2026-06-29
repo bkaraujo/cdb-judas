@@ -6,7 +6,6 @@ import br.commons.framework.persistence.jdbc.DataSource;
 import br.commons.framework.persistence.jdbc.JDBCTransaction;
 import br.commons.framework.persistence.jdbc.primitives.JDBCParameter;
 import br.commons.framework.persistence.jdbc.primitives.JDBCResultSet;
-import br.community.core.web.security.Preferences;
 import br.community.core.web.security.User;
 import br.community.core.web.security.UserRepository;
 import lombok.val;
@@ -18,9 +17,9 @@ import java.time.LocalDateTime;
 import java.util.*;
 
 /**
- * Adaptador JDBC (H2) da porta {@link UserRepository}: tabela {@code SEC_USER} (identidade),
- * {@code USER_CREDENTIAL} (histórico de senhas) e {@code USER_PREFERENCES} (preferências k/v),
- * ligadas a {@code PEP_PERSON} via {@code COD_PERSON}.
+ * Adaptador JDBC (H2) da porta {@link UserRepository}: tabela {@code SEC_USER} (identidade) e
+ * {@code USER_CREDENTIAL} (histórico de senhas), ligadas a {@code PEP_PERSON} via
+ * {@code COD_PERSON}. Preferências são uma feature à parte ({@code PreferencesJDBCRepository}).
  */
 @NullMarked
 public final class UserJDBCRepository implements UserRepository {
@@ -114,12 +113,6 @@ public final class UserJDBCRepository implements UserRepository {
                     )
             ).get();
 
-            val prefs = user.preferences();
-            upsertPref(tx, user.id(), "theme", prefs.theme());
-            upsertPref(tx, user.id(), "language", prefs.language());
-            upsertPref(tx, user.id(), "locale", prefs.locale());
-            upsertPref(tx, user.id(), "sidebarCollapsed", String.valueOf(prefs.sidebarCollapsed()));
-
             return Result.success(user);
         });
     }
@@ -141,26 +134,6 @@ public final class UserJDBCRepository implements UserRepository {
         return results.isEmpty() ? null : results.get(0);
     }
 
-    private void upsertPref(JDBCTransaction tx, String userId, String key, @Nullable String value) {
-        val exists = tx.query(
-                "SELECT TXT_VALUE FROM USER_PREFERENCES WHERE COD_USER = ? AND TXT_KEY = ?",
-                JDBCParameter.of(userId, key),
-                rs -> rs.next().get()
-        ).get();
-
-        if (exists) {
-            tx.execute(
-                    "UPDATE USER_PREFERENCES SET TXT_VALUE = ? WHERE COD_USER = ? AND TXT_KEY = ?",
-                    JDBCParameter.of(value, userId, key)
-            ).get();
-        } else {
-            tx.execute(
-                    "INSERT INTO USER_PREFERENCES (COD_USER, TXT_KEY, TXT_VALUE) VALUES (?, ?, ?)",
-                    JDBCParameter.of(userId, key, value)
-            ).get();
-        }
-    }
-
     private List<User> toUsers(JDBCResultSet rs) {
         val users = new ArrayList<User>();
         while (rs.next().get()) users.add(toUser(rs));
@@ -172,8 +145,7 @@ public final class UserJDBCRepository implements UserRepository {
         val username = rs.getString("TXT_USERNAME").get();
         val name = rs.getString("TXT_NAME").get();
         val password = findLatestPassword(id);
-        val preferences = loadPreferences(id);
-        return new User(id, username, name, password, preferences);
+        return new User(id, username, name, password);
     }
 
     private String findLatestPassword(String userId) {
@@ -190,28 +162,5 @@ public final class UserJDBCRepository implements UserRepository {
                 }
         );
         return results.isEmpty() ? "" : results.get(0);
-    }
-
-    private Preferences loadPreferences(String userId) {
-        val map = dataSource.query(
-                "SELECT TXT_KEY, TXT_VALUE FROM USER_PREFERENCES WHERE COD_USER = ?",
-                JDBCParameter.of(userId),
-                rs -> {
-                    val m = new HashMap<String, String>();
-                    while (rs.next().get()) {
-                        val k = rs.getString("TXT_KEY").get();
-                        val v = rs.getString("TXT_VALUE").get();
-                        m.put(k, v);
-                    }
-                    return m;
-                }
-        );
-
-        val theme = map.get("theme");
-        val language = map.get("language");
-        val locale = map.get("locale");
-        val sc = map.get("sidebarCollapsed");
-
-        return new Preferences(theme, language, locale, "true".equals(sc));
     }
 }

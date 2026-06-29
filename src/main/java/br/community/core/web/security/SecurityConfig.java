@@ -2,6 +2,7 @@ package br.community.core.web.security;
 
 import br.community.core.web.filter.AuthenticationFilter;
 import br.community.core.web.filter.AuthorizationFilter;
+import br.community.core.web.security.core.AccessTokenStore;
 import br.community.feature.system.auth.LoginResource;
 import lombok.val;
 import org.jspecify.annotations.NullMarked;

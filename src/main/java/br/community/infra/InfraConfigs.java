@@ -10,6 +10,7 @@ import br.community.core.web.security.UserRepository;
 import br.community.feature.user.accounts.closing.ClosingRepository;
 import br.community.feature.user.accounts.transactions.UserTransactionRepository;
 import br.community.feature.user.categories.UserCategoryRepository;
+import br.community.feature.user.profile.PreferencesRepository;
 import br.community.feature.user.tags.UserTagRepository;
 import br.community.infra.persistence.CachingPersonRepository;
 import br.community.infra.persistence.CachingUserRepository;
@@ -34,6 +35,11 @@ public class InfraConfigs {
     @Bean
     UserRepository userRepository() {
         return new CachingUserRepository(new UserJDBCRepository());
+    }
+
+    @Bean
+    PreferencesRepository preferencesRepository() {
+        return new PreferencesJDBCRepository();
     }
 
     @Bean

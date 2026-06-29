@@ -41,8 +41,7 @@ public final class UserSeeder {
                     id,
                     "admin",
                     null,
-                    Strings.orEmpty(passwordEncoder.encode("admin")),
-                    Preferences.defaults()
+                    Strings.orEmpty(passwordEncoder.encode("admin"))
             ));
             Logger.info("Seed => usuário 'admin' criado com id %s", id);
         }

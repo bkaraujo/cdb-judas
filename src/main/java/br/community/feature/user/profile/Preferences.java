@@ -1,4 +1,4 @@
-package br.community.core.web.security;
+package br.community.feature.user.profile;
 
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;

@@ -3,7 +3,7 @@ package br.community.core.web.filter;
 import br.commons.Logger;
 import br.commons.framework.logger.MDC;
 import br.community.core.web.RequestUtils;
-import br.community.core.web.security.AccessTokenStore;
+import br.community.core.web.security.core.AccessTokenStore;
 import br.community.core.web.security.AuthenticatedUser;
 import br.community.core.web.security.UserRepository;
 import jakarta.servlet.FilterChain;

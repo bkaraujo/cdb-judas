@@ -1,7 +1,6 @@
 package br.community.feature.user.profile;
 
-import br.community.core.web.security.Preferences;
-import br.community.core.web.security.User;
+import lombok.val;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 
@@ -16,7 +15,8 @@ public record MeResponse(
         @Nullable String name,
         Preferences preferences
 ) {
-    public static MeResponse from(User user) {
-        return new MeResponse(user.id(), user.username(), user.name(), user.preferences());
+    public static MeResponse from(Profile profile) {
+        val user = profile.user();
+        return new MeResponse(user.id(), user.username(), user.name(), profile.preferences());
     }
 }

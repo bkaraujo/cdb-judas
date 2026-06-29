@@ -1,6 +1,7 @@
-package br.community.core.web.security;
+package br.community.core.web.security.interceptor;
 
 import br.commons.Logger;
+import br.community.core.web.security.AuthenticatedUser;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.val;
