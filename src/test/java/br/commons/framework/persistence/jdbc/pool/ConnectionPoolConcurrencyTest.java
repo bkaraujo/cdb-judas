@@ -101,11 +101,9 @@ class ConnectionPoolConcurrencyTest {
 
             assertTrue(done.await(20, TimeUnit.SECONDS), "a rajada tem de terminar sem starvation");
             assertEquals(0, failures.get(), "nenhuma aquisição devia expirar");
-            assertTrue(pool.getTotalCount() <= pool.getProperties().maxPoolSize(),
-                    "total de conexões nunca pode exceder o máximo (corrida no create?)");
-            assertEquals(0, pool.getActiveCount(), "todas as conexões deviam estar devolvidas");
-            assertEquals(pool.getTotalCount(), pool.getAvailableCount(),
-                    "conexões devolvidas têm de voltar ao pool (offer descartado em silêncio?)");
+            assertTrue(pool.totalCount() <= pool.properties().maxPoolSize(), "total de conexões nunca pode exceder o máximo (corrida no create?)");
+            assertEquals(0, pool.activeCount(), "todas as conexões deviam estar devolvidas");
+            assertEquals(pool.totalCount(), pool.availableCount(), "conexões devolvidas têm de voltar ao pool (offer descartado em silêncio?)");
         } finally {
             pool.close();
         }

@@ -16,7 +16,10 @@ public class JDBCTransaction {
 
     private final JDBCConnection connection;
 
-    JDBCTransaction(JDBCConnection connection) {
+    private final String name;
+
+    JDBCTransaction(String name, JDBCConnection connection) {
+        this.name = name;
         this.connection = connection;
     }
 
@@ -117,7 +120,17 @@ public class JDBCTransaction {
     }
 
     public void close() {
-        connection.close().ifFailure(error -> Logger.error("Error closing JDBC transaction: %s", error));
+        connection.close()
+                .ifSuccess(c -> unbind())
+                .ifFailure(error -> Logger.error("Error closing JDBC transaction: %s", error));
+    }
+
+    /** Liberta o slot da transação nesta thread para que o próximo begin() crie uma nova. */
+    private void unbind() {
+        val holder = DataSource.transactions.get(name);
+        if (holder != null) {
+            holder.remove();
+        }
     }
 
 }

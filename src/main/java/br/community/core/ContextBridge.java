@@ -38,7 +38,8 @@ public class ContextBridge {
     public DataSource dataSource() {
         val properties = new JDBCProperties();
         properties.driver("org.h2.Driver");
-        properties.url("jdbc:h2:file:./database;DB_CLOSE_DELAY=-1");
+         properties.url("jdbc:h2:file:./database;DB_CLOSE_DELAY=-1");
+//        properties.url("jdbc:h2:mem:cdb;DB_CLOSE_DELAY=-1");
         properties.username("sa");
         properties.password(Strings.EMPTY);
         properties.validationQuery("SELECT 1");

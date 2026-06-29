@@ -38,8 +38,7 @@ public class AccountResource {
         val uaMap = userAccountService.findByUser(userId).stream()
                 .collect(Collectors.toMap(UserAccount::accountId, Function.identity()));
         return switch (result) {
-            case Result.Success(var accounts) ->
-                    accounts.stream().map(a -> AccountResponse.from(a, uaMap.get(a.id()), transactions)).toList();
+            case Result.Success(var accounts) -> accounts.stream().map(account -> AccountResponse.from(account, uaMap.get(account.id()), transactions)).toList();
             case Result.Failure(var error) -> throw new DomainException(error);
         };
     }
@@ -64,10 +63,10 @@ public class AccountResource {
     public AccountResponse create(@RequestBody @Valid AccountRequest req) {
         val userId = CurrentUser.getId();
         return switch (monetaryContext.createAccount(toCommand(req))) {
-            case Result.Success(var c) -> {
-                val ua = new UserAccount(userId, c.id(), req.balance(), req.color(), req.active());
+            case Result.Success(var account) -> {
+                val ua = new UserAccount(userId, account.id(), req.balance(), req.color(), req.active());
                 userAccountService.save(ua);
-                yield AccountResponse.from(c, ua, allTransactions());
+                yield AccountResponse.from(account, ua, allTransactions());
             }
             case Result.Failure(var error) -> throw new DomainException(error);
         };

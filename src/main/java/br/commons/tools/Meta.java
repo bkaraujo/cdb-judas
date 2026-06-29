@@ -181,15 +181,15 @@ public abstract class Meta {
         return fields;
     }
 
-    private static final ConcurrentHashMap<String, Boolean> exclusionCache = new ConcurrentHashMap<>();
-
+    // NÃO cachear esta decisão: RT.packages é mutável em runtime (ex.: testes/bootstrap adicionam
+    // prefixos de infra). Um cache por className ficava preso ao estado de RT.packages na 1ª consulta
+    // e ignorava adições posteriores → resolução de caller errada (override de log por pacote deixava
+    // de casar). A lista é pequena; o scan linear por frame é barato.
     private static boolean isStackFrameExcluded(String className) {
-        return exclusionCache.computeIfAbsent(className, name -> {
-            for (val pkg : RT.packages) {
-                if (name.startsWith(pkg)) return true;
-            }
-            return false;
-        });
+        for (val pkg : RT.packages) {
+            if (className.startsWith(pkg)) return true;
+        }
+        return false;
     }
 
     private static String mainClassName = Strings.EMPTY;

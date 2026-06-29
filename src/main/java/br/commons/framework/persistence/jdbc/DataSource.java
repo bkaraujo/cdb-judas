@@ -11,6 +11,8 @@ import lombok.val;
 import org.jspecify.annotations.NullMarked;
 
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 
 /**
@@ -24,6 +26,9 @@ public class DataSource {
     private final String name;
     private final ConnectionPool pool;
     private volatile boolean closed;
+
+    /** Active transactions */
+    static final Map<String, ThreadLocal<JDBCTransaction>> transactions = new ConcurrentHashMap<>();
 
     /**
      * Creates a new DataSource with the specified properties.
@@ -41,13 +46,39 @@ public class DataSource {
     }
 
     public Result<JDBCTransaction, String> begin() {
-        Logger.debug("Initializing transaction");
-        return getConnection().map(JDBCTransaction::new);
+        return begin("default");
+    }
+
+    public Result<JDBCTransaction, String> begin(String name) {
+       return begin(name, pool.properties().connectionTimeout());
     }
 
     public Result<JDBCTransaction, String> begin(long timeout) {
-        Logger.debug("Initializing transaction with timeout: %d");
-        return getConnection(timeout).map(JDBCTransaction::new);
+        return begin("default", timeout);
+    }
+
+    public Result<JDBCTransaction, String> begin(String name, long timeout) {
+        // Uma transação por nome E por thread: cada thread tem o seu próprio slot no ThreadLocal.
+        // Reentrância na MESMA thread devolve a transação em curso (re-obtida/continuada); threads
+        // distintas nunca partilham a mesma transação/conexão (corrida do modelo antigo, que capturava
+        // uma única instância no withInitial e a servia a todas as threads).
+        val holder = transactions.computeIfAbsent(name, n -> new ThreadLocal<>());
+
+        // NÃO remover este ramo de criação: na primeira chamada da thread o slot está vazio
+        // (holder.get() == null). Sem ele, begin() devolvia Result.success(null), e readOnly()/
+        // mutating() caíam de imediato no Logger.fatal("Transaction is null") → toda operação de BD
+        // quebrava. É aqui que se adquire a conexão e se vincula a transação ao slot da thread.
+        val existing = holder.get();
+        if (existing != null) {
+            return Result.success(existing);
+        }
+
+        Logger.debug("Initializing transaction '%s' with timeout: %d", name, timeout);
+        return getConnection(timeout).map(connection -> {
+            val transaction = new JDBCTransaction(name, connection);
+            holder.set(transaction);
+            return transaction;
+        });
     }
 
     /**
@@ -151,7 +182,7 @@ public class DataSource {
      * @see #getTotalConnections()
      */
     public int getActiveConnections() {
-        return pool.getActiveCount();
+        return pool.activeCount();
     }
 
     /**
@@ -162,7 +193,7 @@ public class DataSource {
      * @see #getActiveConnections()
      */
     public int getAvailableConnections() {
-        return pool.getAvailableCount();
+        return pool.availableCount();
     }
 
     /**
@@ -173,7 +204,7 @@ public class DataSource {
      * @see #getAvailableConnections()
      */
     public int getTotalConnections() {
-        return pool.getTotalCount();
+        return pool.totalCount();
     }
 
     /**
@@ -181,8 +212,8 @@ public class DataSource {
      *
      * @return The JDBC properties
      */
-    public JDBCProperties getProperties() {
-        return pool.getProperties();
+    public JDBCProperties properties() {
+        return pool.properties().clone();
     }
 
     /**

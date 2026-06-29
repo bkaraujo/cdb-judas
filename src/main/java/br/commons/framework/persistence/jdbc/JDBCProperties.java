@@ -1,11 +1,12 @@
 package br.commons.framework.persistence.jdbc;
 
 import br.commons.tools.Strings;
+import lombok.val;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 
 @NullMarked
-public final class JDBCProperties {
+public final class JDBCProperties implements Cloneable {
 
     private String name = "default";
     public String name() { return name; }
@@ -54,5 +55,24 @@ public final class JDBCProperties {
     private @Nullable String validationQuery;
     public @Nullable String validationQuery() { return validationQuery; }
     public void validationQuery(String validationQuery) { this.validationQuery = validationQuery; }
+
+    public JDBCProperties clone()  {
+        val clone = new JDBCProperties();
+
+        clone.name = name;
+        clone.driver = driver;
+        clone.url = url;
+        clone.username = username;
+        clone.password = password;
+        clone.minPoolSize = minPoolSize;
+        clone.maxPoolSize = maxPoolSize;
+        clone.connectionTimeout = connectionTimeout;
+        clone.idleTimeout = idleTimeout;
+        clone.maxLifetime = maxLifetime;
+        clone.autoCommit = autoCommit;
+        clone.validationQuery = validationQuery;
+
+        return clone;
+    }
 
 }

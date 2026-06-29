@@ -21,7 +21,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicLong;
 
 @NullMarked
 public final class ConnectionPool {
@@ -43,7 +42,9 @@ public final class ConnectionPool {
 
         // Initialize minimum pool size
         try {
-            initialize();
+            for (int i = 0; i < properties.minPoolSize(); i++) {
+                availableConnections.offer(createConnection());
+            }
         } catch (SQLException ex ){
             Logger.error("Failed to initialize connection pool '%s': %s", properties.name(), ex.toString());
             throw new RuntimeException("Failed to initialize connection pool: " + ex.toString());
@@ -62,19 +63,11 @@ public final class ConnectionPool {
         Logger.debug("%s", Logger.lazy(() -> Objects.toString(properties)));
     }
 
-    private void initialize() throws SQLException {
-        for (int i = 0; i < properties.minPoolSize(); i++) {
-            availableConnections.offer(createConnection());
-        }
-    }
-
     /** Cria uma conexão e contabiliza-a no total. Usado por initialize()/manutenção. */
     private PooledConnection createConnection() throws SQLException {
         val pooled = openConnection();
         totalConnections.incrementAndGet();
-
-        Logger.debug("Created new connection for pool '%s' (total=%d)",
-                properties.name(), totalConnections.get());
+        Logger.debug("Created new connection for pool '%s' (total=%d)", properties.name(), totalConnections.get());
 
         return pooled;
     }
@@ -201,7 +194,7 @@ public final class ConnectionPool {
     private boolean isValid(PooledConnection pooled) {
         try {
             // Check if connection exceeded max lifetime
-            if (System.currentTimeMillis() - pooled.getCreatedAt() > properties.maxLifetime()) {
+            if (System.currentTimeMillis() - pooled.createdAt() > properties.maxLifetime()) {
                 Logger.debug("Connection exceeded max lifetime in pool '%s'", properties.name());
                 return false;
             }
@@ -257,7 +250,7 @@ public final class ConnectionPool {
                 break;
             }
 
-            if (pooled.getLastAccessedAt() < idleDeadline) {
+            if (pooled.lastAccessedAt().get() < idleDeadline) {
                 iterator.remove();
                 closeConnection(pooled);
                 removed++;
@@ -314,53 +307,24 @@ public final class ConnectionPool {
         Logger.info("Connection pool '%s' closed", properties.name());
     }
 
-    public int getActiveCount() {
+    public int activeCount() {
         return activeConnections.size();
     }
 
-    public int getAvailableCount() {
+    public int availableCount() {
         return availableConnections.size();
     }
 
-    public int getTotalCount() {
+    public int totalCount() {
         return totalConnections.get();
     }
 
-    public JDBCProperties getProperties() {
+    public JDBCProperties properties() {
         return properties;
     }
 
     public boolean isClosed() {
         return closed;
-    }
-
-    @NullMarked
-    private static class PooledConnection {
-        private final Connection connection;
-        private final long createdAt;
-        private final AtomicLong lastAccessedAt;
-
-        PooledConnection(Connection connection) {
-            this.connection = connection;
-            this.createdAt = System.currentTimeMillis();
-            this.lastAccessedAt = new AtomicLong(this.createdAt);
-        }
-
-        Connection connection() {
-            return connection;
-        }
-
-        long getCreatedAt() {
-            return createdAt;
-        }
-
-        long getLastAccessedAt() {
-            return lastAccessedAt.get();
-        }
-
-        void updateLastAccess() {
-            lastAccessedAt.set(System.currentTimeMillis());
-        }
     }
 
 }
