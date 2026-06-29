@@ -1,4 +1,4 @@
-package br.community.infra.persistence.features;
+package br.community.infra.persistence.security;
 
 import br.commons.Registry;
 import br.commons.Result;

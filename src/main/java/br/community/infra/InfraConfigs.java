@@ -19,6 +19,7 @@ import br.community.infra.persistence.monetary.AccountJDBCRepository;
 import br.community.infra.persistence.monetary.CostCenterJDBCRepository;
 import br.community.infra.persistence.monetary.TransactionJDBCRepository;
 import br.community.infra.persistence.person.PersonJDBCRepository;
+import br.community.infra.persistence.security.UserJDBCRepository;
 import org.jspecify.annotations.NullMarked;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
