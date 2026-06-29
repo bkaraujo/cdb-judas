@@ -12,7 +12,7 @@
     }
     var html = '';
     cards.forEach(function (c, i) {
-      var limit = (c.additionalInfo && c.additionalInfo.limit) || 0;
+      var limit = c.creditLimit || 0;
       var used = Math.abs(window.Domain.Account.currentBalance(c));
       var pct = window.Domain.CreditCard.usagePct(used, limit);
       var color = ctx.pickColor(i + 4, c.color);

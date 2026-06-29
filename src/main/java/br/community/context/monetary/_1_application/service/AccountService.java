@@ -36,16 +36,4 @@ public class AccountService {
             return null;
         });
     }
-
-    public List<Account> findCreditCards() {
-        return accountRepository.findAll().stream()
-                .filter(a -> a.type() == Account.Type.CREDIT_CARD)
-                .toList();
-    }
-
-    public List<Account> findCreditCardsByAccount(UUID accountId) {
-        return findCreditCards().stream()
-                .filter(c -> accountId.equals(c.linkedAccountId()))
-                .toList();
-    }
 }

@@ -6,7 +6,10 @@ import br.community.context.monetary._0_domain.model.Account;
 import br.community.context.monetary._0_domain.model.CostCenter;
 import br.community.context.monetary._0_domain.model.MonthlyBalance;
 import br.community.context.monetary._0_domain.model.Transaction;
-import br.community.context.monetary._1_application.command.*;
+import br.community.context.monetary._1_application.command.AccountCommand;
+import br.community.context.monetary._1_application.command.CostCenterCommand;
+import br.community.context.monetary._1_application.command.ImportedTransactionCommand;
+import br.community.context.monetary._1_application.command.TransactionCommand;
 import br.community.context.monetary._1_application.usecase.AccountUseCase;
 import br.community.context.monetary._1_application.usecase.MetadataUseCase;
 import br.community.context.monetary._1_application.usecase.TransactionUseCase;
@@ -59,28 +62,6 @@ public class MonetaryContext implements Facade {
 
     public Result<List<MonthlyBalance>, DomainError> getYearBalances(UUID accountId, int year) {
         return ucAccount.getYearBalances(accountId, year);
-    }
-
-    // ── Credit card operations ─────────────────────────────────────
-
-    public Result<List<Account>, DomainError> listCreditCards() {
-        return ucAccount.listCreditCards();
-    }
-
-    public Result<List<Account>, DomainError> listCreditCardsByAccount(UUID accountId) {
-        return ucAccount.listCreditCardsByAccount(accountId);
-    }
-
-    public Result<Account, DomainError> createCreditCard(CreditCardCommand cmd) {
-        return ucAccount.createCreditCard(cmd);
-    }
-
-    public Result<Account, DomainError> updateCreditCard(UUID id, CreditCardCommand cmd) {
-        return ucAccount.updateCreditCard(id, cmd);
-    }
-
-    public Result<Void, DomainError> deleteCreditCard(UUID id) {
-        return ucAccount.deleteCreditCard(id);
     }
 
     // ── Transaction operations ─────────────────────────────────────

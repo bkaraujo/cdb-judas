@@ -6,12 +6,12 @@
   function pad2(n) { return n < 10 ? '0' + n : '' + n; }
 
   function closingDay(card) {
-    const d = card && card.additionalInfo && +card.additionalInfo.closingDay;
+    const d = card && +card.closingDay;
     return d > 0 ? d : DEFAULT_CLOSING_DAY;
   }
 
   function dueDay(card) {
-    const d = card && card.additionalInfo && +card.additionalInfo.dueDay;
+    const d = card && +card.dueDay;
     return d > 0 ? d : DEFAULT_DUE_DAY;
   }
 

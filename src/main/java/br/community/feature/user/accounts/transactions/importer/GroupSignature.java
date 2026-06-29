@@ -1,12 +1,12 @@
 package br.community.feature.user.accounts.transactions.importer;
 
+import br.commons.tools.Strings;
 import lombok.val;
 import org.jspecify.annotations.NullMarked;
 
 import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
-import java.util.Locale;
 import java.util.UUID;
 
 /**
@@ -22,7 +22,7 @@ import java.util.UUID;
 public class GroupSignature {
 
     public static String normalize(String description) {
-        return description.trim().replaceAll("\\s+", " ").toUpperCase(Locale.ROOT);
+        return Strings.upper(description.trim().replaceAll("\\s+", " "));
     }
 
     public UUID groupId(UUID accountId, LocalDate originalDate, int totalInstallments, String description) {

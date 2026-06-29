@@ -2,6 +2,7 @@ package br.community.infra.persistence.security;
 
 import br.commons.Registry;
 import br.commons.Result;
+import br.commons.chrono.Time;
 import br.commons.framework.persistence.jdbc.DataSource;
 import br.commons.framework.persistence.jdbc.JDBCTransaction;
 import br.commons.framework.persistence.jdbc.primitives.JDBCParameter;
@@ -13,8 +14,10 @@ import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 
 import java.sql.Timestamp;
-import java.time.LocalDateTime;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
 
 /**
  * Adaptador JDBC (H2) da porta {@link UserRepository}: tabela {@code SEC_USER} (identidade) e
@@ -51,7 +54,7 @@ public final class UserJDBCRepository implements UserRepository {
     @Override
     public User save(User user) {
         return dataSource.transaction(tx -> {
-            val now = Timestamp.valueOf(LocalDateTime.now());
+            val now = Timestamp.valueOf(Time.now());
             val existingPersonId = findPersonId(tx, user.id());
             val rawName = user.name();
             val personName = rawName != null ? rawName : user.username();

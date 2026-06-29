@@ -1,5 +1,6 @@
 package br.community.feature.user.accounts.statement.provider;
 
+import br.commons.tools.Strings;
 import br.community.feature.user.accounts.statement.Issuer;
 import br.community.feature.user.accounts.statement.MonetaryDocument;
 import br.community.feature.user.accounts.statement.MonetaryDocumentEntry;
@@ -13,7 +14,6 @@ import org.jspecify.annotations.Nullable;
 import java.time.MonthDay;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Locale;
 import java.util.regex.Pattern;
 
 /**
@@ -134,6 +134,6 @@ public class SantanderInvoiceParser implements StatementParser {
     }
 
     private static ChargeKind classify(String description) {
-        return description.toUpperCase(Locale.ROOT).startsWith("ANUIDADE") ? ChargeKind.FEE : ChargeKind.PURCHASE;
+        return Strings.upper(description).startsWith("ANUIDADE") ? ChargeKind.FEE : ChargeKind.PURCHASE;
     }
 }

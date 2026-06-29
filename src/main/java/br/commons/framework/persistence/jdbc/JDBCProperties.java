@@ -56,6 +56,7 @@ public final class JDBCProperties implements Cloneable {
     public @Nullable String validationQuery() { return validationQuery; }
     public void validationQuery(String validationQuery) { this.validationQuery = validationQuery; }
 
+    @Override
     public JDBCProperties clone()  {
         val clone = new JDBCProperties();
 

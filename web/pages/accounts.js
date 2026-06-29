@@ -224,13 +224,13 @@
       balanceNegative: isEdit ? (Number(existing.balance || 0) < 0) : false,
       active: isEdit ? (existing.active !== false) : true,
       linkedAccountId: isEdit ? (existing.linkedAccountId ? String(existing.linkedAccountId) : '') : '',
-      last4: isEdit && existing.additionalInfo ? (existing.additionalInfo.last4 || '') : '',
-      limit: isEdit && existing.additionalInfo && existing.additionalInfo.limit != null
-        ? maskInitial(existing.additionalInfo.limit) : '0,00',
-      closingDay: isEdit && existing.additionalInfo && existing.additionalInfo.closingDay
-        ? String(existing.additionalInfo.closingDay) : '1',
-      dueDay: isEdit && existing.additionalInfo && existing.additionalInfo.dueDay
-        ? String(existing.additionalInfo.dueDay) : '10',
+      last4: isEdit ? (existing.last4 || '') : '',
+      limit: isEdit && existing.creditLimit != null
+        ? maskInitial(existing.creditLimit) : '0,00',
+      closingDay: isEdit && existing.closingDay
+        ? String(existing.closingDay) : '1',
+      dueDay: isEdit && existing.dueDay
+        ? String(existing.dueDay) : '10',
     };
 
     const typeOptions = [
@@ -419,12 +419,10 @@
       if (t === 'CREDIT_CARD') {
         const linkedId = $form.find('select[name=linkedAccountId]').val();
         if (linkedId) payload.linkedAccountId = linkedId;
-        payload.additionalInfo = {
-          last4: ($form.find('input[name=last4]').val() || '').trim(),
-          limit: window.parseCurrency($limit.val()).toFixed(2),
-          closingDay: parseInt($form.find('input[name=closingDay]').val(), 10) || 1,
-          dueDay: parseInt($form.find('input[name=dueDay]').val(), 10) || 10,
-        };
+        payload.last4 = ($form.find('input[name=last4]').val() || '').trim();
+        payload.creditLimit = window.parseCurrency($limit.val()).toFixed(2);
+        payload.closingDay = parseInt($form.find('input[name=closingDay]').val(), 10) || 1;
+        payload.dueDay = parseInt($form.find('input[name=dueDay]').val(), 10) || 10;
       }
 
       const $btn = m.$el.find('[data-act=save]');

@@ -1,0 +1,196 @@
+flowchart TD
+    %% ============================================================
+    %% DEFINIÇÃO DE ESTILOS (CORES)
+    %% ============================================================
+    classDef featureNode fill:#e1f2f8,stroke:#1A5276,stroke-width:1px,color:#000
+    classDef facadeNode fill:#fef6ec,stroke:#935116,stroke-width:1px,color:#000
+    classDef appNode fill:#ffece0,stroke:#873600,stroke-width:1px,color:#000
+    classDef domainNode fill:#effaf3,stroke:#1D8348,stroke-width:1px,color:#000
+    classDef infraNode fill:#f5eff8,stroke:#512E5F,stroke-width:1px,color:#000
+    classDef coreNode fill:#fef4f4,stroke:#78281F,stroke-width:1px,color:#000
+    classDef dbNode fill:#F5F5F5,stroke:#333,stroke-width:2px,color:#000
+    classDef noteNode fill:#FFF2CC,stroke:#D6B656,stroke-width:1px,stroke-dasharray: 5 5,color:#000,text-align:left
+
+    %% ============================================================
+    %% CAMADAS (SUBGRAPHS)
+    %% ============================================================
+
+    subgraph Feature_Layer ["Feature Layer — @RestController\nValida DTO → converte Command → chama Facade → Result match → Response / ProblemDetail"]
+        direction TB
+        acc_res["AccountResource"]:::featureNode
+        txn_res["TransactionResource"]:::featureNode
+        imp_res["StatementImportResource"]:::featureNode
+        cls_res["ClosingResource"]:::featureNode
+        dash_res["DashboardResource"]:::featureNode
+        cat_res["CategoryResource"]:::featureNode
+        tag_res["TagResource"]:::featureNode
+        login_res["LoginResource"]:::featureNode
+    end
+    style Feature_Layer fill:#A8D8EA,stroke:#333,stroke-width:1.5px
+
+    subgraph Facade_Layer ["Facade — implements Facade\nPonto único de entrada do contexto. Delega para UseCases. Retorna Result<T, DomainError>"]
+        direction TB
+        mon_facade["MonetaryContext"]:::facadeNode
+        sec_facade["SecurityContext"]:::facadeNode
+    end
+    style Facade_Layer fill:#FDEBD0,stroke:#333,stroke-width:1.5px
+
+    subgraph Application_Layer ["Application Layer\nOrquestra fluxo, emite DomainEvents, retorna Result<T, DomainError>"]
+        direction TB
+        subgraph uc_pkg ["usecase (@UseCase)"]
+            acc_uc["AccountUseCase"]:::appNode
+            txn_uc["TransactionUseCase"]:::appNode
+            cat_uc["CategoryUseCase"]:::appNode
+            tag_uc["TagUseCase"]:::appNode
+            cls_uc["ClosingUseCase"]:::appNode
+        end
+        subgraph svc_pkg ["service"]
+            acc_svc["AccountService"]:::appNode
+            txn_svc["TransactionService"]:::appNode
+        end
+        subgraph cmd_pkg ["command (records + Jakarta)"]
+            acc_cmd["AccountCommand"]:::appNode
+            txn_cmd["TransactionCommand"]:::appNode
+            imp_cmd["ImportConfirmCommand"]:::appNode
+        end
+        subgraph lstnr_pkg ["event listener (@MessageListener)"]
+            acc_lstnr["AccountEventListener"]:::appNode
+            txn_lstnr["TransactionEventListener"]:::appNode
+        end
+    end
+    style Application_Layer fill:#FFD3B6,stroke:#333,stroke-width:1.5px
+    style uc_pkg fill:none,stroke:#666,stroke-dasharray: 3 3
+    style svc_pkg fill:none,stroke:#666,stroke-dasharray: 3 3
+    style cmd_pkg fill:none,stroke:#666,stroke-dasharray: 3 3
+    style lstnr_pkg fill:none,stroke:#666,stroke-dasharray: 3 3
+
+    subgraph Domain_Layer ["Domain Layer — zero framework\nRecords imutáveis, interfaces, sealed events/errors"]
+        direction TB
+        subgraph model_pkg ["model (records)"]
+            acc_m["MonetaryAccount"]:::domainNode
+            txn_m["MonetaryTransaction"]:::domainNode
+            cat_m["MonetaryCategory"]:::domainNode
+            tag_m["Tag"]:::domainNode
+            bal_m["MonthlyBalance"]:::domainNode
+        end
+        subgraph repo_pkg ["repository &lt;&lt;interface&gt;&gt;"]
+            acc_ri["AccountRepository"]:::domainNode
+            txn_ri["TransactionRepository"]:::domainNode
+            cat_ri["CategoryRepository"]:::domainNode
+            tag_ri["TagRepository"]:::domainNode
+        end
+        subgraph evt_pkg ["event (sealed)"]
+            mon_evt["MonetaryEvent"]:::domainNode
+        end
+        subgraph shared_pkg ["shared"]
+            dom_err["DomainError\nNotFound | BusinessRule\nValidation | Conflict"]:::domainNode
+            dom_evt["DomainEvent"]:::domainNode
+        end
+    end
+    style Domain_Layer fill:#D5F5E3,stroke:#333,stroke-width:1.5px
+    style model_pkg fill:none,stroke:#666,stroke-dasharray: 3 3
+    style repo_pkg fill:none,stroke:#666,stroke-dasharray: 3 3
+    style evt_pkg fill:none,stroke:#666,stroke-dasharray: 3 3
+    style shared_pkg fill:none,stroke:#666,stroke-dasharray: 3 3
+
+    subgraph Infra_Layer ["Infrastructure\nImplementa interfaces do Domain. Wiring explícito @Bean (sem scan)"]
+        direction TB
+        subgraph json_pkg ["JSON persistence"]
+            acc_impl["AccountJsonRepository"]:::infraNode
+            txn_impl["TransactionJsonRepository\nparticionado/ano, RWLock"]:::infraNode
+            cat_impl["CategoryJsonRepository"]:::infraNode
+            tag_impl["TagJsonRepository"]:::infraNode
+        end
+        subgraph mod_pkg ["module"]
+            mon_mod["MonetaryModule\n@Configuration"]:::infraNode
+        end
+    end
+    style Infra_Layer fill:#E8DAEF,stroke:#333,stroke-width:1.5px
+    style json_pkg fill:none,stroke:#666,stroke-dasharray: 3 3
+    style mod_pkg fill:none,stroke:#666,stroke-dasharray: 3 3
+
+    subgraph Core_Layer ["Core / Commons\nFramework reutilizável transversal"]
+        direction TB
+        bus["MessageBus"]:::coreNode
+        result["Result<T,E>"]:::coreNode
+        base_repo["Repository<T,ID>"]:::coreNode
+        storage["Storage"]:::coreNode
+        err_h["GlobalExceptionHandler"]:::coreNode
+        sec_cfg["SecurityConfig"]:::coreNode
+    end
+    style Core_Layer fill:#FDEDEC,stroke:#333,stroke-width:1.5px
+
+    db[("JSON Files (data/)")]:::dbNode
+
+    %% ============================================================
+    %% FLUXOS E CONEXÕES
+    %% ============================================================
+
+    %% Feature → Facade
+    acc_res --> mon_facade
+    txn_res --> mon_facade
+    imp_res --> mon_facade
+    cls_res --> mon_facade
+    dash_res --> mon_facade
+    cat_res --> mon_facade
+    tag_res --> mon_facade
+    login_res --> sec_facade
+
+    %% Facade → UseCase
+    mon_facade --> acc_uc
+    mon_facade --> txn_uc
+    mon_facade --> cat_uc
+    mon_facade --> tag_uc
+    mon_facade --> cls_uc
+
+    %% UseCase → Service
+    acc_uc --> acc_svc
+    txn_uc --> txn_svc
+
+    %% Service/UseCase → Repository interface
+    acc_svc --> acc_ri
+    txn_svc --> txn_ri
+    cat_uc --> cat_ri
+    tag_uc --> tag_ri
+
+    %% UseCase → MessageBus (events)
+    acc_uc --> bus
+    txn_uc --> bus
+    bus --> acc_lstnr
+    bus --> txn_lstnr
+
+    %% Infrastructure implements Domain
+    acc_impl -. "implements" .-> acc_ri
+    txn_impl -. "implements" .-> txn_ri
+    cat_impl -. "implements" .-> cat_ri
+    tag_impl -. "implements" .-> tag_ri
+
+    %% Infrastructure → JSON
+    acc_impl --> db
+    txn_impl --> db
+    cat_impl --> db
+    tag_impl --> db
+
+    %% ============================================================
+    %% NOTAS
+    %% ============================================================
+    
+    N_DEP["`**Dependency Rule**
+    Feature → Facade → UseCase → Service → Domain ← Infrastructure
+    Domain não conhece nenhuma camada externa.`"]:::noteNode
+
+    N_FLOW["`**Fluxo típico**
+    1. HTTP → Resource (valida @Valid)
+    2. Request → Command (record)
+    3. Resource → Facade
+    4. Facade → UseCase → Service → Repository &lt;&lt;if&gt;&gt;
+    5. Infrastructure impl → JSON file
+    6. UseCase emite DomainEvent → MessageBus
+    7. Listeners reagem (recalculam balances)
+    8. Result&lt;Success|Failure&gt; retorna
+    9. Success → Response DTO (200)
+    10. Failure → DomainException → ProblemDetail (RFC 7807)`"]:::noteNode
+
+    %% Ancorando as notas visualmente próximas de elementos centrais (opcional)
+    N_DEP ~~~ Facade_Layer
+    N_FLOW ~~~ Application_Layer

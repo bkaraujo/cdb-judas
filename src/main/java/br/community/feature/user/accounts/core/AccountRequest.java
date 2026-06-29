@@ -1,14 +1,11 @@
 package br.community.feature.user.accounts.core;
 
 import br.community.core.TwoDecimalPlaces;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Pattern;
+import jakarta.validation.constraints.*;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 
 import java.math.BigDecimal;
-import java.util.Map;
 import java.util.UUID;
 
 @NullMarked
@@ -19,5 +16,9 @@ public record AccountRequest(
         @NotBlank @Pattern(regexp = "#[0-9A-Fa-f]{6}") String color,
         boolean active,
         @Nullable UUID linkedAccountId,
-        @Nullable Map<String, Object> additionalInfo
+        @Nullable @Pattern(regexp = "\\d{4}") String last4,
+        @Nullable @Min(1) @Max(31) Integer dueDay,
+        @Nullable @Min(1) @Max(31) Integer closingDay,
+        @Nullable @PositiveOrZero @TwoDecimalPlaces BigDecimal creditLimit,
+        @Nullable @PositiveOrZero @TwoDecimalPlaces BigDecimal overdraftLimit
 ) {}

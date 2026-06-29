@@ -10,9 +10,9 @@ import java.util.List;
  *
  * <p>Restrito a construções padrão (sem dialeto): {@code CREATE TABLE} sem {@code IF NOT EXISTS},
  * tipos {@code CHAR}/{@code VARCHAR}/{@code DECIMAL}/{@code DATE}/{@code INT}/{@code TIMESTAMP};
- * booleanos ativos como {@code CHAR(1)} ('Y'/'N') com prefixo {@code FLG_}; textos grandes (JSON
- * de {@code additionalInfo}) como {@code VARCHAR(4000)}. Tabelas de dados planas, sem
- * {@code DEFAULT} (a aplicação sempre fornece os valores).</p>
+ * booleanos ativos como {@code CHAR(1)} ('Y'/'N') com prefixo {@code FLG_}. Tabelas de dados planas,
+ * sem {@code DEFAULT} (a aplicação sempre fornece os valores). Os dados de cartão (conta vinculada,
+ * last4, dias, limites) vivem no overlay de feature {@code USER_ACCOUNT}, não em {@code MON_ACCOUNT}.</p>
  *
  * <p>Lookup tables: {@code MON_ACCOUNT_TYPE} (IDs UUID estáveis — ver {@link AccountTypeMapper}),
  * {@code TRANSACTION_NATURE} e {@code MON_STATUS} (IDs VARCHAR(20) com o nome do enum). As tabelas
@@ -62,8 +62,6 @@ public abstract class Database {
                     TXT_NAME VARCHAR(255) NOT NULL,
                     TXT_TYPE CHAR(36) NOT NULL REFERENCES MON_ACCOUNT_TYPE(ID),
                     FLG_ACTIVE CHAR(1) NOT NULL,
-                    COD_LINKED_ACCOUNT CHAR(36),
-                    TXT_ADDITIONAL_INFO VARCHAR(4000),
                     TMS_CREATE_AT TIMESTAMP NOT NULL,
                     TMS_UPDATED_AT TIMESTAMP NOT NULL
                 )
@@ -75,6 +73,12 @@ public abstract class Database {
                     DEC_OPENING_BALANCE DECIMAL(19, 2) NOT NULL,
                     TXT_COLOR VARCHAR(20) NOT NULL,
                     FLG_ACTIVE CHAR(1) NOT NULL,
+                    COD_LINKED_ACCOUNT CHAR(36),
+                    TXT_CARD_LAST4 VARCHAR(4),
+                    NUM_DUE_DAY INT,
+                    NUM_CLOSING_DAY INT,
+                    DEC_CREDIT_LIMIT DECIMAL(19, 2),
+                    DEC_OVERDRAFT_LIMIT DECIMAL(19, 2),
                     PRIMARY KEY (COD_USER, COD_ACCOUNT)
                 )
                 """,

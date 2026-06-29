@@ -135,12 +135,11 @@
   }
 
   function renderCard(c) {
-    const info = c.additionalInfo || {};
     const color = colorOf(c);
-    const last4 = info.last4 || '0000';
+    const last4 = c.last4 || '0000';
     const closingDay = window.Domain.CreditCard.closingDay(c);
     const dueDay = window.Domain.CreditCard.dueDay(c);
-    const limit = Number(info.limit) || 0;
+    const limit = Number(c.creditLimit) || 0;
 
     const inv = computeInvoice(c.id);
     const loadingInv = state.txLoading;

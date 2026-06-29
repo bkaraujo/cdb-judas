@@ -142,7 +142,7 @@ class StatementImportResourceTest extends BaseHttpTest {
         String cardJson = """
             {"name":"Black Card","balance":0.00,"type":"CREDIT_CARD","color":"#007AFF","active":true,
              "linkedAccountId":"%s",
-             "additionalInfo":{"last4":"0020","limit":10000.00,"closingDay":1,"dueDay":10}}
+             "last4":"0020","creditLimit":10000.00,"closingDay":1,"dueDay":10}
             """.formatted(accountId);
         String cardResponse = mockMvc.perform(post("/api/{u}/accounts", TEST_USER_ID)
                         .contentType(MediaType.APPLICATION_JSON).content(cardJson))

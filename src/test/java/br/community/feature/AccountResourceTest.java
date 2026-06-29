@@ -21,10 +21,7 @@ class AccountResourceTest extends BaseHttpTest {
               "type": "CHECKING",
               "color": "#007AFF",
               "active": true,
-              "linkedAccountId": null,
-              "additionalInfo": {
-                "bank": "Banco do Brasil"
-              }
+              "linkedAccountId": null
             }
             """;
 
@@ -42,8 +39,7 @@ class AccountResourceTest extends BaseHttpTest {
 
         mockMvc.perform(get("/api/{u}/accounts/{id}", TEST_USER_ID, id))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.id").value(id.toString()))
-                .andExpect(jsonPath("$.additionalInfo.bank").value("Banco do Brasil"));
+                .andExpect(jsonPath("$.id").value(id.toString()));
 
         mockMvc.perform(get("/api/{u}/accounts", TEST_USER_ID))
                 .andExpect(status().isOk())
@@ -114,7 +110,7 @@ class AccountResourceTest extends BaseHttpTest {
             {
               "name":"Nubank","balance":0.00,"type":"CREDIT_CARD","color":"#820AD1","active":true,
               "linkedAccountId":"%s",
-              "additionalInfo":{"last4":"1234","limit":5000.00,"closingDay":5,"dueDay":12}
+              "last4":"1234","creditLimit":5000.00,"closingDay":5,"dueDay":12
             }
             """.formatted(checkingId);
         String cardResp = mockMvc.perform(post("/api/{u}/accounts", TEST_USER_ID)
@@ -122,7 +118,8 @@ class AccountResourceTest extends BaseHttpTest {
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.type").value("CREDIT_CARD"))
                 .andExpect(jsonPath("$.linkedAccountId").value(checkingId.toString()))
-                .andExpect(jsonPath("$.additionalInfo.last4").value("1234"))
+                .andExpect(jsonPath("$.last4").value("1234"))
+                .andExpect(jsonPath("$.creditLimit").value(5000.00))
                 .andReturn().getResponse().getContentAsString();
         UUID cardId = objectMapper.readValue(cardResp, AccountResponse.class).id();
 
@@ -139,13 +136,14 @@ class AccountResourceTest extends BaseHttpTest {
             {
               "name":"Nubank","balance":0.00,"type":"CREDIT_CARD","color":"#820AD1","active":true,
               "linkedAccountId":"%s",
-              "additionalInfo":{"last4":"9999","limit":8000.00,"closingDay":5,"dueDay":12}
+              "last4":"9999","creditLimit":8000.00,"closingDay":5,"dueDay":12
             }
             """.formatted(checkingId);
         mockMvc.perform(patch("/api/{u}/accounts/{id}", TEST_USER_ID, cardId)
                 .contentType(MediaType.APPLICATION_JSON).content(patchCard))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.additionalInfo.last4").value("9999"));
+                .andExpect(jsonPath("$.last4").value("9999"))
+                .andExpect(jsonPath("$.creditLimit").value(8000.00));
 
         // Excluir o cartão.
         mockMvc.perform(delete("/api/{u}/accounts/{id}", TEST_USER_ID, cardId))

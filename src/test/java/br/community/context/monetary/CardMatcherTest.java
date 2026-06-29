@@ -1,8 +1,8 @@
 package br.community.context.monetary;
 
-import br.community.context.monetary._0_domain.model.Account;
 import br.community.feature.user.accounts.transactions.importer.CardMatch;
 import br.community.feature.user.accounts.transactions.importer.CardMatcher;
+import br.community.feature.user.accounts.transactions.importer.CreditCard;
 import org.junit.jupiter.api.Test;
 
 
@@ -17,12 +17,12 @@ class CardMatcherTest {
 
     private final CardMatcher matcher = new CardMatcher();
 
-    private static Account card(String name, Map<String, Object> additionalInfo) {
-        return new Account(UUID.randomUUID(), name, Account.Type.CREDIT_CARD, true, null, additionalInfo);
+    private static CreditCard cardWithLast4(String name, String last4) {
+        return new CreditCard(UUID.randomUUID(), name, last4, null);
     }
 
-    private static Account cardWithLast4(String name, String last4) {
-        return card(name, Map.of("last4", last4));
+    private static CreditCard cardWithoutLast4(String name) {
+        return new CreditCard(UUID.randomUUID(), name, null, null);
     }
 
     @Test
@@ -56,7 +56,7 @@ class CardMatcherTest {
 
     @Test
     void noMatchWhenCardHasNoLast4() {
-        var noLast4 = card("Sem final", Map.of());
+        var noLast4 = cardWithoutLast4("Sem final");
 
         var result = matcher.match(List.of("0020"), List.of(noLast4));
 

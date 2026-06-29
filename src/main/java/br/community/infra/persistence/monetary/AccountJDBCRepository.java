@@ -1,6 +1,7 @@
 package br.community.infra.persistence.monetary;
 
 import br.commons.Registry;
+import br.commons.chrono.Time;
 import br.commons.framework.persistence.jdbc.DataSource;
 import br.commons.framework.persistence.jdbc.primitives.JDBCParameter;
 import br.commons.framework.persistence.jdbc.primitives.JDBCResultSet;
@@ -8,29 +9,24 @@ import br.community.context.monetary._0_domain.model.Account;
 import br.community.context.monetary._0_domain.repository.AccountRepository;
 import lombok.val;
 import org.jspecify.annotations.NullMarked;
-import org.jspecify.annotations.Nullable;
-import tools.jackson.databind.ObjectMapper;
 
 import java.sql.Timestamp;
-import java.time.LocalDateTime;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
 
 /**
  * Adaptador JDBC (H2) da porta {@link AccountRepository}. Mapeia {@link Account} para
- * {@code MON_ACCOUNT} (metadados globais). Saldo e cor são geridos por {@code USER_ACCOUNT}.
+ * {@code MON_ACCOUNT} (metadados globais: nome, tipo, ativo). Saldo, cor e os dados de cartão
+ * (conta vinculada, limites) são geridos pela feature em {@code USER_ACCOUNT}.
  */
 @NullMarked
 public final class AccountJDBCRepository implements AccountRepository {
 
-    private static final String COLUMNS =
-            "ID, TXT_NAME, TXT_TYPE, FLG_ACTIVE, COD_LINKED_ACCOUNT, TXT_ADDITIONAL_INFO, TMS_CREATE_AT, TMS_UPDATED_AT";
+    private static final String COLUMNS = "ID, TXT_NAME, TXT_TYPE, FLG_ACTIVE, TMS_CREATE_AT, TMS_UPDATED_AT";
 
     private final DataSource dataSource = Registry.get(DataSource.class);
-    private final ObjectMapper mapper;
-
-    public AccountJDBCRepository(ObjectMapper mapper) {
-        this.mapper = mapper;
-    }
 
     @Override
     public List<Account> findAll() {
@@ -53,36 +49,29 @@ public final class AccountJDBCRepository implements AccountRepository {
         val existing = findById(entity.id());
         if (existing.isPresent() && existing.get().equals(entity)) return entity;
 
-        val linked = entity.linkedAccountId();
-        val linkedStr = linked == null ? null : linked.toString();
         val activeFlag = entity.active() ? "Y" : "N";
-        val infoJson = mapper.writeValueAsString(entity.additionalInfo());
         val typeId = AccountTypeMapper.toId(entity.type());
-        val now = Timestamp.valueOf(LocalDateTime.now());
+        val now = Timestamp.valueOf(Time.now());
 
         if (existing.isEmpty()) {
             dataSource.execute(
-                    "INSERT INTO MON_ACCOUNT (" + COLUMNS + ") VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+                    "INSERT INTO MON_ACCOUNT (" + COLUMNS + ") VALUES (?, ?, ?, ?, ?, ?)",
                     JDBCParameter.of (
                             entity.id().toString(),
                             entity.name(),
                             typeId,
                             activeFlag,
-                            linkedStr,
-                            infoJson,
                             now,
                             now
                     )
             );
         } else {
             dataSource.execute(
-                    "UPDATE MON_ACCOUNT SET TXT_NAME = ?, TXT_TYPE = ?, FLG_ACTIVE = ?, COD_LINKED_ACCOUNT = ?, TXT_ADDITIONAL_INFO = ?, TMS_UPDATED_AT = ? WHERE ID = ?",
+                    "UPDATE MON_ACCOUNT SET TXT_NAME = ?, TXT_TYPE = ?, FLG_ACTIVE = ?, TMS_UPDATED_AT = ? WHERE ID = ?",
                     JDBCParameter.of (
                             entity.name(),
                             typeId,
                             activeFlag,
-                            linkedStr,
-                            infoJson,
                             now,
                             entity.id().toString()
                     )
@@ -118,22 +107,11 @@ public final class AccountJDBCRepository implements AccountRepository {
         val type = AccountTypeMapper.fromId(rs.getString("TXT_TYPE").get());
         val active = "Y".equals(rs.getString("FLG_ACTIVE").get());
 
-        final @Nullable String linkedRaw = rs.getString("COD_LINKED_ACCOUNT").get();
-        final @Nullable UUID linkedAccountId = (linkedRaw == null || linkedRaw.isBlank()) ? null : UUID.fromString(linkedRaw);
-
-        final @Nullable String infoJson = rs.getString("TXT_ADDITIONAL_INFO").get();
-        val additionalInfo = (infoJson == null || infoJson.isBlank()) ? new HashMap<String, Object>() : readMap(infoJson);
-
         val createRaw = rs.getTimestamp("TMS_CREATE_AT").get();
         val createdAt = createRaw.toLocalDateTime();
         val updateRaw = rs.getTimestamp("TMS_UPDATED_AT").get();
         val updatedAt = updateRaw.toLocalDateTime();
 
-        return new Account(id, name, type, active, linkedAccountId, additionalInfo, createdAt, updatedAt);
-    }
-
-    @SuppressWarnings("unchecked")
-    private Map<String, Object> readMap(String json) {
-        return (Map<String, Object>) mapper.readValue(json, Map.class);
+        return new Account(id, name, type, active, createdAt, updatedAt);
     }
 }

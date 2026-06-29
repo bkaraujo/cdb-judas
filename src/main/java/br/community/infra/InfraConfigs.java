@@ -25,7 +25,6 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.DependsOn;
 import org.springframework.context.annotation.Import;
-import tools.jackson.databind.ObjectMapper;
 
 @NullMarked
 @Configuration
@@ -44,8 +43,8 @@ public class InfraConfigs {
     }
 
     @Bean
-    AccountRepository accountRepository(ObjectMapper mapper) {
-        return new AccountJDBCRepository(mapper);
+    AccountRepository accountRepository() {
+        return new AccountJDBCRepository();
     }
 
     @Bean

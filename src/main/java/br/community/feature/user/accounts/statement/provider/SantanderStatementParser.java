@@ -14,9 +14,9 @@ import org.jspecify.annotations.Nullable;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.Year;
+import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Locale;
 import java.util.regex.Pattern;
 
 /**
@@ -147,7 +147,7 @@ public class SantanderStatementParser implements StatementParser {
     }
 
     private static boolean isDropped(String description) {
-        val upper = description.toUpperCase(Locale.ROOT);
+        val upper = Strings.upper(description);
         return upper.contains("PAGAMENTO CARTAO") || upper.contains("PAGAMENTO CARTÃO")
                 || upper.contains("FATURA CARTAO") || upper.contains("FATURA CARTÃO");
     }
@@ -168,12 +168,12 @@ public class SantanderStatementParser implements StatementParser {
 
     private static int referenceYear(String text) {
         val m = MONTH_TOKEN.matcher(text);
-        return m.find() ? Integer.parseInt(m.group(2)) : Year.now().getValue();
+        return m.find() ? Integer.parseInt(m.group(2)) : Year.now(ZoneId.systemDefault()).getValue();
     }
 
     private static int referenceMonth(String text) {
         val m = MONTH_TOKEN.matcher(text);
-        return m.find() ? Dates.MONTHS_PTBR.getOrDefault(m.group(1).toUpperCase(Locale.ROOT), 1) : 1;
+        return m.find() ? Dates.MONTHS_PTBR.getOrDefault(Strings.upper(m.group(1)), 1) : 1;
     }
 
 }

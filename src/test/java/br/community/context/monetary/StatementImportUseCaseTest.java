@@ -30,7 +30,6 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneOffset;
 import java.util.List;
-import java.util.Map;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -177,7 +176,7 @@ class StatementImportUseCaseTest {
         final PdfTextExtractor extractor = (bytes, password) -> Result.success(EXTRATO);
         final MonetaryContext monetaryContext = monetaryContext(accounts, transactions);
         return new StatementImportUseCase(
-                monetaryContext, extractor,
+                monetaryContext, List::of, extractor, // empty card provider (bank-statement path)
                 List.of(new BTGStatementParser(), new SantanderStatementParser(),
                         new BTGInvoiceParser(), new SantanderInvoiceParser()),
                 MAX_BYTES, CLOCK);
@@ -197,6 +196,6 @@ class StatementImportUseCaseTest {
     }
 
     private static Account checking(String name) {
-        return new Account(UUID.randomUUID(), name, Account.Type.CHECKING, true, null, Map.of());
+        return new Account(UUID.randomUUID(), name, Account.Type.CHECKING, true);
     }
 }

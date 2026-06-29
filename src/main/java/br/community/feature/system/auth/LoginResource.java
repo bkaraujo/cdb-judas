@@ -1,8 +1,8 @@
 package br.community.feature.system.auth;
 
 import br.commons.Logger;
-import br.community.core.web.security.core.AccessTokenStore;
 import br.community.core.web.security.AuthUserDetails;
+import br.community.core.web.security.core.AccessTokenStore;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.val;

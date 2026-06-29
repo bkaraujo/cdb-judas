@@ -2,6 +2,7 @@ package br.community.core.persistence;
 
 import br.commons.framework.persistence.Storage;
 import br.commons.framework.persistence.json.LocalFileStorage;
+import br.commons.tools.Strings;
 import br.community.context.monetary._0_domain.model.Transaction;
 import br.community.core.JsonStorageProperties;
 import lombok.val;
@@ -16,7 +17,6 @@ import tools.jackson.databind.module.SimpleModule;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
-import java.util.Locale;
 
 /**
  * Registra módulos Jackson customizados como beans {@link JacksonModule}.
@@ -50,25 +50,25 @@ class JsonStorageConfig {
         module.addSerializer(Transaction.Status.class, new ValueSerializer<>() {
             @Override
             public void serialize(Transaction.Status value, JsonGenerator gen, SerializationContext serializers) {
-                gen.writeString(value.name().toLowerCase(Locale.ROOT));
+                gen.writeString(Strings.lower(value.name()));
             }
         });
         module.addDeserializer(Transaction.Status.class, new ValueDeserializer<>() {
             @Override
             public Transaction.Status deserialize(JsonParser p, DeserializationContext ctxt) {
-                return Transaction.Status.valueOf(p.getValueAsString().toUpperCase(Locale.ROOT));
+                return Transaction.Status.valueOf(Strings.upper(p.getValueAsString()));
             }
         });
         module.addSerializer(Transaction.Type.class, new ValueSerializer<>() {
             @Override
             public void serialize(Transaction.Type value, JsonGenerator gen, SerializationContext serializers) {
-                gen.writeString(value.name().toLowerCase(Locale.ROOT));
+                gen.writeString(Strings.lower(value.name()));
             }
         });
         module.addDeserializer(Transaction.Type.class, new ValueDeserializer<>() {
             @Override
             public Transaction.Type deserialize(JsonParser p, DeserializationContext ctxt) {
-                return Transaction.Type.valueOf(p.getValueAsString().toUpperCase(Locale.ROOT));
+                return Transaction.Type.valueOf(Strings.upper(p.getValueAsString()));
             }
         });
         return module;

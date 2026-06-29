@@ -1,6 +1,7 @@
 package br.community.infra.persistence.features;
 
 import br.commons.Registry;
+import br.commons.chrono.Time;
 import br.commons.framework.persistence.jdbc.DataSource;
 import br.commons.framework.persistence.jdbc.primitives.JDBCParameter;
 import br.commons.framework.persistence.jdbc.primitives.JDBCResultSet;
@@ -12,7 +13,6 @@ import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 
 import java.sql.Timestamp;
-import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -52,7 +52,7 @@ public final class UserCategoryJDBCRepository implements UserCategoryRepository 
         val parentStr = entity.parentId() == null ? null : entity.parentId().toString();
         val systemFlag = entity.isSystem() ? "Y" : "N";
         val activeFlag = entity.active() ? "Y" : "N";
-        val now = Timestamp.valueOf(LocalDateTime.now());
+        val now = Timestamp.valueOf(Time.now());
 
         if (existing.isEmpty()) {
             dataSource.execute(

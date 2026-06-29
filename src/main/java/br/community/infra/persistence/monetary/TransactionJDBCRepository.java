@@ -1,6 +1,7 @@
 package br.community.infra.persistence.monetary;
 
 import br.commons.Registry;
+import br.commons.chrono.Time;
 import br.commons.framework.persistence.jdbc.DataSource;
 import br.commons.framework.persistence.jdbc.primitives.JDBCParameter;
 import br.commons.framework.persistence.jdbc.primitives.JDBCResultSet;
@@ -13,7 +14,6 @@ import org.jspecify.annotations.Nullable;
 import java.sql.Date;
 import java.sql.Timestamp;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -58,7 +58,7 @@ public final class TransactionJDBCRepository implements TransactionRepository {
         val group = entity.groupId();
         val paymentDate = payment == null ? null : Date.valueOf(payment);
         val groupStr = group == null ? null : group.toString();
-        val now = Timestamp.valueOf(LocalDateTime.now());
+        val now = Timestamp.valueOf(Time.now());
 
         if (existing.isEmpty()) {
             dataSource.execute(

@@ -16,6 +16,7 @@ import org.jspecify.annotations.NullMarked;
 
 import java.math.BigDecimal;
 import java.time.YearMonth;
+import java.time.ZoneId;
 import java.util.Comparator;
 import java.util.List;
 import java.util.UUID;
@@ -54,10 +55,6 @@ public class TransactionEventListener {
         transactionService.findByAccount(accountId)
                 .forEach(t -> transactionService.deleteById(t.id()));
 
-        accountService.findAll().stream()
-                .filter(a -> accountId.equals(a.linkedAccountId()))
-                .forEach(a -> accountService.deleteById(a.id()));
-
         balanceService.findByAccount(accountId)
                 .forEach(b -> balanceService.deleteById(b.id()));
 
@@ -88,11 +85,11 @@ public class TransactionEventListener {
         val firstMonth = transactions.stream()
                 .map(t -> YearMonth.from(t.date()))
                 .min(Comparator.naturalOrder())
-                .orElse(YearMonth.now());
+                .orElse(YearMonth.now(ZoneId.systemDefault()));
 
         // Recompute the whole timeline from the first activity through the current month, so every
         // month up to today has a snapshot (months with no movement carry the prior balance forward).
-        var endMonth = YearMonth.now();
+        var endMonth = YearMonth.now(ZoneId.systemDefault());
         for (val t : transactions) {
             val month = YearMonth.from(t.date());
             if (month.isAfter(endMonth)) endMonth = month;

@@ -1,6 +1,5 @@
 package br.community.feature.user.accounts.transactions.importer;
 
-import br.community.context.monetary._0_domain.model.Account;
 import org.jspecify.annotations.NullMarked;
 
 import java.util.List;
@@ -14,11 +13,11 @@ import java.util.List;
 public sealed interface CardMatch {
 
     @NullMarked
-    record Matched(Account card) implements CardMatch {}
+    record Matched(CreditCard card) implements CardMatch {}
 
     @NullMarked
     record NoMatch() implements CardMatch {}
 
     @NullMarked
-    record Ambiguous(List<Account> candidates) implements CardMatch {}
+    record Ambiguous(List<CreditCard> candidates) implements CardMatch {}
 }

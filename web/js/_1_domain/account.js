@@ -18,7 +18,12 @@
       currentBalance: raw.currentBalance != null ? (+raw.currentBalance || 0) : (+raw.balance || 0),
       color:    raw.color || null,
       active:   raw.active !== false,
-      additionalInfo: raw.additionalInfo || {},
+      linkedAccountId: raw.linkedAccountId || null,
+      last4:    raw.last4 || null,
+      dueDay:   raw.dueDay != null ? +raw.dueDay : null,
+      closingDay: raw.closingDay != null ? +raw.closingDay : null,
+      creditLimit: raw.creditLimit != null ? (+raw.creditLimit || 0) : 0,
+      overdraftLimit: raw.overdraftLimit != null ? (+raw.overdraftLimit || 0) : 0,
     };
   }
 
@@ -37,7 +42,7 @@
      Returns 0 if not a credit card or limit missing. */
   function availableLimit(a) {
     if (!isCreditCard(a)) return 0;
-    const limit = +((a.additionalInfo && a.additionalInfo.limit) || 0);
+    const limit = +(a.creditLimit || 0);
     const used  = Math.abs(currentBalance(a));
     return Math.max(0, limit - used);
   }

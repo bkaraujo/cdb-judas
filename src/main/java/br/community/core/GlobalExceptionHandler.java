@@ -88,7 +88,7 @@ public class GlobalExceptionHandler {
         while (t != null) {
             val msg = t.getMessage();
             if (msg != null) {
-                val lower = msg.toLowerCase();
+                val lower = Strings.lower(msg);
                 if (lower.contains("broken pipe") || lower.contains("pipe quebrado") || lower.contains("connection reset")) return true;
             }
             t = t.getCause();

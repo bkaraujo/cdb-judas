@@ -1,6 +1,7 @@
 package br.community.infra.persistence.person;
 
 import br.commons.Registry;
+import br.commons.chrono.Time;
 import br.commons.framework.persistence.jdbc.DataSource;
 import br.commons.framework.persistence.jdbc.primitives.JDBCParameter;
 import br.commons.framework.persistence.jdbc.primitives.JDBCResultSet;
@@ -10,7 +11,6 @@ import lombok.val;
 import org.jspecify.annotations.NullMarked;
 
 import java.sql.Timestamp;
-import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -43,7 +43,7 @@ public final class PersonJDBCRepository implements PersonRepository {
         val existing = findById(entity.id());
         if (existing.isPresent() && existing.get().equals(entity)) return entity;
 
-        val now = Timestamp.valueOf(LocalDateTime.now());
+        val now = Timestamp.valueOf(Time.now());
 
         if (existing.isEmpty()) {
             dataSource.execute(

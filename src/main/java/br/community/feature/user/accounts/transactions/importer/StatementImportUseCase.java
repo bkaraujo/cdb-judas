@@ -25,6 +25,7 @@ import java.math.BigDecimal;
 import java.time.Clock;
 import java.time.LocalDate;
 import java.time.YearMonth;
+import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -39,6 +40,7 @@ public class StatementImportUseCase {
     private static final int RECONCILE_WINDOW_DAYS = 3;
 
     private final MonetaryContext monetaryContext;
+    private final CreditCardProvider creditCardProvider;
     private final PdfTextExtractor extractor;
     private final List<StatementParser> parsers;
     private final CardMatcher cardMatcher = new CardMatcher();
@@ -48,12 +50,13 @@ public class StatementImportUseCase {
     private final Clock clock;
     private final long maxFileBytes;
 
-    public StatementImportUseCase(MonetaryContext monetaryContext, PdfTextExtractor extractor, List<StatementParser> parsers, long bytes) {
-        this(monetaryContext, extractor, parsers, bytes, Clock.systemDefaultZone());
+    public StatementImportUseCase(MonetaryContext monetaryContext, CreditCardProvider creditCardProvider, PdfTextExtractor extractor, List<StatementParser> parsers, long bytes) {
+        this(monetaryContext, creditCardProvider, extractor, parsers, bytes, Clock.system(ZoneId.systemDefault()));
     }
 
-    public StatementImportUseCase(MonetaryContext monetaryContext, PdfTextExtractor extractor, List<StatementParser> parsers, long bytes, Clock clock) {
+    public StatementImportUseCase(MonetaryContext monetaryContext, CreditCardProvider creditCardProvider, PdfTextExtractor extractor, List<StatementParser> parsers, long bytes, Clock clock) {
         this.monetaryContext = monetaryContext;
+        this.creditCardProvider = creditCardProvider;
         this.extractor = extractor;
         this.expander = new InstallmentExpander(groupSignature);
         this.parsers = parsers;
@@ -109,10 +112,13 @@ public class StatementImportUseCase {
     }
 
     private Result<Map<UUID, UUID>, DomainError> resolveAccountsByCard(ImportConfirmCommand cmd) {
+        val linkedByCard = creditCardProvider.creditCards().stream()
+                .filter(card -> card.linkedAccountId() != null)
+                .collect(Collectors.toMap(CreditCard::id, card -> card.linkedAccountId()));
         val accountByCard = new HashMap<UUID, UUID>();
         for (val cardId : cmd.rows().stream().map(ImportConfirmCommand.Row::cardId).distinct().toList()) {
             switch (monetaryContext.findAccount(cardId)) {
-                case Result.Success(var card) -> accountByCard.put(cardId, accountIdOf(card));
+                case Result.Success(var ignored) -> accountByCard.put(cardId, linkedByCard.getOrDefault(cardId, cardId));
                 case Result.Failure(var error) -> { return new Result.Failure<>(error); }
             }
         }
@@ -365,9 +371,9 @@ public class StatementImportUseCase {
     private Result<ImportPreviewOutcome, ImportError> preview(Issuer issuer, List<MonetaryDocumentEntry> statement) {
         val last4s = statement.stream().map(MonetaryDocumentEntry::last4)
                 .filter(Objects::nonNull).collect(Collectors.toSet());
-        val cards = monetaryContext.listCreditCards().getOrElse(List.of()).stream()
+        val cards = creditCardProvider.creditCards().stream()
                 .filter(card -> card.linkedAccountId() != null)
-                .filter(card -> last4s.contains(card.additionalInfo().getOrDefault("last4", Strings.EMPTY)))
+                .filter(card -> card.last4() != null && last4s.contains(card.last4()))
                 .toList();
 
         val cardByLast4 = cardMatcher.matchByLast4(last4s, cards);
@@ -391,14 +397,14 @@ public class StatementImportUseCase {
         );
     }
 
-    private static UUID resolveAccountId(@Nullable Account card) {
+    private static UUID resolveAccountId(@Nullable CreditCard card) {
         if (card == null) {
             return new UUID(0L, 0L);
         }
         return accountIdOf(card);
     }
 
-    private static UUID accountIdOf(Account card) {
+    private static UUID accountIdOf(CreditCard card) {
         return card.linkedAccountId() != null ? card.linkedAccountId() : card.id();
     }
 

@@ -33,10 +33,12 @@ public class StatementImportModule {
     @Bean
     StatementImportUseCase statementImportUseCase(
             MonetaryContext monetaryContext,
+            CreditCardProvider creditCardProvider,
             PdfTextExtractor extractor
     ) {
         return new StatementImportUseCase(
                 monetaryContext,
+                creditCardProvider,
                 extractor,
                 List.of(
                         new BTGStatementParser(),
