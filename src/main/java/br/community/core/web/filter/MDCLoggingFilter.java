@@ -2,35 +2,41 @@ package br.community.core.web.filter;
 
 import br.commons.framework.logger.MDC;
 import br.community.core.web.RequestUtils;
-import jakarta.servlet.FilterChain;
-import jakarta.servlet.ServletException;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
+import jakarta.annotation.Priority;
+import jakarta.ws.rs.container.ContainerRequestContext;
+import jakarta.ws.rs.container.ContainerRequestFilter;
+import jakarta.ws.rs.container.ContainerResponseContext;
+import jakarta.ws.rs.container.ContainerResponseFilter;
+import jakarta.ws.rs.ext.Provider;
 import org.jspecify.annotations.NullMarked;
-import org.springframework.core.Ordered;
-import org.springframework.core.annotation.Order;
-import org.springframework.stereotype.Component;
-import org.springframework.web.filter.OncePerRequestFilter;
 
-import java.io.IOException;
 import java.util.UUID;
 
-@Component
+/**
+ * Correlação de requisição: injeta {@code X-REQUEST-ID} no MDC no início e limpa as chaves
+ * do MDC no fim (evita vazamento entre threads de worker reaproveitadas).
+ */
+@Provider
+@Priority(500)
 @NullMarked
-@Order(value = Ordered.HIGHEST_PRECEDENCE)
-public class MDCLoggingFilter extends OncePerRequestFilter {
+public class MDCLoggingFilter implements ContainerRequestFilter, ContainerResponseFilter {
+
+    private static final String REQUEST_ID = "X-REQUEST-ID";
+    private static final String REQUEST_USER = "X-REQUEST-USER";
 
     @Override
-    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
-        if (RequestUtils.isStatic(request)) {
-            filterChain.doFilter(request, response);
-            return;
-        }
+    public void filter(ContainerRequestContext request) {
+        if (RequestUtils.isStatic(request)) return;
 
-        var xRequestId = request.getHeader("X-REQUEST-ID");
+        var xRequestId = request.getHeaderString(REQUEST_ID);
         if (xRequestId == null) { xRequestId = UUID.randomUUID().toString(); }
 
-        MDC.push("X-REQUEST-ID", xRequestId);
-        filterChain.doFilter(request, response);
+        MDC.push(REQUEST_ID, xRequestId);
+    }
+
+    @Override
+    public void filter(ContainerRequestContext request, ContainerResponseContext response) {
+        MDC.pop(REQUEST_USER);
+        MDC.pop(REQUEST_ID);
     }
 }
