@@ -93,3 +93,26 @@ Os Adapters de Entrada (REST/Web) são responsáveis pela **Tradução Final**. 
 
 > [!IMPORTANT]
 > O padrão Result não deve ser usado para erros fatais de infraestrutura (ex: OutOfMemory, StackOverflow). Para esses casos, as exceções de runtime do Java continuam sendo a ferramenta apropriada, pois representam uma parada catastrófica do sistema.
+
+---
+
+## 6. Desembrulho em Adaptadores e Falha Fatal
+
+O `Result` modela erros de **negócio**. Falhas de **infraestrutura** (SQL, conexão) são tratadas como **fatais** — abortam a JVM, não viram erro de domínio.
+
+### `get()` vs `getOrThrow()`
+
+`Result.get()` (em `br.commons.Result`) desembrulha o `Success` ou, no `Failure`, chama `Logger.fatal(error)` e então lança (inalcançável após o fatal). `getOrThrow()` apenas lança `RuntimeException` genérico, **sem** o fatal.
+
+Nos adaptadores `*JDBCRepository` e nos consumidores do framework `br.commons.framework.persistence.jdbc`, **prefira `.get()`** — uma falha de infra deve ser fatal, não uma exceção de fluxo. `getOrThrow()` fica reservado aos testes do próprio `Result` (`ResultTest`).
+
+`Logger.fatal` → `FatalForwarder.fatal` → `Meta.exit(99)` aborta a JVM. Por isso o `throw new RuntimeException("Unreachable")` que aparece logo após um `Logger.fatal` (ex.: `DataSource.readOnly`/`mutating`) existe só para satisfazer o compilador — nunca executa.
+
+### O que já vem desembrulhado
+
+`DataSource.query(...)`, `execute(...)` e `transaction(...)` **desembrulham internamente** (chamam `Result.get()` dentro de `readOnly`/`mutating`) e retornam o valor cru (`T` / `boolean` / `T`). **Não** chame `.get()` neles:
+```java
+val rows = datasource.query(sql, params, this::mapList); // List, já cru
+datasource.execute(sql, params);                          // sem .get()
+```
+Continuam retornando `Result` (chame `.get()`): `DataSource.begin()`, os métodos de `JDBCTransaction` (`tx.execute`, `tx.commit`) e os primitivos `rs.*` (`rs.getString(col).get()`). Conexão só via `dataSource.begin().get()` — `getConnection()` é privado. Não reescreva o resto do framework para dropar `Result`.

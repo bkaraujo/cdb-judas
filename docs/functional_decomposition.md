@@ -3,11 +3,11 @@
 CDB Finance — gestor de finanças pessoais (Java 25 + Spring Boot 4). Arquitetura híbrida:
 **Vertical Slice** nas features de entrega HTTP (`br.community.feature.*`) sobre **Hexagonal**
 nos contextos de negócio (`br.community.context.*`). Features falam com os contextos apenas via
-**Facade**. Persistência atual em JSON. Rotas de usuário são escopadas por `/api/{uuid}/…`.
+**Facade**. Persistência em **JDBC/H2** (dev: arquivo; teste: in-memory), com JSON remanescente para `Closing` e o catálogo de centros de custo. Rotas de usuário são escopadas por `/api/{uuid}/…`.
 
 ## 1. Contextos de Negócio (Hexagonal)
 
-- [Monetário] Concentra a lógica financeira [Isolar regras de negócio]. Fachada `MonetaryContext`; camadas `_0_domain` / `_1_application` / `_2_infrastructure`. Modelos: `MonetaryAccount`, `MonetaryTransaction`, `MonetaryCategory`, `MonetaryCenter`, `Tag`, `MonthlyBalance`, `MonetaryStatement`. Use cases: `AccountUseCase`, `TransactionUseCase`, `MetadataUseCase`.
+- [Monetário] Concentra a lógica financeira [Isolar regras de negócio]. Fachada `MonetaryContext`; camadas `_0_domain` / `_1_application` / `_2_infrastructure`. Modelos: `MonetaryAccount`, `MonetaryTransaction`, `MonetaryCenter`, `MonthlyBalance`, `MonetaryStatement`. (Categoria e Tag saíram do contexto monetário — hoje são features de usuário `categories`/`tags`.) Use cases: `AccountUseCase`, `TransactionUseCase`, `MetadataUseCase`.
 - [Segurança] Gerencia usuário e preferências [Fonte da verdade de identidade]. Fachada `SecurityContext`; agregado `User` (`username`, `name`, `password`, `Preferences`). `Preferences`: `theme`, `language`, `locale`, `sidebarCollapsed` (merge parcial via `PreferencesPatch`). Use case `UserUseCase`.
 - [Compartilhado] Núcleo comum dos contextos [Evitar acoplamento]. `DomainEvent`, `DomainError`, `DomainException`, `SharedModule`.
 
@@ -35,7 +35,7 @@ nos contextos de negócio (`br.community.context.*`). Features falam com os cont
 - [Autenticação] Login e emissão de token [Proteger acesso]. `LoginResource` (`POST /login`), `AccessTokenStore` (JWT), `CurrentUser`, `UserDetailsServiceImpl`, `UserSeeder`, `SecurityConfig`.
 - [Autorização] Filtros e guarda de propriedade [Bloquear acesso indevido]. `AuthenticationFilter`, `AuthorizationFilter`, `OwnershipInterceptor` (valida `{uuid}` do dono).
 - [Observabilidade] Log de requisições e correlação [Rastrear chamadas]. `RequestLoggingFilter`, `MDCLoggingFilter`.
-- [Persistência] Armazenamento JSON [Manter estado]. `JsonStorageConfig`, `JsonStorageProperties`, repositórios `*JsonRepository`.
+- [Persistência] JDBC/H2 para os dados de negócio (`DataSourceProperties`; adaptadores `*JDBCRepository` em `br.community.infra.persistence`); JSON remanescente (`JsonStorageConfig`, `*JsonRepository`) para `Closing` e o catálogo de centros de custo [Manter estado].
 - [Web/API] Configuração HTTP transversal [Padronizar contrato]. `OpenApiConfig`, `WebConfig`, `GlobalExceptionHandler`, validação `@TwoDecimalPlaces`.
 
 ## 5. Framework Comum (`br.commons`)

@@ -41,7 +41,7 @@ O projeto abrange frontend e backend, com forte separação arquitetural interna
 - **Contextos:** `monetary` (lógica financeira), `security` (usuário e preferências) e `shared` (núcleo comum).
 - **Núcleo / Plataforma (`br.community.core`):** Autenticação e autorização (login JWT, `OwnershipInterceptor`), observabilidade (log de requisições + correlação), persistência JSON e configuração HTTP transversal.
 - **Padrão Result:** Fluxo de negócio sem exceções (`Result` Success/Failure).
-- **Persistência:** Armazenamento local em **arquivos JSON** (sem banco de dados), garantindo processamento e privacidade locais.
+- **Persistência:** **JDBC/H2** local (dev: arquivo `./database`; testes: in-memory), com JSON remanescente para `Closing` e o catálogo de centros de custo — processamento e privacidade locais, sem servidor de banco externo.
 - **Segurança:** Login com emissão de token, rotas de usuário escopadas por `/api/{uuid}/…` e guarda de propriedade que bloqueia acesso indevido (proteção contra IDOR).
 - **Null-Safety & Qualidade:** `NullAway` + `ErrorProne` com anotações JSpecify (`@NullMarked`/`@Nullable`) no ciclo de compilação, falhando o build contra `NullPointerException`.
 - **Testes:** Cobertura de testes unitários com JUnit 5 e testes de arquitetura automatizados com ArchUnit (ex.: *Resources* não acessam repositórios; *application* não acessa *infrastructure*; *feature* fala com *context* só via *facade*).
@@ -60,7 +60,7 @@ O projeto abrange frontend e backend, com forte separação arquitetural interna
 
 | Camada | Stack |
 |--------|-------|
-| **Linguagens** | Java 25 (*preview features*) · JavaScript (ES6+) · HTML5 · CSS3 |
+| **Linguagens** | Java 25 · JavaScript (ES6+) · HTML5 · CSS3 |
 | **Backend** | Spring Boot 4.0.2 (Web, Security, Validation, Actuator) |
 | **Build** | Maven 3.9+ · Spring Boot Maven Plugin |
 | **Frontend** | Vanilla JS/CSS · jQuery 4 |
@@ -117,7 +117,8 @@ No Docker Compose, o diretório `./data` do host é montado em `/data` no contai
 
 A documentação técnica está em [`docs/`](docs/):
 
-- **[Decomposição Funcional](docs/functional_decomposition.md)** — visão geral dos contextos, features e plataforma.
-- **Backend:** [Arquitetura Hexagonal](docs/backend/hexagonal-architecture.md) · [Padrão Result](docs/backend/result-pattern.md) · [Null-Safety](docs/backend/null-safety.md) · [Lombok](docs/backend/lombok.md)
-- **Frontend:** [Arquitetura](docs/frontend/architecture.md) · [API Web](docs/frontend/api-web.md)
-- **Rotas:** diagramas PlantUML em [`docs/routes/`](docs/routes/).
+- **[Guia Central](CLAUDE.md)** — decomposição funcional + índice de toda a documentação.
+- **[Decomposição Funcional](docs/functional_decomposition.md)** — contextos, features e plataforma em detalhe.
+- **Backend:** [Arquitetura Hexagonal](docs/backend/hexagonal-architecture.md) · [Padrão Result](docs/backend/result-pattern.md) · [Null-Safety](docs/backend/null-safety.md) · [Lombok](docs/backend/lombok.md) · [Persistência JDBC/H2](docs/backend/persistence-jdbc.md) · [Qualidade & Build](docs/backend/quality-and-build.md)
+- **Frontend:** [API Web](docs/frontend/api-web.md)
+- **Schema do banco:** diagramas Mermaid em [`docs/`](docs/) (`db-ctx-people`, `db-ctx-monetary`, `db-features`) — fonte da verdade.

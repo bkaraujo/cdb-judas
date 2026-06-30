@@ -40,3 +40,33 @@ lombok.addLombokGeneratedAnnotation = true
 lombok.copyableAnnotations += org.jspecify.annotations.Nullable
 lombok.copyableAnnotations += org.jspecify.annotations.NonNull
 ```
+
+---
+
+## 6. Exceções ao `val` — manter tipo explícito
+
+A regra de usar `val` em todo `final` tem exceções: como `val` infere o tipo do inicializador, alguns casos **quebram** a compilação ou degradam a null-safety e exigem `final <Tipo>` explícito.
+
+### 6.1 Retornos genéricos com target-type
+Métodos genéricos cujo tipo é resolvido pelo destino (`<T> T readValue(...)`, `convertValue`, `Collections.emptyList()`) inferem `Object` sob `val` — o uso seguinte (`.stream()`, etc.) falha com `cannot find symbol`. Manter o tipo:
+```java
+final List<MonetaryTransaction> parsed = mapper.readValue(bytes, listType);
+```
+
+### 6.2 Primitivo a partir de retorno/fábrica boxed
+Primitivo lido de um retorno `@Nullable Integer` (`line.installmentTotal()`) ou de uma fábrica boxed (`Integer.valueOf(s, 16)`) infere `Integer` sob `val` — muda `int`→`Integer`, quebra comparações `==` e espalha avisos de unboxing do NullAway. Manter `final int`:
+```java
+final int total = line.installmentTotal();
+```
+
+### 6.3 Diamantes sem tipo de elemento
+`new ArrayList<>()`, `new HashSet<>()`, `new ArrayList<>(n)` (sem argumento que carregue o tipo) inferem `<Object>` sob `val`. Preencher o elemento antes de converter (`new ArrayList<Element>()`). Diamantes com argumento tipado (`new ArrayList<>(readAll())`) são ok.
+
+### 6.4 `@Nullable val` não compila
+`@Nullable` (JSpecify) é `TYPE_USE`; antes de `val` ela cai em posição de declaração → *"annotation interface not applicable"*. Para um local anulável, usar `final @Nullable Type`:
+```java
+final @Nullable String raw = rs.getString("COD_CATEGORY").get();
+```
+
+### 6.5 Onde `val` não é válido
+Sem inicializador (`String x;` atribuído em ramos), local reatribuído (acumuladores, walkers `klass = klass.getSuperclass()`), `catch (...)` e parâmetros de método. **Válido** em for-each (`for (val x : coll)`). Cada arquivo precisa do próprio `import lombok.val;` (sem star import). Convenção do repo: `var` apenas para mutáveis e `val` para finais — um `var` encontrado quase sempre é reatribuído; confirme antes de "promover" a `val`.
