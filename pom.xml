@@ -19,6 +19,10 @@
         <maven.resources.encoding>UTF-8</maven.resources.encoding>
         <maven.surefire.skipTest>false</maven.surefire.skipTest>
         <!-- ######################################################### -->
+        <!-- Plataforma Quarkus -->
+        <!-- ######################################################### -->
+        <quarkus.platform.version>3.37.0</quarkus.platform.version>
+        <!-- ######################################################### -->
         <!-- Versões dos plugins Maven -->
         <!-- ######################################################### -->
         <maven.plugin.clean>3.5.0</maven.plugin.clean>
@@ -34,17 +38,16 @@
         <maven.plugin.enforcer>3.6.2</maven.plugin.enforcer>
         <maven.plugin.jacoco>0.8.14</maven.plugin.jacoco>
         <maven.plugin.pmd>3.28.0</maven.plugin.pmd>
-        <maven.plugin.springboot>4.0.6</maven.plugin.springboot>
         <maven.plugin.versions>2.21.0</maven.plugin.versions>
         <maven.plugin.antrun>3.2.0</maven.plugin.antrun>
         <!-- ######################################################### -->
         <!-- Dependências Técnicas -->
         <!-- ######################################################### -->
         <dependency.runtime.lombok>1.18.42</dependency.runtime.lombok>
+        <dependency.runtime.jspecify>1.0.0</dependency.runtime.jspecify>
         <dependency.test.archunit>1.4.1</dependency.test.archunit>
         <dependency.runtime.juniversalchardet>1.0.3</dependency.runtime.juniversalchardet>
         <dependency.runtime.pdfbox>3.0.5</dependency.runtime.pdfbox>
-        <dependency.runtime.springdoc>3.0.3</dependency.runtime.springdoc>
         <!-- NullAway + ErrorProne para verificação de null-safety em tempo de compilação -->
         <dependency.nullaway>0.13.4</dependency.nullaway>
         <dependency.errorprone>2.48.0</dependency.errorprone>
@@ -55,11 +58,11 @@
 
     <dependencyManagement>
         <dependencies>
-            <!-- Spring Boot BOM -->
+            <!-- Quarkus BOM -->
             <dependency>
-                <groupId>org.springframework.boot</groupId>
-                <artifactId>spring-boot-dependencies</artifactId>
-                <version>4.0.2</version>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-bom</artifactId>
+                <version>${quarkus.platform.version}</version>
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
@@ -67,43 +70,36 @@
     </dependencyManagement>
 
     <dependencies>
+        <!-- Núcleo comum / null-safety / Lombok -->
         <dependency><groupId>org.slf4j</groupId><artifactId>slf4j-api</artifactId></dependency>
-        <dependency><groupId>org.jspecify</groupId><artifactId>jspecify</artifactId></dependency>
-        <dependency><groupId>org.projectlombok</groupId><artifactId>lombok</artifactId></dependency>
+        <dependency><groupId>org.jspecify</groupId><artifactId>jspecify</artifactId><version>${dependency.runtime.jspecify}</version></dependency>
+        <dependency><groupId>org.projectlombok</groupId><artifactId>lombok</artifactId><version>${dependency.runtime.lombok}</version><scope>provided</scope></dependency>
 
-        <dependency>
-            <groupId>org.springframework.boot</groupId><artifactId>spring-boot-starter-web</artifactId>
-            <exclusions><exclusion><groupId>org.springframework.boot</groupId><artifactId>spring-boot-starter-logging</artifactId></exclusion></exclusions>
-        </dependency>
-        <dependency>
-            <groupId>org.springframework.boot</groupId><artifactId>spring-boot-starter-actuator</artifactId>
-            <exclusions><exclusion><groupId>org.springframework.boot</groupId><artifactId>spring-boot-starter-logging</artifactId></exclusion></exclusions>
-        </dependency>
-        <dependency>
-            <groupId>org.springframework.boot</groupId><artifactId>spring-boot-starter-validation</artifactId>
-            <exclusions><exclusion><groupId>org.springframework.boot</groupId><artifactId>spring-boot-starter-logging</artifactId></exclusion></exclusions>
-        </dependency>
-        <dependency>
-            <groupId>org.springframework.boot</groupId><artifactId>spring-boot-starter-security</artifactId>
-            <exclusions><exclusion><groupId>org.springframework.boot</groupId><artifactId>spring-boot-starter-logging</artifactId></exclusion></exclusions>
-        </dependency>
+        <!-- Quarkus (borda HTTP/DI/segurança) -->
+        <dependency><groupId>io.quarkus</groupId><artifactId>quarkus-arc</artifactId></dependency>
+        <dependency><groupId>io.quarkus</groupId><artifactId>quarkus-rest</artifactId></dependency>
+        <dependency><groupId>io.quarkus</groupId><artifactId>quarkus-rest-jackson</artifactId></dependency>
+        <dependency><groupId>io.quarkus</groupId><artifactId>quarkus-hibernate-validator</artifactId></dependency>
+        <dependency><groupId>io.quarkus</groupId><artifactId>quarkus-smallrye-openapi</artifactId></dependency>
+        <dependency><groupId>io.quarkus</groupId><artifactId>quarkus-smallrye-health</artifactId></dependency>
+        <dependency><groupId>io.quarkus</groupId><artifactId>quarkus-elytron-security-common</artifactId></dependency>
 
-        <dependency><groupId>tools.jackson.dataformat</groupId><artifactId>jackson-dataformat-yaml</artifactId></dependency>
+        <!-- Jackson 2 (com.fasterxml): mapper único web+storage. databind vem de quarkus-rest-jackson;
+             o dataformat YAML (stack próprio de serialização) é adicionado aqui, versão gerida pelo BOM Quarkus. -->
+        <dependency><groupId>com.fasterxml.jackson.dataformat</groupId><artifactId>jackson-dataformat-yaml</artifactId></dependency>
+
+        <!-- Utilitários -->
         <dependency><groupId>com.googlecode.juniversalchardet</groupId><artifactId>juniversalchardet</artifactId><version>${dependency.runtime.juniversalchardet}</version></dependency>
         <dependency><groupId>org.apache.pdfbox</groupId><artifactId>pdfbox</artifactId><version>${dependency.runtime.pdfbox}</version></dependency>
-        <dependency><groupId>org.springdoc</groupId><artifactId>springdoc-openapi-starter-webmvc-ui</artifactId><version>${dependency.runtime.springdoc}</version></dependency>
 
-        <!-- Banco relacional H2 (in-memory) — backend JDBC do modelo jimmy; versão gerida pelo BOM Spring Boot -->
+        <!-- Banco relacional H2 — backend do pool JDBC próprio; versão gerida pelo BOM Quarkus -->
         <dependency><groupId>com.h2database</groupId><artifactId>h2</artifactId><scope>runtime</scope></dependency>
 
-
-        <dependency><groupId>org.junit.jupiter</groupId><artifactId>junit-jupiter-engine</artifactId><scope>test</scope></dependency>
+        <!-- Testes -->
+        <dependency><groupId>io.quarkus</groupId><artifactId>quarkus-junit5</artifactId><scope>test</scope></dependency>
+        <dependency><groupId>io.rest-assured</groupId><artifactId>rest-assured</artifactId><scope>test</scope></dependency>
         <dependency><groupId>org.junit.jupiter</groupId><artifactId>junit-jupiter-params</artifactId><scope>test</scope></dependency>
         <dependency><groupId>com.tngtech.archunit</groupId><artifactId>archunit-junit5</artifactId><version>${dependency.test.archunit}</version><scope>test</scope></dependency>
-        <dependency>
-            <groupId>org.springframework.boot</groupId><artifactId>spring-boot-starter-test</artifactId><scope>test</scope>
-            <exclusions><exclusion><groupId>org.springframework.boot</groupId><artifactId>spring-boot-starter-logging</artifactId></exclusion></exclusions>
-        </dependency>
     </dependencies>
 
     <build>
@@ -123,7 +119,7 @@
                 <plugin><groupId>org.apache.maven.plugins</groupId><artifactId>maven-site-plugin</artifactId><version>${maven.plugin.site}</version></plugin>
                 <plugin><groupId>org.apache.maven.plugins</groupId><artifactId>maven-enforcer-plugin</artifactId><version>${maven.plugin.enforcer}</version></plugin>
                 <plugin><groupId>org.apache.maven.plugins</groupId><artifactId>maven-antrun-plugin</artifactId><version>${maven.plugin.antrun}</version></plugin>
-                <plugin><groupId>org.springframework.boot</groupId><artifactId>spring-boot-maven-plugin</artifactId><version>${maven.plugin.springboot}</version></plugin>
+                <plugin><groupId>io.quarkus</groupId><artifactId>quarkus-maven-plugin</artifactId><version>${quarkus.platform.version}</version></plugin>
             </plugins>
         </pluginManagement>
 
@@ -152,6 +148,23 @@
                                 <banDuplicatePomDependencyVersions />
                             </rules>
                         </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+            <!-- ############################################################## -->
+            <!-- Quarkus build/dev/generate-code                                -->
+            <!-- ############################################################## -->
+            <plugin>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-maven-plugin</artifactId>
+                <extensions>true</extensions>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>build</goal>
+                            <goal>generate-code</goal>
+                            <goal>generate-code-tests</goal>
+                        </goals>
                     </execution>
                 </executions>
             </plugin>
@@ -203,6 +216,11 @@
                     <includes>
                         <include>**/*Test.java</include>
                     </includes>
+                    <!-- Quarkus exige o LogManager do JBoss durante os testes. -->
+                    <systemPropertyVariables>
+                        <java.util.logging.manager>org.jboss.logmanager.LogManager</java.util.logging.manager>
+                        <maven.home>${maven.home}</maven.home>
+                    </systemPropertyVariables>
                 </configuration>
             </plugin>
             <!-- ############################################################## -->
@@ -227,32 +245,7 @@
                 </configuration>
             </plugin>
             <!-- ############################################################## -->
-            <!-- Spring Boot packaging                                          -->
-            <!-- ############################################################## -->
-            <plugin>
-                <groupId>org.springframework.boot</groupId>
-                <artifactId>spring-boot-maven-plugin</artifactId>
-                <configuration>
-                    <mainClass>br.community.Application</mainClass>
-                    <jvmArguments>-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5005</jvmArguments>
-                </configuration>
-                <executions>
-                    <execution>
-                        <id>repackage</id>
-                        <goals>
-                            <goal>repackage</goal>
-                        </goals>
-                    </execution>
-                    <execution>
-                        <goals>
-                            <goal>build-info</goal>
-                        </goals>
-                    </execution>
-                </executions>
-            </plugin>
-            <!-- ############################################################## -->
             <!-- PMD + CPD — métricas de qualidade (CC<=7, método curto, duplicação) -->
-            <!-- failOnViolation=false enquanto a baseline é estabelecida.       -->
             <!-- ############################################################## -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
