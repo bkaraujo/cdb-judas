@@ -5,7 +5,6 @@ import br.commons.Registry;
 import br.commons.Result;
 import br.commons.framework.persistence.jdbc.DataSource;
 import br.commons.framework.persistence.jdbc.JDBCProperties;
-import br.commons.tools.Strings;
 import br.community.context.monetary.MonetaryBootstrap;
 import br.community.context.monetary.MonetaryContext;
 import br.community.context.monetary._0_domain.repository.AccountRepository;
@@ -29,19 +28,18 @@ import org.springframework.context.annotation.Configuration;
 public class ContextBridge {
 
     /**
-     * Monta o {@code DataSource} H2 (in-memory), cria o schema ({@link Database#model()}) e o publica
-     * no {@link Registry} para os adaptadores JDBC. Bean explícito (e não inline em {@link #monetaryContext})
-     * para que esteja registrado antes da construção dos repositórios — ver {@code @DependsOn("dataSource")}
-     * em {@code InfraConfigs}.
+     * Monta o {@code DataSource} H2 a partir de {@link DataSourceProperties} (file em dev, in-memory no
+     * perfil de teste), cria o schema ({@link Database#model()}) e o publica no {@link Registry} para os
+     * adaptadores JDBC. Bean explícito (e não inline em {@link #monetaryContext}) para que esteja registrado
+     * antes da construção dos repositórios — ver {@code @DependsOn("dataSource")} em {@code InfraConfigs}.
      */
     @Bean
-    public DataSource dataSource() {
+    public DataSource dataSource(DataSourceProperties config) {
         val properties = new JDBCProperties();
-        properties.driver("org.h2.Driver");
-         properties.url("jdbc:h2:file:./database;DB_CLOSE_DELAY=-1");
-//        properties.url("jdbc:h2:mem:cdb;DB_CLOSE_DELAY=-1");
-        properties.username("sa");
-        properties.password(Strings.EMPTY);
+        properties.driver(config.driver());
+        properties.url(config.url());
+        properties.username(config.username());
+        properties.password(config.password());
         properties.validationQuery("SELECT 1");
         properties.minPoolSize(5);
         properties.maxPoolSize(20);

@@ -1,97 +1,74 @@
 package br.community.infra.persistence.features;
 
-import br.commons.Registry;
 import br.commons.chrono.Time;
-import br.commons.framework.persistence.jdbc.DataSource;
+import br.commons.framework.persistence.jdbc.JDBCRepository;
 import br.commons.framework.persistence.jdbc.primitives.JDBCParameter;
 import br.commons.framework.persistence.jdbc.primitives.JDBCResultSet;
 import br.community.feature.user.tags.UserTag;
 import br.community.feature.user.tags.UserTagRepository;
 import lombok.val;
 import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
 
 import java.sql.Timestamp;
-import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 
 /** Adaptador JDBC (H2) da porta {@link UserTagRepository}; tabela {@code USER_TAG}. */
 @NullMarked
-public final class UserTagJDBCRepository implements UserTagRepository {
+public final class UserTagJDBCRepository extends JDBCRepository<UserTag> implements UserTagRepository {
 
-    private static final String COLUMNS = "ID, COD_USER, TXT_DESCRIPTION, TXT_COLOR, TMS_CREATE_AT";
-
-    private final DataSource dataSource = Registry.get(DataSource.class);
+    public UserTagJDBCRepository() {
+        super("USER_TAG");
+    }
 
     @Override
     public List<UserTag> findAllByUser(UUID userId) {
-        return dataSource.query(
-                "SELECT " + COLUMNS + " FROM USER_TAG WHERE COD_USER = ?",
+        return datasource.query(
+                "SELECT " + columnList() + " FROM " + table() + " WHERE COD_USER = ?",
                 JDBCParameter.of(userId.toString()),
-                this::toTags
+                this::mapList
         );
     }
 
     @Override
     public Optional<UserTag> findById(UUID id) {
-        return dataSource.query(
-                "SELECT " + COLUMNS + " FROM USER_TAG WHERE ID = ?",
-                JDBCParameter.of(id.toString()),
-                this::toTags
-        ).stream().findFirst();
-    }
-
-    @Override
-    public UserTag save(UserTag entity) {
-        val existing = findById(entity.id());
-        if (existing.isPresent() && existing.get().equals(entity)) return entity;
-
-        val now = Timestamp.valueOf(Time.now());
-
-        if (existing.isEmpty()) {
-            dataSource.execute(
-                    "INSERT INTO USER_TAG (" + COLUMNS + ") VALUES (?, ?, ?, ?, ?)",
-                    JDBCParameter.of (
-                            entity.id().toString(),
-                            entity.userId().toString(),
-                            entity.name(),
-                            entity.color(),
-                            now
-                    )
-            );
-        } else {
-            dataSource.execute(
-                    "UPDATE USER_TAG SET TXT_DESCRIPTION = ?, TXT_COLOR = ? WHERE ID = ?",
-                    JDBCParameter.of (
-                            entity.name(),
-                            entity.color(),
-                            entity.id().toString()
-                    )
-            );
-        }
-        return entity;
+        return findById(id.toString());
     }
 
     @Override
     public void deleteById(UUID id) {
-        dataSource.execute("DELETE FROM USER_TAG WHERE ID = ?",
-                JDBCParameter.of(id.toString()));
+        deleteById(id.toString());
     }
 
-    private List<UserTag> toTags(JDBCResultSet rs) {
-        val tags = new ArrayList<UserTag>();
-        while (rs.next().get()) tags.add(toTag(rs));
-        return tags;
+    /** {@code USER_TAG} não tem TMS_UPDATED_AT; update só altera descrição/cor. */
+    @Override
+    protected Set<String> updateImmutableColumns() {
+        return Set.of("COD_USER", "TMS_CREATE_AT");
     }
 
-    private UserTag toTag(JDBCResultSet rs) {
+    @Override
+    protected Map<String, @Nullable Object> values(UserTag entity) {
+        val values = new LinkedHashMap<String, @Nullable Object>();
+        values.put("ID", entity.id().toString());
+        values.put("COD_USER", entity.userId().toString());
+        values.put("TXT_DESCRIPTION", entity.name());
+        values.put("TXT_COLOR", entity.color());
+        values.put("TMS_CREATE_AT", Timestamp.valueOf(Time.now()));
+        return values;
+    }
+
+    @Override
+    protected UserTag map(JDBCResultSet rs) {
         val id = UUID.fromString(rs.getString("ID").get());
         val userId = UUID.fromString(rs.getString("COD_USER").get());
         val name = rs.getString("TXT_DESCRIPTION").get();
         val color = rs.getString("TXT_COLOR").get();
-        val createRaw = rs.getTimestamp("TMS_CREATE_AT").get();
-        val createdAt = createRaw.toLocalDateTime();
+        val createdAt = rs.getTimestamp("TMS_CREATE_AT").get().toLocalDateTime();
         return new UserTag(id, userId, name, color, createdAt);
     }
 }

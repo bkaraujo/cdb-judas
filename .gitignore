@@ -16,3 +16,6 @@
 **/target
 **/*.pdf
 data/
+# H2 file DB (dev) — nunca versionar
+*.mv.db
+*.trace.db

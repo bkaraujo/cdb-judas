@@ -1,18 +1,20 @@
 package br.community.infra.persistence.features;
 
-import br.commons.Registry;
-import br.commons.framework.persistence.jdbc.DataSource;
+import br.commons.framework.persistence.jdbc.JDBCRepository;
 import br.commons.framework.persistence.jdbc.primitives.JDBCParameter;
 import br.commons.framework.persistence.jdbc.primitives.JDBCResultSet;
 import br.community.context.monetary._0_domain.model.MonthlyBalance;
 import br.community.context.monetary._0_domain.repository.BalanceRepository;
 import lombok.val;
 import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
 
 import java.math.BigDecimal;
 import java.time.YearMonth;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -22,46 +24,34 @@ import java.util.UUID;
  * de {@code USER_ACCOUNT.DEC_OPENING_BALANCE}.
  */
 @NullMarked
-public final class UserAccountBalanceJDBCRepository implements BalanceRepository {
+public final class UserAccountBalanceJDBCRepository extends JDBCRepository<MonthlyBalance> implements BalanceRepository {
 
-    private static final String COLUMNS = "ID, COD_USER, COD_ACCOUNT, NUM_PERIOD, DEC_BALANCE";
-
-    private final DataSource dataSource = Registry.get(DataSource.class);
-
-    @Override
-    public List<MonthlyBalance> findAll() {
-        return dataSource.query("SELECT " + COLUMNS + " FROM USER_ACCOUNT_BALANCE", this::toBalances);
+    public UserAccountBalanceJDBCRepository() {
+        super("USER_ACCOUNT_BALANCE");
     }
 
     @Override
     public Optional<MonthlyBalance> findById(UUID id) {
-        return dataSource.query(
-                "SELECT " + COLUMNS + " FROM USER_ACCOUNT_BALANCE WHERE ID = ?",
-                JDBCParameter.of(id.toString()),
-                this::toBalances
-        ).stream().findFirst();
+        return findById(id.toString());
     }
 
     @Override
     public List<MonthlyBalance> findByAccount(UUID accountId) {
-        return dataSource.query(
-                "SELECT " + COLUMNS + " FROM USER_ACCOUNT_BALANCE WHERE COD_ACCOUNT = ?",
+        return datasource.query(
+                "SELECT " + columnList() + " FROM " + table() + " WHERE COD_ACCOUNT = ?",
                 JDBCParameter.of(accountId.toString()),
-                this::toBalances
+                this::mapList
         );
     }
 
     @Override
     public BigDecimal findOpeningBalance(UUID accountId) {
-        val results = dataSource.query(
+        val results = datasource.query(
                 "SELECT DEC_OPENING_BALANCE FROM USER_ACCOUNT WHERE COD_ACCOUNT = ? LIMIT 1",
                 JDBCParameter.of(accountId.toString()),
                 rs -> {
                     val list = new ArrayList<BigDecimal>();
-                    while (rs.next().get()) {
-                        val b = rs.getBigDecimal("DEC_OPENING_BALANCE").get();
-                        list.add(b);
-                    }
+                    while (rs.next().get()) list.add(rs.getBigDecimal("DEC_OPENING_BALANCE").get());
                     return list;
                 }
         );
@@ -69,42 +59,8 @@ public final class UserAccountBalanceJDBCRepository implements BalanceRepository
     }
 
     @Override
-    public MonthlyBalance save(MonthlyBalance entity) {
-        val existing = findById(entity.id());
-        if (existing.isPresent() && existing.get().equals(entity)) return entity;
-
-        val numPeriod = toNumPeriod(entity.period());
-        val userId = findUserIdForAccount(entity.accountId());
-
-        if (existing.isEmpty()) {
-            dataSource.execute(
-                    "INSERT INTO USER_ACCOUNT_BALANCE (" + COLUMNS + ") VALUES (?, ?, ?, ?, ?)",
-                    JDBCParameter.of(
-                            entity.id().toString(),
-                            userId,
-                            entity.accountId().toString(),
-                            numPeriod,
-                            entity.balance()
-                    )
-            );
-        } else {
-            dataSource.execute(
-                    "UPDATE USER_ACCOUNT_BALANCE SET COD_USER = ?, COD_ACCOUNT = ?, NUM_PERIOD = ?, DEC_BALANCE = ? WHERE ID = ?",
-                    JDBCParameter.of(
-                            userId,
-                            entity.accountId().toString(),
-                            numPeriod,
-                            entity.balance(),
-                            entity.id().toString()
-                    )
-            );
-        }
-        return entity;
-    }
-
-    @Override
     public void deleteById(UUID id) {
-        dataSource.execute("DELETE FROM USER_ACCOUNT_BALANCE WHERE ID = ?", JDBCParameter.of(id.toString()));
+        deleteById(id.toString());
     }
 
     @Override
@@ -112,20 +68,38 @@ public final class UserAccountBalanceJDBCRepository implements BalanceRepository
         // Sem cache: a fonte de verdade é o próprio banco.
     }
 
+    @Override
+    protected Map<String, @Nullable Object> values(MonthlyBalance entity) {
+        val values = new LinkedHashMap<String, @Nullable Object>();
+        values.put("ID", entity.id().toString());
+        values.put("COD_USER", findUserIdForAccount(entity.accountId()));
+        values.put("COD_ACCOUNT", entity.accountId().toString());
+        values.put("NUM_PERIOD", toNumPeriod(entity.period()));
+        values.put("DEC_BALANCE", entity.balance());
+        return values;
+    }
+
+    @Override
+    protected MonthlyBalance map(JDBCResultSet rs) {
+        return new MonthlyBalance(
+                UUID.fromString(rs.getString("ID").get()),
+                UUID.fromString(rs.getString("COD_ACCOUNT").get()),
+                fromNumPeriod(rs.getInt("NUM_PERIOD").get()),
+                rs.getBigDecimal("DEC_BALANCE").get()
+        );
+    }
+
     private String findUserIdForAccount(UUID accountId) {
-        val results = dataSource.query(
+        val results = datasource.query(
                 "SELECT COD_USER FROM USER_ACCOUNT WHERE COD_ACCOUNT = ? LIMIT 1",
                 JDBCParameter.of(accountId.toString()),
                 rs -> {
                     val list = new ArrayList<String>();
-                    while (rs.next().get()) {
-                        val u = rs.getString("COD_USER").get();
-                        list.add(u);
-                    }
+                    while (rs.next().get()) list.add(rs.getString("COD_USER").get());
                     return list;
                 }
         );
-        return results.isEmpty() ? "" : results.get(0);
+        return results.isEmpty() ? "" : results.getFirst();
     }
 
     private static int toNumPeriod(YearMonth period) {
@@ -134,20 +108,5 @@ public final class UserAccountBalanceJDBCRepository implements BalanceRepository
 
     private static YearMonth fromNumPeriod(int numPeriod) {
         return YearMonth.of(numPeriod / 100, numPeriod % 100);
-    }
-
-    private List<MonthlyBalance> toBalances(JDBCResultSet rs) {
-        val balances = new ArrayList<MonthlyBalance>();
-        while (rs.next().get()) balances.add(toBalance(rs));
-        return balances;
-    }
-
-    private MonthlyBalance toBalance(JDBCResultSet rs) {
-        return new MonthlyBalance(
-                UUID.fromString(rs.getString("ID").get()),
-                UUID.fromString(rs.getString("COD_ACCOUNT").get()),
-                fromNumPeriod(rs.getInt("NUM_PERIOD").get()),
-                rs.getBigDecimal("DEC_BALANCE").get()
-        );
     }
 }

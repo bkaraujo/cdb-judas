@@ -1,9 +1,7 @@
 package br.community.infra.persistence.monetary;
 
-import br.commons.Registry;
 import br.commons.chrono.Time;
-import br.commons.framework.persistence.jdbc.DataSource;
-import br.commons.framework.persistence.jdbc.primitives.JDBCParameter;
+import br.commons.framework.persistence.jdbc.JDBCRepository;
 import br.commons.framework.persistence.jdbc.primitives.JDBCResultSet;
 import br.community.context.monetary._0_domain.model.Transaction;
 import br.community.context.monetary._0_domain.repository.TransactionRepository;
@@ -14,9 +12,10 @@ import org.jspecify.annotations.Nullable;
 import java.sql.Date;
 import java.sql.Timestamp;
 import java.time.LocalDate;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 
 /**
@@ -26,91 +25,20 @@ import java.util.UUID;
  * Categoria e tipo (income/expense) saíram para a camada feature (USER_TRANSACTION).
  */
 @NullMarked
-public final class TransactionJDBCRepository implements TransactionRepository {
+public final class TransactionJDBCRepository extends JDBCRepository<Transaction> implements TransactionRepository {
 
-    private static final String COLUMNS =
-            "ID, TXT_DESCRIPTION, NUM_SIGNAL, DEC_AMOUNT, TMS_PURCHASE, COD_ACCOUNT, COD_STATUS, "
-            + "COD_COST_CENTER, DAT_PAYMENT, GROUP_ID, NUM_INSTALLMENT, NUM_INSTALLMENT_TOTAL, TXT_NOTES, "
-            + "TMS_CREATE_AT, TMS_UPDATED_AT";
-
-    private final DataSource dataSource = Registry.get(DataSource.class);
-
-    @Override
-    public List<Transaction> findAll() {
-        return dataSource.query("SELECT " + COLUMNS + " FROM MON_TRANSACTION", this::toTransactions);
+    public TransactionJDBCRepository() {
+        super("MON_TRANSACTION");
     }
 
     @Override
     public Optional<Transaction> findById(UUID id) {
-        return dataSource.query(
-                "SELECT " + COLUMNS + " FROM MON_TRANSACTION WHERE ID = ?",
-                JDBCParameter.of(id.toString()),
-                this::toTransactions
-        ).stream().findFirst();
-    }
-
-    @Override
-    public Transaction save(Transaction entity) {
-        val existing = findById(entity.id());
-        if (existing.isPresent() && existing.get().equals(entity)) return entity;
-
-        val payment = entity.paymentDate();
-        val group = entity.groupId();
-        val paymentDate = payment == null ? null : Date.valueOf(payment);
-        val groupStr = group == null ? null : group.toString();
-        val now = Timestamp.valueOf(Time.now());
-
-        if (existing.isEmpty()) {
-            dataSource.execute(
-                    "INSERT INTO MON_TRANSACTION (" + COLUMNS + ") VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-                    JDBCParameter.of
-                            (entity.id().toString(),
-                            entity.description(),
-                            entity.signal(),
-                            entity.amount(),
-                            Timestamp.valueOf(entity.purchasedAt()),
-                            entity.accountId().toString(),
-                            entity.status().name(),
-                            entity.costCenterId().toString(),
-                            paymentDate,
-                            groupStr,
-                            entity.installmentNumber(),
-                            entity.totalInstallments(),
-                            entity.notes(),
-                            now,
-                            now)
-            );
-        } else {
-            dataSource.execute(
-                    "UPDATE MON_TRANSACTION SET TXT_DESCRIPTION = ?, NUM_SIGNAL = ?, DEC_AMOUNT = ?, TMS_PURCHASE = ?, "
-                            + "COD_ACCOUNT = ?, COD_STATUS = ?, COD_COST_CENTER = ?, DAT_PAYMENT = ?, "
-                            + "GROUP_ID = ?, NUM_INSTALLMENT = ?, NUM_INSTALLMENT_TOTAL = ?, TXT_NOTES = ?, TMS_UPDATED_AT = ? WHERE ID = ?",
-                    JDBCParameter.of(
-                            entity.description(),
-                            entity.signal(),
-                            entity.amount(),
-                            Timestamp.valueOf(entity.purchasedAt()),
-                            entity.accountId().toString(),
-                            entity.status().name(),
-                            entity.costCenterId().toString(),
-                            paymentDate,
-                            groupStr,
-                            entity.installmentNumber(),
-                            entity.totalInstallments(),
-                            entity.notes(),
-                            now,
-                            entity.id().toString())
-            );
-        }
-        return entity;
+        return findById(id.toString());
     }
 
     @Override
     public void deleteById(UUID id) {
-        dataSource.execute(
-                "DELETE FROM MON_TRANSACTION WHERE ID = ?",
-                JDBCParameter.of(id.toString())
-        );
+        deleteById(id.toString());
     }
 
     @Override
@@ -118,19 +46,45 @@ public final class TransactionJDBCRepository implements TransactionRepository {
         // Sem cache: a fonte de verdade é o próprio banco.
     }
 
-    private List<Transaction> toTransactions(JDBCResultSet rs) {
-        val transactions = new ArrayList<Transaction>();
-        while (rs.next().get()) transactions.add(toTransaction(rs));
-        return transactions;
+    @Override
+    protected Set<String> updateImmutableColumns() {
+        return Set.of("TMS_CREATE_AT");
     }
 
-    private Transaction toTransaction(JDBCResultSet rs) {
+    @Override
+    protected Map<String, @Nullable Object> values(Transaction entity) {
+        val payment = entity.paymentDate();
+        val group = entity.groupId();
+        final @Nullable Date paymentDate = payment == null ? null : Date.valueOf(payment);
+        final @Nullable String groupStr = group == null ? null : group.toString();
+        val now = Timestamp.valueOf(Time.now());
+
+        val values = new LinkedHashMap<String, @Nullable Object>();
+        values.put("ID", entity.id().toString());
+        values.put("TXT_DESCRIPTION", entity.description());
+        values.put("NUM_SIGNAL", entity.signal());
+        values.put("DEC_AMOUNT", entity.amount());
+        values.put("TMS_PURCHASE", Timestamp.valueOf(entity.purchasedAt()));
+        values.put("COD_ACCOUNT", entity.accountId().toString());
+        values.put("COD_STATUS", entity.status().name());
+        values.put("COD_COST_CENTER", entity.costCenterId().toString());
+        values.put("DAT_PAYMENT", paymentDate);
+        values.put("GROUP_ID", groupStr);
+        values.put("NUM_INSTALLMENT", entity.installmentNumber());
+        values.put("NUM_INSTALLMENT_TOTAL", entity.totalInstallments());
+        values.put("TXT_NOTES", entity.notes());
+        values.put("TMS_CREATE_AT", now);
+        values.put("TMS_UPDATED_AT", now);
+        return values;
+    }
+
+    @Override
+    protected Transaction map(JDBCResultSet rs) {
         val id = UUID.fromString(rs.getString("ID").get());
         val description = rs.getString("TXT_DESCRIPTION").get();
         val signal = rs.getInt("NUM_SIGNAL").get();
         val amount = rs.getBigDecimal("DEC_AMOUNT").get();
-        val purchaseRaw = rs.getTimestamp("TMS_PURCHASE").get();
-        val purchasedAt = purchaseRaw.toLocalDateTime();
+        val purchasedAt = rs.getTimestamp("TMS_PURCHASE").get().toLocalDateTime();
         val accountId = UUID.fromString(rs.getString("COD_ACCOUNT").get());
         val status = Transaction.Status.valueOf(rs.getString("COD_STATUS").get());
         val costCenterId = UUID.fromString(rs.getString("COD_COST_CENTER").get());
@@ -146,10 +100,8 @@ public final class TransactionJDBCRepository implements TransactionRepository {
 
         val notes = rs.getString("TXT_NOTES").get();
 
-        val createRaw = rs.getTimestamp("TMS_CREATE_AT").get();
-        val createdAt = createRaw.toLocalDateTime();
-        val updateRaw = rs.getTimestamp("TMS_UPDATED_AT").get();
-        val updatedAt = updateRaw.toLocalDateTime();
+        val createdAt = rs.getTimestamp("TMS_CREATE_AT").get().toLocalDateTime();
+        val updatedAt = rs.getTimestamp("TMS_UPDATED_AT").get().toLocalDateTime();
 
         return new Transaction(id, description, signal, amount, purchasedAt,
                 accountId, status, costCenterId, paymentDate, groupId,
