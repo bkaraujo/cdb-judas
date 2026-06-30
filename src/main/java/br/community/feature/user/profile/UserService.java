@@ -8,7 +8,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.val;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
-import org.springframework.stereotype.Service;
+import jakarta.inject.Singleton;
 
 /**
  * Serviço da fatia {@code self} (/api/me): leitura/escrita do próprio perfil a partir da
@@ -16,7 +16,7 @@ import org.springframework.stereotype.Service;
  * core ({@link UserRepository}); as preferências são uma feature à parte
  * ({@link PreferencesRepository}). Ambas são reunidas em {@link Profile}.
  */
-@Service
+@Singleton
 @NullMarked
 @RequiredArgsConstructor
 public class UserService {

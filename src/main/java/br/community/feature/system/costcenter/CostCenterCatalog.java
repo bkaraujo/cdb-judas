@@ -2,17 +2,17 @@ package br.community.feature.system.costcenter;
 
 import br.commons.framework.persistence.Storage;
 import br.community.context.monetary._0_domain.model.CostCenter;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import jakarta.enterprise.context.ApplicationScoped;
 import lombok.RequiredArgsConstructor;
 import lombok.val;
 import org.jspecify.annotations.NullMarked;
-import org.springframework.stereotype.Service;
-import tools.jackson.core.JacksonException;
-import tools.jackson.databind.ObjectMapper;
 
+import java.io.IOException;
 import java.util.List;
 
 /** Fonte global (somente leitura) de centros de custo, servida do arquivo cost-centers.json. */
-@Service
+@ApplicationScoped
 @NullMarked
 @RequiredArgsConstructor
 public class CostCenterCatalog {
@@ -29,7 +29,7 @@ public class CostCenterCatalog {
         try {
             val listType = mapper.getTypeFactory().constructCollectionType(List.class, CostCenter.class);
             return mapper.readValue(bytes, listType);
-        } catch (JacksonException e) {
+        } catch (IOException e) {
             throw new RuntimeException("Erro ao ler centros de custo globais", e);
         }
     }

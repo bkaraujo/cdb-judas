@@ -8,14 +8,14 @@ import lombok.RequiredArgsConstructor;
 import lombok.val;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
-import org.springframework.stereotype.Service;
+import jakarta.inject.Singleton;
 
 import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
 
 @NullMarked
-@Service
+@Singleton
 @RequiredArgsConstructor
 public class UserCategoryService {
 

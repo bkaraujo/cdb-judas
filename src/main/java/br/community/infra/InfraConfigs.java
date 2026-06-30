@@ -5,7 +5,6 @@ import br.community.context.monetary._0_domain.repository.BalanceRepository;
 import br.community.context.monetary._0_domain.repository.CostCenterRepository;
 import br.community.context.monetary._0_domain.repository.TransactionRepository;
 import br.community.context.people._0_domain.repository.PersonRepository;
-import br.community.core.ContextBridge;
 import br.community.core.web.security.UserRepository;
 import br.community.feature.user.accounts.closing.ClosingRepository;
 import br.community.feature.user.accounts.transactions.UserTransactionRepository;
@@ -20,74 +19,87 @@ import br.community.infra.persistence.monetary.CostCenterJDBCRepository;
 import br.community.infra.persistence.monetary.TransactionJDBCRepository;
 import br.community.infra.persistence.person.PersonJDBCRepository;
 import br.community.infra.persistence.security.UserJDBCRepository;
+import jakarta.enterprise.inject.Produces;
+import jakarta.inject.Singleton;
 import org.jspecify.annotations.NullMarked;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.DependsOn;
-import org.springframework.context.annotation.Import;
 
+/**
+ * Producers CDI dos adaptadores de persistência (portas → {@code *JDBCRepository}).
+ * A ordem em relação ao {@code DataSource} é garantida pelo observer de startup em
+ * {@code ContextBridge} (schema criado antes de qualquer query).
+ */
 @NullMarked
-@Configuration
-@Import(ContextBridge.class)
-@DependsOn("dataSource")
+@Singleton
 public class InfraConfigs {
 
-    @Bean
+    @Produces
+    @Singleton
     UserRepository userRepository() {
         return new CachingUserRepository(new UserJDBCRepository());
     }
 
-    @Bean
+    @Produces
+    @Singleton
     PreferencesRepository preferencesRepository() {
         return new PreferencesJDBCRepository();
     }
 
-    @Bean
+    @Produces
+    @Singleton
     AccountRepository accountRepository() {
         return new AccountJDBCRepository();
     }
 
-    @Bean
+    @Produces
+    @Singleton
     BalanceRepository balanceRepository() {
         return new UserAccountBalanceJDBCRepository();
     }
 
-    @Bean
+    @Produces
+    @Singleton
     UserAccountJDBCRepository userAccountRepository() {
         return new UserAccountJDBCRepository();
     }
 
-    @Bean
+    @Produces
+    @Singleton
     CostCenterRepository costCenterRepository() {
         return new CostCenterJDBCRepository();
     }
 
-    @Bean
+    @Produces
+    @Singleton
     TransactionRepository transactionRepository() {
         return new TransactionJDBCRepository();
     }
 
-    @Bean
+    @Produces
+    @Singleton
     UserCategoryRepository userCategoryRepository() {
         return new UserCategoryJDBCRepository();
     }
 
-    @Bean
+    @Produces
+    @Singleton
     UserTagRepository userTagRepository() {
         return new UserTagJDBCRepository();
     }
 
-    @Bean
+    @Produces
+    @Singleton
     UserTransactionRepository userTransactionRepository() {
         return new UserTransactionJDBCRepository();
     }
 
-    @Bean
+    @Produces
+    @Singleton
     ClosingRepository closingRepository() {
         return new ClosingJDBCRepository();
     }
 
-    @Bean
+    @Produces
+    @Singleton
     PersonRepository personRepository() {
         return new CachingPersonRepository(new PersonJDBCRepository());
     }

@@ -4,13 +4,13 @@ import br.commons.Result;
 import br.community.context.shared._0_domain.model.DomainError;
 import lombok.RequiredArgsConstructor;
 import org.jspecify.annotations.NullMarked;
-import org.springframework.stereotype.Service;
+import jakarta.inject.Singleton;
 
 import java.util.List;
 import java.util.UUID;
 
 @NullMarked
-@Service
+@Singleton
 @RequiredArgsConstructor
 public class UserTagService {
 
