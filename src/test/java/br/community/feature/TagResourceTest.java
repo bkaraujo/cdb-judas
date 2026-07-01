@@ -1,18 +1,15 @@
 package br.community.feature;
 
+import io.quarkus.test.junit.QuarkusTest;
 import org.junit.jupiter.api.Test;
-import org.springframework.http.MediaType;
 
-import java.util.UUID;
+import static org.hamcrest.Matchers.is;
 
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
-
-class TagResourceTest extends BaseHttpTest {
+@QuarkusTest
+public class TagResourceTest extends BaseHttpTest {
 
     @Test
-    void deveGerenciarTags() throws Exception {
+    void deveGerenciarTags() {
         String createJson = """
             {
               "name": "Viagem",
@@ -20,19 +17,19 @@ class TagResourceTest extends BaseHttpTest {
             }
             """;
 
-        String createResp = mockMvc.perform(post("/api/" + TEST_USER_ID + "/tags")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(createJson))
-                .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.id").exists())
-                .andExpect(jsonPath("$.name").value("Viagem"))
-                .andReturn().getResponse().getContentAsString();
-        UUID tagId = UUID.fromString(objectMapper.readTree(createResp).get("id").asText());
+        String tagId = asTestUser()
+                .body(createJson)
+                .when().post("/api/" + TEST_USER_ID + "/tags")
+                .then().statusCode(201)
+                .body("id", org.hamcrest.Matchers.notNullValue())
+                .body("name", is("Viagem"))
+                .extract().jsonPath().getString("id");
 
-        mockMvc.perform(get("/api/" + TEST_USER_ID + "/tags"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$").isArray())
-                .andExpect(jsonPath("$[0].name").value("Viagem"));
+        asTestUser()
+                .when().get("/api/" + TEST_USER_ID + "/tags")
+                .then().statusCode(200)
+                .body("size()", is(1))
+                .body("[0].name", is("Viagem"));
 
         String patchJson = """
             {
@@ -41,18 +38,20 @@ class TagResourceTest extends BaseHttpTest {
             }
             """;
 
-        mockMvc.perform(patch("/api/" + TEST_USER_ID + "/tags/{id}", tagId)
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(patchJson))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.name").value("Lazer"))
-                .andExpect(jsonPath("$.color").value("#0000FF"));
+        asTestUser()
+                .body(patchJson)
+                .when().patch("/api/" + TEST_USER_ID + "/tags/" + tagId)
+                .then().statusCode(200)
+                .body("name", is("Lazer"))
+                .body("color", is("#0000FF"));
 
-        mockMvc.perform(delete("/api/" + TEST_USER_ID + "/tags/{id}", tagId))
-                .andExpect(status().isNoContent());
+        asTestUser()
+                .when().delete("/api/" + TEST_USER_ID + "/tags/" + tagId)
+                .then().statusCode(204);
 
-        mockMvc.perform(get("/api/" + TEST_USER_ID + "/tags"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.length()").value(0));
+        asTestUser()
+                .when().get("/api/" + TEST_USER_ID + "/tags")
+                .then().statusCode(200)
+                .body("size()", is(0));
     }
 }

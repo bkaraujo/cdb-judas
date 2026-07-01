@@ -26,7 +26,9 @@ import org.jspecify.annotations.NullMarked;
 /**
  * Producers CDI dos adaptadores de persistência (portas → {@code *JDBCRepository}).
  * A ordem em relação ao {@code DataSource} é garantida pelo observer de startup em
- * {@code ContextBridge} (schema criado antes de qualquer query).
+ * {@code ContextBridge} (schema criado antes de qualquer query) — ver nota em
+ * {@code AuthenticationFilter} sobre por que {@code UserRepository} lá é injetado
+ * de forma preguiçosa (deployment de filtros JAX-RS roda antes do {@code StartupEvent}).
  */
 @NullMarked
 @Singleton

@@ -29,5 +29,5 @@ import org.jspecify.annotations.NullMarked;
         in = SecuritySchemeIn.HEADER,
         apiKeyName = LoginResource.TOKEN_HEADER
 )
-class OpenApiConfig extends Application {
+public class OpenApiConfig extends Application {
 }

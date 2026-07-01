@@ -42,7 +42,7 @@ public class ContextBridge {
         properties.driver(config.driver());
         properties.url(config.url());
         properties.username(config.username());
-        properties.password(config.password());
+        properties.password(config.password().orElse(""));
         properties.validationQuery("SELECT 1");
         properties.minPoolSize(5);
         properties.maxPoolSize(20);

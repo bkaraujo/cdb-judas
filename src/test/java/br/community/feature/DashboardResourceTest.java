@@ -1,22 +1,24 @@
 package br.community.feature;
 
+import io.quarkus.test.junit.QuarkusTest;
 import org.junit.jupiter.api.Test;
 
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.hamcrest.Matchers.instanceOf;
+import static org.hamcrest.Matchers.notNullValue;
 
-class DashboardResourceTest extends BaseHttpTest {
+@QuarkusTest
+public class DashboardResourceTest extends BaseHttpTest {
 
     @Test
-    void deveObterResultadoMensal() throws Exception {
-        mockMvc.perform(get("/api/" + TEST_USER_ID + "/dashboard/result")
-                .param("month", "3")
-                .param("year", "2024"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.incomes").exists())
-                .andExpect(jsonPath("$.expenses").exists())
-                .andExpect(jsonPath("$.result").exists())
-                .andExpect(jsonPath("$.history").isArray());
+    void deveObterResultadoMensal() {
+        asTestUser()
+                .queryParam("month", "3")
+                .queryParam("year", "2024")
+                .when().get("/api/" + TEST_USER_ID + "/dashboard/result")
+                .then().statusCode(200)
+                .body("incomes", notNullValue())
+                .body("expenses", notNullValue())
+                .body("result", notNullValue())
+                .body("history", instanceOf(java.util.List.class));
     }
 }

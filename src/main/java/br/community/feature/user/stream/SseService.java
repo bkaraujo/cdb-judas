@@ -16,6 +16,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 @NullMarked
 public class SseService implements SSE {
 
+    @NullMarked
     private record Channel(SseBroadcaster broadcaster, AtomicInteger connections) {}
 
     private final Map<String, Channel> channels = new ConcurrentHashMap<>();

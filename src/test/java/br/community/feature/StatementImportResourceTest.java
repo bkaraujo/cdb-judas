@@ -1,32 +1,40 @@
 package br.community.feature;
 
 import br.community.PdfFixtures;
-import org.hamcrest.Matchers;
+import br.community.feature.system.auth.LoginResource;
+import io.quarkus.test.junit.QuarkusTest;
+import io.restassured.RestAssured;
+import io.restassured.specification.RequestSpecification;
 import org.junit.jupiter.api.Test;
-import org.springframework.http.MediaType;
-import org.springframework.mock.web.MockMultipartFile;
 
+import java.io.IOException;
 import java.util.UUID;
 
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.endsWith;
+import static org.hamcrest.Matchers.is;
 
-class StatementImportResourceTest extends BaseHttpTest {
+@QuarkusTest
+public class StatementImportResourceTest extends BaseHttpTest {
 
-    @Test
-    void previewDetectsBtgIssuer() throws Exception {
-        byte[] pdf = PdfFixtures.withText("BTG Pactual S.A\nCNPJ 30.306.294/0001-45\ncartao final 5115");
-        var file = new MockMultipartFile("file", "fatura.pdf", "application/pdf", pdf);
-
-        mockMvc.perform(multipart("/api/" + TEST_USER_ID + "/accounts/transactions/import/preview").file(file))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.issuer").value("BTG"));
+    /** Sem o {@code contentType(JSON)} padrão de {@link #asTestUser()}: o multipart define o seu próprio. */
+    private RequestSpecification asMultipartUser() {
+        return RestAssured.given().header(LoginResource.TOKEN_HEADER, tokenStore.issue(TEST_USER_ID));
     }
 
     @Test
-    void previewReturnsParsedRowsAndLast4() throws Exception {
+    void previewDetectsBtgIssuer() throws IOException {
+        byte[] pdf = PdfFixtures.withText("BTG Pactual S.A\nCNPJ 30.306.294/0001-45\ncartao final 5115");
+
+        asMultipartUser()
+                .multiPart("file", "fatura.pdf", pdf, "application/pdf")
+                .when().post("/api/" + TEST_USER_ID + "/accounts/transactions/import/preview")
+                .then().statusCode(200)
+                .body("issuer", is("BTG"));
+    }
+
+    @Test
+    void previewReturnsParsedRowsAndLast4() throws IOException {
         byte[] pdf = PdfFixtures.withText(String.join("\n",
                 "BTG Pactual S.A",
                 "CNPJ 30.306.294/0001-45",
@@ -34,56 +42,61 @@ class StatementImportResourceTest extends BaseHttpTest {
                 "Total de compras e despesas",
                 "R$ 72,99Amazonmktplc Megabytem (9/10)15 Jul",
                 "R$ 72,99"));
-        var file = new MockMultipartFile("file", "fatura.pdf", "application/pdf", pdf);
 
         // The single printed "(9/10)" line expands into the full 10-installment schedule.
-        mockMvc.perform(multipart("/api/" + TEST_USER_ID + "/accounts/transactions/import/preview").file(file))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.issuer").value("BTG"))
-                .andExpect(jsonPath("$.last4s[0]").value("0020"))
-                .andExpect(jsonPath("$.rows.length()").value(10))
-                .andExpect(jsonPath("$.rows[0].description").value("Amazonmktplc Megabytem"))
-                .andExpect(jsonPath("$.rows[0].installmentNumber").value(1))
-                .andExpect(jsonPath("$.rows[0].installmentTotal").value(10))
-                .andExpect(jsonPath("$.rows[9].installmentNumber").value(10))
+        asMultipartUser()
+                .multiPart("file", "fatura.pdf", pdf, "application/pdf")
+                .when().post("/api/" + TEST_USER_ID + "/accounts/transactions/import/preview")
+                .then().statusCode(200)
+                .body("issuer", is("BTG"))
+                .body("last4s[0]", is("0020"))
+                .body("rows.size()", is(10))
+                .body("rows[0].description", is("Amazonmktplc Megabytem"))
+                .body("rows[0].installmentNumber", is(1))
+                .body("rows[0].installmentTotal", is(10))
+                .body("rows[9].installmentNumber", is(10))
                 // Month/day of the first installment is stable ("-07-15"); the year depends on the
-                // real system clock in this Spring test, so it is intentionally not asserted.
-                .andExpect(jsonPath("$.rows[0].date").value(Matchers.endsWith("-07-15")));
+                // real system clock, so it is intentionally not asserted.
+                .body("rows[0].date", endsWith("-07-15"));
     }
 
     @Test
-    void previewEncryptedWithoutPasswordReturns422WithPasswordCode() throws Exception {
+    void previewEncryptedWithoutPasswordReturns422WithPasswordCode() throws IOException {
         byte[] pdf = PdfFixtures.encrypted("segredo", "BTG Pactual 30.306.294/0001-45");
-        var file = new MockMultipartFile("file", "fatura.pdf", "application/pdf", pdf);
 
-        mockMvc.perform(multipart("/api/" + TEST_USER_ID + "/accounts/transactions/import/preview").file(file))
-                .andExpect(status().isUnprocessableEntity())
-                .andExpect(jsonPath("$.code").value("PASSWORD_REQUIRED"));
+        asMultipartUser()
+                .multiPart("file", "fatura.pdf", pdf, "application/pdf")
+                .when().post("/api/" + TEST_USER_ID + "/accounts/transactions/import/preview")
+                .then().statusCode(422)
+                .body("code", is("PASSWORD_REQUIRED"));
     }
 
     @Test
-    void previewEncryptedWithWrongPasswordReturns422WithWrongPasswordCode() throws Exception {
+    void previewEncryptedWithWrongPasswordReturns422WithWrongPasswordCode() throws IOException {
         byte[] pdf = PdfFixtures.encrypted("segredo", "BTG Pactual 30.306.294/0001-45");
-        var file = new MockMultipartFile("file", "fatura.pdf", "application/pdf", pdf);
 
-        mockMvc.perform(multipart("/api/" + TEST_USER_ID + "/accounts/transactions/import/preview").file(file).param("password", "errada"))
-                .andExpect(status().isUnprocessableEntity())
-                .andExpect(jsonPath("$.code").value("WRONG_PASSWORD"));
+        asMultipartUser()
+                .multiPart("file", "fatura.pdf", pdf, "application/pdf")
+                .multiPart("password", "errada")
+                .when().post("/api/" + TEST_USER_ID + "/accounts/transactions/import/preview")
+                .then().statusCode(422)
+                .body("code", is("WRONG_PASSWORD"));
     }
 
     @Test
-    void previewUnknownBankReturns422WithClearMessage() throws Exception {
+    void previewUnknownBankReturns422WithClearMessage() throws IOException {
         byte[] pdf = PdfFixtures.withText("Documento qualquer sem marcador de banco");
-        var file = new MockMultipartFile("file", "doc.pdf", "application/pdf", pdf);
 
-        mockMvc.perform(multipart("/api/" + TEST_USER_ID + "/accounts/transactions/import/preview").file(file))
-                .andExpect(status().isUnprocessableEntity())
-                .andExpect(jsonPath("$.code").value("UNKNOWN_ISSUER"))
-                .andExpect(jsonPath("$.detail").value(Matchers.containsString("não reconhecido")));
+        asMultipartUser()
+                .multiPart("file", "doc.pdf", pdf, "application/pdf")
+                .when().post("/api/" + TEST_USER_ID + "/accounts/transactions/import/preview")
+                .then().statusCode(422)
+                .body("code", is("UNKNOWN_ISSUER"))
+                .body("detail", containsString("não reconhecido"));
     }
 
     @Test
-    void confirmPersistsRowsAndIsIdempotentOnReimport() throws Exception {
+    void confirmPersistsRowsAndIsIdempotentOnReimport() {
         UUID cardId = seedCheckingAndCard();
         UUID categoryId = UUID.randomUUID();
 
@@ -98,22 +111,24 @@ class StatementImportResourceTest extends BaseHttpTest {
             }
             """.formatted(categoryId, cardId, categoryId, cardId, categoryId, cardId);
 
-        mockMvc.perform(post("/api/" + TEST_USER_ID + "/accounts/transactions/import/confirm")
-                        .contentType(MediaType.APPLICATION_JSON).content(body))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.created").value(3))
-                .andExpect(jsonPath("$.skipped").value(0));
+        asTestUser()
+                .body(body)
+                .when().post("/api/" + TEST_USER_ID + "/accounts/transactions/import/confirm")
+                .then().statusCode(200)
+                .body("created", is(3))
+                .body("skipped", is(0));
 
         // A second identical POST creates nothing (idempotent re-import).
-        mockMvc.perform(post("/api/" + TEST_USER_ID + "/accounts/transactions/import/confirm")
-                        .contentType(MediaType.APPLICATION_JSON).content(body))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.created").value(0))
-                .andExpect(jsonPath("$.skipped").value(3));
+        asTestUser()
+                .body(body)
+                .when().post("/api/" + TEST_USER_ID + "/accounts/transactions/import/confirm")
+                .then().statusCode(200)
+                .body("created", is(0))
+                .body("skipped", is(3));
     }
 
     @Test
-    void confirmWithUnknownCardReturns422CardNotFound() throws Exception {
+    void confirmWithUnknownCardReturns422CardNotFound() {
         UUID categoryId = UUID.randomUUID();
         String body = """
             {
@@ -124,30 +139,32 @@ class StatementImportResourceTest extends BaseHttpTest {
             }
             """.formatted(categoryId, UUID.randomUUID());
 
-        mockMvc.perform(post("/api/" + TEST_USER_ID + "/accounts/transactions/import/confirm")
-                        .contentType(MediaType.APPLICATION_JSON).content(body))
-                .andExpect(status().isUnprocessableEntity())
-                .andExpect(jsonPath("$.code").value("CARD_NOT_FOUND"));
+        asTestUser()
+                .body(body)
+                .when().post("/api/" + TEST_USER_ID + "/accounts/transactions/import/confirm")
+                .then().statusCode(422)
+                .body("code", is("CARD_NOT_FOUND"));
     }
 
-    private UUID seedCheckingAndCard() throws Exception {
+    private UUID seedCheckingAndCard() {
         String accJson = """
             {"name":"Conta Corrente","balance":1000.00,"type":"CHECKING","color":"#007AFF","active":true}
             """;
-        String accResponse = mockMvc.perform(post("/api/{u}/accounts", TEST_USER_ID)
-                        .contentType(MediaType.APPLICATION_JSON).content(accJson))
-                .andReturn().getResponse().getContentAsString();
-        UUID accountId = UUID.fromString(objectMapper.readTree(accResponse).get("id").asText());
+        String accountId = asTestUser()
+                .body(accJson)
+                .when().post("/api/" + TEST_USER_ID + "/accounts")
+                .then().extract().jsonPath().getString("id");
 
         String cardJson = """
             {"name":"Black Card","balance":0.00,"type":"CREDIT_CARD","color":"#007AFF","active":true,
              "linkedAccountId":"%s",
              "last4":"0020","creditLimit":10000.00,"closingDay":1,"dueDay":10}
             """.formatted(accountId);
-        String cardResponse = mockMvc.perform(post("/api/{u}/accounts", TEST_USER_ID)
-                        .contentType(MediaType.APPLICATION_JSON).content(cardJson))
-                .andExpect(status().isCreated())
-                .andReturn().getResponse().getContentAsString();
-        return UUID.fromString(objectMapper.readTree(cardResponse).get("id").asText());
+        String cardId = asTestUser()
+                .body(cardJson)
+                .when().post("/api/" + TEST_USER_ID + "/accounts")
+                .then().statusCode(201)
+                .extract().jsonPath().getString("id");
+        return UUID.fromString(cardId);
     }
 }

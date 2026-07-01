@@ -3,6 +3,7 @@ package br.community.core.web.error;
 import br.commons.Logger;
 import br.commons.tools.Strings;
 import br.community.core.web.RequestUtils;
+import jakarta.ws.rs.WebApplicationException;
 import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.core.UriInfo;
@@ -21,6 +22,13 @@ public class GenericExceptionMapper implements ExceptionMapper<Exception> {
 
     @Override
     public Response toResponse(Exception ex) {
+        // Exception.class é o mais genérico possível: sem isto, ele intercepta também
+        // WebApplicationExceptions internas do JAX-RS (ex.: NotAllowedException/405 em rota com
+        // método sem handler), mascarando-as como 500. Respeita a resposta já embutida nelas.
+        if (ex instanceof WebApplicationException wae) {
+            return wae.getResponse();
+        }
+
         val instance = RequestUtils.path(uriInfo);
 
         if (isBrokenPipe(ex)) {

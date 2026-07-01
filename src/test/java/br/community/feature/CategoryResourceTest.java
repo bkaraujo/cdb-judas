@@ -1,168 +1,168 @@
 package br.community.feature;
 
 import br.community.context.monetary._0_domain.model.Transaction.Type;
-import br.community.feature.user.categories.core.CategoryResponse;
-import lombok.val;
+import io.quarkus.test.junit.QuarkusTest;
 import org.junit.jupiter.api.Test;
-import org.springframework.http.MediaType;
 
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.notNullValue;
 
-class CategoryResourceTest extends BaseHttpTest {
+@QuarkusTest
+public class CategoryResourceTest extends BaseHttpTest {
 
     @Test
-    void deveCriarEListarCategorys() throws Exception {
-        val createJson = """
+    void deveCriarEListarCategorys() {
+        String createJson = """
             {
               "name": "Alimentação",
               "nature": "EXPENSE"
             }
             """;
 
-        val createResult = mockMvc.perform(post("/api/" + TEST_USER_ID + "/categories")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(createJson));
+        String id = asTestUser()
+                .body(createJson)
+                .when().post("/api/" + TEST_USER_ID + "/categories")
+                .then().statusCode(201)
+                .body("id", notNullValue())
+                .body("name", is("Alimentação"))
+                .body("nature", is(Type.EXPENSE.name()))
+                .extract().jsonPath().getString("id");
 
-        createResult.andExpect(status().isCreated())
-                .andExpect(jsonPath("$.id").exists())
-                .andExpect(jsonPath("$.name").value("Alimentação"))
-                .andExpect(jsonPath("$.nature").value(Type.EXPENSE.name()));
+        asTestUser()
+                .when().get("/api/" + TEST_USER_ID + "/categories")
+                .then().statusCode(200)
+                .body("size()", is(1))
+                .body("[0].id", is(id))
+                .body("[0].name", is("Alimentação"));
 
-        val responseBody = createResult.andReturn().getResponse().getContentAsString();
-        val created = objectMapper.readValue(responseBody, CategoryResponse.class);
-        val id = created.id();
-
-        mockMvc.perform(get("/api/" + TEST_USER_ID + "/categories"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$").isArray())
-                .andExpect(jsonPath("$.length()").value(1))
-                .andExpect(jsonPath("$[0].id").value(id.toString()))
-                .andExpect(jsonPath("$[0].name").value("Alimentação"));
-
-        val updateJson = """
+        String updateJson = """
             {
               "name": "Supermercado"
             }
             """;
 
-        mockMvc.perform(patch("/api/" + TEST_USER_ID + "/categories/{id}", id)
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(updateJson))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.id").value(id.toString()))
-                .andExpect(jsonPath("$.name").value("Supermercado"));
+        asTestUser()
+                .body(updateJson)
+                .when().patch("/api/" + TEST_USER_ID + "/categories/" + id)
+                .then().statusCode(200)
+                .body("id", is(id))
+                .body("name", is("Supermercado"));
 
-        mockMvc.perform(delete("/api/" + TEST_USER_ID + "/categories/{id}", id))
-                .andExpect(status().isNoContent());
+        asTestUser()
+                .when().delete("/api/" + TEST_USER_ID + "/categories/" + id)
+                .then().statusCode(204);
 
         // After deletion, "Outros" fallback category is auto-created
-        mockMvc.perform(get("/api/" + TEST_USER_ID + "/categories"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.length()").value(1))
-                .andExpect(jsonPath("$[0].name").value("Outros"));
+        asTestUser()
+                .when().get("/api/" + TEST_USER_ID + "/categories")
+                .then().statusCode(200)
+                .body("size()", is(1))
+                .body("[0].name", is("Outros"));
     }
 
     @Test
-    void shouldRejectSubcategoryOfSubcategory() throws Exception {
-        val root = """
+    void shouldRejectSubcategoryOfSubcategory() {
+        String root = """
             {"name": "Moradia", "nature": "EXPENSE"}
             """;
-        val rootBody = mockMvc.perform(post("/api/" + TEST_USER_ID + "/categories").contentType(MediaType.APPLICATION_JSON).content(root))
-                .andExpect(status().isCreated())
-                .andReturn().getResponse().getContentAsString();
-        val rootId = objectMapper.readTree(rootBody).get("id").asText();
+        String rootId = asTestUser()
+                .body(root)
+                .when().post("/api/" + TEST_USER_ID + "/categories")
+                .then().statusCode(201)
+                .extract().jsonPath().getString("id");
 
-        val sub = """
+        String sub = """
             {"name": "Aluguel", "nature": "EXPENSE", "parentId": "%s"}
             """.formatted(rootId);
-        val subBody = mockMvc.perform(post("/api/" + TEST_USER_ID + "/categories").contentType(MediaType.APPLICATION_JSON).content(sub))
-                .andExpect(status().isCreated())
-                .andReturn().getResponse().getContentAsString();
-        val subId = objectMapper.readTree(subBody).get("id").asText();
+        String subId = asTestUser()
+                .body(sub)
+                .when().post("/api/" + TEST_USER_ID + "/categories")
+                .then().statusCode(201)
+                .extract().jsonPath().getString("id");
 
-        val subsub = """
+        String subsub = """
             {"name": "IPTU", "nature": "EXPENSE", "parentId": "%s"}
             """.formatted(subId);
-        mockMvc.perform(post("/api/" + TEST_USER_ID + "/categories").contentType(MediaType.APPLICATION_JSON).content(subsub))
-                .andExpect(status().isBadRequest());
+        asTestUser()
+                .body(subsub)
+                .when().post("/api/" + TEST_USER_ID + "/categories")
+                .then().statusCode(400);
     }
 
     @Test
-    void shouldRejectSubcategoryWithDifferentNature() throws Exception {
-        val root = """
+    void shouldRejectSubcategoryWithDifferentNature() {
+        String root = """
             {"name": "Moradia", "nature": "EXPENSE"}
             """;
-        val rootBody = mockMvc.perform(post("/api/" + TEST_USER_ID + "/categories").contentType(MediaType.APPLICATION_JSON).content(root))
-                .andExpect(status().isCreated())
-                .andReturn().getResponse().getContentAsString();
-        val rootId = objectMapper.readTree(rootBody).get("id").asText();
+        String rootId = asTestUser()
+                .body(root)
+                .when().post("/api/" + TEST_USER_ID + "/categories")
+                .then().statusCode(201)
+                .extract().jsonPath().getString("id");
 
-        val sub = """
+        String sub = """
             {"name": "Salário", "nature": "INCOME", "parentId": "%s"}
             """.formatted(rootId);
-        mockMvc.perform(post("/api/" + TEST_USER_ID + "/categories").contentType(MediaType.APPLICATION_JSON).content(sub))
-                .andExpect(status().isBadRequest());
+        asTestUser()
+                .body(sub)
+                .when().post("/api/" + TEST_USER_ID + "/categories")
+                .then().statusCode(400);
     }
 
     @Test
-    void shouldCreateCategoryAndSubcategory() throws Exception {
-        val moradiaJson = """
+    void shouldCreateCategoryAndSubcategory() {
+        String moradiaJson = """
             {
               "name": "Moradia",
               "nature": "EXPENSE"
             }
             """;
 
-        val createResult = mockMvc.perform(post("/api/" + TEST_USER_ID + "/categories")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(moradiaJson));
+        String moradiaId = asTestUser()
+                .body(moradiaJson)
+                .when().post("/api/" + TEST_USER_ID + "/categories")
+                .then().statusCode(201)
+                .body("id", notNullValue())
+                .body("name", is("Moradia"))
+                .body("nature", is(Type.EXPENSE.name()))
+                .extract().jsonPath().getString("id");
 
-        createResult.andExpect(status().isCreated())
-                .andExpect(jsonPath("$.id").exists())
-                .andExpect(jsonPath("$.name").value("Moradia"))
-                .andExpect(jsonPath("$.nature").value(Type.EXPENSE.name()));
+        asTestUser()
+                .when().get("/api/" + TEST_USER_ID + "/categories")
+                .then().statusCode(200)
+                .body("size()", is(1));
 
-        mockMvc.perform(get("/api/" + TEST_USER_ID + "/categories"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.length()").value(1));
-
-        val moradiaResponseBody = createResult.andReturn().getResponse().getContentAsString();
-        val moradiaCreated = objectMapper.readValue(moradiaResponseBody, CategoryResponse.class);
-        val moradiaId = moradiaCreated.id();
-
-        val aluguelJson = """
+        String aluguelJson = """
             {
               "name": "Aluguél",
               "nature": "EXPENSE",
               "parentId": "%s"
             }
-            """.formatted(moradiaId.toString());
+            """.formatted(moradiaId);
 
-        val aluguelResult = mockMvc.perform(post("/api/" + TEST_USER_ID + "/categories")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(aluguelJson));
+        asTestUser()
+                .body(aluguelJson)
+                .when().post("/api/" + TEST_USER_ID + "/categories")
+                .then().statusCode(201)
+                .body("id", notNullValue())
+                .body("name", is("Aluguél"))
+                .body("parentId", is(moradiaId))
+                .body("nature", is(Type.EXPENSE.name()));
 
-        aluguelResult.andExpect(status().isCreated())
-                .andExpect(jsonPath("$.id").exists())
-                .andExpect(jsonPath("$.name").value("Aluguél"))
-                .andExpect(jsonPath("$.parentId").value(moradiaId.toString()))
-                .andExpect(jsonPath("$.nature").value(Type.EXPENSE.name()));
+        asTestUser()
+                .when().get("/api/" + TEST_USER_ID + "/categories")
+                .then().statusCode(200)
+                .body("size()", is(2));
 
-        mockMvc.perform(get("/api/" + TEST_USER_ID + "/categories"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.length()").value(2));
-
-        mockMvc.perform(delete("/api/" + TEST_USER_ID + "/categories/{id}", moradiaId.toString()))
-                .andExpect(status().isNoContent());
+        asTestUser()
+                .when().delete("/api/" + TEST_USER_ID + "/categories/" + moradiaId)
+                .then().statusCode(204);
 
         // After deletion, "Outros" fallback category is auto-created
-        mockMvc.perform(get("/api/" + TEST_USER_ID + "/categories"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.length()").value(1))
-                .andExpect(jsonPath("$[0].name").value("Outros"));
-
+        asTestUser()
+                .when().get("/api/" + TEST_USER_ID + "/categories")
+                .then().statusCode(200)
+                .body("size()", is(1))
+                .body("[0].name", is("Outros"));
     }
-
 }

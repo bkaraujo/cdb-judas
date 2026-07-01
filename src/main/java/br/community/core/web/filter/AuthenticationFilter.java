@@ -8,6 +8,7 @@ import br.community.core.web.security.CurrentUserContext;
 import br.community.core.web.security.UserRepository;
 import br.community.core.web.security.core.AccessTokenStore;
 import jakarta.annotation.Priority;
+import jakarta.enterprise.inject.Instance;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.Priorities;
 import jakarta.ws.rs.container.ContainerRequestContext;
@@ -33,8 +34,15 @@ public class AuthenticationFilter implements ContainerRequestFilter {
     @Inject
     AccessTokenStore tokenStore;
 
+    /**
+     * {@code Instance} (não injeção direta) de propósito: filtros {@code @Provider} são construídos
+     * na montagem do deployment JAX-RS, antes do {@code StartupEvent} — resolver {@code UserRepository}
+     * (e, por trás dele, o {@code DataSource} via {@code Registry}) cedo demais quebra o boot. Adiar
+     * para o primeiro uso em {@link #authenticate} garante que o {@code StartupEvent} de
+     * {@code ContextBridge} já publicou o {@code DataSource} no {@code Registry}.
+     */
     @Inject
-    UserRepository userRepository;
+    Instance<UserRepository> userRepository;
 
     @Inject
     CurrentUserContext currentUser;
@@ -60,7 +68,7 @@ public class AuthenticationFilter implements ContainerRequestFilter {
     }
 
     private void authenticate(String userId, ContainerRequestContext request) {
-        val user = userRepository.findById(userId).orElse(null);
+        val user = userRepository.get().findById(userId).orElse(null);
         if (user == null) {
             Logger.debug("AUTHN %s %s => token references unknown user '%s'", request.getMethod(), RequestUtils.path(request), userId);
             return;

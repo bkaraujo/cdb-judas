@@ -1,44 +1,44 @@
 package br.community.feature;
 
+import io.quarkus.test.junit.QuarkusTest;
 import org.junit.jupiter.api.Test;
-import org.springframework.http.MediaType;
 
 import java.nio.charset.StandardCharsets;
 
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.hamcrest.Matchers.is;
 
-class CostCenterResourceTest extends BaseHttpTest {
+@QuarkusTest
+public class CostCenterResourceTest extends BaseHttpTest {
 
     private static final String CATALOG = """
             [ {"id":"d0000000-0000-0000-0000-000000000001","description":"Fixo"},
               {"id":"d0000000-0000-0000-0000-000000000002","description":"Variável"} ]""";
 
     @Test
-    void retornaListaFixaGlobalSomenteLeitura() throws Exception {
+    void retornaListaFixaGlobalSomenteLeitura() {
         storage.write("cost-centers.json", "costCenters", CATALOG.getBytes(StandardCharsets.UTF_8));
 
-        mockMvc.perform(get("/api/cost-center"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$").isArray())
-                .andExpect(jsonPath("$.length()").value(2))
-                .andExpect(jsonPath("$[0].id").value("d0000000-0000-0000-0000-000000000001"))
-                .andExpect(jsonPath("$[0].description").value("Fixo"))
-                .andExpect(jsonPath("$[1].description").value("Variável"));
+        asTestUser()
+                .when().get("/api/cost-center")
+                .then().statusCode(200)
+                .body("size()", is(2))
+                .body("[0].id", is("d0000000-0000-0000-0000-000000000001"))
+                .body("[0].description", is("Fixo"))
+                .body("[1].description", is("Variável"));
     }
 
     @Test
-    void naoPermiteCriacaoViaApi() throws Exception {
-        mockMvc.perform(post("/api/cost-center")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content("{\"description\":\"Trabalho\"}"))
-                .andExpect(status().isMethodNotAllowed());
+    void naoPermiteCriacaoViaApi() {
+        asTestUser()
+                .body("{\"description\":\"Trabalho\"}")
+                .when().post("/api/cost-center")
+                .then().statusCode(405);
     }
 
     @Test
-    void naoPermiteExclusaoViaApi() throws Exception {
-        mockMvc.perform(delete("/api/cost-center"))
-                .andExpect(status().isMethodNotAllowed());
+    void naoPermiteExclusaoViaApi() {
+        asTestUser()
+                .when().delete("/api/cost-center")
+                .then().statusCode(405);
     }
 }
