@@ -288,6 +288,16 @@
                 <directory>src/main/resources</directory>
                 <filtering>true</filtering>
             </resource>
+            <!-- SPA vanilla (sem etapa de build): copiada verbatim para o classpath. Quarkus serve
+                 conteúdo estático de META-INF/resources automaticamente (convenção servlet). -->
+            <resource>
+                <directory>web</directory>
+                <targetPath>META-INF/resources</targetPath>
+                <filtering>false</filtering>
+                <excludes>
+                    <exclude>CLAUDE.md</exclude>
+                </excludes>
+            </resource>
         </resources>
     </build>
 </project>
