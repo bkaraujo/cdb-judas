@@ -7,20 +7,25 @@
 FROM maven:3.9-eclipse-temurin-25 AS builder
 WORKDIR /app
 
-# Resolve dependências primeiro: esta camada é reaproveitada enquanto o pom
-# não muda, mesmo quando apenas o código-fonte é alterado.
-COPY pom.xml .
-RUN mvn -B dependency:go-offline
-
 # .mvn/jvm.config traz os --add-exports/--add-opens que o ErrorProne exige para
 # acessar internals do javac. Sem ele a compilação falha com "An unknown
-# compilation problem occurred". go-offline não compila, então fica antes do
-# copy para preservar o cache daquela camada.
+# compilation problem occurred".
 COPY .mvn ./.mvn
+COPY pom.xml .
 
+# `dependency:go-offline` (usado antes para cachear as dependências numa camada
+# separada de pom.xml, antes desta linha) falhava com "version is missing" para
+# dependências geridas só pelo BOM do Quarkus (rest-assured, junit-jupiter-params
+# etc.) — gap pré-existente (já estava assim antes da migração), só descoberto
+# agora ao tentar validar a imagem de fato. Unificado num único passo (perde o
+# cache de dependências entre builds só de código) para não depender desse goal.
+# NOTA: build de imagem não verificado fim-a-fim neste ambiente — o `mvn package`
+# aqui dentro do container também não resolveu o BOM (mesmas coordenadas que
+# `mvn verify` resolve sem problema fora do container), o que aponta para uma
+# restrição de rede do sandbox de build e não para o Dockerfile em si; validar
+# num Docker com rede irrestrita antes de depender disto em CI/produção.
 # Compila e gera target/quarkus-app/ (fast-jar: app/ + lib/ + quarkus/ +
-# quarkus-run.jar). Testes ficam por conta do CI; a imagem foca no artefato
-# de runtime. O goal `build` do quarkus-maven-plugin roda dentro do `package`.
+# quarkus-run.jar). Testes ficam por conta do CI; a imagem foca no runtime.
 COPY src ./src
 RUN mvn -B package -DskipTests
 
