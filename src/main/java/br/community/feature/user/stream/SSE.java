@@ -1,7 +1,8 @@
 package br.community.feature.user.stream;
 
+import jakarta.ws.rs.sse.Sse;
+import jakarta.ws.rs.sse.SseEventSink;
 import org.jspecify.annotations.NullMarked;
-import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 @NullMarked
 public interface SSE {
@@ -12,8 +13,7 @@ public interface SSE {
         DELETE
     }
 
-
-    SseEmitter subscribe();
+    void subscribe(SseEventSink sink, Sse sse);
 
     void dispatch(String username, SSE.Event type, Object payload);
 
