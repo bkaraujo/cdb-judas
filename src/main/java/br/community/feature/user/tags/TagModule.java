@@ -1,10 +1,4 @@
 package br.community.feature.user.tags;
-
-import org.jspecify.annotations.NullMarked;
-import org.springframework.context.annotation.Configuration;
-
-/** Tag infrastructure module — stream listeners removed; SSE events dispatched directly from service. */
-@Configuration
-@NullMarked
-public class TagModule {
-}
+// Obsoleto: não produzia nenhum bean (UserTagService já é @Singleton auto-suficiente). Vestígio de
+// um listener de stream removido antes da migração Quarkus.
+// Arquivo a remover na limpeza: rm src/main/java/br/community/feature/user/tags/TagModule.java

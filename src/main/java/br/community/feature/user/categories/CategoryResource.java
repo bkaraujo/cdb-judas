@@ -9,32 +9,37 @@ import br.community.feature.user.categories.core.CategoryResponse;
 import br.community.feature.user.categories.core.CreateRequest;
 import br.community.feature.user.categories.core.UpdateRequest;
 import jakarta.validation.Valid;
+import jakarta.ws.rs.DELETE;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.PATCH;
+import jakarta.ws.rs.POST;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.PathParam;
+import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.core.MediaType;
 import lombok.RequiredArgsConstructor;
 import lombok.val;
+import org.jboss.resteasy.reactive.RestResponse;
 import org.jspecify.annotations.NullMarked;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
-import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 import java.util.UUID;
 
 @NullMarked
-@RestController
+@Path("/api/{uuid}/categories")
+@Produces(MediaType.APPLICATION_JSON)
 @RequiredArgsConstructor
-@RequestMapping(value = "/api/{uuid}/categories", produces = MediaType.APPLICATION_JSON_VALUE)
 public class CategoryResource {
 
     private final UserCategoryService userCategoryService;
 
-    @GetMapping
-    public List<CategoryResponse> listAll(@PathVariable UUID uuid) {
+    @GET
+    public List<CategoryResponse> listAll(@PathParam("uuid") UUID uuid) {
         return userCategoryService.findAll(uuid).stream().map(CategoryResponse::from).toList();
     }
 
-    @PostMapping
-    @ResponseStatus(HttpStatus.CREATED)
-    public CategoryResponse create(@PathVariable UUID uuid, @RequestBody @Valid CreateRequest req) {
+    @POST
+    public RestResponse<CategoryResponse> create(@PathParam("uuid") UUID uuid, @Valid CreateRequest req) {
         val nature = Transaction.Type.valueOf(Strings.upper(req.nature()));
 
         if (req.parentId() != null) {
@@ -42,11 +47,13 @@ public class CategoryResource {
         }
         guardResult(userCategoryService.validateUniqueName(uuid, req.name(), req.parentId(), null));
 
-        return CategoryResponse.from(userCategoryService.create(uuid, req.name(), nature, req.parentId()));
+        return RestResponse.status(RestResponse.Status.CREATED,
+                CategoryResponse.from(userCategoryService.create(uuid, req.name(), nature, req.parentId())));
     }
 
-    @PatchMapping("/{id}")
-    public CategoryResponse update(@PathVariable UUID uuid, @PathVariable UUID id, @RequestBody @Valid UpdateRequest req) {
+    @PATCH
+    @Path("/{id}")
+    public CategoryResponse update(@PathParam("uuid") UUID uuid, @PathParam("id") UUID id, @Valid UpdateRequest req) {
         return switch (userCategoryService.findById(id)) {
             case Result.Failure(var error) -> throw new DomainException(error);
             case Result.Success(var existing) -> {
@@ -59,9 +66,9 @@ public class CategoryResource {
         };
     }
 
-    @DeleteMapping("/{id}")
-    @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void delete(@PathVariable UUID uuid, @PathVariable UUID id) {
+    @DELETE
+    @Path("/{id}")
+    public void delete(@PathParam("uuid") UUID uuid, @PathParam("id") UUID id) {
         switch (userCategoryService.deleteById(id, uuid)) {
             case Result.Success(var ignored) -> {}
             case Result.Failure(var error) -> throw new DomainException(error);

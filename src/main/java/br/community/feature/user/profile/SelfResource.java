@@ -4,25 +4,29 @@ import br.commons.Result;
 import br.community.context.shared._1_application.DomainException;
 import br.community.core.web.security.CurrentUser;
 import jakarta.validation.Valid;
+import jakarta.ws.rs.Consumes;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.PATCH;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.core.MediaType;
 import lombok.RequiredArgsConstructor;
 import lombok.val;
 import org.jspecify.annotations.NullMarked;
-import org.springframework.http.MediaType;
-import org.springframework.web.bind.annotation.*;
 
 /**
  * Recurso {@code self}: a identidade vem do contexto autenticado (sem id no caminho →
  * sem risco de IDOR). Sem token, a cadeia de filtros responde 401 antes de chegar aqui.
  */
 @NullMarked
-@RestController
+@Path("/api/me")
+@Produces(MediaType.APPLICATION_JSON)
 @RequiredArgsConstructor
-@RequestMapping(value = "/api/me", produces = MediaType.APPLICATION_JSON_VALUE)
 public class SelfResource {
 
     private final UserService userService;
 
-    @GetMapping
+    @GET
     public MeResponse getMe() {
         return switch (userService.getProfile(CurrentUser.getId())) {
             case Result.Success(var profile) -> MeResponse.from(profile);
@@ -31,8 +35,9 @@ public class SelfResource {
     }
 
     /** PATCH parcial: aplica nome e/ou preferências de forma independente (merge). */
-    @PatchMapping(consumes = MediaType.APPLICATION_JSON_VALUE)
-    public MeResponse update(@RequestBody @Valid UpdateMeRequest req) {
+    @PATCH
+    @Consumes(MediaType.APPLICATION_JSON)
+    public MeResponse update(@Valid UpdateMeRequest req) {
         val id = CurrentUser.getId();
 
         var result = req.name() != null

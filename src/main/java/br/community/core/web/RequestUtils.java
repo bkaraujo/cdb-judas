@@ -2,6 +2,7 @@ package br.community.core.web;
 
 import jakarta.ws.rs.container.ContainerRequestContext;
 import jakarta.ws.rs.core.HttpHeaders;
+import jakarta.ws.rs.core.UriInfo;
 import org.jspecify.annotations.NullMarked;
 
 @NullMarked
@@ -23,7 +24,12 @@ public abstract class RequestUtils {
 
     /** Caminho com barra inicial garantida (UriInfo#getPath é relativo à base, sem a barra). */
     public static String path(ContainerRequestContext request) {
-        final String p = request.getUriInfo().getPath();
+        return path(request.getUriInfo());
+    }
+
+    /** Caminho com barra inicial garantida (UriInfo#getPath é relativo à base, sem a barra). */
+    public static String path(UriInfo uriInfo) {
+        final String p = uriInfo.getPath();
         return p.startsWith("/") ? p : "/" + p;
     }
 }

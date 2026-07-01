@@ -4,29 +4,35 @@ import br.commons.Result;
 import br.community.context.monetary.MonetaryContext;
 import br.community.context.shared._0_domain.model.DomainError;
 import br.community.context.shared._1_application.DomainException;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.PathParam;
+import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.QueryParam;
+import jakarta.ws.rs.core.MediaType;
 import lombok.RequiredArgsConstructor;
 import lombok.val;
 import org.jspecify.annotations.NullMarked;
-import org.springframework.http.MediaType;
-import org.springframework.web.bind.annotation.*;
+import org.jspecify.annotations.Nullable;
 
 import java.time.YearMonth;
 import java.time.format.DateTimeFormatter;
 import java.util.UUID;
 
 @NullMarked
-@RestController
+@Path("/api/{uuid}/accounts")
+@Produces(MediaType.APPLICATION_JSON)
 @RequiredArgsConstructor
-@RequestMapping(value = "/api/{uuid}/accounts", produces = MediaType.APPLICATION_JSON_VALUE)
 public class AccountBalanceResource {
 
     private final MonetaryContext monetaryContext;
 
-    @GetMapping("/{id}/balance")
+    @GET
+    @Path("/{id}/balance")
     public Object getBalance(
-            @PathVariable UUID id,
-            @RequestParam(required = false) String period,
-            @RequestParam(required = false) Integer year
+            @PathParam("id") UUID id,
+            @QueryParam("period") @Nullable String period,
+            @QueryParam("year") @Nullable Integer year
     ) {
         if (period != null) {
             val ym = YearMonth.parse(period, DateTimeFormatter.ofPattern("yyyyMM"));

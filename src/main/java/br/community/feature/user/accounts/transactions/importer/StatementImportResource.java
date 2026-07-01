@@ -3,52 +3,56 @@ package br.community.feature.user.accounts.transactions.importer;
 import br.commons.Result;
 import br.community.context.monetary._1_application.command.ImportConfirmCommand;
 import br.community.context.shared._0_domain.model.DomainError;
+import br.community.core.web.error.ProblemDetail;
 import br.community.feature.user.accounts.transactions.importer.confirm.BankStatementConfirmCommand;
 import br.community.feature.user.accounts.transactions.importer.confirm.ImportConfirmResponse;
 import br.community.feature.user.accounts.transactions.importer.preview.*;
 import jakarta.validation.Valid;
+import jakarta.ws.rs.Consumes;
+import jakarta.ws.rs.POST;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.Response;
 import lombok.RequiredArgsConstructor;
 import lombok.val;
+import org.jboss.resteasy.reactive.RestForm;
+import org.jboss.resteasy.reactive.multipart.FileUpload;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
-import org.springframework.http.ProblemDetail;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
-import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.nio.file.Files;
 import java.util.Objects;
 import java.util.UUID;
 
 @NullMarked
-@RestController
+@Path("/api/{uuid}/accounts/transactions/import")
 @RequiredArgsConstructor
-@RequestMapping("/api/{uuid}/accounts/transactions/import")
 public class StatementImportResource {
 
     private final StatementImportUseCase statementImport;
 
-    @PostMapping(value = "/preview", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public ResponseEntity<Object> preview(
-            @RequestParam("file") MultipartFile file,
-            @RequestParam(value = "password", required = false) @Nullable String password,
-            @RequestParam(value = "accountId", required = false) @Nullable UUID accountId) {
+    @POST
+    @Path("/preview")
+    @Consumes(MediaType.MULTIPART_FORM_DATA)
+    public Response preview(
+            @RestForm("file") @Nullable FileUpload file,
+            @RestForm @Nullable String password,
+            @RestForm @Nullable UUID accountId) {
 
-        if (file.isEmpty()) {
-            return problem(HttpStatus.UNPROCESSABLE_CONTENT, "FILE_REQUIRED", "Selecione um arquivo PDF.");
+        if (file == null || file.size() == 0) {
+            return problem422("FILE_REQUIRED", "Selecione um arquivo PDF.");
         }
 
         final byte[] bytes;
         try {
-            bytes = file.getBytes();
+            bytes = Files.readAllBytes(file.filePath());
         } catch (IOException e) {
-            return problem(HttpStatus.BAD_REQUEST, "FILE_UNREADABLE", "Não foi possível ler o arquivo enviado.");
+            return problem(Response.Status.BAD_REQUEST, "FILE_UNREADABLE", "Não foi possível ler o arquivo enviado.");
         }
 
         return switch (statementImport.preview(bytes, password, accountId)) {
-            case Result.Success(var outcome) -> ResponseEntity.<Object>ok(toResponseBody(outcome));
+            case Result.Success(var outcome) -> Response.ok(toResponseBody(outcome)).build();
             case Result.Failure(var error) -> problem(error);
         };
     }
@@ -60,32 +64,33 @@ public class StatementImportResource {
         };
     }
 
-    @PostMapping(value = "/confirm", consumes = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<Object> confirm(@RequestBody @Valid StatementConfirmRequest req) {
+    @POST
+    @Path("/confirm")
+    @Consumes(MediaType.APPLICATION_JSON)
+    public Response confirm(@Valid StatementConfirmRequest req) {
         return switch (req.type()) {
             case CREDIT_CARD_INVOICE -> confirmInvoice(req);
             case BANK_STATEMENT -> confirmBankStatement(req);
         };
     }
 
-    private ResponseEntity<Object> confirmInvoice(StatementConfirmRequest req) {
+    private Response confirmInvoice(StatementConfirmRequest req) {
         if (req.rows().stream().anyMatch(row -> row.cardId() == null)) {
-            return problem(HttpStatus.UNPROCESSABLE_CONTENT, "CARD_REQUIRED", "Cada lançamento precisa de um cartão de destino.");
+            return problem422("CARD_REQUIRED", "Cada lançamento precisa de um cartão de destino.");
         }
         val rows = req.rows().stream().map(StatementImportResource::toInvoiceRow).toList();
         val cmd = new ImportConfirmCommand(rows);
 
         return switch (statementImport.confirm(cmd)) {
             case Result.Success(var res) ->
-                    ResponseEntity.<Object>ok(new ImportConfirmResponse(res.created(), res.reconciled(), res.skipped()));
-            case Result.Failure(var error) ->
-                    problem(HttpStatus.UNPROCESSABLE_CONTENT, "CARD_NOT_FOUND", messageOf(error));
+                    Response.ok(new ImportConfirmResponse(res.created(), res.reconciled(), res.skipped())).build();
+            case Result.Failure(var error) -> problem422("CARD_NOT_FOUND", messageOf(error));
         };
     }
 
-    private ResponseEntity<Object> confirmBankStatement(StatementConfirmRequest req) {
+    private Response confirmBankStatement(StatementConfirmRequest req) {
         if (req.accountId() == null) {
-            return problem(HttpStatus.UNPROCESSABLE_CONTENT, "ACCOUNT_REQUIRED", "O campo accountId é obrigatório para extratos bancários.");
+            return problem422("ACCOUNT_REQUIRED", "O campo accountId é obrigatório para extratos bancários.");
         }
         val rows = req.rows().stream()
                 .map(r -> new BankStatementConfirmCommand.Row(r.description(), r.amount(), r.date(), r.transactionType(), r.categoryId()))
@@ -94,9 +99,8 @@ public class StatementImportResource {
 
         return switch (statementImport.confirmStatement(cmd)) {
             case Result.Success(var res) ->
-                    ResponseEntity.<Object>ok(new ImportConfirmResponse(res.created(), res.reconciled(), res.skipped()));
-            case Result.Failure(var error) ->
-                    problem(HttpStatus.UNPROCESSABLE_CONTENT, "ACCOUNT_NOT_FOUND", messageOf(error));
+                    Response.ok(new ImportConfirmResponse(res.created(), res.reconciled(), res.skipped())).build();
+            case Result.Failure(var error) -> problem422("ACCOUNT_NOT_FOUND", messageOf(error));
         };
     }
 
@@ -157,24 +161,23 @@ public class StatementImportResource {
                 row.suggestedCardId());
     }
 
-    private static ResponseEntity<Object> problem(ImportError error) {
-        return problem(statusFor(error), error.code(), error.message());
+    private static Response problem(ImportError error) {
+        if (error instanceof ImportError.FileTooLarge) {
+            return problem(413, "Content Too Large", error.code(), error.message());
+        }
+        return problem422(error.code(), error.message());
     }
 
-    private static HttpStatus statusFor(ImportError error) {
-        return switch (error) {
-            case ImportError.FileTooLarge ignored -> HttpStatus.CONTENT_TOO_LARGE;
-            case ImportError.PasswordRequired ignored -> HttpStatus.UNPROCESSABLE_CONTENT;
-            case ImportError.WrongPassword ignored -> HttpStatus.UNPROCESSABLE_CONTENT;
-            case ImportError.NoTextLayer ignored -> HttpStatus.UNPROCESSABLE_CONTENT;
-            case ImportError.UnknownIssuer ignored -> HttpStatus.UNPROCESSABLE_CONTENT;
-            case ImportError.TooManyPages ignored -> HttpStatus.UNPROCESSABLE_CONTENT;
-        };
+    private static Response problem422(String code, String detail) {
+        return problem(422, "Unprocessable Content", code, detail);
     }
 
-    private static ResponseEntity<Object> problem(HttpStatus status, String code, String detail) {
-        val pd = ProblemDetail.forStatusAndDetail(status, detail);
-        pd.setProperty("code", code);
-        return ResponseEntity.status(status).body(pd);
+    private static Response problem(Response.Status status, String code, String detail) {
+        return problem(status.getStatusCode(), status.getReasonPhrase(), code, detail);
+    }
+
+    private static Response problem(int status, String reason, String code, String detail) {
+        val pd = ProblemDetail.of(status, reason, null, detail).withCode(code);
+        return Response.status(status).entity(pd).build();
     }
 }
