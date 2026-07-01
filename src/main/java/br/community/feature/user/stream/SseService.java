@@ -1,6 +1,7 @@
 package br.community.feature.user.stream;
 
 import br.community.core.web.security.CurrentUser;
+import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.sse.OutboundSseEvent;
 import jakarta.ws.rs.sse.Sse;
 import jakarta.ws.rs.sse.SseBroadcaster;
@@ -61,6 +62,10 @@ public class SseService implements SSE {
     }
 
     private static OutboundSseEvent event(Sse sse, SSE.Event type, Object payload) {
-        return sse.newEventBuilder().name(type.name()).data(payload).build();
+        return sse.newEventBuilder()
+                .name(type.name())
+                .mediaType(MediaType.APPLICATION_JSON_TYPE)
+                .data(payload)
+                .build();
     }
 }

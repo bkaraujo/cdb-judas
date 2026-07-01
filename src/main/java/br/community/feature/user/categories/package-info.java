@@ -11,12 +11,13 @@
  * </pre>
  *
  * <p>Categorias são usadas para classificar transações e gerar agregações no dashboard.
- * Alterações são propagadas ao frontend via SSE através do
- * {@link br.community.feature.user.categories.core.CategoryStreamListener}.
+ * Alterações são propagadas ao frontend via SSE diretamente pelo {@code UserCategoryService}
+ * (sem indireção por evento de domínio, já que {@code UserCategory} é uma entidade da feature,
+ * não um modelo do contexto {@code monetary}).
  *
  * <p>Subpacote:
  * <ul>
- *   <li>{@link br.community.feature.user.categories.core} — entidade, requests e listener de stream</li>
+ *   <li>{@link br.community.feature.user.categories.core} — entidade e requests</li>
  * </ul>
  */
 @NullMarked

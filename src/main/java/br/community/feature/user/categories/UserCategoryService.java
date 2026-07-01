@@ -4,6 +4,8 @@ import br.commons.Result;
 import br.community.context.monetary._0_domain.model.Transaction;
 import br.community.context.shared._0_domain.model.DomainError;
 import br.community.feature.user.accounts.transactions.UserTransactionService;
+import br.community.feature.user.categories.core.CategoryResponse;
+import br.community.feature.user.stream.SSE;
 import lombok.RequiredArgsConstructor;
 import lombok.val;
 import org.jspecify.annotations.NullMarked;
@@ -11,6 +13,7 @@ import org.jspecify.annotations.Nullable;
 import jakarta.inject.Singleton;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
 
@@ -19,8 +22,11 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class UserCategoryService {
 
+    private static final String TYPE = "CATEGORY";
+
     private final UserCategoryRepository repo;
     private final UserTransactionService userTransactionService;
+    private final SSE sse;
 
     public List<UserCategory> findAll(UUID userId) {
         return repo.findAllByUser(userId);
@@ -70,27 +76,39 @@ public class UserCategoryService {
     }
 
     public UserCategory create(UUID userId, String name, Transaction.Type nature, @Nullable UUID parentId) {
-        return repo.save(new UserCategory(UUID.randomUUID(), userId, nature, name, parentId));
+        val saved = repo.save(new UserCategory(UUID.randomUUID(), userId, nature, name, parentId));
+        upsert(saved);
+        return saved;
     }
 
     public UserCategory update(UUID id, String name, @Nullable UUID parentId) {
         val existing = repo.findById(id).orElseThrow(() -> new IllegalStateException("Category not found: " + id));
-        return repo.save(new UserCategory(id, existing.userId(), existing.nature(), name, parentId,
+        val saved = repo.save(new UserCategory(id, existing.userId(), existing.nature(), name, parentId,
                 existing.isSystem(), existing.active(), existing.createdAt(), existing.updatedAt()));
+        upsert(saved);
+        return saved;
     }
 
     public UserCategory findOrCreateOthersCategory(UUID userId, Transaction.Type nature) {
         return repo.findAllByUser(userId).stream()
                 .filter(c -> "Outros".equalsIgnoreCase(c.name()) && c.nature() == nature && c.parentId() == null)
                 .findFirst()
-                .orElseGet(() -> repo.save(new UserCategory(UUID.randomUUID(), userId, nature, "Outros", null)));
+                .orElseGet(() -> {
+                    val created = repo.save(new UserCategory(UUID.randomUUID(), userId, nature, "Outros", null));
+                    upsert(created);
+                    return created;
+                });
     }
 
     public UserCategory findOrCreateUncategorizedCategory(UUID userId) {
         return repo.findAllByUser(userId).stream()
                 .filter(c -> "Sem categoria".equalsIgnoreCase(c.name()) && c.nature() == Transaction.Type.EXPENSE && c.parentId() == null)
                 .findFirst()
-                .orElseGet(() -> repo.save(new UserCategory(UUID.randomUUID(), userId, Transaction.Type.EXPENSE, "Sem categoria", null, true)));
+                .orElseGet(() -> {
+                    val created = repo.save(new UserCategory(UUID.randomUUID(), userId, Transaction.Type.EXPENSE, "Sem categoria", null, true));
+                    upsert(created);
+                    return created;
+                });
     }
 
     public Result<Void, DomainError> deleteById(UUID id, UUID userId) {
@@ -118,5 +136,20 @@ public class UserCategoryService {
                 .forEach(c -> deleteRecursive(c.id(), othersId, userId, all));
 
         repo.deleteById(id);
+        delete(userId, id);
+    }
+
+    @SuppressWarnings("EmptyCatch")
+    private void upsert(UserCategory category) {
+        try {
+            sse.dispatch(category.userId().toString(), SSE.Event.UPSERT, Map.of("type", TYPE, "payload", CategoryResponse.from(category)));
+        } catch (Exception ignored) {}
+    }
+
+    @SuppressWarnings("EmptyCatch")
+    private void delete(UUID userId, UUID categoryId) {
+        try {
+            sse.dispatch(userId.toString(), SSE.Event.DELETE, Map.of("type", TYPE, "id", categoryId.toString()));
+        } catch (Exception ignored) {}
     }
 }

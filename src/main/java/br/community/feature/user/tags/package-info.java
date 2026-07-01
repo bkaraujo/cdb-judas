@@ -11,12 +11,11 @@
  * </pre>
  *
  * <p>Tags complementam as categorias como forma de marcação livre e transversal.
- * Mutações são propagadas ao frontend via SSE pelo
- * {@link br.community.feature.user.tags.core.TagStreamListener}.
+ * Mutações são propagadas ao frontend via SSE diretamente pelo {@code UserTagService}.
  *
  * <p>Subpacote:
  * <ul>
- *   <li>{@link br.community.feature.user.tags.core} — entidade, request e listener de stream</li>
+ *   <li>{@link br.community.feature.user.tags.core} — entidade e request</li>
  * </ul>
  */
 @NullMarked

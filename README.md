@@ -44,7 +44,7 @@ O projeto abrange frontend e backend, com forte separação arquitetural interna
 - **Persistência:** **JDBC/H2** local (dev: arquivo `./database`; testes: in-memory), com JSON remanescente para `Closing` e o catálogo de centros de custo — processamento e privacidade locais, sem servidor de banco externo.
 - **Segurança:** Login com emissão de token, rotas de usuário escopadas por `/api/{uuid}/…` e guarda de propriedade que bloqueia acesso indevido (proteção contra IDOR).
 - **Null-Safety & Qualidade:** `NullAway` + `ErrorProne` com anotações JSpecify (`@NullMarked`/`@Nullable`) no ciclo de compilação, falhando o build contra `NullPointerException`.
-- **Testes:** Cobertura de testes unitários com JUnit 5 e testes de arquitetura automatizados com ArchUnit (ex.: *Resources* não acessam repositórios; *application* não acessa *infrastructure*; *feature* fala com *context* só via *facade*).
+- **Testes:** Testes unitários com JUnit 5, testes de arquitetura com ArchUnit (ex.: *Resources* não acessam repositórios; *feature* fala com *context* só via *facade*) e testes de integração HTTP com `@QuarkusTest` + RestAssured.
 
 ### Frontend (HTML / CSS / JS)
 
@@ -61,7 +61,7 @@ O projeto abrange frontend e backend, com forte separação arquitetural interna
 | Camada | Stack |
 |--------|-------|
 | **Linguagens** | Java 25 · JavaScript (ES6+) · HTML5 · CSS3 |
-| **Backend** | Quarkus 3.37 (REST, Hibernate Validator, SmallRye OpenAPI/Health) — modo JVM |
+| **Backend** | Quarkus 3.37 (REST, Hibernate Validator, SmallRye OpenAPI/Health, Elytron Security) — modo JVM |
 | **Build** | Maven 3.9+ · Quarkus Maven Plugin |
 | **Frontend** | Vanilla JS/CSS · jQuery 4 |
 | **Utilitários** | Lombok · SLF4J · PDFBox 3.0.5 (leitura de PDF) · Jackson (YAML/JSR-310) · juniversalchardet (detecção de *charset*) |
@@ -109,7 +109,7 @@ Variáveis de ambiente reconhecidas (ver `docker-compose.yaml`):
 | Variável | Descrição | Padrão |
 |----------|-----------|--------|
 | `STORAGE_JSON_PATH` | Diretório de persistência dos arquivos JSON | `/data` (container) |
-| `APP_LOGLEVEL_ROOT` | Nível de log raiz | `INFO` |
+| `APP_LOGLEVEL_ROOT` | Nível de log do logger da aplicação (`br.commons`) | `INFO` |
 
 No Docker Compose, o diretório `./data` do host é montado em `/data` no container, persistindo os dados entre execuções.
 
