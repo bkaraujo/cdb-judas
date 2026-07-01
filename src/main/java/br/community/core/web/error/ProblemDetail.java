@@ -5,7 +5,7 @@ import jakarta.ws.rs.core.Response;
 import org.jspecify.annotations.Nullable;
 import org.jspecify.annotations.NullMarked;
 
-/** Corpo `application/problem+json` (RFC 7807), equivalente ao antigo `org.springframework.http.ProblemDetail`. */
+/** Corpo `application/problem+json` (RFC 7807), equivalente ao antigo `ProblemDetail` do Spring Framework. */
 @NullMarked
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public record ProblemDetail(

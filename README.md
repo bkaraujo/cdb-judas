@@ -30,7 +30,7 @@ O CDB Finance é destinado a **indivíduos e famílias** que desejam um controle
 
 O projeto abrange frontend e backend, com forte separação arquitetural interna. A arquitetura é **híbrida**: **Vertical Slice** nas features de entrega HTTP (`br.community.feature.*`) sobre **Hexagonal** nos contextos de negócio (`br.community.context.*`). Features se comunicam com os contextos exclusivamente via **Facade**.
 
-### Backend (Java 25 + Spring Boot 4)
+### Backend (Java 25 + Quarkus)
 
 - **Vertical Slice Architecture (VSA):** Cada funcionalidade vive isolada em seu pacote, mantendo o código de negócio coeso e independente.
 - **Arquitetura Hexagonal:** Dentro de cada contexto de negócio, as camadas são concêntricas:
@@ -39,7 +39,7 @@ O projeto abrange frontend e backend, com forte separação arquitetural interna
   - `_2_infrastructure` — implementações concretas de persistência.
   - `UseCase` — orquestração de alto nível, recebe *Commands*.
 - **Contextos:** `monetary` (lógica financeira), `security` (usuário e preferências) e `shared` (núcleo comum).
-- **Núcleo / Plataforma (`br.community.core`):** Autenticação e autorização (login JWT, `OwnershipInterceptor`), observabilidade (log de requisições + correlação), persistência JSON e configuração HTTP transversal.
+- **Núcleo / Plataforma (`br.community.core`):** Autenticação e autorização (token opaco rotativo, `OwnershipFilter`), observabilidade (log de requisições + correlação), persistência JSON e configuração HTTP transversal.
 - **Padrão Result:** Fluxo de negócio sem exceções (`Result` Success/Failure).
 - **Persistência:** **JDBC/H2** local (dev: arquivo `./database`; testes: in-memory), com JSON remanescente para `Closing` e o catálogo de centros de custo — processamento e privacidade locais, sem servidor de banco externo.
 - **Segurança:** Login com emissão de token, rotas de usuário escopadas por `/api/{uuid}/…` e guarda de propriedade que bloqueia acesso indevido (proteção contra IDOR).
@@ -61,23 +61,23 @@ O projeto abrange frontend e backend, com forte separação arquitetural interna
 | Camada | Stack |
 |--------|-------|
 | **Linguagens** | Java 25 · JavaScript (ES6+) · HTML5 · CSS3 |
-| **Backend** | Spring Boot 4.0.2 (Web, Security, Validation, Actuator) |
-| **Build** | Maven 3.9+ · Spring Boot Maven Plugin |
+| **Backend** | Quarkus 3.37 (REST, Hibernate Validator, SmallRye OpenAPI/Health) — modo JVM |
+| **Build** | Maven 3.9+ · Quarkus Maven Plugin |
 | **Frontend** | Vanilla JS/CSS · jQuery 4 |
 | **Utilitários** | Lombok · SLF4J · PDFBox 3.0.5 (leitura de PDF) · Jackson (YAML/JSR-310) · juniversalchardet (detecção de *charset*) |
-| **API Docs** | springdoc-openapi (Swagger UI) |
+| **API Docs** | SmallRye OpenAPI (Swagger UI) |
 | **Qualidade & Testes** | JUnit 5 · ArchUnit · JaCoCo · NullAway · ErrorProne · JSpecify |
 
 ## 🏃 Como Executar
 
-Há dois caminhos: **Maven** (o backend Spring Boot serve o frontend estático) ou **Docker Compose** (backend + nginx em containers separados).
+Há dois caminhos: **Maven** (o backend Quarkus serve o frontend estático) ou **Docker Compose** (backend + nginx em containers separados).
 
 ### Opção 1 — Maven (desenvolvimento)
 
 ```bash
 git clone <url-do-repositorio>
 cd cdb-judas
-mvn spring-boot:run
+mvn quarkus:dev
 ```
 
 Acesse `http://localhost:8080`. O frontend estático é servido pelo próprio backend.
@@ -89,7 +89,7 @@ docker compose up --build
 ```
 
 - **Frontend (nginx):** `http://localhost:8081` — serve o estático e faz proxy reverso para a API.
-- **Backend (Spring Boot):** `http://localhost:8080` — acessível diretamente também.
+- **Backend (Quarkus):** `http://localhost:8080` — acessível diretamente também.
 
 ### Acesso
 
@@ -100,7 +100,7 @@ A aplicação semeia um usuário inicial no primeiro arranque:
 | `admin` | `admin` |
 
 - **Swagger UI:** `/swagger` (ex.: `http://localhost:8080/swagger`).
-- **Health/Métricas:** `/actuator`.
+- **Health:** `/q/health`.
 
 ## ⚙️ Configuração
 
