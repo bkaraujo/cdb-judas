@@ -1,15 +1,15 @@
 package br.community.core.web.security.core;
 
+import jakarta.inject.Singleton;
 import lombok.val;
 import org.jspecify.annotations.NullMarked;
-import org.springframework.stereotype.Component;
 
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
-@Component
+@Singleton
 @NullMarked
 public class AccessTokenStore {
 

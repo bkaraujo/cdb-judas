@@ -9,7 +9,7 @@ import br.community.feature.user.accounts.core.UserAccountService;
 import lombok.RequiredArgsConstructor;
 import lombok.val;
 import org.jspecify.annotations.NullMarked;
-import org.springframework.stereotype.Component;
+import jakarta.inject.Singleton;
 
 import java.util.List;
 
@@ -19,7 +19,7 @@ import java.util.List;
  * (via {@link MonetaryContext}).
  */
 @NullMarked
-@Component
+@Singleton
 @RequiredArgsConstructor
 public class UserCreditCardProvider implements CreditCardProvider {
 

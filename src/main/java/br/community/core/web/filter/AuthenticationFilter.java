@@ -4,68 +4,76 @@ import br.commons.Logger;
 import br.commons.framework.logger.MDC;
 import br.community.core.web.RequestUtils;
 import br.community.core.web.security.AuthenticatedUser;
+import br.community.core.web.security.CurrentUserContext;
 import br.community.core.web.security.UserRepository;
 import br.community.core.web.security.core.AccessTokenStore;
-import jakarta.servlet.FilterChain;
-import jakarta.servlet.ServletException;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
-import lombok.RequiredArgsConstructor;
+import jakarta.annotation.Priority;
+import jakarta.enterprise.inject.Instance;
+import jakarta.inject.Inject;
+import jakarta.ws.rs.Priorities;
+import jakarta.ws.rs.container.ContainerRequestContext;
+import jakarta.ws.rs.container.ContainerRequestFilter;
+import jakarta.ws.rs.ext.Provider;
 import lombok.val;
 import org.jspecify.annotations.NullMarked;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.web.filter.OncePerRequestFilter;
-
-import java.io.IOException;
-import java.util.List;
 
 import static br.community.feature.system.auth.LoginResource.TOKEN_HEADER;
 
+/**
+ * Valida o token de acesso (header {@value br.community.feature.system.auth.LoginResource#TOKEN_HEADER}),
+ * popula o {@link CurrentUserContext} e — fora do stream — rotaciona o token, guardando o próximo em
+ * {@link #NEXT_TOKEN_PROPERTY} para o {@link AuthTokenResponseFilter} emitir na resposta.
+ */
+@Provider
+@Priority(Priorities.AUTHENTICATION)
 @NullMarked
-@RequiredArgsConstructor
-public class AuthenticationFilter extends OncePerRequestFilter {
+public class AuthenticationFilter implements ContainerRequestFilter {
 
-    private final AccessTokenStore tokenStore;
-    private final UserRepository userRepository;
+    static final String NEXT_TOKEN_PROPERTY = "cdb.nextToken";
+
+    @Inject
+    AccessTokenStore tokenStore;
+
+    /**
+     * {@code Instance} (não injeção direta) de propósito: filtros {@code @Provider} são construídos
+     * na montagem do deployment JAX-RS, antes do {@code StartupEvent} — resolver {@code UserRepository}
+     * (e, por trás dele, o {@code DataSource} via {@code Registry}) cedo demais quebra o boot. Adiar
+     * para o primeiro uso em {@link #authenticate} garante que o {@code StartupEvent} de
+     * {@code ContextBridge} já publicou o {@code DataSource} no {@code Registry}.
+     */
+    @Inject
+    Instance<UserRepository> userRepository;
+
+    @Inject
+    CurrentUserContext currentUser;
 
     @Override
-    protected boolean shouldNotFilter(HttpServletRequest request) {
-        return RequestUtils.isStatic(request);
-    }
+    public void filter(ContainerRequestContext request) {
+        if (RequestUtils.isStatic(request)) return;
 
-    @Override
-    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
-        val token = request.getHeader(TOKEN_HEADER);
-        if (token != null) {
-            if (RequestUtils.isStream(request)) {
-                tokenStore
-                        .validate(token)
-                        .ifPresent(userId -> authenticate(userId, request, response, false, null));
+        val token = request.getHeaderString(TOKEN_HEADER);
+        if (token == null) return;
+
+        if (RequestUtils.isStream(request)) {
+            tokenStore.validate(token).ifPresent(userId -> authenticate(userId, request));
+        } else {
+            val result = tokenStore.rotate(token);
+            if (result.isPresent()) {
+                authenticate(result.get().userId(), request);
+                request.setProperty(NEXT_TOKEN_PROPERTY, result.get().nextToken());
             } else {
-                val result = tokenStore.rotate(token);
-                if (result.isPresent()) {
-                    authenticate(result.get().userId(), request, response, true, result.get().nextToken());
-                } else {
-                    Logger.debug("AUTHN %s %s => invalid or expired token", request.getMethod(), request.getRequestURI());
-                }
+                Logger.debug("AUTHN %s %s => invalid or expired token", request.getMethod(), RequestUtils.path(request));
             }
         }
-
-        filterChain.doFilter(request, response);
     }
 
-    private void authenticate(String userId, HttpServletRequest request, HttpServletResponse response, boolean rotated, String nextToken) {
-        val user = userRepository.findById(userId).orElse(null);
+    private void authenticate(String userId, ContainerRequestContext request) {
+        val user = userRepository.get().findById(userId).orElse(null);
         if (user == null) {
-            Logger.debug("AUTHN %s %s => token references unknown user '%s'", request.getMethod(), request.getRequestURI(), userId);
+            Logger.debug("AUTHN %s %s => token references unknown user '%s'", request.getMethod(), RequestUtils.path(request), userId);
             return;
         }
-
-        val auth = new UsernamePasswordAuthenticationToken(new AuthenticatedUser(userId, user.username()), null, List.of());
-        SecurityContextHolder.getContext().setAuthentication(auth);
-        if (rotated) response.setHeader(TOKEN_HEADER, nextToken);
-
+        currentUser.set(new AuthenticatedUser(userId, user.username()));
         MDC.push("X-REQUEST-USER", user.username());
     }
 }

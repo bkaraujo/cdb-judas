@@ -1,45 +1,48 @@
 package br.community.feature;
 
+import io.quarkus.test.junit.QuarkusTest;
 import org.junit.jupiter.api.Test;
 
 import java.util.UUID;
 
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
-
-class OwnershipInterceptorTest extends BaseHttpTest {
+@QuarkusTest
+public class OwnershipInterceptorTest extends BaseHttpTest {
 
     @Test
-    void permiteQuandoUuidDaRotaIgualAoAutenticado() throws Exception {
-        mockMvc.perform(get("/api/{u}/accounts", TEST_USER_ID))
-                .andExpect(status().isOk());
+    void permiteQuandoUuidDaRotaIgualAoAutenticado() {
+        asTestUser()
+                .when().get("/api/" + TEST_USER_ID + "/accounts")
+                .then().statusCode(200);
     }
 
     @Test
-    void retorna403QuandoUuidDivergente() throws Exception {
+    void retorna403QuandoUuidDivergente() {
         String outroUsuario = UUID.randomUUID().toString();
-        mockMvc.perform(get("/api/{u}/accounts", outroUsuario))
-                .andExpect(status().isForbidden());
+        asTestUser()
+                .when().get("/api/" + outroUsuario + "/accounts")
+                .then().statusCode(403);
     }
 
     @Test
-    void retorna403QuandoUuidMalformado() throws Exception {
-        mockMvc.perform(get("/api/{u}/accounts", "nao-e-uuid"))
-                .andExpect(status().isForbidden());
+    void retorna403QuandoUuidMalformado() {
+        asTestUser()
+                .when().get("/api/nao-e-uuid/accounts")
+                .then().statusCode(403);
     }
 
     @Test
-    void streamDeOutroUsuarioRetorna403() throws Exception {
+    void streamDeOutroUsuarioRetorna403() {
         String outroUsuario = UUID.randomUUID().toString();
-        mockMvc.perform(get("/api/{u}/stream", outroUsuario)
-                .header("Accept", "text/event-stream"))
-                .andExpect(status().isForbidden());
+        asTestUser()
+                .accept("text/event-stream")
+                .when().get("/api/" + outroUsuario + "/stream")
+                .then().statusCode(403);
     }
 
     @Test
-    void naoGuardaRotaGlobalDeCentroDeCusto() throws Exception {
-        // /api/cost-center é global (isenta da guarda); jamais retorna 403 por propriedade.
-        mockMvc.perform(get("/api/cost-center"))
-                .andExpect(status().isOk());
+    void naoGuardaRotaGlobalDeCentroDeCusto() {
+        asTestUser()
+                .when().get("/api/cost-center")
+                .then().statusCode(200);
     }
 }

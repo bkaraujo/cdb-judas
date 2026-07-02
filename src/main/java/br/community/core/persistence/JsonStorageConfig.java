@@ -5,35 +5,44 @@ import br.commons.framework.persistence.json.LocalFileStorage;
 import br.commons.tools.Strings;
 import br.community.context.monetary._0_domain.model.Transaction;
 import br.community.core.JsonStorageProperties;
+import com.fasterxml.jackson.core.JsonGenerator;
+import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.databind.DeserializationContext;
+import com.fasterxml.jackson.databind.JsonDeserializer;
+import com.fasterxml.jackson.databind.JsonSerializer;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializerProvider;
+import com.fasterxml.jackson.databind.module.SimpleModule;
+import io.quarkus.jackson.ObjectMapperCustomizer;
+import jakarta.enterprise.inject.Produces;
+import jakarta.inject.Singleton;
 import lombok.val;
 import org.jspecify.annotations.NullMarked;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
-import tools.jackson.core.JsonGenerator;
-import tools.jackson.core.JsonParser;
-import tools.jackson.databind.*;
-import tools.jackson.databind.module.SimpleModule;
 
+import java.io.IOException;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 
 /**
- * Registra módulos Jackson customizados como beans {@link JacksonModule}.
- * O Spring Boot 4 os detecta automaticamente e os incorpora ao ObjectMapper
- * auto-configurado ({@code jacksonJsonMapper}), garantindo um único mapper
- * para persistência e camada web.
+ * Registra os módulos Jackson customizados no {@link ObjectMapper} único do Quarkus
+ * (via {@link ObjectMapperCustomizer}) — garantindo o mesmo mapper para a camada web
+ * e para a persistência ({@link #jsonStorage}). Mantém o domínio livre de anotações.
  */
-@Configuration
+@Singleton
 @NullMarked
-class JsonStorageConfig {
+public class JsonStorageConfig implements ObjectMapperCustomizer {
 
-    @Bean
-    JacksonModule bigDecimalModule() {
+    @Override
+    public void customize(ObjectMapper mapper) {
+        mapper.registerModule(bigDecimalModule());
+        mapper.registerModule(transactionEnumModule());
+    }
+
+    private SimpleModule bigDecimalModule() {
         val module = new SimpleModule("bigDecimal");
-        module.addSerializer(BigDecimal.class, new ValueSerializer<>() {
+        module.addSerializer(BigDecimal.class, new JsonSerializer<>() {
             @Override
-            public void serialize(BigDecimal value, JsonGenerator gen, SerializationContext serializers) {
+            public void serialize(BigDecimal value, JsonGenerator gen, SerializerProvider serializers) throws IOException {
                 gen.writeNumber(value.setScale(2, RoundingMode.HALF_UP));
             }
         });
@@ -44,38 +53,37 @@ class JsonStorageConfig {
      * Serializa/desserializa enums de transação como lowercase tokens,
      * mantendo o domínio livre de anotações de framework.
      */
-    @Bean
-    JacksonModule transactionEnumModule() {
+    private SimpleModule transactionEnumModule() {
         val module = new SimpleModule("transactionEnum");
-        module.addSerializer(Transaction.Status.class, new ValueSerializer<>() {
+        module.addSerializer(Transaction.Status.class, new JsonSerializer<>() {
             @Override
-            public void serialize(Transaction.Status value, JsonGenerator gen, SerializationContext serializers) {
+            public void serialize(Transaction.Status value, JsonGenerator gen, SerializerProvider serializers) throws IOException {
                 gen.writeString(Strings.lower(value.name()));
             }
         });
-        module.addDeserializer(Transaction.Status.class, new ValueDeserializer<>() {
+        module.addDeserializer(Transaction.Status.class, new JsonDeserializer<>() {
             @Override
-            public Transaction.Status deserialize(JsonParser p, DeserializationContext ctxt) {
+            public Transaction.Status deserialize(JsonParser p, DeserializationContext ctxt) throws IOException {
                 return Transaction.Status.valueOf(Strings.upper(p.getValueAsString()));
             }
         });
-        module.addSerializer(Transaction.Type.class, new ValueSerializer<>() {
+        module.addSerializer(Transaction.Type.class, new JsonSerializer<>() {
             @Override
-            public void serialize(Transaction.Type value, JsonGenerator gen, SerializationContext serializers) {
+            public void serialize(Transaction.Type value, JsonGenerator gen, SerializerProvider serializers) throws IOException {
                 gen.writeString(Strings.lower(value.name()));
             }
         });
-        module.addDeserializer(Transaction.Type.class, new ValueDeserializer<>() {
+        module.addDeserializer(Transaction.Type.class, new JsonDeserializer<>() {
             @Override
-            public Transaction.Type deserialize(JsonParser p, DeserializationContext ctxt) {
+            public Transaction.Type deserialize(JsonParser p, DeserializationContext ctxt) throws IOException {
                 return Transaction.Type.valueOf(Strings.upper(p.getValueAsString()));
             }
         });
         return module;
     }
 
-    @Bean
-    @ConditionalOnProperty(name = "storage.json.backend", havingValue = "local", matchIfMissing = true)
+    @Produces
+    @Singleton
     Storage jsonStorage(JsonStorageProperties props, ObjectMapper mapper) {
         return new LocalFileStorage(props, mapper);
     }

@@ -2,18 +2,22 @@ package br.community.core.web.security;
 
 import br.commons.Logger;
 import br.commons.framework.persistence.Storage;
-import br.commons.tools.Strings;
-import jakarta.annotation.PostConstruct;
+import io.quarkus.elytron.security.common.BcryptUtil;
+import io.quarkus.runtime.StartupEvent;
+import jakarta.enterprise.event.Observes;
+import jakarta.inject.Singleton;
 import lombok.RequiredArgsConstructor;
 import lombok.val;
 import org.jspecify.annotations.NullMarked;
-import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.stereotype.Component;
 
 import java.nio.charset.StandardCharsets;
 import java.util.UUID;
 
-@Component
+/**
+ * Semeia o usuário {@code admin} e a fonte global de centros de custo no startup. A ordem em relação
+ * ao schema é garantida pelo observer {@code @Priority(1)} de {@code ContextBridge} (DataSource antes).
+ */
+@Singleton
 @NullMarked
 @RequiredArgsConstructor
 public final class UserSeeder {
@@ -30,18 +34,16 @@ public final class UserSeeder {
             } ]""";
 
     private final UserRepository repository;
-    private final PasswordEncoder passwordEncoder;
     private final Storage storage;
 
-    @PostConstruct
-    public void seed() {
+    void seed(@Observes StartupEvent event) {
         if (repository.findByUsername("admin").isEmpty()) {
             val id = UUID.randomUUID().toString();
             repository.save(new User(
                     id,
                     "admin",
                     null,
-                    Strings.orEmpty(passwordEncoder.encode("admin"))
+                    BcryptUtil.bcryptHash("admin")
             ));
             Logger.info("Seed => usuário 'admin' criado com id %s", id);
         }

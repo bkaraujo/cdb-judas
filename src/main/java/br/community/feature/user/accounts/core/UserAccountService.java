@@ -8,14 +8,14 @@ import br.community.infra.persistence.features.UserAccountJDBCRepository;
 import lombok.RequiredArgsConstructor;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
-import org.springframework.stereotype.Component;
+import jakarta.inject.Singleton;
 
 import java.util.List;
 import java.util.UUID;
 
 /** Serviço de acesso ao overlay de conta por utilizador ({@code USER_ACCOUNT}). */
 @NullMarked
-@Component
+@Singleton
 @RequiredArgsConstructor
 public class UserAccountService {
 

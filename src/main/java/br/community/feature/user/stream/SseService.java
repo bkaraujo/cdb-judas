@@ -1,71 +1,71 @@
 package br.community.feature.user.stream;
 
 import br.community.core.web.security.CurrentUser;
+import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.sse.OutboundSseEvent;
+import jakarta.ws.rs.sse.Sse;
+import jakarta.ws.rs.sse.SseBroadcaster;
+import jakarta.ws.rs.sse.SseEventSink;
 import lombok.val;
 import org.jspecify.annotations.NullMarked;
-import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
+import org.jspecify.annotations.Nullable;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.atomic.AtomicInteger;
 
 @NullMarked
 public class SseService implements SSE {
 
-    private final Map<String, CopyOnWriteArrayList<SseEmitter>> emitters = new ConcurrentHashMap<>();
+    @NullMarked
+    private record Channel(SseBroadcaster broadcaster, AtomicInteger connections) {}
+
+    private final Map<String, Channel> channels = new ConcurrentHashMap<>();
+
+    /**
+     * {@code Sse} é uma factory sem estado (o RESTEasy Reactive expõe sempre a mesma instância
+     * subjacente via {@code @Context}); cacheada aqui na primeira subscription para permitir
+     * {@link #dispatch} fora do escopo de uma request (chamado pelo {@code MessageBus}).
+     */
+    private volatile @Nullable Sse sse;
 
     @Override
-    public SseEmitter subscribe() {
+    public void subscribe(SseEventSink sink, Sse requestSse) {
+        this.sse = requestSse;
         val userId = CurrentUser.getId();
-        val emitter = new SseEmitter(Long.MAX_VALUE); // Infinite timeout
+        val channel = channels.computeIfAbsent(userId, ignored -> newChannel(userId, requestSse));
+        channel.connections().incrementAndGet();
+        channel.broadcaster().register(sink);
 
-        emitters
-                .computeIfAbsent(userId, k -> new CopyOnWriteArrayList<>())
-                .add(emitter);
-
-        emitter.onCompletion(() -> removeEmitter(userId, emitter));
-        emitter.onTimeout(() -> removeEmitter(userId, emitter));
-        emitter.onError((e) -> removeEmitter(userId, emitter));
-
-        // Send initial connection event
-        dispatchEvent(
-                emitter,
-                userId,
-                SSE.Event.INITIALIZE,
-                "Connected"
-        );
-
-        return emitter;
+        sink.send(event(requestSse, SSE.Event.INITIALIZE, "Connected"));
     }
 
     @Override
     public void dispatch(String username, SSE.Event type, Object payload) {
-        val userEmitters = emitters.get(username);
-        if (userEmitters == null) return;
-        userEmitters
-                .forEach(emitter -> dispatchEvent(emitter, username, type, payload));
+        val currentSse = sse;
+        val channel = channels.get(username);
+        if (currentSse == null || channel == null) return;
+        channel.broadcaster().broadcast(event(currentSse, type, payload));
     }
 
-    private void dispatchEvent(SseEmitter emitter, String username, SSE.Event type, Object payload) {
-        try {
-            emitter.send(
-                    SseEmitter
-                            .event()
-                            .name(type.name())
-                            .data(payload)
-            );
-        } catch (Exception e) {
-            removeEmitter(username, emitter);
-        }
+    private Channel newChannel(String userId, Sse requestSse) {
+        val broadcaster = requestSse.newBroadcaster();
+        val connections = new AtomicInteger(0);
+        // Só decrementa no close (não no error) para nunca remover o canal cedo demais
+        // enquanto outra aba do mesmo usuário ainda pode estar conectada.
+        broadcaster.onClose(ignored -> {
+            if (connections.decrementAndGet() <= 0) {
+                channels.remove(userId);
+            }
+        });
+        return new Channel(broadcaster, connections);
     }
 
-    private void removeEmitter(String username, SseEmitter emitter) {
-        val userEmitters = emitters.get(username);
-        if (userEmitters == null) return;
-
-        userEmitters.remove(emitter);
-        if (userEmitters.isEmpty()) {
-            emitters.remove(username);
-        }
+    private static OutboundSseEvent event(Sse sse, SSE.Event type, Object payload) {
+        return sse.newEventBuilder()
+                .name(type.name())
+                .mediaType(MediaType.APPLICATION_JSON_TYPE)
+                .data(payload)
+                .build();
     }
 }

@@ -1,6 +1,6 @@
 # API Web — Exemplos de Request/Response JSON
 
-Este documento cataloga os contratos de dados (JSON) da API Web do sistema, organizados por recurso. Os contratos foram extraídos diretamente dos `*Resource` (Spring) e seus DTOs.
+Este documento cataloga os contratos de dados (JSON) da API Web do sistema, organizados por recurso. Os contratos foram extraídos diretamente dos `*Resource` (JAX-RS/Quarkus) e seus DTOs.
 
 ---
 

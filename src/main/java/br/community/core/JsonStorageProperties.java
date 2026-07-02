@@ -1,13 +1,15 @@
 package br.community.core;
 
+import io.smallrye.config.ConfigMapping;
+import io.smallrye.config.WithDefault;
 import org.jspecify.annotations.NullMarked;
-import org.springframework.boot.context.properties.ConfigurationProperties;
 
 @NullMarked
-@ConfigurationProperties(prefix = "storage.json")
-public record JsonStorageProperties(String path, String backend) {
+@ConfigMapping(prefix = "storage.json")
+public interface JsonStorageProperties {
 
-    public JsonStorageProperties {
-        if (backend == null || backend.isBlank()) backend = "local";
-    }
+    String path();
+
+    @WithDefault("local")
+    String backend();
 }

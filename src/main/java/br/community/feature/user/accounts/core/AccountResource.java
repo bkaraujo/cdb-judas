@@ -9,13 +9,20 @@ import br.community.context.monetary._1_application.command.AccountCommand;
 import br.community.context.shared._1_application.DomainException;
 import br.community.core.web.security.CurrentUser;
 import jakarta.validation.Valid;
+import jakarta.ws.rs.DELETE;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.PATCH;
+import jakarta.ws.rs.POST;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.PathParam;
+import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.QueryParam;
+import jakarta.ws.rs.core.MediaType;
 import lombok.RequiredArgsConstructor;
 import lombok.val;
+import org.jboss.resteasy.reactive.RestResponse;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
-import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 import java.util.UUID;
@@ -23,16 +30,16 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 @NullMarked
-@RestController
+@Path("/api/{uuid}/accounts")
+@Produces(MediaType.APPLICATION_JSON)
 @RequiredArgsConstructor
-@RequestMapping(value = "/api/{uuid}/accounts", produces = MediaType.APPLICATION_JSON_VALUE)
 public class AccountResource {
 
     private final MonetaryContext monetaryContext;
     private final UserAccountService userAccountService;
 
-    @GetMapping
-    public List<AccountResponse> listAll(@RequestParam(required = false) @Nullable String type) {
+    @GET
+    public List<AccountResponse> listAll(@QueryParam("type") @Nullable String type) {
         val transactions = allTransactions();
         val userId = CurrentUser.getId();
         val uaMap = userAccountService.findByUser(userId).stream()
@@ -52,8 +59,9 @@ public class AccountResource {
         return t.equals("CARD") || t.equals("CREDIT_CARD");
     }
 
-    @GetMapping("/{id}")
-    public AccountResponse getById(@PathVariable UUID id) {
+    @GET
+    @Path("/{id}")
+    public AccountResponse getById(@PathParam("id") UUID id) {
         val userId = CurrentUser.getId();
         return switch (monetaryContext.findAccount(id)) {
             case Result.Success(var c) -> AccountResponse.from(c, userAccountService.find(userId, c.id()), allTransactions());
@@ -61,9 +69,8 @@ public class AccountResource {
         };
     }
 
-    @PostMapping
-    @ResponseStatus(HttpStatus.CREATED)
-    public AccountResponse create(@RequestBody @Valid AccountRequest req) {
+    @POST
+    public RestResponse<AccountResponse> create(@Valid AccountRequest req) {
         val userId = CurrentUser.getId();
         val cardError = userAccountService.validateCardLink(req.type(), req.linkedAccountId());
         if (cardError != null) throw new DomainException(cardError);
@@ -71,14 +78,15 @@ public class AccountResource {
             case Result.Success(var account) -> {
                 val ua = overlay(userId, account.id(), req);
                 userAccountService.save(ua);
-                yield AccountResponse.from(account, ua, allTransactions());
+                yield RestResponse.status(RestResponse.Status.CREATED, AccountResponse.from(account, ua, allTransactions()));
             }
             case Result.Failure(var error) -> throw new DomainException(error);
         };
     }
 
-    @PatchMapping("/{id}")
-    public AccountResponse update(@PathVariable UUID id, @RequestBody @Valid AccountRequest req) {
+    @PATCH
+    @Path("/{id}")
+    public AccountResponse update(@PathParam("id") UUID id, @Valid AccountRequest req) {
         val userId = CurrentUser.getId();
         val cardError = userAccountService.validateCardLink(req.type(), req.linkedAccountId());
         if (cardError != null) throw new DomainException(cardError);
@@ -92,9 +100,9 @@ public class AccountResource {
         };
     }
 
-    @DeleteMapping("/{id}")
-    @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void delete(@PathVariable UUID id) {
+    @DELETE
+    @Path("/{id}")
+    public void delete(@PathParam("id") UUID id) {
         val userId = CurrentUser.getId();
         switch (monetaryContext.deleteAccount(id)) {
             case Result.Success(var ignored) -> {

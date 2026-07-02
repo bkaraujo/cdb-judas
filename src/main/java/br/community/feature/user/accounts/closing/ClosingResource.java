@@ -2,39 +2,41 @@ package br.community.feature.user.accounts.closing;
 
 import br.commons.Logger;
 import jakarta.validation.Valid;
+import jakarta.ws.rs.DELETE;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.POST;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.core.MediaType;
 import lombok.RequiredArgsConstructor;
 import lombok.val;
 import org.jspecify.annotations.NullMarked;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
-import org.springframework.web.bind.annotation.*;
 
 import java.time.YearMonth;
 
 @NullMarked
-@RestController
+@Path("/api/{uuid}/accounts/closing")
+@Produces(MediaType.APPLICATION_JSON)
 @RequiredArgsConstructor
-@RequestMapping(value = "/api/{uuid}/accounts/closing", produces = MediaType.APPLICATION_JSON_VALUE)
 public class ClosingResource {
 
     private final ClosingService closingService;
 
-    @GetMapping
+    @GET
     public ClosingResponse get() {
         return closingService.find()
                 .map(ym -> new ClosingResponse(ym.toString()))
                 .orElse(new ClosingResponse(null));
     }
 
-    @PostMapping
-    public ClosingResponse set(@RequestBody @Valid ClosingRequest req) {
+    @POST
+    public ClosingResponse set(@Valid ClosingRequest req) {
         Logger.debug("ClosingRequest: %s", req);
         val ym = closingService.save(YearMonth.parse(req.period()));
         return new ClosingResponse(ym.toString());
     }
 
-    @DeleteMapping
-    @ResponseStatus(HttpStatus.NO_CONTENT)
+    @DELETE
     public void clear() {
         Logger.debug("Clearing closing");
         closingService.clear();

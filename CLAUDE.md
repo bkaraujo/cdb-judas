@@ -1,6 +1,6 @@
 # CDB Finance — Guia Central
 
-Gestor de finanças pessoais. Backend **Java 25 + Spring Boot 4**; frontend **SPA Vanilla JS/CSS + jQuery 4** (servido pelo próprio backend). Arquitetura híbrida: **Vertical Slice** nas features de entrega HTTP (`br.community.feature.*`) sobre **Hexagonal** nos contextos de negócio (`br.community.context.*`) — features falam com contextos **apenas via Facade**. Persistência: **JDBC/H2** (dev: file `./database`; teste: in-memory) + JSON para `Closing` e o catálogo de centros de custo. Rotas de dados escopadas por `/api/{uuid}/…` com guarda de propriedade (anti-IDOR).
+Gestor de finanças pessoais. Backend **Java 25 + Quarkus** (JVM mode); frontend **SPA Vanilla JS/CSS + jQuery 4** (servido pelo próprio backend). Arquitetura híbrida: **Vertical Slice** nas features de entrega HTTP (`br.community.feature.*`) sobre **Hexagonal** nos contextos de negócio (`br.community.context.*`) — features falam com contextos **apenas via Facade**. Persistência: **JDBC/H2** (dev: file `./database`; teste: in-memory) + JSON para `Closing` e o catálogo de centros de custo. Rotas de dados escopadas por `/api/{uuid}/…` com guarda de propriedade (anti-IDOR).
 
 > Este é o índice central. As diretrizes detalhadas vivem nos `CLAUDE.md` aninhados (`src/main/java/`, `web/`) e em `docs/`.
 > **Schema do banco: os diagramas `docs/*.mermaid` são a fonte da verdade** — o código (DDL em `Database`) conforma ao diagrama, nunca o inverso.
@@ -9,7 +9,7 @@ Gestor de finanças pessoais. Backend **Java 25 + Spring Boot 4**; frontend **SP
 
 ## Decomposição Funcional
 
-### Contextos de negócio — `br.community.context.*` (Hexagonal, livre de Spring; DI via `Registry`)
+### Contextos de negócio — `br.community.context.*` (Hexagonal, livre de framework; DI via `Registry`)
 - **`monetary`** — lógica financeira. Facade `MonetaryContext`; modelos `MonetaryAccount`, `MonetaryTransaction`, `MonetaryCenter`, `MonthlyBalance`, `MonetaryStatement`; use cases `AccountUseCase`, `TransactionUseCase`, `MetadataUseCase`.
 - **`people`** — identidade, usuário e preferências. Agregado `User` (+ `Preferences`: theme/language/locale/sidebarCollapsed).
 - **`shared`** — núcleo comum dos contextos (`DomainEvent`, `DomainError`, `SharedModule`).
@@ -27,11 +27,11 @@ Gestor de finanças pessoais. Backend **Java 25 + Spring Boot 4**; frontend **SP
 - **`stream`** — canal SSE (`/api/{uuid}/stream`).
 
 ### Features de sistema — `br.community.feature.system.*` (sem `{uuid}`)
-- **`auth`** — login e emissão de token (`POST /login`, JWT rotativo).
+- **`auth`** — login e emissão de token (`POST /login`, token opaco rotativo).
 - **`costcenter`** — catálogo somente-leitura (`GET /api/cost-center`).
 
 ### Plataforma — `br.community.core`
-Autenticação/autorização (JWT, `OwnershipInterceptor`), observabilidade (log de requisição + MDC), persistência JSON, config HTTP/OpenAPI, `ContextBridge` (costura Spring↔`Registry`).
+Autenticação/autorização (token opaco rotativo, `OwnershipFilter`), observabilidade (log de requisição + MDC), persistência JSON, config HTTP/OpenAPI, `ContextBridge` (costura CDI↔`Registry`).
 
 ### Framework comum — `br.commons`
 `Result` (Success/Failure), `MessageBus`, Logger próprio (console + arquivo rotativo), abstrações de persistência (JSON + pool JDBC), leitor YAML, `PdfBoxTextExtractor`, utilidades multiplataforma.

@@ -1,25 +1,25 @@
 package br.community.feature.system.costcenter;
 
 import br.community.context.monetary._0_domain.model.CostCenter;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.core.MediaType;
 import lombok.RequiredArgsConstructor;
 import org.jspecify.annotations.NullMarked;
-import org.springframework.http.MediaType;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 
 /** Centro de custo é dado fixo do sistema: rota global, somente leitura (sem namespace de usuário). */
 @NullMarked
-@RestController
+@Path("/api/cost-center")
+@Produces(MediaType.APPLICATION_JSON)
 @RequiredArgsConstructor
-@RequestMapping(value = "/api/cost-center", produces = MediaType.APPLICATION_JSON_VALUE)
 public class CostCenterResource {
 
     private final CostCenterCatalog catalog;
 
-    @GetMapping
+    @GET
     public List<CostCenter> list() {
         return catalog.list();
     }

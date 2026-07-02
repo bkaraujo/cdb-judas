@@ -7,23 +7,29 @@ import br.community.context.shared._1_application.DomainException;
 import br.community.feature.user.accounts.closing.ClosingService;
 import br.community.feature.user.accounts.transactions.core.TransactionMapper;
 import jakarta.validation.Valid;
+import jakarta.ws.rs.DELETE;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.PATCH;
+import jakarta.ws.rs.POST;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.PathParam;
+import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.QueryParam;
+import jakarta.ws.rs.core.MediaType;
 import lombok.RequiredArgsConstructor;
 import lombok.val;
+import org.jboss.resteasy.reactive.RestResponse;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
-import org.springframework.format.annotation.DateTimeFormat;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
-import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
 
 @NullMarked
-@RestController
+@Path("/api/{uuid}/accounts")
+@Produces(MediaType.APPLICATION_JSON)
 @RequiredArgsConstructor
-@RequestMapping(value = "/api/{uuid}/accounts", produces = MediaType.APPLICATION_JSON_VALUE)
 public class TransactionResource {
 
     private final MonetaryContext monetaryContext;
@@ -32,50 +38,53 @@ public class TransactionResource {
 
     // ── Cross-account collection ───────────────────────────────────
 
-    @GetMapping("/transactions")
+    @GET
+    @Path("/transactions")
     public List<TransactionResponse> listAll(
-            @PathVariable UUID uuid,
-            @Nullable @RequestParam(required = false) Integer limit,
-            @Nullable @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dateFrom,
-            @Nullable @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dateTo,
-            @Nullable @RequestParam(required = false) String status,
-            @Nullable @RequestParam(required = false) String type
+            @PathParam("uuid") UUID uuid,
+            @QueryParam("limit") @Nullable Integer limit,
+            @QueryParam("dateFrom") @Nullable LocalDate dateFrom,
+            @QueryParam("dateTo") @Nullable LocalDate dateTo,
+            @QueryParam("status") @Nullable String status,
+            @QueryParam("type") @Nullable String type
     ) {
         return query(uuid, null, limit, dateFrom, dateTo, status, type);
     }
 
     // ── Per-account collection + items ─────────────────────────────
 
-    @GetMapping("/{accId}/transactions")
+    @GET
+    @Path("/{accId}/transactions")
     public List<TransactionResponse> listByAccount(
-            @PathVariable UUID uuid,
-            @PathVariable UUID accId,
-            @Nullable @RequestParam(required = false) Integer limit,
-            @Nullable @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dateFrom,
-            @Nullable @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dateTo,
-            @Nullable @RequestParam(required = false) String status,
-            @Nullable @RequestParam(required = false) String type
+            @PathParam("uuid") UUID uuid,
+            @PathParam("accId") UUID accId,
+            @QueryParam("limit") @Nullable Integer limit,
+            @QueryParam("dateFrom") @Nullable LocalDate dateFrom,
+            @QueryParam("dateTo") @Nullable LocalDate dateTo,
+            @QueryParam("status") @Nullable String status,
+            @QueryParam("type") @Nullable String type
     ) {
         return query(uuid, accId, limit, dateFrom, dateTo, status, type);
     }
 
-    @PostMapping("/{accId}/transactions")
-    @ResponseStatus(HttpStatus.CREATED)
-    public TransactionResponse create(@PathVariable UUID uuid, @PathVariable UUID accId, @RequestBody @Valid TransactionRequest req) {
+    @POST
+    @Path("/{accId}/transactions")
+    public RestResponse<TransactionResponse> create(@PathParam("uuid") UUID uuid, @PathParam("accId") UUID accId, @Valid TransactionRequest req) {
         guardClosing(req.date());
         return switch (monetaryContext.createTransaction(TransactionMapper.toCommand(accId, req))) {
             case Result.Success(var t) -> {
                 // Create USER_TRANSACTION for first installment, then for group siblings
                 val ut = saveUserTransaction(t, uuid, req.categoryId());
                 saveUserTransactionForGroup(t, uuid, req.categoryId());
-                yield TransactionMapper.toDto(t, ut);
+                yield RestResponse.status(RestResponse.Status.CREATED, TransactionMapper.toDto(t, ut));
             }
             case Result.Failure(var error) -> throw new DomainException(error);
         };
     }
 
-    @PatchMapping("/{accId}/transactions/{txId}")
-    public TransactionResponse update(@PathVariable UUID uuid, @PathVariable UUID accId, @PathVariable UUID txId, @RequestBody @Valid TransactionRequest req) {
+    @PATCH
+    @Path("/{accId}/transactions/{txId}")
+    public TransactionResponse update(@PathParam("uuid") UUID uuid, @PathParam("accId") UUID accId, @PathParam("txId") UUID txId, @Valid TransactionRequest req) {
         if (monetaryContext.findTransaction(txId) instanceof Result.Success(var existing)) {
             guardClosing(existing.date());
             guardClosing(req.date());
@@ -94,8 +103,9 @@ public class TransactionResource {
         };
     }
 
-    @PatchMapping("/{accId}/transactions/{txId}/status")
-    public TransactionResponse patchStatus(@PathVariable UUID uuid, @PathVariable UUID txId, @RequestBody @Valid PatchStatusRequest req) {
+    @PATCH
+    @Path("/{accId}/transactions/{txId}/status")
+    public TransactionResponse patchStatus(@PathParam("uuid") UUID uuid, @PathParam("txId") UUID txId, @Valid PatchStatusRequest req) {
         return switch (monetaryContext.updateTransactionStatus(txId, req.status(), req.paymentDate())) {
             case Result.Success(var t) -> {
                 val ut = userTransactionService.find(t.id(), uuid).orElse(null);
@@ -105,9 +115,9 @@ public class TransactionResource {
         };
     }
 
-    @DeleteMapping("/{accId}/transactions/{txId}")
-    @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void delete(@PathVariable UUID txId, @Nullable @RequestParam(required = false) String mode) {
+    @DELETE
+    @Path("/{accId}/transactions/{txId}")
+    public void delete(@PathParam("txId") UUID txId, @QueryParam("mode") @Nullable String mode) {
         if (monetaryContext.findTransaction(txId) instanceof Result.Success(var existing)) {
             guardClosing(existing.date());
         }

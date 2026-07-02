@@ -37,6 +37,6 @@ JDK 23+ só roda processadores de anotação com `-proc:full` (ou `-proc:only`);
 
 ErrorProne + NullAway rodam como `-Xplugin` do javac e exigem os `--add-exports=jdk.compiler/...` que vivem em `.mvn/jvm.config` — **só a JVM do Maven CLI os lê**. A IDE compila com compilador próprio, sem esses flags, então o passo "Make" pode falhar antes de subir a aplicação.
 
-A causa de runtime mais traiçoeira, porém, foi um **bug de codegen do javac 25.0.2**: ele emite stackmap frames inválidos em certos `switch` sobre record pattern → `VerifyError` ao carregar a classe → o Spring embrulha como `Lookup method resolution failed`. O CLI sempre funcionou porque usa **JDK 25.0.3** (`/usr/lib/jvm/java-25-openjdk-amd64`); a IDE apontava para `25.0.2`.
+A causa de runtime mais traiçoeira, porém, foi um **bug de codegen do javac 25.0.2**: ele emite stackmap frames inválidos em certos `switch` sobre record pattern → `VerifyError` ao carregar a classe (a mensagem exata do wrapper varia por framework — sob Spring aparecia como `Lookup method resolution failed`; sob Quarkus/Arc não confirmado, mas a causa raiz é a mesma). O CLI sempre funcionou porque usa **JDK 25.0.3** (`/usr/lib/jvm/java-25-openjdk-amd64`); a IDE apontava para `25.0.2`.
 
 **Fix:** apontar a IntelliJ para o JDK **25.0.3** (Project Structure → SDKs → Project SDK + JRE da run config). O lint (ErrorProne/NullAway/PMD) continua barrando só no CLI `mvn verify`.

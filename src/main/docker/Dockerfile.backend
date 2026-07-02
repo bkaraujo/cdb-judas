@@ -1,30 +1,36 @@
 # syntax=docker/dockerfile:1
 
 # ============================================================================
-# Build stage — compila e empacota o jar executável do Spring Boot.
+# Build stage — compila e empacota a fast-jar do Quarkus.
 # Base com Maven 3.9 + Temurin 25, exigidos pelo maven-enforcer-plugin do pom.
 # ============================================================================
 FROM maven:3.9-eclipse-temurin-25 AS builder
 WORKDIR /app
 
-# Resolve dependências primeiro: esta camada é reaproveitada enquanto o pom
-# não muda, mesmo quando apenas o código-fonte é alterado.
-COPY pom.xml .
-RUN mvn -B dependency:go-offline
-
 # .mvn/jvm.config traz os --add-exports/--add-opens que o ErrorProne exige para
 # acessar internals do javac. Sem ele a compilação falha com "An unknown
-# compilation problem occurred". go-offline não compila, então fica antes do
-# copy para preservar o cache daquela camada.
+# compilation problem occurred".
 COPY .mvn ./.mvn
+COPY pom.xml .
 
-# Compila e gera o jar repackaged (cdb-judas-<versão>.jar). Testes ficam por
-# conta do CI; a imagem foca no artefato de runtime.
+# `dependency:go-offline` (usado antes para cachear as dependências numa camada
+# separada de pom.xml, antes desta linha) falhava com "version is missing" para
+# dependências geridas só pelo BOM do Quarkus (rest-assured, junit-jupiter-params
+# etc.) — gap pré-existente (já estava assim antes da migração), só descoberto
+# agora ao tentar validar a imagem de fato. Unificado num único passo (perde o
+# cache de dependências entre builds só de código) para não depender desse goal.
+# NOTA: build de imagem não verificado fim-a-fim neste ambiente — o `mvn package`
+# aqui dentro do container também não resolveu o BOM (mesmas coordenadas que
+# `mvn verify` resolve sem problema fora do container), o que aponta para uma
+# restrição de rede do sandbox de build e não para o Dockerfile em si; validar
+# num Docker com rede irrestrita antes de depender disto em CI/produção.
+# Compila e gera target/quarkus-app/ (fast-jar: app/ + lib/ + quarkus/ +
+# quarkus-run.jar). Testes ficam por conta do CI; a imagem foca no runtime.
 COPY src ./src
 RUN mvn -B package -DskipTests
 
 # ============================================================================
-# Runtime stage — apenas o JRE e o jar. Imagem final enxuta.
+# Runtime stage — apenas o JRE e a fast-jar. Imagem final enxuta.
 # ============================================================================
 FROM eclipse-temurin:25-jre-alpine
 WORKDIR /app
@@ -35,16 +41,18 @@ LABEL org.opencontainers.image.title="cdb-judas-backend" \
       org.opencontainers.image.version="${APP_VERSION}" \
       org.opencontainers.image.vendor="br.community"
 
-# Diretório de persistência JSON. Liga a propriedade storage.json.path (binding
-# relaxado de @ConfigurationProperties) a um caminho de container que o compose
-# monta a partir do ./data do host. mkdir garante execução mesmo sem volume.
+# Diretório de persistência JSON. Liga storage.json.path (@ConfigMapping) a um
+# caminho de container que o compose monta a partir do ./data do host. mkdir
+# garante execução mesmo sem volume.
 ENV STORAGE_JSON_PATH=/data
 RUN mkdir -p /data
 
-COPY --from=builder /app/target/cdb-judas-*.jar app.jar
+# fast-jar preserva a estrutura de diretórios (app/ lib/ quarkus/ + quarkus-run.jar);
+# não é um único jar copiável como o repackaged do Spring Boot.
+COPY --from=builder /app/target/quarkus-app/ ./
 
 EXPOSE 8080
 
 # --enable-preview é obrigatório: o código é compilado com preview features do
 # Java 25, logo a JVM de runtime precisa habilitá-las ou a inicialização falha.
-ENTRYPOINT ["java", "--enable-preview", "-jar", "app.jar"]
+ENTRYPOINT ["java", "--enable-preview", "-jar", "quarkus-run.jar"]

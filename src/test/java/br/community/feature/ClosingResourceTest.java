@@ -1,136 +1,144 @@
 package br.community.feature;
 
+import io.quarkus.test.junit.QuarkusTest;
 import org.junit.jupiter.api.Test;
-import org.springframework.http.MediaType;
 
 import java.util.UUID;
 
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.nullValue;
 
-class ClosingResourceTest extends BaseHttpTest {
+@QuarkusTest
+public class ClosingResourceTest extends BaseHttpTest {
 
     @Test
-    void deveGerenciarFechamento() throws Exception {
-        mockMvc.perform(post("/api/{u}/accounts/closing", TEST_USER_ID)
-                .contentType(MediaType.APPLICATION_JSON)
-                .content("{\"period\":\"2024-02\"}"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.period").value("2024-02"));
+    void deveGerenciarFechamento() {
+        asTestUser()
+                .body("{\"period\":\"2024-02\"}")
+                .when().post("/api/" + TEST_USER_ID + "/accounts/closing")
+                .then().statusCode(200)
+                .body("period", is("2024-02"));
 
-        mockMvc.perform(get("/api/{u}/accounts/closing", TEST_USER_ID))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.period").value("2024-02"));
+        asTestUser()
+                .when().get("/api/" + TEST_USER_ID + "/accounts/closing")
+                .then().statusCode(200)
+                .body("period", is("2024-02"));
 
-        mockMvc.perform(delete("/api/{u}/accounts/closing", TEST_USER_ID))
-                .andExpect(status().isNoContent());
+        asTestUser()
+                .when().delete("/api/" + TEST_USER_ID + "/accounts/closing")
+                .then().statusCode(204);
 
-        mockMvc.perform(get("/api/{u}/accounts/closing", TEST_USER_ID))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.period").doesNotExist());
+        asTestUser()
+                .when().get("/api/" + TEST_USER_ID + "/accounts/closing")
+                .then().statusCode(200)
+                .body("period", nullValue());
     }
 
     @Test
-    void deveBloquearLancamentoEmPeriodoFechado() throws Exception {
-        String accJson = """
-            {"name":"Conta F","balance":0.00,"type":"CHECKING","color":"#000000","active":true}
-            """;
-        UUID accountId = UUID.fromString(objectMapper.readTree(
-                mockMvc.perform(post("/api/{u}/accounts", TEST_USER_ID).contentType(MediaType.APPLICATION_JSON).content(accJson))
-                        .andReturn().getResponse().getContentAsString()).get("id").asText());
+    void deveBloquearLancamentoEmPeriodoFechado() {
+        UUID accountId = UUID.fromString(asTestUser()
+                .body("{\"name\":\"Conta F\",\"balance\":0.00,\"type\":\"CHECKING\",\"color\":\"#000000\",\"active\":true}")
+                .when().post("/api/" + TEST_USER_ID + "/accounts")
+                .then().extract().jsonPath().getString("id"));
 
-        UUID macroId = UUID.fromString(objectMapper.readTree(
-                mockMvc.perform(post("/api/" + TEST_USER_ID + "/categories").contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"name\":\"Geral\",\"nature\":\"EXPENSE\"}"))
-                        .andReturn().getResponse().getContentAsString()).get("id").asText());
-        UUID categoryId = UUID.fromString(objectMapper.readTree(
-                mockMvc.perform(post("/api/" + TEST_USER_ID + "/categories").contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"name\":\"Sub\",\"nature\":\"EXPENSE\",\"parentId\":\"" + macroId + "\"}"))
-                        .andReturn().getResponse().getContentAsString()).get("id").asText());
+        String macroId = asTestUser()
+                .body("{\"name\":\"Geral\",\"nature\":\"EXPENSE\"}")
+                .when().post("/api/" + TEST_USER_ID + "/categories")
+                .then().extract().jsonPath().getString("id");
+        String categoryId = asTestUser()
+                .body("{\"name\":\"Sub\",\"nature\":\"EXPENSE\",\"parentId\":\"" + macroId + "\"}")
+                .when().post("/api/" + TEST_USER_ID + "/categories")
+                .then().extract().jsonPath().getString("id");
 
-        mockMvc.perform(post("/api/{u}/accounts/closing", TEST_USER_ID)
-                .contentType(MediaType.APPLICATION_JSON)
-                .content("{\"period\":\"2024-06\"}"))
-                .andExpect(status().isOk());
+        asTestUser()
+                .body("{\"period\":\"2024-06\"}")
+                .when().post("/api/" + TEST_USER_ID + "/accounts/closing")
+                .then().statusCode(200);
 
         String blockedJson = """
             {"description":"Dentro do fechado","amount":-50.00,"date":"2024-06-15","categoryId":"%s","costCenterId":"d0000000-0000-0000-0000-000000000002","status":"pending","type":"expense"}
             """.formatted(categoryId);
-        mockMvc.perform(post("/api/{u}/accounts/{acc}/transactions", TEST_USER_ID, accountId)
-                .contentType(MediaType.APPLICATION_JSON).content(blockedJson))
-                .andExpect(status().isBadRequest());
+        asTestUser()
+                .body(blockedJson)
+                .when().post("/api/" + TEST_USER_ID + "/accounts/" + accountId + "/transactions")
+                .then().statusCode(400);
 
         String okJson = """
             {"description":"Pos fechamento","amount":-50.00,"date":"2024-07-15","categoryId":"%s","costCenterId":"d0000000-0000-0000-0000-000000000002","status":"pending","type":"expense"}
             """.formatted(categoryId);
-        mockMvc.perform(post("/api/{u}/accounts/{acc}/transactions", TEST_USER_ID, accountId)
-                .contentType(MediaType.APPLICATION_JSON).content(okJson))
-                .andExpect(status().isCreated());
+        asTestUser()
+                .body(okJson)
+                .when().post("/api/" + TEST_USER_ID + "/accounts/" + accountId + "/transactions")
+                .then().statusCode(201);
     }
 
     @Test
-    void deveBloquearEdicaoEExclusaoEmPeriodoFechado() throws Exception {
-        UUID accountId = UUID.fromString(objectMapper.readTree(
-                mockMvc.perform(post("/api/{u}/accounts", TEST_USER_ID).contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"name\":\"Conta E\",\"balance\":0.00,\"type\":\"CHECKING\",\"color\":\"#000000\",\"active\":true}"))
-                        .andReturn().getResponse().getContentAsString()).get("id").asText());
+    void deveBloquearEdicaoEExclusaoEmPeriodoFechado() {
+        UUID accountId = UUID.fromString(asTestUser()
+                .body("{\"name\":\"Conta E\",\"balance\":0.00,\"type\":\"CHECKING\",\"color\":\"#000000\",\"active\":true}")
+                .when().post("/api/" + TEST_USER_ID + "/accounts")
+                .then().extract().jsonPath().getString("id"));
 
-        UUID macroId = UUID.fromString(objectMapper.readTree(
-                mockMvc.perform(post("/api/" + TEST_USER_ID + "/categories").contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"name\":\"Geral\",\"nature\":\"EXPENSE\"}"))
-                        .andReturn().getResponse().getContentAsString()).get("id").asText());
-        UUID categoryId = UUID.fromString(objectMapper.readTree(
-                mockMvc.perform(post("/api/" + TEST_USER_ID + "/categories").contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"name\":\"Sub\",\"nature\":\"EXPENSE\",\"parentId\":\"" + macroId + "\"}"))
-                        .andReturn().getResponse().getContentAsString()).get("id").asText());
+        String macroId = asTestUser()
+                .body("{\"name\":\"Geral\",\"nature\":\"EXPENSE\"}")
+                .when().post("/api/" + TEST_USER_ID + "/categories")
+                .then().extract().jsonPath().getString("id");
+        String categoryId = asTestUser()
+                .body("{\"name\":\"Sub\",\"nature\":\"EXPENSE\",\"parentId\":\"" + macroId + "\"}")
+                .when().post("/api/" + TEST_USER_ID + "/categories")
+                .then().extract().jsonPath().getString("id");
 
         // lançamento criado ANTES de fechar o período
         String txJson = """
             {"description":"Antes","amount":-50.00,"date":"2024-06-15","categoryId":"%s","costCenterId":"d0000000-0000-0000-0000-000000000002","status":"pending","type":"expense"}
             """.formatted(categoryId);
-        UUID txId = UUID.fromString(objectMapper.readTree(
-                mockMvc.perform(post("/api/{u}/accounts/{acc}/transactions", TEST_USER_ID, accountId)
-                        .contentType(MediaType.APPLICATION_JSON).content(txJson))
-                        .andExpect(status().isCreated())
-                        .andReturn().getResponse().getContentAsString()).get("id").asText());
+        String txId = asTestUser()
+                .body(txJson)
+                .when().post("/api/" + TEST_USER_ID + "/accounts/" + accountId + "/transactions")
+                .then().statusCode(201)
+                .extract().jsonPath().getString("id");
 
         // fecha o período que cobre o lançamento
-        mockMvc.perform(post("/api/{u}/accounts/closing", TEST_USER_ID)
-                .contentType(MediaType.APPLICATION_JSON).content("{\"period\":\"2024-06\"}"))
-                .andExpect(status().isOk());
+        asTestUser()
+                .body("{\"period\":\"2024-06\"}")
+                .when().post("/api/" + TEST_USER_ID + "/accounts/closing")
+                .then().statusCode(200);
 
         String updJson = """
             {"description":"Tentativa","amount":-60.00,"date":"2024-06-15","categoryId":"%s","costCenterId":"d0000000-0000-0000-0000-000000000002","status":"pending","type":"expense"}
             """.formatted(categoryId);
-        mockMvc.perform(patch("/api/{u}/accounts/{acc}/transactions/{tx}", TEST_USER_ID, accountId, txId)
-                .contentType(MediaType.APPLICATION_JSON).content(updJson))
-                .andExpect(status().isBadRequest());
+        asTestUser()
+                .body(updJson)
+                .when().patch("/api/" + TEST_USER_ID + "/accounts/" + accountId + "/transactions/" + txId)
+                .then().statusCode(400);
 
-        mockMvc.perform(delete("/api/{u}/accounts/{acc}/transactions/{tx}", TEST_USER_ID, accountId, txId))
-                .andExpect(status().isBadRequest());
+        asTestUser()
+                .when().delete("/api/" + TEST_USER_ID + "/accounts/" + accountId + "/transactions/" + txId)
+                .then().statusCode(400);
     }
 
     @Test
-    void deveBloquearTransferenciaEmPeriodoFechado() throws Exception {
-        UUID from = UUID.fromString(objectMapper.readTree(
-                mockMvc.perform(post("/api/{u}/accounts", TEST_USER_ID).contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"name\":\"Origem\",\"balance\":100.00,\"type\":\"CHECKING\",\"color\":\"#000000\",\"active\":true}"))
-                        .andReturn().getResponse().getContentAsString()).get("id").asText());
-        UUID to = UUID.fromString(objectMapper.readTree(
-                mockMvc.perform(post("/api/{u}/accounts", TEST_USER_ID).contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"name\":\"Destino\",\"balance\":0.00,\"type\":\"CHECKING\",\"color\":\"#000000\",\"active\":true}"))
-                        .andReturn().getResponse().getContentAsString()).get("id").asText());
+    void deveBloquearTransferenciaEmPeriodoFechado() {
+        String from = asTestUser()
+                .body("{\"name\":\"Origem\",\"balance\":100.00,\"type\":\"CHECKING\",\"color\":\"#000000\",\"active\":true}")
+                .when().post("/api/" + TEST_USER_ID + "/accounts")
+                .then().extract().jsonPath().getString("id");
+        String to = asTestUser()
+                .body("{\"name\":\"Destino\",\"balance\":0.00,\"type\":\"CHECKING\",\"color\":\"#000000\",\"active\":true}")
+                .when().post("/api/" + TEST_USER_ID + "/accounts")
+                .then().extract().jsonPath().getString("id");
 
-        mockMvc.perform(post("/api/{u}/accounts/closing", TEST_USER_ID)
-                .contentType(MediaType.APPLICATION_JSON).content("{\"period\":\"2024-06\"}"))
-                .andExpect(status().isOk());
+        asTestUser()
+                .body("{\"period\":\"2024-06\"}")
+                .when().post("/api/" + TEST_USER_ID + "/accounts/closing")
+                .then().statusCode(200);
 
         String transfer = """
             {"fromAccountId":"%s","toAccountId":"%s","date":"2024-06-10","amount":30.00}
             """.formatted(from, to);
-        mockMvc.perform(post("/api/{u}/accounts/transactions/transfer", TEST_USER_ID)
-                .contentType(MediaType.APPLICATION_JSON).content(transfer))
-                .andExpect(status().isBadRequest());
+        asTestUser()
+                .body(transfer)
+                .when().post("/api/" + TEST_USER_ID + "/accounts/transactions/transfer")
+                .then().statusCode(400);
     }
 }

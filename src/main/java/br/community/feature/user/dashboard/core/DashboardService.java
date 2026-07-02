@@ -7,14 +7,14 @@ import lombok.Builder;
 import lombok.RequiredArgsConstructor;
 import lombok.val;
 import org.jspecify.annotations.NullMarked;
-import org.springframework.stereotype.Service;
+import jakarta.inject.Singleton;
 
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 
 @NullMarked
-@Service
+@Singleton
 @RequiredArgsConstructor
 public class DashboardService {
 

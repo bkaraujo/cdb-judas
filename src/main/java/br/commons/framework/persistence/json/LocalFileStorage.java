@@ -4,12 +4,11 @@ import br.commons.Logger;
 import br.commons.Platform;
 import br.commons.framework.persistence.Storage;
 import br.community.core.JsonStorageProperties;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import lombok.val;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
-import org.springframework.stereotype.Component;
-import tools.jackson.databind.ObjectMapper;
-import tools.jackson.databind.node.ObjectNode;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -18,7 +17,6 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.stream.Stream;
 
-@Component
 @NullMarked
 public final class LocalFileStorage implements Storage {
 
@@ -36,11 +34,15 @@ public final class LocalFileStorage implements Storage {
         val path = resolve(file);
         if (!Files.exists(path)) return null;
 
-        val rootNode = mapper.readTree(path.toFile());
-        val field = rootNode.get(jsonKey);
-        if (field == null || field.isNull()) return null;
+        try {
+            val rootNode = mapper.readTree(path.toFile());
+            val field = rootNode.get(jsonKey);
+            if (field == null || field.isNull()) return null;
 
-        return mapper.writeValueAsBytes(field);
+            return mapper.writeValueAsBytes(field);
+        } catch (IOException e) {
+            throw new UncheckedIOException("Erro ao ler campo " + jsonKey + " em " + file, e);
+        }
     }
 
     @Override

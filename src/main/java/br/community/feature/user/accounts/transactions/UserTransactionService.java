@@ -3,7 +3,7 @@ package br.community.feature.user.accounts.transactions;
 import lombok.RequiredArgsConstructor;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
-import org.springframework.stereotype.Service;
+import jakarta.inject.Singleton;
 
 import java.util.List;
 import java.util.Map;
@@ -12,7 +12,7 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 @NullMarked
-@Service
+@Singleton
 @RequiredArgsConstructor
 public class UserTransactionService {
 

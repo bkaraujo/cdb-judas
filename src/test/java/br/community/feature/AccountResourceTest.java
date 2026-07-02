@@ -1,19 +1,19 @@
 package br.community.feature;
 
-import br.community.feature.user.accounts.core.AccountResponse;
+import io.quarkus.test.junit.QuarkusTest;
 import org.junit.jupiter.api.Test;
-import org.springframework.http.MediaType;
 
 import java.util.UUID;
 
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.hamcrest.Matchers.instanceOf;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.notNullValue;
 
-class AccountResourceTest extends BaseHttpTest {
+@QuarkusTest
+public class AccountResourceTest extends BaseHttpTest {
 
     @Test
-    void deveCriarEGerenciarContas() throws Exception {
+    void deveCriarEGerenciarContas() {
         String createJson = """
             {
               "name": "Conta Corrente",
@@ -25,26 +25,24 @@ class AccountResourceTest extends BaseHttpTest {
             }
             """;
 
-        String response = mockMvc.perform(post("/api/{u}/accounts", TEST_USER_ID)
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(createJson))
-                .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.id").exists())
-                .andExpect(jsonPath("$.name").value("Conta Corrente"))
-                .andExpect(jsonPath("$.balance").value(1250.50))
-                .andReturn().getResponse().getContentAsString();
+        String id = asTestUser()
+                .body(createJson)
+                .when().post("/api/" + TEST_USER_ID + "/accounts")
+                .then().statusCode(201)
+                .body("id", notNullValue())
+                .body("name", is("Conta Corrente"))
+                .body("balance", is(1250.50f))
+                .extract().jsonPath().getString("id");
 
-        AccountResponse created = objectMapper.readValue(response, AccountResponse.class);
-        UUID id = created.id();
+        asTestUser()
+                .when().get("/api/" + TEST_USER_ID + "/accounts/" + id)
+                .then().statusCode(200)
+                .body("id", is(id));
 
-        mockMvc.perform(get("/api/{u}/accounts/{id}", TEST_USER_ID, id))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.id").value(id.toString()));
-
-        mockMvc.perform(get("/api/{u}/accounts", TEST_USER_ID))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$").isArray())
-                .andExpect(jsonPath("$.length()").value(1));
+        asTestUser()
+                .when().get("/api/" + TEST_USER_ID + "/accounts")
+                .then().statusCode(200)
+                .body("size()", is(1));
 
         String patchJson = """
             {
@@ -56,55 +54,60 @@ class AccountResourceTest extends BaseHttpTest {
             }
             """;
 
-        mockMvc.perform(patch("/api/{u}/accounts/{id}", TEST_USER_ID, id)
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(patchJson))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.name").value("Conta Alterada"))
-                .andExpect(jsonPath("$.balance").value(1300.00));
+        asTestUser()
+                .body(patchJson)
+                .when().patch("/api/" + TEST_USER_ID + "/accounts/" + id)
+                .then().statusCode(200)
+                .body("name", is("Conta Alterada"))
+                .body("balance", is(1300.00f));
 
-        mockMvc.perform(get("/api/{u}/accounts/{id}/balance", TEST_USER_ID, id)
-                .param("year", "2024"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$").isArray());
+        asTestUser()
+                .queryParam("year", "2024")
+                .when().get("/api/" + TEST_USER_ID + "/accounts/" + id + "/balance")
+                .then().statusCode(200)
+                .body("$", instanceOf(java.util.List.class));
 
-        mockMvc.perform(get("/api/{u}/accounts/{id}/balance", TEST_USER_ID, id))
-                .andExpect(status().isUnprocessableEntity());
+        asTestUser()
+                .when().get("/api/" + TEST_USER_ID + "/accounts/" + id + "/balance")
+                .then().statusCode(422);
 
-        mockMvc.perform(delete("/api/{u}/accounts/{id}", TEST_USER_ID, id))
-                .andExpect(status().isNoContent());
+        asTestUser()
+                .when().delete("/api/" + TEST_USER_ID + "/accounts/" + id)
+                .then().statusCode(204);
     }
 
     @Test
-    void deveRetornar404ParaContaInexistente() throws Exception {
+    void deveRetornar404ParaContaInexistente() {
         UUID missing = UUID.randomUUID();
 
-        mockMvc.perform(get("/api/{u}/accounts/{id}", TEST_USER_ID, missing))
-                .andExpect(status().isNotFound());
+        asTestUser()
+                .when().get("/api/" + TEST_USER_ID + "/accounts/" + missing)
+                .then().statusCode(404);
 
         String patchJson = """
             {"name":"X","balance":0.00,"type":"CHECKING","color":"#000000","active":true}
             """;
-        mockMvc.perform(patch("/api/{u}/accounts/{id}", TEST_USER_ID, missing)
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(patchJson))
-                .andExpect(status().isNotFound());
+        asTestUser()
+                .body(patchJson)
+                .when().patch("/api/" + TEST_USER_ID + "/accounts/" + missing)
+                .then().statusCode(404);
 
-        mockMvc.perform(delete("/api/{u}/accounts/{id}", TEST_USER_ID, missing))
-                .andExpect(status().isNotFound());
+        asTestUser()
+                .when().delete("/api/" + TEST_USER_ID + "/accounts/" + missing)
+                .then().statusCode(404);
     }
 
     @Test
-    void deveGerenciarCartaoViaContas() throws Exception {
+    void deveGerenciarCartaoViaContas() {
         // Conta vinculada (CHECKING) — cartão exige mesma cor da conta de origem.
         String checkingJson = """
             {"name":"Conta Corrente","balance":0.00,"type":"CHECKING","color":"#820AD1","active":true}
             """;
-        String checkingResp = mockMvc.perform(post("/api/{u}/accounts", TEST_USER_ID)
-                .contentType(MediaType.APPLICATION_JSON).content(checkingJson))
-                .andExpect(status().isCreated())
-                .andReturn().getResponse().getContentAsString();
-        UUID checkingId = objectMapper.readValue(checkingResp, AccountResponse.class).id();
+        String checkingId = asTestUser()
+                .body(checkingJson)
+                .when().post("/api/" + TEST_USER_ID + "/accounts")
+                .then().statusCode(201)
+                .extract().jsonPath().getString("id");
 
         String cardJson = """
             {
@@ -113,23 +116,24 @@ class AccountResourceTest extends BaseHttpTest {
               "last4":"1234","creditLimit":5000.00,"closingDay":5,"dueDay":12
             }
             """.formatted(checkingId);
-        String cardResp = mockMvc.perform(post("/api/{u}/accounts", TEST_USER_ID)
-                .contentType(MediaType.APPLICATION_JSON).content(cardJson))
-                .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.type").value("CREDIT_CARD"))
-                .andExpect(jsonPath("$.linkedAccountId").value(checkingId.toString()))
-                .andExpect(jsonPath("$.last4").value("1234"))
-                .andExpect(jsonPath("$.creditLimit").value(5000.00))
-                .andReturn().getResponse().getContentAsString();
-        UUID cardId = objectMapper.readValue(cardResp, AccountResponse.class).id();
+        String cardId = asTestUser()
+                .body(cardJson)
+                .when().post("/api/" + TEST_USER_ID + "/accounts")
+                .then().statusCode(201)
+                .body("type", is("CREDIT_CARD"))
+                .body("linkedAccountId", is(checkingId))
+                .body("last4", is("1234"))
+                .body("creditLimit", is(5000.00f))
+                .extract().jsonPath().getString("id");
 
         // Listar apenas cartões via filtro de tipo.
-        mockMvc.perform(get("/api/{u}/accounts", TEST_USER_ID).param("type", "card"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$").isArray())
-                .andExpect(jsonPath("$.length()").value(1))
-                .andExpect(jsonPath("$[0].id").value(cardId.toString()))
-                .andExpect(jsonPath("$[0].type").value("CREDIT_CARD"));
+        asTestUser()
+                .queryParam("type", "card")
+                .when().get("/api/" + TEST_USER_ID + "/accounts")
+                .then().statusCode(200)
+                .body("size()", is(1))
+                .body("[0].id", is(cardId))
+                .body("[0].type", is("CREDIT_CARD"));
 
         // Editar o cartão pelos endpoints de item de conta.
         String patchCard = """
@@ -139,63 +143,69 @@ class AccountResourceTest extends BaseHttpTest {
               "last4":"9999","creditLimit":8000.00,"closingDay":5,"dueDay":12
             }
             """.formatted(checkingId);
-        mockMvc.perform(patch("/api/{u}/accounts/{id}", TEST_USER_ID, cardId)
-                .contentType(MediaType.APPLICATION_JSON).content(patchCard))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.last4").value("9999"))
-                .andExpect(jsonPath("$.creditLimit").value(8000.00));
+        asTestUser()
+                .body(patchCard)
+                .when().patch("/api/" + TEST_USER_ID + "/accounts/" + cardId)
+                .then().statusCode(200)
+                .body("last4", is("9999"))
+                .body("creditLimit", is(8000.00f));
 
         // Excluir o cartão.
-        mockMvc.perform(delete("/api/{u}/accounts/{id}", TEST_USER_ID, cardId))
-                .andExpect(status().isNoContent());
+        asTestUser()
+                .when().delete("/api/" + TEST_USER_ID + "/accounts/" + cardId)
+                .then().statusCode(204);
 
-        mockMvc.perform(get("/api/{u}/accounts", TEST_USER_ID).param("type", "card"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.length()").value(0));
+        asTestUser()
+                .queryParam("type", "card")
+                .when().get("/api/" + TEST_USER_ID + "/accounts")
+                .then().statusCode(200)
+                .body("size()", is(0));
     }
 
     @Test
-    void saldoAtualRefleteTransacoesEnquantoSaldoInicialPermanece() throws Exception {
+    void saldoAtualRefleteTransacoesEnquantoSaldoInicialPermanece() {
         // Conta com saldo inicial 1000 — sem transações, saldo atual = saldo inicial.
         String accJson = """
             {"name":"Conta Corrente","balance":1000.00,"type":"CHECKING","color":"#007AFF","active":true}
             """;
-        String accResp = mockMvc.perform(post("/api/{u}/accounts", TEST_USER_ID)
-                .contentType(MediaType.APPLICATION_JSON).content(accJson))
-                .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.balance").value(1000.00))
-                .andExpect(jsonPath("$.currentBalance").value(1000.00))
-                .andReturn().getResponse().getContentAsString();
-        UUID accountId = UUID.fromString(objectMapper.readTree(accResp).get("id").asText());
+        String accountId = asTestUser()
+                .body(accJson)
+                .when().post("/api/" + TEST_USER_ID + "/accounts")
+                .then().statusCode(201)
+                .body("balance", is(1000.00f))
+                .body("currentBalance", is(1000.00f))
+                .extract().jsonPath().getString("id");
 
         // Transações só podem ser lançadas em subcategorias (folhas).
-        String macroResp = mockMvc.perform(post("/api/" + TEST_USER_ID + "/categories")
-                .contentType(MediaType.APPLICATION_JSON).content("{\"name\":\"Moradia\",\"nature\":\"EXPENSE\"}"))
-                .andReturn().getResponse().getContentAsString();
-        UUID macroId = UUID.fromString(objectMapper.readTree(macroResp).get("id").asText());
-        String subResp = mockMvc.perform(post("/api/" + TEST_USER_ID + "/categories")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content("{\"name\":\"Aluguel\",\"nature\":\"EXPENSE\",\"parentId\":\"%s\"}".formatted(macroId)))
-                .andReturn().getResponse().getContentAsString();
-        UUID categoryId = UUID.fromString(objectMapper.readTree(subResp).get("id").asText());
+        String macroId = asTestUser()
+                .body("{\"name\":\"Moradia\",\"nature\":\"EXPENSE\"}")
+                .when().post("/api/" + TEST_USER_ID + "/categories")
+                .then().extract().jsonPath().getString("id");
+        String categoryId = asTestUser()
+                .body("{\"name\":\"Aluguel\",\"nature\":\"EXPENSE\",\"parentId\":\"%s\"}".formatted(macroId))
+                .when().post("/api/" + TEST_USER_ID + "/categories")
+                .then().extract().jsonPath().getString("id");
 
         // Lançamento de -250 na conta.
         String txJson = """
             {"description":"Aluguel","amount":-250.00,"date":"2024-04-01","categoryId":"%s","costCenterId":"d0000000-0000-0000-0000-000000000002","status":"confirmed","type":"expense","installments":1,"editMode":"single"}
             """.formatted(categoryId);
-        mockMvc.perform(post("/api/{u}/accounts/{acc}/transactions", TEST_USER_ID, accountId)
-                .contentType(MediaType.APPLICATION_JSON).content(txJson))
-                .andExpect(status().isCreated());
+        asTestUser()
+                .body(txJson)
+                .when().post("/api/" + TEST_USER_ID + "/accounts/" + accountId + "/transactions")
+                .then().statusCode(201);
 
         // Saldo inicial permanece 1000; saldo atual = 1000 - 250 = 750 (no item e na lista).
-        mockMvc.perform(get("/api/{u}/accounts/{id}", TEST_USER_ID, accountId))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.balance").value(1000.00))
-                .andExpect(jsonPath("$.currentBalance").value(750.00));
+        asTestUser()
+                .when().get("/api/" + TEST_USER_ID + "/accounts/" + accountId)
+                .then().statusCode(200)
+                .body("balance", is(1000.00f))
+                .body("currentBalance", is(750.00f));
 
-        mockMvc.perform(get("/api/{u}/accounts", TEST_USER_ID))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].balance").value(1000.00))
-                .andExpect(jsonPath("$[0].currentBalance").value(750.00));
+        asTestUser()
+                .when().get("/api/" + TEST_USER_ID + "/accounts")
+                .then().statusCode(200)
+                .body("[0].balance", is(1000.00f))
+                .body("[0].currentBalance", is(750.00f));
     }
 }

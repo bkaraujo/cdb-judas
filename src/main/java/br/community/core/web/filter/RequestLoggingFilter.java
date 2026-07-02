@@ -1,39 +1,25 @@
 package br.community.core.web.filter;
 
 import br.commons.Logger;
-import br.commons.tools.Strings;
-import jakarta.servlet.FilterChain;
-import jakarta.servlet.ServletException;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
+import br.community.core.web.RequestUtils;
+import jakarta.annotation.Priority;
+import jakarta.ws.rs.container.ContainerRequestContext;
+import jakarta.ws.rs.container.ContainerRequestFilter;
+import jakarta.ws.rs.ext.Provider;
 import lombok.val;
 import org.jspecify.annotations.NullMarked;
-import org.springframework.core.Ordered;
-import org.springframework.core.annotation.Order;
-import org.springframework.stereotype.Component;
-import org.springframework.web.filter.OncePerRequestFilter;
-import org.springframework.web.util.ContentCachingRequestWrapper;
 
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-
-@Component
+/** Log de requisição em nível TRACE (método + caminho). */
+@Provider
+@Priority(600)
 @NullMarked
-@Order(Ordered.HIGHEST_PRECEDENCE + 1)
-public class RequestLoggingFilter extends OncePerRequestFilter {
+public class RequestLoggingFilter implements ContainerRequestFilter {
 
     @Override
-    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
-        val wrappedRequest = new ContentCachingRequestWrapper(request, 1024 * 1024);
-        val requestBody = wrappedRequest.getContentAsByteArray();
-
-        var bodyString = Strings.EMPTY;
-        if (requestBody.length > 0) { bodyString = new String(requestBody, StandardCharsets.UTF_8); }
-
-        if (!request.getRequestURI().contains("favicon")) {
-            Logger.trace("%s %s => %s", request.getMethod(), request.getRequestURI(), bodyString.isEmpty() ? "none" : bodyString);
+    public void filter(ContainerRequestContext request) {
+        val path = RequestUtils.path(request);
+        if (!path.contains("favicon")) {
+            Logger.trace("%s %s", request.getMethod(), path);
         }
-
-        filterChain.doFilter(wrappedRequest, response);
     }
 }

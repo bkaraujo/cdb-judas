@@ -4,77 +4,90 @@ import br.commons.framework.persistence.Storage;
 import br.commons.framework.persistence.jdbc.DataSource;
 import br.commons.framework.persistence.json.Repository;
 import br.community.core.JsonStorageProperties;
-import br.community.core.web.security.AuthenticatedUser;
+import br.community.core.web.security.User;
+import br.community.core.web.security.UserRepository;
+import br.community.core.web.security.core.AccessTokenStore;
+import br.community.feature.system.auth.LoginResource;
 import br.community.infra.persistence.Database;
+import io.quarkus.elytron.security.common.BcryptUtil;
+import io.quarkus.test.junit.QuarkusTest;
+import io.restassured.RestAssured;
+import io.restassured.http.ContentType;
+import io.restassured.specification.RequestSpecification;
+import jakarta.enterprise.inject.Instance;
+import jakarta.inject.Inject;
 import lombok.val;
 import org.junit.jupiter.api.BeforeEach;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.test.web.servlet.setup.MockMvcBuilders;
-import org.springframework.util.FileSystemUtils;
-import org.springframework.web.context.WebApplicationContext;
-import tools.jackson.databind.ObjectMapper;
 
-import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.List;
+import java.util.Comparator;
 
-@SpringBootTest
-@ActiveProfiles("test")
-abstract class BaseHttpTest {
+@QuarkusTest
+public abstract class BaseHttpTest {
 
     protected static final String TEST_USER_ID = "00000000-0000-0000-0000-0000000000ad";
 
-    @Autowired
-    protected WebApplicationContext context;
-
-    protected MockMvc mockMvc;
-
-    @Autowired
-    protected ObjectMapper objectMapper;
-
-    @Autowired
+    @Inject
     protected Storage storage;
 
-    @Autowired
+    @Inject
     protected JsonStorageProperties storageProperties;
 
-    @Autowired
-    protected List<Repository<?, ?>> repositories;
+    @Inject
+    DataSource dataSource;
 
-    @Autowired
-    protected DataSource dataSource;
+    @Inject
+    Instance<Repository<?, ?>> repositories;
+
+    @Inject
+    UserRepository userRepository;
+
+    @Inject
+    AccessTokenStore tokenStore;
 
     @BeforeEach
     void setUpBase() throws IOException {
-        this.mockMvc = MockMvcBuilders.webAppContextSetup(this.context).build();
-
-        val principal = new AuthenticatedUser(TEST_USER_ID, "admin");
-        SecurityContextHolder
-                .getContext()
-                .setAuthentication(new UsernamePasswordAuthenticationToken(
-                        principal,
-                        null,
-                        List.of()
-                ));
-
         // Clean storage directory
         val path = Path.of(storageProperties.path());
-        FileSystemUtils.deleteRecursively(path);
-        new File(path.toString()).mkdirs();
+        deleteRecursively(path);
+        Files.createDirectories(path);
+
+        // Reset relational tables — H2 in-memory é compartilhado entre métodos de teste. Também
+        // garante que o DataSource já está publicado no Registry (JDBCRepository.<init> o exige)
+        // antes de repositories.forEach abaixo forçar a construção de todos os *JDBCRepository.
+        val tx = dataSource.begin().get();
+        for (val sql : Database.reset()) tx.execute(sql).get();
+        tx.commit().get();
 
         // Clear repository caches
         repositories.forEach(Repository::clearCache);
 
-        // Reset relational tables — H2 in-memory é compartilhado entre métodos de teste
-        val tx = dataSource.begin().get();
-        for (val sql : Database.reset()) tx.execute(sql).get();
-        tx.commit().get();
+        userRepository.save(new User(TEST_USER_ID, "test-user", null, BcryptUtil.bcryptHash("test")));
     }
 
+    /**
+     * Nova requisição autenticada como {@link #TEST_USER_ID}. Emite um token novo a cada chamada —
+     * o token de acesso real rotaciona a cada resposta bem-sucedida, então reaproveitar um token
+     * capturado de uma resposta anterior quebraria a segunda chamada em diante.
+     */
+    protected RequestSpecification asTestUser() {
+        return RestAssured.given()
+                .header(LoginResource.TOKEN_HEADER, tokenStore.issue(TEST_USER_ID))
+                .contentType(ContentType.JSON);
+    }
+
+    private static void deleteRecursively(Path path) throws IOException {
+        if (!Files.exists(path)) return;
+        try (val walk = Files.walk(path)) {
+            walk.sorted(Comparator.reverseOrder()).forEach(p -> {
+                try {
+                    Files.delete(p);
+                } catch (IOException ignored) {
+                    // best-effort cleanup entre testes
+                }
+            });
+        }
+    }
 }

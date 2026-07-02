@@ -7,9 +7,9 @@ import br.community.feature.user.accounts.statement.provider.BTGInvoiceParser;
 import br.community.feature.user.accounts.statement.provider.BTGStatementParser;
 import br.community.feature.user.accounts.statement.provider.SantanderInvoiceParser;
 import br.community.feature.user.accounts.statement.provider.SantanderStatementParser;
+import jakarta.enterprise.inject.Produces;
+import jakarta.inject.Singleton;
 import org.jspecify.annotations.NullMarked;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
 
 import java.util.List;
 
@@ -18,19 +18,21 @@ import java.util.List;
  * services and the orchestrating {@link StatementImportUseCase}, which reaches the monetary context
  * only through its {@link MonetaryContext} facade.
  */
-@Configuration
 @NullMarked
+@Singleton
 public class StatementImportModule {
 
     private static final int MAX_STATEMENT_PAGES = 50;
     private static final long MAX_STATEMENT_FILE_BYTES = 10L * 1024 * 1024;
 
-    @Bean
+    @Produces
+    @Singleton
     PdfTextExtractor pdfTextExtractor() {
         return new PdfBoxTextExtractor(MAX_STATEMENT_PAGES);
     }
 
-    @Bean
+    @Produces
+    @Singleton
     StatementImportUseCase statementImportUseCase(
             MonetaryContext monetaryContext,
             CreditCardProvider creditCardProvider,

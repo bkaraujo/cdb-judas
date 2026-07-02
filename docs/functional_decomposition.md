@@ -1,6 +1,6 @@
 # Decomposição Funcional
 
-CDB Finance — gestor de finanças pessoais (Java 25 + Spring Boot 4). Arquitetura híbrida:
+CDB Finance — gestor de finanças pessoais (Java 25 + Quarkus). Arquitetura híbrida:
 **Vertical Slice** nas features de entrega HTTP (`br.community.feature.*`) sobre **Hexagonal**
 nos contextos de negócio (`br.community.context.*`). Features falam com os contextos apenas via
 **Facade**. Persistência em **JDBC/H2** (dev: arquivo; teste: in-memory), com JSON remanescente para `Closing` e o catálogo de centros de custo. Rotas de usuário são escopadas por `/api/{uuid}/…`.

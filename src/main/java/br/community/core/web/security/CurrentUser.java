@@ -1,42 +1,33 @@
 package br.community.core.web.security;
 
+import io.quarkus.arc.Arc;
 import lombok.val;
 import org.jspecify.annotations.NullMarked;
-import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.core.userdetails.UserDetails;
 
+/**
+ * Fachada estática para a identidade autenticada, resolvendo o {@link CurrentUserContext}
+ * {@code @RequestScoped} via {@code Arc}. Mantém os call-sites inalterados após a migração
+ * do {@code SecurityContextHolder}.
+ */
 @NullMarked
 public abstract class CurrentUser {
     private CurrentUser() {}
 
     public static String getId() {
-        val principal = principal();
-        if (principal instanceof AuthenticatedUser user) {
-            return user.id();
-        }
-        throw new IllegalStateException("Usuário autenticado sem identificador no contexto");
+        return current().id();
     }
 
     public static String getUsername() {
-        val principal = principal();
-        if (principal instanceof AuthenticatedUser user) {
-            return user.username();
-        }
-        if (principal instanceof UserDetails userDetails) {
-            return userDetails.getUsername();
-        }
-        return principal.toString();
+        return current().username();
     }
 
-    private static Object principal() {
-        val auth = SecurityContextHolder.getContext().getAuthentication();
-        if (auth == null || !auth.isAuthenticated()) {
+    private static AuthenticatedUser current() {
+        val handle = Arc.container().instance(CurrentUserContext.class);
+        val ctx = handle.get();
+        val user = ctx == null ? null : ctx.user();
+        if (user == null) {
             throw new IllegalStateException("Nenhum usuário autenticado no contexto");
         }
-        val principal = auth.getPrincipal();
-        if (principal == null) {
-            throw new IllegalStateException("Nenhum usuário autenticado no contexto");
-        }
-        return principal;
+        return user;
     }
 }

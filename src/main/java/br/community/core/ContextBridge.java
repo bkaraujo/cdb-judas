@@ -15,31 +15,34 @@ import br.community.context.people.PeopleBootstrap;
 import br.community.context.people.PeopleContext;
 import br.community.context.people._0_domain.repository.PersonRepository;
 import br.community.infra.persistence.Database;
+import io.quarkus.runtime.StartupEvent;
+import jakarta.annotation.Priority;
+import jakarta.enterprise.event.Observes;
+import jakarta.enterprise.inject.Produces;
+import jakarta.inject.Singleton;
 import lombok.val;
 import org.jspecify.annotations.NullMarked;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
 
 /**
- * Costura entre a borda Spring (feature) e os contextos ligados por {@link Registry}.
+ * Costura entre a borda Quarkus/CDI (feature) e os contextos ligados por {@link Registry}.
  */
 @NullMarked
-@Configuration
+@Singleton
 public class ContextBridge {
 
     /**
      * Monta o {@code DataSource} H2 a partir de {@link DataSourceProperties} (file em dev, in-memory no
      * perfil de teste), cria o schema ({@link Database#model()}) e o publica no {@link Registry} para os
-     * adaptadores JDBC. Bean explícito (e não inline em {@link #monetaryContext}) para que esteja registrado
-     * antes da construção dos repositórios — ver {@code @DependsOn("dataSource")} em {@code InfraConfigs}.
+     * adaptadores JDBC.
      */
-    @Bean
+    @Produces
+    @Singleton
     public DataSource dataSource(DataSourceProperties config) {
         val properties = new JDBCProperties();
         properties.driver(config.driver());
         properties.url(config.url());
         properties.username(config.username());
-        properties.password(config.password());
+        properties.password(config.password().orElse(""));
         properties.validationQuery("SELECT 1");
         properties.minPoolSize(5);
         properties.maxPoolSize(20);
@@ -63,7 +66,17 @@ public class ContextBridge {
         });
     }
 
-    @Bean
+    /**
+     * Força a criação do {@link DataSource} (e do schema) no startup, antes de qualquer query.
+     * A prioridade baixa garante execução antes de observers de seed (ex.: {@code UserSeeder}) —
+     * substitui o {@code @DependsOn("dataSource")} do Spring.
+     */
+    void initDataSource(@Observes @Priority(1) StartupEvent event, DataSource dataSource) {
+        // A injeção de DataSource basta para acionar o producer e construir o schema.
+    }
+
+    @Produces
+    @Singleton
     public MonetaryContext monetaryContext(
             AccountRepository accountRepository,
             BalanceRepository balanceRepository,
@@ -79,7 +92,8 @@ public class ContextBridge {
         return Registry.get(MonetaryContext.class);
     }
 
-    @Bean
+    @Produces
+    @Singleton
     public PeopleContext peopleContext(PersonRepository personRepository) {
         Registry.set(PersonRepository.class, personRepository);
         PeopleBootstrap.register();
