@@ -7,8 +7,10 @@ import br.community.context.monetary._0_domain.event.AccountEvents;
 import br.community.context.monetary._0_domain.event.TransactionEvents;
 import br.community.context.monetary._0_domain.model.Balance;
 import br.community.context.monetary._0_domain.model.MonthlyBalance;
+import br.community.context.monetary._1_application.service.AccountLimitService;
 import br.community.context.monetary._1_application.service.AccountService;
 import br.community.context.monetary._1_application.service.BalanceService;
+import br.community.context.monetary._1_application.service.CardService;
 import br.community.context.monetary._1_application.service.TransactionService;
 import lombok.RequiredArgsConstructor;
 import lombok.val;
@@ -29,6 +31,8 @@ public class TransactionEventListener {
     private final AccountService accountService;
     private final BalanceService balanceService;
     private final TransactionService transactionService;
+    private final CardService cardService;
+    private final AccountLimitService accountLimitService;
 
     @MessageListener
     public MessageResult onTransaction(TransactionEvents.Created transaction) {
@@ -57,6 +61,11 @@ public class TransactionEventListener {
 
         balanceService.findByAccount(accountId)
                 .forEach(b -> balanceService.deleteById(b.id()));
+
+        cardService.findByAccount(accountId)
+                .forEach(c -> cardService.deleteById(c.id()));
+
+        accountLimitService.deleteByAccount(accountId);
 
         return MessageResult.CONSUMED;
     }

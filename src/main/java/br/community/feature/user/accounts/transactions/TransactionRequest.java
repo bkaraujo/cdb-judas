@@ -26,5 +26,6 @@ public record TransactionRequest(
         @Nullable @Min(1) Integer installments,
         @Nullable String editMode,
         @Nullable String deleteMode,
-        @Nullable @Size(max = 250) String notes
+        @Nullable @Size(max = 250) String notes,
+        @Nullable UUID cardId
 ) {}

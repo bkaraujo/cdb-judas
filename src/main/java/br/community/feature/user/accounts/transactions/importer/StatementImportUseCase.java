@@ -112,15 +112,15 @@ public class StatementImportUseCase {
     }
 
     private Result<Map<UUID, UUID>, DomainError> resolveAccountsByCard(ImportConfirmCommand cmd) {
-        val linkedByCard = creditCardProvider.creditCards().stream()
-                .filter(card -> card.linkedAccountId() != null)
-                .collect(Collectors.toMap(CreditCard::id, card -> card.linkedAccountId()));
+        val accountByCardId = creditCardProvider.creditCards().stream()
+                .collect(Collectors.toMap(CreditCard::id, CreditCard::accountId));
         val accountByCard = new HashMap<UUID, UUID>();
         for (val cardId : cmd.rows().stream().map(ImportConfirmCommand.Row::cardId).distinct().toList()) {
-            switch (monetaryContext.findAccount(cardId)) {
-                case Result.Success(var ignored) -> accountByCard.put(cardId, linkedByCard.getOrDefault(cardId, cardId));
-                case Result.Failure(var error) -> { return new Result.Failure<>(error); }
+            val accountId = accountByCardId.get(cardId);
+            if (accountId == null) {
+                return new Result.Failure<>(new DomainError.NotFound("Card not found: " + cardId));
             }
+            accountByCard.put(cardId, accountId);
         }
         return new Result.Success<>(accountByCard);
     }
@@ -239,7 +239,7 @@ public class StatementImportUseCase {
         val type = row.type() != null ? row.type() : (row.amount().signum() < 0 ? Transaction.Type.EXPENSE : Transaction.Type.INCOME);
         val command = new ImportedTransactionCommand(
                 accountId, row.description(), row.amount(), row.date(),
-                status, type, null, null, null);
+                status, type, null, null, null, null);
         try {
             return switch (monetaryContext.createImportedTransaction(command)) {
                 case Result.Success(var ignored) -> true;
@@ -323,7 +323,7 @@ public class StatementImportUseCase {
         val status = YearMonth.from(row.date()).isAfter(YearMonth.from(today)) ? Transaction.Status.SCHEDULED : Transaction.Status.CONFIRMED;
         val command = new ImportedTransactionCommand(
                 accountId, row.description(), row.amount(), row.date(),
-                status, Transaction.Type.EXPENSE, groupId, installmentNumber, totalInstallments);
+                status, Transaction.Type.EXPENSE, groupId, installmentNumber, totalInstallments, row.cardId());
         try {
             return switch (monetaryContext.createImportedTransaction(command)) {
                 case Result.Success(var saved) -> saved;
@@ -340,7 +340,7 @@ public class StatementImportUseCase {
 
     private Result<ImportPreviewOutcome, ImportError> preview(Issuer issuer, List<MonetaryDocumentEntry> statement, @Nullable UUID accountId) {
         val candidates = monetaryContext.listAccounts().getOrElse(List.of()).stream()
-                .filter(a -> a.type() != Account.Type.CREDIT_CARD && a.active())
+                .filter(Account::active)
                 .toList();
         val selectedAccountId = selectAccount(accountId, candidates);
 
@@ -372,8 +372,7 @@ public class StatementImportUseCase {
         val last4s = statement.stream().map(MonetaryDocumentEntry::last4)
                 .filter(Objects::nonNull).collect(Collectors.toSet());
         val cards = creditCardProvider.creditCards().stream()
-                .filter(card -> card.linkedAccountId() != null)
-                .filter(card -> card.last4() != null && last4s.contains(card.last4()))
+                .filter(card -> last4s.contains(card.last4()))
                 .toList();
 
         val cardByLast4 = cardMatcher.matchByLast4(last4s, cards);
@@ -398,14 +397,7 @@ public class StatementImportUseCase {
     }
 
     private static UUID resolveAccountId(@Nullable CreditCard card) {
-        if (card == null) {
-            return new UUID(0L, 0L);
-        }
-        return accountIdOf(card);
-    }
-
-    private static UUID accountIdOf(CreditCard card) {
-        return card.linkedAccountId() != null ? card.linkedAccountId() : card.id();
+        return card != null ? card.accountId() : new UUID(0L, 0L);
     }
 
     private boolean isDuplicate(TransactionDraft draft, List<Transaction> existing) {

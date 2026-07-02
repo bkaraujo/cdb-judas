@@ -31,7 +31,8 @@ public final class TransactionMapper {
                 t.groupId(),
                 t.installmentNumber(),
                 t.totalInstallments(),
-                t.notes()
+                t.notes(),
+                t.cardId()
         );
     }
 
@@ -46,7 +47,8 @@ public final class TransactionMapper {
                 req.type(),
                 req.installments(),
                 req.editMode(),
-                req.notes()
+                req.notes(),
+                req.cardId()
         );
     }
 }

@@ -11,8 +11,11 @@ import java.util.List;
  * <p>Restrito a construções padrão (sem dialeto): {@code CREATE TABLE} sem {@code IF NOT EXISTS},
  * tipos {@code CHAR}/{@code VARCHAR}/{@code DECIMAL}/{@code DATE}/{@code INT}/{@code TIMESTAMP};
  * booleanos ativos como {@code CHAR(1)} ('Y'/'N') com prefixo {@code FLG_}. Tabelas de dados planas,
- * sem {@code DEFAULT} (a aplicação sempre fornece os valores). Os dados de cartão (conta vinculada,
- * last4, dias, limites) vivem no overlay de feature {@code USER_ACCOUNT}, não em {@code MON_ACCOUNT}.</p>
+ * sem {@code DEFAULT} (a aplicação sempre fornece os valores). Cartão é entidade do contexto
+ * monetário: {@code MON_CARD} (identificado só pelo last4, vinculado a uma conta real) e
+ * {@code MON_ACCOUNT_LIMIT} (limite de crédito/cheque especial e ciclo de fatura, linha única por
+ * conta, compartilhados por todos os cartões dela). {@code USER_ACCOUNT} carrega só o overlay por
+ * utilizador (saldo de abertura, cor, ativo) — sem dados de cartão.</p>
  *
  * <p>Lookup tables: {@code MON_ACCOUNT_TYPE} (IDs UUID estáveis — ver {@link AccountTypeMapper}),
  * {@code TRANSACTION_NATURE} e {@code MON_STATUS} (IDs VARCHAR(20) com o nome do enum). As tabelas
@@ -50,7 +53,6 @@ public abstract class Database {
                 """,
                 "INSERT INTO MON_ACCOUNT_TYPE (ID, TXT_DESCRIPTION, FLG_ACTIVE) VALUES ('" + AccountTypeMapper.CHECKING_ID    + "', 'Conta corrente', 'Y')",
                 "INSERT INTO MON_ACCOUNT_TYPE (ID, TXT_DESCRIPTION, FLG_ACTIVE) VALUES ('" + AccountTypeMapper.INVESTMENT_ID  + "', 'Investimento', 'Y')",
-                "INSERT INTO MON_ACCOUNT_TYPE (ID, TXT_DESCRIPTION, FLG_ACTIVE) VALUES ('" + AccountTypeMapper.CREDIT_CARD_ID + "', 'Cartão de crédito', 'Y')",
                 "INSERT INTO TRANSACTION_NATURE (ID, TXT_DESCRIPTION) VALUES ('EXPENSE', 'Despesa')",
                 "INSERT INTO TRANSACTION_NATURE (ID, TXT_DESCRIPTION) VALUES ('INCOME', 'Receita')",
                 "INSERT INTO MON_STATUS (ID, TXT_DESCRIPTION, FLG_ACTIVE) VALUES ('SCHEDULED', 'Agendado', 'Y')",
@@ -73,12 +75,6 @@ public abstract class Database {
                     DEC_OPENING_BALANCE DECIMAL(19, 2) NOT NULL,
                     TXT_COLOR VARCHAR(20) NOT NULL,
                     FLG_ACTIVE CHAR(1) NOT NULL,
-                    COD_LINKED_ACCOUNT CHAR(36),
-                    TXT_CARD_LAST4 VARCHAR(4),
-                    NUM_DUE_DAY INT,
-                    NUM_CLOSING_DAY INT,
-                    DEC_CREDIT_LIMIT DECIMAL(19, 2),
-                    DEC_OVERDRAFT_LIMIT DECIMAL(19, 2),
                     PRIMARY KEY (COD_USER, COD_ACCOUNT)
                 )
                 """,
@@ -115,6 +111,28 @@ public abstract class Database {
                     NUM_INSTALLMENT INT NOT NULL,
                     NUM_INSTALLMENT_TOTAL INT NOT NULL,
                     TXT_NOTES VARCHAR(1000),
+                    TMS_CREATE_AT TIMESTAMP NOT NULL,
+                    TMS_UPDATED_AT TIMESTAMP NOT NULL,
+                    COD_CARD CHAR(36)
+                )
+                """,
+                """
+                CREATE TABLE MON_CARD (
+                    ID CHAR(36) PRIMARY KEY,
+                    TXT_LAST4 VARCHAR(4) NOT NULL,
+                    COD_ACCOUNT CHAR(36) NOT NULL,
+                    FLG_ACTIVE CHAR(1) NOT NULL,
+                    TMS_CREATE_AT TIMESTAMP NOT NULL,
+                    TMS_UPDATED_AT TIMESTAMP NOT NULL
+                )
+                """,
+                """
+                CREATE TABLE MON_ACCOUNT_LIMIT (
+                    COD_ACCOUNT CHAR(36) PRIMARY KEY,
+                    DEC_CREDIT_LIMIT DECIMAL(19, 2),
+                    DEC_OVERDRAFT_LIMIT DECIMAL(19, 2),
+                    NUM_CLOSING_DAY INT,
+                    NUM_DUE_DAY INT,
                     TMS_CREATE_AT TIMESTAMP NOT NULL,
                     TMS_UPDATED_AT TIMESTAMP NOT NULL
                 )
@@ -207,7 +225,9 @@ public abstract class Database {
                 "DELETE FROM USER_ACCOUNT_BALANCE",
                 "DELETE FROM USER_ACCOUNT",
                 "DELETE FROM MON_TRANSACTION",
-                "DELETE FROM USER_PREFERENCES"
+                "DELETE FROM USER_PREFERENCES",
+                "DELETE FROM MON_CARD",
+                "DELETE FROM MON_ACCOUNT_LIMIT"
         );
     }
 }

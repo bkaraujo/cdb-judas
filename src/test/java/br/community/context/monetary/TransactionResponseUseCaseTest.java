@@ -1,9 +1,11 @@
 package br.community.context.monetary;
 
 import br.commons.Result;
+import br.community.context.monetary._0_domain.model.Card;
 import br.community.context.monetary._0_domain.model.CostCenter;
 import br.community.context.monetary._0_domain.model.Transaction;
 import br.community.context.monetary._1_application.command.TransactionCommand;
+import br.community.context.monetary._1_application.service.CardService;
 import br.community.context.monetary._1_application.service.TransactionService;
 import br.community.context.monetary._1_application.usecase.TransactionUseCase;
 import br.community.context.shared._0_domain.model.DomainError;
@@ -23,6 +25,7 @@ import static org.junit.jupiter.api.Assertions.*;
 class TransactionResponseUseCaseTest {
 
     private InMemoryRepositories.Transactions txRepo;
+    private InMemoryRepositories.Cards cardRepo;
     private TransactionUseCase useCase;
 
     private final UUID accountId = UUID.randomUUID();
@@ -31,12 +34,22 @@ class TransactionResponseUseCaseTest {
     @BeforeEach
     void setUp() {
         txRepo = new InMemoryRepositories.Transactions();
-        useCase = new TransactionUseCase(new TransactionService(txRepo));
+        cardRepo = new InMemoryRepositories.Cards();
+        useCase = new TransactionUseCase(new TransactionService(txRepo), new CardService(cardRepo));
     }
 
     private TransactionCommand cmd(LocalDate date, Transaction.Status status, Integer installments) {
         return new TransactionCommand("desc", new BigDecimal("10.00"), date, accountId,
-                costCenterId, status, Transaction.Type.EXPENSE, installments, null, null);
+                costCenterId, status, Transaction.Type.EXPENSE, installments, null, null, null);
+    }
+
+    private TransactionCommand cmdWithCard(LocalDate date, Integer installments, UUID cardId) {
+        return new TransactionCommand("desc", new BigDecimal("10.00"), date, accountId,
+                costCenterId, Transaction.Status.CONFIRMED, Transaction.Type.EXPENSE, installments, null, null, cardId);
+    }
+
+    private Card seedCard(UUID forAccountId, String last4) {
+        return cardRepo.save(new Card(UUID.randomUUID(), last4, forAccountId, true));
     }
 
     @Test
@@ -81,7 +94,7 @@ class TransactionResponseUseCaseTest {
         Transaction first = all.stream().filter(t -> t.installmentNumber() == 1).findFirst().orElseThrow();
 
         TransactionCommand upd = new TransactionCommand("upd", new BigDecimal("20.00"),
-                LocalDate.of(2026, 5, 15), accountId, costCenterId, Transaction.Status.CONFIRMED, Transaction.Type.EXPENSE, null, null, null);
+                LocalDate.of(2026, 5, 15), accountId, costCenterId, Transaction.Status.CONFIRMED, Transaction.Type.EXPENSE, null, null, null, null);
         Result<Transaction, DomainError> r = useCase.updateTransaction(first.id(), upd);
         assertTrue(r.isSuccess());
 
@@ -105,7 +118,7 @@ class TransactionResponseUseCaseTest {
 
         LocalDate newDate = LocalDate.of(2026, 7, 20);
         TransactionCommand upd = new TransactionCommand("future", new BigDecimal("99.00"),
-                newDate, accountId, costCenterId, Transaction.Status.CONFIRMED, Transaction.Type.EXPENSE, null, "FUTURE", null);
+                newDate, accountId, costCenterId, Transaction.Status.CONFIRMED, Transaction.Type.EXPENSE, null, "FUTURE", null, null);
         Result<Transaction, DomainError> r = useCase.updateTransaction(second.id(), upd);
         assertTrue(r.isSuccess());
 
@@ -185,9 +198,9 @@ class TransactionResponseUseCaseTest {
     private UUID saveTransferPair(LocalDate date, UUID fromAccount, UUID toAccount) {
         UUID groupId = UUID.randomUUID();
         txRepo.save(new Transaction(UUID.randomUUID(), "Transferência (saída)", new BigDecimal("-50.00"),
-                date, fromAccount, Transaction.Status.CONFIRMED, Transaction.Type.EXPENSE, costCenterId, date, groupId, 1, 2, null));
+                date, fromAccount, Transaction.Status.CONFIRMED, Transaction.Type.EXPENSE, costCenterId, date, groupId, 1, 2, null, null));
         txRepo.save(new Transaction(UUID.randomUUID(), "Transferência (entrada)", new BigDecimal("50.00"),
-                date, toAccount, Transaction.Status.CONFIRMED, Transaction.Type.INCOME, costCenterId, date, groupId, 2, 2, null));
+                date, toAccount, Transaction.Status.CONFIRMED, Transaction.Type.INCOME, costCenterId, date, groupId, 2, 2, null, null));
         return groupId;
     }
 
@@ -227,7 +240,7 @@ class TransactionResponseUseCaseTest {
         UUID newAccount = UUID.randomUUID();
         TransactionCommand upd = new TransactionCommand("ajuste", new BigDecimal("70.00"),
                 LocalDate.of(2026, 5, 12), newAccount, costCenterId,
-                Transaction.Status.CONFIRMED, Transaction.Type.INCOME, null, null, null);
+                Transaction.Status.CONFIRMED, Transaction.Type.INCOME, null, null, null, null);
         Result<Transaction, DomainError> r = useCase.updateTransaction(entrada.id(), upd);
         assertTrue(r.isSuccess());
 
@@ -258,7 +271,7 @@ class TransactionResponseUseCaseTest {
 
         TransactionCommand upd = new TransactionCommand("x", new BigDecimal("50.00"),
                 LocalDate.of(2026, 5, 10), toAccount, costCenterId,
-                Transaction.Status.CONFIRMED, Transaction.Type.EXPENSE, null, null, null);
+                Transaction.Status.CONFIRMED, Transaction.Type.EXPENSE, null, null, null, null);
         assertTrue(useCase.updateTransaction(saida.id(), upd).isFailure());
         assertEquals(2, txRepo.findAll().size(), "nada alterado");
         assertEquals(accountId, txRepo.findById(saida.id()).orElseThrow().accountId(), "conta intacta");
@@ -272,11 +285,71 @@ class TransactionResponseUseCaseTest {
                 .filter(t -> t.installmentNumber() == 1).findFirst().orElseThrow();
 
         TransactionCommand upd = new TransactionCommand("upd", new BigDecimal("20.00"),
-                LocalDate.of(2026, 5, 15), accountId, costCenterId, Transaction.Status.CONFIRMED, Transaction.Type.EXPENSE, null, null, null);
+                LocalDate.of(2026, 5, 15), accountId, costCenterId, Transaction.Status.CONFIRMED, Transaction.Type.EXPENSE, null, null, null, null);
         assertTrue(useCase.updateTransaction(first.id(), upd).isSuccess());
 
         assertEquals(3, txRepo.findAll().size(), "parcelas preservadas");
         Transaction reload = txRepo.findById(first.id()).orElseThrow();
         assertNotNull(reload.groupId(), "ainda parte do grupo de parcelas");
+    }
+
+    // ── cardId: validação de posse ──────────────────────────────
+
+    @Test
+    @DisplayName("createTransaction com cardId da própria conta é aceito e persistido")
+    void createWithOwnCardIsAccepted() {
+        Card card = seedCard(accountId, "1234");
+        Result<Transaction, DomainError> r = useCase.createTransaction(cmdWithCard(LocalDate.of(2026, 5, 10), null, card.id()));
+        assertTrue(r.isSuccess());
+        assertEquals(card.id(), txRepo.findAll().get(0).cardId());
+    }
+
+    @Test
+    @DisplayName("createTransaction com cardId de outra conta é rejeitado")
+    void createWithCardFromAnotherAccountIsRejected() {
+        Card card = seedCard(UUID.randomUUID(), "1234");
+        Result<Transaction, DomainError> r = useCase.createTransaction(cmdWithCard(LocalDate.of(2026, 5, 10), null, card.id()));
+        assertTrue(r.isFailure());
+        assertInstanceOf(DomainError.BusinessRule.class, ((Result.Failure<Transaction, DomainError>) r).error());
+        assertTrue(txRepo.findAll().isEmpty(), "nada deve ser persistido");
+    }
+
+    @Test
+    @DisplayName("createTransaction com cardId inexistente é rejeitado")
+    void createWithUnknownCardIsRejected() {
+        Result<Transaction, DomainError> r = useCase.createTransaction(cmdWithCard(LocalDate.of(2026, 5, 10), null, UUID.randomUUID()));
+        assertTrue(r.isFailure());
+        assertInstanceOf(DomainError.NotFound.class, ((Result.Failure<Transaction, DomainError>) r).error());
+    }
+
+    @Test
+    @DisplayName("parcelamento propaga o mesmo cardId para todas as parcelas")
+    void installmentsPropagateCardId() {
+        Card card = seedCard(accountId, "1234");
+        useCase.createTransaction(cmdWithCard(LocalDate.of(2026, 5, 10), 3, card.id()));
+        List<Transaction> all = txRepo.findAll();
+        assertEquals(3, all.size());
+        assertTrue(all.stream().allMatch(t -> card.id().equals(t.cardId())));
+    }
+
+    @Test
+    @DisplayName("transferência nunca carrega cardId, mesmo se a conta tiver cartões")
+    void transferNeverCarriesCard() {
+        seedCard(accountId, "1234");
+        Result<Transaction, DomainError> r = useCase.createTransfer(accountId, UUID.randomUUID(), LocalDate.of(2026, 5, 10), new BigDecimal("50.00"));
+        assertTrue(r.isSuccess());
+        assertTrue(txRepo.findAll().stream().allMatch(t -> t.cardId() == null));
+    }
+
+    @Test
+    @DisplayName("updateTransactionStatus preserva o cardId existente")
+    void updateStatusPreservesCardId() {
+        Card card = seedCard(accountId, "1234");
+        useCase.createTransaction(cmdWithCard(LocalDate.of(2026, 5, 10), null, card.id()));
+        Transaction t = txRepo.findAll().get(0);
+
+        Result<Transaction, DomainError> r = useCase.updateTransactionStatus(t.id(), Transaction.Status.CONFIRMED, LocalDate.of(2026, 5, 12));
+        assertTrue(r.isSuccess());
+        assertEquals(card.id(), txRepo.findById(t.id()).orElseThrow().cardId());
     }
 }

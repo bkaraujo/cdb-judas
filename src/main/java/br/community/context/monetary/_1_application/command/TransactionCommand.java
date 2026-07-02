@@ -24,5 +24,6 @@ public record TransactionCommand(
         @NotNull Transaction.Type type,
         @Nullable @Min(1) Integer installments,
         @Nullable String editMode,
-        @Nullable @Size(max = 250) String notes
+        @Nullable @Size(max = 250) String notes,
+        @Nullable UUID cardId
 ) {}

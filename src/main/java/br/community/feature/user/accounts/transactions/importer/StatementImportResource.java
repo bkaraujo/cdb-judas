@@ -142,7 +142,7 @@ public class StatementImportResource {
     }
 
     private static ImportPreviewResponse.CardOption toCardOption(CreditCard card) {
-        return new ImportPreviewResponse.CardOption(card.id(), card.name(), card.last4());
+        return new ImportPreviewResponse.CardOption(card.id(), card.accountName(), card.last4());
     }
 
     private static ImportPreviewResponse.Row toRow(PreviewRow row) {

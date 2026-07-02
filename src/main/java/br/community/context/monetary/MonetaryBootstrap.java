@@ -2,16 +2,21 @@ package br.community.context.monetary;
 
 import br.commons.MessageBus;
 import br.commons.Registry;
+import br.community.context.monetary._0_domain.repository.AccountLimitRepository;
 import br.community.context.monetary._0_domain.repository.AccountRepository;
 import br.community.context.monetary._0_domain.repository.BalanceRepository;
+import br.community.context.monetary._0_domain.repository.CardRepository;
 import br.community.context.monetary._0_domain.repository.CostCenterRepository;
 import br.community.context.monetary._0_domain.repository.TransactionRepository;
 import br.community.context.monetary._1_application.event.TransactionEventListener;
+import br.community.context.monetary._1_application.service.AccountLimitService;
 import br.community.context.monetary._1_application.service.AccountService;
 import br.community.context.monetary._1_application.service.BalanceService;
+import br.community.context.monetary._1_application.service.CardService;
 import br.community.context.monetary._1_application.service.CostCenterService;
 import br.community.context.monetary._1_application.service.TransactionService;
 import br.community.context.monetary._1_application.usecase.AccountUseCase;
+import br.community.context.monetary._1_application.usecase.CardUseCase;
 import br.community.context.monetary._1_application.usecase.MetadataUseCase;
 import br.community.context.monetary._1_application.usecase.TransactionUseCase;
 import lombok.val;
@@ -31,13 +36,16 @@ public final class MonetaryBootstrap {
         val balanceService = new BalanceService(Registry.get(BalanceRepository.class));
         val costCenterService = new CostCenterService(Registry.get(CostCenterRepository.class));
         val transactionService = new TransactionService(Registry.get(TransactionRepository.class));
+        val cardService = new CardService(Registry.get(CardRepository.class));
+        val accountLimitService = new AccountLimitService(Registry.get(AccountLimitRepository.class));
 
         val accountUseCase = new AccountUseCase(accountService, balanceService);
         val metadataUseCase = new MetadataUseCase(costCenterService);
-        val transactionUseCase = new TransactionUseCase(transactionService);
+        val transactionUseCase = new TransactionUseCase(transactionService, cardService);
+        val cardUseCase = new CardUseCase(cardService, accountService, accountLimitService);
 
-        MessageBus.subscribe(new TransactionEventListener(accountService, balanceService, transactionService));
+        MessageBus.subscribe(new TransactionEventListener(accountService, balanceService, transactionService, cardService, accountLimitService));
 
-        Registry.set(MonetaryContext.class, new MonetaryContext(accountUseCase, transactionUseCase, metadataUseCase));
+        Registry.set(MonetaryContext.class, new MonetaryContext(accountUseCase, transactionUseCase, metadataUseCase, cardUseCase));
     }
 }

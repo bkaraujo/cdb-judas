@@ -40,3 +40,16 @@ final @Nullable UUID categoryId =
         (categoryRaw == null || categoryRaw.isBlank()) ? null : UUID.fromString(categoryRaw);
 ```
 Colunas `NOT NULL` (timestamps `TMS_CREATE_AT`, etc.) são seguras: `rs.getTimestamp("TMS_CREATE_AT").get().toLocalDateTime()`. Padrão real em `UserTransactionJDBCRepository.map`.
+
+## 5. Migração automática one-shot (`LegacyCardMigration`)
+
+Como o dev é file-based e `Database` nunca evolui schema existente (§3), a remodelagem do cartão (de `MON_ACCOUNT` tipo `CREDIT_CARD` para entidade própria `MON_CARD`/`MON_ACCOUNT_LIMIT`) precisou de um passo de migração de dados, não só de DDL novo aditivo.
+
+`LegacyCardMigration.apply(DataSource)` roda em `ContextBridge.dataSource(...)` **antes** do loop de `Database.model()`:
+
+- **Detecção**: `SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME='USER_ACCOUNT' AND COLUMN_NAME='TXT_CARD_LAST4'`. `0` → banco novo ou já migrado → não faz nada (idempotente).
+- **Backup**: `BACKUP TO './database-pre-card-remodel.zip'` (backup online do H2, seguro com o arquivo aberto) antes de qualquer alteração — pulado em bancos em memória (`:mem:`, perfil de teste), que `BACKUP TO` rejeita por não serem persistentes. Falha de backup num banco real é fatal por design (mesma convenção de `Result.get()`/infraestrutura do restante do projeto — ver [Result Pattern](result-pattern.md)): a migração aborta em vez de prosseguir sem rede de segurança.
+- **Dados**: por conta-cartão, resolve a conta real (`COD_LINKED_ACCOUNT` ou a própria, convertida para `CHECKING`), migra last4 para `MON_CARD`, funde limites/dias em `MON_ACCOUNT_LIMIT` (múltiplos overlays no mesmo alvo → `MAX` nos limites, primeiro dia não-nulo), reaponta `MON_TRANSACTION` para a conta real com `COD_CARD` preenchido, e descarta os `USER_ACCOUNT_BALANCE` da conta-cartão apagada e da conta real que recebeu transações (o listener de eventos recalcula no próximo lançamento).
+- **Corte final**: remove as 6 colunas legadas de `USER_ACCOUNT` e o seed do tipo `CREDIT_CARD` em `MON_ACCOUNT_TYPE`.
+
+Teste `LegacyCardMigrationTest` cobre o cenário (cartão vinculado + cartão sem vínculo + fusão de limites + idempotência) contra um H2 em memória isolado com o schema legado montado à mão — não depende do arquivo de dev real.

@@ -3,10 +3,12 @@ package br.community.context.monetary._1_application.usecase;
 import br.commons.MessageBus;
 import br.commons.Result;
 import br.community.context.monetary._0_domain.event.TransactionEvents;
+import br.community.context.monetary._0_domain.model.Card;
 import br.community.context.monetary._0_domain.model.CostCenter;
 import br.community.context.monetary._0_domain.model.Transaction;
 import br.community.context.monetary._1_application.command.ImportedTransactionCommand;
 import br.community.context.monetary._1_application.command.TransactionCommand;
+import br.community.context.monetary._1_application.service.CardService;
 import br.community.context.monetary._1_application.service.TransactionService;
 import br.community.context.shared._0_domain.model.DomainError;
 import lombok.RequiredArgsConstructor;
@@ -25,6 +27,7 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class TransactionUseCase {
     private final TransactionService transactionService;
+    private final CardService cardService;
 
     public Result<List<Transaction>, DomainError> listTransactions() {
         val all = transactionService.findAll().stream()
@@ -42,6 +45,10 @@ public class TransactionUseCase {
     }
 
     public Result<Transaction, DomainError> createTransaction(TransactionCommand cmd) {
+        return validateCard(cmd.accountId(), cmd.cardId()).flatMap(ignored -> dispatchCreate(cmd));
+    }
+
+    private Result<Transaction, DomainError> dispatchCreate(TransactionCommand cmd) {
         val count = installmentCount(cmd);
         return count == 1 ? createSingle(cmd) : createInstallments(cmd, count);
     }
@@ -78,45 +85,50 @@ public class TransactionUseCase {
     }
 
     public Result<Transaction, DomainError> updateTransaction(UUID id, TransactionCommand cmd) {
-        return transactionService.findById(id).flatMap(existing -> {
-            val transferSiblings = transactionService.findTransferSiblings(existing);
-            if (!transferSiblings.isEmpty()) return updateTransfer(existing, transferSiblings, cmd);
+        return transactionService.findById(id).flatMap(existing -> dispatchUpdate(id, existing, cmd));
+    }
 
-            val isFuture = "FUTURE".equalsIgnoreCase(cmd.editMode()) && existing.groupId() != null;
+    private Result<Transaction, DomainError> dispatchUpdate(UUID id, Transaction existing, TransactionCommand cmd) {
+        val transferSiblings = transactionService.findTransferSiblings(existing);
+        if (!transferSiblings.isEmpty()) return updateTransfer(existing, transferSiblings, cmd);
+        return validateCard(cmd.accountId(), cmd.cardId()).flatMap(ignored -> updateNonTransfer(id, existing, cmd));
+    }
 
-            if (!isFuture) {
-                val updated = transactionService.save(toEntity(id, cmd, cmd.date(), cmd.status(),
-                        existing.groupId(), existing.installmentNumber(), existing.totalInstallments()));
-                MessageBus.submit(new TransactionEvents.Updated(existing));
-                MessageBus.submit(new TransactionEvents.Updated(updated));
-                return Result.<Transaction, DomainError>success(updated);
-            }
+    private Result<Transaction, DomainError> updateNonTransfer(UUID id, Transaction existing, TransactionCommand cmd) {
+        val isFuture = "FUTURE".equalsIgnoreCase(cmd.editMode()) && existing.groupId() != null;
 
-            val groupId = existing.groupId();
-            val installmentNumber = existing.installmentNumber();
-            if (groupId == null) return Result.<Transaction, DomainError>success(existing);
+        if (!isFuture) {
+            val updated = transactionService.save(toEntity(id, cmd, cmd.date(), cmd.status(),
+                    existing.groupId(), existing.installmentNumber(), existing.totalInstallments()));
+            MessageBus.submit(new TransactionEvents.Updated(existing));
+            MessageBus.submit(new TransactionEvents.Updated(updated));
+            return Result.<Transaction, DomainError>success(updated);
+        }
 
-            val all = transactionService.findByGroupId(groupId).stream()
-                    .filter(t -> t.installmentNumber() >= installmentNumber)
-                    .sorted(Comparator.comparing(Transaction::installmentNumber))
-                    .toList();
+        val groupId = existing.groupId();
+        val installmentNumber = existing.installmentNumber();
+        if (groupId == null) return Result.<Transaction, DomainError>success(existing);
 
-            Transaction firstSaved = null;
-            for (val t : all) {
-                val currentNumber = t.installmentNumber();
-                val newDate = cmd.date().plusMonths(currentNumber - installmentNumber);
-                val updated = transactionService.save(toEntity(t.id(), cmd, newDate, t.status(),
-                        t.groupId(), t.installmentNumber(), t.totalInstallments()));
-                if (t.id().equals(id)) firstSaved = updated;
-            }
+        val all = transactionService.findByGroupId(groupId).stream()
+                .filter(t -> t.installmentNumber() >= installmentNumber)
+                .sorted(Comparator.comparing(Transaction::installmentNumber))
+                .toList();
 
-            if (firstSaved != null) {
-                MessageBus.submit(new TransactionEvents.Updated(existing));
-                MessageBus.submit(new TransactionEvents.Updated(firstSaved));
-            }
+        Transaction firstSaved = null;
+        for (val t : all) {
+            val currentNumber = t.installmentNumber();
+            val newDate = cmd.date().plusMonths(currentNumber - installmentNumber);
+            val updated = transactionService.save(toEntity(t.id(), cmd, newDate, t.status(),
+                    t.groupId(), t.installmentNumber(), t.totalInstallments()));
+            if (t.id().equals(id)) firstSaved = updated;
+        }
 
-            return Result.success(firstSaved);
-        });
+        if (firstSaved != null) {
+            MessageBus.submit(new TransactionEvents.Updated(existing));
+            MessageBus.submit(new TransactionEvents.Updated(firstSaved));
+        }
+
+        return Result.success(firstSaved);
     }
 
     /** A transfer stays an inseparable pair when edited. */
@@ -138,12 +150,13 @@ public class TransactionUseCase {
         return Result.success(updatedEdited);
     }
 
+    /** Transfer legs never carry a card — cardId is always null. */
     private static Transaction withTransferEdits(Transaction leg, UUID accountId, BigDecimal absAmount, LocalDate date, Transaction.Status status) {
         return new Transaction(
                 leg.id(), leg.description(), absAmount, date,
                 accountId, status, leg.type(), leg.costCenterId(),
                 Transaction.Status.CONFIRMED.equals(status) ? date : null,
-                leg.groupId(), leg.installmentNumber(), leg.totalInstallments(), leg.notes());
+                leg.groupId(), leg.installmentNumber(), leg.totalInstallments(), leg.notes(), null);
     }
 
     public Result<Transaction, DomainError> updateTransactionStatus(UUID id, Transaction.Status status, @Nullable LocalDate paymentDate) {
@@ -152,7 +165,8 @@ public class TransactionUseCase {
                     val saved = transactionService.save(new Transaction(
                             existing.id(), existing.description(), existing.amount(), existing.date(),
                             existing.accountId(), status, existing.type(), existing.costCenterId(), paymentDate,
-                            existing.groupId(), existing.installmentNumber(), existing.totalInstallments(), existing.notes()
+                            existing.groupId(), existing.installmentNumber(), existing.totalInstallments(), existing.notes(),
+                            existing.cardId()
                     ));
                     MessageBus.submit(new TransactionEvents.Updated(saved));
                     return saved;
@@ -218,12 +232,12 @@ public class TransactionUseCase {
         val outflow = new Transaction(
                 outId, "Transferência (saída)", absAmount, date,
                 fromAccountId, Transaction.Status.CONFIRMED, Transaction.Type.EXPENSE, CostCenter.VARIAVEL_ID, date,
-                groupId, 1, 2, null
+                groupId, 1, 2, null, null
         );
         val inflow = new Transaction(
                 inId, "Transferência (entrada)", absAmount, date,
                 toAccountId, Transaction.Status.CONFIRMED, Transaction.Type.INCOME, CostCenter.VARIAVEL_ID, date,
-                groupId, 2, 2, null
+                groupId, 2, 2, null, null
         );
 
         val savedOut = transactionService.save(outflow);
@@ -234,10 +248,15 @@ public class TransactionUseCase {
     }
 
     public Result<Transaction, DomainError> createImported(ImportedTransactionCommand cmd) {
+        return validateCard(cmd.accountId(), cmd.cardId()).flatMap(ignored -> persistImported(cmd));
+    }
+
+    private Result<Transaction, DomainError> persistImported(ImportedTransactionCommand cmd) {
         val tx = new Transaction(
                 UUID.randomUUID(), cmd.description(), cmd.amount().abs(), cmd.date(),
                 cmd.accountId(), cmd.status(), cmd.type(), CostCenter.VARIAVEL_ID, null,
-                cmd.groupId(), installmentOrDefault(cmd.installmentNumber()), installmentOrDefault(cmd.totalInstallments()), null);
+                cmd.groupId(), installmentOrDefault(cmd.installmentNumber()), installmentOrDefault(cmd.totalInstallments()), null,
+                cmd.cardId());
         val saved = transactionService.save(tx);
         MessageBus.submit(new TransactionEvents.Created(saved));
         return Result.success(saved);
@@ -247,10 +266,24 @@ public class TransactionUseCase {
                                  @Nullable UUID groupId, @Nullable Integer installmentNumber, @Nullable Integer totalInstallments) {
         return new Transaction(id, cmd.description(), cmd.amount().abs(), date,
                 cmd.accountId(), status, cmd.type(), cmd.costCenterId(), null,
-                groupId, installmentOrDefault(installmentNumber), installmentOrDefault(totalInstallments), cmd.notes());
+                groupId, installmentOrDefault(installmentNumber), installmentOrDefault(totalInstallments), cmd.notes(),
+                cmd.cardId());
     }
 
     private static int installmentOrDefault(@Nullable Integer value) {
         return value == null ? 1 : value;
+    }
+
+    /** No-op when {@code cardId} is absent; otherwise the card must exist and belong to {@code accountId}. */
+    private Result<Void, DomainError> validateCard(UUID accountId, @Nullable UUID cardId) {
+        if (cardId == null) return Result.success();
+        return cardService.findById(cardId).flatMap(card -> validateCardOwner(accountId, card));
+    }
+
+    private static Result<Void, DomainError> validateCardOwner(UUID accountId, Card card) {
+        if (!accountId.equals(card.accountId())) {
+            return Result.failure(new DomainError.BusinessRule("Card does not belong to account: " + card.id()));
+        }
+        return Result.success();
     }
 }

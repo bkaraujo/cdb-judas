@@ -8,6 +8,7 @@ import java.util.UUID;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
+import static org.hamcrest.Matchers.nullValue;
 
 @QuarkusTest
 public class AccountResourceTest extends BaseHttpTest {
@@ -98,68 +99,96 @@ public class AccountResourceTest extends BaseHttpTest {
     }
 
     @Test
-    void deveGerenciarCartaoViaContas() {
-        // Conta vinculada (CHECKING) — cartão exige mesma cor da conta de origem.
+    void deveGerenciarLimiteECicloDeFaturaDaConta() {
+        String createJson = """
+            {
+              "name":"Conta Corrente","balance":0.00,"type":"CHECKING","color":"#820AD1","active":true,
+              "creditLimit":5000.00,"overdraftLimit":500.00,"closingDay":5,"dueDay":12
+            }
+            """;
+        String accountId = asTestUser()
+                .body(createJson)
+                .when().post("/api/" + TEST_USER_ID + "/accounts")
+                .then().statusCode(201)
+                .body("creditLimit", is(5000.00f))
+                .body("overdraftLimit", is(500.00f))
+                .body("closingDay", is(5))
+                .body("dueDay", is(12))
+                .body("cards.size()", is(0))
+                .extract().jsonPath().getString("id");
+
+        String patchJson = """
+            {
+              "name":"Conta Corrente","balance":0.00,"type":"CHECKING","color":"#820AD1","active":true,
+              "creditLimit":8000.00,"closingDay":10,"dueDay":20
+            }
+            """;
+        asTestUser()
+                .body(patchJson)
+                .when().patch("/api/" + TEST_USER_ID + "/accounts/" + accountId)
+                .then().statusCode(200)
+                .body("creditLimit", is(8000.00f))
+                .body("overdraftLimit", nullValue())
+                .body("closingDay", is(10))
+                .body("dueDay", is(20));
+    }
+
+    @Test
+    void deveGerenciarCartoesDaConta() {
         String checkingJson = """
             {"name":"Conta Corrente","balance":0.00,"type":"CHECKING","color":"#820AD1","active":true}
             """;
-        String checkingId = asTestUser()
+        String accountId = asTestUser()
                 .body(checkingJson)
                 .when().post("/api/" + TEST_USER_ID + "/accounts")
                 .then().statusCode(201)
                 .extract().jsonPath().getString("id");
 
-        String cardJson = """
-            {
-              "name":"Nubank","balance":0.00,"type":"CREDIT_CARD","color":"#820AD1","active":true,
-              "linkedAccountId":"%s",
-              "last4":"1234","creditLimit":5000.00,"closingDay":5,"dueDay":12
-            }
-            """.formatted(checkingId);
         String cardId = asTestUser()
-                .body(cardJson)
-                .when().post("/api/" + TEST_USER_ID + "/accounts")
+                .body("{\"last4\":\"1234\"}")
+                .when().post("/api/" + TEST_USER_ID + "/accounts/" + accountId + "/cards")
                 .then().statusCode(201)
-                .body("type", is("CREDIT_CARD"))
-                .body("linkedAccountId", is(checkingId))
                 .body("last4", is("1234"))
-                .body("creditLimit", is(5000.00f))
+                .body("accountId", is(accountId))
                 .extract().jsonPath().getString("id");
 
-        // Listar apenas cartões via filtro de tipo.
         asTestUser()
-                .queryParam("type", "card")
-                .when().get("/api/" + TEST_USER_ID + "/accounts")
+                .when().get("/api/" + TEST_USER_ID + "/accounts/" + accountId + "/cards")
                 .then().statusCode(200)
                 .body("size()", is(1))
-                .body("[0].id", is(cardId))
-                .body("[0].type", is("CREDIT_CARD"));
+                .body("[0].id", is(cardId));
 
-        // Editar o cartão pelos endpoints de item de conta.
-        String patchCard = """
-            {
-              "name":"Nubank","balance":0.00,"type":"CREDIT_CARD","color":"#820AD1","active":true,
-              "linkedAccountId":"%s",
-              "last4":"9999","creditLimit":8000.00,"closingDay":5,"dueDay":12
-            }
-            """.formatted(checkingId);
         asTestUser()
-                .body(patchCard)
-                .when().patch("/api/" + TEST_USER_ID + "/accounts/" + cardId)
+                .when().get("/api/" + TEST_USER_ID + "/accounts/" + accountId)
                 .then().statusCode(200)
-                .body("last4", is("9999"))
-                .body("creditLimit", is(8000.00f));
+                .body("cards.size()", is(1))
+                .body("cards[0].last4", is("1234"));
 
-        // Excluir o cartão.
+        // Mesmo last4 na mesma conta → conflito.
         asTestUser()
-                .when().delete("/api/" + TEST_USER_ID + "/accounts/" + cardId)
+                .body("{\"last4\":\"1234\"}")
+                .when().post("/api/" + TEST_USER_ID + "/accounts/" + accountId + "/cards")
+                .then().statusCode(409);
+
+        asTestUser()
+                .when().delete("/api/" + TEST_USER_ID + "/accounts/" + accountId + "/cards/" + cardId)
                 .then().statusCode(204);
 
         asTestUser()
-                .queryParam("type", "card")
-                .when().get("/api/" + TEST_USER_ID + "/accounts")
+                .when().get("/api/" + TEST_USER_ID + "/accounts/" + accountId + "/cards")
                 .then().statusCode(200)
                 .body("size()", is(0));
+    }
+
+    @Test
+    void deveRejeitarTipoDeContaDesconhecido() {
+        String cardJson = """
+            {"name":"Nubank","balance":0.00,"type":"CREDIT_CARD","color":"#820AD1","active":true}
+            """;
+        asTestUser()
+                .body(cardJson)
+                .when().post("/api/" + TEST_USER_ID + "/accounts")
+                .then().statusCode(422);
     }
 
     @Test

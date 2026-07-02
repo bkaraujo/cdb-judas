@@ -23,5 +23,6 @@ public record TransactionResponse(
         @Nullable UUID groupId,
         @Nullable Integer installmentNumber,
         @Nullable Integer totalInstallments,
-        @Nullable String notes
+        @Nullable String notes,
+        @Nullable UUID cardId
 ) {}

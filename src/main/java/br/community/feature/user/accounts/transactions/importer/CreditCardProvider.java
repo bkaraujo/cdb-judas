@@ -5,14 +5,13 @@ import org.jspecify.annotations.NullMarked;
 import java.util.List;
 
 /**
- * Fornece os cartões de crédito do utilizador corrente para a importação de faturas. Os dados de
- * cartão (last4, conta vinculada) pertencem ao overlay de feature {@code USER_ACCOUNT}; esta porta
- * mantém o {@link StatementImportUseCase} desacoplado da origem (e testável com um fake).
+ * Fornece os cartões de crédito (entidade do contexto monetário) para a importação de faturas. Esta
+ * porta mantém o {@link StatementImportUseCase} desacoplado da origem (e testável com um fake).
  */
 @FunctionalInterface
 @NullMarked
 public interface CreditCardProvider {
 
-    /** Cartões de crédito do utilizador corrente (com last4 e conta vinculada, quando houver). */
+    /** Todos os cartões cadastrados, com a conta real a que pertencem. */
     List<CreditCard> creditCards();
 }

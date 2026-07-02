@@ -1,7 +1,9 @@
 package br.community.infra;
 
+import br.community.context.monetary._0_domain.repository.AccountLimitRepository;
 import br.community.context.monetary._0_domain.repository.AccountRepository;
 import br.community.context.monetary._0_domain.repository.BalanceRepository;
+import br.community.context.monetary._0_domain.repository.CardRepository;
 import br.community.context.monetary._0_domain.repository.CostCenterRepository;
 import br.community.context.monetary._0_domain.repository.TransactionRepository;
 import br.community.context.people._0_domain.repository.PersonRepository;
@@ -15,6 +17,8 @@ import br.community.infra.persistence.CachingPersonRepository;
 import br.community.infra.persistence.CachingUserRepository;
 import br.community.infra.persistence.features.*;
 import br.community.infra.persistence.monetary.AccountJDBCRepository;
+import br.community.infra.persistence.monetary.AccountLimitJDBCRepository;
+import br.community.infra.persistence.monetary.CardJDBCRepository;
 import br.community.infra.persistence.monetary.CostCenterJDBCRepository;
 import br.community.infra.persistence.monetary.TransactionJDBCRepository;
 import br.community.infra.persistence.person.PersonJDBCRepository;
@@ -74,6 +78,18 @@ public class InfraConfigs {
     @Singleton
     TransactionRepository transactionRepository() {
         return new TransactionJDBCRepository();
+    }
+
+    @Produces
+    @Singleton
+    CardRepository cardRepository() {
+        return new CardJDBCRepository();
+    }
+
+    @Produces
+    @Singleton
+    AccountLimitRepository accountLimitRepository() {
+        return new AccountLimitJDBCRepository();
     }
 
     @Produces

@@ -7,20 +7,15 @@ import java.time.LocalDateTime;
 import java.util.UUID;
 
 @NullMarked
-public record Account(
+public record Card(
         UUID id,
-        String name,
-        Type type,
+        String last4,
+        UUID accountId,
         boolean active,
         @Nullable LocalDateTime createdAt,
         @Nullable LocalDateTime updatedAt
 ) {
-    public Account(UUID id, String name, Type type, boolean active) {
-        this(id, name, type, active, null, null);
-    }
-
-    public enum Type {
-        CHECKING,
-        INVESTMENT
+    public Card(UUID id, String last4, UUID accountId, boolean active) {
+        this(id, last4, accountId, active, null, null);
     }
 }

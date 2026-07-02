@@ -51,12 +51,12 @@ class AccountUseCaseTest {
     }
 
     @Test
-    @DisplayName("cria CREDIT_CARD (sem regra de vínculo no contexto monetary)")
-    void createsCreditCardAccount() {
-        AccountCommand cmd = new AccountCommand("Card", new BigDecimal("500.00"), "CREDIT_CARD", "#112233", true);
+    @DisplayName("tipo desconhecido → Validation")
+    void rejectsUnknownAccountType() {
+        AccountCommand cmd = new AccountCommand("X", new BigDecimal("100.00"), "SAVINGS", "#112233", true);
         Result<Account, DomainError> r = useCase.createAccount(cmd);
-        assertTrue(r.isSuccess());
-        assertEquals(Account.Type.CREDIT_CARD, ((Result.Success<Account, DomainError>) r).value().type());
+        assertTrue(r.isFailure());
+        assertInstanceOf(DomainError.Validation.class, ((Result.Failure<Account, DomainError>) r).error());
     }
 
     @Test

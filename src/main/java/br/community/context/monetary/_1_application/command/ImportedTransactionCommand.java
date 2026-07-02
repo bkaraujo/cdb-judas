@@ -23,4 +23,5 @@ public record ImportedTransactionCommand(
         Transaction.Type type,
         @Nullable UUID groupId,
         @Nullable Integer installmentNumber,
-        @Nullable Integer totalInstallments) {}
+        @Nullable Integer totalInstallments,
+        @Nullable UUID cardId) {}

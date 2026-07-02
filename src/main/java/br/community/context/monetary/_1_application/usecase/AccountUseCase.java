@@ -14,6 +14,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.val;
 import org.jspecify.annotations.NullMarked;
 
+import java.util.Arrays;
 import java.time.YearMonth;
 import java.util.List;
 import java.util.UUID;
@@ -44,17 +45,20 @@ public class AccountUseCase {
     }
 
     public Result<Account, DomainError> createAccount(AccountCommand cmd) {
-        val created = accountService.save(parse(UUID.randomUUID(), cmd));
-        MessageBus.submit(new AccountEvents.Created(created));
-        return Result.success(created);
+        return parse(UUID.randomUUID(), cmd).map(account -> {
+            val created = accountService.save(account);
+            MessageBus.submit(new AccountEvents.Created(created));
+            return created;
+        });
     }
 
     public Result<Account, DomainError> updateAccount(UUID accountId, AccountCommand cmd) {
         return accountService.findById(accountId)
-                .flatMap(existing -> {
-                    val updated = accountService.save(parse(accountId, cmd));
+                .flatMap(existing -> parse(accountId, cmd))
+                .map(account -> {
+                    val updated = accountService.save(account);
                     MessageBus.submit(new AccountEvents.Updated(updated));
-                    return Result.success(updated);
+                    return updated;
                 });
     }
 
@@ -63,7 +67,10 @@ public class AccountUseCase {
                 .ifSuccess(ignored -> MessageBus.submit(new AccountEvents.Deleted(accountId)));
     }
 
-    private Account parse(UUID accountId, AccountCommand cmd) {
-        return new Account(accountId, cmd.name(), Account.Type.valueOf(Strings.upper(cmd.type())), cmd.active());
+    private Result<Account, DomainError> parse(UUID accountId, AccountCommand cmd) {
+        val typeName = Strings.upper(cmd.type());
+        val valid = Arrays.stream(Account.Type.values()).anyMatch(t -> t.name().equals(typeName));
+        if (!valid) return Result.failure(new DomainError.Validation("Unknown account type: " + cmd.type()));
+        return Result.success(new Account(accountId, cmd.name(), Account.Type.valueOf(typeName), cmd.active()));
     }
 }

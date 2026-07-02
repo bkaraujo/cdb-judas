@@ -16,8 +16,8 @@ import java.util.Optional;
 import java.util.UUID;
 
 /**
- * Adaptador JDBC (H2) para {@code USER_ACCOUNT} (overlay por utilizador: saldo, cor, ativo,
- * conta vinculada e dados/limites de cartão). PK composta {@code (COD_USER, COD_ACCOUNT)}.
+ * Adaptador JDBC (H2) para {@code USER_ACCOUNT} (overlay por utilizador: saldo, cor, ativo).
+ * PK composta {@code (COD_USER, COD_ACCOUNT)}.
  */
 @NullMarked
 public final class UserAccountJDBCRepository extends JDBCRepository<UserAccount> {
@@ -44,20 +44,12 @@ public final class UserAccountJDBCRepository extends JDBCRepository<UserAccount>
 
     @Override
     protected Map<String, @Nullable Object> values(UserAccount ua) {
-        final @Nullable String linked = ua.linkedAccountId() == null ? null : ua.linkedAccountId().toString();
-
         val values = new LinkedHashMap<String, @Nullable Object>();
         values.put("COD_USER", ua.userId());
         values.put("COD_ACCOUNT", ua.accountId().toString());
         values.put("DEC_OPENING_BALANCE", ua.openingBalance());
         values.put("TXT_COLOR", ua.color());
         values.put("FLG_ACTIVE", ua.active() ? "Y" : "N");
-        values.put("COD_LINKED_ACCOUNT", linked);
-        values.put("TXT_CARD_LAST4", ua.last4());
-        values.put("NUM_DUE_DAY", ua.dueDay());
-        values.put("NUM_CLOSING_DAY", ua.closingDay());
-        values.put("DEC_CREDIT_LIMIT", ua.creditLimit());
-        values.put("DEC_OVERDRAFT_LIMIT", ua.overdraftLimit());
         return values;
     }
 
@@ -70,18 +62,6 @@ public final class UserAccountJDBCRepository extends JDBCRepository<UserAccount>
         val color = rs.getString("TXT_COLOR").get();
         val active = "Y".equals(rs.getString("FLG_ACTIVE").get());
 
-        final @Nullable String linkedRaw = rs.getString("COD_LINKED_ACCOUNT").get();
-        final @Nullable UUID linkedAccountId = (linkedRaw == null || linkedRaw.isBlank()) ? null : UUID.fromString(linkedRaw);
-
-        final @Nullable String last4Raw = rs.getString("TXT_CARD_LAST4").get();
-        final @Nullable String last4 = (last4Raw == null || last4Raw.isBlank()) ? null : last4Raw;
-
-        final @Nullable Integer dueDay = rs.getObject("NUM_DUE_DAY", Integer.class).get();
-        final @Nullable Integer closingDay = rs.getObject("NUM_CLOSING_DAY", Integer.class).get();
-        final @Nullable BigDecimal creditLimit = rs.getBigDecimal("DEC_CREDIT_LIMIT").get();
-        final @Nullable BigDecimal overdraftLimit = rs.getBigDecimal("DEC_OVERDRAFT_LIMIT").get();
-
-        return new UserAccount(userId, accountId, openingBalance, color, active,
-                linkedAccountId, last4, dueDay, closingDay, creditLimit, overdraftLimit);
+        return new UserAccount(userId, accountId, openingBalance, color, active);
     }
 }

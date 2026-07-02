@@ -6,14 +6,18 @@ import br.commons.pdf.ExtractionFailure;
 import br.commons.pdf.PdfTextExtractor;
 import br.community.context.monetary._0_domain.event.TransactionEvents;
 import br.community.context.monetary._0_domain.model.Account;
+import br.community.context.monetary._0_domain.model.Card;
 import br.community.context.monetary._0_domain.model.CostCenter;
 import br.community.context.monetary._0_domain.model.Transaction;
 import br.community.context.monetary._1_application.command.ImportConfirmCommand;
+import br.community.context.monetary._1_application.service.AccountLimitService;
 import br.community.context.monetary._1_application.service.AccountService;
 import br.community.context.monetary._1_application.service.BalanceService;
+import br.community.context.monetary._1_application.service.CardService;
 import br.community.context.monetary._1_application.service.CostCenterService;
 import br.community.context.monetary._1_application.service.TransactionService;
 import br.community.context.monetary._1_application.usecase.AccountUseCase;
+import br.community.context.monetary._1_application.usecase.CardUseCase;
 import br.community.context.monetary._1_application.usecase.MetadataUseCase;
 import br.community.context.monetary._1_application.usecase.TransactionUseCase;
 import br.community.feature.user.accounts.statement.Issuer;
@@ -27,8 +31,8 @@ import br.community.feature.user.accounts.transactions.importer.*;
 import br.community.feature.user.accounts.transactions.importer.preview.ImportPreview;
 import br.community.feature.user.accounts.transactions.importer.preview.ImportPreviewOutcome;
 import br.community.feature.user.accounts.transactions.importer.preview.PreviewRow;
+import lombok.val;
 import org.jspecify.annotations.NonNull;
-import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;
@@ -71,7 +75,11 @@ class CreditCardStatementImportUseCaseTest {
             InMemoryRepositories.Accounts accounts,
             InMemoryRepositories.Transactions transactions,
             List<CreditCard> cards) {
-        final MonetaryContext monetaryContext = monetaryContext(accounts, transactions);
+        final InMemoryRepositories.Cards cardRepo = new InMemoryRepositories.Cards();
+        for (val c : cards) {
+            cardRepo.save(new Card(c.id(), c.last4(), c.accountId(), true));
+        }
+        final MonetaryContext monetaryContext = monetaryContext(accounts, transactions, cardRepo);
         final CreditCardProvider provider = () -> cards;
         return new StatementImportUseCase(
                 monetaryContext, provider, extractor,
@@ -82,25 +90,24 @@ class CreditCardStatementImportUseCaseTest {
 
     private static MonetaryContext monetaryContext(
             InMemoryRepositories.Accounts accounts,
-            InMemoryRepositories.Transactions transactions) {
+            InMemoryRepositories.Transactions transactions,
+            InMemoryRepositories.Cards cardRepo) {
         final AccountService accountService = new AccountService(accounts);
         final BalanceService balanceService = new BalanceService(new InMemoryRepositories.Balances());
         final TransactionService transactionService = new TransactionService(transactions);
         final CostCenterService costCenterService = new CostCenterService(new InMemoryRepositories.CostCenters());
+        final CardService cardService = new CardService(cardRepo);
+        final AccountLimitService accountLimitService = new AccountLimitService(new InMemoryRepositories.AccountLimits());
         final AccountUseCase ucAccount = new AccountUseCase(accountService, balanceService);
-        final TransactionUseCase ucTransaction = new TransactionUseCase(transactionService);
+        final TransactionUseCase ucTransaction = new TransactionUseCase(transactionService, cardService);
         final MetadataUseCase ucMetadata = new MetadataUseCase(costCenterService);
-        return new MonetaryContext(ucAccount, ucTransaction, ucMetadata);
+        final CardUseCase ucCard = new CardUseCase(cardService, accountService, accountLimitService);
+        return new MonetaryContext(ucAccount, ucTransaction, ucMetadata, ucCard);
     }
 
-    /**
-     * Cria a conta monetária do cartão (para {@code findAccount}) e devolve a visão de cartão da
-     * feature (last4 + conta vinculada) a registar no {@link CreditCardProvider} de teste.
-     */
-    private static CreditCard registerCard(InMemoryRepositories.Accounts accounts, String name, String last4, @Nullable UUID linkedAccountId) {
-        var account = new Account(UUID.randomUUID(), name, Account.Type.CREDIT_CARD, true);
-        accounts.save(account);
-        return new CreditCard(account.id(), name, last4, linkedAccountId);
+    /** Cartão do contexto: identificado só pelo last4, sempre vinculado a uma conta real existente. */
+    private static CreditCard registerCard(Account account, String last4) {
+        return new CreditCard(UUID.randomUUID(), account.id(), account.name(), last4);
     }
 
     private static Account checking(String name) {
@@ -181,8 +188,8 @@ class CreditCardStatementImportUseCaseTest {
         var accounts = new InMemoryRepositories.Accounts();
         var bank = checking("Conta");
         accounts.save(bank);
-        var matchingCard = registerCard(accounts, "Cartão BTG", "0020", bank.id());
-        var otherCard = registerCard(accounts, "Cartão Santander", "9999", bank.id());
+        var matchingCard = registerCard(bank, "0020");
+        var otherCard = registerCard(bank, "9999");
         var useCase = useCaseWith((bytes, password) -> Result.success(text), accounts,
                 new InMemoryRepositories.Transactions(), List.of(matchingCard, otherCard));
 
@@ -241,14 +248,14 @@ class CreditCardStatementImportUseCaseTest {
         var accounts = new InMemoryRepositories.Accounts();
         var bank = checking("Conta");
         accounts.save(bank);
-        var card = registerCard(accounts, "Cartão BTG", "0020", bank.id());
+        var card = registerCard(bank, "0020");
 
         var groupId = new GroupSignature().groupId(bank.id(), LocalDate.of(2024, 7, 15), 10, "Amazonmktplc Megabytem");
         var transactions = new InMemoryRepositories.Transactions();
         transactions.save(new Transaction(
                 UUID.randomUUID(), "Amazonmktplc Megabytem", new BigDecimal("72.99"),
                 LocalDate.of(2024, 7, 15), bank.id(),
-                Transaction.Status.CONFIRMED, Transaction.Type.EXPENSE, CostCenter.VARIAVEL_ID, null, groupId, 1, 10, null));
+                Transaction.Status.CONFIRMED, Transaction.Type.EXPENSE, CostCenter.VARIAVEL_ID, null, groupId, 1, 10, null, null));
 
         var useCase = useCaseWith((bytes, password) -> Result.success(text), accounts, transactions, List.of(card));
         var preview = invoicePreview(useCase.preview(new byte[1], null, null));
@@ -270,13 +277,13 @@ class CreditCardStatementImportUseCaseTest {
         var accounts = new InMemoryRepositories.Accounts();
         var bank = checking("Conta");
         accounts.save(bank);
-        var card = registerCard(accounts, "Cartão BTG", "0020", bank.id());
+        var card = registerCard(bank, "0020");
 
         var transactions = new InMemoryRepositories.Transactions();
         transactions.save(new Transaction(
                 UUID.randomUUID(), "MICROSOFT", new BigDecimal("-60.00"),
                 LocalDate.of(2025, 3, 9), bank.id(),
-                Transaction.Status.CONFIRMED, Transaction.Type.EXPENSE, CostCenter.VARIAVEL_ID, null, null, 1, 1, null));
+                Transaction.Status.CONFIRMED, Transaction.Type.EXPENSE, CostCenter.VARIAVEL_ID, null, null, 1, 1, null, null));
 
         var useCase = useCaseWith((bytes, password) -> Result.success(text), accounts, transactions, List.of(card));
         var preview = invoicePreview(useCase.preview(new byte[1], null, null));
@@ -314,13 +321,15 @@ class CreditCardStatementImportUseCaseTest {
                 R$ 72,99
                 """;
         var accounts = new InMemoryRepositories.Accounts();
-        var card = registerCard(accounts, "Cartão BTG", "0020", null);
+        var account = checking("Conta");
+        accounts.save(account);
+        var card = registerCard(account, "0020");
 
         var transactions = new InMemoryRepositories.Transactions();
         transactions.save(new Transaction(
                 UUID.randomUUID(), "AMAZONMKTPLC MEGABYTEM", new BigDecimal("-99.90"),
-                LocalDate.of(2024, 1, 10), card.id(),
-                Transaction.Status.CONFIRMED, Transaction.Type.EXPENSE, CostCenter.VARIAVEL_ID, null, null, 1, 1, null));
+                LocalDate.of(2024, 1, 10), account.id(),
+                Transaction.Status.CONFIRMED, Transaction.Type.EXPENSE, CostCenter.VARIAVEL_ID, null, null, 1, 1, null, null));
 
         var useCase = useCaseWith((bytes, password) -> Result.success(text), accounts, transactions, List.of(card));
         var preview = invoicePreview(useCase.preview(new byte[1], null, null));
@@ -359,7 +368,7 @@ class CreditCardStatementImportUseCaseTest {
         var accounts = new InMemoryRepositories.Accounts();
         var bank = checking("Conta");
         accounts.save(bank);
-        var card = registerCard(accounts, "Cartão BTG", "0020", bank.id());
+        var card = registerCard(bank, "0020");
         var useCase = useCaseWith((bytes, password) -> Result.success(text), accounts,
                 new InMemoryRepositories.Transactions(), List.of(card));
 
@@ -396,8 +405,8 @@ class CreditCardStatementImportUseCaseTest {
         var accountB = checking("Conta B");
         accounts.save(accountA);
         accounts.save(accountB);
-        var cardA = registerCard(accounts, "Cartão A", "0020", accountA.id());
-        var cardB = registerCard(accounts, "Cartão B", "9999", accountB.id());
+        var cardA = registerCard(accountA, "0020");
+        var cardB = registerCard(accountB, "9999");
 
         var transactions = new InMemoryRepositories.Transactions();
         var useCase = useCaseWith(NOOP_EXTRACTOR, accounts, transactions, List.of(cardA, cardB));
@@ -426,7 +435,7 @@ class CreditCardStatementImportUseCaseTest {
         var accounts = new InMemoryRepositories.Accounts();
         var account = checking("Conta");
         accounts.save(account);
-        var card = registerCard(accounts, "Cartão BTG", "0020", account.id());
+        var card = registerCard(account, "0020");
 
         var transactions = new InMemoryRepositories.Transactions();
         var useCase = useCaseWith(NOOP_EXTRACTOR, accounts, transactions, List.of(card));
@@ -482,7 +491,7 @@ class CreditCardStatementImportUseCaseTest {
         var accounts = new InMemoryRepositories.Accounts();
         var account = checking("Conta");
         accounts.save(account);
-        var card = registerCard(accounts, "Cartão", "0020", account.id());
+        var card = registerCard(account, "0020");
 
         var transactions = new InMemoryRepositories.Transactions();
         var useCase = useCaseWith(NOOP_EXTRACTOR, accounts, transactions, List.of(card));
@@ -517,7 +526,7 @@ class CreditCardStatementImportUseCaseTest {
         var accounts = new InMemoryRepositories.Accounts();
         var account = checking("Conta");
         accounts.save(account);
-        var card = registerCard(accounts, "Cartão", "0020", account.id());
+        var card = registerCard(account, "0020");
 
         var transactions = new InMemoryRepositories.Transactions();
         var useCase = useCaseWith(NOOP_EXTRACTOR, accounts, transactions, List.of(card));
@@ -550,13 +559,13 @@ class CreditCardStatementImportUseCaseTest {
         var accounts = new InMemoryRepositories.Accounts();
         var account = checking("Conta");
         accounts.save(account);
-        var card = registerCard(accounts, "Cartão", "0020", account.id());
+        var card = registerCard(account, "0020");
 
         var transactions = new InMemoryRepositories.Transactions();
         transactions.save(new Transaction(
                 UUID.randomUUID(), "MERCADO LIVRE", new BigDecimal("-90.00"),
                 LocalDate.of(2025, 7, 4), account.id(),
-                Transaction.Status.CONFIRMED, Transaction.Type.EXPENSE, CostCenter.VARIAVEL_ID, null, null, 1, 1, null));
+                Transaction.Status.CONFIRMED, Transaction.Type.EXPENSE, CostCenter.VARIAVEL_ID, null, null, 1, 1, null, null));
 
         var useCase = useCaseWith(NOOP_EXTRACTOR, accounts, transactions, List.of(card));
 
@@ -587,7 +596,7 @@ class CreditCardStatementImportUseCaseTest {
         var accounts = new InMemoryRepositories.Accounts();
         var account = checking("Conta");
         accounts.save(account);
-        var card = registerCard(accounts, "Cartão", "0020", account.id());
+        var card = registerCard(account, "0020");
 
         var transactions = new InMemoryRepositories.Transactions() {
             @Override

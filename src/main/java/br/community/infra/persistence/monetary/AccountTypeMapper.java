@@ -14,18 +14,15 @@ public abstract class AccountTypeMapper {
 
     public static final String CHECKING_ID    = "a1000000-0000-0000-0000-000000000001";
     public static final String INVESTMENT_ID  = "a1000000-0000-0000-0000-000000000002";
-    public static final String CREDIT_CARD_ID = "a1000000-0000-0000-0000-000000000003";
 
     private static final Map<Account.Type, String> TO_ID = Map.of(
             Account.Type.CHECKING,    CHECKING_ID,
-            Account.Type.INVESTMENT,  INVESTMENT_ID,
-            Account.Type.CREDIT_CARD, CREDIT_CARD_ID
+            Account.Type.INVESTMENT,  INVESTMENT_ID
     );
 
     private static final Map<String, Account.Type> FROM_ID = Map.of(
             CHECKING_ID,    Account.Type.CHECKING,
-            INVESTMENT_ID,  Account.Type.INVESTMENT,
-            CREDIT_CARD_ID, Account.Type.CREDIT_CARD
+            INVESTMENT_ID,  Account.Type.INVESTMENT
     );
 
     public static String toId(Account.Type type) {

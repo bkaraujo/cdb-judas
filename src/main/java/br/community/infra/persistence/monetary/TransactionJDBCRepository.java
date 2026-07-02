@@ -55,8 +55,10 @@ public final class TransactionJDBCRepository extends JDBCRepository<Transaction>
     protected Map<String, @Nullable Object> values(Transaction entity) {
         val payment = entity.paymentDate();
         val group = entity.groupId();
+        val card = entity.cardId();
         final @Nullable Date paymentDate = payment == null ? null : Date.valueOf(payment);
         final @Nullable String groupStr = group == null ? null : group.toString();
+        final @Nullable String cardStr = card == null ? null : card.toString();
         val now = Timestamp.valueOf(Time.now());
 
         val values = new LinkedHashMap<String, @Nullable Object>();
@@ -75,6 +77,7 @@ public final class TransactionJDBCRepository extends JDBCRepository<Transaction>
         values.put("TXT_NOTES", entity.notes());
         values.put("TMS_CREATE_AT", now);
         values.put("TMS_UPDATED_AT", now);
+        values.put("COD_CARD", cardStr);
         return values;
     }
 
@@ -103,8 +106,11 @@ public final class TransactionJDBCRepository extends JDBCRepository<Transaction>
         val createdAt = rs.getTimestamp("TMS_CREATE_AT").get().toLocalDateTime();
         val updatedAt = rs.getTimestamp("TMS_UPDATED_AT").get().toLocalDateTime();
 
+        final @Nullable String cardRaw = rs.getString("COD_CARD").get();
+        final @Nullable UUID cardId = (cardRaw == null || cardRaw.isBlank()) ? null : UUID.fromString(cardRaw);
+
         return new Transaction(id, description, signal, amount, purchasedAt,
                 accountId, status, costCenterId, paymentDate, groupId,
-                installmentNumber, totalInstallments, notes, createdAt, updatedAt);
+                installmentNumber, totalInstallments, notes, createdAt, updatedAt, cardId);
     }
 }

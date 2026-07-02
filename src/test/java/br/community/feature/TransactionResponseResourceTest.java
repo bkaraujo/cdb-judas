@@ -22,6 +22,15 @@ public class TransactionResponseResourceTest extends BaseHttpTest {
         return UUID.fromString(id);
     }
 
+    private UUID createCard(UUID accountId, String last4) {
+        String id = asTestUser()
+                .body("{\"last4\":\"%s\"}".formatted(last4))
+                .when().post("/api/" + TEST_USER_ID + "/accounts/" + accountId + "/cards")
+                .then().statusCode(201)
+                .extract().jsonPath().getString("id");
+        return UUID.fromString(id);
+    }
+
     // Transações só podem ser lançadas em subcategorias (não em macro-categorias).
     private UUID createLeafCategory() {
         String macroId = asTestUser()
@@ -174,5 +183,39 @@ public class TransactionResponseResourceTest extends BaseHttpTest {
                 .when().get("/api/" + TEST_USER_ID + "/accounts/" + origem + "/transactions")
                 .then().statusCode(200)
                 .body("size()", is(1));
+    }
+
+    @Test
+    void deveAceitarTransacaoComCartaoDaPropriaConta() {
+        UUID accountId = createAccount("#101010");
+        UUID cardId = createCard(accountId, "1234");
+        UUID categoryId = createLeafCategory();
+
+        String createJson = """
+            {"description":"Compra","amount":-50.00,"date":"2024-05-01","categoryId":"%s","costCenterId":"d0000000-0000-0000-0000-000000000002","status":"confirmed","type":"expense","installments":1,"editMode":"single","cardId":"%s"}
+            """.formatted(categoryId, cardId);
+
+        asTestUser()
+                .body(createJson)
+                .when().post("/api/" + TEST_USER_ID + "/accounts/" + accountId + "/transactions")
+                .then().statusCode(201)
+                .body("cardId", is(cardId.toString()));
+    }
+
+    @Test
+    void deveRejeitarTransacaoComCartaoDeOutraConta() {
+        UUID accountA = createAccount("#202020");
+        UUID accountB = createAccount("#303030");
+        UUID cardOfB = createCard(accountB, "9999");
+        UUID categoryId = createLeafCategory();
+
+        String createJson = """
+            {"description":"Compra","amount":-50.00,"date":"2024-05-01","categoryId":"%s","costCenterId":"d0000000-0000-0000-0000-000000000002","status":"confirmed","type":"expense","installments":1,"editMode":"single","cardId":"%s"}
+            """.formatted(categoryId, cardOfB);
+
+        asTestUser()
+                .body(createJson)
+                .when().post("/api/" + TEST_USER_ID + "/accounts/" + accountA + "/transactions")
+                .then().statusCode(400);
     }
 }

@@ -97,7 +97,8 @@ public class StatementImportResourceTest extends BaseHttpTest {
 
     @Test
     void confirmPersistsRowsAndIsIdempotentOnReimport() {
-        UUID cardId = seedCheckingAndCard();
+        Seeded seeded = seedCheckingAndCard();
+        UUID cardId = seeded.cardId();
         UUID categoryId = UUID.randomUUID();
 
         String body = """
@@ -117,6 +118,13 @@ public class StatementImportResourceTest extends BaseHttpTest {
                 .then().statusCode(200)
                 .body("created", is(3))
                 .body("skipped", is(0));
+
+        // A transação é postada na conta real do cartão, com o cardId de origem preservado.
+        asTestUser()
+                .when().get("/api/" + TEST_USER_ID + "/accounts/transactions")
+                .then().statusCode(200)
+                .body("find { it.description == 'Mercado' }.accountId", is(seeded.accountId().toString()))
+                .body("find { it.description == 'Mercado' }.cardId", is(cardId.toString()));
 
         // A second identical POST creates nothing (idempotent re-import).
         asTestUser()
@@ -146,25 +154,23 @@ public class StatementImportResourceTest extends BaseHttpTest {
                 .body("code", is("CARD_NOT_FOUND"));
     }
 
-    private UUID seedCheckingAndCard() {
+    private record Seeded(UUID accountId, UUID cardId) {}
+
+    private Seeded seedCheckingAndCard() {
         String accJson = """
-            {"name":"Conta Corrente","balance":1000.00,"type":"CHECKING","color":"#007AFF","active":true}
+            {"name":"Conta Corrente","balance":1000.00,"type":"CHECKING","color":"#007AFF","active":true,
+             "creditLimit":10000.00,"closingDay":1,"dueDay":10}
             """;
         String accountId = asTestUser()
                 .body(accJson)
                 .when().post("/api/" + TEST_USER_ID + "/accounts")
                 .then().extract().jsonPath().getString("id");
 
-        String cardJson = """
-            {"name":"Black Card","balance":0.00,"type":"CREDIT_CARD","color":"#007AFF","active":true,
-             "linkedAccountId":"%s",
-             "last4":"0020","creditLimit":10000.00,"closingDay":1,"dueDay":10}
-            """.formatted(accountId);
         String cardId = asTestUser()
-                .body(cardJson)
-                .when().post("/api/" + TEST_USER_ID + "/accounts")
+                .body("{\"last4\":\"0020\"}")
+                .when().post("/api/" + TEST_USER_ID + "/accounts/" + accountId + "/cards")
                 .then().statusCode(201)
                 .extract().jsonPath().getString("id");
-        return UUID.fromString(cardId);
+        return new Seeded(UUID.fromString(accountId), UUID.fromString(cardId));
     }
 }

@@ -24,7 +24,8 @@ public record Transaction(
         int totalInstallments,
         @Nullable String notes,
         @Nullable LocalDateTime createdAt,
-        @Nullable LocalDateTime updatedAt
+        @Nullable LocalDateTime updatedAt,
+        @Nullable UUID cardId
 ) {
     /** Convenience accessor returning the purchase date part. */
     public LocalDate date() { return purchasedAt.toLocalDate(); }
@@ -59,9 +60,9 @@ public record Transaction(
     public Transaction(UUID id, String description, BigDecimal amount, LocalDate date,
             UUID accountId, Status status, Type type,
             UUID costCenterId, @Nullable LocalDate paymentDate, @Nullable UUID groupId,
-            int installmentNumber, int totalInstallments, @Nullable String notes) {
+            int installmentNumber, int totalInstallments, @Nullable String notes, @Nullable UUID cardId) {
         this(id, description, type == Type.INCOME ? 1 : -1, amount.abs(), date.atStartOfDay(),
                 accountId, status, costCenterId, paymentDate, groupId,
-                installmentNumber, totalInstallments, notes, null, null);
+                installmentNumber, totalInstallments, notes, null, null, cardId);
     }
 }

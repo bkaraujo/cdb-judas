@@ -7,6 +7,7 @@ import br.community.context.monetary.MonetaryContext;
 import br.community.context.monetary._0_domain.event.AccountEvents;
 import br.community.context.monetary._0_domain.event.TransactionEvents;
 import br.community.context.monetary._0_domain.model.Account;
+import br.community.context.monetary._0_domain.model.AccountLimit;
 import br.community.context.monetary._0_domain.model.Transaction;
 import br.community.core.web.security.CurrentUser;
 import br.community.feature.user.stream.SSE;
@@ -76,7 +77,10 @@ public class AccountStreamListener {
         try {
             val userId = CurrentUser.getId();
             val ua = userAccountService.find(userId, account.id());
-            val dto = AccountResponse.from(account, ua, allTransactions());
+            val limit = monetaryContext.getAccountLimit(account.id())
+                    .getOrElse(new AccountLimit(account.id(), null, null, null, null));
+            val cards = monetaryContext.listCardsByAccount(account.id()).getOrElse(List.of());
+            val dto = AccountResponse.from(account, ua, limit, cards, allTransactions());
             sse.dispatch(userId, SSE.Event.UPSERT, Map.of("type", TYPE, "payload", dto));
         } catch (Exception ignored) {}
     }
