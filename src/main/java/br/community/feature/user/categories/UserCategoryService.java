@@ -6,11 +6,11 @@ import br.community.context.shared._0_domain.model.DomainError;
 import br.community.feature.user.accounts.transactions.UserTransactionService;
 import br.community.feature.user.categories.core.CategoryResponse;
 import br.community.feature.user.stream.SSE;
+import jakarta.inject.Singleton;
 import lombok.RequiredArgsConstructor;
 import lombok.val;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
-import jakarta.inject.Singleton;
 
 import java.util.List;
 import java.util.Map;
@@ -62,14 +62,14 @@ public class UserCategoryService {
                 .orElseGet(() -> Result.failure(new DomainError.NotFound("Category not found: " + parentId)));
     }
 
-    public Result<Void, DomainError> validateUniqueName(UUID userId, String name, @Nullable UUID parentId, @Nullable UUID excludeId) {
-        val duplicate = repo.findAllByUser(userId).stream()
+    public Result<Void, DomainError> validateUniqueName(UUID userId, String nature, String name, @Nullable UUID parentId, @Nullable UUID excludeId) {
+        val optional = repo.findByNature(userId, Transaction.Type.valueOf(nature)).stream()
                 .filter(c -> c.name().equalsIgnoreCase(name))
                 .filter(c -> Objects.equals(c.parentId(), parentId))
                 .filter(c -> excludeId == null || !c.id().equals(excludeId))
                 .findFirst();
 
-        if (duplicate.isPresent()) {
+        if (optional.isPresent()) {
             return Result.failure(new DomainError.BusinessRule("Já existe uma categoria com o nome '" + name + "' neste nível"));
         }
         return Result.success();

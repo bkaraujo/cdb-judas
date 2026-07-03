@@ -9,13 +9,7 @@ import br.community.feature.user.categories.core.CategoryResponse;
 import br.community.feature.user.categories.core.CreateRequest;
 import br.community.feature.user.categories.core.UpdateRequest;
 import jakarta.validation.Valid;
-import jakarta.ws.rs.DELETE;
-import jakarta.ws.rs.GET;
-import jakarta.ws.rs.PATCH;
-import jakarta.ws.rs.POST;
-import jakarta.ws.rs.Path;
-import jakarta.ws.rs.PathParam;
-import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
 import lombok.RequiredArgsConstructor;
 import lombok.val;
@@ -45,10 +39,9 @@ public class CategoryResource {
         if (req.parentId() != null) {
             guardResult(userCategoryService.validateParent(req.parentId(), nature));
         }
-        guardResult(userCategoryService.validateUniqueName(uuid, req.name(), req.parentId(), null));
+        guardResult(userCategoryService.validateUniqueName(uuid, req.nature(), req.name(), req.parentId(), null));
 
-        return RestResponse.status(RestResponse.Status.CREATED,
-                CategoryResponse.from(userCategoryService.create(uuid, req.name(), nature, req.parentId())));
+        return RestResponse.status(RestResponse.Status.CREATED, CategoryResponse.from(userCategoryService.create(uuid, req.name(), nature, req.parentId())));
     }
 
     @PATCH
@@ -60,7 +53,7 @@ public class CategoryResource {
                 if (existing.isSystem()) {
                     throw new DomainException(new DomainError.BusinessRule("Categoria de sistema não pode ser modificada"));
                 }
-                guardResult(userCategoryService.validateUniqueName(uuid, req.name(), req.parentId(), id));
+                guardResult(userCategoryService.validateUniqueName(uuid, existing.nature().name(), req.name(), req.parentId(), id));
                 yield CategoryResponse.from(userCategoryService.update(id, req.name(), req.parentId()));
             }
         };

@@ -28,6 +28,11 @@ public final class UserCategoryJDBCRepository extends JDBCRepository<UserCategor
     }
 
     @Override
+    public Optional<UserCategory> findById(UUID id) {
+        return findById(id.toString());
+    }
+
+    @Override
     public List<UserCategory> findAllByUser(UUID userId) {
         return datasource.query(
                 "SELECT " + columnList() + " FROM " + table() + " WHERE COD_USER = ?",
@@ -37,8 +42,15 @@ public final class UserCategoryJDBCRepository extends JDBCRepository<UserCategor
     }
 
     @Override
-    public Optional<UserCategory> findById(UUID id) {
-        return findById(id.toString());
+    public List<UserCategory> findByNature(UUID userId, Transaction.Type nature) {
+        return datasource.query(
+                "SELECT " + columnList() + " FROM " + table() + " WHERE COD_USER = ? AND EXISTS (SELECT 1 FROM TRANSACTION_NATURE TN WHERE TN.TXT_DESCRIPTION = ? AND TN.ID = TXT_NATURE)",
+                JDBCParameter.of(
+                        userId.toString(),
+                        nature.name()
+                ),
+                this::mapList
+        );
     }
 
     @Override
