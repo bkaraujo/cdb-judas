@@ -14,7 +14,7 @@
   }
 
   function checkings() {
-    return cache.accounts().filter(window.Domain.Account.isCash);
+    return cache.accounts();
   }
 
   /* Opening balance = previous month's closing snapshot; on 404 (no snapshot for a month

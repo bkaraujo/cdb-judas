@@ -29,7 +29,6 @@
 
   function checkingAccounts() {
     return window.App.CacheStore.accounts()
-      .filter(window.Domain.Account.isCash)
       .slice()
       .sort(window.sortByName);
   }

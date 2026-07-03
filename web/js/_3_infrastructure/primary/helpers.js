@@ -116,9 +116,8 @@
 
   // Wire the swatch grid inside a modal to a color <input>: clicking a swatch
   // sets the input value and re-paints borders; editing the color input repaints
-  // too. Swatch clicks are ignored while the color input is disabled (accounts'
-  // credit-card mode). Returns a paint(hex) fn so callers can repaint after
-  // programmatic color changes.
+  // too. Swatch clicks are ignored while the color input is disabled. Returns a
+  // paint(hex) fn so callers can repaint after programmatic color changes.
   function bindSwatches(m, $colorInput) {
     function paint(activeHex) {
       m.$body.find('[data-region=swatches] [data-swatch]').each(function () {

@@ -136,8 +136,8 @@
   }
 
   // ── Data derivations ─────────────────────────────────────────
-  function cashAccounts()   { return cbdAccounts().filter(window.Domain.Account.isCash); }
-  function creditCards()    { return cbdAccounts().filter(window.Domain.Account.isCreditCard); }
+  function cashAccounts()   { return cbdAccounts(); }
+  function creditCards()    { return window.App.CreditCardService.accountsWithCards(); }
 
   function currentMonthTxs() {
     const p = window.Domain.Period.currentMonth();

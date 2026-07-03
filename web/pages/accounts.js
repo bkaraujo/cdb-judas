@@ -1,12 +1,16 @@
-/* pages/accounts.js — Contas Bancárias (CRUD em grid de cards). */
+/* pages/accounts.js — Contas Bancárias (CRUD em grid de cards).
+ *
+ * Cartões de crédito não são mais um tipo de conta: são entidades filhas (last4
+ * apenas), geridas dentro do modal de edição da conta real a que pertencem. O
+ * limite de crédito/cheque especial e o ciclo de fatura (fechamento/vencimento)
+ * são configuração da conta (seção "Limites e Fatura", sempre visível).
+ */
 (function () {
   window.Pages = window.Pages || {};
 
   const TYPE_LABELS = {
     CHECKING: 'Conta Corrente',
-    SAVINGS: 'Conta Poupança',
     INVESTMENT: 'Investimento',
-    CREDIT_CARD: 'Cartão de Crédito'
   };
 
   const DEFAULT_COLORS = [
@@ -29,8 +33,6 @@
     state.accounts = window.App.CacheStore.accounts().slice();
   }
 
-  // ── Toast (same pattern as categories.js) ─────────────────
-
   // ── Helpers ───────────────────────────────────────────────
 
   function findAccount(id) { return window.byId(state.accounts, id); }
@@ -38,11 +40,22 @@
   function colorOf(a) { return a.color || '#6366F1'; }
 
   function iconForType(type) {
-    return type === 'CREDIT_CARD' ? 'creditCard' : 'building';
+    return type === 'INVESTMENT' ? 'trendingUp' : 'building';
   }
 
   function maskInitial(n) {
     return window.maskCurrency(n);
+  }
+
+  // Optional numeric fields (Limites e Fatura): blank input → null payload.
+  function parseOptionalCurrency(raw) {
+    const n = window.parseCurrency(raw);
+    return isFinite(n) ? n.toFixed(2) : null;
+  }
+
+  function parseOptionalDay(raw) {
+    const n = parseInt(raw, 10);
+    return (isFinite(n) && n >= 1 && n <= 31) ? n : null;
   }
 
   // ── Render ────────────────────────────────────────────────
@@ -72,35 +85,13 @@
         desc: 'Clique em "Nova Conta" para começar.'
       }));
     } else {
-      $body = $('<div></div>');
-      
-      const accounts = state.accounts.filter(function(a) { return a.type !== 'CREDIT_CARD'; }).sort(window.sortByName);
-      const creditCards = state.accounts.filter(function(a) { return a.type === 'CREDIT_CARD'; }).sort(window.sortByName);
-
-      if (accounts.length > 0) {
-        $body.append('<h2 style="font-size:16px;font-weight:600;margin:0 0 12px 0;color:var(--text-primary);">Contas</h2>');
-        const $accGrid = $(
-          '<div data-region="accounts-grid" style="' +
-            'display:grid;gap:14px;' +
-            'grid-template-columns:repeat(auto-fill, minmax(280px, 1fr));' +
-            'margin-bottom:24px;' +
-          '"></div>'
-        );
-        accounts.forEach(function (a) { $accGrid.append(renderCard(a)); });
-        $body.append($accGrid);
-      }
-
-      if (creditCards.length > 0) {
-        $body.append('<h2 style="font-size:16px;font-weight:600;margin:0 0 12px 0;color:var(--text-primary);">Cartões de Crédito</h2>');
-        const $ccGrid = $(
-          '<div data-region="credit-cards-grid" style="' +
-            'display:grid;gap:14px;' +
-            'grid-template-columns:repeat(auto-fill, minmax(280px, 1fr));' +
-          '"></div>'
-        );
-        creditCards.forEach(function (a) { $ccGrid.append(renderCard(a)); });
-        $body.append($ccGrid);
-      }
+      $body = $(
+        '<div data-region="accounts-grid" style="' +
+          'display:grid;gap:14px;' +
+          'grid-template-columns:repeat(auto-fill, minmax(280px, 1fr));' +
+        '"></div>'
+      );
+      state.accounts.slice().sort(window.sortByName).forEach(function (a) { $body.append(renderCard(a)); });
     }
 
     $root.empty().append($header).append($body);
@@ -111,8 +102,7 @@
     const typeLabel = TYPE_LABELS[a.type] || 'Conta';
     const iconName = iconForType(a.type);
 
-    // Credit cards show available limit; other accounts show current balance.
-    const displayValue = window.Domain.Account.displayBalance(a);
+    const displayValue = window.Domain.Account.currentBalance(a);
     const valueColor = displayValue >= 0 ? 'var(--income)' : 'var(--expense)';
     const active = a.active !== false;
 
@@ -146,19 +136,12 @@
         'display:flex;align-items:center;justify-content:center;' +
       '">' + window.icon(iconName, 20) + '</div>'
     );
-    let subTitle = esc(typeLabel);
-    if (a.type === 'CREDIT_CARD' && a.linkedAccountId) {
-      const linked = findAccount(a.linkedAccountId);
-      if (linked) {
-        subTitle = esc(linked.name);
-      }
-    }
 
     $left.append(
       '<div style="min-width:0;display:flex;flex-direction:column;gap:2px;">' +
         '<div style="font-size:14px;font-weight:700;color:var(--text-primary);' +
           'overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + esc(a.name) + '</div>' +
-        '<div style="font-size:12px;color:var(--text-muted);font-weight:500;">' + subTitle + '</div>' +
+        '<div style="font-size:12px;color:var(--text-muted);font-weight:500;">' + esc(typeLabel) + '</div>' +
       '</div>'
     );
     $head.append($left);
@@ -173,16 +156,27 @@
     $card.append($head);
 
     // Value block.
-    const valueLabel = a.type === 'CREDIT_CARD' ? 'Limite disponível' : 'Saldo atual';
     $card.append(
       '<div style="padding:6px 16px 16px 16px;">' +
         '<div style="font-size:11px;color:var(--text-muted);font-weight:600;' +
-          'text-transform:uppercase;letter-spacing:0.04em;">' + esc(valueLabel) + '</div>' +
+          'text-transform:uppercase;letter-spacing:0.04em;">Saldo atual</div>' +
         '<div style="font-size:20px;font-weight:800;color:' + valueColor + ';margin-top:2px;">' +
           esc(fmt(displayValue)) +
         '</div>' +
       '</div>'
     );
+
+    // Cards summary (only when the account has attached cards).
+    if (window.Domain.Account.hasCards(a)) {
+      const last4Line = a.cards.map(function (c) { return '•••• ' + c.last4; }).join('  ·  ');
+      $card.append(
+        '<div style="display:flex;align-items:center;gap:6px;padding:0 16px 14px 16px;' +
+          'font-size:12px;color:var(--text-muted);">' +
+          window.icon('creditCard', 13) +
+          '<span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + esc(last4Line) + '</span>' +
+        '</div>'
+      );
+    }
 
     // Footer with active status (subtle).
     if (!active) {
@@ -198,7 +192,6 @@
     return $card;
   }
 
-
   // ── Modal: create / edit ──────────────────────────────────
   function openFormModal(existing) {
     const isEdit = !!existing;
@@ -209,11 +202,11 @@
       color: 'acc-color-' + uniq,
       balance: 'acc-balance-' + uniq,
       active: 'acc-active-' + uniq,
-      linked: 'acc-linked-' + uniq,
-      last4: 'acc-last4-' + uniq,
       limit: 'acc-limit-' + uniq,
+      overdraft: 'acc-overdraft-' + uniq,
       closingDay: 'acc-closing-' + uniq,
       dueDay: 'acc-due-' + uniq,
+      cardLast4: 'acc-card-last4-' + uniq,
     };
 
     const initial = {
@@ -223,36 +216,55 @@
       balance: isEdit ? maskInitial(existing.balance) : '0,00',
       balanceNegative: isEdit ? (Number(existing.balance || 0) < 0) : false,
       active: isEdit ? (existing.active !== false) : true,
-      linkedAccountId: isEdit ? (existing.linkedAccountId ? String(existing.linkedAccountId) : '') : '',
-      last4: isEdit ? (existing.last4 || '') : '',
-      limit: isEdit && existing.creditLimit != null
-        ? maskInitial(existing.creditLimit) : '0,00',
-      closingDay: isEdit && existing.closingDay
-        ? String(existing.closingDay) : '1',
-      dueDay: isEdit && existing.dueDay
-        ? String(existing.dueDay) : '10',
+      creditLimit: isEdit && existing.creditLimit ? maskInitial(existing.creditLimit) : '',
+      overdraftLimit: isEdit && existing.overdraftLimit ? maskInitial(existing.overdraftLimit) : '',
+      closingDay: isEdit && existing.closingDay ? String(existing.closingDay) : '',
+      dueDay: isEdit && existing.dueDay ? String(existing.dueDay) : '',
     };
+
+    // Local, optimistic copy of this account's cards — kept in sync with the
+    // server on every add/remove so the chip list reflects reality without
+    // waiting for the SSE round-trip.
+    let cards = isEdit ? (existing.cards || []).slice() : [];
 
     const typeOptions = [
       ['CHECKING', 'Corrente'],
-      ['SAVINGS', 'Poupança'],
       ['INVESTMENT', 'Investimento'],
-      ['CREDIT_CARD', 'Cartão de Crédito']
     ].map(function (p) {
       const sel = p[0] === initial.type ? ' selected' : '';
       return '<option value="' + esc(p[0]) + '"' + sel + '>' + esc(p[1]) + '</option>';
     }).join('');
 
-    // Linked-account options: CHECKING accounts (excluding self).
-    const linkedOptions = '<option value="">Selecione uma conta...</option>' +
-      window.App.AccountService.linkableCheckings(isEdit ? existing.id : null)
-        .slice().sort(window.sortByName)
-        .map(function (a) {
-          const sel = String(a.id) === initial.linkedAccountId ? ' selected' : '';
-          return '<option value="' + esc(a.id) + '"' + sel + '>' + esc(a.name) + '</option>';
-        }).join('');
-
     const swatchesHtml = window.swatchesHtml(DEFAULT_COLORS, initial.color);
+
+    function cardsRegionHtml() {
+      if (!isEdit) {
+        return '<p style="font-size:12px;color:var(--text-muted);">' +
+          'Salve a conta antes de adicionar cartões.' +
+        '</p>';
+      }
+      const chips = cards.map(function (c) {
+        return '<span class="chip" data-card-id="' + esc(c.id) + '">' +
+          '<span>•••• ' + esc(c.last4) + '</span>' +
+          '<span class="chip-actions">' +
+            '<button type="button" data-act="remove-card" data-id="' + esc(c.id) + '" ' +
+              'style="background:none;border:none;cursor:pointer;color:var(--text-muted);' +
+              'padding:0;display:inline-flex;" title="Remover cartão">' + window.icon('x', 12) + '</button>' +
+          '</span>' +
+        '</span>';
+      }).join('');
+      const chipsHtml = chips
+        ? '<div class="chip-group" style="margin-bottom:10px;">' + chips + '</div>'
+        : '<p style="font-size:12px;color:var(--text-muted);margin-bottom:10px;">Nenhum cartão nesta conta.</p>';
+      return chipsHtml +
+        '<div style="display:flex;gap:8px;align-items:center;">' +
+          '<input id="' + ids.cardLast4 + '" data-field="new-card-last4" type="text" maxlength="4" ' +
+            'inputmode="numeric" placeholder="0000" style="width:90px;" />' +
+          '<button type="button" data-act="add-card" class="btn btn-secondary btn-sm">' +
+            window.icon('plus', 13) + '<span>Adicionar</span>' +
+          '</button>' +
+        '</div>';
+    }
 
     const bodyHtml =
       '<form data-form="acc" autocomplete="off">' +
@@ -303,24 +315,21 @@
           '</div>' +
         '</div>' +
 
-        // Credit-card extra fields (toggled).
-        '<div data-region="cc-fields" style="' +
-          'display:' + (initial.type === 'CREDIT_CARD' ? 'block' : 'none') + ';' +
-          'margin-top:14px;padding-top:14px;border-top:1px solid var(--border);">' +
+        // Limites e Fatura — sempre visível (qualquer conta pode hospedar cartões).
+        '<div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--border);">' +
+          '<p style="font-size:12px;font-weight:700;color:var(--text-secondary);margin-bottom:10px;">' +
+            'Limites e Fatura' +
+          '</p>' +
           '<div class="form-grid">' +
-            '<div class="form-group full">' +
-              '<label class="form-label" for="' + ids.linked + '">Conta Vinculada (Pagamento)</label>' +
-              '<select id="' + ids.linked + '" name="linkedAccountId">' + linkedOptions + '</select>' +
+            '<div class="form-group">' +
+              '<label class="form-label" for="' + ids.limit + '">Limite de crédito</label>' +
+              '<input id="' + ids.limit + '" name="creditLimit" type="text" inputmode="numeric" ' +
+                'placeholder="0,00" value="' + esc(initial.creditLimit) + '" />' +
             '</div>' +
             '<div class="form-group">' +
-              '<label class="form-label" for="' + ids.last4 + '">Últimos 4 dígitos</label>' +
-              '<input id="' + ids.last4 + '" name="last4" type="text" maxlength="4" ' +
-                'placeholder="0000" value="' + esc(initial.last4) + '" />' +
-            '</div>' +
-            '<div class="form-group">' +
-              '<label class="form-label" for="' + ids.limit + '">Limite</label>' +
-              '<input id="' + ids.limit + '" name="limit" type="text" inputmode="numeric" ' +
-                'value="' + esc(initial.limit) + '" />' +
+              '<label class="form-label" for="' + ids.overdraft + '">Cheque especial</label>' +
+              '<input id="' + ids.overdraft + '" name="overdraftLimit" type="text" inputmode="numeric" ' +
+                'placeholder="0,00" value="' + esc(initial.overdraftLimit) + '" />' +
             '</div>' +
             '<div class="form-group">' +
               '<label class="form-label" for="' + ids.closingDay + '">Fechamento (dia)</label>' +
@@ -334,6 +343,12 @@
             '</div>' +
           '</div>' +
         '</div>' +
+
+        // Cartões — apenas em edição (precisa de um accountId salvo).
+        '<div data-region="cards-section" style="margin-top:14px;padding-top:14px;border-top:1px solid var(--border);">' +
+          '<p style="font-size:12px;font-weight:700;color:var(--text-secondary);margin-bottom:10px;">Cartões</p>' +
+          '<div data-region="cards-body">' + cardsRegionHtml() + '</div>' +
+        '</div>' +
       '</form>';
 
     const m = window.modal({
@@ -344,46 +359,12 @@
     m.open();
 
     const $form = m.$body.find('form[data-form=acc]');
-    const $type = $form.find('select[name=type]');
     const $color = $form.find('input[name=color]');
-    const $cc = m.$body.find('[data-region=cc-fields]');
     const $balance = $form.find('input[name=balance]');
-    const $limit = $form.find('input[name=limit]');
+    const $limit = $form.find('input[name=creditLimit]');
+    const $overdraft = $form.find('input[name=overdraftLimit]');
 
-    // Swatch picker. Captures the returned paint(hex) fn so the credit-card
-    // auto-color logic below can repaint borders after setting $color.
-    const paintSwatches = window.bindSwatches(m, $color);
-
-    // Type toggles credit-card fields and disables color picker.
-    function syncTypeUI() {
-      const t = $type.val();
-      $cc.css('display', t === 'CREDIT_CARD' ? 'block' : 'none');
-      $color.prop('disabled', t === 'CREDIT_CARD');
-      $color.css('opacity', t === 'CREDIT_CARD' ? '0.5' : '1');
-      m.$body.find('[data-region=swatches]').css('opacity', t === 'CREDIT_CARD' ? '0.5' : '1').css('pointer-events', t === 'CREDIT_CARD' ? 'none' : 'auto');
-      if (t === 'CREDIT_CARD') {
-        // Auto-pick color from linked account if available.
-        const linkedId = $form.find('select[name=linkedAccountId]').val();
-        if (linkedId) {
-          const linked = findAccount(linkedId);
-          if (linked && linked.color) {
-            $color.val(linked.color);
-            paintSwatches(linked.color);
-          }
-        }
-      }
-    }
-    $type.on('change', syncTypeUI);
-    syncTypeUI();
-    $form.find('select[name=linkedAccountId]').on('change', function () {
-      if ($type.val() === 'CREDIT_CARD') {
-        const linked = findAccount($(this).val());
-        if (linked && linked.color) {
-          $color.val(linked.color);
-          paintSwatches(linked.color);
-        }
-      }
-    });
+    window.bindSwatches(m, $color);
 
     // Sign toggle for initial balance.
     function updateSignBtn() {
@@ -400,6 +381,53 @@
     // Currency masks.
     window.bindCurrencyMask($balance);
     window.bindCurrencyMask($limit);
+    window.bindCurrencyMask($overdraft);
+
+    // ── Cartões: add/remove live (endpoints próprios, fora do submit do form) ─
+    function renderCardsBody() {
+      m.$body.find('[data-region=cards-body]').html(cardsRegionHtml());
+    }
+
+    m.$el.on('click', '[data-act=add-card]', function () {
+      if (!isEdit) return;
+      const $input = m.$body.find('#' + ids.cardLast4);
+      const last4 = ($input.val() || '').trim();
+      if (!/^\d{4}$/.test(last4)) {
+        window.toast('Informe os 4 dígitos do cartão', 'error');
+        return;
+      }
+      const $btn = $(this).prop('disabled', true);
+      window.App.AccountService.addCard(existing.id, { last4: last4 }).then(function (card) {
+        cards.push(card);
+        renderCardsBody();
+        window.toast('Cartão adicionado', 'success');
+      }).catch(function (err) {
+        $btn.prop('disabled', false);
+        window.toast((err && err.message) || 'Falha ao adicionar cartão', 'error');
+      });
+    });
+
+    m.$el.on('click', '[data-act=remove-card]', function () {
+      if (!isEdit) return;
+      const cardId = $(this).attr('data-id');
+      const $chip = $(this).closest('[data-card-id]');
+      $chip.css('opacity', '0.5');
+      window.App.AccountService.removeCard(existing.id, cardId).then(function () {
+        cards = cards.filter(function (c) { return String(c.id) !== String(cardId); });
+        renderCardsBody();
+        window.toast('Cartão removido', 'success');
+      }).catch(function (err) {
+        $chip.css('opacity', '1');
+        window.toast((err && err.message) || 'Falha ao remover cartão', 'error');
+      });
+    });
+
+    m.$body.on('keydown', '[data-field=new-card-last4]', function (e) {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        m.$el.find('[data-act=add-card]').trigger('click');
+      }
+    });
 
     function submit(e) {
       if (e) e.preventDefault();
@@ -408,22 +436,17 @@
         $form.find('input[name=name]').trigger('focus');
         return;
       }
-      const t = $type.val();
       const payload = {
         name: name,
         balance: (window.parseCurrency($balance.val()) * (initial.balanceNegative ? -1 : 1)).toFixed(2),
-        type: t,
+        type: $form.find('select[name=type]').val(),
         color: $color.val() || '#6366F1',
         active: $form.find('input[name=active]').is(':checked'),
+        creditLimit: parseOptionalCurrency($limit.val()),
+        overdraftLimit: parseOptionalCurrency($overdraft.val()),
+        closingDay: parseOptionalDay($form.find('input[name=closingDay]').val()),
+        dueDay: parseOptionalDay($form.find('input[name=dueDay]').val()),
       };
-      if (t === 'CREDIT_CARD') {
-        const linkedId = $form.find('select[name=linkedAccountId]').val();
-        if (linkedId) payload.linkedAccountId = linkedId;
-        payload.last4 = ($form.find('input[name=last4]').val() || '').trim();
-        payload.creditLimit = window.parseCurrency($limit.val()).toFixed(2);
-        payload.closingDay = parseInt($form.find('input[name=closingDay]').val(), 10) || 1;
-        payload.dueDay = parseInt($form.find('input[name=dueDay]').val(), 10) || 10;
-      }
 
       const $btn = m.$el.find('[data-act=save]');
       $btn.prop('disabled', true);
@@ -448,43 +471,34 @@
 
   // ── Modal: confirm delete ─────────────────────────────────
   function openDeleteModal(target) {
-    // Find credit cards linked to this account.
-    const linkedCards = state.accounts.filter(function (a) {
-      return a.type === 'CREDIT_CARD' && String(a.linkedAccountId) === String(target.id);
-    });
-
-    // Collect all account IDs to check (target + linked cards).
-    const idsToCheck = [String(target.id)];
-    linkedCards.forEach(function (c) { idsToCheck.push(String(c.id)); });
-
-    // Check if any of those accounts have transactions.
     window.App.TransactionService.list('').then(function (all) {
       const allTxs = Array.isArray(all) ? all : [];
       let txCount = 0;
       allTxs.forEach(function (tx) {
-        if (idsToCheck.indexOf(String(tx.accountId)) >= 0) txCount++;
+        if (String(tx.accountId) === String(target.id)) txCount++;
       });
-      showDeleteConfirm(target, linkedCards, txCount);
+      showDeleteConfirm(target, txCount);
     }).catch(function () {
-      showDeleteConfirm(target, linkedCards, 0);
+      showDeleteConfirm(target, 0);
     });
   }
 
-  function showDeleteConfirm(target, linkedCards, txCount) {
+  function showDeleteConfirm(target, txCount) {
     const nameHtml = '<strong>' + esc(target.name) + '</strong>';
+    const cards = target.cards || [];
     let bodyHtml = '';
-    const hasWarning = linkedCards.length > 0 || txCount > 0;
+    const hasWarning = cards.length > 0 || txCount > 0;
 
     if (hasWarning) {
       const warnings = [];
 
-      if (linkedCards.length > 0) {
-        const cardNames = linkedCards.map(function (c) { return c.name; }).join(', ');
+      if (cards.length > 0) {
+        const last4s = cards.map(function (c) { return '•••• ' + c.last4; }).join(', ');
         warnings.push(
-          'Esta conta possui <strong>' + esc(String(linkedCards.length)) + '</strong> ' +
-          (linkedCards.length === 1 ? 'cartão vinculado' : 'cartões vinculados') +
-          ' (' + esc(cardNames) + ') que ' +
-          (linkedCards.length === 1 ? 'será excluído' : 'serão excluídos') + ' junto com a conta.'
+          'Esta conta possui <strong>' + esc(String(cards.length)) + '</strong> ' +
+          (cards.length === 1 ? 'cartão' : 'cartões') +
+          ' (' + esc(last4s) + ') que ' +
+          (cards.length === 1 ? 'será excluído' : 'serão excluídos') + ' junto com a conta.'
         );
       }
 
@@ -492,8 +506,7 @@
         warnings.push(
           'Existem <strong>' + esc(String(txCount)) + '</strong> transaç' +
           (txCount === 1 ? 'ão vinculada' : 'ões vinculadas') +
-          (linkedCards.length > 0 ? ' à conta e seus cartões' : ' a esta conta') +
-          ' que ' + (txCount === 1 ? 'será removida' : 'serão removidas') + ' permanentemente.'
+          ' a esta conta que ' + (txCount === 1 ? 'será removida' : 'serão removidas') + ' permanentemente.'
         );
       }
 

@@ -1,16 +1,20 @@
 /* pages/credit-cards.js — Cartões de Crédito.
  *
- * Lista cartões (accounts onde type==='CREDIT_CARD') em grid de "card visuals" com:
- *   - banda visual top em gradient com card.color
- *   - bloco "Fatura atual" (despesas do período no cartão)
- *   - barra de uso (used/limit) com cores 60/80% (STYLE.md §11)
- *   - rodapé Fechamento/Vencimento + link "Ver fatura"
+ * Cartões não são mais contas — cada um é `{ id, last4, accountId, active }` filho
+ * de uma conta real. A página agrupa os cartões do cache por conta (uma "conta com
+ * cartões" pode ter 1+ cartões) e renderiza um tile por grupo:
+ *   - banda visual top em gradient com a cor/nome DA CONTA
+ *   - uma linha por cartão (last4 + fatura daquele cartão, casada por tx.cardId)
+ *   - barra de uso COMPARTILHADA (uma por grupo): total dos cartões da conta vs
+ *     account.creditLimit — o limite é da conta, não de cada cartão
+ *   - rodapé Fechamento/Vencimento (também da conta)
  *
  * Período: navegação por mês (periodNav). Backend GET /api/transactions ignora
  * filtros accountId/from/to, então buscamos a lista completa uma vez e
  * particionamos por cartão + intervalo de datas no cliente.
  *
- * "Novo Cartão" → redireciona para #/accounts (criação acontece lá com type=CREDIT_CARD).
+ * "Novo Cartão" → redireciona para #/accounts (cartões são geridos no modal de
+ * edição da conta).
  */
 (function () {
   window.Pages = window.Pages || {};
@@ -22,7 +26,7 @@
     const now = new Date();
     state = {
       $root: null,
-      cards: [],
+      groups: [], // [{ account, cards: [...] }]
       month: now.getMonth() + 1, // 1..12
       year: now.getFullYear(),
       allTx: [],
@@ -30,28 +34,37 @@
     };
   }
 
-  // Cards live in App.CacheStore (hydrated at login, SSE-refreshed).
-  function syncCardsFromCache() {
-    state.cards = window.App.CreditCardService.listFromCache();
+  // Cards live in App.CacheStore (hydrated at login, SSE-refreshed), grouped by
+  // their owning account for the grid.
+  function syncGroupsFromCache() {
+    const flat = window.App.CreditCardService.listFromCache();
+    const byAccount = {};
+    flat.forEach(function (c) {
+      const aid = String(c.accountId);
+      if (!byAccount[aid]) byAccount[aid] = { account: c.account, cards: [] };
+      byAccount[aid].cards.push(c);
+    });
+    const groups = Object.keys(byAccount).map(function (k) { return byAccount[k]; });
+    groups.forEach(function (g) {
+      g.cards.sort(function (a, b) { return String(a.last4).localeCompare(String(b.last4)); });
+    });
+    groups.sort(function (a, b) { return window.sortByName(a.account, b.account); });
+    state.groups = groups;
   }
 
   // ── Helpers ───────────────────────────────────────────────
-
-
 
   function currentPeriod() {
     return window.Domain.Period.create(state.month, state.year);
   }
 
-  function findCard(id) { return window.byId(state.cards, id); }
-
-  function accountName(id) {
-    if (!id) return '—';
-    const acc = window.App.CacheStore.findById('accounts', id);
-    return acc ? (acc.name || '—') : '—';
+  function findCard(id) {
+    for (let i = 0; i < state.groups.length; i++) {
+      const found = window.byId(state.groups[i].cards, id);
+      if (found) return found;
+    }
+    return null;
   }
-
-  function colorOf(c) { return c.color || '#820AD1'; }
 
   function pctColor(pct) {
     return 'var(--' + window.Domain.CreditCard.barColorByUsage(pct) + ')';
@@ -70,19 +83,23 @@
     });
   }
 
-  // Filter transactions by card account + month/year. Returns { items, total }.
-  // Backend list endpoint ignores accountId/from/to filters, so partition client-side.
+  // Invoice for a single card (matched by tx.cardId) — used per row + the modal.
   function computeInvoice(cardId) {
     const period = currentPeriod();
     const b = window.Domain.CreditCard.invoicePeriod(period);
     const cid = String(cardId);
     const items = (state.allTx || []).filter(function (t) {
-      if (String(t.accountId) !== cid) return false;
+      if (String(t.cardId) !== cid) return false;
       const d = String(t.date || '').slice(0, 10);
       return d >= b.from && d <= b.to;
     });
     const total = window.Domain.CreditCard.invoiceTotal(items, cardId, period);
     return { items: items, total: total };
+  }
+
+  // Combined invoice for every card on the account — feeds the shared usage bar.
+  function computeAccountInvoice(account) {
+    return window.Domain.CreditCard.accountInvoiceTotal(state.allTx || [], account, currentPeriod());
   }
 
   // ── Render ────────────────────────────────────────────────
@@ -114,7 +131,7 @@
     $page.append($header);
 
     // Body
-    if (!state.cards.length) {
+    if (!state.groups.length) {
       $page.append(window.emptyState({
         icon: 'creditCard',
         title: 'Nenhum cartão cadastrado',
@@ -125,41 +142,35 @@
         '<div style="display:grid;gap:16px;' +
           'grid-template-columns:repeat(auto-fill, minmax(320px, 1fr));"></div>'
       );
-      state.cards.slice().sort(window.sortByName).forEach(function (c) {
-        $grid.append(renderCard(c));
-      });
+      state.groups.forEach(function (g) { $grid.append(renderGroup(g)); });
       $page.append($grid);
     }
 
     $root.empty().append($page);
   }
 
-  function renderCard(c) {
-    const color = colorOf(c);
-    const last4 = c.last4 || '0000';
-    const closingDay = window.Domain.CreditCard.closingDay(c);
-    const dueDay = window.Domain.CreditCard.dueDay(c);
-    const limit = Number(c.creditLimit) || 0;
+  function renderGroup(group) {
+    const account = group.account;
+    const color = account.color || '#820AD1';
+    const closingDay = window.Domain.CreditCard.closingDay(account);
+    const dueDay = window.Domain.CreditCard.dueDay(account);
+    const limit = Number(account.creditLimit) || 0;
 
-    const inv = computeInvoice(c.id);
-    const loadingInv = state.txLoading;
-    const used = Number(inv.total) || 0;
-    const pct = window.Domain.CreditCard.usagePct(used, limit);
+    const accountUsed = computeAccountInvoice(account);
+    const pct = window.Domain.CreditCard.usagePct(accountUsed, limit);
     const barColor = pctColor(pct);
-    const available = window.Domain.CreditCard.availableCredit(limit, used);
-
-    const linkedName = accountName(c.linkedAccountId);
+    const available = window.Domain.CreditCard.availableCredit(limit, accountUsed);
 
     const $card = $(
-      '<div class="card cc" data-id="' + esc(c.id) + '" style="' +
-        'padding:20px;display:flex;flex-direction:column;gap:16px;' +
-        'cursor:pointer;transition:border-color var(--transition);' +
+      '<div class="card cc" data-account-id="' + esc(account.id) + '" style="' +
+        'padding:20px;display:flex;flex-direction:column;gap:14px;' +
+        'transition:border-color var(--transition);' +
       '"></div>'
     );
 
-    // ── Visual band (gradient) ─────────────────────────────
+    // ── Visual band (gradient) — cor/nome da conta ─────────
     const bandStyle =
-      'position:relative;overflow:hidden;min-height:140px;' +
+      'position:relative;overflow:hidden;min-height:120px;' +
       'border-radius:var(--radius);padding:20px;color:#fff;' +
       'background:linear-gradient(135deg, ' + esc(color) + ', ' + esc(color) + '99);';
 
@@ -172,24 +183,20 @@
       '<div style="display:flex;align-items:center;gap:8px;' +
         'font-size:11px;font-weight:700;letter-spacing:0.12em;opacity:0.75;">' +
         window.icon('creditCard', 14) +
-        '<span>CRÉDITO' + (c.active === false ? ' · INATIVO' : '') + '</span>' +
+        '<span>CRÉDITO' + (account.active === false ? ' · INATIVA' : '') + '</span>' +
       '</div>'
     );
     $band.append(
       '<div style="font-size:18px;font-weight:800;margin-top:24px;' +
         'overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' +
-        esc(c.name || '—') +
+        esc(account.name || '—') +
       '</div>'
     );
+    const last4Line = group.cards.map(function (c) { return '•••• ' + c.last4; }).join('   ');
     $band.append(
-      '<div style="font-size:12px;opacity:0.65;margin-top:2px;' +
+      '<div style="font-size:13px;opacity:0.75;margin-top:8px;letter-spacing:0.06em;' +
         'overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' +
-        esc(linkedName) +
-      '</div>'
-    );
-    $band.append(
-      '<div style="font-size:13px;opacity:0.7;margin-top:8px;letter-spacing:0.08em;">' +
-        '•••• •••• •••• ' + esc(last4) +
+        esc(last4Line) +
       '</div>'
     );
     $band.append(
@@ -199,39 +206,40 @@
     );
     $card.append($band);
 
-    // ── Fatura atual + Limite ──────────────────────────────
-    let invoiceValueHtml;
-    if (loadingInv) {
-      invoiceValueHtml = '<span style="font-size:13px;color:var(--text-muted);">…</span>';
-    } else {
-      const invoiceColor = used > 0 ? 'var(--expense)' : 'var(--text-primary)';
-      invoiceValueHtml =
-        '<span style="font-size:20px;font-weight:800;color:' + invoiceColor + ';">' +
-          esc(fmt(used)) +
-        '</span>';
-    }
+    // ── Per-card rows: last4 + fatura do cartão + Ver fatura ─
+    const $rows = $('<div style="display:flex;flex-direction:column;"></div>');
+    group.cards.forEach(function (c) {
+      const inv = computeInvoice(c.id);
+      const used = Number(inv.total) || 0;
+      const valueHtml = state.txLoading
+        ? '<span style="font-size:13px;color:var(--text-muted);">…</span>'
+        : '<span style="font-size:14px;font-weight:800;color:' +
+            (used > 0 ? 'var(--expense)' : 'var(--text-primary)') + ';">' + esc(fmt(used)) + '</span>';
+      $rows.append(
+        '<div style="display:flex;justify-content:space-between;align-items:center;' +
+          'padding:9px 0;border-bottom:1px solid var(--border-light);">' +
+          '<span style="font-size:12px;color:var(--text-secondary);letter-spacing:0.04em;">' +
+            '•••• ' + esc(c.last4) +
+          '</span>' +
+          valueHtml +
+          '<button type="button" class="cc" data-act="view-invoice" data-id="' + esc(c.id) + '" ' +
+            'style="background:transparent;border:none;cursor:pointer;font-size:12px;' +
+            'font-weight:600;color:var(--accent);display:inline-flex;align-items:center;gap:4px;">' +
+            'Ver fatura ' + window.icon('chevronRight', 12) +
+          '</button>' +
+        '</div>'
+      );
+    });
+    $card.append($rows);
 
-    const $body = $(
-      '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;">' +
-        '<div>' +
-          '<p style="font-size:11px;color:var(--text-muted);font-weight:700;' +
-            'text-transform:uppercase;letter-spacing:0.04em;">Fatura atual</p>' +
-          '<p data-region="invoice-value" style="margin-top:4px;">' + invoiceValueHtml + '</p>' +
-        '</div>' +
-        '<div style="text-align:right;">' +
-          '<p style="font-size:11px;color:var(--text-muted);font-weight:700;' +
-            'text-transform:uppercase;letter-spacing:0.04em;">Limite</p>' +
-          '<p style="font-size:20px;font-weight:800;color:var(--text-primary);margin-top:4px;">' +
-            esc(fmt(limit)) +
-          '</p>' +
-        '</div>' +
-      '</div>'
-    );
-    $card.append($body);
-
-    // ── Usage bar ──────────────────────────────────────────
+    // ── Shared usage bar (account-level: all of the account's cards combined) ─
     const $bar = $(
       '<div>' +
+        '<div style="display:flex;justify-content:space-between;margin-bottom:4px;">' +
+          '<span style="font-size:11px;color:var(--text-muted);font-weight:700;' +
+            'text-transform:uppercase;letter-spacing:0.04em;">Limite da conta</span>' +
+          '<span style="font-size:12px;font-weight:700;color:var(--text-primary);">' + esc(fmt(limit)) + '</span>' +
+        '</div>' +
         '<div style="height:8px;background:var(--bg-hover);border-radius:4px;overflow:hidden;">' +
           '<div style="height:100%;border-radius:4px;width:' + pct.toFixed(1) + '%;' +
             'background:' + barColor + ';transition:width 0.5s ease;"></div>' +
@@ -245,30 +253,22 @@
     );
     $card.append($bar);
 
-    // ── Footer: closing/due days + Ver fatura ──────────────
-    const $footer = $(
-      '<div style="display:flex;justify-content:space-between;align-items:center;' +
-        'padding-top:12px;border-top:1px solid var(--border-light);">' +
+    // ── Footer: closing/due (conta) ─────────────────────────
+    $card.append(
+      '<div style="padding-top:2px;">' +
         '<span style="font-size:12px;color:var(--text-muted);">' +
           'Fech. dia ' + esc(closingDay) + ' · Venc. dia ' + esc(dueDay) +
         '</span>' +
-        '<button type="button" class="cc" data-act="view-invoice" data-id="' + esc(c.id) + '" ' +
-          'style="background:transparent;border:none;cursor:pointer;font-size:12px;' +
-          'font-weight:600;color:var(--accent);display:inline-flex;align-items:center;gap:4px;">' +
-          'Ver fatura ' + window.icon('chevronRight', 12) +
-        '</button>' +
       '</div>'
     );
-    $card.append($footer);
 
-    // Hover highlight border with card color
     $card.on('mouseenter', function () { $card.css('border-color', color); });
     $card.on('mouseleave', function () { $card.css('border-color', ''); });
 
     return $card;
   }
 
-  // ── Invoice modal ─────────────────────────────────────────
+  // ── Invoice modal (por cardId) ─────────────────────────────
   function openInvoiceModal(cardId) {
     const card = findCard(cardId);
     if (!card) return;
@@ -345,8 +345,9 @@
       variant: 'secondary', size: 'md', label: 'Fechar',
       attrs: 'data-modal-close="1" type="button"'
     });
+    const accountName = card.account ? (card.account.name || '') : '';
     const m = window.modal({
-      title: 'Fatura · ' + (card.name || 'Cartão'),
+      title: 'Fatura · ' + accountName + ' · •••• ' + (card.last4 || ''),
       body: headerSummary + listHtml,
       footer: window.modalFooter($close),
     });
@@ -363,12 +364,6 @@
       const id = $(this).attr('data-id');
       openInvoiceModal(id);
     });
-    // Click anywhere on a card = view invoice.
-    $root.on('click.cc', '.card.cc', function (e) {
-      if ($(e.target).closest('[data-act]').length) return;
-      const id = $(this).attr('data-id');
-      if (id) openInvoiceModal(id);
-    });
   }
 
   // ── Lifecycle ─────────────────────────────────────────────
@@ -377,11 +372,11 @@
       resetState();
       state.$root = $root;
       bindRoot($root);
-      syncCardsFromCache();
+      syncGroupsFromCache();
       render();
       loadAllTx();
       state.unsubscribe = window.App.AccountService.onChange(function () {
-        syncCardsFromCache();
+        syncGroupsFromCache();
         render();
       });
     },

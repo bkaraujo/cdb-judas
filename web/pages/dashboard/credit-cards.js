@@ -3,26 +3,28 @@
   window.DashboardPanels = window.DashboardPanels || {};
 
   window.DashboardPanels['credit-cards'] = function (p, ctx) {
-    var cards = ctx.creditCards();
-    if (!cards.length) {
+    var accounts = ctx.creditCards(); // accounts with at least one card
+    if (!accounts.length) {
       return ctx.panelWrap({
         title: 'Cartões de Crédito', icon: p.icon,
         body: window.emptyState({ icon: 'creditCard', title: 'Sem cartões', desc: 'Cadastre um cartão para visualizar aqui.' }),
       });
     }
+    var period = window.Domain.Period.currentMonth();
     var html = '';
-    cards.forEach(function (c, i) {
-      var limit = c.creditLimit || 0;
-      var used = Math.abs(window.Domain.Account.currentBalance(c));
+    accounts.forEach(function (a, i) {
+      var limit = a.creditLimit || 0;
+      // Invoice total = every card on the account combined, matched by tx.cardId.
+      var used = window.Domain.CreditCard.accountInvoiceTotal(ctx.currentMonthTxs(), a, period);
       var pct = window.Domain.CreditCard.usagePct(used, limit);
-      var color = ctx.pickColor(i + 4, c.color);
+      var color = ctx.pickColor(i + 4, a.color);
       var barColor = 'var(--' + window.Domain.CreditCard.barColorByUsage(pct) + ')';
       html +=
         '<div style="margin-bottom:12px;">' +
           '<div style="display:flex;justify-content:space-between;margin-bottom:6px;">' +
             '<div style="display:flex;align-items:center;gap:6px;min-width:0;">' +
               '<span style="width:10px;height:10px;border-radius:2px;background:' + ctx.esc(color) + ';flex-shrink:0;"></span>' +
-              '<span style="font-size:12px;font-weight:600;color:var(--text-primary);">' + ctx.esc(c.name) + '</span>' +
+              '<span style="font-size:12px;font-weight:600;color:var(--text-primary);">' + ctx.esc(a.name) + '</span>' +
             '</div>' +
             '<span style="font-size:12px;color:var(--expense);font-weight:700;">' + ctx.esc(ctx.v(used)) + '</span>' +
           '</div>' +

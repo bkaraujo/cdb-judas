@@ -32,6 +32,7 @@
       date: 'tx-date-' + uniq,
       category: 'tx-cat-' + uniq,
       account: 'tx-acc-' + uniq,
+      card: 'tx-card-' + uniq,
       destAccount: 'tx-dest-' + uniq,
       costCenter: 'tx-cc-' + uniq,
       status: 'tx-status-' + uniq,
@@ -48,6 +49,7 @@
       destAccountId: '',
       status: isEdit ? (existing.status === 'balance' ? 'confirmed' : (existing.status || 'confirmed')) : 'confirmed',
       costCenterId: isEdit ? String(existing.costCenterId || '') : '',
+      cardId: isEdit ? (existing.cardId || '') : '',
       isEstorno: isEdit ? (
         (existing.type === 'expense' && Number(existing.amount) > 0) ||
         (existing.type === 'income'  && Number(existing.amount) < 0)
@@ -82,6 +84,26 @@
         const sel = String(a.id) === String(selectedId) ? ' selected' : '';
         return '<option value="' + esc(a.id) + '"' + sel + '>' + esc(a.name) + '</option>';
       }).join('');
+    }
+
+    // Card select is optional and only relevant when the chosen account has
+    // cards attached; options + visibility are recomputed whenever the account
+    // selection changes (see the accountId `change` handler below).
+    function cardOptionsHtml(accountId, selectedCardId) {
+      const acc = window.byId(accs, accountId);
+      if (!acc || !window.Domain.Account.hasCards(acc)) return '';
+      return '<option value="">— Nenhum —</option>' + acc.cards.map(function (c) {
+        const sel = String(c.id) === String(selectedCardId) ? ' selected' : '';
+        return '<option value="' + esc(c.id) + '"' + sel + '>•••• ' + esc(c.last4) + '</option>';
+      }).join('');
+    }
+
+    function cardFieldHtml(accountId, selectedCardId) {
+      const options = cardOptionsHtml(accountId, selectedCardId);
+      return '<div class="form-group" data-region="card-field" style="display:' + (options ? 'block' : 'none') + ';">' +
+        '<label class="form-label" for="' + ids.card + '">Cartão</label>' +
+        '<select id="' + ids.card + '" name="cardId">' + options + '</select>' +
+      '</div>';
     }
 
     function buildCostCenterOpts(selectedId) {
@@ -155,6 +177,7 @@
           '<label class="form-label" for="' + ids.account + '">Conta</label>' +
           '<select id="' + ids.account + '" name="accountId">' + accOpts + '</select>' +
         '</div>' +
+        cardFieldHtml(initial.accountId, initial.cardId) +
         '<div class="form-group">' +
           '<label class="form-label" for="' + ids.costCenter + '">Centro de Custo</label>' +
           '<select id="' + ids.costCenter + '" name="costCenterId">' + buildCostCenterOpts(initial.costCenterId) + '</select>' +
@@ -247,6 +270,15 @@
     }
     bindNotesCounter();
 
+    // Account change refreshes which cards are offered (a card belongs to one account).
+    m.$body.on('change', 'select[name=accountId]', function () {
+      const $field = m.$body.find('[data-region=card-field]');
+      if (!$field.length) return;
+      const options = cardOptionsHtml($(this).val(), null);
+      $field.find('select[name=cardId]').html(options);
+      $field.css('display', options ? 'block' : 'none');
+    });
+
     // Type buttons sync hidden input + rebuild grid layout for the chosen type.
     m.$body.on('click', '[data-act=set-form-type]', function (e) {
       e.preventDefault();
@@ -264,6 +296,8 @@
       if ($stSel.length)   initial.status        = $stSel.val()        || initial.status;
       const $ccSel        = $form.find('select[name=costCenterId]');
       if ($ccSel.length)   initial.costCenterId  = $ccSel.val()        || initial.costCenterId;
+      const $cardSel      = $form.find('select[name=cardId]');
+      if ($cardSel.length) initial.cardId        = $cardSel.val()      || initial.cardId;
       const $estornoChk   = $form.find('input[name=estorno]');
       if ($estornoChk.length) initial.isEstorno  = $estornoChk.is(':checked');
       const $notesTa      = $form.find('textarea[name=notes]');
@@ -364,6 +398,7 @@
         status: status,
         type: type,
         notes: notes,
+        cardId: $form.find('select[name=cardId]').val() || null,
       };
 
       $btn.prop('disabled', true);
