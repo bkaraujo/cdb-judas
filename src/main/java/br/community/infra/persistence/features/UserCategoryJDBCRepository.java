@@ -62,7 +62,7 @@ public final class UserCategoryJDBCRepository extends JDBCRepository<UserCategor
         values.put("TXT_NATURE", entity.nature().name());
         values.put("TXT_NAME", entity.name());
         values.put("COD_PARENT", parentStr);
-        values.put("BOL_SYSTEM", entity.isSystem() ? "Y" : "N");
+        values.put("FLG_SYSTEM", entity.isSystem() ? "Y" : "N");
         values.put("FLG_ACTIVE", entity.active() ? "Y" : "N");
         values.put("TMS_CREATE_AT", now);
         values.put("TMS_UPDATED_AT", now);
@@ -75,7 +75,7 @@ public final class UserCategoryJDBCRepository extends JDBCRepository<UserCategor
         val userId = UUID.fromString(rs.getString("COD_USER").get());
         val nature = Transaction.Type.valueOf(rs.getString("TXT_NATURE").get());
         val name = rs.getString("TXT_NAME").get();
-        val isSystem = "Y".equals(rs.getString("BOL_SYSTEM").get());
+        val isSystem = "Y".equals(rs.getString("FLG_SYSTEM").get());
         val active = "Y".equals(rs.getString("FLG_ACTIVE").get());
 
         final @Nullable String parentRaw = rs.getString("COD_PARENT").get();

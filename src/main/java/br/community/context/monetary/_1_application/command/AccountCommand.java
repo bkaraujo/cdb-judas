@@ -4,7 +4,6 @@ import br.community.core.TwoDecimalPlaces;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.PositiveOrZero;
 import org.jspecify.annotations.NullMarked;
@@ -15,7 +14,6 @@ import java.math.BigDecimal;
 @NullMarked
 public record AccountCommand(
         @NotBlank String name,
-        @NotNull @TwoDecimalPlaces BigDecimal balance,
         @NotBlank String type,
         @NotBlank @Pattern(regexp = "#[0-9A-Fa-f]{6}") String color,
         boolean active,

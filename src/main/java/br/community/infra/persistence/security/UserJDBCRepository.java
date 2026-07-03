@@ -32,7 +32,7 @@ public final class UserJDBCRepository implements UserRepository {
     @Override
     public Optional<User> findByUsername(String username) {
         return dataSource.query(
-                "SELECT U.ID, U.TXT_USERNAME, P.TXT_NAME"
+                "SELECT U.ID, U.TXT_USERNAME, U.FLG_ACTIVE, U.TMS_CREATE_AT, U.TMS_UPDATED_AT, P.TXT_NAME"
                         + " FROM SEC_USER U JOIN PEP_PERSON P ON P.ID = U.COD_PERSON"
                         + " WHERE U.TXT_USERNAME = ?",
                 JDBCParameter.of(username),
@@ -43,7 +43,7 @@ public final class UserJDBCRepository implements UserRepository {
     @Override
     public Optional<User> findById(String id) {
         return dataSource.query(
-                "SELECT U.ID, U.TXT_USERNAME, P.TXT_NAME"
+                "SELECT U.ID, U.TXT_USERNAME, U.FLG_ACTIVE, U.TMS_CREATE_AT, U.TMS_UPDATED_AT, P.TXT_NAME"
                         + " FROM SEC_USER U JOIN PEP_PERSON P ON P.ID = U.COD_PERSON"
                         + " WHERE U.ID = ?",
                 JDBCParameter.of(id),
@@ -88,19 +88,25 @@ public final class UserJDBCRepository implements UserRepository {
 
             if (existingPersonId == null) {
                 tx.execute(
-                        "INSERT INTO SEC_USER (ID, TXT_USERNAME, COD_PERSON) VALUES (?, ?, ?)",
+                        "INSERT INTO SEC_USER (ID, TXT_USERNAME, COD_PERSON, FLG_ACTIVE, TMS_CREATE_AT, TMS_UPDATED_AT)"
+                                + " VALUES (?, ?, ?, ?, ?, ?)",
                         JDBCParameter.of(
                                 user.id(),
                                 user.username(),
-                                personId
+                                personId,
+                                user.active() ? "Y" : "N",
+                                now,
+                                now
                         )
                 ).get();
             } else {
                 tx.execute(
-                        "UPDATE SEC_USER SET TXT_USERNAME = ?, COD_PERSON = ? WHERE ID = ?",
+                        "UPDATE SEC_USER SET TXT_USERNAME = ?, COD_PERSON = ?, FLG_ACTIVE = ?, TMS_UPDATED_AT = ? WHERE ID = ?",
                         JDBCParameter.of(
                                 user.username(),
                                 personId,
+                                user.active() ? "Y" : "N",
+                                now,
                                 user.id()
                         )
                 ).get();
@@ -147,8 +153,11 @@ public final class UserJDBCRepository implements UserRepository {
         val id = rs.getString("ID").get();
         val username = rs.getString("TXT_USERNAME").get();
         val name = rs.getString("TXT_NAME").get();
+        val active = "Y".equals(rs.getString("FLG_ACTIVE").get());
+        val createdAt = rs.getTimestamp("TMS_CREATE_AT").get().toLocalDateTime();
+        val updatedAt = rs.getTimestamp("TMS_UPDATED_AT").get().toLocalDateTime();
         val password = findLatestPassword(id);
-        return new User(id, username, name, password);
+        return new User(id, username, name, password, active, createdAt, updatedAt);
     }
 
     private String findLatestPassword(String userId) {

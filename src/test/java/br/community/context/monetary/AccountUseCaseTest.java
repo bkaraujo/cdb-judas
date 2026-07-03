@@ -39,7 +39,7 @@ class AccountUseCaseTest {
     }
 
     private AccountCommand checkingCmd() {
-        return new AccountCommand("Banco", new BigDecimal("100.00"), "CHECKING", "#112233", true,
+        return new AccountCommand("Banco", "CHECKING", "#112233", true,
                 null, null, null, null);
     }
 
@@ -54,7 +54,7 @@ class AccountUseCaseTest {
     @Test
     @DisplayName("tipo desconhecido → Validation")
     void rejectsUnknownAccountType() {
-        AccountCommand cmd = new AccountCommand("X", new BigDecimal("100.00"), "SAVINGS", "#112233", true,
+        AccountCommand cmd = new AccountCommand("X", "SAVINGS", "#112233", true,
                 null, null, null, null);
         Result<Account, DomainError> r = useCase.createAccount(cmd);
         assertTrue(r.isFailure());
@@ -64,7 +64,7 @@ class AccountUseCaseTest {
     @Test
     @DisplayName("limite/ciclo de fatura sobrevivem a create e update, e all-null limpa")
     void limitFieldsRoundTripThroughCreateAndUpdate() {
-        AccountCommand withLimit = new AccountCommand("Banco", new BigDecimal("100.00"), "CHECKING", "#112233", true,
+        AccountCommand withLimit = new AccountCommand("Banco", "CHECKING", "#112233", true,
                 new BigDecimal("1000.00"), new BigDecimal("200.00"), 5, 10);
         Account created = ((Result.Success<Account, DomainError>) useCase.createAccount(withLimit)).value();
         assertEquals(0, new BigDecimal("1000.00").compareTo(created.creditLimit()));
@@ -72,7 +72,7 @@ class AccountUseCaseTest {
         assertEquals(5, created.closingDay());
         assertEquals(10, created.dueDay());
 
-        AccountCommand cleared = new AccountCommand("Banco", new BigDecimal("100.00"), "CHECKING", "#112233", true,
+        AccountCommand cleared = new AccountCommand("Banco", "CHECKING", "#112233", true,
                 null, null, null, null);
         Account updated = ((Result.Success<Account, DomainError>) useCase.updateAccount(created.id(), cleared)).value();
         assertNull(updated.creditLimit());

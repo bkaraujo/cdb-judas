@@ -200,7 +200,6 @@
       name: 'acc-name-' + uniq,
       type: 'acc-type-' + uniq,
       color: 'acc-color-' + uniq,
-      balance: 'acc-balance-' + uniq,
       active: 'acc-active-' + uniq,
       limit: 'acc-limit-' + uniq,
       overdraft: 'acc-overdraft-' + uniq,
@@ -213,8 +212,6 @@
       name: isEdit ? (existing.name || '') : '',
       type: isEdit ? (existing.type || 'CHECKING') : 'CHECKING',
       color: isEdit ? (existing.color || '#6366F1') : '#6366F1',
-      balance: isEdit ? maskInitial(existing.balance) : '0,00',
-      balanceNegative: isEdit ? (Number(existing.balance || 0) < 0) : false,
       active: isEdit ? (existing.active !== false) : true,
       creditLimit: isEdit && existing.creditLimit ? maskInitial(existing.creditLimit) : '',
       overdraftLimit: isEdit && existing.overdraftLimit ? maskInitial(existing.overdraftLimit) : '',
@@ -288,22 +285,6 @@
             '<label class="form-label" for="' + ids.type + '">Tipo</label>' +
             '<select id="' + ids.type + '" name="type">' + typeOptions + '</select>' +
           '</div>' +
-          '<div class="form-group">' +
-            '<label class="form-label" for="' + ids.balance + '">Saldo Inicial</label>' +
-            '<div style="display:flex;gap:6px;align-items:center;">' +
-              '<button type="button" data-act="toggle-balance-sign" ' +
-                'style="width:36px;height:36px;border-radius:var(--radius-sm);' +
-                'border:1px solid var(--border);background:transparent;cursor:pointer;' +
-                'font-size:18px;font-weight:700;flex-shrink:0;line-height:1;' +
-                'color:' + (initial.balanceNegative ? 'var(--expense)' : 'var(--text-secondary)') + ';" ' +
-                'title="Alternar sinal">' +
-                (initial.balanceNegative ? '−' : '+') +
-              '</button>' +
-              '<input id="' + ids.balance + '" name="balance" type="text" inputmode="numeric" ' +
-                'value="' + esc(initial.balance) + '" />' +
-            '</div>' +
-          '</div>' +
-
           '<div class="form-group full">' +
             '<label style="display:inline-flex;align-items:center;gap:8px;cursor:pointer;' +
               'font-size:13px;font-weight:500;color:var(--text-primary);">' +
@@ -360,26 +341,12 @@
 
     const $form = m.$body.find('form[data-form=acc]');
     const $color = $form.find('input[name=color]');
-    const $balance = $form.find('input[name=balance]');
     const $limit = $form.find('input[name=creditLimit]');
     const $overdraft = $form.find('input[name=overdraftLimit]');
 
     window.bindSwatches(m, $color);
 
-    // Sign toggle for initial balance.
-    function updateSignBtn() {
-      const $btn = $form.find('[data-act=toggle-balance-sign]');
-      $btn.text(initial.balanceNegative ? '−' : '+');
-      $btn.css('color', initial.balanceNegative ? 'var(--expense)' : 'var(--text-secondary)');
-    }
-    $form.on('click', '[data-act=toggle-balance-sign]', function (e) {
-      e.preventDefault();
-      initial.balanceNegative = !initial.balanceNegative;
-      updateSignBtn();
-    });
-
     // Currency masks.
-    window.bindCurrencyMask($balance);
     window.bindCurrencyMask($limit);
     window.bindCurrencyMask($overdraft);
 
@@ -438,7 +405,6 @@
       }
       const payload = {
         name: name,
-        balance: (window.parseCurrency($balance.val()) * (initial.balanceNegative ? -1 : 1)).toFixed(2),
         type: $form.find('select[name=type]').val(),
         color: $color.val() || '#6366F1',
         active: $form.find('input[name=active]').is(':checked'),

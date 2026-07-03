@@ -85,14 +85,22 @@ public class TransactionResource {
     @PATCH
     @Path("/{accId}/transactions/{txId}")
     public TransactionResponse update(@PathParam("uuid") UUID uuid, @PathParam("accId") UUID accId, @PathParam("txId") UUID txId, @Valid TransactionRequest req) {
+        UUID previousAccountId = null;
         if (monetaryContext.findTransaction(txId) instanceof Result.Success(var existing)) {
             guardClosing(existing.date());
             guardClosing(req.date());
+            previousAccountId = existing.accountId();
         }
         return switch (monetaryContext.updateTransaction(txId, TransactionMapper.toCommand(accId, req))) {
             case Result.Success(var t) -> {
-                val existing = userTransactionService.find(t.id(), uuid);
-                val ut = userTransactionService.save(t.id(), uuid, req.categoryId());
+                // USER_TRANSACTION's PK now includes the account: if this update moved the
+                // transaction to a different account, the old composite-key row would otherwise
+                // be orphaned (save() below would INSERT a new row instead of UPDATE-in-place).
+                if (previousAccountId != null && !previousAccountId.equals(t.accountId())) {
+                    userTransactionService.deleteByTransactionAccountAndUser(t.id(), previousAccountId, uuid);
+                }
+                val existing = userTransactionService.find(t.id(), t.accountId(), uuid);
+                val ut = userTransactionService.save(t.id(), t.accountId(), uuid, req.categoryId());
                 // If installment group: update category for all group members
                 if (t.groupId() != null && existing.isEmpty()) {
                     saveUserTransactionForGroup(t, uuid, req.categoryId());
@@ -108,7 +116,7 @@ public class TransactionResource {
     public TransactionResponse patchStatus(@PathParam("uuid") UUID uuid, @PathParam("txId") UUID txId, @Valid PatchStatusRequest req) {
         return switch (monetaryContext.updateTransactionStatus(txId, req.status(), req.paymentDate())) {
             case Result.Success(var t) -> {
-                val ut = userTransactionService.find(t.id(), uuid).orElse(null);
+                val ut = userTransactionService.find(t.id(), t.accountId(), uuid).orElse(null);
                 yield TransactionMapper.toDto(t, ut);
             }
             case Result.Failure(var error) -> throw new DomainException(error);
@@ -135,7 +143,7 @@ public class TransactionResource {
     }
 
     private UserTransaction saveUserTransaction(Transaction t, UUID userId, @Nullable UUID categoryId) {
-        return userTransactionService.save(t.id(), userId, categoryId);
+        return userTransactionService.save(t.id(), t.accountId(), userId, categoryId);
     }
 
     private void saveUserTransactionForGroup(Transaction first, UUID userId, @Nullable UUID categoryId) {
@@ -144,7 +152,7 @@ public class TransactionResource {
         monetaryContext.listTransactions().getOrElse(List.of()).stream()
                 .filter(t -> groupId.equals(t.groupId()))
                 .filter(t -> !t.id().equals(first.id()))
-                .forEach(t -> userTransactionService.save(t.id(), userId, categoryId));
+                .forEach(t -> userTransactionService.save(t.id(), t.accountId(), userId, categoryId));
     }
 
     private List<TransactionResponse> query(

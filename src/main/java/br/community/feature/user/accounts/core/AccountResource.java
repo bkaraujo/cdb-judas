@@ -107,12 +107,12 @@ public class AccountResource {
     }
 
     private AccountCommand toCommand(AccountRequest req) {
-        return new AccountCommand(req.name(), req.balance(), req.type(), req.color(), req.active(),
+        return new AccountCommand(req.name(), req.type(), req.color(), req.active(),
                 req.creditLimit(), req.overdraftLimit(), req.closingDay(), req.dueDay());
     }
 
     private UserAccount overlay(String userId, UUID accountId, AccountRequest req) {
-        return new UserAccount(userId, accountId, req.balance(), req.color(), req.active());
+        return new UserAccount(userId, accountId, req.color());
     }
 
     private List<Transaction> allTransactions() {

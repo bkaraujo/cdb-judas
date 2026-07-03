@@ -8,7 +8,6 @@ import lombok.val;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 
-import java.math.BigDecimal;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -16,7 +15,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 /**
- * Adaptador JDBC (H2) para {@code USER_ACCOUNT} (overlay por utilizador: saldo, cor, ativo).
+ * Adaptador JDBC (H2) para {@code USER_ACCOUNT} (overlay por utilizador: só a cor).
  * PK composta {@code (COD_USER, COD_ACCOUNT)}.
  */
 @NullMarked
@@ -47,9 +46,7 @@ public final class UserAccountJDBCRepository extends JDBCRepository<UserAccount>
         val values = new LinkedHashMap<String, @Nullable Object>();
         values.put("COD_USER", ua.userId());
         values.put("COD_ACCOUNT", ua.accountId().toString());
-        values.put("DEC_OPENING_BALANCE", ua.openingBalance());
         values.put("TXT_COLOR", ua.color());
-        values.put("FLG_ACTIVE", ua.active() ? "Y" : "N");
         return values;
     }
 
@@ -57,11 +54,8 @@ public final class UserAccountJDBCRepository extends JDBCRepository<UserAccount>
     protected UserAccount map(JDBCResultSet rs) {
         val userId = rs.getString("COD_USER").get();
         val accountId = UUID.fromString(rs.getString("COD_ACCOUNT").get());
-        val bal = rs.getBigDecimal("DEC_OPENING_BALANCE").get();
-        val openingBalance = bal != null ? bal : BigDecimal.ZERO;
         val color = rs.getString("TXT_COLOR").get();
-        val active = "Y".equals(rs.getString("FLG_ACTIVE").get());
 
-        return new UserAccount(userId, accountId, openingBalance, color, active);
+        return new UserAccount(userId, accountId, color);
     }
 }

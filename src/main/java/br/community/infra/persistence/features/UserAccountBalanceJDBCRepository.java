@@ -20,8 +20,7 @@ import java.util.UUID;
 
 /**
  * Adaptador JDBC (H2) da porta {@link BalanceRepository}: tabela {@code USER_ACCOUNT_BALANCE}
- * (períodos mensais por utilizador, período como YYYYMM inteiro). O saldo de abertura é lido
- * de {@code USER_ACCOUNT.DEC_OPENING_BALANCE}.
+ * (períodos mensais por utilizador, período como YYYYMM inteiro).
  */
 @NullMarked
 public final class UserAccountBalanceJDBCRepository extends JDBCRepository<MonthlyBalance> implements BalanceRepository {
@@ -42,20 +41,6 @@ public final class UserAccountBalanceJDBCRepository extends JDBCRepository<Month
                 JDBCParameter.of(accountId.toString()),
                 this::mapList
         );
-    }
-
-    @Override
-    public BigDecimal findOpeningBalance(UUID accountId) {
-        val results = datasource.query(
-                "SELECT DEC_OPENING_BALANCE FROM USER_ACCOUNT WHERE COD_ACCOUNT = ? LIMIT 1",
-                JDBCParameter.of(accountId.toString()),
-                rs -> {
-                    val list = new ArrayList<BigDecimal>();
-                    while (rs.next().get()) list.add(rs.getBigDecimal("DEC_OPENING_BALANCE").get());
-                    return list;
-                }
-        );
-        return results.isEmpty() ? BigDecimal.ZERO : results.get(0);
     }
 
     @Override

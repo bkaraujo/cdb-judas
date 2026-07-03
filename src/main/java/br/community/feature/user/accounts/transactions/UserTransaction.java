@@ -10,6 +10,7 @@ import java.util.UUID;
 public record UserTransaction(
         UUID transactionId,
         UUID userId,
+        UUID accountId,
         @Nullable UUID categoryId,
         @Nullable LocalDateTime createdAt,
         @Nullable LocalDateTime updatedAt

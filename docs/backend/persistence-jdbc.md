@@ -41,11 +41,21 @@ final @Nullable UUID categoryId =
 ```
 Colunas `NOT NULL` (timestamps `TMS_CREATE_AT`, etc.) são seguras: `rs.getTimestamp("TMS_CREATE_AT").get().toLocalDateTime()`. Padrão real em `UserTransactionJDBCRepository.map`.
 
-## 5. Migração automática one-shot (`LegacyCardMigration`)
+## 5. Migrações automáticas one-shot
 
-Como o dev é file-based e `Database` nunca evolui schema existente (§3), a remodelagem do cartão (de `MON_ACCOUNT` tipo `CREDIT_CARD` para entidade própria `MON_CARD`/`MON_ACCOUNT_LIMIT`) precisou de um passo de migração de dados, não só de DDL novo aditivo.
+Como o dev é file-based e `Database` nunca evolui schema existente (§3), toda mudança de schema que precise transformar dados já persistidos (não só DDL novo aditivo) ganha uma classe `*Migration` própria em `br.community.infra.persistence`, chamada em sequência em `ContextBridge.dataSource(...)` **antes** do loop de `Database.model()`:
 
-`LegacyCardMigration.apply(DataSource)` roda em `ContextBridge.dataSource(...)` **antes** do loop de `Database.model()`:
+```java
+LegacyCardMigration.apply(datasource);
+AccountLimitMigration.apply(datasource);
+FeatureSchemaMigration.apply(datasource);
+```
+
+Cada uma é independentemente idempotente (detecção própria via `INFORMATION_SCHEMA`) — a ordem importa só porque um banco de dev muito antigo passa por todas em sequência na mesma inicialização; um banco já em dia pula todas.
+
+### 5.1 `LegacyCardMigration`
+
+Remodelagem do cartão: de `MON_ACCOUNT` tipo `CREDIT_CARD` para entidade própria `MON_CARD` (+ limites, na época, em `MON_ACCOUNT_LIMIT` — ver §5.2 para onde os limites foram depois).
 
 - **Detecção**: `SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME='USER_ACCOUNT' AND COLUMN_NAME='TXT_CARD_LAST4'`. `0` → banco novo ou já migrado → não faz nada (idempotente).
 - **Backup**: `BACKUP TO './database-pre-card-remodel.zip'` (backup online do H2, seguro com o arquivo aberto) antes de qualquer alteração — pulado em bancos em memória (`:mem:`, perfil de teste), que `BACKUP TO` rejeita por não serem persistentes. Falha de backup num banco real é fatal por design (mesma convenção de `Result.get()`/infraestrutura do restante do projeto — ver [Result Pattern](result-pattern.md)): a migração aborta em vez de prosseguir sem rede de segurança.
@@ -53,3 +63,24 @@ Como o dev é file-based e `Database` nunca evolui schema existente (§3), a rem
 - **Corte final**: remove as 6 colunas legadas de `USER_ACCOUNT` e o seed do tipo `CREDIT_CARD` em `MON_ACCOUNT_TYPE`.
 
 Teste `LegacyCardMigrationTest` cobre o cenário (cartão vinculado + cartão sem vínculo + fusão de limites + idempotência) contra um H2 em memória isolado com o schema legado montado à mão — não depende do arquivo de dev real.
+
+### 5.2 `AccountLimitMigration`
+
+Follow-up da §5.1: `MON_ACCOUNT_LIMIT` (linha própria por conta) deixou de existir — os 4 campos viram colunas direto em `MON_ACCOUNT`, já que a relação sempre foi 1:1.
+
+- **Detecção**: tabela `MON_ACCOUNT_LIMIT` existe → migra; ausente → no-op.
+- **Backup**: mesmo padrão (`./database-pre-account-limit-merge.zip`, skip em `:mem:`).
+- **Dados**: `ALTER TABLE MON_ACCOUNT ADD` as 4 colunas (nullable); cópia 1:1 por `COD_ACCOUNT` (sem acumulador — ao contrário da §5.1, aqui não há múltiplas contas colidindo no mesmo destino); `DROP TABLE MON_ACCOUNT_LIMIT`.
+
+Teste `AccountLimitMigrationTest`, mesmo molde (schema legado à mão em H2 isolado, idempotência na 2ª chamada).
+
+### 5.3 `FeatureSchemaMigration`
+
+Quatro tabelas de `docs/db-features.mermaid` que evoluíram juntas: `SEC_USER` ganha `FLG_ACTIVE`/timestamps (usuários existentes viram ativos); `USER_ACCOUNT` perde `FLG_ACTIVE` (redundante com `MON_ACCOUNT.FLG_ACTIVE`) e `DEC_OPENING_BALANCE`; `USER_CATEGORY.BOL_SYSTEM` vira `FLG_SYSTEM` (só rename); `USER_TRANSACTION` ganha `COD_ACCOUNT` e troca a PK de `(COD_TRANSACTION, COD_USER)` para `(COD_USER, COD_ACCOUNT, COD_TRANSACTION)`.
+
+- **Detecção**: ausência de `SEC_USER.FLG_ACTIVE` → migra; presente → no-op.
+- **Backup**: mesmo padrão (`./database-pre-feature-schema.zip`, skip em `:mem:`).
+- **Saldo inicial → transação sintética**: antes de derrubar `DEC_OPENING_BALANCE`, cada conta com saldo inicial ≠ 0 ganha uma `MON_TRANSACTION` ("Saldo inicial", data-âncora `2000-01-01`, status `CONFIRMED`, centro de custo "Fixo", sem categoria) — preserva o valor histórico sem inventar um substituto pro conceito de saldo de abertura; `AccountResponse.currentBalance` passa a ser sempre a soma pura das transações da conta.
+- **`USER_TRANSACTION.COD_ACCOUNT`**: retropreenchido via subquery correlacionada em `MON_TRANSACTION` (`WHERE ID = COD_TRANSACTION`) antes da PK trocar.
+
+Teste `FeatureSchemaMigrationTest`, mesmo molde, cobrindo as 4 tabelas + idempotência.

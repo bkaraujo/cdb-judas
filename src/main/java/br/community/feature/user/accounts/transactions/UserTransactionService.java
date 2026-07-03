@@ -18,12 +18,12 @@ public class UserTransactionService {
 
     private final UserTransactionRepository repo;
 
-    public UserTransaction save(UUID transactionId, UUID userId, @Nullable UUID categoryId) {
-        return repo.save(new UserTransaction(transactionId, userId, categoryId, null, null));
+    public UserTransaction save(UUID transactionId, UUID accountId, UUID userId, @Nullable UUID categoryId) {
+        return repo.save(new UserTransaction(transactionId, userId, accountId, categoryId, null, null));
     }
 
-    public Optional<UserTransaction> find(UUID transactionId, UUID userId) {
-        return repo.findByTransactionAndUser(transactionId, userId);
+    public Optional<UserTransaction> find(UUID transactionId, UUID accountId, UUID userId) {
+        return repo.findByTransactionAccountAndUser(transactionId, accountId, userId);
     }
 
     public List<UserTransaction> findAllByUser(UUID userId) {
@@ -37,6 +37,10 @@ public class UserTransactionService {
 
     public void deleteByTransaction(UUID transactionId) {
         repo.deleteByTransaction(transactionId);
+    }
+
+    public void deleteByTransactionAccountAndUser(UUID transactionId, UUID accountId, UUID userId) {
+        repo.deleteByTransactionAccountAndUser(transactionId, accountId, userId);
     }
 
     public void reassignCategory(UUID oldCategoryId, UUID newCategoryId, UUID userId) {

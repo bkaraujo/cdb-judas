@@ -15,7 +15,8 @@ import java.util.List;
  * monetário: {@code MON_CARD} (identificado só pelo last4, vinculado a uma conta real).
  * Limite de crédito/cheque especial e ciclo de fatura (fechamento/vencimento) são colunas da
  * própria {@code MON_ACCOUNT}, compartilhadas por todos os cartões dela. {@code USER_ACCOUNT}
- * carrega só o overlay por utilizador (saldo de abertura, cor, ativo) — sem dados de cartão.</p>
+ * carrega só a cor por utilizador — estado ativo e saldo já vêm do contexto monetário (o saldo
+ * inicial histórico, quando existia, virou uma transação normal na migração).</p>
  *
  * <p>Lookup tables: {@code MON_ACCOUNT_TYPE} (IDs UUID estáveis — ver {@link AccountTypeMapper}),
  * {@code TRANSACTION_NATURE} e {@code MON_STATUS} (IDs VARCHAR(20) com o nome do enum). As tabelas
@@ -76,9 +77,7 @@ public abstract class Database {
                 CREATE TABLE USER_ACCOUNT (
                     COD_USER CHAR(36) NOT NULL,
                     COD_ACCOUNT CHAR(36) NOT NULL,
-                    DEC_OPENING_BALANCE DECIMAL(19, 2) NOT NULL,
                     TXT_COLOR VARCHAR(20) NOT NULL,
-                    FLG_ACTIVE CHAR(1) NOT NULL,
                     PRIMARY KEY (COD_USER, COD_ACCOUNT)
                 )
                 """,
@@ -134,10 +133,10 @@ public abstract class Database {
                 CREATE TABLE USER_CATEGORY (
                     ID CHAR(36) PRIMARY KEY,
                     COD_USER CHAR(36) NOT NULL,
-                    TXT_NATURE VARCHAR(20) NOT NULL REFERENCES TRANSACTION_NATURE(ID),
-                    TXT_NAME VARCHAR(255) NOT NULL,
                     COD_PARENT CHAR(36),
-                    BOL_SYSTEM CHAR(1) NOT NULL,
+                    TXT_NATURE VARCHAR(20) NOT NULL REFERENCES TRANSACTION_NATURE(ID),
+                    TXT_NAME VARCHAR(80) NOT NULL,
+                    FLG_SYSTEM CHAR(1) NOT NULL,
                     FLG_ACTIVE CHAR(1) NOT NULL,
                     TMS_CREATE_AT TIMESTAMP NOT NULL,
                     TMS_UPDATED_AT TIMESTAMP NOT NULL
@@ -154,12 +153,13 @@ public abstract class Database {
                 """,
                 """
                 CREATE TABLE USER_TRANSACTION (
-                    COD_TRANSACTION CHAR(36) NOT NULL,
                     COD_USER CHAR(36) NOT NULL,
+                    COD_ACCOUNT CHAR(36) NOT NULL,
+                    COD_TRANSACTION CHAR(36) NOT NULL,
                     COD_CATEGORY CHAR(36),
                     TMS_CREATE_AT TIMESTAMP NOT NULL,
                     TMS_UPDATED_AT TIMESTAMP NOT NULL,
-                    PRIMARY KEY (COD_TRANSACTION, COD_USER)
+                    PRIMARY KEY (COD_USER, COD_ACCOUNT, COD_TRANSACTION)
                 )
                 """,
                 """
@@ -173,8 +173,11 @@ public abstract class Database {
                 """
                 CREATE TABLE SEC_USER (
                     ID CHAR(36) PRIMARY KEY,
-                    TXT_USERNAME VARCHAR(255) NOT NULL,
-                    COD_PERSON CHAR(36) NOT NULL
+                    COD_PERSON CHAR(36) NOT NULL,
+                    TXT_USERNAME VARCHAR(120) NOT NULL,
+                    FLG_ACTIVE CHAR(1) NOT NULL,
+                    TMS_CREATE_AT TIMESTAMP NOT NULL,
+                    TMS_UPDATED_AT TIMESTAMP NOT NULL
                 )
                 """,
                 """

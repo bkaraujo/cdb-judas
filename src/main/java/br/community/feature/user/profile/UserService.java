@@ -35,7 +35,8 @@ public class UserService {
         val user = repository.findById(userId).orElse(null);
         if (user == null) return Result.failure(new DomainError.NotFound("Usuário não encontrado"));
         val trimmed = (name == null || name.isBlank()) ? null : name.trim();
-        val saved = repository.save(new User(user.id(), user.username(), trimmed, user.password()));
+        val saved = repository.save(new User(user.id(), user.username(), trimmed, user.password(),
+                user.active(), user.createdAt(), user.updatedAt()));
         return Result.success(new Profile(saved, preferences.findByUserId(userId)));
     }
 

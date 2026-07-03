@@ -18,11 +18,9 @@ public class AccountResourceTest extends BaseHttpTest {
         String createJson = """
             {
               "name": "Conta Corrente",
-              "balance": 1250.50,
               "type": "CHECKING",
               "color": "#007AFF",
-              "active": true,
-              "linkedAccountId": null
+              "active": true
             }
             """;
 
@@ -32,7 +30,6 @@ public class AccountResourceTest extends BaseHttpTest {
                 .then().statusCode(201)
                 .body("id", notNullValue())
                 .body("name", is("Conta Corrente"))
-                .body("balance", is(1250.50f))
                 .extract().jsonPath().getString("id");
 
         asTestUser()
@@ -48,7 +45,6 @@ public class AccountResourceTest extends BaseHttpTest {
         String patchJson = """
             {
               "name": "Conta Alterada",
-              "balance": 1300.00,
               "type": "CHECKING",
               "color": "#007AFF",
               "active": true
@@ -59,8 +55,7 @@ public class AccountResourceTest extends BaseHttpTest {
                 .body(patchJson)
                 .when().patch("/api/" + TEST_USER_ID + "/accounts/" + id)
                 .then().statusCode(200)
-                .body("name", is("Conta Alterada"))
-                .body("balance", is(1300.00f));
+                .body("name", is("Conta Alterada"));
 
         asTestUser()
                 .queryParam("year", "2024")
@@ -86,7 +81,7 @@ public class AccountResourceTest extends BaseHttpTest {
                 .then().statusCode(404);
 
         String patchJson = """
-            {"name":"X","balance":0.00,"type":"CHECKING","color":"#000000","active":true}
+            {"name":"X","type":"CHECKING","color":"#000000","active":true}
             """;
         asTestUser()
                 .body(patchJson)
@@ -102,7 +97,7 @@ public class AccountResourceTest extends BaseHttpTest {
     void deveGerenciarLimiteECicloDeFaturaDaConta() {
         String createJson = """
             {
-              "name":"Conta Corrente","balance":0.00,"type":"CHECKING","color":"#820AD1","active":true,
+              "name":"Conta Corrente","type":"CHECKING","color":"#820AD1","active":true,
               "creditLimit":5000.00,"overdraftLimit":500.00,"closingDay":5,"dueDay":12
             }
             """;
@@ -119,7 +114,7 @@ public class AccountResourceTest extends BaseHttpTest {
 
         String patchJson = """
             {
-              "name":"Conta Corrente","balance":0.00,"type":"CHECKING","color":"#820AD1","active":true,
+              "name":"Conta Corrente","type":"CHECKING","color":"#820AD1","active":true,
               "creditLimit":8000.00,"closingDay":10,"dueDay":20
             }
             """;
@@ -136,7 +131,7 @@ public class AccountResourceTest extends BaseHttpTest {
     @Test
     void deveGerenciarCartoesDaConta() {
         String checkingJson = """
-            {"name":"Conta Corrente","balance":0.00,"type":"CHECKING","color":"#820AD1","active":true}
+            {"name":"Conta Corrente","type":"CHECKING","color":"#820AD1","active":true}
             """;
         String accountId = asTestUser()
                 .body(checkingJson)
@@ -183,7 +178,7 @@ public class AccountResourceTest extends BaseHttpTest {
     @Test
     void deveRejeitarTipoDeContaDesconhecido() {
         String cardJson = """
-            {"name":"Nubank","balance":0.00,"type":"CREDIT_CARD","color":"#820AD1","active":true}
+            {"name":"Nubank","type":"CREDIT_CARD","color":"#820AD1","active":true}
             """;
         asTestUser()
                 .body(cardJson)
@@ -192,17 +187,16 @@ public class AccountResourceTest extends BaseHttpTest {
     }
 
     @Test
-    void saldoAtualRefleteTransacoesEnquantoSaldoInicialPermanece() {
-        // Conta com saldo inicial 1000 — sem transações, saldo atual = saldo inicial.
+    void saldoAtualEhSomaPuraDasTransacoes() {
+        // Conta nova — sem conceito de saldo inicial; sem transações, saldo atual = 0.
         String accJson = """
-            {"name":"Conta Corrente","balance":1000.00,"type":"CHECKING","color":"#007AFF","active":true}
+            {"name":"Conta Corrente","type":"CHECKING","color":"#007AFF","active":true}
             """;
         String accountId = asTestUser()
                 .body(accJson)
                 .when().post("/api/" + TEST_USER_ID + "/accounts")
                 .then().statusCode(201)
-                .body("balance", is(1000.00f))
-                .body("currentBalance", is(1000.00f))
+                .body("currentBalance", is(0.0f))
                 .extract().jsonPath().getString("id");
 
         // Transações só podem ser lançadas em subcategorias (folhas).
@@ -224,17 +218,15 @@ public class AccountResourceTest extends BaseHttpTest {
                 .when().post("/api/" + TEST_USER_ID + "/accounts/" + accountId + "/transactions")
                 .then().statusCode(201);
 
-        // Saldo inicial permanece 1000; saldo atual = 1000 - 250 = 750 (no item e na lista).
+        // Saldo atual = soma pura das transações = -250 (no item e na lista).
         asTestUser()
                 .when().get("/api/" + TEST_USER_ID + "/accounts/" + accountId)
                 .then().statusCode(200)
-                .body("balance", is(1000.00f))
-                .body("currentBalance", is(750.00f));
+                .body("currentBalance", is(-250.00f));
 
         asTestUser()
                 .when().get("/api/" + TEST_USER_ID + "/accounts")
                 .then().statusCode(200)
-                .body("[0].balance", is(1000.00f))
-                .body("[0].currentBalance", is(750.00f));
+                .body("[0].currentBalance", is(-250.00f));
     }
 }

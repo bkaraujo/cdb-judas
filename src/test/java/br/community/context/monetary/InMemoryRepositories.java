@@ -14,7 +14,6 @@ import br.community.feature.user.accounts.closing.ClosingRepository;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 
-import java.math.BigDecimal;
 import java.time.YearMonth;
 import java.util.*;
 
@@ -48,7 +47,6 @@ final class InMemoryRepositories {
         public List<MonthlyBalance> findByAccount(UUID accountId) {
             return data.values().stream().filter(b -> b.accountId().equals(accountId)).toList();
         }
-        public BigDecimal findOpeningBalance(UUID accountId) { return BigDecimal.ZERO; }
     }
 
     static class Cards extends BaseRepo<Card, UUID> implements CardRepository {

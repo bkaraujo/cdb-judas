@@ -69,12 +69,11 @@ public class TransactionEventListener {
     private void triggerRecalculate(UUID accountId) {
         val accountResult = accountService.findById(accountId);
         if (accountResult.isFailure()) return;
-        val initialBalance = balanceService.findOpeningBalance(accountId);
         val transactions = transactionService.findByAccount(accountId).stream()
                 .map(t -> new Balance(t.date(), BigDecimal.valueOf(t.signal()).multiply(t.amount())))
                 .toList();
 
-        recalculateBalance(accountId, initialBalance, transactions);
+        recalculateBalance(accountId, BigDecimal.ZERO, transactions);
     }
 
     private void recalculateBalance(UUID accountId, BigDecimal initialBalance, List<Balance> transactions) {

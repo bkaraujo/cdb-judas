@@ -27,8 +27,8 @@ public final class UserTransactionJDBCRepository extends JDBCRepository<UserTran
     }
 
     @Override
-    public Optional<UserTransaction> findByTransactionAndUser(UUID transactionId, UUID userId) {
-        return findById(transactionId.toString(), userId.toString());
+    public Optional<UserTransaction> findByTransactionAccountAndUser(UUID transactionId, UUID accountId, UUID userId) {
+        return findById(userId.toString(), accountId.toString(), transactionId.toString());
     }
 
     @Override
@@ -46,6 +46,11 @@ public final class UserTransactionJDBCRepository extends JDBCRepository<UserTran
                 "DELETE FROM USER_TRANSACTION WHERE COD_TRANSACTION = ?",
                 JDBCParameter.of(transactionId.toString())
         );
+    }
+
+    @Override
+    public void deleteByTransactionAccountAndUser(UUID transactionId, UUID accountId, UUID userId) {
+        deleteById(userId.toString(), accountId.toString(), transactionId.toString());
     }
 
     @Override
@@ -69,6 +74,7 @@ public final class UserTransactionJDBCRepository extends JDBCRepository<UserTran
         val values = new LinkedHashMap<String, @Nullable Object>();
         values.put("COD_TRANSACTION", entity.transactionId().toString());
         values.put("COD_USER", entity.userId().toString());
+        values.put("COD_ACCOUNT", entity.accountId().toString());
         values.put("COD_CATEGORY", categoryStr);
         values.put("TMS_CREATE_AT", now);
         values.put("TMS_UPDATED_AT", now);
@@ -79,12 +85,13 @@ public final class UserTransactionJDBCRepository extends JDBCRepository<UserTran
     protected UserTransaction map(JDBCResultSet rs) {
         val transactionId = UUID.fromString(rs.getString("COD_TRANSACTION").get());
         val userId = UUID.fromString(rs.getString("COD_USER").get());
+        val accountId = UUID.fromString(rs.getString("COD_ACCOUNT").get());
 
         final @Nullable String categoryRaw = rs.getString("COD_CATEGORY").get();
         final @Nullable UUID categoryId = (categoryRaw == null || categoryRaw.isBlank()) ? null : UUID.fromString(categoryRaw);
 
         val createdAt = rs.getTimestamp("TMS_CREATE_AT").get().toLocalDateTime();
         val updatedAt = rs.getTimestamp("TMS_UPDATED_AT").get().toLocalDateTime();
-        return new UserTransaction(transactionId, userId, categoryId, createdAt, updatedAt);
+        return new UserTransaction(transactionId, userId, accountId, categoryId, createdAt, updatedAt);
     }
 }

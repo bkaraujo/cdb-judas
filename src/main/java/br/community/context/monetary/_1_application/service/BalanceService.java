@@ -7,7 +7,6 @@ import br.community.context.shared._0_domain.model.DomainError;
 import lombok.RequiredArgsConstructor;
 import org.jspecify.annotations.NullMarked;
 
-import java.math.BigDecimal;
 import java.time.YearMonth;
 import java.util.Comparator;
 import java.util.List;
@@ -44,9 +43,5 @@ public class BalanceService {
 
     public void deleteById(UUID id) {
         balanceRepository.deleteById(id);
-    }
-
-    public BigDecimal findOpeningBalance(UUID accountId) {
-        return balanceRepository.findOpeningBalance(accountId);
     }
 }

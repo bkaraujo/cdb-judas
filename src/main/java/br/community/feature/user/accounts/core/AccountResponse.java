@@ -17,7 +17,6 @@ import java.util.UUID;
 public record AccountResponse(
         UUID id,
         String name,
-        BigDecimal balance,
         String type,
         String color,
         boolean active,
@@ -28,7 +27,7 @@ public record AccountResponse(
         BigDecimal currentBalance,
         List<CardResponse> cards
 ) {
-    /** Saldo atual = saldo de abertura + todas as transações da conta. */
+    /** Saldo atual = soma de todas as transações da conta (sem conceito de saldo de abertura). */
     public static AccountResponse from(Account monetary, @Nullable UserAccount ua,
                                         List<Card> cards, List<Transaction> transactions) {
         var sum = BigDecimal.ZERO;
@@ -37,14 +36,9 @@ public record AccountResponse(
         }
         val type = Strings.upper(monetary.type().name());
         val cardDtos = cards.stream().map(CardResponse::from).toList();
-        if (ua == null) {
-            return new AccountResponse(monetary.id(), monetary.name(), BigDecimal.ZERO, type,
-                    "#000000", monetary.active(), monetary.creditLimit(), monetary.overdraftLimit(),
-                    monetary.closingDay(), monetary.dueDay(), sum, cardDtos);
-        }
-        val opening = ua.openingBalance();
-        return new AccountResponse(monetary.id(), monetary.name(), opening, type,
-                ua.color(), ua.active(), monetary.creditLimit(), monetary.overdraftLimit(),
-                monetary.closingDay(), monetary.dueDay(), opening.add(sum), cardDtos);
+        val color = ua != null ? ua.color() : "#000000";
+        return new AccountResponse(monetary.id(), monetary.name(), type, color, monetary.active(),
+                monetary.creditLimit(), monetary.overdraftLimit(), monetary.closingDay(), monetary.dueDay(),
+                sum, cardDtos);
     }
 }

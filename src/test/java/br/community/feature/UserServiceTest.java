@@ -8,6 +8,7 @@ import br.community.feature.user.profile.*;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import java.time.LocalDateTime;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Optional;
@@ -107,6 +108,18 @@ class UserServiceTest {
         assertEquals("pt-BR", profile.preferences().language());
         assertTrue(profile.preferences().sidebarCollapsed(), "campo presente é alterado");
         assertEquals("Bruno", profile.user().name(), "preferências não afetam o nome");
+    }
+
+    @Test
+    void updateNamePreservaActiveETimestampsExistentes() {
+        String id = UUID.randomUUID().toString();
+        LocalDateTime created = LocalDateTime.of(2020, 1, 1, 0, 0);
+        repo.save(new User(id, "admin", null, "hash", false, created, created));
+
+        Profile profile = value(useCase.updateName(id, "Novo Nome"));
+
+        assertFalse(profile.user().active(), "active não deve resetar pra true ao só renomear");
+        assertEquals(created, profile.user().createdAt(), "createdAt não deve se perder ao só renomear");
     }
 
     @Test

@@ -10,7 +10,6 @@ import java.math.BigDecimal;
 @NullMarked
 public record AccountRequest(
         @NotBlank String name,
-        @NotNull @TwoDecimalPlaces BigDecimal balance,
         @NotBlank String type,
         @NotBlank @Pattern(regexp = "#[0-9A-Fa-f]{6}") String color,
         boolean active,
