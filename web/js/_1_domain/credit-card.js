@@ -5,13 +5,15 @@
 
   function pad2(n) { return n < 10 ? '0' + n : '' + n; }
 
-  function closingDay(card) {
-    const d = card && +card.closingDay;
+  /* Closing/due day are configured once per account (MON_ACCOUNT_LIMIT) and
+     shared by every card on it — so these read from the account, not the card. */
+  function closingDay(account) {
+    const d = account && +account.closingDay;
     return d > 0 ? d : DEFAULT_CLOSING_DAY;
   }
 
-  function dueDay(card) {
-    const d = card && +card.dueDay;
+  function dueDay(account) {
+    const d = account && +account.dueDay;
     return d > 0 ? d : DEFAULT_DUE_DAY;
   }
 
@@ -40,11 +42,27 @@
   }
 
   /* Total invoice = sum of |amount| over EXPENSE transactions inside the period
-     that belong to the card account. */
+     posted against this card (matched by `tx.cardId`, not the account). */
   function invoiceTotal(transactions, cardId, period) {
     const b = invoicePeriod(period);
+    const cid = String(cardId);
     return (transactions || []).reduce(function (acc, t) {
-      if (String(t.accountId) !== String(cardId)) return acc;
+      if (String(t.cardId) !== cid) return acc;
+      const dStr = String(t.date || '').slice(0, 10);
+      if (dStr < b.from || dStr > b.to) return acc;
+      const isExpense = String(t.type || '').toUpperCase() === 'EXPENSE' || (+t.amount || 0) < 0;
+      if (!isExpense) return acc;
+      return acc + Math.abs(+t.amount || 0);
+    }, 0);
+  }
+
+  /* Total invoice for every card on the account combined — used for the shared
+     usage bar (account.creditLimit is one limit for all of the account's cards). */
+  function accountInvoiceTotal(transactions, account, period) {
+    const b = invoicePeriod(period);
+    const aid = String(account && account.id);
+    return (transactions || []).reduce(function (acc, t) {
+      if (String(t.accountId) !== aid || t.cardId == null) return acc;
       const dStr = String(t.date || '').slice(0, 10);
       if (dStr < b.from || dStr > b.to) return acc;
       const isExpense = String(t.type || '').toUpperCase() === 'EXPENSE' || (+t.amount || 0) < 0;
@@ -64,5 +82,6 @@
     availableCredit:     availableCredit,
     barColorByUsage:     barColorByUsage,
     invoiceTotal:        invoiceTotal,
+    accountInvoiceTotal: accountInvoiceTotal,
   };
 })();

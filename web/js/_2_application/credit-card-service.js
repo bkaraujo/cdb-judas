@@ -9,15 +9,27 @@
     return { ready: true };
   }
 
-  // Cards are accounts (type CREDIT_CARD); read them from the shared accounts cache.
-  // Create/edit/delete happen through the Accounts resource (Contas page).
+  /* Every card across every account, flattened, each carrying its owning account
+     (for color/name/limit) — used by views that group cards by account client-side. */
   function listFromCache() {
-    return cache.accounts().filter(window.Domain.Account.isCreditCard);
+    const out = [];
+    cache.accounts().forEach(function (a) {
+      (a.cards || []).forEach(function (c) {
+        out.push(Object.assign({}, c, { account: a }));
+      });
+    });
+    return out;
+  }
+
+  /* Accounts that have at least one card — used by views that render one row/bar
+     per account rather than per card (e.g. the dashboard panel). */
+  function accountsWithCards() {
+    return cache.accounts().filter(window.Domain.Account.hasCards);
   }
 
   function invoiceFor(cardId, period) {
     const b = window.Domain.Period.bounds(period);
-    const params = 'from=' + b.from + '&to=' + b.to + '&accountId=' + encodeURIComponent(cardId);
+    const params = 'from=' + b.from + '&to=' + b.to;
     return txRepo.list(params).then(function (txs) {
       const arr = Array.isArray(txs) ? txs : [];
       return {
@@ -31,6 +43,7 @@
   window.App.CreditCardService = {
     init: init,
     listFromCache: listFromCache,
+    accountsWithCards: accountsWithCards,
     invoiceFor: invoiceFor,
   };
 })();

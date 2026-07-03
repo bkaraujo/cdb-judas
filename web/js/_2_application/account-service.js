@@ -14,13 +14,12 @@
      with SSE updates. */
   function listCached()        { return cache.accounts(); }
 
-  function linkableCheckings(excludeId) {
-    return window.Domain.Account.linkableCheckings(cache.accounts(), excludeId);
-  }
-
   function findById(id) { return cache.findById('accounts', id); }
 
-  function onChange(cb) { return cache.subscribe(['ACCOUNT', 'CREDITCARD'], cb); }
+  function addCard(accountId, data)      { return repo.createCard(accountId, data); }
+  function removeCard(accountId, cardId) { return repo.removeCard(accountId, cardId); }
+
+  function onChange(cb) { return cache.subscribe('ACCOUNT', cb); }
 
   window.App = window.App || {};
   window.App.AccountService = {
@@ -30,7 +29,8 @@
     create: create,
     update: update,
     remove: remove,
-    linkableCheckings: linkableCheckings,
+    addCard: addCard,
+    removeCard: removeCard,
     findById: findById,
     onChange: onChange,
   };

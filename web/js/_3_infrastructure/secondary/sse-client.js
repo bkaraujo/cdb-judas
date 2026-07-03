@@ -9,9 +9,9 @@
   function streamPath(uid) { return '/' + uid + '/stream'; }
 
   function keyOf(type) {
-    if (type === 'CATEGORY')                       return 'categories';
-    if (type === 'ACCOUNT' || type === 'CREDITCARD') return 'accounts';
-    if (type === 'TAG')                            return 'tags';
+    if (type === 'CATEGORY') return 'categories';
+    if (type === 'ACCOUNT')  return 'accounts';
+    if (type === 'TAG')      return 'tags';
     // Centro de custo é fixo (somente leitura): sem canal de eventos.
     return null;
   }
@@ -29,7 +29,7 @@
           ? payload.parentId
           : (payload.parent ? payload.parent.id : null),
       });
-    } else if (type === 'ACCOUNT' || type === 'CREDITCARD') {
+    } else if (type === 'ACCOUNT') {
       normalized = Object.assign({}, payload, {
         type: payload.type ? String(payload.type).toUpperCase() : 'CHECKING',
       });
