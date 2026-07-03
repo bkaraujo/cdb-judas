@@ -174,35 +174,56 @@
       'border-radius:var(--radius);padding:20px;color:#fff;' +
       'background:linear-gradient(135deg, ' + esc(color) + ', ' + esc(color) + '99);';
 
-    const $band = $('<div style="' + bandStyle + '"></div>');
-    $band.append(
+    const $header = $('<div style="' + bandStyle + '"></div>');
+    $header.append(
       '<div style="position:absolute;right:-32px;top:-32px;width:160px;height:160px;' +
         'border-radius:50%;background:rgba(255,255,255,0.10);"></div>'
     );
-    $band.append(
+    $header.append(
       '<div style="display:flex;align-items:center;gap:8px;' +
         'font-size:11px;font-weight:700;letter-spacing:0.12em;opacity:0.75;">' +
         window.icon('creditCard', 14) +
         '<span>CRÉDITO' + (account.active === false ? ' · INATIVA' : '') + '</span>' +
       '</div>'
     );
-    $band.append(
+    $header.append(
       '<div style="font-size:18px;font-weight:800;margin-top:24px;' +
         'overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' +
         esc(account.name || '—') +
       '</div>'
     );
-    $band.append(
+    $header.append(
       '<div style="position:absolute;bottom:14px;left:20px;font-size:11px;opacity:0.55;">' +
         'Fecha dia ' + esc(closingDay) +
       '</div>'
     );
-    $band.append(
+    $header.append(
       '<div style="position:absolute;bottom:14px;right:16px;font-size:11px;opacity:0.55;">' +
         'Vence dia ' + esc(dueDay) +
       '</div>'
     );
-    $card.append($band);
+    $card.append($header);
+
+    // ── Shared usage bar (account-level: all of the account's cards combined) ─
+    const $usage = $(
+        '<div>' +
+        '<div style="display:flex;justify-content:space-between;margin-bottom:4px;">' +
+        '<span style="font-size:11px;color:var(--text-muted);font-weight:700;' +
+        'text-transform:uppercase;letter-spacing:0.04em;">Limite da conta</span>' +
+        '<span style="font-size:12px;font-weight:700;color:var(--text-primary);">' + esc(fmt(limit)) + '</span>' +
+        '</div>' +
+        '<div style="height:8px;background:var(--bg-hover);border-radius:4px;overflow:hidden;">' +
+        '<div style="height:100%;border-radius:4px;width:' + pct.toFixed(1) + '%;' +
+        'background:' + barColor + ';transition:width 0.5s ease;"></div>' +
+        '</div>' +
+        '<div style="display:flex;justify-content:space-between;margin-top:6px;' +
+        'font-size:12px;color:var(--text-muted);">' +
+        '<span>' + esc(pct.toFixed(0)) + '% utilizado</span>' +
+        '<span>' + esc(fmt(available)) + ' disponível</span>' +
+        '</div>' +
+        '</div>'
+    );
+    $card.append($usage);
 
     // ── Per-card rows: last4 + fatura do cartão + Ver fatura ─
     const $rows = $('<div style="display:flex;flex-direction:column;"></div>');
@@ -229,27 +250,6 @@
       );
     });
     $card.append($rows);
-
-    // ── Shared usage bar (account-level: all of the account's cards combined) ─
-    const $bar = $(
-      '<div>' +
-        '<div style="display:flex;justify-content:space-between;margin-bottom:4px;">' +
-          '<span style="font-size:11px;color:var(--text-muted);font-weight:700;' +
-            'text-transform:uppercase;letter-spacing:0.04em;">Limite da conta</span>' +
-          '<span style="font-size:12px;font-weight:700;color:var(--text-primary);">' + esc(fmt(limit)) + '</span>' +
-        '</div>' +
-        '<div style="height:8px;background:var(--bg-hover);border-radius:4px;overflow:hidden;">' +
-          '<div style="height:100%;border-radius:4px;width:' + pct.toFixed(1) + '%;' +
-            'background:' + barColor + ';transition:width 0.5s ease;"></div>' +
-        '</div>' +
-        '<div style="display:flex;justify-content:space-between;margin-top:6px;' +
-          'font-size:12px;color:var(--text-muted);">' +
-          '<span>' + esc(pct.toFixed(0)) + '% utilizado</span>' +
-          '<span>' + esc(fmt(available)) + ' disponível</span>' +
-        '</div>' +
-      '</div>'
-    );
-    $card.append($bar);
 
     $card.on('mouseenter', function () { $card.css('border-color', color); });
     $card.on('mouseleave', function () { $card.css('border-color', ''); });
