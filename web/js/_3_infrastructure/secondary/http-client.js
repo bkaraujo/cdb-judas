@@ -53,8 +53,15 @@
             try { onUnauthorized(); } catch (e) { /* noop */ }
           }
           return res.text().then(function (txt) {
-            const err = new Error(txt || ('HTTP ' + res.status));
+            let code = null, detail = txt;
+            try {
+              const json = JSON.parse(txt);
+              code = json.code || null;
+              detail = json.detail || json.message || txt;
+            } catch (e) { /* non-JSON body */ }
+            const err = new Error(detail || ('HTTP ' + res.status));
             err.status = res.status;
+            if (code) err.code = code;
             throw err;
           });
         }
