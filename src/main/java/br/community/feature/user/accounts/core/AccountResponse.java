@@ -2,7 +2,6 @@ package br.community.feature.user.accounts.core;
 
 import br.commons.tools.Strings;
 import br.community.context.monetary._0_domain.model.Account;
-import br.community.context.monetary._0_domain.model.AccountLimit;
 import br.community.context.monetary._0_domain.model.Card;
 import br.community.context.monetary._0_domain.model.Transaction;
 import br.community.feature.user.accounts.cards.CardResponse;
@@ -30,7 +29,7 @@ public record AccountResponse(
         List<CardResponse> cards
 ) {
     /** Saldo atual = saldo de abertura + todas as transações da conta. */
-    public static AccountResponse from(Account monetary, @Nullable UserAccount ua, AccountLimit limit,
+    public static AccountResponse from(Account monetary, @Nullable UserAccount ua,
                                         List<Card> cards, List<Transaction> transactions) {
         var sum = BigDecimal.ZERO;
         for (val t : transactions) {
@@ -40,12 +39,12 @@ public record AccountResponse(
         val cardDtos = cards.stream().map(CardResponse::from).toList();
         if (ua == null) {
             return new AccountResponse(monetary.id(), monetary.name(), BigDecimal.ZERO, type,
-                    "#000000", monetary.active(), limit.creditLimit(), limit.overdraftLimit(),
-                    limit.closingDay(), limit.dueDay(), sum, cardDtos);
+                    "#000000", monetary.active(), monetary.creditLimit(), monetary.overdraftLimit(),
+                    monetary.closingDay(), monetary.dueDay(), sum, cardDtos);
         }
         val opening = ua.openingBalance();
         return new AccountResponse(monetary.id(), monetary.name(), opening, type,
-                ua.color(), ua.active(), limit.creditLimit(), limit.overdraftLimit(),
-                limit.closingDay(), limit.dueDay(), opening.add(sum), cardDtos);
+                ua.color(), ua.active(), monetary.creditLimit(), monetary.overdraftLimit(),
+                monetary.closingDay(), monetary.dueDay(), opening.add(sum), cardDtos);
     }
 }

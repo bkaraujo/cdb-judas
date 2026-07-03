@@ -3,11 +3,9 @@ package br.community.feature.user.accounts.core;
 import br.commons.Result;
 import br.community.context.monetary.MonetaryContext;
 import br.community.context.monetary._0_domain.model.Account;
-import br.community.context.monetary._0_domain.model.AccountLimit;
 import br.community.context.monetary._0_domain.model.Card;
 import br.community.context.monetary._0_domain.model.Transaction;
 import br.community.context.monetary._1_application.command.AccountCommand;
-import br.community.context.monetary._1_application.command.AccountLimitCommand;
 import br.community.context.shared._1_application.DomainException;
 import br.community.core.web.security.CurrentUser;
 import jakarta.validation.Valid;
@@ -44,14 +42,11 @@ public class AccountResource {
         val userId = CurrentUser.getId();
         val uaMap = userAccountService.findByUser(userId).stream()
                 .collect(Collectors.toMap(UserAccount::accountId, Function.identity()));
-        val limitsByAccount = monetaryContext.listAccountLimits().getOrElse(List.of()).stream()
-                .collect(Collectors.toMap(AccountLimit::accountId, Function.identity()));
         val cardsByAccount = monetaryContext.listCards().getOrElse(List.of()).stream()
                 .collect(Collectors.groupingBy(Card::accountId));
         return switch (monetaryContext.listAccounts()) {
             case Result.Success(var accounts) -> accounts.stream()
                     .map(account -> AccountResponse.from(account, uaMap.get(account.id()),
-                            limitsByAccount.getOrDefault(account.id(), emptyLimit(account.id())),
                             cardsByAccount.getOrDefault(account.id(), List.of()), transactions))
                     .toList();
             case Result.Failure(var error) -> throw new DomainException(error);
@@ -64,7 +59,7 @@ public class AccountResource {
         val userId = CurrentUser.getId();
         return switch (monetaryContext.findAccount(id)) {
             case Result.Success(var c) -> AccountResponse.from(c, userAccountService.find(userId, c.id()),
-                    limitOf(c.id()), cardsOf(c.id()), allTransactions());
+                    cardsOf(c.id()), allTransactions());
             case Result.Failure(var error) -> throw new DomainException(error);
         };
     }
@@ -76,9 +71,8 @@ public class AccountResource {
             case Result.Success(var account) -> {
                 val ua = overlay(userId, account.id(), req);
                 userAccountService.save(ua);
-                val limit = applyLimit(account.id(), req);
                 yield RestResponse.status(RestResponse.Status.CREATED,
-                        AccountResponse.from(account, ua, limit, List.of(), allTransactions()));
+                        AccountResponse.from(account, ua, List.of(), allTransactions()));
             }
             case Result.Failure(var error) -> throw new DomainException(error);
         };
@@ -93,8 +87,7 @@ public class AccountResource {
             case Result.Success(var c) -> {
                 val ua = overlay(userId, c.id(), req);
                 userAccountService.save(ua);
-                val limit = applyLimit(c.id(), req);
-                yield AccountResponse.from(c, ua, limit, cardsOf(c.id()), allTransactions());
+                yield AccountResponse.from(c, ua, cardsOf(c.id()), allTransactions());
             }
         };
     }
@@ -109,31 +102,13 @@ public class AccountResource {
         }
     }
 
-    private AccountLimit applyLimit(UUID accountId, AccountRequest req) {
-        return switch (monetaryContext.setAccountLimit(accountId, toLimitCommand(req))) {
-            case Result.Success(var limit) -> limit;
-            case Result.Failure(var error) -> throw new DomainException(error);
-        };
-    }
-
-    private AccountLimit limitOf(UUID accountId) {
-        return monetaryContext.getAccountLimit(accountId).getOrElse(emptyLimit(accountId));
-    }
-
     private List<Card> cardsOf(UUID accountId) {
         return monetaryContext.listCardsByAccount(accountId).getOrElse(List.of());
     }
 
-    private static AccountLimit emptyLimit(UUID accountId) {
-        return new AccountLimit(accountId, null, null, null, null);
-    }
-
     private AccountCommand toCommand(AccountRequest req) {
-        return new AccountCommand(req.name(), req.balance(), req.type(), req.color(), req.active());
-    }
-
-    private AccountLimitCommand toLimitCommand(AccountRequest req) {
-        return new AccountLimitCommand(req.creditLimit(), req.overdraftLimit(), req.closingDay(), req.dueDay());
+        return new AccountCommand(req.name(), req.balance(), req.type(), req.color(), req.active(),
+                req.creditLimit(), req.overdraftLimit(), req.closingDay(), req.dueDay());
     }
 
     private UserAccount overlay(String userId, UUID accountId, AccountRequest req) {

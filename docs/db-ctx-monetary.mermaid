@@ -9,8 +9,12 @@ erDiagram
 
     MON_ACCOUNT {
         CHAR(36) ID PK
-        VARCHAR(255) TXT_NAME
         CHAR(36) TXT_TYPE FK
+        VARCHAR(80) TXT_NAME
+        DECIMAL DEC_CREDIT_LIMIT
+        DECIMAL DEC_OVERDRAFT_LIMIT
+        INT NUM_CLOSING_DAY
+        INT NUM_DUE_DAY
         NUMERIC(1) FLG_ACTIVE
         TIMESTAMP TMS_CREATE_AT
         TIMESTAMP TMS_UPDATED_AT
@@ -39,6 +43,7 @@ erDiagram
         DECIMAL DEC_AMOUNT
         TIMESTAMP TMS_PURCHASE
         CHAR(36) COD_ACCOUNT FK
+        CHAR(36) COD_CARD FK
         CHAR(36) COD_COST_CENTER FK
         CHAR(36) COD_STATUS FK
         DATE DAT_PAYMENT
@@ -48,7 +53,6 @@ erDiagram
         VARCHAR(1000) TXT_NOTES
         TIMESTAMP TMS_CREATE_AT
         TIMESTAMP TMS_UPDATED_AT
-        CHAR(36) COD_CARD FK
     }
 
     MON_COST_CENTER ||--o{ MON_TRANSACTION : ""
@@ -58,8 +62,8 @@ erDiagram
 %% Cartão é identificado só pelo last4; vinculado a uma conta real
     MON_CARD {
         CHAR(36) ID PK
-        VARCHAR(4) TXT_LAST4
         CHAR(36) COD_ACCOUNT FK
+        CHAR(4) TXT_LAST4
         NUMERIC(1) FLG_ACTIVE
         TIMESTAMP TMS_CREATE_AT
         TIMESTAMP TMS_UPDATED_AT
@@ -68,15 +72,3 @@ erDiagram
     MON_ACCOUNT ||--o{ MON_CARD : ""
     MON_CARD |o--o{ MON_TRANSACTION : ""
 
-%% Linha única por conta; todos os cartões da conta compartilham o limite
-    MON_ACCOUNT_LIMIT {
-        CHAR(36) COD_ACCOUNT PK, FK
-        DECIMAL DEC_CREDIT_LIMIT
-        DECIMAL DEC_OVERDRAFT_LIMIT
-        INT NUM_CLOSING_DAY
-        INT NUM_DUE_DAY
-        TIMESTAMP TMS_CREATE_AT
-        TIMESTAMP TMS_UPDATED_AT
-    }
-
-    MON_ACCOUNT ||--o| MON_ACCOUNT_LIMIT : ""

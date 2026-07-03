@@ -3,13 +3,11 @@ package br.community.context.monetary;
 import br.commons.Result;
 import br.commons.annotation.Facade;
 import br.community.context.monetary._0_domain.model.Account;
-import br.community.context.monetary._0_domain.model.AccountLimit;
 import br.community.context.monetary._0_domain.model.Card;
 import br.community.context.monetary._0_domain.model.CostCenter;
 import br.community.context.monetary._0_domain.model.MonthlyBalance;
 import br.community.context.monetary._0_domain.model.Transaction;
 import br.community.context.monetary._1_application.command.AccountCommand;
-import br.community.context.monetary._1_application.command.AccountLimitCommand;
 import br.community.context.monetary._1_application.command.CardCommand;
 import br.community.context.monetary._1_application.command.CostCenterCommand;
 import br.community.context.monetary._1_application.command.ImportedTransactionCommand;
@@ -142,17 +140,5 @@ public class MonetaryContext implements Facade {
 
     public Result<Void, DomainError> deleteCard(UUID id) {
         return ucCard.deleteCard(id);
-    }
-
-    public Result<AccountLimit, DomainError> getAccountLimit(UUID accountId) {
-        return ucCard.getAccountLimit(accountId);
-    }
-
-    public Result<AccountLimit, DomainError> setAccountLimit(UUID accountId, AccountLimitCommand cmd) {
-        return ucCard.setAccountLimit(accountId, cmd);
-    }
-
-    public Result<List<AccountLimit>, DomainError> listAccountLimits() {
-        return ucCard.listAccountLimits();
     }
 }

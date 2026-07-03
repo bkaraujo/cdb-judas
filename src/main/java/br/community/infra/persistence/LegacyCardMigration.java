@@ -88,8 +88,8 @@ public final class LegacyCardMigration {
         ds.execute("""
                 CREATE TABLE MON_CARD (
                     ID CHAR(36) PRIMARY KEY,
-                    TXT_LAST4 VARCHAR(4) NOT NULL,
                     COD_ACCOUNT CHAR(36) NOT NULL,
+                    TXT_LAST4 CHAR(4) NOT NULL,
                     FLG_ACTIVE CHAR(1) NOT NULL,
                     TMS_CREATE_AT TIMESTAMP NOT NULL,
                     TMS_UPDATED_AT TIMESTAMP NOT NULL

@@ -71,6 +71,7 @@ public class AccountUseCase {
         val typeName = Strings.upper(cmd.type());
         val valid = Arrays.stream(Account.Type.values()).anyMatch(t -> t.name().equals(typeName));
         if (!valid) return Result.failure(new DomainError.Validation("Unknown account type: " + cmd.type()));
-        return Result.success(new Account(accountId, cmd.name(), Account.Type.valueOf(typeName), cmd.active()));
+        return Result.success(new Account(accountId, cmd.name(), Account.Type.valueOf(typeName), cmd.active(),
+                cmd.creditLimit(), cmd.overdraftLimit(), cmd.closingDay(), cmd.dueDay(), null, null));
     }
 }

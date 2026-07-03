@@ -12,10 +12,10 @@ import java.util.List;
  * tipos {@code CHAR}/{@code VARCHAR}/{@code DECIMAL}/{@code DATE}/{@code INT}/{@code TIMESTAMP};
  * booleanos ativos como {@code CHAR(1)} ('Y'/'N') com prefixo {@code FLG_}. Tabelas de dados planas,
  * sem {@code DEFAULT} (a aplicação sempre fornece os valores). Cartão é entidade do contexto
- * monetário: {@code MON_CARD} (identificado só pelo last4, vinculado a uma conta real) e
- * {@code MON_ACCOUNT_LIMIT} (limite de crédito/cheque especial e ciclo de fatura, linha única por
- * conta, compartilhados por todos os cartões dela). {@code USER_ACCOUNT} carrega só o overlay por
- * utilizador (saldo de abertura, cor, ativo) — sem dados de cartão.</p>
+ * monetário: {@code MON_CARD} (identificado só pelo last4, vinculado a uma conta real).
+ * Limite de crédito/cheque especial e ciclo de fatura (fechamento/vencimento) são colunas da
+ * própria {@code MON_ACCOUNT}, compartilhadas por todos os cartões dela. {@code USER_ACCOUNT}
+ * carrega só o overlay por utilizador (saldo de abertura, cor, ativo) — sem dados de cartão.</p>
  *
  * <p>Lookup tables: {@code MON_ACCOUNT_TYPE} (IDs UUID estáveis — ver {@link AccountTypeMapper}),
  * {@code TRANSACTION_NATURE} e {@code MON_STATUS} (IDs VARCHAR(20) com o nome do enum). As tabelas
@@ -61,8 +61,12 @@ public abstract class Database {
                 """
                 CREATE TABLE MON_ACCOUNT (
                     ID CHAR(36) PRIMARY KEY,
-                    TXT_NAME VARCHAR(255) NOT NULL,
                     TXT_TYPE CHAR(36) NOT NULL REFERENCES MON_ACCOUNT_TYPE(ID),
+                    TXT_NAME VARCHAR(80) NOT NULL,
+                    DEC_CREDIT_LIMIT DECIMAL(19, 2),
+                    DEC_OVERDRAFT_LIMIT DECIMAL(19, 2),
+                    NUM_CLOSING_DAY INT,
+                    NUM_DUE_DAY INT,
                     FLG_ACTIVE CHAR(1) NOT NULL,
                     TMS_CREATE_AT TIMESTAMP NOT NULL,
                     TMS_UPDATED_AT TIMESTAMP NOT NULL
@@ -104,6 +108,7 @@ public abstract class Database {
                     DEC_AMOUNT DECIMAL(19, 2) NOT NULL,
                     TMS_PURCHASE TIMESTAMP NOT NULL,
                     COD_ACCOUNT CHAR(36) NOT NULL,
+                    COD_CARD CHAR(36),
                     COD_STATUS VARCHAR(20) NOT NULL REFERENCES MON_STATUS(ID),
                     COD_COST_CENTER CHAR(36) NOT NULL,
                     DAT_PAYMENT DATE,
@@ -112,27 +117,15 @@ public abstract class Database {
                     NUM_INSTALLMENT_TOTAL INT NOT NULL,
                     TXT_NOTES VARCHAR(1000),
                     TMS_CREATE_AT TIMESTAMP NOT NULL,
-                    TMS_UPDATED_AT TIMESTAMP NOT NULL,
-                    COD_CARD CHAR(36)
+                    TMS_UPDATED_AT TIMESTAMP NOT NULL
                 )
                 """,
                 """
                 CREATE TABLE MON_CARD (
                     ID CHAR(36) PRIMARY KEY,
-                    TXT_LAST4 VARCHAR(4) NOT NULL,
                     COD_ACCOUNT CHAR(36) NOT NULL,
+                    TXT_LAST4 CHAR(4) NOT NULL,
                     FLG_ACTIVE CHAR(1) NOT NULL,
-                    TMS_CREATE_AT TIMESTAMP NOT NULL,
-                    TMS_UPDATED_AT TIMESTAMP NOT NULL
-                )
-                """,
-                """
-                CREATE TABLE MON_ACCOUNT_LIMIT (
-                    COD_ACCOUNT CHAR(36) PRIMARY KEY,
-                    DEC_CREDIT_LIMIT DECIMAL(19, 2),
-                    DEC_OVERDRAFT_LIMIT DECIMAL(19, 2),
-                    NUM_CLOSING_DAY INT,
-                    NUM_DUE_DAY INT,
                     TMS_CREATE_AT TIMESTAMP NOT NULL,
                     TMS_UPDATED_AT TIMESTAMP NOT NULL
                 )
@@ -226,8 +219,7 @@ public abstract class Database {
                 "DELETE FROM USER_ACCOUNT",
                 "DELETE FROM MON_TRANSACTION",
                 "DELETE FROM USER_PREFERENCES",
-                "DELETE FROM MON_CARD",
-                "DELETE FROM MON_ACCOUNT_LIMIT"
+                "DELETE FROM MON_CARD"
         );
     }
 }

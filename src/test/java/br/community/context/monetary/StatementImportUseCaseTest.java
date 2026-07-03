@@ -5,7 +5,6 @@ import br.commons.pdf.PdfTextExtractor;
 import br.community.context.monetary._0_domain.model.Account;
 import br.community.context.monetary._0_domain.model.CostCenter;
 import br.community.context.monetary._0_domain.model.Transaction;
-import br.community.context.monetary._1_application.service.AccountLimitService;
 import br.community.context.monetary._1_application.service.AccountService;
 import br.community.context.monetary._1_application.service.BalanceService;
 import br.community.context.monetary._1_application.service.CardService;
@@ -193,11 +192,10 @@ class StatementImportUseCaseTest {
         final TransactionService transactionService = new TransactionService(transactions);
         final CostCenterService costCenterService = new CostCenterService(new InMemoryRepositories.CostCenters());
         final CardService cardService = new CardService(new InMemoryRepositories.Cards());
-        final AccountLimitService accountLimitService = new AccountLimitService(new InMemoryRepositories.AccountLimits());
         final AccountUseCase ucAccount = new AccountUseCase(accountService, balanceService);
         final TransactionUseCase ucTransaction = new TransactionUseCase(transactionService, cardService);
         final MetadataUseCase ucMetadata = new MetadataUseCase(costCenterService);
-        final CardUseCase ucCard = new CardUseCase(cardService, accountService, accountLimitService);
+        final CardUseCase ucCard = new CardUseCase(cardService, accountService);
         return new MonetaryContext(ucAccount, ucTransaction, ucMetadata, ucCard);
     }
 

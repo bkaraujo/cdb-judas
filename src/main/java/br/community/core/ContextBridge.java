@@ -7,7 +7,6 @@ import br.commons.framework.persistence.jdbc.DataSource;
 import br.commons.framework.persistence.jdbc.JDBCProperties;
 import br.community.context.monetary.MonetaryBootstrap;
 import br.community.context.monetary.MonetaryContext;
-import br.community.context.monetary._0_domain.repository.AccountLimitRepository;
 import br.community.context.monetary._0_domain.repository.AccountRepository;
 import br.community.context.monetary._0_domain.repository.BalanceRepository;
 import br.community.context.monetary._0_domain.repository.CardRepository;
@@ -16,6 +15,7 @@ import br.community.context.monetary._0_domain.repository.TransactionRepository;
 import br.community.context.people.PeopleBootstrap;
 import br.community.context.people.PeopleContext;
 import br.community.context.people._0_domain.repository.PersonRepository;
+import br.community.infra.persistence.AccountLimitMigration;
 import br.community.infra.persistence.Database;
 import br.community.infra.persistence.LegacyCardMigration;
 import io.quarkus.runtime.StartupEvent;
@@ -53,6 +53,7 @@ public class ContextBridge {
         return Registry.tryGet(DataSource.class, () -> {
             val datasource = new DataSource(properties);
             LegacyCardMigration.apply(datasource);
+            AccountLimitMigration.apply(datasource);
             switch (datasource.begin()) {
                 case Result.Failure(var error) -> throw new IllegalStateException(error);
                 case Result.Success(var transaction) -> {
@@ -86,15 +87,13 @@ public class ContextBridge {
             BalanceRepository balanceRepository,
             CostCenterRepository costCenterRepository,
             TransactionRepository transactionRepository,
-            CardRepository cardRepository,
-            AccountLimitRepository accountLimitRepository
+            CardRepository cardRepository
     ) {
         Registry.set(AccountRepository.class, accountRepository);
         Registry.set(BalanceRepository.class, balanceRepository);
         Registry.set(CostCenterRepository.class, costCenterRepository);
         Registry.set(TransactionRepository.class, transactionRepository);
         Registry.set(CardRepository.class, cardRepository);
-        Registry.set(AccountLimitRepository.class, accountLimitRepository);
 
         MonetaryBootstrap.register();
         return Registry.get(MonetaryContext.class);
