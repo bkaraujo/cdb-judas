@@ -192,11 +192,9 @@
         esc(account.name || '—') +
       '</div>'
     );
-    const last4Line = group.cards.map(function (c) { return '•••• ' + c.last4; }).join('   ');
     $band.append(
-      '<div style="font-size:13px;opacity:0.75;margin-top:8px;letter-spacing:0.06em;' +
-        'overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' +
-        esc(last4Line) +
+      '<div style="position:absolute;bottom:14px;left:20px;font-size:11px;opacity:0.55;">' +
+        'Fecha dia ' + esc(closingDay) +
       '</div>'
     );
     $band.append(
@@ -252,15 +250,6 @@
       '</div>'
     );
     $card.append($bar);
-
-    // ── Footer: closing/due (conta) ─────────────────────────
-    $card.append(
-      '<div style="padding-top:2px;">' +
-        '<span style="font-size:12px;color:var(--text-muted);">' +
-          'Fech. dia ' + esc(closingDay) + ' · Venc. dia ' + esc(dueDay) +
-        '</span>' +
-      '</div>'
-    );
 
     $card.on('mouseenter', function () { $card.css('border-color', color); });
     $card.on('mouseleave', function () { $card.css('border-color', ''); });
