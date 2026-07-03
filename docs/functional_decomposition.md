@@ -13,11 +13,11 @@ nos contextos de negócio (`br.community.context.*`). Features falam com os cont
 
 ## 2. Features de Usuário (`/api/{uuid}/…`)
 
-- [Contas] CRUD de contas e cartões [Manter saldos]. `AccountResource` (filtro `?type=card`); projeta `MonetaryAccount` + saldo. Sub-recursos abaixo.
+- [Contas] CRUD de contas e limites de crédito; cartões como sub-recurso [Manter saldos]. `AccountResource` projeta `MonetaryAccount` + saldo + limite (`AccountLimit`) + cartões (`Card`, via `CardResource` em `/accounts/{accountId}/cards`). Sub-recursos abaixo.
   - [Saldo] Consulta saldo por período [Conferir posição mensal/anual]. `AccountBalanceResource` (`?period=yyyyMM` ou `?year=yyyy`).
   - [Fechamento] Define período de fechamento [Consolidar competência em aberto]. `ClosingResource` (GET/POST/DELETE).
   - [Extrato] Exibe histórico mensal por conta [Facilitar conferência]. `StatementResource`, `StatementService` (filtro `?status=`).
-  - [Importação de Extratos] Lê PDF de banco/cartão [Automatizar lançamentos]. Fluxo preview→confirm (`StatementImportResource`). Detecta tipo (`DocumentTypeDetector`) e emissor (`IssuerDetector`); parsers por banco BTG e Santander (cartão + conta), `BankStatementParserRegistry`, `CreditCardStatementParserRegistry`; expande parcelas (`InstallmentExpander`), sugere categoria (`CategoryGuesser`), casa cartão (`CardMatcher`).
+  - [Importação de Extratos] Lê PDF de banco/cartão [Automatizar lançamentos]. Fluxo preview→confirm (`StatementImportResource`). Detecta tipo (`DocumentTypeDetector`) e emissor (`IssuerDetector`); parsers por banco BTG e Santander (cartão + conta), `BankStatementParserRegistry`, `CreditCardStatementParserRegistry`; expande parcelas (`InstallmentExpander`), sugere categoria (`CategoryGuesser`), casa cartão (`CardMatcher`) e resolve a conta real de destino a partir do cartão (`MonetaryCardProvider`) — cartão não tem saldo próprio, a fatura é postada na conta a que pertence.
   - [Transações] Registra créditos, débitos, transferências e parcelas [Rastrear fluxo]. `TransactionResource` (filtros, `transfer`, patch de status, delete unitário/em grupo via `mode`).
 - [Categorias] CRUD de categorias [Análise macro]. `CategoryResource`; propaga mudanças via SSE (`CategoryStreamListener`).
 - [Tags] CRUD de rótulos livres [Análise micro / marcação transversal]. `TagResource`; SSE via `TagStreamListener`.

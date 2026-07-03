@@ -75,11 +75,13 @@ A maioria dos recursos vive sob `/api/{uuid}/...`, onde **`{uuid}` é o `X-User-
 
 ## 2. Contas (`/api/{uuid}/accounts`)
 
-`type` ∈ `CHECKING` | `INVESTMENT` | `CREDIT_CARD`.
+`type` ∈ `CHECKING` | `INVESTMENT`. Cartão de crédito **não é um tipo de conta** — é uma entidade
+própria (`cards[]` abaixo; endpoints em **2.1**) sempre vinculada a uma conta real. O limite de
+crédito/cheque especial e o ciclo de fatura (fechamento/vencimento) são configuração da **conta**,
+compartilhada por todos os cartões nela cadastrados.
 
 ### Listar Todas
 - **Endpoint:** `GET /api/{uuid}/accounts`
-- **Query opcional:** `?type=card` (ou `credit-card`) filtra apenas cartões de crédito.
 - **Response (200 OK):**
 ```json
 [
@@ -90,15 +92,18 @@ A maioria dos recursos vive sob `/api/{uuid}/...`, onde **`{uuid}` é o `X-User-
     "type": "CHECKING",
     "color": "#007AFF",
     "active": true,
-    "linkedAccountId": null,
-    "additionalInfo": {
-      "bank": "Banco do Brasil"
-    },
-    "currentBalance": 1100.25
+    "creditLimit": 5000.00,
+    "overdraftLimit": 200.00,
+    "closingDay": 5,
+    "dueDay": 15,
+    "currentBalance": 1100.25,
+    "cards": [
+      { "id": "uuid-card", "last4": "1234", "accountId": "550e8400-e29b-41d4-a716-446655440000", "active": true }
+    ]
   }
 ]
 ```
-> `balance` é o saldo de abertura; `currentBalance` = abertura + soma das transações da conta. Cartões carregam dados extras em `additionalInfo` (ex.: `last4`).
+> `balance` é o saldo de abertura; `currentBalance` = abertura + soma das transações da conta (inclui as postadas via cartão — cartão não tem saldo próprio). `creditLimit`/`overdraftLimit`/`closingDay`/`dueDay` vêm `null` quando a conta não tem limite configurado. `cards` pode ser uma lista vazia.
 
 ### Buscar por ID
 - **Endpoint:** `GET /api/{uuid}/accounts/{id}`
@@ -115,17 +120,20 @@ A maioria dos recursos vive sob `/api/{uuid}/...`, onde **`{uuid}` é o `X-User-
   "type": "CHECKING",
   "color": "#FF5733",
   "active": true,
-  "linkedAccountId": null,
-  "additionalInfo": {}
+  "creditLimit": null,
+  "overdraftLimit": null,
+  "closingDay": null,
+  "dueDay": null
 }
 ```
-> Obrigatórios: `name`, `balance`, `type`, `color`. `linkedAccountId` e `additionalInfo` são opcionais.
+> Obrigatórios: `name`, `balance`, `type`, `color`, `active`. `creditLimit`/`overdraftLimit`/`closingDay`/`dueDay` são opcionais — **upsert-ou-apaga**: os 4 nulos apagam o limite configurado da conta (idempotente).
 
 ### Atualizar Conta
-- **Endpoint:** `PATCH /api/{uuid}/accounts/{id}` — mesma estrutura do POST.
+- **Endpoint:** `PATCH /api/{uuid}/accounts/{id}` — mesma estrutura do POST (corpo completo, não é merge parcial).
 
 ### Excluir Conta
 - **Endpoint:** `DELETE /api/{uuid}/accounts/{id}` → `204 No Content`.
+> Cascata: apaga também os cartões e o limite configurado da conta.
 
 ### Saldo Mensal/Anual
 - **Endpoint:** `GET /api/{uuid}/accounts/{id}/balance?period=202401` ou `?year=2024`
@@ -140,6 +148,32 @@ A maioria dos recursos vive sob `/api/{uuid}/...`, onde **`{uuid}` é o `X-User-
 ```
 - **Response (200 OK — `year`):** lista de objetos acima (um por mês).
 - Sem `period` nem `year` → `422`.
+
+### 2.1 Cartões (`/api/{uuid}/accounts/{accountId}/cards`)
+
+Cartão é identificado **somente pelo last4** (sem nome próprio) e pertence a exatamente uma conta.
+
+#### Listar cartões da conta
+- **Endpoint:** `GET /api/{uuid}/accounts/{accountId}/cards`
+- **Response (200 OK):**
+```json
+[
+  { "id": "uuid-card", "last4": "1234", "accountId": "uuid-account", "active": true }
+]
+```
+
+#### Criar cartão
+- **Endpoint:** `POST /api/{uuid}/accounts/{accountId}/cards`
+- **Response:** `201 Created` com o `Card` (mesmo formato acima).
+- **Request:**
+```json
+{ "last4": "1234" }
+```
+> `last4`: exatamente 4 dígitos; único dentro da conta (`409 Conflict` se duplicado).
+
+#### Excluir cartão
+- **Endpoint:** `DELETE /api/{uuid}/accounts/{accountId}/cards/{cardId}` → `204 No Content`.
+> `404 Not Found` se o cartão não pertence à conta do path.
 
 ---
 
@@ -167,7 +201,8 @@ A maioria dos recursos vive sob `/api/{uuid}/...`, onde **`{uuid}` é o `X-User-
     "groupId": null,
     "installmentNumber": null,
     "totalInstallments": null,
-    "notes": null
+    "notes": null,
+    "cardId": null
   }
 ]
 ```
@@ -192,10 +227,11 @@ A maioria dos recursos vive sob `/api/{uuid}/...`, onde **`{uuid}` é o `X-User-
   "installments": 1,
   "editMode": "single",
   "deleteMode": null,
-  "notes": "opcional, máx 250 chars"
+  "notes": "opcional, máx 250 chars",
+  "cardId": null
 }
 ```
-> Obrigatórios: `description`, `amount`, `date`, `categoryId`, `costCenterId`, `status`, `type`. `accountId` no corpo é opcional (a conta vem do path).
+> Obrigatórios: `description`, `amount`, `date`, `categoryId`, `costCenterId`, `status`, `type`. `accountId` no corpo é opcional (a conta vem do path). `cardId` é opcional — cartão de origem do lançamento; o contexto valida que o cartão pertence à conta da transação (`accountId`), senão `400 BusinessRule`. Transferências nunca carregam `cardId`.
 
 ### Atualizar Transação
 - **Endpoint:** `PATCH /api/{uuid}/accounts/{accId}/transactions/{txId}` — mesmo corpo do POST.
@@ -263,7 +299,7 @@ A maioria dos recursos vive sob `/api/{uuid}/...`, onde **`{uuid}` é o `X-User-
   ]
 }
 ```
-> Uma fatura pode misturar lançamentos de vários cartões (titular + adicionais). `suggestedCardId` é o cartão cujo `last4` casou unicamente com aquela linha — pré-seleção por linha que o usuário pode trocar antes de confirmar; `null` quando o `last4` não casou com nenhum cartão ou casou com vários. `candidateCards` lista **apenas os cartões cadastrados presentes na fatura** (cujo `last4` aparece no PDF) — são as opções do seletor por linha. Não há cartão padrão: o cartão é definido por transação.
+> Uma fatura pode misturar lançamentos de vários cartões (titular + adicionais). `suggestedCardId` é o cartão cujo `last4` casou unicamente com aquela linha — pré-seleção por linha que o usuário pode trocar antes de confirmar; `null` quando o `last4` não casou com nenhum cartão ou casou com vários. `candidateCards` lista **apenas os cartões cadastrados presentes na fatura** (cujo `last4` aparece no PDF) — são as opções do seletor por linha; `name` é o nome da **conta** dona do cartão (cartão não tem nome próprio). Não há cartão padrão: o cartão é definido por transação.
 
 **Extrato bancário — `documentType: "BANK_STATEMENT"`:**
 ```json
