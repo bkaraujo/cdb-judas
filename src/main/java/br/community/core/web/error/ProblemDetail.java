@@ -14,7 +14,8 @@ public record ProblemDetail(
         int status,
         @Nullable String detail,
         @Nullable String instance,
-        @Nullable String code
+        @Nullable String code,
+        @Nullable Integer count
 ) {
 
     public static ProblemDetail of(Response.Status status, @Nullable String instance, @Nullable String detail) {
@@ -22,7 +23,7 @@ public record ProblemDetail(
     }
 
     public static ProblemDetail of(int status, String reason, @Nullable String instance, @Nullable String detail) {
-        return new ProblemDetail("about:blank", reason, status, detail, instance, null);
+        return new ProblemDetail("about:blank", reason, status, detail, instance, null, null);
     }
 
     /** 422 não tem constante em {@link Response.Status} (RFC 9110 renomeou para "Unprocessable Content"). */
@@ -31,6 +32,10 @@ public record ProblemDetail(
     }
 
     public ProblemDetail withCode(String newCode) {
-        return new ProblemDetail(type, title, status, detail, instance, newCode);
+        return new ProblemDetail(type, title, status, detail, instance, newCode, count);
+    }
+
+    public ProblemDetail withCount(int newCount) {
+        return new ProblemDetail(type, title, status, detail, instance, code, newCount);
     }
 }

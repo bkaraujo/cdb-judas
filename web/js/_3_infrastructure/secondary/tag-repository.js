@@ -5,7 +5,7 @@
       list:   function ()        { return http.get('/tags'); },
       create: function (data)    { return http.post('/tags', data); },
       update: function (id, d)   { return http.patch('/tags/' + id, d); },
-      remove: function (id)      { return http.delete('/tags/' + id); },
+      remove: function (id, opts) { return http.delete('/tags/' + id + window.Infra.HttpClient.deletionQuery(opts)); },
     };
   }
   window.Infra = window.Infra || {};

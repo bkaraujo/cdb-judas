@@ -98,20 +98,20 @@
       return '<span style="font-size:11px;color:' + color + ';">' + esc(label) + '</span>';
     }
 
-    function importCategories() {
-      const expense = flatCategories('EXPENSE', true);
-      return expense.length ? expense : flatCategories(null, true);
+    function importCategories(keepId) {
+      const expense = flatCategories('EXPENSE', true, keepId);
+      return expense.length ? expense : flatCategories(null, true, keepId);
     }
 
     // Import category set for a given movement type (statement rows can be income or expense).
-    function importCategoriesFor(type) {
+    function importCategoriesFor(type, keepId) {
       const nature = type === 'income' ? 'INCOME' : 'EXPENSE';
-      const byNature = flatCategories(nature, true);
-      return byNature.length ? byNature : flatCategories(null, true);
+      const byNature = flatCategories(nature, true, keepId);
+      return byNature.length ? byNature : flatCategories(null, true, keepId);
     }
 
     function categorySelectHtml(selectedId, idx) {
-      const cats = importCategories();
+      const cats = importCategories(selectedId);
       if (!cats.length) {
         return '<select data-row-category data-idx="' + idx + '" disabled>' +
           '<option value="">Sem categorias</option></select>';
@@ -335,7 +335,7 @@
     }
 
     function statementCategorySelectHtml(selectedId, idx, type) {
-      const cats = importCategoriesFor(type);
+      const cats = importCategoriesFor(type, selectedId);
       if (!cats.length) {
         return '<select data-row-category data-idx="' + idx + '" disabled>' +
           '<option value="">Sem categorias</option></select>';

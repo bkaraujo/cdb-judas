@@ -219,8 +219,45 @@
           window.toast('Tag removida', 'success');
           // SSE DELETE will refresh CacheStore → TagService.onChange → re-render.
         }).catch(function (err) {
+          if (err && err.status === 409 && err.code === 'LINKED_TRANSACTIONS') {
+            m.close();
+            openLinkedTagDialog(target, err.count);
+            return;
+          }
           reEnable();
           window.toast(err && err.message ? err.message : 'Falha ao excluir tag', 'error');
+        });
+      },
+    });
+  }
+
+  function openLinkedTagDialog(target, count) {
+    const otherTags = state.tags.filter(function (t) { return String(t.id) !== String(target.id); });
+    const options = [
+      {
+        value: 'MOVE', label: 'Mover para outra tag',
+        hint: 'As transações desta tag passam a usar a tag escolhida.',
+        choices: otherTags.map(function (t) { return { value: t.id, label: '#' + t.name }; }),
+      },
+      {
+        value: 'DELETE', label: 'Excluir transações', danger: true,
+        hint: 'Apaga a tag e ' + count + ' transaç' + (count === 1 ? 'ão vinculada' : 'ões vinculadas') + '.',
+      },
+      { value: 'DETACH', label: 'Apenas desvincular', hint: 'Remove só a marcação; as transações permanecem intactas.' },
+    ];
+
+    window.linkedDeleteDialog({
+      title: 'Tag com transações vinculadas',
+      intro: 'A tag <strong>#' + esc(target.name) + '</strong> tem ' + count + ' transaç' +
+        (count === 1 ? 'ão vinculada' : 'ões vinculadas') + '. Escolha o que fazer:',
+      options: options,
+      onConfirm: function (choice, m, reEnable) {
+        window.App.TagService.remove(target.id, { strategy: choice.strategy, targetId: choice.targetId }).then(function () {
+          m.close();
+          window.toast('Tag removida', 'success');
+        }).catch(function (err) {
+          reEnable();
+          window.toast((err && err.message) || 'Falha ao excluir tag', 'error');
         });
       },
     });

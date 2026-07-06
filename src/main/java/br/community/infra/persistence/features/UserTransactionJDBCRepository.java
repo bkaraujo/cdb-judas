@@ -11,12 +11,15 @@ import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 
 import java.sql.Timestamp;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 /** Adaptador JDBC (H2) da porta {@link UserTransactionRepository}; tabela {@code USER_TRANSACTION}. */
 @NullMarked
@@ -62,13 +65,51 @@ public final class UserTransactionJDBCRepository extends JDBCRepository<UserTran
     }
 
     @Override
+    public void reassignAccount(UUID oldAccountId, UUID newAccountId, UUID userId) {
+        datasource.execute(
+                "UPDATE USER_TRANSACTION SET COD_ACCOUNT = ? WHERE COD_ACCOUNT = ? AND COD_USER = ?",
+                JDBCParameter.of(newAccountId.toString(), oldAccountId.toString(), userId.toString())
+        );
+    }
+
+    @Override
+    public void deleteByAccountAndUser(UUID accountId, UUID userId) {
+        datasource.execute(
+                "DELETE FROM USER_TRANSACTION WHERE COD_ACCOUNT = ? AND COD_USER = ?",
+                JDBCParameter.of(accountId.toString(), userId.toString())
+        );
+    }
+
+    @Override
+    public List<UUID> findTransactionIdsByCategories(UUID userId, Collection<UUID> categoryIds) {
+        if (categoryIds.isEmpty()) return List.of();
+
+        val placeholders = categoryIds.stream().map(ignored -> "?").collect(Collectors.joining(", "));
+        val params = new ArrayList<Object>();
+        params.add(userId.toString());
+        categoryIds.forEach(id -> params.add(id.toString()));
+
+        return datasource.query(
+                "SELECT COD_TRANSACTION FROM USER_TRANSACTION WHERE COD_USER = ? AND COD_CATEGORY IN (" + placeholders + ")",
+                JDBCParameter.of(params.toArray()),
+                UserTransactionJDBCRepository::readTransactionIds
+        );
+    }
+
+    private static List<UUID> readTransactionIds(JDBCResultSet rs) {
+        val ids = new ArrayList<UUID>();
+        while (rs.next().get()) ids.add(UUID.fromString(rs.getString("COD_TRANSACTION").get()));
+        return ids;
+    }
+
+    @Override
     protected Set<String> updateImmutableColumns() {
         return Set.of("TMS_CREATE_AT");
     }
 
     @Override
     protected Map<String, @Nullable Object> values(UserTransaction entity) {
-        final @Nullable String categoryStr = entity.categoryId() == null ? null : entity.categoryId().toString();
+        val categoryStr = entity.categoryId() == null ? null : entity.categoryId().toString();
         val now = Timestamp.valueOf(Time.now());
 
         val values = new LinkedHashMap<String, @Nullable Object>();
@@ -87,8 +128,8 @@ public final class UserTransactionJDBCRepository extends JDBCRepository<UserTran
         val userId = UUID.fromString(rs.getString("COD_USER").get());
         val accountId = UUID.fromString(rs.getString("COD_ACCOUNT").get());
 
-        final @Nullable String categoryRaw = rs.getString("COD_CATEGORY").get();
-        final @Nullable UUID categoryId = (categoryRaw == null || categoryRaw.isBlank()) ? null : UUID.fromString(categoryRaw);
+        val categoryRaw = rs.getString("COD_CATEGORY").get();
+        val categoryId = (categoryRaw == null || categoryRaw.isBlank()) ? null : UUID.fromString(categoryRaw);
 
         val createdAt = rs.getTimestamp("TMS_CREATE_AT").get().toLocalDateTime();
         val updatedAt = rs.getTimestamp("TMS_UPDATED_AT").get().toLocalDateTime();

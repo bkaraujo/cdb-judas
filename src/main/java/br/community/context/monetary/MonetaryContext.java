@@ -12,6 +12,7 @@ import br.community.context.monetary._1_application.command.CardCommand;
 import br.community.context.monetary._1_application.command.CostCenterCommand;
 import br.community.context.monetary._1_application.command.ImportedTransactionCommand;
 import br.community.context.monetary._1_application.command.TransactionCommand;
+import br.community.context.monetary._1_application.command.TransactionPolicy;
 import br.community.context.monetary._1_application.usecase.AccountUseCase;
 import br.community.context.monetary._1_application.usecase.CardUseCase;
 import br.community.context.monetary._1_application.usecase.MetadataUseCase;
@@ -54,8 +55,8 @@ public class MonetaryContext implements Facade {
         return ucAccount.updateAccount(id, cmd);
     }
 
-    public Result<Void, DomainError> deleteAccount(UUID id) {
-        return ucAccount.deleteAccount(id);
+    public Result<List<UUID>, DomainError> deleteAccount(UUID id, TransactionPolicy policy) {
+        return ucAccount.deleteAccount(id, policy);
     }
 
     // ── Balance operations ─────────────────────────────────────────
@@ -94,8 +95,12 @@ public class MonetaryContext implements Facade {
         return ucTransaction.updateTransactionStatus(id, status, paymentDate);
     }
 
-    public Result<Void, DomainError> deleteTransaction(UUID id, @Nullable String mode) {
+    public Result<List<UUID>, DomainError> deleteTransaction(UUID id, @Nullable String mode) {
         return ucTransaction.deleteTransaction(id, mode);
+    }
+
+    public Result<Void, DomainError> deleteTransactions(List<UUID> ids) {
+        return ucTransaction.deleteTransactions(ids);
     }
 
     public Result<Transaction, DomainError> createTransfer(UUID fromAccountId, UUID toAccountId, LocalDate date, BigDecimal amount) {
@@ -138,8 +143,8 @@ public class MonetaryContext implements Facade {
         return ucCard.createCard(cmd);
     }
 
-    public Result<Void, DomainError> deleteCard(UUID id) {
-        return ucCard.deleteCard(id);
+    public Result<List<UUID>, DomainError> deleteCard(UUID id, TransactionPolicy policy) {
+        return ucCard.deleteCard(id, policy);
     }
 
     public Result<Card, DomainError> setCardActive(UUID id, boolean active) {

@@ -6,8 +6,13 @@ import br.community.context.monetary._0_domain.model.Account;
 import br.community.context.monetary._0_domain.model.Card;
 import br.community.context.monetary._0_domain.model.Transaction;
 import br.community.context.monetary._1_application.command.AccountCommand;
+import br.community.context.shared._0_domain.model.DomainError;
 import br.community.context.shared._1_application.DomainException;
 import br.community.core.web.security.CurrentUser;
+import br.community.feature.user.accounts.transactions.UserTransactionService;
+import br.community.feature.user.deletion.DeletionStrategy;
+import br.community.feature.user.deletion.Deletions;
+import br.community.feature.user.tags.UserTransactionTagService;
 import jakarta.validation.Valid;
 import jakarta.ws.rs.DELETE;
 import jakarta.ws.rs.GET;
@@ -16,13 +21,18 @@ import jakarta.ws.rs.POST;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.Response;
 import lombok.RequiredArgsConstructor;
 import lombok.val;
 import org.jboss.resteasy.reactive.RestResponse;
 import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
 
 import java.util.List;
+import java.util.Objects;
+import java.util.Set;
 import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -33,8 +43,12 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class AccountResource {
 
+    private static final Set<DeletionStrategy> ALLOWED_STRATEGIES = Set.of(DeletionStrategy.MOVE, DeletionStrategy.DELETE);
+
     private final MonetaryContext monetaryContext;
     private final UserAccountService userAccountService;
+    private final UserTransactionService userTransactionService;
+    private final UserTransactionTagService tagLinkService;
 
     @GET
     public List<AccountResponse> listAll() {
@@ -94,12 +108,72 @@ public class AccountResource {
 
     @DELETE
     @Path("/{id}")
-    public void delete(@PathParam("id") UUID id) {
-        val userId = CurrentUser.getId();
-        switch (monetaryContext.deleteAccount(id)) {
-            case Result.Success(var ignored) -> userAccountService.delete(userId, id);
-            case Result.Failure(var error) -> throw new DomainException(error);
+    public Response delete(
+            @PathParam("uuid") UUID uuid,
+            @PathParam("id") UUID id,
+            @QueryParam("strategy") @Nullable String strategy,
+            @QueryParam("targetId") @Nullable UUID targetId
+    ) {
+        val parsed = Deletions.parse(strategy, targetId, ALLOWED_STRATEGIES);
+        if (parsed instanceof Result.Failure<DeletionStrategy, DomainError>(var error)) {
+            throw new DomainException(error);
         }
+        val deletionStrategy = parsed.get();
+
+        if (deletionStrategy == null) {
+            val count = countLinkedTransactions(id);
+            if (count > 0) {
+                return Deletions.linkedConflict(null, count, "Existem " + count + " transações vinculadas a esta conta.");
+            }
+        }
+
+        return executeDelete(uuid, id, deletionStrategy, targetId);
+    }
+
+    /**
+     * USER_ACCOUNT/USER_TRANSACTION referenciam MON_ACCOUNT (FK) — o overlay precisa sumir/ser
+     * re-keyed *antes* do contexto apagar a conta. MOVE é validado aqui primeiro (boundary da
+     * feature) para nunca reatribuir para um alvo inválido; Block/Purge não têm alvo a validar e
+     * contam com o contexto como backstop (race → 409/400 simples, sem corrupção de dados).
+     */
+    private Response executeDelete(UUID uuid, UUID id, @Nullable DeletionStrategy deletionStrategy, @Nullable UUID targetId) {
+        val userId = CurrentUser.getId();
+
+        if (deletionStrategy == DeletionStrategy.MOVE) {
+            val targetCheck = validateMoveTarget(id, Objects.requireNonNull(targetId));
+            if (targetCheck instanceof Result.Failure<Void, DomainError>(var error)) throw new DomainException(error);
+            userTransactionService.reassignAccount(id, targetId, uuid);
+        } else {
+            userTransactionService.deleteByAccountAndUser(id, uuid);
+        }
+        userAccountService.delete(userId, id);
+
+        val policy = Deletions.toPolicy(deletionStrategy, targetId);
+        return switch (monetaryContext.deleteAccount(id, policy)) {
+            case Result.Failure(var error) -> throw new DomainException(error);
+            case Result.Success(var ids) -> {
+                if (deletionStrategy != DeletionStrategy.MOVE) {
+                    ids.forEach(tagLinkService::deleteByTransaction);
+                }
+                yield Response.noContent().build();
+            }
+        };
+    }
+
+    private Result<Void, DomainError> validateMoveTarget(UUID sourceId, UUID targetId) {
+        return monetaryContext.findAccount(targetId).flatMap(target -> {
+            if (target.id().equals(sourceId)) {
+                return Result.failure(new DomainError.BusinessRule("Target account must be different from source: " + targetId));
+            }
+            if (!target.active()) {
+                return Result.failure(new DomainError.BusinessRule("Target account is inactive: " + targetId));
+            }
+            return Result.success();
+        });
+    }
+
+    private int countLinkedTransactions(UUID accountId) {
+        return (int) allTransactions().stream().filter(t -> accountId.equals(t.accountId())).count();
     }
 
     private List<Card> cardsOf(UUID accountId) {

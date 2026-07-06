@@ -23,8 +23,7 @@ public record UserCategory(
         this(id, userId, nature, name, parentId, false, true, null, null);
     }
 
-    public UserCategory(UUID id, UUID userId, Transaction.Type nature, String name,
-                        @Nullable UUID parentId, boolean isSystem) {
+    public UserCategory(UUID id, UUID userId, Transaction.Type nature, String name, @Nullable UUID parentId, boolean isSystem) {
         this(id, userId, nature, name, parentId, isSystem, true, null, null);
     }
 }

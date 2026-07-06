@@ -1,12 +1,14 @@
 package br.community.feature.user.tags;
 
 import br.commons.Result;
+import br.community.context.monetary.MonetaryContext;
 import br.community.context.shared._0_domain.model.DomainError;
+import br.community.feature.user.accounts.transactions.UserTransactionService;
 import br.community.feature.user.stream.SSE;
+import jakarta.inject.Singleton;
 import lombok.RequiredArgsConstructor;
 import lombok.val;
 import org.jspecify.annotations.NullMarked;
-import jakarta.inject.Singleton;
 
 import java.util.List;
 import java.util.Map;
@@ -20,6 +22,9 @@ public class UserTagService {
     private static final String TYPE = "TAG";
 
     private final UserTagRepository repo;
+    private final UserTransactionTagService tagLinkService;
+    private final UserTransactionService userTransactionService;
+    private final MonetaryContext monetaryContext;
     private final SSE sse;
 
     public List<UserTag> findAll(UUID userId) {
@@ -46,10 +51,56 @@ public class UserTagService {
         });
     }
 
+    public List<UUID> linkedTransactionIds(UUID userId, UUID tagId) {
+        return tagLinkService.findTransactionIdsByTag(userId, tagId);
+    }
+
+    /** Sem estratégia e sem vínculos: exclusão simples. */
     public Result<Void, DomainError> deleteById(UUID id) {
         return findById(id).map(existing -> {
             repo.deleteById(id);
             delete(existing.userId(), id);
+            return null;
+        });
+    }
+
+    public Result<Void, DomainError> deleteMoving(UUID id, UUID targetId, UUID userId) {
+        return findById(id).flatMap(ignoredSource -> findById(targetId).flatMap(target -> {
+            if (target.id().equals(id)) {
+                return Result.<Void>failure(new DomainError.BusinessRule("Tag de destino deve ser diferente da origem"));
+            }
+            tagLinkService.reassignTag(id, targetId, userId);
+            repo.deleteById(id);
+            delete(userId, id);
+            return Result.success();
+        }));
+    }
+
+    /** Apaga as transações vinculadas à tag (via facade), depois a tag em si. */
+    public Result<Void, DomainError> deleteWithTransactions(UUID id, UUID userId) {
+        return findById(id).flatMap(ignored -> {
+            val txIds = tagLinkService.findTransactionIdsByTag(userId, id);
+
+            if (monetaryContext.deleteTransactions(txIds) instanceof Result.Failure<Void, DomainError>(var error)) {
+                return Result.failure(error);
+            }
+            txIds.forEach(txId -> {
+                userTransactionService.deleteByTransaction(txId);
+                tagLinkService.deleteByTransaction(txId);
+            });
+
+            repo.deleteById(id);
+            delete(userId, id);
+            return Result.success();
+        });
+    }
+
+    /** Desvincula (apaga só a associação) e exclui a tag; transações permanecem intactas. */
+    public Result<Void, DomainError> deleteDetached(UUID id, UUID userId) {
+        return findById(id).map(existing -> {
+            tagLinkService.deleteByTag(userId, id);
+            repo.deleteById(id);
+            delete(userId, id);
             return null;
         });
     }

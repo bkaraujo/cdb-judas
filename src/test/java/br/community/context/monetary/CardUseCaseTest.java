@@ -1,13 +1,13 @@
 package br.community.context.monetary;
 
 import br.commons.Result;
-import br.community.context.monetary._0_domain.event.AccountEvents;
 import br.community.context.monetary._0_domain.model.Account;
 import br.community.context.monetary._0_domain.model.Card;
 import br.community.context.monetary._0_domain.model.Transaction;
 import br.community.context.monetary._1_application.command.CardCommand;
-import br.community.context.monetary._1_application.event.TransactionEventListener;
+import br.community.context.monetary._1_application.command.TransactionPolicy;
 import br.community.context.monetary._1_application.service.AccountService;
+import br.community.context.monetary._1_application.service.BalanceRecalculationService;
 import br.community.context.monetary._1_application.service.BalanceService;
 import br.community.context.monetary._1_application.service.CardService;
 import br.community.context.monetary._1_application.service.TransactionService;
@@ -28,20 +28,23 @@ class CardUseCaseTest {
 
     private InMemoryRepositories.Accounts accountRepo;
     private InMemoryRepositories.Cards cardRepo;
+    private InMemoryRepositories.Transactions txRepo;
     private CardUseCase useCase;
-    private TransactionEventListener listener;
     private TransactionService transactionService;
 
     @BeforeEach
     void setUp() {
         accountRepo = new InMemoryRepositories.Accounts();
         cardRepo = new InMemoryRepositories.Cards();
+        txRepo = new InMemoryRepositories.Transactions();
+
+        val accountService = new AccountService(accountRepo);
         val cardService = new CardService(cardRepo);
-        transactionService = new TransactionService(new InMemoryRepositories.Transactions());
-        useCase = new CardUseCase(cardService, new AccountService(accountRepo), transactionService);
-        listener = new TransactionEventListener(
-                new AccountService(accountRepo), new BalanceService(new InMemoryRepositories.Balances()),
-                transactionService, cardService);
+        transactionService = new TransactionService(txRepo);
+        val balanceRecalculationService = new BalanceRecalculationService(
+                accountService, new BalanceService(new InMemoryRepositories.Balances()), transactionService);
+
+        useCase = new CardUseCase(cardService, accountService, transactionService, balanceRecalculationService);
     }
 
     private Account seedChecking() {
@@ -52,6 +55,10 @@ class CardUseCaseTest {
     private Account seedInactive() {
         Account acc = new Account(UUID.randomUUID(), "Banco Inativo", Account.Type.CHECKING, false);
         return accountRepo.save(acc);
+    }
+
+    private Card createCard(UUID accountId, String last4) {
+        return ((Result.Success<Card, DomainError>) useCase.createCard(new CardCommand(accountId, last4))).value();
     }
 
     @Test
@@ -112,11 +119,11 @@ class CardUseCaseTest {
     }
 
     @Test
-    @DisplayName("deleteCard remove o cartão")
-    void deletesCard() {
+    @DisplayName("Block sem transações remove o cartão")
+    void blockDeletesCardWithoutTransactions() {
         Account account = seedChecking();
-        Card card = ((Result.Success<Card, DomainError>) useCase.createCard(new CardCommand(account.id(), "1234"))).value();
-        Result<Void, DomainError> r = useCase.deleteCard(card.id());
+        Card card = createCard(account.id(), "1234");
+        Result<List<UUID>, DomainError> r = useCase.deleteCard(card.id(), new TransactionPolicy.Block());
         assertTrue(r.isSuccess());
         assertTrue(((Result.Success<List<Card>, DomainError>) useCase.listCardsByAccount(account.id())).value().isEmpty());
     }
@@ -124,42 +131,111 @@ class CardUseCaseTest {
     @Test
     @DisplayName("deleteCard inexistente → NotFound")
     void deleteUnknownCard() {
-        Result<Void, DomainError> r = useCase.deleteCard(UUID.randomUUID());
+        Result<List<UUID>, DomainError> r = useCase.deleteCard(UUID.randomUUID(), new TransactionPolicy.Block());
         assertTrue(r.isFailure());
-        assertInstanceOf(DomainError.NotFound.class, ((Result.Failure<Void, DomainError>) r).error());
+        assertInstanceOf(DomainError.NotFound.class, ((Result.Failure<List<UUID>, DomainError>) r).error());
     }
 
     @Test
-    @DisplayName("TransactionEventListener.onAccountDeleted remove cartões da conta")
-    void accountDeletionCascadesCards() {
+    @DisplayName("Block com transação vinculada → Conflict, cartão preservado")
+    void blockRejectsCardWithLinkedTransaction() {
         Account account = seedChecking();
-        Card card = ((Result.Success<Card, DomainError>) useCase.createCard(new CardCommand(account.id(), "1234"))).value();
-
-        listener.onAccountDeleted(new AccountEvents.Deleted(account.id()));
-
-        assertTrue(cardRepo.findById(card.id()).isEmpty(), "cartão removido junto da conta");
-    }
-
-    @Test
-    @DisplayName("deleteCard com transação vinculada → Conflict, cartão preservado")
-    void rejectsDeleteWithLinkedTransaction() {
-        Account account = seedChecking();
-        Card card = ((Result.Success<Card, DomainError>) useCase.createCard(new CardCommand(account.id(), "1234"))).value();
+        Card card = createCard(account.id(), "1234");
         transactionService.save(new Transaction(UUID.randomUUID(), "compra", java.math.BigDecimal.TEN, java.time.LocalDate.now(),
                 account.id(), Transaction.Status.CONFIRMED, Transaction.Type.EXPENSE, UUID.randomUUID(), null, null, 1, 1, null, card.id()));
 
-        Result<Void, DomainError> r = useCase.deleteCard(card.id());
+        Result<List<UUID>, DomainError> r = useCase.deleteCard(card.id(), new TransactionPolicy.Block());
 
         assertTrue(r.isFailure());
-        assertInstanceOf(DomainError.Conflict.class, ((Result.Failure<Void, DomainError>) r).error());
+        assertInstanceOf(DomainError.Conflict.class, ((Result.Failure<List<UUID>, DomainError>) r).error());
         assertTrue(cardRepo.findById(card.id()).isPresent());
+    }
+
+    @Test
+    @DisplayName("Move: transações migram para o cartão de destino, origem é removida")
+    void moveMigratesTransactionsToTargetCard() {
+        Account account = seedChecking();
+        Card source = createCard(account.id(), "1234");
+        Card target = createCard(account.id(), "5678");
+        Transaction tx = transactionService.save(new Transaction(UUID.randomUUID(), "compra", java.math.BigDecimal.TEN,
+                java.time.LocalDate.now(), account.id(), Transaction.Status.CONFIRMED, Transaction.Type.EXPENSE,
+                UUID.randomUUID(), null, null, 1, 1, null, source.id()));
+
+        Result<List<UUID>, DomainError> r = useCase.deleteCard(source.id(), new TransactionPolicy.Move(target.id()));
+
+        assertTrue(r.isSuccess());
+        assertEquals(List.of(tx.id()), ((Result.Success<List<UUID>, DomainError>) r).value());
+        assertTrue(cardRepo.findById(source.id()).isEmpty());
+        assertEquals(target.id(), txRepo.findById(tx.id()).orElseThrow().cardId());
+    }
+
+    @Test
+    @DisplayName("Move para si mesmo é rejeitado")
+    void moveRejectsSelfTarget() {
+        Account account = seedChecking();
+        Card card = createCard(account.id(), "1234");
+        Result<List<UUID>, DomainError> r = useCase.deleteCard(card.id(), new TransactionPolicy.Move(card.id()));
+        assertTrue(r.isFailure());
+        assertInstanceOf(DomainError.BusinessRule.class, ((Result.Failure<List<UUID>, DomainError>) r).error());
+    }
+
+    @Test
+    @DisplayName("Move para cartão inexistente → NotFound")
+    void moveRejectsUnknownTarget() {
+        Account account = seedChecking();
+        Card card = createCard(account.id(), "1234");
+        Result<List<UUID>, DomainError> r = useCase.deleteCard(card.id(), new TransactionPolicy.Move(UUID.randomUUID()));
+        assertTrue(r.isFailure());
+        assertInstanceOf(DomainError.NotFound.class, ((Result.Failure<List<UUID>, DomainError>) r).error());
+    }
+
+    @Test
+    @DisplayName("Move para cartão de outra conta é rejeitado")
+    void moveRejectsTargetFromAnotherAccount() {
+        Account a = seedChecking();
+        Account b = seedChecking();
+        Card source = createCard(a.id(), "1234");
+        Card target = createCard(b.id(), "5678");
+        Result<List<UUID>, DomainError> r = useCase.deleteCard(source.id(), new TransactionPolicy.Move(target.id()));
+        assertTrue(r.isFailure());
+        assertInstanceOf(DomainError.BusinessRule.class, ((Result.Failure<List<UUID>, DomainError>) r).error());
+    }
+
+    @Test
+    @DisplayName("Move para cartão inativo é rejeitado")
+    void moveRejectsInactiveTarget() {
+        Account account = seedChecking();
+        Card source = createCard(account.id(), "1234");
+        Card target = createCard(account.id(), "5678");
+        useCase.setActive(target.id(), false);
+
+        Result<List<UUID>, DomainError> r = useCase.deleteCard(source.id(), new TransactionPolicy.Move(target.id()));
+        assertTrue(r.isFailure());
+        assertInstanceOf(DomainError.BusinessRule.class, ((Result.Failure<List<UUID>, DomainError>) r).error());
+    }
+
+    @Test
+    @DisplayName("Purge apaga o cartão e suas transações")
+    void purgeDeletesCardAndItsTransactions() {
+        Account account = seedChecking();
+        Card card = createCard(account.id(), "1234");
+        Transaction tx = transactionService.save(new Transaction(UUID.randomUUID(), "compra", java.math.BigDecimal.TEN,
+                java.time.LocalDate.now(), account.id(), Transaction.Status.CONFIRMED, Transaction.Type.EXPENSE,
+                UUID.randomUUID(), null, null, 1, 1, null, card.id()));
+
+        Result<List<UUID>, DomainError> r = useCase.deleteCard(card.id(), new TransactionPolicy.Purge());
+
+        assertTrue(r.isSuccess());
+        assertEquals(List.of(tx.id()), ((Result.Success<List<UUID>, DomainError>) r).value());
+        assertTrue(cardRepo.findById(card.id()).isEmpty());
+        assertTrue(txRepo.findById(tx.id()).isEmpty());
     }
 
     @Test
     @DisplayName("setActive persiste a flag")
     void setActivePersistsFlag() {
         Account account = seedChecking();
-        Card card = ((Result.Success<Card, DomainError>) useCase.createCard(new CardCommand(account.id(), "1234"))).value();
+        Card card = createCard(account.id(), "1234");
 
         Result<Card, DomainError> r = useCase.setActive(card.id(), false);
 

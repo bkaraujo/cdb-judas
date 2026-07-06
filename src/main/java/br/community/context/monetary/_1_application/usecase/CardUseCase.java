@@ -5,8 +5,11 @@ import br.commons.Result;
 import br.community.context.monetary._0_domain.event.AccountEvents;
 import br.community.context.monetary._0_domain.model.Account;
 import br.community.context.monetary._0_domain.model.Card;
+import br.community.context.monetary._0_domain.model.Transaction;
 import br.community.context.monetary._1_application.command.CardCommand;
+import br.community.context.monetary._1_application.command.TransactionPolicy;
 import br.community.context.monetary._1_application.service.AccountService;
+import br.community.context.monetary._1_application.service.BalanceRecalculationService;
 import br.community.context.monetary._1_application.service.CardService;
 import br.community.context.monetary._1_application.service.TransactionService;
 import br.community.context.shared._0_domain.model.DomainError;
@@ -27,6 +30,7 @@ public class CardUseCase {
     private final CardService cardService;
     private final AccountService accountService;
     private final TransactionService transactionService;
+    private final BalanceRecalculationService balanceRecalculationService;
 
     public Result<List<Card>, DomainError> listCards() {
         return Result.success(cardService.findAll());
@@ -59,15 +63,58 @@ public class CardUseCase {
         return Result.success(saved);
     }
 
-    public Result<Void, DomainError> deleteCard(UUID id) {
-        return cardService.findById(id).flatMap(card -> {
-            if (!transactionService.findByCard(id).isEmpty()) {
-                return Result.<Void>failure(new DomainError.Conflict("Card has linked transactions and cannot be deleted: " + id));
+    /** Ids das transações movidas/apagadas (vazio para {@link TransactionPolicy.Block}). */
+    public Result<List<UUID>, DomainError> deleteCard(UUID id, TransactionPolicy policy) {
+        return cardService.findById(id).flatMap(card -> switch (policy) {
+            case TransactionPolicy.Block ignored -> deleteBlock(card);
+            case TransactionPolicy.Move(var targetId) -> deleteMove(card, targetId);
+            case TransactionPolicy.Purge ignored -> deletePurge(card);
+        });
+    }
+
+    private Result<List<UUID>, DomainError> deleteBlock(Card card) {
+        if (!transactionService.findByCard(card.id()).isEmpty()) {
+            return Result.failure(new DomainError.Conflict("Card has linked transactions and cannot be deleted: " + card.id()));
+        }
+        cardService.deleteById(card.id());
+        accountService.findById(card.accountId())
+                .ifSuccess(account -> MessageBus.submit(new AccountEvents.Updated(account)));
+        return Result.success(List.of());
+    }
+
+    private Result<List<UUID>, DomainError> deleteMove(Card card, UUID targetId) {
+        return cardService.findById(targetId).flatMap(target -> {
+            if (target.id().equals(card.id())) {
+                return Result.<List<UUID>>failure(
+                        new DomainError.BusinessRule("Target card must be different from source: " + targetId));
             }
-            cardService.deleteById(id);
+            if (!target.accountId().equals(card.accountId())) {
+                return Result.<List<UUID>>failure(
+                        new DomainError.BusinessRule("Target card must belong to the same account: " + targetId));
+            }
+            if (!target.active()) {
+                return Result.<List<UUID>>failure(
+                        new DomainError.BusinessRule("Target card is inactive: " + targetId));
+            }
+
+            val movedIds = transactionService.findByCard(card.id()).stream().map(Transaction::id).toList();
+            transactionService.reassignCard(card.id(), target.id());
+            cardService.deleteById(card.id());
             accountService.findById(card.accountId())
                     .ifSuccess(account -> MessageBus.submit(new AccountEvents.Updated(account)));
-            return Result.success();
+            return Result.success(movedIds);
+        });
+    }
+
+    private Result<List<UUID>, DomainError> deletePurge(Card card) {
+        val ids = transactionService.findByCard(card.id()).stream().map(Transaction::id).toList();
+        ids.forEach(transactionService::deleteById);
+        cardService.deleteById(card.id());
+
+        return accountService.findById(card.accountId()).map(account -> {
+            balanceRecalculationService.recalculate(account.id());
+            MessageBus.submit(new AccountEvents.Updated(account));
+            return ids;
         });
     }
 

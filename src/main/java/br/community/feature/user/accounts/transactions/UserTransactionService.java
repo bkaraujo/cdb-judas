@@ -5,6 +5,7 @@ import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 import jakarta.inject.Singleton;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -45,5 +46,17 @@ public class UserTransactionService {
 
     public void reassignCategory(UUID oldCategoryId, UUID newCategoryId, UUID userId) {
         repo.reassignCategory(oldCategoryId, newCategoryId, userId);
+    }
+
+    public void reassignAccount(UUID oldAccountId, UUID newAccountId, UUID userId) {
+        repo.reassignAccount(oldAccountId, newAccountId, userId);
+    }
+
+    public void deleteByAccountAndUser(UUID accountId, UUID userId) {
+        repo.deleteByAccountAndUser(accountId, userId);
+    }
+
+    public List<UUID> findTransactionIdsByCategories(UUID userId, Collection<UUID> categoryIds) {
+        return repo.findTransactionIdsByCategories(userId, categoryIds);
     }
 }

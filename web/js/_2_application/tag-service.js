@@ -8,7 +8,7 @@
   function list()           { return repo.list(); }
   function create(data)     { return repo.create(data); }
   function update(id, data) { return repo.update(id, data); }
-  function remove(id)       { return repo.remove(id); }
+  function remove(id, opts) { return repo.remove(id, opts); }
 
   function listCached()     { return cache.tags(); }
   function findById(id)     { return cache.findById('tags', id); }

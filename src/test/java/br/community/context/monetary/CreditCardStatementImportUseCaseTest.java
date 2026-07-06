@@ -11,6 +11,7 @@ import br.community.context.monetary._0_domain.model.CostCenter;
 import br.community.context.monetary._0_domain.model.Transaction;
 import br.community.context.monetary._1_application.command.ImportConfirmCommand;
 import br.community.context.monetary._1_application.service.AccountService;
+import br.community.context.monetary._1_application.service.BalanceRecalculationService;
 import br.community.context.monetary._1_application.service.BalanceService;
 import br.community.context.monetary._1_application.service.CardService;
 import br.community.context.monetary._1_application.service.CostCenterService;
@@ -96,10 +97,12 @@ class CreditCardStatementImportUseCaseTest {
         final TransactionService transactionService = new TransactionService(transactions);
         final CostCenterService costCenterService = new CostCenterService(new InMemoryRepositories.CostCenters());
         final CardService cardService = new CardService(cardRepo);
-        final AccountUseCase ucAccount = new AccountUseCase(accountService, balanceService);
-        final TransactionUseCase ucTransaction = new TransactionUseCase(transactionService, cardService);
+        final BalanceRecalculationService balanceRecalculationService =
+                new BalanceRecalculationService(accountService, balanceService, transactionService);
+        final AccountUseCase ucAccount = new AccountUseCase(accountService, balanceService, transactionService, cardService, balanceRecalculationService);
+        final TransactionUseCase ucTransaction = new TransactionUseCase(transactionService, cardService, accountService, balanceRecalculationService);
         final MetadataUseCase ucMetadata = new MetadataUseCase(costCenterService);
-        final CardUseCase ucCard = new CardUseCase(cardService, accountService, transactionService);
+        final CardUseCase ucCard = new CardUseCase(cardService, accountService, transactionService, balanceRecalculationService);
         return new MonetaryContext(ucAccount, ucTransaction, ucMetadata, ucCard);
     }
 

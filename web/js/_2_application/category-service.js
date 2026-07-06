@@ -8,7 +8,7 @@
   function list()           { return repo.list(); }
   function create(data)     { return repo.create(data); }
   function update(id, data) { return repo.update(id, data); }
-  function remove(id)       { return repo.remove(id); }
+  function remove(id, opts) { return repo.remove(id, opts); }
 
   function listCached()     { return cache.categories(); }
   function findById(id)     { return cache.findById('categories', id); }
@@ -19,6 +19,7 @@
   function eligibleParents(nature, excludeId) {
     return window.Domain.Category.eligibleParents(cache.categories(), nature, excludeId);
   }
+  function isEffectivelyActive(id) { return window.Domain.Category.isEffectivelyActive(cache.categories(), id); }
 
   function onChange(cb) { return cache.subscribe('CATEGORY', cb); }
 
@@ -35,6 +36,7 @@
     childrenOf: childrenOf,
     labelChain: labelChain,
     eligibleParents: eligibleParents,
+    isEffectivelyActive: isEffectivelyActive,
     onChange: onChange,
   };
 })();

@@ -46,6 +46,16 @@
 
   function findCategory(id) { return window.byId(state.categories, id); }
 
+  function reactivateBtn(id) {
+    return $(
+      '<button type="button" class="icon-btn" title="Reativar" ' +
+        'data-act="reactivate" data-id="' + esc(id) + '" ' +
+        'style="width:28px;height:28px;color:var(--text-secondary);">' +
+        window.icon('eye', 14) +
+      '</button>'
+    );
+  }
+
   // ── Render ────────────────────────────────────────────────
   function render() {
     const $root = state.$root;
@@ -145,11 +155,13 @@
     const rootAttrs = hasChildren
       ? ' data-act="toggle" data-id="' + esc(root.id) + '" style="cursor:pointer;'
       : ' style="cursor:default;';
+    const rootActive = root.active !== false;
     const $rootRow = $(
       '<div data-row="root" data-id="' + esc(root.id) + '"' + rootAttrs +
         'display:flex;align-items:center;justify-content:space-between;' +
         'padding:13px 20px;border-bottom:' +
         (showChildren ? '1px solid var(--border-light)' : 'none') + ';' +
+        (rootActive ? '' : 'opacity:0.55;') +
         'transition:background var(--transition);">' +
         '<div style="display:flex;align-items:center;gap:10px;min-width:0;">' +
           '<span style="display:inline-flex;align-items:center;color:var(--text-muted);">' +
@@ -158,14 +170,20 @@
           '<span style="font-size:13px;font-weight:600;color:var(--text-primary);' +
           'text-transform:uppercase;letter-spacing:0.02em;">' + esc(root.name) + '</span>' +
           (hasChildren ? window.badge(String(children.length), 'muted') : '') +
+          (rootActive ? '' : window.badge('Inativa', 'muted')) +
         '</div>' +
         '<div data-region="row-actions" style="display:flex;gap:2px;"></div>' +
       '</div>'
     );
     if (!root.isSystem) {
-      $rootRow.find('[data-region=row-actions]')
-        .append(window.rowActionBtn('edit',  'Editar',  root.id))
-        .append(window.rowActionBtn('trash', 'Excluir', root.id, true));
+      const $rootActions = $rootRow.find('[data-region=row-actions]');
+      if (rootActive) {
+        $rootActions
+          .append(window.rowActionBtn('edit',  'Editar',  root.id))
+          .append(window.rowActionBtn('trash', 'Excluir', root.id, true));
+      } else {
+        $rootActions.append(reactivateBtn(root.id));
+      }
     }
     $rootRow.on('mouseenter', function () { $(this).css('background', 'var(--bg-hover)'); });
     $rootRow.on('mouseleave', function () { $(this).css('background', 'transparent'); });
@@ -174,23 +192,31 @@
     if (showChildren) {
       children.forEach(function (sub, idx) {
         const isLast = idx === children.length - 1;
+        const subActive = sub.active !== false;
         const $subRow = $(
           '<div data-row="sub" data-id="' + esc(sub.id) + '" ' +
             'style="display:flex;align-items:center;justify-content:space-between;' +
             'padding:10px 20px 10px 44px;' +
             (isLast ? '' : 'border-bottom:1px solid var(--border-light);') +
+            (subActive ? '' : 'opacity:0.55;') +
             'transition:background var(--transition);">' +
             '<div style="display:flex;align-items:center;gap:8px;min-width:0;">' +
               '<span style="color:var(--text-muted);font-family:monospace;font-size:12px;">└─</span>' +
               '<span style="font-size:13px;color:var(--text-secondary);">' + esc(sub.name) + '</span>' +
+              (subActive ? '' : window.badge('Inativa', 'muted')) +
             '</div>' +
             '<div data-region="row-actions" style="display:flex;gap:2px;"></div>' +
           '</div>'
         );
         if (!sub.isSystem) {
-          $subRow.find('[data-region=row-actions]')
-            .append(window.rowActionBtn('edit',  'Editar',  sub.id))
-            .append(window.rowActionBtn('trash', 'Excluir', sub.id, true));
+          const $subActions = $subRow.find('[data-region=row-actions]');
+          if (subActive) {
+            $subActions
+              .append(window.rowActionBtn('edit',  'Editar',  sub.id))
+              .append(window.rowActionBtn('trash', 'Excluir', sub.id, true));
+          } else {
+            $subActions.append(reactivateBtn(sub.id));
+          }
         }
         $subRow.on('mouseenter', function () { $(this).css('background', 'var(--bg-hover)'); });
         $subRow.on('mouseleave', function () { $(this).css('background', 'transparent'); });
@@ -333,6 +359,12 @@
   }
 
   // ── Modal: confirm delete ─────────────────────────────────
+  function subtreeIds(target) {
+    const ids = [target.id];
+    if (!target.parentId) childrenOf(target.id).forEach(function (c) { ids.push(c.id); });
+    return ids;
+  }
+
   function openDeleteModal(target) {
     const nameHtml = '<strong>' + esc(target.name) + '</strong>';
     window.confirmModal({
@@ -344,10 +376,79 @@
           window.toast('Categoria excluída', 'success');
           // SSE DELETE will refresh CacheStore → CategoryService.onChange → re-render.
         }).catch(function (err) {
+          if (err && err.status === 409 && err.code === 'LINKED_TRANSACTIONS') {
+            m.close();
+            openLinkedCategoryDialog(target, err.count);
+            return;
+          }
           reEnable();
-          window.toast(err && err.message ? err.message : 'Falha ao excluir categoria');
+          window.toast(err && err.message ? err.message : 'Falha ao excluir categoria', 'error');
         });
       },
+    });
+  }
+
+  function openLinkedCategoryDialog(target, count) {
+    const excluded = subtreeIds(target);
+    const hasChildren = !target.parentId && childrenOf(target.id).length > 0;
+    const eligibleTargets = state.categories.filter(function (c) {
+      return !!c.parentId
+        && c.nature === target.nature
+        && excluded.indexOf(c.id) === -1
+        && window.Domain.Category.isEffectivelyActive(state.categories, c.id);
+    });
+
+    const options = [
+      {
+        value: 'MOVE', label: 'Mover para outra subcategoria',
+        hint: 'As transações' + (hasChildren ? ' desta categoria e das subcategorias' : '') + ' passam para a categoria escolhida.',
+        choices: eligibleTargets.map(function (c) { return { value: c.id, label: window.App.CategoryService.labelChain(c.id) }; }),
+      },
+      {
+        value: 'DELETE', label: 'Excluir transações', danger: true,
+        hint: 'Apaga a categoria' + (hasChildren ? ' (e subcategorias)' : '') + ' e ' + count +
+          ' transaç' + (count === 1 ? 'ão vinculada' : 'ões vinculadas') + '.',
+      },
+      { value: 'INATIVAR', label: 'Inativar categoria', hint: 'Some dos lançamentos novos; o histórico é mantido.' },
+    ];
+
+    window.linkedDeleteDialog({
+      title: 'Categoria com transações vinculadas',
+      intro: 'A categoria <strong>' + esc(target.name) + '</strong>' +
+        (hasChildren ? ' (e suas subcategorias)' : '') + ' tem ' + count + ' transaç' +
+        (count === 1 ? 'ão vinculada' : 'ões vinculadas') + '. Escolha o que fazer:',
+      options: options,
+      onConfirm: function (choice, m, reEnable) {
+        if (choice.strategy === 'INATIVAR') {
+          window.App.CategoryService.update(target.id, {
+            name: target.name, parentId: target.parentId || null, active: false,
+          }).then(function () {
+            m.close();
+            window.toast('Categoria inativada', 'success');
+          }).catch(function (err) {
+            reEnable();
+            window.toast((err && err.message) || 'Falha ao inativar categoria', 'error');
+          });
+          return;
+        }
+        window.App.CategoryService.remove(target.id, { strategy: choice.strategy, targetId: choice.targetId }).then(function () {
+          m.close();
+          window.toast('Categoria excluída', 'success');
+        }).catch(function (err) {
+          reEnable();
+          window.toast((err && err.message) || 'Falha ao excluir categoria', 'error');
+        });
+      },
+    });
+  }
+
+  function reactivateCategory(cat) {
+    window.App.CategoryService.update(cat.id, {
+      name: cat.name, parentId: cat.parentId || null, active: true,
+    }).then(function () {
+      window.toast('Categoria reativada', 'success');
+    }).catch(function (err) {
+      window.toast((err && err.message) || 'Falha ao reativar categoria', 'error');
     });
   }
 
@@ -381,6 +482,12 @@
       const id = $(this).attr('data-id');
       const cat = findCategory(id);
       if (cat) openDeleteModal(cat);
+    });
+    $root.on('click.cats', '[data-act=reactivate]', function (e) {
+      e.stopPropagation();
+      const id = $(this).attr('data-id');
+      const cat = findCategory(id);
+      if (cat) reactivateCategory(cat);
     });
   }
 

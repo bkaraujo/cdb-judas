@@ -2,12 +2,15 @@ package br.community.context.monetary._1_application.usecase;
 
 import br.commons.MessageBus;
 import br.commons.Result;
+import br.community.context.monetary._0_domain.event.AccountEvents;
 import br.community.context.monetary._0_domain.event.TransactionEvents;
 import br.community.context.monetary._0_domain.model.Card;
 import br.community.context.monetary._0_domain.model.CostCenter;
 import br.community.context.monetary._0_domain.model.Transaction;
 import br.community.context.monetary._1_application.command.ImportedTransactionCommand;
 import br.community.context.monetary._1_application.command.TransactionCommand;
+import br.community.context.monetary._1_application.service.AccountService;
+import br.community.context.monetary._1_application.service.BalanceRecalculationService;
 import br.community.context.monetary._1_application.service.CardService;
 import br.community.context.monetary._1_application.service.TransactionService;
 import br.community.context.shared._0_domain.model.DomainError;
@@ -20,6 +23,8 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.UUID;
 
@@ -28,6 +33,8 @@ import java.util.UUID;
 public class TransactionUseCase {
     private final TransactionService transactionService;
     private final CardService cardService;
+    private final AccountService accountService;
+    private final BalanceRecalculationService balanceRecalculationService;
 
     public Result<List<Transaction>, DomainError> listTransactions() {
         val all = transactionService.findAll().stream()
@@ -173,40 +180,38 @@ public class TransactionUseCase {
                 });
     }
 
-    public Result<Void, DomainError> deleteTransaction(UUID id, @Nullable String mode) {
+    /** Ids das transações apagadas (par de transferência / lote FUTURE / unitário). */
+    public Result<List<UUID>, DomainError> deleteTransaction(UUID id, @Nullable String mode) {
         return transactionService.findById(id).flatMap(existing -> {
             val transferSiblings = transactionService.findTransferSiblings(existing);
             if (!transferSiblings.isEmpty()) return deleteTransferGroup(existing, transferSiblings);
 
             val isFuture = "FUTURE".equalsIgnoreCase(mode) && existing.groupId() != null;
-
-            if (!isFuture) {
-                return transactionService.deleteById(id)
-                        .ifSuccess(ignored -> MessageBus.submit(new TransactionEvents.Deleted(existing)));
-            }
-
             val groupId = existing.groupId();
-            val installmentNumber = existing.installmentNumber();
-            if (groupId == null) {
-                return transactionService.deleteById(id)
-                        .ifSuccess(ignored -> MessageBus.submit(new TransactionEvents.Deleted(existing)));
+
+            if (!isFuture || groupId == null) {
+                return transactionService.deleteById(id).map(ignored -> {
+                    MessageBus.submit(new TransactionEvents.Deleted(existing));
+                    return List.of(id);
+                });
             }
 
+            val installmentNumber = existing.installmentNumber();
             val toDelete = transactionService.findByGroupId(groupId).stream()
                     .filter(t -> t.installmentNumber() >= installmentNumber)
                     .toList();
 
             for (val t : toDelete) {
                 val delRes = transactionService.deleteById(t.id());
-                if (delRes instanceof Result.Failure<Void, DomainError>(DomainError error)) return Result.<Void>failure(error);
+                if (delRes instanceof Result.Failure<Void, DomainError>(DomainError error)) return Result.<List<UUID>>failure(error);
             }
 
             MessageBus.submit(new TransactionEvents.Deleted(existing));
-            return Result.success();
+            return Result.success(toDelete.stream().map(Transaction::id).toList());
         });
     }
 
-    private Result<Void, DomainError> deleteTransferGroup(Transaction leg, List<Transaction> siblings) {
+    private Result<List<UUID>, DomainError> deleteTransferGroup(Transaction leg, List<Transaction> siblings) {
         val legs = new ArrayList<Transaction>();
         legs.add(leg);
         legs.addAll(siblings);
@@ -216,6 +221,38 @@ public class TransactionUseCase {
             }
         }
         for (val t : legs) MessageBus.submit(new TransactionEvents.Deleted(t));
+        return Result.success(legs.stream().map(Transaction::id).toList());
+    }
+
+    /**
+     * Exclusão em massa (categoria/tag). Ids ausentes são ignorados (idempotente); irmãos de
+     * transferência são expandidos para nunca deixar uma perna órfã. Ao final, recalcula o saldo
+     * uma única vez por conta distinta e emite {@link AccountEvents.Updated} (SSE) — sem eventos
+     * por transação individual.
+     */
+    public Result<Void, DomainError> deleteTransactions(List<UUID> ids) {
+        val toDelete = new LinkedHashMap<UUID, Transaction>();
+        for (val id : ids) {
+            if (toDelete.containsKey(id)) continue;
+            if (!(transactionService.findById(id) instanceof Result.Success<Transaction, DomainError>(var existing))) continue;
+
+            toDelete.put(existing.id(), existing);
+            for (val sibling : transactionService.findTransferSiblings(existing)) {
+                toDelete.putIfAbsent(sibling.id(), sibling);
+            }
+        }
+
+        val accountIds = new LinkedHashSet<UUID>();
+        for (val tx : toDelete.values()) {
+            accountIds.add(tx.accountId());
+            transactionService.deleteById(tx.id());
+        }
+
+        for (val accountId : accountIds) {
+            balanceRecalculationService.recalculate(accountId);
+            accountService.findById(accountId).ifSuccess(account -> MessageBus.submit(new AccountEvents.Updated(account)));
+        }
+
         return Result.success();
     }
 

@@ -37,6 +37,14 @@ public class TransactionService {
         return Result.success();
     }
 
+    public void reassignAccount(UUID from, UUID to) {
+        transactionRepository.reassignAccount(from, to);
+    }
+
+    public void reassignCard(UUID from, UUID to) {
+        transactionRepository.reassignCard(from, to);
+    }
+
     public List<Transaction> findByAccount(UUID accountId) {
         return transactionRepository.findAll().stream()
                 .filter(t -> accountId.equals(t.accountId()))

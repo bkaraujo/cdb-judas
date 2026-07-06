@@ -1,4 +1,4 @@
-package br.community.infra.persistence;
+package br.community.infra.persistence.core;
 
 import br.commons.Logger;
 import br.commons.framework.persistence.jdbc.DataSource;

@@ -8,7 +8,7 @@
   function list()              { return repo.list(); }
   function create(data)        { return repo.create(data); }
   function update(id, data)    { return repo.update(id, data); }
-  function remove(id)          { return repo.remove(id); }
+  function remove(id, opts)    { return repo.remove(id, opts); }
 
   /* List from cache (no network) — used by views that need accounts in sync
      with SSE updates. */
@@ -17,7 +17,7 @@
   function findById(id) { return cache.findById('accounts', id); }
 
   function addCard(accountId, data)      { return repo.createCard(accountId, data); }
-  function removeCard(accountId, cardId) { return repo.removeCard(accountId, cardId); }
+  function removeCard(accountId, cardId, opts) { return repo.removeCard(accountId, cardId, opts); }
   function setCardActive(accountId, cardId, active) { return repo.setCardActive(accountId, cardId, active); }
 
   function onChange(cb) { return cache.subscribe('ACCOUNT', cb); }

@@ -2,6 +2,7 @@ package br.community.infra.persistence.monetary;
 
 import br.commons.chrono.Time;
 import br.commons.framework.persistence.jdbc.JDBCRepository;
+import br.commons.framework.persistence.jdbc.primitives.JDBCParameter;
 import br.commons.framework.persistence.jdbc.primitives.JDBCResultSet;
 import br.community.context.monetary._0_domain.model.Transaction;
 import br.community.context.monetary._0_domain.repository.TransactionRepository;
@@ -39,6 +40,22 @@ public final class TransactionJDBCRepository extends JDBCRepository<Transaction>
     @Override
     public void deleteById(UUID id) {
         deleteById(id.toString());
+    }
+
+    @Override
+    public void reassignAccount(UUID from, UUID to) {
+        datasource.execute(
+                "UPDATE MON_TRANSACTION SET COD_ACCOUNT = ? WHERE COD_ACCOUNT = ?",
+                JDBCParameter.of(to.toString(), from.toString())
+        );
+    }
+
+    @Override
+    public void reassignCard(UUID from, UUID to) {
+        datasource.execute(
+                "UPDATE MON_TRANSACTION SET COD_CARD = ? WHERE COD_CARD = ?",
+                JDBCParameter.of(to.toString(), from.toString())
+        );
     }
 
     @Override

@@ -12,7 +12,8 @@ public record CategoryResponse(
         String name,
         String nature,
         @Nullable UUID parentId,
-        boolean isSystem
+        boolean isSystem,
+        boolean active
 ) {
     public static CategoryResponse from(UserCategory entity) {
         return new CategoryResponse(
@@ -20,7 +21,8 @@ public record CategoryResponse(
                 entity.name(),
                 entity.nature().name(),
                 entity.parentId(),
-                entity.isSystem()
+                entity.isSystem(),
+                entity.active()
         );
     }
 }

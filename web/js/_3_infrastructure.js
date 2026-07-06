@@ -7,6 +7,7 @@
     'format.js',
     'ui.js',
     'helpers.js',
+    'delete-dialog.js',
     'theme.js',
     'sidebar.data.js',
     'sidebar.js',

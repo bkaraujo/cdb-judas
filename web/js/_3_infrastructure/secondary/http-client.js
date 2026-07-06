@@ -21,6 +21,16 @@
       p5(v) + user;
   }
 
+  /* Reversed from the deletion contract: 409 LINKED_TRANSACTIONS -> pick a strategy -> retry the
+   * DELETE with ?strategy=MOVE|DELETE|DETACH (+targetId for MOVE). */
+  function deletionQuery(opts) {
+    opts = opts || {};
+    const params = [];
+    if (opts.strategy) params.push('strategy=' + encodeURIComponent(opts.strategy));
+    if (opts.targetId) params.push('targetId=' + encodeURIComponent(opts.targetId));
+    return params.length ? ('?' + params.join('&')) : '';
+  }
+
   function create(opts) {
     const baseUrl = (opts && opts.baseUrl) || '/api';
     let onUnauthorized = function () {};
@@ -53,15 +63,17 @@
             try { onUnauthorized(); } catch (e) { /* noop */ }
           }
           return res.text().then(function (txt) {
-            let code = null, detail = txt;
+            let code = null, detail = txt, count = null;
             try {
               const json = JSON.parse(txt);
               code = json.code || null;
               detail = json.detail || json.message || txt;
+              count = typeof json.count === 'number' ? json.count : null;
             } catch (e) { /* non-JSON body */ }
             const err = new Error(detail || ('HTTP ' + res.status));
             err.status = res.status;
             if (code) err.code = code;
+            if (count !== null) err.count = count;
             throw err;
           });
         }
@@ -97,15 +109,17 @@
             try { onUnauthorized(); } catch (e) { /* noop */ }
           }
           return res.text().then(function (txt) {
-            let code = null, detail = txt;
+            let code = null, detail = txt, count = null;
             try {
               const json = JSON.parse(txt);
               code = json.code || null;
               detail = json.detail || json.message || txt;
+              count = typeof json.count === 'number' ? json.count : null;
             } catch (e) { /* non-JSON body */ }
             const err = new Error(detail || ('HTTP ' + res.status));
             err.status = res.status;
             if (code) err.code = code;
+            if (count !== null) err.count = count;
             throw err;
           });
         }
@@ -142,5 +156,5 @@
   }
 
   window.Infra = window.Infra || {};
-  window.Infra.HttpClient = { create: create };
+  window.Infra.HttpClient = { create: create, deletionQuery: deletionQuery };
 })();

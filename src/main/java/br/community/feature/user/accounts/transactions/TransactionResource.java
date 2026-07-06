@@ -6,6 +6,7 @@ import br.community.context.monetary._0_domain.model.Transaction;
 import br.community.context.shared._1_application.DomainException;
 import br.community.feature.user.accounts.closing.ClosingService;
 import br.community.feature.user.accounts.transactions.core.TransactionMapper;
+import br.community.feature.user.tags.UserTransactionTagService;
 import jakarta.validation.Valid;
 import jakarta.ws.rs.DELETE;
 import jakarta.ws.rs.GET;
@@ -35,6 +36,7 @@ public class TransactionResource {
     private final MonetaryContext monetaryContext;
     private final ClosingService closingService;
     private final UserTransactionService userTransactionService;
+    private final UserTransactionTagService tagLinkService;
 
     // ── Cross-account collection ───────────────────────────────────
 
@@ -129,8 +131,12 @@ public class TransactionResource {
         if (monetaryContext.findTransaction(txId) instanceof Result.Success(var existing)) {
             guardClosing(existing.date());
         }
-        if (monetaryContext.deleteTransaction(txId, mode) instanceof Result.Failure(var error)) {
-            throw new DomainException(error);
+        switch (monetaryContext.deleteTransaction(txId, mode)) {
+            case Result.Failure(var error) -> throw new DomainException(error);
+            case Result.Success(var ids) -> ids.forEach(id -> {
+                userTransactionService.deleteByTransaction(id);
+                tagLinkService.deleteByTransaction(id);
+            });
         }
     }
 

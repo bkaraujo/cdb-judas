@@ -69,7 +69,7 @@
 
     function buildCatOptions(type, selectedId) {
       const nat = natureForType(type);
-      const cats = flatCategories(nat, true);
+      const cats = flatCategories(nat, true, selectedId);
       if (!cats.length) return '<option value="">Nenhuma categoria disponível</option>';
       return cats.map(function (c) {
         const sel = String(c.id) === String(selectedId) ? ' selected' : '';

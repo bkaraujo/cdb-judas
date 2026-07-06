@@ -2,6 +2,7 @@ package br.community.infra.persistence;
 
 import br.commons.framework.persistence.jdbc.DataSource;
 import br.commons.framework.persistence.jdbc.JDBCProperties;
+import br.community.infra.persistence.core.AccountLimitMigration;
 import lombok.val;
 import org.junit.jupiter.api.Test;
 

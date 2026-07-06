@@ -13,14 +13,16 @@ nos contextos de negócio (`br.community.context.*`). Features falam com os cont
 
 ## 2. Features de Usuário (`/api/{uuid}/…`)
 
-- [Contas] CRUD de contas e limites de crédito; cartões como sub-recurso [Manter saldos]. `AccountResource` projeta `MonetaryAccount` + saldo + limite (`AccountLimit`) + cartões (`Card`, via `CardResource` em `/accounts/{accountId}/cards`). Sub-recursos abaixo.
+- [Contas] CRUD de contas e limites de crédito; cartões como sub-recurso [Manter saldos]. `AccountResource` projeta `MonetaryAccount` + saldo + limite (`AccountLimit`) + cartões (`Card`, via `CardResource` em `/accounts/{accountId}/cards`). Sub-recursos abaixo. Exclusão de conta/cartão com transações vinculadas segue o contrato uniforme (ver nota abaixo); "Inativar" (PATCH `active=false`, já existente) é sempre uma alternativa oferecida no diálogo do frontend.
   - [Saldo] Consulta saldo por período [Conferir posição mensal/anual]. `AccountBalanceResource` (`?period=yyyyMM` ou `?year=yyyy`).
   - [Fechamento] Define período de fechamento [Consolidar competência em aberto]. `ClosingResource` (GET/POST/DELETE).
   - [Extrato] Exibe histórico mensal por conta [Facilitar conferência]. `StatementResource`, `StatementService` (filtro `?status=`).
   - [Importação de Extratos] Lê PDF de banco/cartão [Automatizar lançamentos]. Fluxo preview→confirm (`StatementImportResource`). Detecta tipo (`DocumentTypeDetector`) e emissor (`IssuerDetector`); parsers por banco BTG e Santander (cartão + conta), `BankStatementParserRegistry`, `CreditCardStatementParserRegistry`; expande parcelas (`InstallmentExpander`), sugere categoria (`CategoryGuesser`), casa cartão (`CardMatcher`) e resolve a conta real de destino a partir do cartão (`MonetaryCardProvider`) — cartão não tem saldo próprio, a fatura é postada na conta a que pertence.
   - [Transações] Registra créditos, débitos, transferências e parcelas [Rastrear fluxo]. `TransactionResource` (filtros, `transfer`, patch de status, delete unitário/em grupo via `mode`).
-- [Categorias] CRUD de categorias [Análise macro]. `CategoryResource`; propaga mudanças via SSE (`CategoryStreamListener`).
-- [Tags] CRUD de rótulos livres [Análise micro / marcação transversal]. `TagResource`; SSE via `TagStreamListener`.
+- [Categorias] CRUD de categorias [Análise macro]. `CategoryResource`; propaga mudanças via SSE (`CategoryStreamListener`). Exclusão com transações vinculadas segue o contrato uniforme (abaixo); não há mais reatribuição automática para "Outros" (removida). `active` agora é funcional: categoria inativa (ou com ancestral inativo) some dos dropdowns de classificação, mas o histórico permanece intacto; "Inativar" é oferecida como alternativa no diálogo de exclusão, com botão de reativação na lista.
+- [Tags] CRUD de rótulos livres [Análise micro / marcação transversal]. `TagResource`; SSE via `TagStreamListener`. Exclusão com transações vinculadas segue o contrato uniforme (abaixo), com uma 3ª opção exclusiva de tag: apenas desvincular (`DETACH`), sem tocar nas transações.
+
+> **Contrato uniforme de exclusão** (contas, cartões, categorias, tags): sem vínculos → `204`; com transações vinculadas → `409` (`code=LINKED_TRANSACTIONS`, `count` = quantidade) a menos que o cliente informe `?strategy=MOVE&targetId={uuid}` (reatribui) ou `?strategy=DELETE` (apaga entidade + transações); tags aceitam também `?strategy=DETACH` (desvincula sem apagar transação). O frontend reage ao `409` com um diálogo (`linkedDeleteDialog`) oferecendo as estratégias válidas para o recurso — cartão, conta e categoria somam ainda "Inativar" como alternativa (fora do contrato de exclusão, via PATCH).
 - [Dashboard] Agrega resultado mensal [Visão geral]. `DashboardResource`, `DashboardService` (receitas/despesas/líquido por categoria).
 - [Perfil] Lê e atualiza o próprio usuário [Self-service sem risco de IDOR]. `SelfResource` (GET/PATCH `/api/me`); atualiza nome e/ou preferências (write-through de tema e estado da sidebar).
 

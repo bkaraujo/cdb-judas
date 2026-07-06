@@ -9,6 +9,7 @@ import br.community.context.monetary._0_domain.repository.CostCenterRepository;
 import br.community.context.monetary._0_domain.repository.TransactionRepository;
 import br.community.context.monetary._1_application.event.TransactionEventListener;
 import br.community.context.monetary._1_application.service.AccountService;
+import br.community.context.monetary._1_application.service.BalanceRecalculationService;
 import br.community.context.monetary._1_application.service.BalanceService;
 import br.community.context.monetary._1_application.service.CardService;
 import br.community.context.monetary._1_application.service.CostCenterService;
@@ -35,13 +36,14 @@ public final class MonetaryBootstrap {
         val costCenterService = new CostCenterService(Registry.get(CostCenterRepository.class));
         val transactionService = new TransactionService(Registry.get(TransactionRepository.class));
         val cardService = new CardService(Registry.get(CardRepository.class));
+        val balanceRecalculationService = new BalanceRecalculationService(accountService, balanceService, transactionService);
 
-        val accountUseCase = new AccountUseCase(accountService, balanceService);
+        val accountUseCase = new AccountUseCase(accountService, balanceService, transactionService, cardService, balanceRecalculationService);
         val metadataUseCase = new MetadataUseCase(costCenterService);
-        val transactionUseCase = new TransactionUseCase(transactionService, cardService);
-        val cardUseCase = new CardUseCase(cardService, accountService, transactionService);
+        val transactionUseCase = new TransactionUseCase(transactionService, cardService, accountService, balanceRecalculationService);
+        val cardUseCase = new CardUseCase(cardService, accountService, transactionService, balanceRecalculationService);
 
-        MessageBus.subscribe(new TransactionEventListener(accountService, balanceService, transactionService, cardService));
+        MessageBus.subscribe(new TransactionEventListener(balanceRecalculationService));
 
         Registry.set(MonetaryContext.class, new MonetaryContext(accountUseCase, transactionUseCase, metadataUseCase, cardUseCase));
     }

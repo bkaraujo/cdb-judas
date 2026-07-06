@@ -1,10 +1,11 @@
-package br.community.infra.persistence;
+package br.community.infra.persistence.core;
 
 import br.commons.Logger;
 import br.commons.chrono.Time;
 import br.commons.framework.persistence.jdbc.DataSource;
 import br.commons.framework.persistence.jdbc.primitives.JDBCParameter;
 import br.commons.framework.persistence.jdbc.primitives.JDBCResultSet;
+import br.community.infra.persistence.Database;
 import lombok.val;
 import org.jspecify.annotations.NullMarked;
 

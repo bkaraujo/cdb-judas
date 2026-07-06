@@ -12,6 +12,7 @@
                    ? raw.parentId
                    : (raw.parent ? raw.parent.id : null),
       isSystem:  !!raw.isSystem,
+      active:    raw.active !== false,
     };
   }
 
@@ -59,6 +60,17 @@
     });
   }
 
+  /* A category is only usable for new classification when it AND every ancestor are active —
+   * inactivating a macro hides its subcategories too, without touching their own flag. */
+  function isEffectivelyActive(list, id) {
+    let c = byId(list, id);
+    while (c) {
+      if (c.active === false) return false;
+      c = c.parentId != null ? byId(list, c.parentId) : null;
+    }
+    return true;
+  }
+
   window.Domain = window.Domain || {};
   window.Domain.Category = {
     NATURE: NATURE,
@@ -72,5 +84,6 @@
     childrenOf: childrenOf,
     labelChain: labelChain,
     eligibleParents: eligibleParents,
+    isEffectivelyActive: isEffectivelyActive,
   };
 })();

@@ -1,17 +1,20 @@
 package br.community.feature.user.categories;
 
 import br.commons.Result;
+import br.community.context.monetary.MonetaryContext;
 import br.community.context.monetary._0_domain.model.Transaction;
 import br.community.context.shared._0_domain.model.DomainError;
 import br.community.feature.user.accounts.transactions.UserTransactionService;
 import br.community.feature.user.categories.core.CategoryResponse;
 import br.community.feature.user.stream.SSE;
+import br.community.feature.user.tags.UserTransactionTagService;
 import jakarta.inject.Singleton;
 import lombok.RequiredArgsConstructor;
 import lombok.val;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -26,6 +29,8 @@ public class UserCategoryService {
 
     private final UserCategoryRepository repo;
     private final UserTransactionService userTransactionService;
+    private final UserTransactionTagService tagLinkService;
+    private final MonetaryContext monetaryContext;
     private final SSE sse;
 
     public List<UserCategory> findAll(UUID userId) {
@@ -81,23 +86,12 @@ public class UserCategoryService {
         return saved;
     }
 
-    public UserCategory update(UUID id, String name, @Nullable UUID parentId) {
+    public UserCategory update(UUID id, String name, @Nullable UUID parentId, @Nullable Boolean active) {
         val existing = repo.findById(id).orElseThrow(() -> new IllegalStateException("Category not found: " + id));
         val saved = repo.save(new UserCategory(id, existing.userId(), existing.nature(), name, parentId,
-                existing.isSystem(), existing.active(), existing.createdAt(), existing.updatedAt()));
+                existing.isSystem(), active != null ? active : existing.active(), existing.createdAt(), existing.updatedAt()));
         upsert(saved);
         return saved;
-    }
-
-    public UserCategory findOrCreateOthersCategory(UUID userId, Transaction.Type nature) {
-        return repo.findAllByUser(userId).stream()
-                .filter(c -> "Outros".equalsIgnoreCase(c.name()) && c.nature() == nature && c.parentId() == null)
-                .findFirst()
-                .orElseGet(() -> {
-                    val created = repo.save(new UserCategory(UUID.randomUUID(), userId, nature, "Outros", null));
-                    upsert(created);
-                    return created;
-                });
     }
 
     public UserCategory findOrCreateUncategorizedCategory(UUID userId) {
@@ -111,7 +105,8 @@ public class UserCategoryService {
                 });
     }
 
-    public Result<Void, DomainError> deleteById(UUID id, UUID userId) {
+    /** Ids da categoria + toda a subárvore (pré-ordem). Falha se {@code id} não existe ou é de sistema. */
+    public Result<List<UUID>, DomainError> subtreeIds(UUID id, UUID userId) {
         val all = repo.findAllByUser(userId);
         val root = all.stream().filter(c -> c.id().equals(id)).findFirst();
         if (root.isEmpty()) return Result.failure(new DomainError.NotFound("Category not found: " + id));
@@ -119,24 +114,88 @@ public class UserCategoryService {
             return Result.failure(new DomainError.BusinessRule("Categoria de sistema não pode ser excluída"));
         }
 
-        val nature = root.get().nature();
-        val others = findOrCreateOthersCategory(userId, nature);
+        val ids = new ArrayList<UUID>();
+        collectSubtree(id, all, ids);
+        return Result.success(ids);
+    }
 
-        deleteRecursive(id, others.id(), userId, all);
+    public List<UUID> linkedTransactionIds(List<UUID> subtreeIds, UUID userId) {
+        return userTransactionService.findTransactionIdsByCategories(userId, subtreeIds);
+    }
+
+    /** Reatribui toda a subárvore para {@code targetId} (subcategoria da mesma natureza, fora dela) e apaga a subárvore. */
+    public Result<Void, DomainError> deleteMoving(UUID id, UUID targetId, UUID userId) {
+        val validation = validateMoveTarget(id, targetId, userId);
+        if (validation instanceof Result.Failure<List<UUID>, DomainError>(var error)) return Result.failure(error);
+        val subtree = validation.get();
+
+        for (val nodeId : subtree) {
+            userTransactionService.reassignCategory(nodeId, targetId, userId);
+        }
+        deleteSubtreeRows(subtree, userId);
         return Result.success();
     }
 
-    private void deleteRecursive(UUID id, UUID othersId, UUID userId, List<UserCategory> all) {
-        if (id.equals(othersId)) return;
+    /** Valida o alvo do MOVE (existe, subcategoria, mesma natureza, ativa, fora da subárvore) e, se ok, devolve a subárvore. */
+    private Result<List<UUID>, DomainError> validateMoveTarget(UUID id, UUID targetId, UUID userId) {
+        val all = repo.findAllByUser(userId);
+        val rootOpt = all.stream().filter(c -> c.id().equals(id)).findFirst();
+        if (rootOpt.isEmpty()) return Result.failure(new DomainError.NotFound("Category not found: " + id));
+        val root = rootOpt.get();
 
-        userTransactionService.reassignCategory(id, othersId, userId);
+        val targetOpt = all.stream().filter(c -> c.id().equals(targetId)).findFirst();
+        if (targetOpt.isEmpty()) return Result.failure(new DomainError.NotFound("Category not found: " + targetId));
+        val target = targetOpt.get();
 
-        all.stream()
-                .filter(c -> id.equals(c.parentId()))
-                .forEach(c -> deleteRecursive(c.id(), othersId, userId, all));
+        if (target.parentId() == null) {
+            return Result.failure(new DomainError.BusinessRule("Categoria de destino deve ser uma subcategoria"));
+        }
+        if (target.nature() != root.nature()) {
+            return Result.failure(new DomainError.BusinessRule("Categoria de destino deve ter a mesma natureza"));
+        }
+        if (!target.active()) {
+            return Result.failure(new DomainError.BusinessRule("Categoria de destino está inativa"));
+        }
 
-        repo.deleteById(id);
-        delete(userId, id);
+        val subtree = new ArrayList<UUID>();
+        collectSubtree(id, all, subtree);
+        if (subtree.contains(targetId)) {
+            return Result.failure(new DomainError.BusinessRule("Categoria de destino não pode pertencer à subárvore excluída"));
+        }
+        return Result.success(subtree);
+    }
+
+    /** Apaga as transações vinculadas à subárvore inteira (via facade) e depois a subárvore. */
+    public Result<Void, DomainError> deleteWithTransactions(List<UUID> subtreeIds, UUID userId) {
+        val txIds = linkedTransactionIds(subtreeIds, userId);
+
+        if (monetaryContext.deleteTransactions(txIds) instanceof Result.Failure<Void, DomainError>(var error)) {
+            return Result.failure(error);
+        }
+        txIds.forEach(txId -> {
+            userTransactionService.deleteByTransaction(txId);
+            tagLinkService.deleteByTransaction(txId);
+        });
+
+        deleteSubtreeRows(subtreeIds, userId);
+        return Result.success();
+    }
+
+    /** Subárvore sem nenhum vínculo: apaga direto. */
+    public void deletePlain(List<UUID> subtreeIds, UUID userId) {
+        deleteSubtreeRows(subtreeIds, userId);
+    }
+
+    private void collectSubtree(UUID id, List<UserCategory> all, List<UUID> acc) {
+        acc.add(id);
+        all.stream().filter(c -> id.equals(c.parentId())).forEach(c -> collectSubtree(c.id(), all, acc));
+    }
+
+    private void deleteSubtreeRows(List<UUID> ids, UUID userId) {
+        for (val nodeId : ids) {
+            repo.deleteById(nodeId);
+            delete(userId, nodeId);
+        }
     }
 
     @SuppressWarnings("EmptyCatch")

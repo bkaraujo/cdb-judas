@@ -36,6 +36,26 @@ final class InMemoryRepositories {
 
     static class Transactions extends BaseRepo<Transaction, UUID> implements TransactionRepository {
         public Transaction save(Transaction e) { data.put(e.id(), e); return e; }
+
+        public void reassignAccount(UUID from, UUID to) {
+            for (var t : List.copyOf(data.values())) {
+                if (t.accountId().equals(from)) {
+                    data.put(t.id(), new Transaction(t.id(), t.description(), t.signal(), t.amount(), t.purchasedAt(),
+                            to, t.status(), t.costCenterId(), t.paymentDate(), t.groupId(),
+                            t.installmentNumber(), t.totalInstallments(), t.notes(), t.createdAt(), t.updatedAt(), t.cardId()));
+                }
+            }
+        }
+
+        public void reassignCard(UUID from, UUID to) {
+            for (var t : List.copyOf(data.values())) {
+                if (from.equals(t.cardId())) {
+                    data.put(t.id(), new Transaction(t.id(), t.description(), t.signal(), t.amount(), t.purchasedAt(),
+                            t.accountId(), t.status(), t.costCenterId(), t.paymentDate(), t.groupId(),
+                            t.installmentNumber(), t.totalInstallments(), t.notes(), t.createdAt(), t.updatedAt(), to));
+                }
+            }
+        }
     }
 
     static class CostCenters extends BaseRepo<CostCenter, UUID> implements CostCenterRepository {

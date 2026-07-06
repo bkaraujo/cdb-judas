@@ -1,15 +1,49 @@
 package br.community.feature;
 
+import br.commons.framework.persistence.jdbc.primitives.JDBCParameter;
 import io.quarkus.test.junit.QuarkusTest;
 import io.restassured.response.Response;
+import lombok.val;
 import org.junit.jupiter.api.Test;
 
 import java.util.UUID;
 
 import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @QuarkusTest
 public class TransactionResponseResourceTest extends BaseHttpTest {
+
+    private long overlayCount(String transactionId) {
+        return dataSource.query(
+                "SELECT COUNT(*) FROM USER_TRANSACTION WHERE COD_TRANSACTION = ?",
+                JDBCParameter.of(transactionId),
+                rs -> { rs.next().get(); return rs.getLong(1).get(); }
+        );
+    }
+
+    private long tagLinkCount(String transactionId) {
+        return dataSource.query(
+                "SELECT COUNT(*) FROM USER_TRANSACTION_TAG WHERE COD_TRANSACTION = ?",
+                JDBCParameter.of(transactionId),
+                rs -> { rs.next().get(); return rs.getLong(1).get(); }
+        );
+    }
+
+    private void linkTag(String transactionId, String tagId) {
+        dataSource.execute(
+                "INSERT INTO USER_TRANSACTION_TAG (COD_TRANSACTION, COD_USER, COD_TAG) VALUES (?, ?, ?)",
+                JDBCParameter.of(transactionId, TEST_USER_ID, tagId)
+        );
+    }
+
+    private String createTag() {
+        return asTestUser()
+                .body("{\"name\":\"Tag\",\"color\":\"#00FF00\"}")
+                .when().post("/api/" + TEST_USER_ID + "/tags")
+                .then().statusCode(201)
+                .extract().jsonPath().getString("id");
+    }
 
     private UUID createAccount(String color) {
         String json = """
@@ -109,10 +143,18 @@ public class TransactionResponseResourceTest extends BaseHttpTest {
                 .body("status", is("confirmed"))
                 .body("paymentDate", is("2024-04-02"));
 
+        // Vincula uma tag antes de excluir, para provar que o join some junto (fix do bug de órfãos).
+        String tagId = createTag();
+        linkTag(id, tagId);
+        assertEquals(1, overlayCount(id), "overlay existe antes da exclusão");
+
         // Excluir.
         asTestUser()
                 .when().delete("/api/" + TEST_USER_ID + "/accounts/" + accountId + "/transactions/" + id)
                 .then().statusCode(204);
+
+        assertEquals(0, overlayCount(id), "overlay (USER_TRANSACTION) limpo na exclusão unitária");
+        assertEquals(0, tagLinkCount(id), "vínculo de tag limpo na exclusão unitária");
     }
 
     @Test
@@ -139,6 +181,7 @@ public class TransactionResponseResourceTest extends BaseHttpTest {
                 .extract().response();
 
         String firstId = null;
+        java.util.List<String> allIds = list.jsonPath().getList("id", String.class);
         java.util.List<Object> installmentNumbers = list.jsonPath().getList("installmentNumber");
         for (int i = 0; i < installmentNumbers.size(); i++) {
             if (((Number) installmentNumbers.get(i)).intValue() == 1) {
@@ -146,6 +189,9 @@ public class TransactionResponseResourceTest extends BaseHttpTest {
                 break;
             }
         }
+
+        String tagId = createTag();
+        for (val txId : allIds) linkTag(txId, tagId);
 
         asTestUser()
                 .queryParam("mode", "FUTURE")
@@ -156,6 +202,11 @@ public class TransactionResponseResourceTest extends BaseHttpTest {
                 .when().get("/api/" + TEST_USER_ID + "/accounts/transactions")
                 .then().statusCode(200)
                 .body("size()", is(0));
+
+        for (val txId : allIds) {
+            assertEquals(0, overlayCount(txId), "overlay limpo para cada parcela apagada (FUTURE)");
+            assertEquals(0, tagLinkCount(txId), "vínculo de tag limpo para cada parcela apagada (FUTURE)");
+        }
     }
 
     @Test
@@ -167,10 +218,11 @@ public class TransactionResponseResourceTest extends BaseHttpTest {
             {"fromAccountId":"%s","toAccountId":"%s","date":"2024-07-01","amount":150.00}
             """.formatted(origem, destino);
 
-        asTestUser()
+        String outboundId = asTestUser()
                 .body(transferJson)
                 .when().post("/api/" + TEST_USER_ID + "/accounts/transactions/transfer")
-                .then().statusCode(201);
+                .then().statusCode(201)
+                .extract().jsonPath().getString("id");
 
         asTestUser()
                 .when().get("/api/" + TEST_USER_ID + "/accounts/transactions")
@@ -178,11 +230,35 @@ public class TransactionResponseResourceTest extends BaseHttpTest {
                 .body("size()", is(2));
 
         // Saída pertence à conta de origem.
+        String inboundId = asTestUser()
+                .queryParam("type", "income")
+                .when().get("/api/" + TEST_USER_ID + "/accounts/" + destino + "/transactions")
+                .then().statusCode(200)
+                .body("size()", is(1))
+                .extract().jsonPath().getString("[0].id");
+
         asTestUser()
                 .queryParam("type", "expense")
                 .when().get("/api/" + TEST_USER_ID + "/accounts/" + origem + "/transactions")
                 .then().statusCode(200)
                 .body("size()", is(1));
+
+        // Vincula uma tag em cada perna: excluir uma leva a outra junto, e o fix de órfãos limpa ambas.
+        String tagId = createTag();
+        linkTag(outboundId, tagId);
+        linkTag(inboundId, tagId);
+
+        asTestUser()
+                .when().delete("/api/" + TEST_USER_ID + "/accounts/" + origem + "/transactions/" + outboundId)
+                .then().statusCode(204);
+
+        asTestUser()
+                .when().get("/api/" + TEST_USER_ID + "/accounts/transactions")
+                .then().statusCode(200)
+                .body("size()", is(0));
+
+        assertEquals(0, tagLinkCount(outboundId), "vínculo de tag da perna de saída limpo");
+        assertEquals(0, tagLinkCount(inboundId), "vínculo de tag da perna de entrada limpo (par expandido)");
     }
 
     @Test

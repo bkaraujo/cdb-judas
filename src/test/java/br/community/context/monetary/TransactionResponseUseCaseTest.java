@@ -1,20 +1,27 @@
 package br.community.context.monetary;
 
 import br.commons.Result;
+import br.community.context.monetary._0_domain.model.Account;
 import br.community.context.monetary._0_domain.model.Card;
 import br.community.context.monetary._0_domain.model.CostCenter;
+import br.community.context.monetary._0_domain.model.MonthlyBalance;
 import br.community.context.monetary._0_domain.model.Transaction;
 import br.community.context.monetary._1_application.command.TransactionCommand;
+import br.community.context.monetary._1_application.service.AccountService;
+import br.community.context.monetary._1_application.service.BalanceRecalculationService;
+import br.community.context.monetary._1_application.service.BalanceService;
 import br.community.context.monetary._1_application.service.CardService;
 import br.community.context.monetary._1_application.service.TransactionService;
 import br.community.context.monetary._1_application.usecase.TransactionUseCase;
 import br.community.context.shared._0_domain.model.DomainError;
+import lombok.val;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.YearMonth;
 import java.util.List;
 import java.util.UUID;
 
@@ -26,6 +33,8 @@ class TransactionResponseUseCaseTest {
 
     private InMemoryRepositories.Transactions txRepo;
     private InMemoryRepositories.Cards cardRepo;
+    private InMemoryRepositories.Accounts accountRepo;
+    private InMemoryRepositories.Balances balanceRepo;
     private TransactionUseCase useCase;
 
     private final UUID accountId = UUID.randomUUID();
@@ -35,7 +44,14 @@ class TransactionResponseUseCaseTest {
     void setUp() {
         txRepo = new InMemoryRepositories.Transactions();
         cardRepo = new InMemoryRepositories.Cards();
-        useCase = new TransactionUseCase(new TransactionService(txRepo), new CardService(cardRepo));
+        accountRepo = new InMemoryRepositories.Accounts();
+        balanceRepo = new InMemoryRepositories.Balances();
+        accountRepo.save(new Account(accountId, "Banco", Account.Type.CHECKING, true));
+
+        val transactionService = new TransactionService(txRepo);
+        val accountService = new AccountService(accountRepo);
+        val balanceRecalculationService = new BalanceRecalculationService(accountService, new BalanceService(balanceRepo), transactionService);
+        useCase = new TransactionUseCase(transactionService, new CardService(cardRepo), accountService, balanceRecalculationService);
     }
 
     private TransactionCommand cmd(LocalDate date, Transaction.Status status, Integer installments) {
@@ -156,7 +172,7 @@ class TransactionResponseUseCaseTest {
         useCase.createTransaction(cmd(LocalDate.of(2026, 5, 10), Transaction.Status.CONFIRMED, 2));
         Transaction first = txRepo.findAll().stream()
                 .filter(t -> t.installmentNumber() == 1).findFirst().orElseThrow();
-        Result<Void, DomainError> r = useCase.deleteTransaction(first.id(), null);
+        Result<List<UUID>, DomainError> r = useCase.deleteTransaction(first.id(), null);
         assertTrue(r.isSuccess());
         assertEquals(1, txRepo.findAll().size());
     }
@@ -167,7 +183,7 @@ class TransactionResponseUseCaseTest {
         useCase.createTransaction(cmd(LocalDate.of(2026, 5, 10), Transaction.Status.CONFIRMED, 4));
         Transaction second = txRepo.findAll().stream()
                 .filter(t -> t.installmentNumber() == 2).findFirst().orElseThrow();
-        Result<Void, DomainError> r = useCase.deleteTransaction(second.id(), "FUTURE");
+        Result<List<UUID>, DomainError> r = useCase.deleteTransaction(second.id(), "FUTURE");
         assertTrue(r.isSuccess());
         assertEquals(1, txRepo.findAll().size());
         assertEquals(1, txRepo.findAll().get(0).installmentNumber());
@@ -211,7 +227,7 @@ class TransactionResponseUseCaseTest {
         Transaction entrada = txRepo.findAll().stream()
                 .filter(t -> Transaction.Type.INCOME.equals(t.type())).findFirst().orElseThrow();
 
-        Result<Void, DomainError> r = useCase.deleteTransaction(entrada.id(), null);
+        Result<List<UUID>, DomainError> r = useCase.deleteTransaction(entrada.id(), null);
         assertTrue(r.isSuccess());
         assertEquals(0, txRepo.findAll().size(), "as duas pernas removidas");
     }
@@ -351,5 +367,57 @@ class TransactionResponseUseCaseTest {
         Result<Transaction, DomainError> r = useCase.updateTransactionStatus(t.id(), Transaction.Status.CONFIRMED, LocalDate.of(2026, 5, 12));
         assertTrue(r.isSuccess());
         assertEquals(card.id(), txRepo.findById(t.id()).orElseThrow().cardId());
+    }
+
+    // ── deleteTransactions (exclusão em massa: categoria/tag DELETE) ─────
+
+    @Test
+    @DisplayName("deleteTransactions: dedupe (mesmo id repetido) apaga uma vez")
+    void deleteTransactionsDedupesRepeatedIds() {
+        useCase.createTransaction(cmd(LocalDate.of(2026, 5, 10), Transaction.Status.CONFIRMED, null));
+        Transaction t = txRepo.findAll().get(0);
+
+        Result<Void, DomainError> r = useCase.deleteTransactions(List.of(t.id(), t.id()));
+
+        assertTrue(r.isSuccess());
+        assertTrue(txRepo.findAll().isEmpty());
+    }
+
+    @Test
+    @DisplayName("deleteTransactions: id inexistente é ignorado (idempotente)")
+    void deleteTransactionsSkipsMissingIds() {
+        useCase.createTransaction(cmd(LocalDate.of(2026, 5, 10), Transaction.Status.CONFIRMED, null));
+        Transaction t = txRepo.findAll().get(0);
+
+        Result<Void, DomainError> r = useCase.deleteTransactions(List.of(t.id(), UUID.randomUUID()));
+
+        assertTrue(r.isSuccess());
+        assertTrue(txRepo.findAll().isEmpty());
+    }
+
+    @Test
+    @DisplayName("deleteTransactions: passar só uma perna expande para a irmã de transferência")
+    void deleteTransactionsExpandsTransferSiblings() {
+        saveTransferPair(LocalDate.of(2026, 5, 10), accountId, UUID.randomUUID());
+        Transaction saida = txRepo.findAll().stream()
+                .filter(t -> Transaction.Type.EXPENSE.equals(t.type())).findFirst().orElseThrow();
+
+        Result<Void, DomainError> r = useCase.deleteTransactions(List.of(saida.id()));
+
+        assertTrue(r.isSuccess());
+        assertTrue(txRepo.findAll().isEmpty(), "as duas pernas removidas");
+    }
+
+    @Test
+    @DisplayName("deleteTransactions: recalcula saldo da conta (sem atividade → snapshot antigo cai)")
+    void deleteTransactionsRecalculatesBalance() {
+        useCase.createTransaction(cmd(LocalDate.of(2026, 5, 10), Transaction.Status.CONFIRMED, null));
+        Transaction t = txRepo.findAll().get(0);
+        balanceRepo.save(new MonthlyBalance(UUID.randomUUID(), accountId, YearMonth.of(2026, 5), new BigDecimal("999.00")));
+
+        Result<Void, DomainError> r = useCase.deleteTransactions(List.of(t.id()));
+
+        assertTrue(r.isSuccess());
+        assertTrue(balanceRepo.findByAccount(accountId).isEmpty(), "sem atividade → snapshots removidos");
     }
 }

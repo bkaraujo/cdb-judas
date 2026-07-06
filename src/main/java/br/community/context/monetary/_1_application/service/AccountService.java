@@ -31,9 +31,9 @@ public class AccountService {
     }
 
     public Result<Void, DomainError> deleteById(UUID accountId) {
-        return findById(accountId).map(existing -> {
+        return findById(accountId).flatMap(existing -> {
             accountRepository.deleteById(accountId);
-            return null;
+            return Result.success();
         });
     }
 }

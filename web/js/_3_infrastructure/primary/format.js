@@ -107,14 +107,18 @@ window.categoryLabel = function (c) {
   return window.Domain.Category.labelChain(window.App.CacheStore.categories(), c.id, ' / ');
 };
 
-window.flatCategories = function (natureFilter, excludeRoots) {
+/* keepId: include this category even if it (or an ancestor) is inactive — keeps a transaction
+ * being edited from silently losing its category when the dropdown is rebuilt. Only applies when
+ * natureFilter is set; the no-filter form (width-measurement callers) is left untouched. */
+window.flatCategories = function (natureFilter, excludeRoots, keepId) {
   const Cat = window.Domain.Category;
   const cats = window.App.CacheStore.categories();
   return cats
     .filter(function (c) {
       if (excludeRoots && Cat.isRoot(c)) return false;
       if (!natureFilter) return true;
-      return String(c.nature || '').toUpperCase() === natureFilter;
+      if (String(c.nature || '').toUpperCase() !== natureFilter) return false;
+      return Cat.isEffectivelyActive(cats, c.id) || String(c.id) === String(keepId);
     })
     .map(function (c) { return { id: c.id, label: window.categoryLabel(c), nature: c.nature }; })
     .sort(function (a, b) {

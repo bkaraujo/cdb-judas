@@ -379,39 +379,64 @@
       });
     });
 
-    function doRemoveCard(cardId) {
+    function doRemoveCard(cardId, opts, dialogModal, dialogReEnable) {
       const $chip = m.$body.find('[data-card-id="' + cardId + '"]');
       $chip.css('opacity', '0.5');
-      window.App.AccountService.removeCard(existing.id, cardId).then(function () {
+      window.App.AccountService.removeCard(existing.id, cardId, opts).then(function () {
         cards = cards.filter(function (c) { return String(c.id) !== String(cardId); });
         renderCardsBody();
+        if (dialogModal) dialogModal.close();
         window.toast('Cartão removido', 'success');
       }).catch(function (err) {
         $chip.css('opacity', '1');
+        if (!opts && err && err.status === 409 && err.code === 'LINKED_TRANSACTIONS') {
+          openLinkedCardDialog(cardId, err.count);
+          return;
+        }
+        if (dialogReEnable) dialogReEnable();
         window.toast((err && err.message) || 'Falha ao remover cartão', 'error');
       });
     }
 
-    function confirmDeactivate(card, count) {
-      window.confirmModal({
-        title: 'Inativar cartão',
-        body: '<p>Este cartão tem ' + count + ' transaç' + (count === 1 ? 'ão vinculada' : 'ões vinculadas') +
-              ' e não pode ser excluído. Ele pode ser inativado: deixa de aparecer para novos lançamentos, ' +
-              'mas o histórico é mantido.</p>',
-        confirmLabel: 'Inativar',
-        confirmIcon: 'eyeOff',
-        danger: false,
-        onConfirm: function (m2, reEnable) {
-          window.App.AccountService.setCardActive(existing.id, card.id, false).then(function (updated) {
-            cards = cards.map(function (c) { return String(c.id) === String(updated.id) ? updated : c; });
-            renderCardsBody();
-            m2.close();
-            window.toast('Cartão inativado', 'success');
-          }).catch(function (err) {
-            reEnable();
-            window.toast((err && err.message) || 'Falha ao inativar cartão', 'error');
-          });
-        }
+    function openLinkedCardDialog(cardId, count) {
+      const card = cards.filter(function (c) { return String(c.id) === String(cardId); })[0];
+      if (!card) return;
+      const otherActive = cards.filter(function (c) {
+        return String(c.id) !== String(cardId) && c.active !== false;
+      });
+      const options = [
+        {
+          value: 'MOVE', label: 'Mover para outro cartão',
+          hint: 'As transações deste cartão passam para o cartão escolhido (mesma conta).',
+          choices: otherActive.map(function (c) { return { value: c.id, label: '•••• ' + c.last4 }; }),
+        },
+        {
+          value: 'DELETE', label: 'Excluir transações', danger: true,
+          hint: 'Apaga o cartão e ' + count + ' transaç' + (count === 1 ? 'ão vinculada' : 'ões vinculadas') + '.',
+        },
+        { value: 'INATIVAR', label: 'Inativar cartão', hint: 'Some de novos lançamentos; o histórico é mantido.' },
+      ];
+
+      window.linkedDeleteDialog({
+        title: 'Cartão com transações vinculadas',
+        intro: 'O cartão <strong>•••• ' + esc(card.last4) + '</strong> tem ' + count + ' transaç' +
+          (count === 1 ? 'ão vinculada' : 'ões vinculadas') + '. Escolha o que fazer:',
+        options: options,
+        onConfirm: function (choice, m2, reEnable) {
+          if (choice.strategy === 'INATIVAR') {
+            window.App.AccountService.setCardActive(existing.id, cardId, false).then(function (updated) {
+              cards = cards.map(function (c) { return String(c.id) === String(updated.id) ? updated : c; });
+              renderCardsBody();
+              m2.close();
+              window.toast('Cartão inativado', 'success');
+            }).catch(function (err) {
+              reEnable();
+              window.toast((err && err.message) || 'Falha ao inativar cartão', 'error');
+            });
+            return;
+          }
+          doRemoveCard(cardId, { strategy: choice.strategy, targetId: choice.targetId }, m2, reEnable);
+        },
       });
     }
 
@@ -420,13 +445,7 @@
       const cardId = $(this).attr('data-id');
       const card = cards.filter(function (c) { return String(c.id) === String(cardId); })[0];
       if (!card) return;
-      window.App.TransactionService.list('').then(function (all) {
-        const linked = (Array.isArray(all) ? all : []).filter(function (tx) {
-          return String(tx.cardId) === String(cardId);
-        }).length;
-        if (linked === 0) doRemoveCard(cardId);
-        else confirmDeactivate(card, linked);
-      }).catch(function () { doRemoveCard(cardId); });
+      doRemoveCard(cardId);
     });
 
     m.$el.on('click', '[data-act=reactivate-card]', function () {
@@ -489,74 +508,75 @@
 
   // ── Modal: confirm delete ─────────────────────────────────
   function openDeleteModal(target) {
-    window.App.TransactionService.list('').then(function (all) {
-      const allTxs = Array.isArray(all) ? all : [];
-      let txCount = 0;
-      allTxs.forEach(function (tx) {
-        if (String(tx.accountId) === String(target.id)) txCount++;
-      });
-      showDeleteConfirm(target, txCount);
-    }).catch(function () {
-      showDeleteConfirm(target, 0);
-    });
-  }
-
-  function showDeleteConfirm(target, txCount) {
-    const nameHtml = '<strong>' + esc(target.name) + '</strong>';
-    const cards = target.cards || [];
-    let bodyHtml = '';
-    const hasWarning = cards.length > 0 || txCount > 0;
-
-    if (hasWarning) {
-      const warnings = [];
-
-      if (cards.length > 0) {
-        const last4s = cards.map(function (c) { return '•••• ' + c.last4; }).join(', ');
-        warnings.push(
-          'Esta conta possui <strong>' + esc(String(cards.length)) + '</strong> ' +
-          (cards.length === 1 ? 'cartão' : 'cartões') +
-          ' (' + esc(last4s) + ') que ' +
-          (cards.length === 1 ? 'será excluído' : 'serão excluídos') + ' junto com a conta.'
-        );
-      }
-
-      if (txCount > 0) {
-        warnings.push(
-          'Existem <strong>' + esc(String(txCount)) + '</strong> transaç' +
-          (txCount === 1 ? 'ão vinculada' : 'ões vinculadas') +
-          ' a esta conta que ' + (txCount === 1 ? 'será removida' : 'serão removidas') + ' permanentemente.'
-        );
-      }
-
-      bodyHtml +=
-        '<div style="padding:12px 14px;border-radius:8px;background:var(--expense-bg, rgba(244,63,94,0.08));' +
-          'border:1px solid var(--expense, #F43F5E);margin-bottom:12px;">' +
-          '<p style="font-size:13px;font-weight:600;color:var(--expense, #F43F5E);margin:0 0 6px 0;">' +
-            window.icon('alertCircle', 16) + ' Atenção' +
-          '</p>' +
-          warnings.map(function (w) {
-            return '<p style="font-size:13px;color:var(--text-secondary);margin:0 0 4px 0;line-height:1.5;">' + w + '</p>';
-          }).join('') +
-        '</div>';
-    }
-
-    bodyHtml +=
-      '<p style="font-size:13px;color:var(--text-secondary);line-height:1.5;">' +
-        'Tem certeza que deseja excluir a conta ' + nameHtml + '? ' +
-        'Esta ação ' + (hasWarning ? '<strong>não pode ser desfeita</strong>' : 'não pode ser desfeita') + '.' +
-      '</p>';
-
     window.confirmModal({
       title: 'Excluir Conta',
-      body: bodyHtml,
+      body: '<p style="font-size:13px;color:var(--text-secondary);line-height:1.5;">' +
+        'Tem certeza que deseja excluir a conta <strong>' + esc(target.name) + '</strong>? ' +
+        'Esta ação não pode ser desfeita.</p>',
       onConfirm: function (m, reEnable) {
         window.App.AccountService.remove(target.id).then(function () {
           m.close();
           window.toast('Conta excluída', 'success');
           // SSE DELETE will refresh CacheStore → AccountService.onChange → re-render.
         }).catch(function (err) {
+          if (err && err.status === 409 && err.code === 'LINKED_TRANSACTIONS') {
+            m.close();
+            openLinkedAccountDialog(target, err.count);
+            return;
+          }
           reEnable();
-          window.toast(err && err.message ? err.message : 'Falha ao excluir conta');
+          window.toast(err && err.message ? err.message : 'Falha ao excluir conta', 'error');
+        });
+      },
+    });
+  }
+
+  function openLinkedAccountDialog(target, count) {
+    const otherActive = state.accounts.filter(function (a) {
+      return String(a.id) !== String(target.id) && a.active !== false;
+    });
+    const options = [
+      {
+        value: 'MOVE', label: 'Mover para outra conta',
+        hint: 'Transações e cartões desta conta passam para a conta escolhida.',
+        choices: otherActive.map(function (a) { return { value: a.id, label: a.name }; }),
+      },
+      {
+        value: 'DELETE', label: 'Excluir transações', danger: true,
+        hint: 'Apaga a conta e ' + count + ' transaç' + (count === 1 ? 'ão vinculada' : 'ões vinculadas') + '.',
+      },
+      { value: 'INATIVAR', label: 'Inativar conta', hint: 'Some do lançamento de novas transações; o histórico é mantido.' },
+    ];
+
+    window.linkedDeleteDialog({
+      title: 'Conta com transações vinculadas',
+      intro: 'A conta <strong>' + esc(target.name) + '</strong> tem ' + count + ' transaç' +
+        (count === 1 ? 'ão vinculada' : 'ões vinculadas') + '. Escolha o que fazer:',
+      options: options,
+      onConfirm: function (choice, m, reEnable) {
+        if (choice.strategy === 'INATIVAR') {
+          const payload = {
+            name: target.name, type: target.type, color: target.color, active: false,
+            creditLimit: target.creditLimit || null,
+            overdraftLimit: target.overdraftLimit || null,
+            closingDay: target.closingDay || null,
+            dueDay: target.dueDay || null,
+          };
+          window.App.AccountService.update(target.id, payload).then(function () {
+            m.close();
+            window.toast('Conta inativada', 'success');
+          }).catch(function (err) {
+            reEnable();
+            window.toast((err && err.message) || 'Falha ao inativar conta', 'error');
+          });
+          return;
+        }
+        window.App.AccountService.remove(target.id, { strategy: choice.strategy, targetId: choice.targetId }).then(function () {
+          m.close();
+          window.toast('Conta excluída', 'success');
+        }).catch(function (err) {
+          reEnable();
+          window.toast((err && err.message) || 'Falha ao excluir conta', 'error');
         });
       },
     });

@@ -9,5 +9,6 @@ import java.util.UUID;
 @NullMarked
 public record UpdateRequest(
         @NotBlank String name,
-        @Nullable UUID parentId
+        @Nullable UUID parentId,
+        @Nullable Boolean active
 ) {}

@@ -12,6 +12,7 @@ import br.community.feature.user.accounts.transactions.UserTransactionRepository
 import br.community.feature.user.categories.UserCategoryRepository;
 import br.community.feature.user.profile.PreferencesRepository;
 import br.community.feature.user.tags.UserTagRepository;
+import br.community.feature.user.tags.UserTransactionTagRepository;
 import br.community.infra.persistence.CachingPersonRepository;
 import br.community.infra.persistence.CachingUserRepository;
 import br.community.infra.persistence.features.*;
@@ -100,6 +101,12 @@ public class InfraConfigs {
     @Singleton
     UserTransactionRepository userTransactionRepository() {
         return new UserTransactionJDBCRepository();
+    }
+
+    @Produces
+    @Singleton
+    UserTransactionTagRepository userTransactionTagRepository() {
+        return new UserTransactionTagJDBCRepository();
     }
 
     @Produces

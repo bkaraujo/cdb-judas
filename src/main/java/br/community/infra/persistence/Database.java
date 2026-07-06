@@ -1,8 +1,10 @@
 package br.community.infra.persistence;
 
 import br.community.infra.persistence.monetary.AccountTypeMapper;
+import lombok.val;
 import org.jspecify.annotations.NullMarked;
 
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -30,7 +32,7 @@ public abstract class Database {
 
     private Database() {}
 
-    public static List<String> model() {
+    private static List<String> ctxMonetary() {
         return List.of(
                 """
                 CREATE TABLE MON_ACCOUNT_TYPE (
@@ -39,12 +41,8 @@ public abstract class Database {
                     FLG_ACTIVE CHAR(1) NOT NULL
                 )
                 """,
-                """
-                CREATE TABLE TRANSACTION_NATURE (
-                    ID VARCHAR(20) PRIMARY KEY,
-                    TXT_DESCRIPTION VARCHAR(50) NOT NULL
-                )
-                """,
+                "INSERT INTO MON_ACCOUNT_TYPE (ID, TXT_DESCRIPTION, FLG_ACTIVE) VALUES ('" + AccountTypeMapper.CHECKING_ID    + "', 'Conta corrente', 'Y')",
+                "INSERT INTO MON_ACCOUNT_TYPE (ID, TXT_DESCRIPTION, FLG_ACTIVE) VALUES ('" + AccountTypeMapper.INVESTMENT_ID  + "', 'Investimento', 'Y')",
                 """
                 CREATE TABLE MON_STATUS (
                     ID VARCHAR(20) PRIMARY KEY,
@@ -52,10 +50,6 @@ public abstract class Database {
                     FLG_ACTIVE CHAR(1) NOT NULL
                 )
                 """,
-                "INSERT INTO MON_ACCOUNT_TYPE (ID, TXT_DESCRIPTION, FLG_ACTIVE) VALUES ('" + AccountTypeMapper.CHECKING_ID    + "', 'Conta corrente', 'Y')",
-                "INSERT INTO MON_ACCOUNT_TYPE (ID, TXT_DESCRIPTION, FLG_ACTIVE) VALUES ('" + AccountTypeMapper.INVESTMENT_ID  + "', 'Investimento', 'Y')",
-                "INSERT INTO TRANSACTION_NATURE (ID, TXT_DESCRIPTION) VALUES ('EXPENSE', 'Despesa')",
-                "INSERT INTO TRANSACTION_NATURE (ID, TXT_DESCRIPTION) VALUES ('INCOME', 'Receita')",
                 "INSERT INTO MON_STATUS (ID, TXT_DESCRIPTION, FLG_ACTIVE) VALUES ('SCHEDULED', 'Agendado', 'Y')",
                 "INSERT INTO MON_STATUS (ID, TXT_DESCRIPTION, FLG_ACTIVE) VALUES ('CONFIRMED', 'Confirmado', 'Y')",
                 "INSERT INTO MON_STATUS (ID, TXT_DESCRIPTION, FLG_ACTIVE) VALUES ('PENDING', 'Pendente', 'Y')",
@@ -74,29 +68,12 @@ public abstract class Database {
                 )
                 """,
                 """
-                CREATE TABLE USER_ACCOUNT (
-                    COD_USER CHAR(36) NOT NULL,
-                    COD_ACCOUNT CHAR(36) NOT NULL,
-                    TXT_COLOR VARCHAR(20) NOT NULL,
-                    PRIMARY KEY (COD_USER, COD_ACCOUNT)
-                )
-                """,
-                """
                 CREATE TABLE MON_COST_CENTER (
                     ID CHAR(36) PRIMARY KEY,
                     TXT_DESCRIPTION VARCHAR(255) NOT NULL,
                     FLG_ACTIVE CHAR(1) NOT NULL,
                     TMS_CREATE_AT TIMESTAMP NOT NULL,
                     TMS_UPDATED_AT TIMESTAMP NOT NULL
-                )
-                """,
-                """
-                CREATE TABLE USER_ACCOUNT_BALANCE (
-                    ID CHAR(36) PRIMARY KEY,
-                    COD_USER CHAR(36) NOT NULL,
-                    COD_ACCOUNT CHAR(36) NOT NULL,
-                    NUM_PERIOD INT NOT NULL,
-                    DEC_BALANCE DECIMAL(19, 2) NOT NULL
                 )
                 """,
                 """
@@ -128,48 +105,27 @@ public abstract class Database {
                     TMS_CREATE_AT TIMESTAMP NOT NULL,
                     TMS_UPDATED_AT TIMESTAMP NOT NULL
                 )
-                """,
                 """
-                CREATE TABLE USER_CATEGORY (
+        );
+    }
+
+    private static List<String> ctxPeople() {
+        return List.of(
+                """
+                CREATE TABLE PEP_PERSON (
                     ID CHAR(36) PRIMARY KEY,
-                    COD_USER CHAR(36) NOT NULL,
-                    COD_PARENT CHAR(36),
-                    TXT_NATURE VARCHAR(20) NOT NULL REFERENCES TRANSACTION_NATURE(ID),
-                    TXT_NAME VARCHAR(80) NOT NULL,
-                    FLG_SYSTEM CHAR(1) NOT NULL,
-                    FLG_ACTIVE CHAR(1) NOT NULL,
+                    TXT_NAME VARCHAR(255) NOT NULL,
+                    TXT_LOCALE VARCHAR(20) NOT NULL,
+                    TXT_LANGUAGE VARCHAR(20) NOT NULL,
                     TMS_CREATE_AT TIMESTAMP NOT NULL,
                     TMS_UPDATED_AT TIMESTAMP NOT NULL
                 )
-                """,
                 """
-                CREATE TABLE USER_TAG (
-                    ID CHAR(36) PRIMARY KEY,
-                    COD_USER CHAR(36) NOT NULL,
-                    TXT_DESCRIPTION VARCHAR(255) NOT NULL,
-                    TXT_COLOR VARCHAR(20) NOT NULL,
-                    TMS_CREATE_AT TIMESTAMP NOT NULL
-                )
-                """,
-                """
-                CREATE TABLE USER_TRANSACTION (
-                    COD_USER CHAR(36) NOT NULL,
-                    COD_ACCOUNT CHAR(36) NOT NULL,
-                    COD_TRANSACTION CHAR(36) NOT NULL,
-                    COD_CATEGORY CHAR(36),
-                    TMS_CREATE_AT TIMESTAMP NOT NULL,
-                    TMS_UPDATED_AT TIMESTAMP NOT NULL,
-                    PRIMARY KEY (COD_USER, COD_ACCOUNT, COD_TRANSACTION)
-                )
-                """,
-                """
-                CREATE TABLE USER_TRANSACTION_TAG (
-                    COD_TRANSACTION CHAR(36) NOT NULL,
-                    COD_USER CHAR(36) NOT NULL,
-                    COD_TAG CHAR(36) NOT NULL,
-                    PRIMARY KEY (COD_TRANSACTION, COD_USER, COD_TAG)
-                )
-                """,
+        );
+    }
+
+    private static List<String> security() {
+        return List.of(
                 """
                 CREATE TABLE SEC_USER (
                     ID CHAR(36) PRIMARY KEY,
@@ -179,7 +135,12 @@ public abstract class Database {
                     TMS_CREATE_AT TIMESTAMP NOT NULL,
                     TMS_UPDATED_AT TIMESTAMP NOT NULL
                 )
-                """,
+                """
+        );
+    }
+
+    private static List<String> features() {
+        return List.of(
                 """
                 CREATE TABLE USER_CREDENTIAL (
                     ID CHAR(36) PRIMARY KEY,
@@ -197,32 +158,104 @@ public abstract class Database {
                 )
                 """,
                 """
-                CREATE TABLE PEP_PERSON (
+                CREATE TABLE USER_ACCOUNT (
+                    COD_USER CHAR(36) NOT NULL REFERENCES SEC_USER(ID),
+                    COD_ACCOUNT CHAR(36) NOT NULL REFERENCES MON_ACCOUNT(ID),
+                    TXT_COLOR VARCHAR(20) NOT NULL,
+                    PRIMARY KEY (COD_USER, COD_ACCOUNT)
+                )
+                """,
+                """
+                CREATE TABLE USER_ACCOUNT_BALANCE (
                     ID CHAR(36) PRIMARY KEY,
-                    TXT_NAME VARCHAR(255) NOT NULL,
-                    TXT_LOCALE VARCHAR(20) NOT NULL,
-                    TXT_LANGUAGE VARCHAR(20) NOT NULL,
+                    COD_USER CHAR(36) NOT NULL REFERENCES SEC_USER(ID),
+                    COD_ACCOUNT CHAR(36) NOT NULL REFERENCES MON_ACCOUNT(ID),
+                    NUM_PERIOD INT NOT NULL,
+                    DEC_BALANCE DECIMAL(19, 2) NOT NULL
+                )
+                """,
+                """
+                CREATE TABLE TRANSACTION_NATURE (
+                    ID VARCHAR(20) PRIMARY KEY,
+                    TXT_DESCRIPTION VARCHAR(50) NOT NULL
+                )
+                """,
+                "INSERT INTO TRANSACTION_NATURE (ID, TXT_DESCRIPTION) VALUES ('EXPENSE', 'Despesa')",
+                "INSERT INTO TRANSACTION_NATURE (ID, TXT_DESCRIPTION) VALUES ('INCOME', 'Receita')",
+                """
+                CREATE TABLE USER_CATEGORY (
+                    ID CHAR(36) PRIMARY KEY,
+                    COD_USER CHAR(36) NOT NULL REFERENCES SEC_USER(ID),
+                    COD_PARENT CHAR(36),
+                    TXT_NATURE VARCHAR(20) NOT NULL REFERENCES TRANSACTION_NATURE(ID),
+                    TXT_NAME VARCHAR(80) NOT NULL,
+                    FLG_SYSTEM CHAR(1) NOT NULL,
+                    FLG_ACTIVE CHAR(1) NOT NULL,
                     TMS_CREATE_AT TIMESTAMP NOT NULL,
                     TMS_UPDATED_AT TIMESTAMP NOT NULL
+                )
+                """,
+                """
+                CREATE TABLE USER_TAG (
+                    ID CHAR(36) PRIMARY KEY,
+                    COD_USER CHAR(36) NOT NULL REFERENCES SEC_USER(ID),
+                    TXT_DESCRIPTION VARCHAR(255) NOT NULL,
+                    TXT_COLOR VARCHAR(20) NOT NULL,
+                    TMS_CREATE_AT TIMESTAMP NOT NULL
+                )
+                """,
+                """
+                CREATE TABLE USER_TRANSACTION (
+                    COD_USER CHAR(36) NOT NULL REFERENCES SEC_USER(ID),
+                    COD_ACCOUNT CHAR(36) NOT NULL REFERENCES MON_ACCOUNT(ID),
+                    COD_TRANSACTION CHAR(36) NOT NULL,
+                    COD_CATEGORY CHAR(36) NOT NULL REFERENCES USER_CATEGORY(ID),
+                    TMS_CREATE_AT TIMESTAMP NOT NULL,
+                    TMS_UPDATED_AT TIMESTAMP NOT NULL,
+                    PRIMARY KEY (COD_USER, COD_ACCOUNT, COD_TRANSACTION)
+                )
+                """,
+                """
+                CREATE TABLE USER_TRANSACTION_TAG (
+                    COD_TRANSACTION CHAR(36) NOT NULL,
+                    COD_USER CHAR(36) NOT NULL REFERENCES SEC_USER(ID),
+                    COD_TAG CHAR(36) NOT NULL,
+                    PRIMARY KEY (COD_TRANSACTION, COD_USER, COD_TAG)
                 )
                 """
         );
     }
 
-    /** Comandos de limpeza de dados (isolamento entre testes). Sem FKs: ordem é indiferente. */
+
+    public static List<String> model() {
+        val instructions = new ArrayList<String>();
+        instructions.addAll(ctxPeople());
+        instructions.addAll(ctxMonetary());
+
+        instructions.addAll(security());
+        instructions.addAll(features());
+
+        return instructions;
+    }
+
+    /**
+     * Comandos de limpeza de dados (isolamento entre testes). Ordem importa: tabelas com FK para
+     * {@code MON_ACCOUNT} (USER_ACCOUNT, USER_ACCOUNT_BALANCE, USER_TRANSACTION) e para
+     * {@code USER_CATEGORY} (USER_TRANSACTION) são apagadas antes das tabelas referenciadas.
+     */
     public static List<String> reset() {
         return List.of(
-                "DELETE FROM MON_ACCOUNT",
-                "DELETE FROM MON_COST_CENTER",
-                "DELETE FROM USER_CATEGORY",
-                "DELETE FROM USER_TAG",
-                "DELETE FROM USER_TRANSACTION",
                 "DELETE FROM USER_TRANSACTION_TAG",
+                "DELETE FROM USER_TRANSACTION",
                 "DELETE FROM USER_ACCOUNT_BALANCE",
                 "DELETE FROM USER_ACCOUNT",
+                "DELETE FROM USER_CATEGORY",
+                "DELETE FROM MON_ACCOUNT",
                 "DELETE FROM MON_TRANSACTION",
-                "DELETE FROM USER_PREFERENCES",
-                "DELETE FROM MON_CARD"
+                "DELETE FROM MON_CARD",
+                "DELETE FROM USER_TAG",
+                "DELETE FROM MON_COST_CENTER",
+                "DELETE FROM USER_PREFERENCES"
         );
     }
 }
