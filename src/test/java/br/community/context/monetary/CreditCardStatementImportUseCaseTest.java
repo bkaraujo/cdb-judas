@@ -99,7 +99,7 @@ class CreditCardStatementImportUseCaseTest {
         final AccountUseCase ucAccount = new AccountUseCase(accountService, balanceService);
         final TransactionUseCase ucTransaction = new TransactionUseCase(transactionService, cardService);
         final MetadataUseCase ucMetadata = new MetadataUseCase(costCenterService);
-        final CardUseCase ucCard = new CardUseCase(cardService, accountService);
+        final CardUseCase ucCard = new CardUseCase(cardService, accountService, transactionService);
         return new MonetaryContext(ucAccount, ucTransaction, ucMetadata, ucCard);
     }
 

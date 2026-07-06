@@ -92,7 +92,11 @@
     function cardOptionsHtml(accountId, selectedCardId) {
       const acc = window.byId(accs, accountId);
       if (!acc || !window.Domain.Account.hasCards(acc)) return '';
-      return '<option value="">— Nenhum —</option>' + acc.cards.map(function (c) {
+      const visible = acc.cards.filter(function (c) {
+        return c.active !== false || String(c.id) === String(selectedCardId);
+      });
+      if (!visible.length) return '';
+      return '<option value="">— Nenhum —</option>' + visible.map(function (c) {
         const sel = String(c.id) === String(selectedCardId) ? ' selected' : '';
         return '<option value="' + esc(c.id) + '"' + sel + '>•••• ' + esc(c.last4) + '</option>';
       }).join('');

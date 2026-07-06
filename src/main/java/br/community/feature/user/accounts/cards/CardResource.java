@@ -8,6 +8,7 @@ import br.community.context.shared._1_application.DomainException;
 import jakarta.validation.Valid;
 import jakarta.ws.rs.DELETE;
 import jakarta.ws.rs.GET;
+import jakarta.ws.rs.PATCH;
 import jakarta.ws.rs.POST;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
@@ -52,6 +53,16 @@ public class CardResource {
         if (monetaryContext.deleteCard(cardId) instanceof Result.Failure(var error)) {
             throw new DomainException(error);
         }
+    }
+
+    @PATCH
+    @Path("/{cardId}")
+    public CardResponse updateStatus(@PathParam("accountId") UUID accountId, @PathParam("cardId") UUID cardId, @Valid CardStatusRequest req) {
+        guardBelongsToAccount(accountId, cardId);
+        return switch (monetaryContext.setCardActive(cardId, req.active())) {
+            case Result.Success(var card) -> CardResponse.from(card);
+            case Result.Failure(var error) -> throw new DomainException(error);
+        };
     }
 
     private void guardBelongsToAccount(UUID accountId, UUID cardId) {

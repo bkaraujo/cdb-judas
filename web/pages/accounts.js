@@ -241,13 +241,18 @@
         '</p>';
       }
       const chips = cards.map(function (c) {
-        return '<span class="chip" data-card-id="' + esc(c.id) + '">' +
-          '<span>•••• ' + esc(c.last4) + '</span>' +
-          '<span class="chip-actions">' +
-            '<button type="button" data-act="remove-card" data-id="' + esc(c.id) + '" ' +
+        const active = c.active !== false;
+        const actionHtml = active
+          ? '<button type="button" data-act="remove-card" data-id="' + esc(c.id) + '" ' +
               'style="background:none;border:none;cursor:pointer;color:var(--text-muted);' +
-              'padding:0;display:inline-flex;" title="Remover cartão">' + window.icon('x', 12) + '</button>' +
-          '</span>' +
+              'padding:0;display:inline-flex;" title="Remover cartão">' + window.icon('x', 12) + '</button>'
+          : '<button type="button" data-act="reactivate-card" data-id="' + esc(c.id) + '" ' +
+              'style="background:none;border:none;cursor:pointer;color:var(--text-muted);' +
+              'padding:0;display:inline-flex;" title="Reativar cartão">' + window.icon('eye', 12) + '</button>';
+        return '<span class="chip" data-card-id="' + esc(c.id) + '" style="' +
+            (active ? '' : 'opacity:0.55;') + '">' +
+          '<span>•••• ' + esc(c.last4) + (active ? '' : ' · Inativo') + '</span>' +
+          '<span class="chip-actions">' + actionHtml + '</span>' +
         '</span>';
       }).join('');
       const chipsHtml = chips
@@ -374,10 +379,8 @@
       });
     });
 
-    m.$el.on('click', '[data-act=remove-card]', function () {
-      if (!isEdit) return;
-      const cardId = $(this).attr('data-id');
-      const $chip = $(this).closest('[data-card-id]');
+    function doRemoveCard(cardId) {
+      const $chip = m.$body.find('[data-card-id="' + cardId + '"]');
       $chip.css('opacity', '0.5');
       window.App.AccountService.removeCard(existing.id, cardId).then(function () {
         cards = cards.filter(function (c) { return String(c.id) !== String(cardId); });
@@ -386,6 +389,55 @@
       }).catch(function (err) {
         $chip.css('opacity', '1');
         window.toast((err && err.message) || 'Falha ao remover cartão', 'error');
+      });
+    }
+
+    function confirmDeactivate(card, count) {
+      window.confirmModal({
+        title: 'Inativar cartão',
+        body: '<p>Este cartão tem ' + count + ' transaç' + (count === 1 ? 'ão vinculada' : 'ões vinculadas') +
+              ' e não pode ser excluído. Ele pode ser inativado: deixa de aparecer para novos lançamentos, ' +
+              'mas o histórico é mantido.</p>',
+        confirmLabel: 'Inativar',
+        confirmIcon: 'eyeOff',
+        danger: false,
+        onConfirm: function (m2, reEnable) {
+          window.App.AccountService.setCardActive(existing.id, card.id, false).then(function (updated) {
+            cards = cards.map(function (c) { return String(c.id) === String(updated.id) ? updated : c; });
+            renderCardsBody();
+            m2.close();
+            window.toast('Cartão inativado', 'success');
+          }).catch(function (err) {
+            reEnable();
+            window.toast((err && err.message) || 'Falha ao inativar cartão', 'error');
+          });
+        }
+      });
+    }
+
+    m.$el.on('click', '[data-act=remove-card]', function () {
+      if (!isEdit) return;
+      const cardId = $(this).attr('data-id');
+      const card = cards.filter(function (c) { return String(c.id) === String(cardId); })[0];
+      if (!card) return;
+      window.App.TransactionService.list('').then(function (all) {
+        const linked = (Array.isArray(all) ? all : []).filter(function (tx) {
+          return String(tx.cardId) === String(cardId);
+        }).length;
+        if (linked === 0) doRemoveCard(cardId);
+        else confirmDeactivate(card, linked);
+      }).catch(function () { doRemoveCard(cardId); });
+    });
+
+    m.$el.on('click', '[data-act=reactivate-card]', function () {
+      if (!isEdit) return;
+      const cardId = $(this).attr('data-id');
+      window.App.AccountService.setCardActive(existing.id, cardId, true).then(function (updated) {
+        cards = cards.map(function (c) { return String(c.id) === String(updated.id) ? updated : c; });
+        renderCardsBody();
+        window.toast('Cartão reativado', 'success');
+      }).catch(function (err) {
+        window.toast((err && err.message) || 'Falha ao reativar cartão', 'error');
       });
     });
 

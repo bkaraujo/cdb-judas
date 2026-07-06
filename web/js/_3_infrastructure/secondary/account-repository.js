@@ -9,6 +9,9 @@
       listCards:  function (accountId)         { return http.get('/accounts/' + accountId + '/cards'); },
       createCard: function (accountId, data)   { return http.post('/accounts/' + accountId + '/cards', data); },
       removeCard: function (accountId, cardId) { return http.delete('/accounts/' + accountId + '/cards/' + cardId); },
+      setCardActive: function (accountId, cardId, active) {
+        return http.patch('/accounts/' + accountId + '/cards/' + cardId, { active: active });
+      },
     };
   }
   window.Infra = window.Infra || {};

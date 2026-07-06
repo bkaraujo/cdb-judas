@@ -141,4 +141,8 @@ public class MonetaryContext implements Facade {
     public Result<Void, DomainError> deleteCard(UUID id) {
         return ucCard.deleteCard(id);
     }
+
+    public Result<Card, DomainError> setCardActive(UUID id, boolean active) {
+        return ucCard.setActive(id, active);
+    }
 }

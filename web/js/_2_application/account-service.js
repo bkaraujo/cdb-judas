@@ -18,6 +18,7 @@
 
   function addCard(accountId, data)      { return repo.createCard(accountId, data); }
   function removeCard(accountId, cardId) { return repo.removeCard(accountId, cardId); }
+  function setCardActive(accountId, cardId, active) { return repo.setCardActive(accountId, cardId, active); }
 
   function onChange(cb) { return cache.subscribe('ACCOUNT', cb); }
 
@@ -31,6 +32,7 @@
     remove: remove,
     addCard: addCard,
     removeCard: removeCard,
+    setCardActive: setCardActive,
     findById: findById,
     onChange: onChange,
   };

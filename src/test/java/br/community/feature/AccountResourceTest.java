@@ -176,6 +176,51 @@ public class AccountResourceTest extends BaseHttpTest {
     }
 
     @Test
+    void deveBloquearExclusaoDeCartaoComTransacaoVinculadaEPermitirInativar() {
+        String checkingJson = """
+            {"name":"Conta Corrente","type":"CHECKING","color":"#820AD1","active":true}
+            """;
+        String accountId = asTestUser()
+                .body(checkingJson)
+                .when().post("/api/" + TEST_USER_ID + "/accounts")
+                .then().statusCode(201)
+                .extract().jsonPath().getString("id");
+
+        String cardId = asTestUser()
+                .body("{\"last4\":\"1234\"}")
+                .when().post("/api/" + TEST_USER_ID + "/accounts/" + accountId + "/cards")
+                .then().statusCode(201)
+                .extract().jsonPath().getString("id");
+
+        String macroId = asTestUser()
+                .body("{\"name\":\"Moradia2\",\"nature\":\"EXPENSE\"}")
+                .when().post("/api/" + TEST_USER_ID + "/categories")
+                .then().extract().jsonPath().getString("id");
+        String categoryId = asTestUser()
+                .body("{\"name\":\"Cartao\",\"nature\":\"EXPENSE\",\"parentId\":\"%s\"}".formatted(macroId))
+                .when().post("/api/" + TEST_USER_ID + "/categories")
+                .then().extract().jsonPath().getString("id");
+
+        String txJson = """
+            {"description":"Compra","amount":-50.00,"date":"2024-04-01","categoryId":"%s","costCenterId":"d0000000-0000-0000-0000-000000000002","status":"confirmed","type":"expense","installments":1,"editMode":"single","cardId":"%s"}
+            """.formatted(categoryId, cardId);
+        asTestUser()
+                .body(txJson)
+                .when().post("/api/" + TEST_USER_ID + "/accounts/" + accountId + "/transactions")
+                .then().statusCode(201);
+
+        asTestUser()
+                .when().delete("/api/" + TEST_USER_ID + "/accounts/" + accountId + "/cards/" + cardId)
+                .then().statusCode(409);
+
+        asTestUser()
+                .body("{\"active\":false}")
+                .when().patch("/api/" + TEST_USER_ID + "/accounts/" + accountId + "/cards/" + cardId)
+                .then().statusCode(200)
+                .body("active", is(false));
+    }
+
+    @Test
     void deveRejeitarTipoDeContaDesconhecido() {
         String cardJson = """
             {"name":"Nubank","type":"CREDIT_CARD","color":"#820AD1","active":true}

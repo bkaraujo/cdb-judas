@@ -8,6 +8,7 @@ import br.community.context.monetary._0_domain.model.Card;
 import br.community.context.monetary._1_application.command.CardCommand;
 import br.community.context.monetary._1_application.service.AccountService;
 import br.community.context.monetary._1_application.service.CardService;
+import br.community.context.monetary._1_application.service.TransactionService;
 import br.community.context.shared._0_domain.model.DomainError;
 import lombok.RequiredArgsConstructor;
 import lombok.val;
@@ -25,6 +26,7 @@ public class CardUseCase {
 
     private final CardService cardService;
     private final AccountService accountService;
+    private final TransactionService transactionService;
 
     public Result<List<Card>, DomainError> listCards() {
         return Result.success(cardService.findAll());
@@ -58,11 +60,23 @@ public class CardUseCase {
     }
 
     public Result<Void, DomainError> deleteCard(UUID id) {
-        return cardService.findById(id).map(card -> {
+        return cardService.findById(id).flatMap(card -> {
+            if (!transactionService.findByCard(id).isEmpty()) {
+                return Result.<Void>failure(new DomainError.Conflict("Card has linked transactions and cannot be deleted: " + id));
+            }
             cardService.deleteById(id);
             accountService.findById(card.accountId())
                     .ifSuccess(account -> MessageBus.submit(new AccountEvents.Updated(account)));
-            return null;
+            return Result.success();
+        });
+    }
+
+    public Result<Card, DomainError> setActive(UUID id, boolean active) {
+        return cardService.findById(id).map(card -> {
+            val saved = cardService.save(new Card(card.id(), card.last4(), card.accountId(), active));
+            accountService.findById(saved.accountId())
+                    .ifSuccess(account -> MessageBus.submit(new AccountEvents.Updated(account)));
+            return saved;
         });
     }
 }

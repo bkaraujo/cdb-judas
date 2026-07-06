@@ -43,6 +43,12 @@ public class TransactionService {
                 .toList();
     }
 
+    public List<Transaction> findByCard(UUID cardId) {
+        return transactionRepository.findAll().stream()
+                .filter(t -> cardId.equals(t.cardId()))
+                .toList();
+    }
+
     public List<Transaction> findPending() {
         return transactionRepository.findAll().stream()
                 .filter(t -> Transaction.Status.PENDING.equals(t.status()))

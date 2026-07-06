@@ -4,6 +4,7 @@ import br.commons.Result;
 import br.community.context.monetary._0_domain.event.AccountEvents;
 import br.community.context.monetary._0_domain.model.Account;
 import br.community.context.monetary._0_domain.model.Card;
+import br.community.context.monetary._0_domain.model.Transaction;
 import br.community.context.monetary._1_application.command.CardCommand;
 import br.community.context.monetary._1_application.event.TransactionEventListener;
 import br.community.context.monetary._1_application.service.AccountService;
@@ -29,16 +30,18 @@ class CardUseCaseTest {
     private InMemoryRepositories.Cards cardRepo;
     private CardUseCase useCase;
     private TransactionEventListener listener;
+    private TransactionService transactionService;
 
     @BeforeEach
     void setUp() {
         accountRepo = new InMemoryRepositories.Accounts();
         cardRepo = new InMemoryRepositories.Cards();
         val cardService = new CardService(cardRepo);
-        useCase = new CardUseCase(cardService, new AccountService(accountRepo));
+        transactionService = new TransactionService(new InMemoryRepositories.Transactions());
+        useCase = new CardUseCase(cardService, new AccountService(accountRepo), transactionService);
         listener = new TransactionEventListener(
                 new AccountService(accountRepo), new BalanceService(new InMemoryRepositories.Balances()),
-                new TransactionService(new InMemoryRepositories.Transactions()), cardService);
+                transactionService, cardService);
     }
 
     private Account seedChecking() {
@@ -135,5 +138,33 @@ class CardUseCaseTest {
         listener.onAccountDeleted(new AccountEvents.Deleted(account.id()));
 
         assertTrue(cardRepo.findById(card.id()).isEmpty(), "cartão removido junto da conta");
+    }
+
+    @Test
+    @DisplayName("deleteCard com transação vinculada → Conflict, cartão preservado")
+    void rejectsDeleteWithLinkedTransaction() {
+        Account account = seedChecking();
+        Card card = ((Result.Success<Card, DomainError>) useCase.createCard(new CardCommand(account.id(), "1234"))).value();
+        transactionService.save(new Transaction(UUID.randomUUID(), "compra", java.math.BigDecimal.TEN, java.time.LocalDate.now(),
+                account.id(), Transaction.Status.CONFIRMED, Transaction.Type.EXPENSE, UUID.randomUUID(), null, null, 1, 1, null, card.id()));
+
+        Result<Void, DomainError> r = useCase.deleteCard(card.id());
+
+        assertTrue(r.isFailure());
+        assertInstanceOf(DomainError.Conflict.class, ((Result.Failure<Void, DomainError>) r).error());
+        assertTrue(cardRepo.findById(card.id()).isPresent());
+    }
+
+    @Test
+    @DisplayName("setActive persiste a flag")
+    void setActivePersistsFlag() {
+        Account account = seedChecking();
+        Card card = ((Result.Success<Card, DomainError>) useCase.createCard(new CardCommand(account.id(), "1234"))).value();
+
+        Result<Card, DomainError> r = useCase.setActive(card.id(), false);
+
+        assertTrue(r.isSuccess());
+        assertFalse(((Result.Success<Card, DomainError>) r).value().active());
+        assertFalse(cardRepo.findById(card.id()).orElseThrow().active());
     }
 }
