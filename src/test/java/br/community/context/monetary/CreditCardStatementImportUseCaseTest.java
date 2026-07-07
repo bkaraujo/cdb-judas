@@ -256,7 +256,7 @@ class CreditCardStatementImportUseCaseTest {
         transactions.save(new Transaction(
                 UUID.randomUUID(), "Amazonmktplc Megabytem", new BigDecimal("72.99"),
                 LocalDate.of(2024, 7, 15), bank.id(),
-                Transaction.Status.CONFIRMED, Transaction.Type.EXPENSE, CostCenter.VARIAVEL_ID, null, groupId, 1, 10, null, null));
+                Transaction.Status.CONFIRMED, Transaction.Type.EXPENSE, CostCenter.VARIAVEL.id(), null, groupId, 1, 10, null, null));
 
         var useCase = useCaseWith((bytes, password) -> Result.success(text), accounts, transactions, List.of(card));
         var preview = invoicePreview(useCase.preview(new byte[1], null, null));
@@ -284,7 +284,7 @@ class CreditCardStatementImportUseCaseTest {
         transactions.save(new Transaction(
                 UUID.randomUUID(), "MICROSOFT", new BigDecimal("-60.00"),
                 LocalDate.of(2025, 3, 9), bank.id(),
-                Transaction.Status.CONFIRMED, Transaction.Type.EXPENSE, CostCenter.VARIAVEL_ID, null, null, 1, 1, null, null));
+                Transaction.Status.CONFIRMED, Transaction.Type.EXPENSE, CostCenter.VARIAVEL.id(), null, null, 1, 1, null, null));
 
         var useCase = useCaseWith((bytes, password) -> Result.success(text), accounts, transactions, List.of(card));
         var preview = invoicePreview(useCase.preview(new byte[1], null, null));
@@ -330,7 +330,7 @@ class CreditCardStatementImportUseCaseTest {
         transactions.save(new Transaction(
                 UUID.randomUUID(), "AMAZONMKTPLC MEGABYTEM", new BigDecimal("-99.90"),
                 LocalDate.of(2024, 1, 10), account.id(),
-                Transaction.Status.CONFIRMED, Transaction.Type.EXPENSE, CostCenter.VARIAVEL_ID, null, null, 1, 1, null, null));
+                Transaction.Status.CONFIRMED, Transaction.Type.EXPENSE, CostCenter.VARIAVEL.id(), null, null, 1, 1, null, null));
 
         var useCase = useCaseWith((bytes, password) -> Result.success(text), accounts, transactions, List.of(card));
         var preview = invoicePreview(useCase.preview(new byte[1], null, null));
@@ -566,7 +566,7 @@ class CreditCardStatementImportUseCaseTest {
         transactions.save(new Transaction(
                 UUID.randomUUID(), "MERCADO LIVRE", new BigDecimal("-90.00"),
                 LocalDate.of(2025, 7, 4), account.id(),
-                Transaction.Status.CONFIRMED, Transaction.Type.EXPENSE, CostCenter.VARIAVEL_ID, null, null, 1, 1, null, null));
+                Transaction.Status.CONFIRMED, Transaction.Type.EXPENSE, CostCenter.VARIAVEL.id(), null, null, 1, 1, null, null));
 
         var useCase = useCaseWith(NOOP_EXTRACTOR, accounts, transactions, List.of(card));
 

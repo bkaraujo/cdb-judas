@@ -109,7 +109,7 @@ class StatementImportUseCaseTest {
         var transactions = new InMemoryRepositories.Transactions();
         var manual = new Transaction(
                 UUID.randomUUID(), "Dentista", new BigDecimal("-161.43"), LocalDate.of(2025, 3, 4),
-                account.id(), Transaction.Status.PENDING, Transaction.Type.EXPENSE, CostCenter.VARIAVEL_ID, null, null, 1, 1, null, null);
+                account.id(), Transaction.Status.PENDING, Transaction.Type.EXPENSE, CostCenter.VARIAVEL.id(), null, null, 1, 1, null, null);
         transactions.save(manual);
         var useCase = useCaseWith(accounts, transactions);
 
@@ -132,7 +132,7 @@ class StatementImportUseCaseTest {
         var transactions = new InMemoryRepositories.Transactions();
         var manual = new Transaction(
                 UUID.randomUUID(), "Dentista", new BigDecimal("-161.43"), LocalDate.of(2025, 3, 1),
-                account.id(), Transaction.Status.PENDING, Transaction.Type.EXPENSE, CostCenter.VARIAVEL_ID, null, null, 1, 1, null, null);
+                account.id(), Transaction.Status.PENDING, Transaction.Type.EXPENSE, CostCenter.VARIAVEL.id(), null, null, 1, 1, null, null);
         transactions.save(manual);
         var useCase = useCaseWith(accounts, transactions);
 
@@ -154,7 +154,7 @@ class StatementImportUseCaseTest {
         var transactions = new InMemoryRepositories.Transactions();
         var existing = new Transaction(
                 UUID.randomUUID(), "Odontoprev", new BigDecimal("-161.43"), LocalDate.of(2025, 3, 5),
-                account.id(), Transaction.Status.CONFIRMED, Transaction.Type.EXPENSE, CostCenter.VARIAVEL_ID, null, null, 1, 1, null, null);
+                account.id(), Transaction.Status.CONFIRMED, Transaction.Type.EXPENSE, CostCenter.VARIAVEL.id(), null, null, 1, 1, null, null);
         transactions.save(existing);
         var useCase = useCaseWith(accounts, transactions);
 

@@ -71,11 +71,11 @@ public abstract class Database {
                 CREATE TABLE MON_COST_CENTER (
                     ID CHAR(36) PRIMARY KEY,
                     TXT_DESCRIPTION VARCHAR(255) NOT NULL,
-                    FLG_ACTIVE CHAR(1) NOT NULL,
-                    TMS_CREATE_AT TIMESTAMP NOT NULL,
-                    TMS_UPDATED_AT TIMESTAMP NOT NULL
+                    FLG_ACTIVE CHAR(1) NOT NULL
                 )
                 """,
+                "INSERT INTO MON_COST_CENTER (ID, TXT_DESCRIPTION, FLG_ACTIVE) VALUES ('d0000000-0000-0000-0000-000000000001', 'Fixo', 'Y')",
+                "INSERT INTO MON_COST_CENTER (ID, TXT_DESCRIPTION, FLG_ACTIVE) VALUES ('d0000000-0000-0000-0000-000000000002', 'Variável', 'Y')",
                 """
                 CREATE TABLE MON_TRANSACTION (
                     ID CHAR(36) PRIMARY KEY,

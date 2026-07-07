@@ -268,12 +268,12 @@ public class TransactionUseCase {
 
         val outflow = new Transaction(
                 outId, "Transferência (saída)", absAmount, date,
-                fromAccountId, Transaction.Status.CONFIRMED, Transaction.Type.EXPENSE, CostCenter.VARIAVEL_ID, date,
+                fromAccountId, Transaction.Status.CONFIRMED, Transaction.Type.EXPENSE, CostCenter.VARIAVEL.id(), date,
                 groupId, 1, 2, null, null
         );
         val inflow = new Transaction(
                 inId, "Transferência (entrada)", absAmount, date,
-                toAccountId, Transaction.Status.CONFIRMED, Transaction.Type.INCOME, CostCenter.VARIAVEL_ID, date,
+                toAccountId, Transaction.Status.CONFIRMED, Transaction.Type.INCOME, CostCenter.VARIAVEL.id(), date,
                 groupId, 2, 2, null, null
         );
 
@@ -291,7 +291,7 @@ public class TransactionUseCase {
     private Result<Transaction, DomainError> persistImported(ImportedTransactionCommand cmd) {
         val tx = new Transaction(
                 UUID.randomUUID(), cmd.description(), cmd.amount().abs(), cmd.date(),
-                cmd.accountId(), cmd.status(), cmd.type(), CostCenter.VARIAVEL_ID, null,
+                cmd.accountId(), cmd.status(), cmd.type(), CostCenter.VARIAVEL.id(), null,
                 cmd.groupId(), installmentOrDefault(cmd.installmentNumber()), installmentOrDefault(cmd.totalInstallments()), null,
                 cmd.cardId());
         val saved = transactionService.save(tx);

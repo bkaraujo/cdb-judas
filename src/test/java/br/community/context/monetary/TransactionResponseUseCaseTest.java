@@ -38,7 +38,7 @@ class TransactionResponseUseCaseTest {
     private TransactionUseCase useCase;
 
     private final UUID accountId = UUID.randomUUID();
-    private final UUID costCenterId = CostCenter.VARIAVEL_ID;
+    private final UUID costCenterId = CostCenter.VARIAVEL.id();
 
     @BeforeEach
     void setUp() {

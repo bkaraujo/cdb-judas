@@ -10,11 +10,7 @@ import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 
 import java.sql.Timestamp;
-import java.util.LinkedHashMap;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
-import java.util.UUID;
+import java.util.*;
 
 /** Adaptador JDBC (H2) da porta {@link CostCenterRepository}; tabela {@code MON_COST_CENTER}. */
 @NullMarked
@@ -42,7 +38,7 @@ public final class CostCenterJDBCRepository extends JDBCRepository<CostCenter> i
     /** {@code FLG_ACTIVE} não está no domínio: semeado como 'Y' na inserção e preservado no update. */
     @Override
     protected Set<String> updateImmutableColumns() {
-        return Set.of("TMS_CREATE_AT", "FLG_ACTIVE");
+        return Set.of("FLG_ACTIVE");
     }
 
     @Override
@@ -53,21 +49,14 @@ public final class CostCenterJDBCRepository extends JDBCRepository<CostCenter> i
         values.put("ID", entity.id().toString());
         values.put("TXT_DESCRIPTION", entity.description());
         values.put("FLG_ACTIVE", "Y");
-        values.put("TMS_CREATE_AT", now);
-        values.put("TMS_UPDATED_AT", now);
         return values;
     }
 
     @Override
     protected CostCenter map(JDBCResultSet rs) {
-        val createdAt = rs.getTimestamp("TMS_CREATE_AT").get().toLocalDateTime();
-        val updatedAt = rs.getTimestamp("TMS_UPDATED_AT").get().toLocalDateTime();
-
         return new CostCenter(
                 UUID.fromString(rs.getString("ID").get()),
-                rs.getString("TXT_DESCRIPTION").get(),
-                createdAt,
-                updatedAt
+                rs.getString("TXT_DESCRIPTION").get()
         );
     }
 }

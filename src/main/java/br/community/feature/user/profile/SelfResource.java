@@ -3,6 +3,7 @@ package br.community.feature.user.profile;
 import br.commons.Result;
 import br.community.context.shared._1_application.DomainException;
 import br.community.core.web.security.CurrentUser;
+import br.community.feature.system.user.UserService;
 import jakarta.validation.Valid;
 import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.GET;
@@ -25,10 +26,11 @@ import org.jspecify.annotations.NullMarked;
 public class SelfResource {
 
     private final UserService userService;
+    private final UserProfileService profileService;
 
     @GET
     public MeResponse getMe() {
-        return switch (userService.getProfile(CurrentUser.getId())) {
+        return switch (profileService.getProfile(CurrentUser.getId())) {
             case Result.Success(var profile) -> MeResponse.from(profile);
             case Result.Failure(var error) -> throw new DomainException(error);
         };
@@ -42,12 +44,12 @@ public class SelfResource {
 
         var result = req.name() != null
                 ? userService.updateName(id, req.name())
-                : userService.getProfile(id);
+                : profileService.getProfile(id);
 
         val prefs = req.preferences();
         if (prefs != null) {
             val patch = new PreferencesPatch(prefs.theme(), prefs.language(), prefs.locale(), prefs.sidebarCollapsed());
-            result = result.flatMap(ignored -> userService.updatePreferences(id, patch));
+            result = result.flatMap(ignored -> profileService.updatePreferences(id, patch));
         }
 
         return switch (result) {

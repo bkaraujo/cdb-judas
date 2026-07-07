@@ -19,7 +19,7 @@ import jakarta.inject.Singleton;
 @Singleton
 @NullMarked
 @RequiredArgsConstructor
-public class UserService {
+public class UserProfileService {
 
     private final UserRepository repository;
     private final PreferencesRepository preferences;
@@ -28,16 +28,6 @@ public class UserService {
         val user = repository.findById(userId).orElse(null);
         if (user == null) return Result.failure(new DomainError.NotFound("Usuário não encontrado"));
         return Result.success(new Profile(user, preferences.findByUserId(userId)));
-    }
-
-    /** Atualiza o nome de exibição. Aplica trim; nome em branco vira nulo (exibição cai para username). */
-    public Result<Profile, DomainError> updateName(String userId, @Nullable String name) {
-        val user = repository.findById(userId).orElse(null);
-        if (user == null) return Result.failure(new DomainError.NotFound("Usuário não encontrado"));
-        val trimmed = (name == null || name.isBlank()) ? null : name.trim();
-        val saved = repository.save(new User(user.id(), user.username(), trimmed, user.password(),
-                user.active(), user.createdAt(), user.updatedAt()));
-        return Result.success(new Profile(saved, preferences.findByUserId(userId)));
     }
 
     /** Aplica um patch parcial sobre as preferências (campo nulo mantém o valor atual). */
