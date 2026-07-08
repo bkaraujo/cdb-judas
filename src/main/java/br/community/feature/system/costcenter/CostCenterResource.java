@@ -17,10 +17,8 @@ import java.util.List;
 @RequiredArgsConstructor
 public class CostCenterResource {
 
-    private final CostCenterCatalog catalog;
-
     @GET
     public List<CostCenter> list() {
-        return catalog.list();
+        return List.of(CostCenter.FIXO, CostCenter.VARIAVEL);
     }
 }
