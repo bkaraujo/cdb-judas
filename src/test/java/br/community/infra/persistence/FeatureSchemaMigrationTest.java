@@ -65,6 +65,8 @@ class FeatureSchemaMigrationTest {
 
             assertEquals(1, columnExists(conn, "USER_CATEGORY", "FLG_SYSTEM"));
             assertEquals(0, columnExists(conn, "USER_CATEGORY", "BOL_SYSTEM"));
+            assertEquals(1, columnExists(conn, "USER_CATEGORY", "COD_NATURE"));
+            assertEquals(0, columnExists(conn, "USER_CATEGORY", "TXT_NATURE"));
 
             assertEquals(1, columnExists(conn, "USER_TRANSACTION", "COD_ACCOUNT"));
             assertEquals(accountA, userTransactionAccountId(conn, txId), "COD_ACCOUNT retropreenchido do MON_TRANSACTION");

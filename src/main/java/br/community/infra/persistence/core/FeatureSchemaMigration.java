@@ -27,8 +27,9 @@ import java.util.UUID;
  *       e {@code DEC_OPENING_BALANCE} — contas com saldo inicial não-zero ganham uma
  *       {@code MON_TRANSACTION} sintética ("Saldo inicial", datada numa âncora antiga) preservando o
  *       valor antes da coluna sumir.</li>
- *   <li>{@code USER_CATEGORY.BOL_SYSTEM} vira {@code FLG_SYSTEM} (só renomeia — mesma convenção
- *       {@code CHAR(1)} 'Y'/'N' de todo {@code FLG_*} do projeto).</li>
+ *   <li>{@code USER_CATEGORY.BOL_SYSTEM} vira {@code FLG_SYSTEM} (mesma convenção {@code CHAR(1)}
+ *       'Y'/'N' de todo {@code FLG_*} do projeto) e {@code TXT_NATURE} vira {@code COD_NATURE}
+ *       (prefixo {@code COD_} de FK de código, alinhando ao diagrama).</li>
  *   <li>{@code USER_TRANSACTION} ganha {@code COD_ACCOUNT} (retropreenchido a partir de
  *       {@code MON_TRANSACTION}) e troca a PK de {@code (COD_TRANSACTION, COD_USER)} para
  *       {@code (COD_USER, COD_ACCOUNT, COD_TRANSACTION)}.</li>
@@ -155,6 +156,7 @@ public final class FeatureSchemaMigration {
 
     private static void migrateUserCategory(DataSource ds) {
         ds.execute("ALTER TABLE USER_CATEGORY RENAME COLUMN BOL_SYSTEM TO FLG_SYSTEM");
+        ds.execute("ALTER TABLE USER_CATEGORY RENAME COLUMN TXT_NATURE TO COD_NATURE");
     }
 
     // ── USER_TRANSACTION: ganha COD_ACCOUNT, PK vira (USER, ACCOUNT, TRANSACTION) ──

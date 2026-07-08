@@ -8,7 +8,7 @@ As portas de repositório do domínio/feature são implementadas por adaptadores
 
 - As portas (`*Repository` no domínio/feature) são implementadas por `*JDBCRepository` em `br.community.infra.persistence`, estendendo `JDBCRepository<T>`.
 - Os adaptadores usam o `DataSource` H2 publicado no `br.commons.Registry`; os primitivos JDBC ficam em `br.commons.framework.persistence.jdbc`.
-- O schema (DDL) vive em `Database`: tabelas planas; enums como string referenciando tabelas de lookup (`MON_ACCOUNT_TYPE` / `MON_NATURE` / `MON_TRANSACTION_STATUS`) via FK; mapas livres (`additionalInfo` / `preferences`) em coluna JSON.
+- O schema (DDL) vive em `Database`: tabelas planas; enums como string referenciando tabelas de lookup (`MON_ACCOUNT_TYPE` / `TRANSACTION_NATURE` / `MON_STATUS`) via FK; mapas livres (`additionalInfo` / `preferences`) em coluna JSON. As FKs conformam a **todas** as relações dos diagramas Mermaid — além das lookups, as tabelas de dados referenciam-se entre si, inclusive entre contextos (ex.: `SEC_USER→PEP_PERSON`, `USER_TRANSACTION→MON_TRANSACTION`); por isso a ordem de criação (`model()`) e de limpeza (`reset()`) respeita a dependência pai→filho.
 - Nem tudo é JDBC: a feature `Closing` e o catálogo global de centros de custo ainda persistem em JSON (`Storage` / `LocalFileStorage`).
 
 ## 2. O schema canônico são os diagramas Mermaid

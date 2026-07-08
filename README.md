@@ -118,7 +118,6 @@ No Docker Compose, o diretório `./data` do host é montado em `/data` no contai
 A documentação técnica está em [`docs/`](docs/):
 
 - **[Guia Central](CLAUDE.md)** — decomposição funcional + índice de toda a documentação.
-- **[Decomposição Funcional](docs/functional_decomposition.md)** — contextos, features e plataforma em detalhe.
 - **Backend:** [Arquitetura Hexagonal](docs/backend/hexagonal-architecture.md) · [Padrão Result](docs/backend/result-pattern.md) · [Null-Safety](docs/backend/null-safety.md) · [Lombok](docs/backend/lombok.md) · [Persistência JDBC/H2](docs/backend/persistence-jdbc.md) · [Qualidade & Build](docs/backend/quality-and-build.md)
 - **Frontend:** [API Web](docs/frontend/api-web.md)
 - **Schema do banco:** diagramas Mermaid em [`docs/`](docs/) (`db-ctx-people`, `db-ctx-monetary`, `db-features`) — fonte da verdade.

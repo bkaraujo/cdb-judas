@@ -120,7 +120,7 @@ public class UserService {
                     repository.save(new UserCategory(
                             UUID.randomUUID(),
                             userId,             // COD_USER
-                            nature,             // TXT_NATURE
+                            nature,             // COD_NATURE
                             name,               // TXT_NAME
                             parentId,           // COD_PARENT
                             false               // FLG_SYSTEM (N)

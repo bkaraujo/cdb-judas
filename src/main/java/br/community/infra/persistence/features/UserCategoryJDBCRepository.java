@@ -44,7 +44,7 @@ public final class UserCategoryJDBCRepository extends JDBCRepository<UserCategor
     @Override
     public List<UserCategory> findByNature(UUID userId, Transaction.Type nature) {
         return datasource.query(
-                "SELECT " + columnList() + " FROM " + table() + " WHERE COD_USER = ? AND EXISTS (SELECT 1 FROM TRANSACTION_NATURE TN WHERE TN.TXT_DESCRIPTION = ? AND TN.ID = TXT_NATURE)",
+                "SELECT " + columnList() + " FROM " + table() + " WHERE COD_USER = ? AND EXISTS (SELECT 1 FROM TRANSACTION_NATURE TN WHERE TN.TXT_DESCRIPTION = ? AND TN.ID = COD_NATURE)",
                 JDBCParameter.of(
                         userId.toString(),
                         nature.name()
@@ -71,7 +71,7 @@ public final class UserCategoryJDBCRepository extends JDBCRepository<UserCategor
         val values = new LinkedHashMap<String, @Nullable Object>();
         values.put("ID", entity.id().toString());
         values.put("COD_USER", entity.userId().toString());
-        values.put("TXT_NATURE", entity.nature().name());
+        values.put("COD_NATURE", entity.nature().name());
         values.put("TXT_NAME", entity.name());
         values.put("COD_PARENT", parentStr);
         values.put("FLG_SYSTEM", entity.isSystem() ? "Y" : "N");
@@ -85,7 +85,7 @@ public final class UserCategoryJDBCRepository extends JDBCRepository<UserCategor
     protected UserCategory map(JDBCResultSet rs) {
         val id = UUID.fromString(rs.getString("ID").get());
         val userId = UUID.fromString(rs.getString("COD_USER").get());
-        val nature = Transaction.Type.valueOf(rs.getString("TXT_NATURE").get());
+        val nature = Transaction.Type.valueOf(rs.getString("COD_NATURE").get());
         val name = rs.getString("TXT_NAME").get();
         val isSystem = "Y".equals(rs.getString("FLG_SYSTEM").get());
         val active = "Y".equals(rs.getString("FLG_ACTIVE").get());
