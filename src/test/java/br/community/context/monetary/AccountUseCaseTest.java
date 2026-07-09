@@ -1,14 +1,13 @@
 package br.community.context.monetary;
 
 import br.commons.Result;
-import br.community.context.monetary._0_domain.model.*;
+import br.community.context.monetary._0_domain.model.Account;
+import br.community.context.monetary._0_domain.model.CreditCard;
+import br.community.context.monetary._0_domain.model.MonthlyBalance;
+import br.community.context.monetary._0_domain.model.Transaction;
 import br.community.context.monetary._1_application.command.AccountCommand;
 import br.community.context.monetary._1_application.command.TransactionPolicy;
-import br.community.context.monetary._1_application.service.AccountService;
-import br.community.context.monetary._1_application.service.BalanceRecalculationService;
-import br.community.context.monetary._1_application.service.BalanceService;
-import br.community.context.monetary._1_application.service.CardService;
-import br.community.context.monetary._1_application.service.TransactionService;
+import br.community.context.monetary._1_application.service.*;
 import br.community.context.monetary._1_application.usecase.AccountUseCase;
 import br.community.context.shared._0_domain.model.DomainError;
 import lombok.val;

@@ -4,7 +4,10 @@ import br.community.context.monetary._0_domain.model.CreditCard;
 import lombok.val;
 import org.jspecify.annotations.NullMarked;
 
-import java.util.*;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 /**
  * Matches a statement's distinct card last4s against the registered credit cards by their

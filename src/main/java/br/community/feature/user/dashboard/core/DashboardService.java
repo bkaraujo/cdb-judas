@@ -3,11 +3,11 @@ package br.community.feature.user.dashboard.core;
 import br.commons.Result;
 import br.community.context.monetary.MonetaryContext;
 import br.community.context.shared._0_domain.model.DomainError;
+import jakarta.inject.Singleton;
 import lombok.Builder;
 import lombok.RequiredArgsConstructor;
 import lombok.val;
 import org.jspecify.annotations.NullMarked;
-import jakarta.inject.Singleton;
 
 import java.time.LocalDate;
 import java.util.ArrayList;

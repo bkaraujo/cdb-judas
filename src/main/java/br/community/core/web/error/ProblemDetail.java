@@ -2,8 +2,8 @@ package br.community.core.web.error;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import jakarta.ws.rs.core.Response;
-import org.jspecify.annotations.Nullable;
 import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
 
 /** Corpo `application/problem+json` (RFC 7807), equivalente ao antigo `ProblemDetail` do Spring Framework. */
 @NullMarked

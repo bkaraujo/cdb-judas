@@ -1,6 +1,5 @@
 package br.community.infra.persistence.monetary;
 
-import br.commons.chrono.Time;
 import br.commons.framework.persistence.jdbc.JDBCRepository;
 import br.commons.framework.persistence.jdbc.primitives.JDBCResultSet;
 import br.community.context.monetary._0_domain.model.CostCenter;
@@ -9,7 +8,6 @@ import lombok.val;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 
-import java.sql.Timestamp;
 import java.util.*;
 
 /** Adaptador JDBC (H2) da porta {@link CostCenterRepository}; tabela {@code MON_COST_CENTER}. */

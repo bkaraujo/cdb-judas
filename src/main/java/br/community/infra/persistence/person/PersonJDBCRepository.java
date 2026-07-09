@@ -10,11 +10,7 @@ import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 
 import java.sql.Timestamp;
-import java.util.LinkedHashMap;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
-import java.util.UUID;
+import java.util.*;
 
 /** Adaptador JDBC (H2) da porta {@link PersonRepository}; tabela {@code PEP_PERSON}. */
 @NullMarked

@@ -13,11 +13,7 @@ import org.jspecify.annotations.Nullable;
 
 import java.math.BigDecimal;
 import java.sql.Timestamp;
-import java.util.ArrayList;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 
 /**
  * Migração one-shot do DB de dev file-based: cartão deixou de ser {@code MON_ACCOUNT} do tipo

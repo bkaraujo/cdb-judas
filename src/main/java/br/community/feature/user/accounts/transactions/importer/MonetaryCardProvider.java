@@ -2,9 +2,9 @@ package br.community.feature.user.accounts.transactions.importer;
 
 import br.community.context.monetary.MonetaryContext;
 import br.community.context.monetary._0_domain.model.CreditCard;
+import jakarta.inject.Singleton;
 import lombok.RequiredArgsConstructor;
 import org.jspecify.annotations.NullMarked;
-import jakarta.inject.Singleton;
 
 import java.util.List;
 

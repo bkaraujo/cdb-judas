@@ -1,10 +1,10 @@
 package br.community.feature.user.accounts.core;
 
 import br.community.infra.persistence.features.UserAccountJDBCRepository;
+import jakarta.inject.Singleton;
 import lombok.RequiredArgsConstructor;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
-import jakarta.inject.Singleton;
 
 import java.util.List;
 import java.util.UUID;

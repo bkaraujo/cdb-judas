@@ -11,11 +11,7 @@ import org.jspecify.annotations.Nullable;
 
 import java.math.BigDecimal;
 import java.sql.Timestamp;
-import java.util.LinkedHashMap;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
-import java.util.UUID;
+import java.util.*;
 
 /**
  * Adaptador JDBC (H2) da porta {@link AccountRepository}. Mapeia {@link Account} para

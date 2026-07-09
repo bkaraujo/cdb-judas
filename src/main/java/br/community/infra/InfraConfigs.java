@@ -1,10 +1,6 @@
 package br.community.infra;
 
-import br.community.context.monetary._0_domain.repository.AccountRepository;
-import br.community.context.monetary._0_domain.repository.BalanceRepository;
-import br.community.context.monetary._0_domain.repository.CardRepository;
-import br.community.context.monetary._0_domain.repository.CostCenterRepository;
-import br.community.context.monetary._0_domain.repository.TransactionRepository;
+import br.community.context.monetary._0_domain.repository.*;
 import br.community.context.people._0_domain.repository.PersonRepository;
 import br.community.core.web.security.UserRepository;
 import br.community.feature.user.accounts.closing.ClosingRepository;

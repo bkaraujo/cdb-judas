@@ -3,8 +3,8 @@ package br.community.context.monetary._1_application.usecase;
 import br.commons.MessageBus;
 import br.commons.Result;
 import br.community.context.monetary._0_domain.event.TransactionEvents;
-import br.community.context.monetary._0_domain.model.CreditCard;
 import br.community.context.monetary._0_domain.model.CostCenter;
+import br.community.context.monetary._0_domain.model.CreditCard;
 import br.community.context.monetary._0_domain.model.Transaction;
 import br.community.context.monetary._1_application.command.ImportedTransactionCommand;
 import br.community.context.monetary._1_application.command.TransactionCommand;
@@ -19,12 +19,7 @@ import org.jspecify.annotations.Nullable;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
 
 @NullMarked
 @RequiredArgsConstructor

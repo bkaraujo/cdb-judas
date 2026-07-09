@@ -2,13 +2,11 @@ package br.community.feature.user.profile;
 
 import br.commons.Result;
 import br.community.context.shared._0_domain.model.DomainError;
-import br.community.core.web.security.User;
 import br.community.core.web.security.UserRepository;
+import jakarta.inject.Singleton;
 import lombok.RequiredArgsConstructor;
 import lombok.val;
 import org.jspecify.annotations.NullMarked;
-import org.jspecify.annotations.Nullable;
-import jakarta.inject.Singleton;
 
 /**
  * Serviço da fatia {@code self} (/api/me): leitura/escrita do próprio perfil a partir da
