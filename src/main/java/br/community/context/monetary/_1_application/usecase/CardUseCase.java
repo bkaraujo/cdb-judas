@@ -1,8 +1,6 @@
 package br.community.context.monetary._1_application.usecase;
 
-import br.commons.MessageBus;
 import br.commons.Result;
-import br.community.context.monetary._0_domain.event.AccountEvents;
 import br.community.context.monetary._0_domain.model.Account;
 import br.community.context.monetary._0_domain.model.CreditCard;
 import br.community.context.monetary._0_domain.model.Transaction;
@@ -59,7 +57,6 @@ public class CardUseCase {
         }
 
         val saved = cardService.save(new CreditCard(UUID.randomUUID(), cmd.last4(), account.id(), true));
-        MessageBus.submit(new AccountEvents.Updated(account));
         return Result.success(saved);
     }
 
@@ -77,8 +74,6 @@ public class CardUseCase {
             return Result.failure(new DomainError.Conflict("CreditCard has linked transactions and cannot be deleted: " + creditCard.id()));
         }
         cardService.deleteById(creditCard.id());
-        accountService.findById(creditCard.accountId())
-                .ifSuccess(account -> MessageBus.submit(new AccountEvents.Updated(account)));
         return Result.success(List.of());
     }
 
@@ -100,8 +95,6 @@ public class CardUseCase {
             val movedIds = transactionService.findByCard(creditCard.id()).stream().map(Transaction::id).toList();
             transactionService.reassignCard(creditCard.id(), target.id());
             cardService.deleteById(creditCard.id());
-            accountService.findById(creditCard.accountId())
-                    .ifSuccess(account -> MessageBus.submit(new AccountEvents.Updated(account)));
             return Result.success(movedIds);
         });
     }
@@ -113,17 +106,12 @@ public class CardUseCase {
 
         return accountService.findById(creditCard.accountId()).map(account -> {
             balanceRecalculationService.recalculate(account.id());
-            MessageBus.submit(new AccountEvents.Updated(account));
             return ids;
         });
     }
 
     public Result<CreditCard, DomainError> setActive(UUID id, boolean active) {
-        return cardService.findById(id).map(card -> {
-            val saved = cardService.save(new CreditCard(card.id(), card.last4(), card.accountId(), active));
-            accountService.findById(saved.accountId())
-                    .ifSuccess(account -> MessageBus.submit(new AccountEvents.Updated(account)));
-            return saved;
-        });
+        return cardService.findById(id)
+                .map(card -> cardService.save(new CreditCard(card.id(), card.last4(), card.accountId(), active)));
     }
 }

@@ -5,6 +5,7 @@ import br.community.context.monetary.MonetaryContext;
 import br.community.context.monetary._0_domain.model.Transaction;
 import br.community.context.shared._1_application.DomainException;
 import br.community.feature.user.accounts.closing.ClosingService;
+import br.community.feature.user.accounts.core.AccountStreamPublisher;
 import br.community.feature.user.accounts.transactions.core.TransactionMapper;
 import br.community.feature.user.tags.UserTransactionTagService;
 import jakarta.validation.Valid;
@@ -37,6 +38,7 @@ public class TransactionResource {
     private final ClosingService closingService;
     private final UserTransactionService userTransactionService;
     private final UserTransactionTagService tagLinkService;
+    private final AccountStreamPublisher accountStreamPublisher;
 
     // ── Cross-account collection ───────────────────────────────────
 
@@ -78,6 +80,7 @@ public class TransactionResource {
                 // Create USER_TRANSACTION for first installment, then for group siblings
                 val ut = saveUserTransaction(t, uuid, req.categoryId());
                 saveUserTransactionForGroup(t, uuid, req.categoryId());
+                accountStreamPublisher.upsert(accId);
                 yield RestResponse.status(RestResponse.Status.CREATED, TransactionMapper.toDto(t, ut));
             }
             case Result.Failure(var error) -> throw new DomainException(error);
@@ -107,6 +110,7 @@ public class TransactionResource {
                 if (t.groupId() != null && existing.isEmpty()) {
                     saveUserTransactionForGroup(t, uuid, req.categoryId());
                 }
+                publishAccountUpdate(t.accountId(), previousAccountId);
                 yield TransactionMapper.toDto(t, ut);
             }
             case Result.Failure(var error) -> throw new DomainException(error);
@@ -119,6 +123,7 @@ public class TransactionResource {
         return switch (monetaryContext.updateTransactionStatus(txId, req.status(), req.paymentDate())) {
             case Result.Success(var t) -> {
                 val ut = userTransactionService.find(t.id(), t.accountId(), uuid).orElse(null);
+                accountStreamPublisher.upsert(t.accountId());
                 yield TransactionMapper.toDto(t, ut);
             }
             case Result.Failure(var error) -> throw new DomainException(error);
@@ -128,15 +133,20 @@ public class TransactionResource {
     @DELETE
     @Path("/{accId}/transactions/{txId}")
     public void delete(@PathParam("txId") UUID txId, @QueryParam("mode") @Nullable String mode) {
+        UUID accountId = null;
         if (monetaryContext.findTransaction(txId) instanceof Result.Success(var existing)) {
             guardClosing(existing.date());
+            accountId = existing.accountId();
         }
         switch (monetaryContext.deleteTransaction(txId, mode)) {
             case Result.Failure(var error) -> throw new DomainException(error);
-            case Result.Success(var ids) -> ids.forEach(id -> {
-                userTransactionService.deleteByTransaction(id);
-                tagLinkService.deleteByTransaction(id);
-            });
+            case Result.Success(var ids) -> {
+                ids.forEach(id -> {
+                    userTransactionService.deleteByTransaction(id);
+                    tagLinkService.deleteByTransaction(id);
+                });
+                if (accountId != null) accountStreamPublisher.upsert(accountId);
+            }
         }
     }
 
@@ -145,6 +155,14 @@ public class TransactionResource {
     private void guardClosing(LocalDate date) {
         if (closingService.validateDate(date) instanceof Result.Failure(var error)) {
             throw new DomainException(error);
+        }
+    }
+
+    /** Publica a conta atual e, se a transação mudou de conta, também a conta anterior. */
+    private void publishAccountUpdate(UUID accountId, @Nullable UUID previousAccountId) {
+        accountStreamPublisher.upsert(accountId);
+        if (previousAccountId != null && !previousAccountId.equals(accountId)) {
+            accountStreamPublisher.upsert(previousAccountId);
         }
     }
 

@@ -19,8 +19,9 @@
  *   <li>{@link br.community.feature.user.accounts.transactions} — lançamentos financeiros (inclui importação de extrato/fatura)</li>
  * </ul>
  *
- * <p>A feature delega toda a lógica de domínio ao {@code MonetaryContext}
- * e escuta eventos via {@link br.community.feature.user.accounts.core.AccountStreamListener}.
+ * <p>A feature delega toda a lógica de domínio ao {@code MonetaryContext} e é dona do SSE de
+ * conta: cada Resource despacha a atualização via {@link br.community.feature.user.accounts.core.AccountStreamPublisher}
+ * logo após persistir sua própria mutação — nunca em reação a um evento do contexto.
  */
 @NullMarked
 package br.community.feature.user.accounts;

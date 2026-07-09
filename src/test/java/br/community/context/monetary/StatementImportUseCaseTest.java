@@ -196,7 +196,7 @@ class StatementImportUseCaseTest {
         final BalanceRecalculationService balanceRecalculationService =
                 new BalanceRecalculationService(accountService, balanceService, transactionService);
         final AccountUseCase ucAccount = new AccountUseCase(accountService, balanceService, transactionService, cardService, balanceRecalculationService);
-        final TransactionUseCase ucTransaction = new TransactionUseCase(transactionService, cardService, accountService, balanceRecalculationService);
+        final TransactionUseCase ucTransaction = new TransactionUseCase(transactionService, cardService, balanceRecalculationService);
         final MetadataUseCase ucMetadata = new MetadataUseCase(costCenterService);
         final CardUseCase ucCard = new CardUseCase(cardService, accountService, transactionService, balanceRecalculationService);
         return new MonetaryContext(ucAccount, ucTransaction, ucMetadata, ucCard);

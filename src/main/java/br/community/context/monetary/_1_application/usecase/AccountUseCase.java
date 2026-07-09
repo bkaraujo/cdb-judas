@@ -1,9 +1,7 @@
 package br.community.context.monetary._1_application.usecase;
 
-import br.commons.MessageBus;
 import br.commons.Result;
 import br.commons.tools.Strings;
-import br.community.context.monetary._0_domain.event.AccountEvents;
 import br.community.context.monetary._0_domain.model.Account;
 import br.community.context.monetary._0_domain.model.CreditCard;
 import br.community.context.monetary._0_domain.model.MonthlyBalance;
@@ -54,21 +52,13 @@ public class AccountUseCase {
     }
 
     public Result<Account, DomainError> createAccount(AccountCommand cmd) {
-        return parse(UUID.randomUUID(), cmd).map(account -> {
-            val created = accountService.save(account);
-            MessageBus.submit(new AccountEvents.Created(created));
-            return created;
-        });
+        return parse(UUID.randomUUID(), cmd).map(accountService::save);
     }
 
     public Result<Account, DomainError> updateAccount(UUID accountId, AccountCommand cmd) {
         return accountService.findById(accountId)
                 .flatMap(existing -> parse(accountId, cmd))
-                .map(account -> {
-                    val updated = accountService.save(account);
-                    MessageBus.submit(new AccountEvents.Updated(updated));
-                    return updated;
-                });
+                .map(accountService::save);
     }
 
     /** Ids das transações movidas/apagadas (vazio para {@link TransactionPolicy.Block}). */
@@ -86,10 +76,7 @@ public class AccountUseCase {
         }
         cardService.findByAccount(account.id()).forEach(c -> cardService.deleteById(c.id()));
         balanceService.findByAccount(account.id()).forEach(b -> balanceService.deleteById(b.id()));
-        return accountService.deleteById(account.id()).map(ignored -> {
-            MessageBus.submit(new AccountEvents.Deleted(account.id()));
-            return List.<UUID>of();
-        });
+        return accountService.deleteById(account.id()).map(ignored -> List.<UUID>of());
     }
 
     private Result<List<UUID>, DomainError> deleteMove(Account account, UUID targetId) {
@@ -112,8 +99,6 @@ public class AccountUseCase {
 
             return accountService.deleteById(account.id()).map(ignored -> {
                 balanceRecalculationService.recalculate(target.id());
-                MessageBus.submit(new AccountEvents.Deleted(account.id()));
-                MessageBus.submit(new AccountEvents.Updated(target));
                 return movedIds;
             });
         });
@@ -125,10 +110,7 @@ public class AccountUseCase {
         cardService.findByAccount(account.id()).forEach(c -> cardService.deleteById(c.id()));
         balanceService.findByAccount(account.id()).forEach(b -> balanceService.deleteById(b.id()));
 
-        return accountService.deleteById(account.id()).map(ignored -> {
-            MessageBus.submit(new AccountEvents.Deleted(account.id()));
-            return ids;
-        });
+        return accountService.deleteById(account.id()).map(ignored -> ids);
     }
 
     private Result<Account, DomainError> parse(UUID accountId, AccountCommand cmd) {

@@ -2,7 +2,9 @@ package br.community.feature.user.tags;
 
 import br.commons.Result;
 import br.community.context.monetary.MonetaryContext;
+import br.community.context.monetary._0_domain.model.Transaction;
 import br.community.context.shared._0_domain.model.DomainError;
+import br.community.feature.user.accounts.core.AccountStreamPublisher;
 import br.community.feature.user.accounts.transactions.UserTransactionService;
 import br.community.feature.user.stream.SSE;
 import jakarta.inject.Singleton;
@@ -12,7 +14,9 @@ import org.jspecify.annotations.NullMarked;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @NullMarked
 @Singleton
@@ -25,6 +29,7 @@ public class UserTagService {
     private final UserTransactionTagService tagLinkService;
     private final UserTransactionService userTransactionService;
     private final MonetaryContext monetaryContext;
+    private final AccountStreamPublisher accountStreamPublisher;
     private final SSE sse;
 
     public List<UserTag> findAll(UUID userId) {
@@ -80,6 +85,7 @@ public class UserTagService {
     public Result<Void, DomainError> deleteWithTransactions(UUID id, UUID userId) {
         return findById(id).flatMap(ignored -> {
             val txIds = tagLinkService.findTransactionIdsByTag(userId, id);
+            val affectedAccountIds = accountIdsOf(txIds);
 
             if (monetaryContext.deleteTransactions(txIds) instanceof Result.Failure<Void, DomainError>(var error)) {
                 return Result.failure(error);
@@ -91,8 +97,18 @@ public class UserTagService {
 
             repo.deleteById(id);
             delete(userId, id);
+            affectedAccountIds.forEach(accountStreamPublisher::upsert);
             return Result.success();
         });
+    }
+
+    /** Contas distintas das transações apagadas — resolvidas antes do delete, quando ainda existem. */
+    private Set<UUID> accountIdsOf(List<UUID> txIds) {
+        val txIdSet = Set.copyOf(txIds);
+        return monetaryContext.listTransactions().getOrElse(List.of()).stream()
+                .filter(t -> txIdSet.contains(t.id()))
+                .map(Transaction::accountId)
+                .collect(Collectors.toSet());
     }
 
     /** Desvincula (apaga só a associação) e exclui a tag; transações permanecem intactas. */

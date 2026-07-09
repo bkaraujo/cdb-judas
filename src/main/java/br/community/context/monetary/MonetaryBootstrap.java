@@ -40,7 +40,7 @@ public final class MonetaryBootstrap {
 
         val accountUseCase = new AccountUseCase(accountService, balanceService, transactionService, cardService, balanceRecalculationService);
         val metadataUseCase = new MetadataUseCase(costCenterService);
-        val transactionUseCase = new TransactionUseCase(transactionService, cardService, accountService, balanceRecalculationService);
+        val transactionUseCase = new TransactionUseCase(transactionService, cardService, balanceRecalculationService);
         val cardUseCase = new CardUseCase(cardService, accountService, transactionService, balanceRecalculationService);
 
         MessageBus.subscribe(new TransactionEventListener(balanceRecalculationService));

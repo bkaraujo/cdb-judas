@@ -4,6 +4,7 @@ import br.commons.Result;
 import br.community.context.monetary.MonetaryContext;
 import br.community.context.shared._1_application.DomainException;
 import br.community.feature.user.accounts.closing.ClosingService;
+import br.community.feature.user.accounts.core.AccountStreamPublisher;
 import br.community.feature.user.accounts.transactions.TransactionResponse;
 import br.community.feature.user.accounts.transactions.core.TransactionMapper;
 import jakarta.validation.Valid;
@@ -23,6 +24,7 @@ public class TransferResource {
 
     private final MonetaryContext monetaryContext;
     private final ClosingService closingService;
+    private final AccountStreamPublisher accountStreamPublisher;
 
     @POST
     @Path("/transactions/transfer")
@@ -31,7 +33,11 @@ public class TransferResource {
             throw new DomainException(error);
         }
         return switch (monetaryContext.createTransfer(req.fromAccountId(), req.toAccountId(), req.date(), req.amount())) {
-            case Result.Success(var t) -> RestResponse.status(RestResponse.Status.CREATED, TransactionMapper.toDto(t, null));
+            case Result.Success(var t) -> {
+                accountStreamPublisher.upsert(req.fromAccountId());
+                accountStreamPublisher.upsert(req.toAccountId());
+                yield RestResponse.status(RestResponse.Status.CREATED, TransactionMapper.toDto(t, null));
+            }
             case Result.Failure(var error) -> throw new DomainException(error);
         };
     }

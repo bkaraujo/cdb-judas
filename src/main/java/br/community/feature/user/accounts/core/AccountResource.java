@@ -48,6 +48,7 @@ public class AccountResource {
     private final UserAccountService userAccountService;
     private final UserTransactionService userTransactionService;
     private final UserTransactionTagService tagLinkService;
+    private final AccountStreamPublisher accountStreamPublisher;
 
     @GET
     public List<AccountResponse> listAll() {
@@ -84,6 +85,7 @@ public class AccountResource {
             case Result.Success(var account) -> {
                 val ua = overlay(userId, account.id(), req);
                 userAccountService.save(ua);
+                accountStreamPublisher.upsert(account.id());
                 yield RestResponse.status(RestResponse.Status.CREATED,
                         AccountResponse.from(account, ua, List.of(), allTransactions()));
             }
@@ -100,6 +102,7 @@ public class AccountResource {
             case Result.Success(var c) -> {
                 val ua = overlay(userId, c.id(), req);
                 userAccountService.save(ua);
+                accountStreamPublisher.upsert(c.id());
                 yield AccountResponse.from(c, ua, cardsOf(c.id()), allTransactions());
             }
         };
@@ -153,6 +156,10 @@ public class AccountResource {
             case Result.Success(var ids) -> {
                 if (deletionStrategy != DeletionStrategy.MOVE) {
                     ids.forEach(tagLinkService::deleteByTransaction);
+                }
+                accountStreamPublisher.delete(id);
+                if (deletionStrategy == DeletionStrategy.MOVE) {
+                    accountStreamPublisher.upsert(Objects.requireNonNull(targetId));
                 }
                 yield Response.noContent().build();
             }

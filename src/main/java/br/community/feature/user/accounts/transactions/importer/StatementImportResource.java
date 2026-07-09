@@ -7,6 +7,7 @@ import br.community.context.monetary._0_domain.model.CreditCard;
 import br.community.context.monetary._1_application.command.ImportConfirmCommand;
 import br.community.context.shared._0_domain.model.DomainError;
 import br.community.core.web.error.ProblemDetail;
+import br.community.feature.user.accounts.core.AccountStreamPublisher;
 import br.community.feature.user.accounts.transactions.importer.confirm.BankStatementConfirmCommand;
 import br.community.feature.user.accounts.transactions.importer.confirm.ImportConfirmResponse;
 import br.community.feature.user.accounts.transactions.importer.preview.*;
@@ -28,6 +29,7 @@ import java.nio.file.Files;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -38,6 +40,7 @@ public class StatementImportResource {
 
     private final StatementImportUseCase statementImport;
     private final MonetaryContext monetaryContext;
+    private final AccountStreamPublisher accountStreamPublisher;
 
     @POST
     @Path("/preview")
@@ -89,10 +92,22 @@ public class StatementImportResource {
         val cmd = new ImportConfirmCommand(rows);
 
         return switch (statementImport.confirm(cmd)) {
-            case Result.Success(var res) ->
-                    Response.ok(new ImportConfirmResponse(res.created(), res.reconciled(), res.skipped())).build();
+            case Result.Success(var res) -> {
+                affectedAccountIds(rows).forEach(accountStreamPublisher::upsert);
+                yield Response.ok(new ImportConfirmResponse(res.created(), res.reconciled(), res.skipped())).build();
+            }
             case Result.Failure(var error) -> problem422("CARD_NOT_FOUND", messageOf(error));
         };
+    }
+
+    /** Contas distintas donas dos cartões das linhas confirmadas, resolvidas via {@code MonetaryContext}. */
+    private Set<UUID> affectedAccountIds(List<ImportConfirmCommand.Row> rows) {
+        val accountByCard = monetaryContext.listCards().getOrElse(List.of()).stream()
+                .collect(Collectors.toMap(CreditCard::id, CreditCard::accountId));
+        return rows.stream()
+                .map(row -> accountByCard.get(row.cardId()))
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet());
     }
 
     private Response confirmBankStatement(StatementConfirmRequest req) {
@@ -105,8 +120,10 @@ public class StatementImportResource {
         val cmd = new BankStatementConfirmCommand(req.accountId(), rows);
 
         return switch (statementImport.confirmStatement(cmd)) {
-            case Result.Success(var res) ->
-                    Response.ok(new ImportConfirmResponse(res.created(), res.reconciled(), res.skipped())).build();
+            case Result.Success(var res) -> {
+                accountStreamPublisher.upsert(cmd.accountId());
+                yield Response.ok(new ImportConfirmResponse(res.created(), res.reconciled(), res.skipped())).build();
+            }
             case Result.Failure(var error) -> problem422("ACCOUNT_NOT_FOUND", messageOf(error));
         };
     }

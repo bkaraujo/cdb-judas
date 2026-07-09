@@ -2,14 +2,12 @@ package br.community.context.monetary._1_application.usecase;
 
 import br.commons.MessageBus;
 import br.commons.Result;
-import br.community.context.monetary._0_domain.event.AccountEvents;
 import br.community.context.monetary._0_domain.event.TransactionEvents;
 import br.community.context.monetary._0_domain.model.CreditCard;
 import br.community.context.monetary._0_domain.model.CostCenter;
 import br.community.context.monetary._0_domain.model.Transaction;
 import br.community.context.monetary._1_application.command.ImportedTransactionCommand;
 import br.community.context.monetary._1_application.command.TransactionCommand;
-import br.community.context.monetary._1_application.service.AccountService;
 import br.community.context.monetary._1_application.service.BalanceRecalculationService;
 import br.community.context.monetary._1_application.service.CardService;
 import br.community.context.monetary._1_application.service.TransactionService;
@@ -33,7 +31,6 @@ import java.util.UUID;
 public class TransactionUseCase {
     private final TransactionService transactionService;
     private final CardService cardService;
-    private final AccountService accountService;
     private final BalanceRecalculationService balanceRecalculationService;
 
     public Result<List<Transaction>, DomainError> listTransactions() {
@@ -227,8 +224,8 @@ public class TransactionUseCase {
     /**
      * Exclusão em massa (categoria/tag). Ids ausentes são ignorados (idempotente); irmãos de
      * transferência são expandidos para nunca deixar uma perna órfã. Ao final, recalcula o saldo
-     * uma única vez por conta distinta e emite {@link AccountEvents.Updated} (SSE) — sem eventos
-     * por transação individual.
+     * uma única vez por conta distinta — sem eventos por transação individual. O SSE de conta é
+     * responsabilidade de quem chama (feature), não deste use case.
      */
     public Result<Void, DomainError> deleteTransactions(List<UUID> ids) {
         val toDelete = new LinkedHashMap<UUID, Transaction>();
@@ -250,7 +247,6 @@ public class TransactionUseCase {
 
         for (val accountId : accountIds) {
             balanceRecalculationService.recalculate(accountId);
-            accountService.findById(accountId).ifSuccess(account -> MessageBus.submit(new AccountEvents.Updated(account)));
         }
 
         return Result.success();

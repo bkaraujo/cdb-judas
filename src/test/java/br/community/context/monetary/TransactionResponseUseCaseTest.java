@@ -47,7 +47,7 @@ class TransactionResponseUseCaseTest {
         val transactionService = new TransactionService(txRepo);
         val accountService = new AccountService(accountRepo);
         val balanceRecalculationService = new BalanceRecalculationService(accountService, new BalanceService(balanceRepo), transactionService);
-        useCase = new TransactionUseCase(transactionService, new CardService(cardRepo), accountService, balanceRecalculationService);
+        useCase = new TransactionUseCase(transactionService, new CardService(cardRepo), balanceRecalculationService);
     }
 
     private TransactionCommand cmd(LocalDate date, Transaction.Status status, Integer installments) {

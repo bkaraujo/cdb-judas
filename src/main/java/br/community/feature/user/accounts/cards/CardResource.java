@@ -5,6 +5,7 @@ import br.community.context.monetary.MonetaryContext;
 import br.community.context.monetary._1_application.command.CardCommand;
 import br.community.context.shared._0_domain.model.DomainError;
 import br.community.context.shared._1_application.DomainException;
+import br.community.feature.user.accounts.core.AccountStreamPublisher;
 import br.community.feature.user.accounts.transactions.UserTransactionService;
 import br.community.feature.user.deletion.DeletionStrategy;
 import br.community.feature.user.deletion.Deletions;
@@ -41,6 +42,7 @@ public class CardResource {
     private final MonetaryContext monetaryContext;
     private final UserTransactionService userTransactionService;
     private final UserTransactionTagService tagLinkService;
+    private final AccountStreamPublisher accountStreamPublisher;
 
     @GET
     public List<CardResponse> list(@PathParam("accountId") UUID accountId) {
@@ -53,7 +55,10 @@ public class CardResource {
     @POST
     public RestResponse<CardResponse> create(@PathParam("accountId") UUID accountId, @Valid CardRequest req) {
         return switch (monetaryContext.createCard(new CardCommand(accountId, req.last4()))) {
-            case Result.Success(var card) -> RestResponse.status(RestResponse.Status.CREATED, CardResponse.from(card));
+            case Result.Success(var card) -> {
+                accountStreamPublisher.upsert(accountId);
+                yield RestResponse.status(RestResponse.Status.CREATED, CardResponse.from(card));
+            }
             case Result.Failure(var error) -> throw new DomainException(error);
         };
     }
@@ -92,6 +97,7 @@ public class CardResource {
                         tagLinkService.deleteByTransaction(id);
                     });
                 }
+                accountStreamPublisher.upsert(accountId);
                 yield Response.noContent().build();
             }
         };
@@ -102,7 +108,10 @@ public class CardResource {
     public CardResponse updateStatus(@PathParam("accountId") UUID accountId, @PathParam("cardId") UUID cardId, @Valid CardStatusRequest req) {
         guardBelongsToAccount(accountId, cardId);
         return switch (monetaryContext.setCardActive(cardId, req.active())) {
-            case Result.Success(var card) -> CardResponse.from(card);
+            case Result.Success(var card) -> {
+                accountStreamPublisher.upsert(accountId);
+                yield CardResponse.from(card);
+            }
             case Result.Failure(var error) -> throw new DomainException(error);
         };
     }

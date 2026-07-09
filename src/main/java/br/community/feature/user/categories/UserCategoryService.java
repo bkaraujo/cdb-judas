@@ -4,6 +4,7 @@ import br.commons.Result;
 import br.community.context.monetary.MonetaryContext;
 import br.community.context.monetary._0_domain.model.Transaction;
 import br.community.context.shared._0_domain.model.DomainError;
+import br.community.feature.user.accounts.core.AccountStreamPublisher;
 import br.community.feature.user.accounts.transactions.UserTransactionService;
 import br.community.feature.user.categories.core.CategoryResponse;
 import br.community.feature.user.stream.SSE;
@@ -18,7 +19,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @NullMarked
 @Singleton
@@ -31,6 +34,7 @@ public class UserCategoryService {
     private final UserTransactionService userTransactionService;
     private final UserTransactionTagService tagLinkService;
     private final MonetaryContext monetaryContext;
+    private final AccountStreamPublisher accountStreamPublisher;
     private final SSE sse;
 
     public List<UserCategory> findAll(UUID userId) {
@@ -168,6 +172,7 @@ public class UserCategoryService {
     /** Apaga as transações vinculadas à subárvore inteira (via facade) e depois a subárvore. */
     public Result<Void, DomainError> deleteWithTransactions(List<UUID> subtreeIds, UUID userId) {
         val txIds = linkedTransactionIds(subtreeIds, userId);
+        val affectedAccountIds = accountIdsOf(txIds);
 
         if (monetaryContext.deleteTransactions(txIds) instanceof Result.Failure<Void, DomainError>(var error)) {
             return Result.failure(error);
@@ -178,7 +183,17 @@ public class UserCategoryService {
         });
 
         deleteSubtreeRows(subtreeIds, userId);
+        affectedAccountIds.forEach(accountStreamPublisher::upsert);
         return Result.success();
+    }
+
+    /** Contas distintas das transações apagadas — resolvidas antes do delete, quando ainda existem. */
+    private Set<UUID> accountIdsOf(List<UUID> txIds) {
+        val txIdSet = Set.copyOf(txIds);
+        return monetaryContext.listTransactions().getOrElse(List.of()).stream()
+                .filter(t -> txIdSet.contains(t.id()))
+                .map(Transaction::accountId)
+                .collect(Collectors.toSet());
     }
 
     /** Subárvore sem nenhum vínculo: apaga direto. */

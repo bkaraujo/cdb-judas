@@ -1,11 +1,12 @@
 /**
- * Modelo de domínio e listeners de conta para a feature {@code accounts}.
+ * Modelo de domínio e publicação SSE de conta para a feature {@code accounts}.
  *
  * <p>Contém:
  * <ul>
  *   <li>{@code AccountResponse} — DTO de resposta que projeta {@code Account} + saldo calculado</li>
  *   <li>{@code AccountRequest} — payload de criação/atualização de conta</li>
- *   <li>{@code AccountStreamListener} — ouve eventos SSE do domínio e propaga atualizações ao frontend</li>
+ *   <li>{@code AccountStreamPublisher} — despachado pelos Resources após a mutação (conta, cartão,
+ *       transação, transferência, importação) para propagar a atualização ao frontend via SSE</li>
  * </ul>
  */
 @NullMarked
