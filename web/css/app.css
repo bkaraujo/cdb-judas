@@ -237,7 +237,7 @@ button { font-family: var(--font); cursor: pointer; border: none; outline: none;
   text-transform: uppercase; letter-spacing: 0.04em;
 }
 
-/* ───── Card ───── */
+/* ───── CreditCard ───── */
 .card {
   background: var(--bg-card);
   border: 1px solid var(--border);
@@ -420,7 +420,7 @@ button { font-family: var(--font); cursor: pointer; border: none; outline: none;
 .toast-info    { background: var(--info);    color: #fff; border-color: var(--info); }
 .toast-fade    { opacity: 0; transform: translateY(6px); }
 
-/* ───── Card list (reusable for crud pages) ───── */
+/* ───── CreditCard list (reusable for crud pages) ───── */
 .card-list { padding: 0; overflow: hidden; }
 .card-row {
   display: flex; align-items: center; justify-content: space-between;

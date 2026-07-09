@@ -1,5 +1,6 @@
 package br.community.feature.user.accounts.transactions.importer;
 
+import br.community.context.monetary._0_domain.model.CreditCard;
 import org.jspecify.annotations.NullMarked;
 
 import java.util.List;

@@ -2,7 +2,7 @@ package br.community.feature.user.accounts.core;
 
 import br.commons.tools.Strings;
 import br.community.context.monetary._0_domain.model.Account;
-import br.community.context.monetary._0_domain.model.Card;
+import br.community.context.monetary._0_domain.model.CreditCard;
 import br.community.context.monetary._0_domain.model.Transaction;
 import br.community.feature.user.accounts.cards.CardResponse;
 import lombok.val;
@@ -29,13 +29,13 @@ public record AccountResponse(
 ) {
     /** Saldo atual = soma de todas as transações da conta (sem conceito de saldo de abertura). */
     public static AccountResponse from(Account monetary, @Nullable UserAccount ua,
-                                        List<Card> cards, List<Transaction> transactions) {
+                                       List<CreditCard> creditCards, List<Transaction> transactions) {
         var sum = BigDecimal.ZERO;
         for (val t : transactions) {
             if (monetary.id().equals(t.accountId())) sum = sum.add(BigDecimal.valueOf(t.signal()).multiply(t.amount()));
         }
         val type = Strings.upper(monetary.type().name());
-        val cardDtos = cards.stream().map(CardResponse::from).toList();
+        val cardDtos = creditCards.stream().map(CardResponse::from).toList();
         val color = ua != null ? ua.color() : "#000000";
         return new AccountResponse(monetary.id(), monetary.name(), type, color, monetary.active(),
                 monetary.creditLimit(), monetary.overdraftLimit(), monetary.closingDay(), monetary.dueDay(),

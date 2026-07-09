@@ -2,11 +2,7 @@ package br.community.context.monetary;
 
 import br.commons.Result;
 import br.commons.annotation.Facade;
-import br.community.context.monetary._0_domain.model.Account;
-import br.community.context.monetary._0_domain.model.Card;
-import br.community.context.monetary._0_domain.model.CostCenter;
-import br.community.context.monetary._0_domain.model.MonthlyBalance;
-import br.community.context.monetary._0_domain.model.Transaction;
+import br.community.context.monetary._0_domain.model.*;
 import br.community.context.monetary._1_application.command.AccountCommand;
 import br.community.context.monetary._1_application.command.CardCommand;
 import br.community.context.monetary._1_application.command.CostCenterCommand;
@@ -129,17 +125,17 @@ public class MonetaryContext implements Facade {
         return ucMetadata.deleteCostCenter(id);
     }
 
-    // ── Card operations ─────────────────────────────────────────────
+    // ── CreditCard operations ─────────────────────────────────────────────
 
-    public Result<List<Card>, DomainError> listCards() {
+    public Result<List<CreditCard>, DomainError> listCards() {
         return ucCard.listCards();
     }
 
-    public Result<List<Card>, DomainError> listCardsByAccount(UUID accountId) {
+    public Result<List<CreditCard>, DomainError> listCardsByAccount(UUID accountId) {
         return ucCard.listCardsByAccount(accountId);
     }
 
-    public Result<Card, DomainError> createCard(CardCommand cmd) {
+    public Result<CreditCard, DomainError> createCard(CardCommand cmd) {
         return ucCard.createCard(cmd);
     }
 
@@ -147,7 +143,7 @@ public class MonetaryContext implements Facade {
         return ucCard.deleteCard(id, policy);
     }
 
-    public Result<Card, DomainError> setCardActive(UUID id, boolean active) {
+    public Result<CreditCard, DomainError> setCardActive(UUID id, boolean active) {
         return ucCard.setActive(id, active);
     }
 }

@@ -6,8 +6,8 @@ import br.commons.pdf.ExtractionFailure;
 import br.commons.pdf.PdfTextExtractor;
 import br.community.context.monetary._0_domain.event.TransactionEvents;
 import br.community.context.monetary._0_domain.model.Account;
-import br.community.context.monetary._0_domain.model.Card;
 import br.community.context.monetary._0_domain.model.CostCenter;
+import br.community.context.monetary._0_domain.model.CreditCard;
 import br.community.context.monetary._0_domain.model.Transaction;
 import br.community.context.monetary._1_application.command.ImportConfirmCommand;
 import br.community.context.monetary._1_application.service.AccountService;
@@ -43,7 +43,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-class CreditCardStatementImportUseCaseTest {
+class CreditCreditCardStatementImportUseCaseTest {
 
     private static final long MAX_BYTES = 4096;
 
@@ -74,13 +74,13 @@ class CreditCardStatementImportUseCaseTest {
             PdfTextExtractor extractor,
             InMemoryRepositories.Accounts accounts,
             InMemoryRepositories.Transactions transactions,
-            List<CreditCard> cards) {
+            List<CreditCard> creditCards) {
         final InMemoryRepositories.Cards cardRepo = new InMemoryRepositories.Cards();
-        for (val c : cards) {
-            cardRepo.save(new Card(c.id(), c.last4(), c.accountId(), true));
+        for (val c : creditCards) {
+            cardRepo.save(c);
         }
         final MonetaryContext monetaryContext = monetaryContext(accounts, transactions, cardRepo);
-        final CreditCardProvider provider = () -> cards;
+        final CreditCardProvider provider = () -> creditCards;
         return new StatementImportUseCase(
                 monetaryContext, provider, extractor,
                 List.of(new BTGStatementParser(), new SantanderStatementParser(),
@@ -108,7 +108,7 @@ class CreditCardStatementImportUseCaseTest {
 
     /** Cartão do contexto: identificado só pelo last4, sempre vinculado a uma conta real existente. */
     private static CreditCard registerCard(Account account, String last4) {
-        return new CreditCard(UUID.randomUUID(), account.id(), account.name(), last4);
+        return new CreditCard(UUID.randomUUID(), last4, account.id(), true);
     }
 
     private static Account checking(String name) {

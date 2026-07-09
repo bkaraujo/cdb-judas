@@ -7,7 +7,7 @@ import java.time.LocalDateTime;
 import java.util.UUID;
 
 @NullMarked
-public record Card(
+public record CreditCard(
         UUID id,
         String last4,
         UUID accountId,
@@ -15,7 +15,7 @@ public record Card(
         @Nullable LocalDateTime createdAt,
         @Nullable LocalDateTime updatedAt
 ) {
-    public Card(UUID id, String last4, UUID accountId, boolean active) {
+    public CreditCard(UUID id, String last4, UUID accountId, boolean active) {
         this(id, last4, accountId, active, null, null);
     }
 }

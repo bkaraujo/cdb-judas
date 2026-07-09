@@ -2,7 +2,7 @@ package br.community.feature.user.accounts.transactions.importer.preview;
 
 import br.community.feature.user.accounts.statement.Issuer;
 import br.community.feature.user.accounts.statement.MonetaryDocumentEntry;
-import br.community.feature.user.accounts.transactions.importer.CreditCard;
+import br.community.context.monetary._0_domain.model.CreditCard;
 import org.jspecify.annotations.NullMarked;
 
 import java.util.List;

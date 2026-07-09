@@ -43,8 +43,6 @@ public final class CostCenterJDBCRepository extends JDBCRepository<CostCenter> i
 
     @Override
     protected Map<String, @Nullable Object> values(CostCenter entity) {
-        val now = Timestamp.valueOf(Time.now());
-
         val values = new LinkedHashMap<String, @Nullable Object>();
         values.put("ID", entity.id().toString());
         values.put("TXT_DESCRIPTION", entity.description());

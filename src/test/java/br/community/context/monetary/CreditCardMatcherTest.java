@@ -1,8 +1,8 @@
 package br.community.context.monetary;
 
+import br.community.context.monetary._0_domain.model.CreditCard;
 import br.community.feature.user.accounts.transactions.importer.CardMatch;
 import br.community.feature.user.accounts.transactions.importer.CardMatcher;
-import br.community.feature.user.accounts.transactions.importer.CreditCard;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
@@ -12,18 +12,18 @@ import java.util.UUID;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 
-class CardMatcherTest {
+class CreditCardMatcherTest {
 
     private final CardMatcher matcher = new CardMatcher();
 
-    private static CreditCard card(String accountName, String last4) {
-        return new CreditCard(UUID.randomUUID(), UUID.randomUUID(), accountName, last4);
+    private static CreditCard card(String last4) {
+        return new CreditCard(UUID.randomUUID(), last4, UUID.randomUUID(), true);
     }
 
     @Test
     void matchesSingleCardWhoseLast4IsOnStatement() {
-        var visa = card("Visa", "0020");
-        var master = card("Master", "9999");
+        var visa = card("0020");
+        var master = card("9999");
 
         var result = matcher.match(List.of("0020"), List.of(visa, master));
 
@@ -33,7 +33,7 @@ class CardMatcherTest {
 
     @Test
     void noMatchWhenNoCardHasThatLast4() {
-        var visa = card("Visa", "0020");
+        var visa = card("0020");
 
         var result = matcher.match(List.of("1234"), List.of(visa));
 
@@ -42,7 +42,7 @@ class CardMatcherTest {
 
     @Test
     void noMatchWhenStatementLast4sEmpty() {
-        var visa = card("Visa", "0020");
+        var visa = card("0020");
 
         var result = matcher.match(List.of(), List.of(visa));
 
@@ -51,8 +51,8 @@ class CardMatcherTest {
 
     @Test
     void ambiguousWhenTwoCardsShareTheSameLast4() {
-        var titular = card("Titular", "0020");
-        var adicional = card("Adicional", "0020");
+        var titular = card("0020");
+        var adicional = card("0020");
 
         var result = matcher.match(List.of("0020"), List.of(titular, adicional));
 
@@ -64,8 +64,8 @@ class CardMatcherTest {
 
     @Test
     void matchByLast4ResolvesEachLast4ToItsOwnCard() {
-        var visa = card("Visa", "0020");
-        var master = card("Master", "9999");
+        var visa = card("0020");
+        var master = card("9999");
 
         var result = matcher.matchByLast4(List.of("0020", "9999"), List.of(visa, master));
 
@@ -74,7 +74,7 @@ class CardMatcherTest {
 
     @Test
     void matchByLast4OmitsLast4MatchedByNoCard() {
-        var visa = card("Visa", "0020");
+        var visa = card("0020");
 
         var result = matcher.matchByLast4(List.of("0020", "1234"), List.of(visa));
 
@@ -83,9 +83,9 @@ class CardMatcherTest {
 
     @Test
     void matchByLast4OmitsAmbiguousLast4() {
-        var titular = card("Titular", "0020");
-        var adicional = card("Adicional", "0020");
-        var other = card("Other", "9999");
+        var titular = card("0020");
+        var adicional = card("0020");
+        var other = card("9999");
 
         var result = matcher.matchByLast4(List.of("0020", "9999"), List.of(titular, adicional, other));
 

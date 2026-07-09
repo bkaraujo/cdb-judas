@@ -119,6 +119,6 @@ public class CardResource {
             case Result.Success(var cards) -> cards.stream().anyMatch(c -> c.id().equals(cardId));
             case Result.Failure(var error) -> throw new DomainException(error);
         };
-        if (!owned) throw new DomainException(new DomainError.NotFound("Card not found: " + cardId));
+        if (!owned) throw new DomainException(new DomainError.NotFound("CreditCard not found: " + cardId));
     }
 }

@@ -1,6 +1,9 @@
 package br.community.feature.user.accounts.transactions.importer;
 
 import br.commons.Result;
+import br.community.context.monetary.MonetaryContext;
+import br.community.context.monetary._0_domain.model.Account;
+import br.community.context.monetary._0_domain.model.CreditCard;
 import br.community.context.monetary._1_application.command.ImportConfirmCommand;
 import br.community.context.shared._0_domain.model.DomainError;
 import br.community.core.web.error.ProblemDetail;
@@ -22,8 +25,11 @@ import org.jspecify.annotations.Nullable;
 
 import java.io.IOException;
 import java.nio.file.Files;
+import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @NullMarked
 @Path("/api/{uuid}/accounts/transactions/import")
@@ -31,6 +37,7 @@ import java.util.UUID;
 public class StatementImportResource {
 
     private final StatementImportUseCase statementImport;
+    private final MonetaryContext monetaryContext;
 
     @POST
     @Path("/preview")
@@ -57,7 +64,7 @@ public class StatementImportResource {
         };
     }
 
-    private static Object toResponseBody(ImportPreviewOutcome outcome) {
+    private Object toResponseBody(ImportPreviewOutcome outcome) {
         return switch (outcome) {
             case ImportPreviewOutcome.Invoice(var preview) -> toResponse(preview);
             case ImportPreviewOutcome.Statement(var preview) -> toStatementResponse(preview);
@@ -121,11 +128,19 @@ public class StatementImportResource {
         };
     }
 
-    private static ImportPreviewResponse toResponse(ImportPreview preview) {
+    private ImportPreviewResponse toResponse(ImportPreview preview) {
+        val accountNames = accountNamesById();
         val rows = preview.rows().stream().map(StatementImportResource::toRow).toList();
-        val candidateCards = preview.candidateCards().stream().map(StatementImportResource::toCardOption).toList();
+        val candidateCards = preview.candidateCards().stream()
+                .map(card -> toCardOption(card, accountNames)).toList();
         return new ImportPreviewResponse(
                 "CREDIT_CARD_INVOICE", preview.issuer().name(), preview.last4s(), rows, candidateCards);
+    }
+
+    /** Nome da conta a que cada cartão pertence, resolvido na borda para rotular a opção de cartão. */
+    private Map<UUID, String> accountNamesById() {
+        return monetaryContext.listAccounts().getOrElse(List.of()).stream()
+                .collect(Collectors.toMap(Account::id, Account::name));
     }
 
     private static BankStatementPreviewResponse toStatementResponse(BankStatementPreview preview) {
@@ -141,8 +156,8 @@ public class StatementImportResource {
                 "BANK_STATEMENT", preview.issuer().name(), accounts, preview.selectedAccountId(), rows);
     }
 
-    private static ImportPreviewResponse.CardOption toCardOption(CreditCard card) {
-        return new ImportPreviewResponse.CardOption(card.id(), card.accountName(), card.last4());
+    private static ImportPreviewResponse.CardOption toCardOption(CreditCard card, Map<UUID, String> accountNames) {
+        return new ImportPreviewResponse.CardOption(card.id(), accountNames.getOrDefault(card.accountId(), ""), card.last4());
     }
 
     private static ImportPreviewResponse.Row toRow(PreviewRow row) {

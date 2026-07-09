@@ -19,7 +19,7 @@ import static org.junit.jupiter.api.Assertions.*;
  * num H2 em memória isolado — não toca o banco de dev real. Cenário: conta real A; cartão C vinculado
  * a A (last4, limites, dias); cartão D sem vínculo (vira conta real ele mesmo); transações em ambos.
  */
-class LegacyCardMigrationTest {
+class LegacyCreditCardMigrationTest {
 
     private static final String URL = "jdbc:h2:mem:legacycardmigration-" + UUID.randomUUID() + ";DB_CLOSE_DELAY=-1";
     private static final String CHECKING_TYPE_ID = "a1000000-0000-0000-0000-000000000001";

@@ -1,10 +1,7 @@
 package br.community.context.monetary;
 
 import br.commons.Result;
-import br.community.context.monetary._0_domain.model.Account;
-import br.community.context.monetary._0_domain.model.Card;
-import br.community.context.monetary._0_domain.model.MonthlyBalance;
-import br.community.context.monetary._0_domain.model.Transaction;
+import br.community.context.monetary._0_domain.model.*;
 import br.community.context.monetary._1_application.command.AccountCommand;
 import br.community.context.monetary._1_application.command.TransactionPolicy;
 import br.community.context.monetary._1_application.service.AccountService;
@@ -149,7 +146,7 @@ class AccountUseCaseTest {
         Account source = seedChecking("Origem", true);
         Account target = seedChecking("Destino", true);
         Transaction tx = seedTransaction(source.id());
-        cardRepo.save(new Card(UUID.randomUUID(), "1234", source.id(), true));
+        cardRepo.save(new CreditCard(UUID.randomUUID(), "1234", source.id(), true));
         balanceRepo.save(new MonthlyBalance(UUID.randomUUID(), source.id(), YearMonth.of(2026, 5), new BigDecimal("50.00")));
 
         Result<List<UUID>, DomainError> r = useCase.deleteAccount(source.id(), new TransactionPolicy.Move(target.id()));
@@ -195,7 +192,7 @@ class AccountUseCaseTest {
     void purgeDeletesAccountCardsAndTransactionsButKeepsTransferSibling() {
         Account source = seedChecking("Origem", true);
         Account other = seedChecking("Outra", true);
-        Card card = cardRepo.save(new Card(UUID.randomUUID(), "1234", source.id(), true));
+        CreditCard creditCard = cardRepo.save(new CreditCard(UUID.randomUUID(), "1234", source.id(), true));
         UUID groupId = UUID.randomUUID();
         Transaction outLeg = txRepo.save(new Transaction(UUID.randomUUID(), "Transferência (saída)", new BigDecimal("50.00"),
                 LocalDate.of(2026, 5, 10), source.id(), Transaction.Status.CONFIRMED, Transaction.Type.EXPENSE,
@@ -209,7 +206,7 @@ class AccountUseCaseTest {
         assertTrue(r.isSuccess());
         assertEquals(List.of(outLeg.id()), ((Result.Success<List<UUID>, DomainError>) r).value());
         assertTrue(accountRepo.findById(source.id()).isEmpty());
-        assertTrue(cardRepo.findById(card.id()).isEmpty(), "cartão da conta apagada sumiu junto");
+        assertTrue(cardRepo.findById(creditCard.id()).isEmpty(), "cartão da conta apagada sumiu junto");
         assertTrue(txRepo.findById(outLeg.id()).isEmpty(), "perna da conta apagada sumiu");
         assertTrue(txRepo.findById(inLeg.id()).isPresent(), "perna da outra conta sobrevive");
     }

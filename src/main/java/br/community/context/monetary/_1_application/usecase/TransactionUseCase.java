@@ -4,7 +4,7 @@ import br.commons.MessageBus;
 import br.commons.Result;
 import br.community.context.monetary._0_domain.event.AccountEvents;
 import br.community.context.monetary._0_domain.event.TransactionEvents;
-import br.community.context.monetary._0_domain.model.Card;
+import br.community.context.monetary._0_domain.model.CreditCard;
 import br.community.context.monetary._0_domain.model.CostCenter;
 import br.community.context.monetary._0_domain.model.Transaction;
 import br.community.context.monetary._1_application.command.ImportedTransactionCommand;
@@ -317,9 +317,9 @@ public class TransactionUseCase {
         return cardService.findById(cardId).flatMap(card -> validateCardOwner(accountId, card));
     }
 
-    private static Result<Void, DomainError> validateCardOwner(UUID accountId, Card card) {
-        if (!accountId.equals(card.accountId())) {
-            return Result.failure(new DomainError.BusinessRule("Card does not belong to account: " + card.id()));
+    private static Result<Void, DomainError> validateCardOwner(UUID accountId, CreditCard creditCard) {
+        if (!accountId.equals(creditCard.accountId())) {
+            return Result.failure(new DomainError.BusinessRule("CreditCard does not belong to account: " + creditCard.id()));
         }
         return Result.success();
     }

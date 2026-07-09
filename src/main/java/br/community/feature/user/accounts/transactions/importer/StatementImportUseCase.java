@@ -7,6 +7,7 @@ import br.commons.pdf.PdfTextExtractor;
 import br.commons.tools.Strings;
 import br.community.context.monetary.MonetaryContext;
 import br.community.context.monetary._0_domain.model.Account;
+import br.community.context.monetary._0_domain.model.CreditCard;
 import br.community.context.monetary._0_domain.model.Transaction;
 import br.community.context.monetary._1_application.command.ImportConfirmCommand;
 import br.community.context.monetary._1_application.command.ImportedTransactionCommand;
@@ -118,7 +119,7 @@ public class StatementImportUseCase {
         for (val cardId : cmd.rows().stream().map(ImportConfirmCommand.Row::cardId).distinct().toList()) {
             val accountId = accountByCardId.get(cardId);
             if (accountId == null) {
-                return new Result.Failure<>(new DomainError.NotFound("Card not found: " + cardId));
+                return new Result.Failure<>(new DomainError.NotFound("CreditCard not found: " + cardId));
             }
             accountByCard.put(cardId, accountId);
         }
@@ -396,8 +397,8 @@ public class StatementImportUseCase {
         );
     }
 
-    private static UUID resolveAccountId(@Nullable CreditCard card) {
-        return card != null ? card.accountId() : new UUID(0L, 0L);
+    private static UUID resolveAccountId(@Nullable CreditCard creditCard) {
+        return creditCard != null ? creditCard.accountId() : new UUID(0L, 0L);
     }
 
     private boolean isDuplicate(TransactionDraft draft, List<Transaction> existing) {

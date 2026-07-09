@@ -3,7 +3,7 @@ package br.community.infra.persistence.monetary;
 import br.commons.chrono.Time;
 import br.commons.framework.persistence.jdbc.JDBCRepository;
 import br.commons.framework.persistence.jdbc.primitives.JDBCResultSet;
-import br.community.context.monetary._0_domain.model.Card;
+import br.community.context.monetary._0_domain.model.CreditCard;
 import br.community.context.monetary._0_domain.repository.CardRepository;
 import lombok.val;
 import org.jspecify.annotations.NullMarked;
@@ -21,14 +21,14 @@ import java.util.UUID;
  * Cartão é identificado só pelo last4 e vinculado a uma conta real ({@code COD_ACCOUNT}).
  */
 @NullMarked
-public final class CardJDBCRepository extends JDBCRepository<Card> implements CardRepository {
+public final class CardJDBCRepository extends JDBCRepository<CreditCard> implements CardRepository {
 
     public CardJDBCRepository() {
         super("MON_CARD");
     }
 
     @Override
-    public Optional<Card> findById(UUID id) {
+    public Optional<CreditCard> findById(UUID id) {
         return findById(id.toString());
     }
 
@@ -48,7 +48,7 @@ public final class CardJDBCRepository extends JDBCRepository<Card> implements Ca
     }
 
     @Override
-    protected Map<String, @Nullable Object> values(Card entity) {
+    protected Map<String, @Nullable Object> values(CreditCard entity) {
         val now = Timestamp.valueOf(Time.now());
 
         val values = new LinkedHashMap<String, @Nullable Object>();
@@ -62,7 +62,7 @@ public final class CardJDBCRepository extends JDBCRepository<Card> implements Ca
     }
 
     @Override
-    protected Card map(JDBCResultSet rs) {
+    protected CreditCard map(JDBCResultSet rs) {
         val id = UUID.fromString(rs.getString("ID").get());
         val last4 = rs.getString("TXT_LAST4").get();
         val accountId = UUID.fromString(rs.getString("COD_ACCOUNT").get());
@@ -71,6 +71,6 @@ public final class CardJDBCRepository extends JDBCRepository<Card> implements Ca
         val createdAt = rs.getTimestamp("TMS_CREATE_AT").get().toLocalDateTime();
         val updatedAt = rs.getTimestamp("TMS_UPDATED_AT").get().toLocalDateTime();
 
-        return new Card(id, last4, accountId, active, createdAt, updatedAt);
+        return new CreditCard(id, last4, accountId, active, createdAt, updatedAt);
     }
 }

@@ -2,8 +2,7 @@ package br.community.feature.user.accounts.core;
 
 import br.commons.Result;
 import br.community.context.monetary.MonetaryContext;
-import br.community.context.monetary._0_domain.model.Account;
-import br.community.context.monetary._0_domain.model.Card;
+import br.community.context.monetary._0_domain.model.CreditCard;
 import br.community.context.monetary._0_domain.model.Transaction;
 import br.community.context.monetary._1_application.command.AccountCommand;
 import br.community.context.shared._0_domain.model.DomainError;
@@ -57,7 +56,7 @@ public class AccountResource {
         val uaMap = userAccountService.findByUser(userId).stream()
                 .collect(Collectors.toMap(UserAccount::accountId, Function.identity()));
         val cardsByAccount = monetaryContext.listCards().getOrElse(List.of()).stream()
-                .collect(Collectors.groupingBy(Card::accountId));
+                .collect(Collectors.groupingBy(CreditCard::accountId));
         return switch (monetaryContext.listAccounts()) {
             case Result.Success(var accounts) -> accounts.stream()
                     .map(account -> AccountResponse.from(account, uaMap.get(account.id()),
@@ -176,7 +175,7 @@ public class AccountResource {
         return (int) allTransactions().stream().filter(t -> accountId.equals(t.accountId())).count();
     }
 
-    private List<Card> cardsOf(UUID accountId) {
+    private List<CreditCard> cardsOf(UUID accountId) {
         return monetaryContext.listCardsByAccount(accountId).getOrElse(List.of());
     }
 

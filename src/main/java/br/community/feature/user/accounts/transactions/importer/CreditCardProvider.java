@@ -1,5 +1,6 @@
 package br.community.feature.user.accounts.transactions.importer;
 
+import br.community.context.monetary._0_domain.model.CreditCard;
 import org.jspecify.annotations.NullMarked;
 
 import java.util.List;
@@ -12,6 +13,6 @@ import java.util.List;
 @NullMarked
 public interface CreditCardProvider {
 
-    /** Todos os cartões cadastrados, com a conta real a que pertencem. */
+    /** Todos os cartões cadastrados. */
     List<CreditCard> creditCards();
 }

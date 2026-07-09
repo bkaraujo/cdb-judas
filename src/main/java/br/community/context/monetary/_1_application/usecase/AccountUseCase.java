@@ -5,7 +5,7 @@ import br.commons.Result;
 import br.commons.tools.Strings;
 import br.community.context.monetary._0_domain.event.AccountEvents;
 import br.community.context.monetary._0_domain.model.Account;
-import br.community.context.monetary._0_domain.model.Card;
+import br.community.context.monetary._0_domain.model.CreditCard;
 import br.community.context.monetary._0_domain.model.MonthlyBalance;
 import br.community.context.monetary._0_domain.model.Transaction;
 import br.community.context.monetary._1_application.command.AccountCommand;
@@ -107,7 +107,7 @@ public class AccountUseCase {
             transactionService.reassignAccount(account.id(), target.id());
 
             cardService.findByAccount(account.id()).forEach(card ->
-                    cardService.save(new Card(card.id(), card.last4(), target.id(), card.active())));
+                    cardService.save(new CreditCard(card.id(), card.last4(), target.id(), card.active())));
             balanceService.findByAccount(account.id()).forEach(b -> balanceService.deleteById(b.id()));
 
             return accountService.deleteById(account.id()).map(ignored -> {

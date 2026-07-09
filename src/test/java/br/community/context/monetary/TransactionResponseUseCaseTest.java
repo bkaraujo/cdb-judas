@@ -1,11 +1,7 @@
 package br.community.context.monetary;
 
 import br.commons.Result;
-import br.community.context.monetary._0_domain.model.Account;
-import br.community.context.monetary._0_domain.model.Card;
-import br.community.context.monetary._0_domain.model.CostCenter;
-import br.community.context.monetary._0_domain.model.MonthlyBalance;
-import br.community.context.monetary._0_domain.model.Transaction;
+import br.community.context.monetary._0_domain.model.*;
 import br.community.context.monetary._1_application.command.TransactionCommand;
 import br.community.context.monetary._1_application.service.AccountService;
 import br.community.context.monetary._1_application.service.BalanceRecalculationService;
@@ -64,8 +60,8 @@ class TransactionResponseUseCaseTest {
                 costCenterId, Transaction.Status.CONFIRMED, Transaction.Type.EXPENSE, installments, null, null, cardId);
     }
 
-    private Card seedCard(UUID forAccountId, String last4) {
-        return cardRepo.save(new Card(UUID.randomUUID(), last4, forAccountId, true));
+    private CreditCard seedCard(UUID forAccountId, String last4) {
+        return cardRepo.save(new CreditCard(UUID.randomUUID(), last4, forAccountId, true));
     }
 
     @Test
@@ -314,17 +310,17 @@ class TransactionResponseUseCaseTest {
     @Test
     @DisplayName("createTransaction com cardId da própria conta é aceito e persistido")
     void createWithOwnCardIsAccepted() {
-        Card card = seedCard(accountId, "1234");
-        Result<Transaction, DomainError> r = useCase.createTransaction(cmdWithCard(LocalDate.of(2026, 5, 10), null, card.id()));
+        CreditCard creditCard = seedCard(accountId, "1234");
+        Result<Transaction, DomainError> r = useCase.createTransaction(cmdWithCard(LocalDate.of(2026, 5, 10), null, creditCard.id()));
         assertTrue(r.isSuccess());
-        assertEquals(card.id(), txRepo.findAll().get(0).cardId());
+        assertEquals(creditCard.id(), txRepo.findAll().get(0).cardId());
     }
 
     @Test
     @DisplayName("createTransaction com cardId de outra conta é rejeitado")
     void createWithCardFromAnotherAccountIsRejected() {
-        Card card = seedCard(UUID.randomUUID(), "1234");
-        Result<Transaction, DomainError> r = useCase.createTransaction(cmdWithCard(LocalDate.of(2026, 5, 10), null, card.id()));
+        CreditCard creditCard = seedCard(UUID.randomUUID(), "1234");
+        Result<Transaction, DomainError> r = useCase.createTransaction(cmdWithCard(LocalDate.of(2026, 5, 10), null, creditCard.id()));
         assertTrue(r.isFailure());
         assertInstanceOf(DomainError.BusinessRule.class, ((Result.Failure<Transaction, DomainError>) r).error());
         assertTrue(txRepo.findAll().isEmpty(), "nada deve ser persistido");
@@ -341,11 +337,11 @@ class TransactionResponseUseCaseTest {
     @Test
     @DisplayName("parcelamento propaga o mesmo cardId para todas as parcelas")
     void installmentsPropagateCardId() {
-        Card card = seedCard(accountId, "1234");
-        useCase.createTransaction(cmdWithCard(LocalDate.of(2026, 5, 10), 3, card.id()));
+        CreditCard creditCard = seedCard(accountId, "1234");
+        useCase.createTransaction(cmdWithCard(LocalDate.of(2026, 5, 10), 3, creditCard.id()));
         List<Transaction> all = txRepo.findAll();
         assertEquals(3, all.size());
-        assertTrue(all.stream().allMatch(t -> card.id().equals(t.cardId())));
+        assertTrue(all.stream().allMatch(t -> creditCard.id().equals(t.cardId())));
     }
 
     @Test
@@ -360,13 +356,13 @@ class TransactionResponseUseCaseTest {
     @Test
     @DisplayName("updateTransactionStatus preserva o cardId existente")
     void updateStatusPreservesCardId() {
-        Card card = seedCard(accountId, "1234");
-        useCase.createTransaction(cmdWithCard(LocalDate.of(2026, 5, 10), null, card.id()));
+        CreditCard creditCard = seedCard(accountId, "1234");
+        useCase.createTransaction(cmdWithCard(LocalDate.of(2026, 5, 10), null, creditCard.id()));
         Transaction t = txRepo.findAll().get(0);
 
         Result<Transaction, DomainError> r = useCase.updateTransactionStatus(t.id(), Transaction.Status.CONFIRMED, LocalDate.of(2026, 5, 12));
         assertTrue(r.isSuccess());
-        assertEquals(card.id(), txRepo.findById(t.id()).orElseThrow().cardId());
+        assertEquals(creditCard.id(), txRepo.findById(t.id()).orElseThrow().cardId());
     }
 
     // ── deleteTransactions (exclusão em massa: categoria/tag DELETE) ─────

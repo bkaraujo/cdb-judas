@@ -1,10 +1,6 @@
 package br.community.context.monetary;
 
-import br.community.context.monetary._0_domain.model.Account;
-import br.community.context.monetary._0_domain.model.Card;
-import br.community.context.monetary._0_domain.model.CostCenter;
-import br.community.context.monetary._0_domain.model.MonthlyBalance;
-import br.community.context.monetary._0_domain.model.Transaction;
+import br.community.context.monetary._0_domain.model.*;
 import br.community.context.monetary._0_domain.repository.AccountRepository;
 import br.community.context.monetary._0_domain.repository.BalanceRepository;
 import br.community.context.monetary._0_domain.repository.CardRepository;
@@ -69,8 +65,8 @@ final class InMemoryRepositories {
         }
     }
 
-    static class Cards extends BaseRepo<Card, UUID> implements CardRepository {
-        public Card save(Card e) { data.put(e.id(), e); return e; }
+    static class Cards extends BaseRepo<CreditCard, UUID> implements CardRepository {
+        public CreditCard save(CreditCard e) { data.put(e.id(), e); return e; }
     }
 
     static class Closings implements ClosingRepository {

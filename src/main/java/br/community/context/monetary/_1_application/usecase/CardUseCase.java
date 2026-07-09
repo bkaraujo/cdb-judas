@@ -4,7 +4,7 @@ import br.commons.MessageBus;
 import br.commons.Result;
 import br.community.context.monetary._0_domain.event.AccountEvents;
 import br.community.context.monetary._0_domain.model.Account;
-import br.community.context.monetary._0_domain.model.Card;
+import br.community.context.monetary._0_domain.model.CreditCard;
 import br.community.context.monetary._0_domain.model.Transaction;
 import br.community.context.monetary._1_application.command.CardCommand;
 import br.community.context.monetary._1_application.command.TransactionPolicy;
@@ -32,22 +32,22 @@ public class CardUseCase {
     private final TransactionService transactionService;
     private final BalanceRecalculationService balanceRecalculationService;
 
-    public Result<List<Card>, DomainError> listCards() {
+    public Result<List<CreditCard>, DomainError> listCards() {
         return Result.success(cardService.findAll());
     }
 
-    public Result<List<Card>, DomainError> listCardsByAccount(UUID accountId) {
+    public Result<List<CreditCard>, DomainError> listCardsByAccount(UUID accountId) {
         return accountService.findById(accountId).map(ignored -> cardService.findByAccount(accountId));
     }
 
-    public Result<Card, DomainError> createCard(CardCommand cmd) {
+    public Result<CreditCard, DomainError> createCard(CardCommand cmd) {
         if (!LAST4.matcher(cmd.last4()).matches()) {
             return Result.failure(new DomainError.Validation("last4 must be exactly 4 digits"));
         }
         return accountService.findById(cmd.accountId()).flatMap(account -> createCardFor(cmd, account));
     }
 
-    private Result<Card, DomainError> createCardFor(CardCommand cmd, Account account) {
+    private Result<CreditCard, DomainError> createCardFor(CardCommand cmd, Account account) {
         if (!account.active()) {
             return Result.failure(new DomainError.BusinessRule("Account is inactive: " + account.id()));
         }
@@ -55,10 +55,10 @@ public class CardUseCase {
         val duplicate = cardService.findByAccount(account.id()).stream()
                 .anyMatch(c -> c.last4().equals(cmd.last4()));
         if (duplicate) {
-            return Result.failure(new DomainError.Conflict("Card already registered for this account: " + cmd.last4()));
+            return Result.failure(new DomainError.Conflict("CreditCard already registered for this account: " + cmd.last4()));
         }
 
-        val saved = cardService.save(new Card(UUID.randomUUID(), cmd.last4(), account.id(), true));
+        val saved = cardService.save(new CreditCard(UUID.randomUUID(), cmd.last4(), account.id(), true));
         MessageBus.submit(new AccountEvents.Updated(account));
         return Result.success(saved);
     }
@@ -72,55 +72,55 @@ public class CardUseCase {
         });
     }
 
-    private Result<List<UUID>, DomainError> deleteBlock(Card card) {
-        if (!transactionService.findByCard(card.id()).isEmpty()) {
-            return Result.failure(new DomainError.Conflict("Card has linked transactions and cannot be deleted: " + card.id()));
+    private Result<List<UUID>, DomainError> deleteBlock(CreditCard creditCard) {
+        if (!transactionService.findByCard(creditCard.id()).isEmpty()) {
+            return Result.failure(new DomainError.Conflict("CreditCard has linked transactions and cannot be deleted: " + creditCard.id()));
         }
-        cardService.deleteById(card.id());
-        accountService.findById(card.accountId())
+        cardService.deleteById(creditCard.id());
+        accountService.findById(creditCard.accountId())
                 .ifSuccess(account -> MessageBus.submit(new AccountEvents.Updated(account)));
         return Result.success(List.of());
     }
 
-    private Result<List<UUID>, DomainError> deleteMove(Card card, UUID targetId) {
+    private Result<List<UUID>, DomainError> deleteMove(CreditCard creditCard, UUID targetId) {
         return cardService.findById(targetId).flatMap(target -> {
-            if (target.id().equals(card.id())) {
+            if (target.id().equals(creditCard.id())) {
                 return Result.<List<UUID>>failure(
-                        new DomainError.BusinessRule("Target card must be different from source: " + targetId));
+                        new DomainError.BusinessRule("Target creditCard must be different from source: " + targetId));
             }
-            if (!target.accountId().equals(card.accountId())) {
+            if (!target.accountId().equals(creditCard.accountId())) {
                 return Result.<List<UUID>>failure(
-                        new DomainError.BusinessRule("Target card must belong to the same account: " + targetId));
+                        new DomainError.BusinessRule("Target creditCard must belong to the same account: " + targetId));
             }
             if (!target.active()) {
                 return Result.<List<UUID>>failure(
-                        new DomainError.BusinessRule("Target card is inactive: " + targetId));
+                        new DomainError.BusinessRule("Target creditCard is inactive: " + targetId));
             }
 
-            val movedIds = transactionService.findByCard(card.id()).stream().map(Transaction::id).toList();
-            transactionService.reassignCard(card.id(), target.id());
-            cardService.deleteById(card.id());
-            accountService.findById(card.accountId())
+            val movedIds = transactionService.findByCard(creditCard.id()).stream().map(Transaction::id).toList();
+            transactionService.reassignCard(creditCard.id(), target.id());
+            cardService.deleteById(creditCard.id());
+            accountService.findById(creditCard.accountId())
                     .ifSuccess(account -> MessageBus.submit(new AccountEvents.Updated(account)));
             return Result.success(movedIds);
         });
     }
 
-    private Result<List<UUID>, DomainError> deletePurge(Card card) {
-        val ids = transactionService.findByCard(card.id()).stream().map(Transaction::id).toList();
+    private Result<List<UUID>, DomainError> deletePurge(CreditCard creditCard) {
+        val ids = transactionService.findByCard(creditCard.id()).stream().map(Transaction::id).toList();
         ids.forEach(transactionService::deleteById);
-        cardService.deleteById(card.id());
+        cardService.deleteById(creditCard.id());
 
-        return accountService.findById(card.accountId()).map(account -> {
+        return accountService.findById(creditCard.accountId()).map(account -> {
             balanceRecalculationService.recalculate(account.id());
             MessageBus.submit(new AccountEvents.Updated(account));
             return ids;
         });
     }
 
-    public Result<Card, DomainError> setActive(UUID id, boolean active) {
+    public Result<CreditCard, DomainError> setActive(UUID id, boolean active) {
         return cardService.findById(id).map(card -> {
-            val saved = cardService.save(new Card(card.id(), card.last4(), card.accountId(), active));
+            val saved = cardService.save(new CreditCard(card.id(), card.last4(), card.accountId(), active));
             accountService.findById(saved.accountId())
                     .ifSuccess(account -> MessageBus.submit(new AccountEvents.Updated(account)));
             return saved;
