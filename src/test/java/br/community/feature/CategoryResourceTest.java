@@ -379,4 +379,14 @@ public class CategoryResourceTest extends BaseHttpTest {
                 .when().delete("/api/" + TEST_USER_ID + "/categories/" + systemId)
                 .then().statusCode(400);
     }
+
+    @Test
+    void deveRejeitarCriacaoDeCategoriaDuplicadaNoMesmoNivel() {
+        createCategory("Casa", "EXPENSE", null);
+        asTestUser().body("""
+           {"name": "Casa", "nature": "EXPENSE"}
+           """)
+                .when().post("/api/" + TEST_USER_ID + "/categories")
+                .then().statusCode(400); // DomainError.BusinessRule -> 400, confirmed via DomainExceptionMapper
+    }
 }

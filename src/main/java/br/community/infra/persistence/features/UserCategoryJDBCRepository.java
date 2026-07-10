@@ -39,11 +39,8 @@ public final class UserCategoryJDBCRepository extends JDBCRepository<UserCategor
     @Override
     public List<UserCategory> findByNature(UUID userId, Transaction.Type nature) {
         return datasource.query(
-                "SELECT " + columnList() + " FROM " + table() + " WHERE COD_USER = ? AND EXISTS (SELECT 1 FROM TRANSACTION_NATURE TN WHERE TN.TXT_DESCRIPTION = ? AND TN.ID = COD_NATURE)",
-                JDBCParameter.of(
-                        userId.toString(),
-                        nature.name()
-                ),
+                "SELECT " + columnList() + " FROM " + table() + " WHERE COD_USER = ? AND COD_NATURE = ?",
+                JDBCParameter.of(userId.toString(), nature.name()),
                 this::mapList
         );
     }

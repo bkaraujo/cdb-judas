@@ -13,6 +13,7 @@ import br.community.context.people.PeopleContext;
 import br.community.context.people._0_domain.repository.PersonRepository;
 import br.community.infra.persistence.Database;
 import br.community.infra.persistence.core.AccountLimitMigration;
+import br.community.infra.persistence.core.DuplicateCategoryMigration;
 import br.community.infra.persistence.core.FeatureSchemaMigration;
 import br.community.infra.persistence.core.LegacyCardMigration;
 import io.quarkus.runtime.StartupEvent;
@@ -52,6 +53,8 @@ public class ContextBridge {
             LegacyCardMigration.apply(datasource);
             AccountLimitMigration.apply(datasource);
             FeatureSchemaMigration.apply(datasource);
+            DuplicateCategoryMigration.apply(datasource);
+
             switch (datasource.begin()) {
                 case Result.Failure(var error) -> throw new IllegalStateException(error);
                 case Result.Success(var transaction) -> {
