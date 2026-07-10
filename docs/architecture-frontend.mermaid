@@ -1,0 +1,40 @@
+flowchart LR
+%% CDB Finance — Frontend: diagrama de pacotes (placement de módulos).
+%% SPA Vanilla JS + jQuery 4, sem build step. Hexagonal em camadas.
+%% Regra de dependência: pages/primary → _2_application → _1_domain.
+%% _1_domain nunca importa infraestrutura; páginas nunca chamam http direto.
+
+    subgraph appd["web/js/app"]
+        BOOT["bootstrap · composition-root (DI manual)<br>shell · login-modal"]
+    end
+
+    subgraph pagesd["web/pages"]
+        PAGES["uma view por tela (jQuery)<br>dashboard · transactions · accounts · credit-cards<br>categories · tags · statement · budget · reports …"]
+    end
+
+    subgraph prim["web/js/_3_infrastructure/primary — driving"]
+        PRIM["router · sidebar · theme · header<br>ui · format · icons"]
+    end
+
+    subgraph appl["web/js/_2_application"]
+        SERV["*-service por domínio<br>session-service · self-service · preferences-service<br>event-bus (pub/sub) · cache-store"]
+    end
+
+    subgraph dom["web/js/_1_domain"]
+        MODELS["modelos puros, sem infraestrutura<br>account · credit-card · transaction · money<br>period · category · tag · budget …"]
+    end
+
+    subgraph sec["web/js/_3_infrastructure/secondary — driven"]
+        SEC["http-client (fila + token rotativo + request-id + withUser)<br>*-repository (REST) · auth-store (sessionStorage)<br>sse-client · storage (espelho localStorage)"]
+    end
+
+    API[("Backend Quarkus<br>/api · /api/{uuid}/…")]
+
+    BOOT -.->|"liga tudo no boot"| SERV
+    BOOT -.-> SEC
+    BOOT -.-> PRIM
+    PAGES --> SERV
+    PRIM --> SERV
+    SERV --> MODELS
+    SERV --> SEC
+    SEC --> API

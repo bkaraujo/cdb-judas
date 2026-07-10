@@ -53,7 +53,11 @@ Autenticação/autorização (token opaco rotativo, `OwnershipFilter`), observab
 | `docs/backend/persistence-jdbc.md` | JDBC/H2, schema = mermaid, ciclo de vida do DB de dev, colunas anuláveis |
 | `docs/backend/quality-and-build.md` | Gate PMD/CPD, gotchas de build Java 25, verificação sem `mvn`, setup de IDE |
 | `docs/frontend/api-web.md` | Integração do frontend com a API REST |
-| `docs/architecture.mermaid` | Diagrama de arquitetura geral |
+| `docs/architecture-backend.mermaid` | **Pacotes (backend)** — placement de classes por pacote + dependências permitidas/proibidas |
+| `docs/architecture-backend-classes.mermaid` | **Classes (backend)** — VSA + Hexagonal materializados numa fatia exemplar (transactions/monetary) |
+| `docs/architecture-backend-activity.mermaid` | **Atividade (backend)** — fluxo de uma requisição mutadora: filtros → Resource → Facade → UseCase → Result |
+| `docs/architecture-frontend.mermaid` | **Pacotes (frontend)** — placement de módulos por camada + regra de dependência |
+| `docs/architecture-frontend-activity.mermaid` | **Atividade (frontend)** — ação do usuário → service → http-client (fila/token) → API, + canal SSE |
 | `docs/db-ctx-people.mermaid` · `docs/db-ctx-monetary.mermaid` · `docs/db-features.mermaid` | **Schema ER canônico** (fonte da verdade do banco) |
 | `docs/extrato/` | PDFs de exemplo (BTG, Santander) para testar a importação |
 
@@ -65,5 +69,6 @@ Autenticação/autorização (token opaco rotativo, `OwnershipFilter`), observab
 
 - **Convenções de código (backend)** → `docs/backend/*` (índice em `src/main/java/CLAUDE.md`).
 - **Arquitetura e regras (frontend)** → `web/CLAUDE.md`.
-- **Schema do banco** → `docs/*.mermaid` (canônico; `Database` conforma).
+- **Arquitetura geral (backend/frontend)** → `docs/architecture-*.mermaid` (pacotes, classes, atividade).
+- **Schema do banco** → `docs/db-*.mermaid` (canônico; `Database` conforma).
 - **Gotchas de build / IDE / qualidade** → `docs/backend/quality-and-build.md`.

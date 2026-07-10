@@ -1,0 +1,24 @@
+flowchart TD
+%% CDB Finance — Backend: fluxo de uma requisição mutadora (ex.: POST transação).
+%% Toda rota de dados /api/{uuid}/… percorre este caminho.
+
+    REQ(["Requisição HTTP<br>/api/{uuid}/… + X-Access-Token + x-request-id"]) --> AUTH{"Token válido?"}
+    AUTH -- não --> R401(["401 — sessão inválida"])
+    AUTH -- sim --> MDC["Log de requisição + MDC<br>com x-request-id"]
+    MDC --> OWN{"OwnershipFilter:<br>{uuid} = usuário autenticado?"}
+    OWN -- não --> R403(["403 — anti-IDOR"])
+    OWN -- sim --> RES["Resource desserializa DTO da feature"]
+    RES --> POL{"Política de usuário ok?<br>ex.: ClosingService.validateDate<br>fronteira da feature"}
+    POL -- Failure --> ERR["Resource traduz DomainError<br>em status HTTP 4xx"]
+    POL -- Success --> FAC["Facade do contexto<br>bean produzido pelo ContextBridge"]
+    FAC --> UC["UseCase recebe Command<br>e orquestra Services"]
+    UC --> SRV["Service valida domínio<br>parâmetros simples"]
+    SRV --> PORT["Porta Repository<br>interface do _0_domain"]
+    PORT --> JDBC["Adaptador *JDBCRepository<br>executa no H2"]
+    JDBC --> RW{"Result"}
+    RW -- Failure --> ERR
+    RW -- Success --> OK["Resource mapeia Success<br>para 200/201 + corpo de resposta"]
+    OK --> SSE["Resource dispara SSE pós-mutação<br>quando a feature exige"]
+    SSE --> TOK["Novo X-Access-Token no header<br>token rotativo, só resposta não-SSE bem-sucedida"]
+    TOK --> OUT(["Resposta"])
+    ERR --> OUT

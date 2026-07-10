@@ -1,0 +1,39 @@
+flowchart LR
+%% CDB Finance — Backend: diagrama de pacotes (placement de classes).
+%% Cada caixa diz o que MORA no pacote; setas = dependências permitidas.
+%% ArchUnit proíbe: feature→contexto fora da Facade; Resource→Repository;
+%% contexto→framework; _1_application→infra; core→feature.
+
+    subgraph feature["br.community.feature.*"]
+        FEAT["*Resource (borda HTTP)<br>*Request / *Response (DTOs da API)<br>services e repositórios locais da fatia<br>políticas de usuário (ex.: ClosingService)<br>user.* = /api/{uuid}/… · system.* = sem uuid"]
+    end
+
+    subgraph core["br.community.core"]
+        CORE["filtros: token rotativo + OwnershipFilter<br>log de requisição + MDC<br>config HTTP/OpenAPI · persistência JSON<br>ContextBridge (costura CDI ↔ Registry)"]
+    end
+
+    subgraph context["br.community.context.*  — monetary · people · shared"]
+        FAC["Facade (MonetaryContext, PeopleContext)<br>Bootstrap (composition root)"]
+        APP["_1_application<br>usecases · services · commands · listeners"]
+        DOM["_0_domain<br>models (records) · events<br>repository = PORTAS (interfaces)"]
+    end
+
+    subgraph infra["br.community.infra"]
+        INF["*JDBCRepository (adaptadores das portas)<br>mappers de persistência · adaptador MessageBus"]
+    end
+
+    subgraph commons["br.commons"]
+        COM["Result · Registry · MessageBus · Logger<br>jdbc pool/primitives · json Storage<br>PdfBoxTextExtractor · YAML · platform"]
+    end
+
+    DB[("H2 — dev: file ./database · teste: in-memory<br>schema canônico: docs/db-*.mermaid")]
+
+    FEAT -->|"só via Facade"| FAC
+    FEAT --> CORE
+    FAC --> APP
+    APP --> DOM
+    INF -.->|"implementa as portas"| DOM
+    INF --> DB
+    context --> COM
+    INF --> COM
+    CORE --> COM

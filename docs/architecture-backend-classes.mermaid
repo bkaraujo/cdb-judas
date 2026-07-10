@@ -1,0 +1,80 @@
+classDiagram
+%% CDB Finance — Backend: como VSA + Hexagonal se materializam em classes.
+%% Fatia vertical exemplar: transactions (feature) sobre o contexto monetary.
+%% Toda fatia repete este formato; troque "Transaction" pelo agregado da fatia.
+    direction LR
+
+    class TransactionResource {
+        <<Feature Resource CDI>>
+        +create(userId, TransactionRequest) Response
+        +patchStatus(userId, PatchStatusRequest) Response
+    }
+    class TransactionRequest {
+        <<Feature DTO record>>
+    }
+    class ClosingService {
+        <<Feature Policy>>
+        +validateDate(userId, date) Result
+    }
+    class UserTransactionService {
+        <<Feature Service>>
+        dados overlay da propria fatia
+    }
+    class ContextBridge {
+        <<CDI Producer core>>
+        +monetaryContext() MonetaryContext
+    }
+    class MonetaryContext {
+        <<Facade do contexto>>
+        unico ponto de entrada para features
+    }
+    class TransactionUseCase {
+        <<UseCase aplicacao>>
+        +execute(Command) Result
+    }
+    class TransactionService {
+        <<Service aplicacao>>
+        parametros simples, valida dominio
+    }
+    class MonetaryTransaction {
+        <<Domain Model record>>
+    }
+    class TransactionRepository {
+        <<Porta interface dominio>>
+        +save(MonetaryTransaction) Result
+    }
+    class TransactionJDBCRepository {
+        <<Adaptador infra JDBC-H2>>
+    }
+    class MonetaryBootstrap {
+        <<Composition Root>>
+        monta o contexto sem framework
+    }
+    class Registry {
+        <<Service Locator commons>>
+    }
+    class Result {
+        <<Success ou Failure>>
+        +map()
+        +flatMap()
+        +recover()
+        +get()
+    }
+
+    TransactionResource ..> TransactionRequest : recebe DTO
+    TransactionResource ..> ClosingService : politica validada na FRONTEIRA da feature
+    TransactionResource ..> UserTransactionService : logica local da fatia
+    TransactionResource ..> MonetaryContext : SO via Facade - ArchUnit
+    TransactionResource ..> Result : traduz em HTTP na borda
+    ContextBridge ..> MonetaryContext : reexpoe como bean CDI
+    MonetaryContext ..> TransactionUseCase : delega
+    TransactionUseCase ..> TransactionService : orquestra
+    TransactionUseCase ..> Result : retorna
+    TransactionService ..> TransactionRepository : usa a PORTA
+    TransactionService ..> MonetaryTransaction : opera o modelo
+    TransactionRepository <|.. TransactionJDBCRepository : adaptador implementa
+    MonetaryBootstrap ..> Registry : liga porta ao adaptador no boot
+
+    note for TransactionResource "VSA: a fatia contem Resource, DTOs,\npoliticas de usuario e servicos locais.\nProibido acessar repositorio de contexto."
+    note for MonetaryContext "Hexagonal: contexto livre de framework.\nDI via Registry, nunca CDI/Spring."
+    note for Result "Railway: sem excecao para fluxo de negocio.\nErro de dominio e objeto de valor."
