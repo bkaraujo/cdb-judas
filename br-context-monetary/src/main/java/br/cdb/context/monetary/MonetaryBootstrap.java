@@ -34,7 +34,7 @@ public final class MonetaryBootstrap {
         val transactionUseCase = new TransactionUseCase(transactionService, cardService, balanceRecalculationService);
         val cardUseCase = new CardUseCase(cardService, accountService, transactionService, balanceRecalculationService);
 
-        MessageBus.subscribe(new TransactionEventListener(balanceRecalculationService));
+        MessageBus.subscribe(new TransactionEventListener(accountService, balanceRecalculationService));
 
         Registry.set(MonetaryContext.class, new MonetaryContext(accountUseCase, transactionUseCase, metadataUseCase, cardUseCase));
     }
