@@ -13,6 +13,19 @@ WORKDIR /app
 COPY .mvn ./.mvn
 COPY pom.xml .
 
+# Reactor multi-módulo (pom.xml raiz é só o agregador — packaging=pom, <modules>
+# aponta pra estes 5 diretórios). br-application depende de br-parent/br-commons/
+# br-context-people/br-context-monetary; todos precisam estar no contexto pro
+# `mvn package` resolver via reactor (sem precisar de `mvn install` prévio).
+# web/ entra porque o pom de br-application copia esse diretório pro classpath
+# (META-INF/resources) — é o que faz o Quarkus servir a SPA como estático.
+COPY br-parent ./br-parent
+COPY br-commons ./br-commons
+COPY br-context-people ./br-context-people
+COPY br-context-monetary ./br-context-monetary
+COPY br-application ./br-application
+COPY web ./web
+
 # `dependency:go-offline` (usado antes para cachear as dependências numa camada
 # separada de pom.xml, antes desta linha) falhava com "version is missing" para
 # dependências geridas só pelo BOM do Quarkus (rest-assured, junit-jupiter-params
@@ -24,9 +37,9 @@ COPY pom.xml .
 # `mvn verify` resolve sem problema fora do container), o que aponta para uma
 # restrição de rede do sandbox de build e não para o Dockerfile em si; validar
 # num Docker com rede irrestrita antes de depender disto em CI/produção.
-# Compila e gera target/quarkus-app/ (fast-jar: app/ + lib/ + quarkus/ +
-# quarkus-run.jar). Testes ficam por conta do CI; a imagem foca no runtime.
-COPY src ./src
+# Compila o reactor inteiro; a fast-jar de saída fica em
+# br-application/target/quarkus-app/ (app/ + lib/ + quarkus/ + quarkus-run.jar).
+# Testes ficam por conta do CI; a imagem foca no runtime.
 RUN mvn -B package -DskipTests
 
 # ============================================================================
@@ -39,7 +52,7 @@ WORKDIR /app
 ARG APP_VERSION=0.1.0
 LABEL org.opencontainers.image.title="cdb-judas-backend" \
       org.opencontainers.image.version="${APP_VERSION}" \
-      org.opencontainers.image.vendor="br.community"
+      org.opencontainers.image.vendor="br.cdb"
 
 # Diretório de persistência JSON. Liga storage.json.path (@ConfigMapping) a um
 # caminho de container que o compose monta a partir do ./data do host. mkdir
@@ -49,7 +62,7 @@ RUN mkdir -p /data
 
 # fast-jar preserva a estrutura de diretórios (app/ lib/ quarkus/ + quarkus-run.jar);
 # não é um único jar copiável como o repackaged do Spring Boot.
-COPY --from=builder /app/target/quarkus-app/ ./
+COPY --from=builder /app/br-application/target/quarkus-app/ ./
 
 EXPOSE 8080
 

@@ -1,5 +1,6 @@
 package br.cdb.context.monetary._1_application.usecase;
 
+import br.cdb.context.monetary._0_domain.event.AccountEvents;
 import br.cdb.context.monetary._0_domain.model.Account;
 import br.cdb.context.monetary._0_domain.model.CreditCard;
 import br.cdb.context.monetary._0_domain.model.MonthlyBalance;
@@ -7,6 +8,7 @@ import br.cdb.context.monetary._0_domain.model.Transaction;
 import br.cdb.context.monetary._1_application.command.AccountCommand;
 import br.cdb.context.monetary._1_application.command.TransactionPolicy;
 import br.cdb.context.monetary._1_application.service.*;
+import br.commons.MessageBus;
 import br.commons.Result;
 import br.commons.business.BusinessError;
 import br.commons.tools.Strings;
@@ -48,13 +50,17 @@ public class AccountUseCase {
     }
 
     public Result<Account, BusinessError> createAccount(AccountCommand cmd) {
-        return parse(UUID.randomUUID(), cmd).map(accountService::save);
+        return parse(UUID.randomUUID(), cmd).map(accountService::save).ifSuccess(
+                account -> MessageBus.submit(new AccountEvents.Created(account))
+        );
     }
 
     public Result<Account, BusinessError> updateAccount(UUID accountId, AccountCommand cmd) {
         return accountService.findById(accountId)
                 .flatMap(existing -> parse(accountId, cmd))
-                .map(accountService::save);
+                .map(accountService::save).ifSuccess(
+                        account -> MessageBus.submit(new AccountEvents.Updated(account))
+                );
     }
 
     /** Ids das transações movidas/apagadas (vazio para {@link TransactionPolicy.Block}). */
@@ -63,7 +69,9 @@ public class AccountUseCase {
             case TransactionPolicy.Block ignored -> deleteBlock(account);
             case TransactionPolicy.Move(var targetId) -> deleteMove(account, targetId);
             case TransactionPolicy.Purge ignored -> deletePurge(account);
-        });
+        }).ifSuccess(
+                _ -> MessageBus.submit(new AccountEvents.Deleted(accountId))
+        );
     }
 
     private Result<List<UUID>, BusinessError> deleteBlock(Account account) {

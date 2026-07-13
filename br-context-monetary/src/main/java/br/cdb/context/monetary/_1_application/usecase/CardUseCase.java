@@ -1,5 +1,6 @@
 package br.cdb.context.monetary._1_application.usecase;
 
+import br.cdb.context.monetary._0_domain.event.CreditCardEvents;
 import br.cdb.context.monetary._0_domain.model.Account;
 import br.cdb.context.monetary._0_domain.model.CreditCard;
 import br.cdb.context.monetary._0_domain.model.Transaction;
@@ -9,6 +10,7 @@ import br.cdb.context.monetary._1_application.service.AccountService;
 import br.cdb.context.monetary._1_application.service.BalanceRecalculationService;
 import br.cdb.context.monetary._1_application.service.CardService;
 import br.cdb.context.monetary._1_application.service.TransactionService;
+import br.commons.MessageBus;
 import br.commons.Result;
 import br.commons.business.BusinessError;
 import lombok.RequiredArgsConstructor;
@@ -42,7 +44,11 @@ public class CardUseCase {
         if (!LAST4.matcher(cmd.last4()).matches()) {
             return Result.failure(new BusinessError.Validation("last4 must be exactly 4 digits"));
         }
-        return accountService.findById(cmd.accountId()).flatMap(account -> createCardFor(cmd, account));
+
+        return accountService
+                .findById(cmd.accountId())
+                .flatMap(account -> createCardFor(cmd, account))
+                .ifSuccess(account -> MessageBus.submit(new CreditCardEvents.Created(account)));
     }
 
     private Result<CreditCard, BusinessError> createCardFor(CardCommand cmd, Account account) {
@@ -66,7 +72,8 @@ public class CardUseCase {
             case TransactionPolicy.Block ignored -> deleteBlock(card);
             case TransactionPolicy.Move(var targetId) -> deleteMove(card, targetId);
             case TransactionPolicy.Purge ignored -> deletePurge(card);
-        });
+        })
+                .ifSuccess(_ -> MessageBus.submit(new CreditCardEvents.Deleted(id)));
     }
 
     private Result<List<UUID>, BusinessError> deleteBlock(CreditCard creditCard) {
@@ -112,6 +119,7 @@ public class CardUseCase {
 
     public Result<CreditCard, BusinessError> setActive(UUID id, boolean active) {
         return cardService.findById(id)
-                .map(card -> cardService.save(new CreditCard(card.id(), card.last4(), card.accountId(), active)));
+                .map(card -> cardService.save(new CreditCard(card.id(), card.last4(), card.accountId(), active)))
+                .ifSuccess(account -> MessageBus.submit(new CreditCardEvents.Updated(account)));
     }
 }

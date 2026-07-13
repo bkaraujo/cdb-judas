@@ -20,6 +20,6 @@ LABEL org.opencontainers.image.title="cdb-judas-frontend" \
 COPY web/ /usr/share/nginx/html/
 
 # Config do server: serve o estático e faz proxy reverso das rotas do backend.
-COPY src/main/docker/nginx.conf /etc/nginx/conf.d/default.conf
+COPY br-application/src/main/docker/nginx.conf /etc/nginx/conf.d/default.conf
 
 EXPOSE 80

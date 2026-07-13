@@ -4,7 +4,7 @@ services:
   backend:
     build:
       context: .
-      dockerfile: src/main/docker/Dockerfile.backend
+      dockerfile: br-application/src/main/docker/Dockerfile.backend
       network: host
       args:
         APP_VERSION: "0.9.1"
@@ -20,7 +20,7 @@ services:
   frontend:
     build:
       context: .
-      dockerfile: src/main/docker/Dockerfile.frontend
+      dockerfile: br-application/src/main/docker/Dockerfile.frontend
       args:
         APP_VERSION: "0.9.1"
     image: cdb-judas-frontend:0.9.1

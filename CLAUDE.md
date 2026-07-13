@@ -2,17 +2,20 @@
 
 Gestor de finanças pessoais. Backend **Java 25 + Quarkus** (JVM mode); frontend **SPA Vanilla JS/CSS + jQuery 4** (servido pelo próprio backend). Arquitetura híbrida: **Vertical Slice** nas features de entrega HTTP (`br.cdb.feature.*`) sobre **Hexagonal** nos contextos de negócio (`br.cdb.context.*`) — features falam com contextos **apenas via Facade**. Persistência: **JDBC/H2** (dev: file `./database`; teste: in-memory) + JSON para `Closing` e o catálogo de centros de custo. Rotas de dados escopadas por `/api/{uuid}/…` com guarda de propriedade (anti-IDOR).
 
-> Este é o índice central. As diretrizes detalhadas vivem nos `CLAUDE.md` aninhados (`src/main/java/`, `web/`) e em `docs/`.
+> Este é o índice central. As diretrizes detalhadas vivem nos `CLAUDE.md` de cada módulo (`br-parent/`, `br-commons/src/main/java/`, `br-context-people/src/main/java/`, `br-context-monetary/src/main/java/`, `br-application/src/main/java/`, `web/`) e em `docs/`.
 > **Schema do banco: os diagramas `docs/*.mermaid` são a fonte da verdade** — o código (DDL em `Database`) conforma ao diagrama, nunca o inverso.
 
 ---
 
 ## Decomposição Funcional
 
+### Módulos Maven (empacotamento físico)
+`br-parent` (pom pai — versões, plugins, gate de qualidade; ver `br-parent/CLAUDE.md`) · `br-commons` (framework comum, sem `br.cdb.*`) · `br-context-people` + `br-context-monetary` (contextos hexagonais, dependem só de `br-commons`) · `br-application` (borda HTTP/CDI — `feature`/`core`/`infra` — depende dos três anteriores). `web/` (frontend) não é módulo Maven. Cada um tem seu próprio `CLAUDE.md` operacional.
+
 ### Contextos de negócio — `br.cdb.context.*` (Hexagonal, livre de framework; DI via `Registry`)
-- **`monetary`** — lógica financeira. Facade `MonetaryContext`; modelos `MonetaryAccount`, `MonetaryTransaction`, `MonetaryCenter`, `MonthlyBalance`, `MonetaryStatement`; use cases `AccountUseCase`, `TransactionUseCase`, `MetadataUseCase`.
-- **`people`** — identidade, usuário e preferências. Agregado `User` (+ `Preferences`: theme/language/locale/sidebarCollapsed).
-- **`shared`** — núcleo comum dos contextos (`DomainEvent`, `DomainError`, `SharedModule`).
+- **`monetary`** (módulo `br-context-monetary`) — lógica financeira. Facade `MonetaryContext`; modelos `Account`, `Balance`, `CostCenter`, `CreditCard`, `MonthlyBalance`, `Statement`, `Transaction`; use cases `AccountUseCase`, `CardUseCase`, `MetadataUseCase`, `TransactionUseCase`.
+- **`people`** (módulo `br-context-people`) — identidade mínima. Facade `PeopleContext`; modelo `Person` (id/name/locale/language). **Não** inclui `User` (login) nem `Preferences` — esses são agregados de `br-application` (`br.cdb.core.web.security.User` e `br.cdb.feature.user.profile.Preferences`), não deste contexto. Hoje `PeopleContext` está montado mas não é consumido por nenhuma feature — ver `br-context-people/src/main/java/CLAUDE.md`.
+- **Núcleo comum entre contextos**: não existe um contexto `shared` — o pacote `context..shared..` é apenas reservado nas regras ArchUnit, sem implementação. O vocabulário compartilhado hoje (erro/evento de domínio) é `br.commons.business.{BusinessError,BusinessEvent,BusinessException}`, em `br-commons`.
 
 ### Features de usuário — `br.cdb.feature.user.*` (HTTP, `/api/{uuid}/…`)
 - **`dashboard`** — agrega resultado mensal por categoria (receitas/despesas/líquido).
@@ -30,11 +33,11 @@ Gestor de finanças pessoais. Backend **Java 25 + Quarkus** (JVM mode); frontend
 - **`auth`** — login e emissão de token (`POST /login`, token opaco rotativo).
 - **`costcenter`** — catálogo somente-leitura (`GET /api/cost-center`).
 
-### Plataforma — `br.cdb.core`
+### Plataforma — `br.cdb.core` (módulo `br-application`)
 Autenticação/autorização (token opaco rotativo, `OwnershipFilter`), observabilidade (log de requisição + MDC), persistência JSON, config HTTP/OpenAPI, `ContextBridge` (costura CDI↔`Registry`).
 
-### Framework comum — `br.commons`
-`Result` (Success/Failure), `MessageBus`, Logger próprio (console + arquivo rotativo), abstrações de persistência (JSON + pool JDBC), leitor YAML, `PdfBoxTextExtractor`, utilidades multiplataforma.
+### Framework comum — `br.commons` (módulo `br-commons`)
+`Result` (Success/Failure), `MessageBus`, Logger próprio (console + arquivo rotativo), abstrações de persistência (JSON + pool JDBC), leitor YAML, `PdfBoxTextExtractor`, utilidades multiplataforma. Sem dependência de `br.cdb.*` — ver `br-commons/src/main/java/CLAUDE.md`.
 
 ---
 
@@ -44,7 +47,11 @@ Autenticação/autorização (token opaco rotativo, `OwnershipFilter`), observab
 |---|---|
 | `README.md` | Visão geral, como executar (Maven/Docker), stack, configuração |
 | `docs/functional_decomposition.md` | Decomposição por feature, em detalhe¹ |
-| **`src/main/java/CLAUDE.md`** | **Diretrizes backend** — índice operacional: VSA/Hexagonal, Result, Lombok, Null-Safety, Testes/ArchUnit, Qualidade & Build |
+| **`br-parent/CLAUDE.md`** | **Pom pai** — versões/deps herdadas, build compartilhado (compilador, PMD/CPD, Quarkus plugin), gotchas conhecidos de empacotamento (`web/` não copiado, `docker-compose` com Dockerfile fora do lugar) |
+| **`br-commons/src/main/java/CLAUDE.md`** | **Framework comum** — índice de pacotes (`Result`, `Registry`, `MessageBus`, logger, JDBC/JSON/YAML, PDF, plataforma), sem dependência de `br.cdb.*` |
+| **`br-context-people/src/main/java/CLAUDE.md`** | **Contexto people** — estrutura, o que NÃO está aqui (adapter/testes ficam em `br-application`), estado atual (não consumido) |
+| **`br-context-monetary/src/main/java/CLAUDE.md`** | **Contexto monetary** — estrutura, modelos/use-cases reais, pontos não óbvios (`TransactionPolicy`, cartão como entidade) |
+| **`br-application/src/main/java/CLAUDE.md`** | **Diretrizes backend (borda HTTP/CDI)** — índice operacional: VSA/Hexagonal, Result, Lombok, Null-Safety, Testes/ArchUnit, Qualidade & Build |
 | **`web/CLAUDE.md`** | **Diretrizes frontend** — estilo + padrões 001–006 (request tracing, token rotativo, namespace de usuário, preferências server-owned) |
 | `docs/backend/hexagonal-architecture.md` | Camadas Resource → UseCase → Service → Repository |
 | `docs/backend/result-pattern.md` | Result / Railway + desembrulho `.get()`/fatal nos adapters |
@@ -67,7 +74,7 @@ Autenticação/autorização (token opaco rotativo, `OwnershipFilter`), observab
 
 ## Onde está o quê
 
-- **Convenções de código (backend)** → `docs/backend/*` (índice em `src/main/java/CLAUDE.md`).
+- **Convenções de código (backend)** → `docs/backend/*` (índice em `br-application/src/main/java/CLAUDE.md`; cada módulo tem seu próprio `CLAUDE.md` — ver tabela acima).
 - **Arquitetura e regras (frontend)** → `web/CLAUDE.md`.
 - **Arquitetura geral (backend/frontend)** → `docs/architecture-*.mermaid` (pacotes, classes, atividade).
 - **Schema do banco** → `docs/db-*.mermaid` (canônico; `Database` conforma).
