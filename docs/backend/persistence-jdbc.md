@@ -6,7 +6,7 @@ As portas de repositório do domínio/feature são implementadas por adaptadores
 
 ## 1. Visão geral
 
-- As portas (`*Repository` no domínio/feature) são implementadas por `*JDBCRepository` em `br.community.infra.persistence`, estendendo `JDBCRepository<T>`.
+- As portas (`*Repository` no domínio/feature) são implementadas por `*JDBCRepository` em `br.cdb.infra.persistence`, estendendo `JDBCRepository<T>`.
 - Os adaptadores usam o `DataSource` H2 publicado no `br.commons.Registry`; os primitivos JDBC ficam em `br.commons.framework.persistence.jdbc`.
 - O schema (DDL) vive em `Database`: tabelas planas; enums como string referenciando tabelas de lookup (`MON_ACCOUNT_TYPE` / `TRANSACTION_NATURE` / `MON_STATUS`) via FK; mapas livres (`additionalInfo` / `preferences`) em coluna JSON. As FKs conformam a **todas** as relações dos diagramas Mermaid — além das lookups, as tabelas de dados referenciam-se entre si, inclusive entre contextos (ex.: `SEC_USER→PEP_PERSON`, `USER_TRANSACTION→MON_TRANSACTION`); por isso a ordem de criação (`model()`) e de limpeza (`reset()`) respeita a dependência pai→filho.
 - Nem tudo é JDBC: a feature `Closing` e o catálogo global de centros de custo ainda persistem em JSON (`Storage` / `LocalFileStorage`).
@@ -43,7 +43,7 @@ Colunas `NOT NULL` (timestamps `TMS_CREATE_AT`, etc.) são seguras: `rs.getTimes
 
 ## 5. Migrações automáticas one-shot
 
-Como o dev é file-based e `Database` nunca evolui schema existente (§3), toda mudança de schema que precise transformar dados já persistidos (não só DDL novo aditivo) ganha uma classe `*Migration` própria em `br.community.infra.persistence`, chamada em sequência em `ContextBridge.dataSource(...)` **antes** do loop de `Database.model()`:
+Como o dev é file-based e `Database` nunca evolui schema existente (§3), toda mudança de schema que precise transformar dados já persistidos (não só DDL novo aditivo) ganha uma classe `*Migration` própria em `br.cdb.infra.persistence`, chamada em sequência em `ContextBridge.dataSource(...)` **antes** do loop de `Database.model()`:
 
 ```java
 LegacyCardMigration.apply(datasource);

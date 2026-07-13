@@ -28,7 +28,7 @@ O CDB Finance é destinado a **indivíduos e famílias** que desejam um controle
 
 ## 📐 Escopo e Arquitetura
 
-O projeto abrange frontend e backend, com forte separação arquitetural interna. A arquitetura é **híbrida**: **Vertical Slice** nas features de entrega HTTP (`br.community.feature.*`) sobre **Hexagonal** nos contextos de negócio (`br.community.context.*`). Features se comunicam com os contextos exclusivamente via **Facade**.
+O projeto abrange frontend e backend, com forte separação arquitetural interna. A arquitetura é **híbrida**: **Vertical Slice** nas features de entrega HTTP (`br.cdb.feature.*`) sobre **Hexagonal** nos contextos de negócio (`br.cdb.context.*`). Features se comunicam com os contextos exclusivamente via **Facade**.
 
 ### Backend (Java 25 + Quarkus)
 
@@ -39,7 +39,7 @@ O projeto abrange frontend e backend, com forte separação arquitetural interna
   - `_2_infrastructure` — implementações concretas de persistência.
   - `UseCase` — orquestração de alto nível, recebe *Commands*.
 - **Contextos:** `monetary` (lógica financeira), `security` (usuário e preferências) e `shared` (núcleo comum).
-- **Núcleo / Plataforma (`br.community.core`):** Autenticação e autorização (token opaco rotativo, `OwnershipFilter`), observabilidade (log de requisições + correlação), persistência JSON e configuração HTTP transversal.
+- **Núcleo / Plataforma (`br.cdb.core`):** Autenticação e autorização (token opaco rotativo, `OwnershipFilter`), observabilidade (log de requisições + correlação), persistência JSON e configuração HTTP transversal.
 - **Padrão Result:** Fluxo de negócio sem exceções (`Result` Success/Failure).
 - **Persistência:** **JDBC/H2** local (dev: arquivo `./database`; testes: in-memory), com JSON remanescente para `Closing` e o catálogo de centros de custo — processamento e privacidade locais, sem servidor de banco externo.
 - **Segurança:** Login com emissão de token, rotas de usuário escopadas por `/api/{uuid}/…` e guarda de propriedade que bloqueia acesso indevido (proteção contra IDOR).

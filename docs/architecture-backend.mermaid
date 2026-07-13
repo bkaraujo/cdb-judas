@@ -4,11 +4,11 @@ flowchart LR
 %% ArchUnit proíbe: feature→contexto fora da Facade; Resource→Repository;
 %% contexto→framework; _1_application→infra; core→feature.
 
-    subgraph feature["br.community.feature.*"]
+    subgraph feature["br.cdb.feature.*"]
         FEAT["*Resource (borda HTTP)<br>*Request / *Response (DTOs da API)<br>services e repositórios locais da fatia<br>políticas de usuário (ex.: ClosingService)<br>user.* = /api/{uuid}/… · system.* = sem uuid"]
     end
 
-    subgraph core["br.community.core"]
+    subgraph core["br.cdb.core"]
         CORE["filtros: token rotativo + OwnershipFilter<br>log de requisição + MDC<br>config HTTP/OpenAPI · persistência JSON<br>ContextBridge (costura CDI ↔ Registry)"]
     end
 
@@ -18,7 +18,7 @@ flowchart LR
         DOM["_0_domain<br>models (records) · events<br>repository = PORTAS (interfaces)"]
     end
 
-    subgraph infra["br.community.infra"]
+    subgraph infra["br.cdb.infra"]
         INF["*JDBCRepository (adaptadores das portas)<br>mappers de persistência · adaptador MessageBus"]
     end
 

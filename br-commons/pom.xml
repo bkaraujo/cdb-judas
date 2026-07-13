@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>br.cdb</groupId>
+        <artifactId>parent</artifactId>
+        <version>1.0.0</version>
+        <relativePath>../br-parent</relativePath>
+    </parent>
+
+    <artifactId>commons</artifactId>
+    <packaging>jar</packaging>
+
+    <properties>
+        <!-- ######################################################### -->
+        <!-- Dependências Técnicas -->
+        <!-- ######################################################### -->
+        <dependency.runtime.juniversalchardet>1.0.3</dependency.runtime.juniversalchardet>
+        <dependency.runtime.pdfbox>3.0.5</dependency.runtime.pdfbox>
+    </properties>
+
+    <dependencies>
+        <dependency><groupId>com.fasterxml.jackson.dataformat</groupId><artifactId>jackson-dataformat-yaml</artifactId></dependency>
+        <dependency><groupId>jakarta.validation</groupId><artifactId>jakarta.validation-api</artifactId></dependency>
+
+        <dependency><groupId>com.googlecode.juniversalchardet</groupId><artifactId>juniversalchardet</artifactId><version>${dependency.runtime.juniversalchardet}</version></dependency>
+        <dependency><groupId>org.apache.pdfbox</groupId><artifactId>pdfbox</artifactId><version>${dependency.runtime.pdfbox}</version></dependency>
+
+        <!-- Driver JDBC concreto p/ exercitar o pool genérico (br.commons.framework.persistence.jdbc) em teste -->
+        <dependency><groupId>com.h2database</groupId><artifactId>h2</artifactId><scope>test</scope></dependency>
+</dependencies>
+
+</project>
