@@ -11,9 +11,9 @@ import br.cdb.context.monetary._1_application.service.BalanceRecalculationServic
 import br.cdb.context.monetary._1_application.service.CardService;
 import br.cdb.context.monetary._1_application.service.TransactionService;
 import br.commons.MessageBus;
+import br.commons.Registry;
 import br.commons.Result;
 import br.commons.business.BusinessError;
-import lombok.RequiredArgsConstructor;
 import lombok.val;
 import org.jspecify.annotations.NullMarked;
 
@@ -22,15 +22,14 @@ import java.util.UUID;
 import java.util.regex.Pattern;
 
 @NullMarked
-@RequiredArgsConstructor
 public class CardUseCase {
 
     private static final Pattern LAST4 = Pattern.compile("\\d{4}");
 
-    private final CardService cardService;
-    private final AccountService accountService;
-    private final TransactionService transactionService;
-    private final BalanceRecalculationService balanceRecalculationService;
+    private final CardService cardService = Registry.tryGet(CardService.class);
+    private final AccountService accountService = Registry.tryGet(AccountService.class);
+    private final TransactionService transactionService = Registry.tryGet(TransactionService.class);
+    private final BalanceRecalculationService balanceRecalculationService = Registry.tryGet(BalanceRecalculationService.class);
 
     public Result<List<CreditCard>, BusinessError> listCards() {
         return Result.success(cardService.findAll());

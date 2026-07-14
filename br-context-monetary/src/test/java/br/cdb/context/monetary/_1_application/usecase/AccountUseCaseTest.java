@@ -1,14 +1,13 @@
-package br.cdb.context.monetary;
+package br.cdb.context.monetary._1_application.usecase;
 
 import br.cdb.context.monetary._0_domain.model.Account;
-import br.cdb.context.monetary._0_domain.model.CreditCard;
 import br.cdb.context.monetary._0_domain.model.AccountBalance;
+import br.cdb.context.monetary._0_domain.model.CreditCard;
 import br.cdb.context.monetary._0_domain.model.Transaction;
 import br.cdb.context.monetary._0_domain.repository.*;
 import br.cdb.context.monetary._1_application.command.AccountCommand;
 import br.cdb.context.monetary._1_application.command.TransactionPolicy;
 import br.cdb.context.monetary._1_application.service.*;
-import br.cdb.context.monetary._1_application.usecase.AccountUseCase;
 import br.commons.Registry;
 import br.commons.Result;
 import br.commons.business.BusinessError;
@@ -26,7 +25,8 @@ import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * Cobre as operações de conta do contexto monetary. As regras de cartão (conta vinculada, limites)
- * são uma preocupação da feature ({@code USER_ACCOUNT}) e estão cobertas em {@code AccountResourceTest}.
+ * são uma preocupação da feature ({@code USER_ACCOUNT}) e estão cobertas em {@code AccountResourceTest}
+ * (br-application).
  */
 class AccountUseCaseTest {
 

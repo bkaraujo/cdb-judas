@@ -1,10 +1,10 @@
-package br.cdb.context.monetary;
+package br.cdb.context.monetary._1_application.usecase;
 
 import br.cdb.context.monetary._0_domain.model.*;
 import br.cdb.context.monetary._0_domain.repository.*;
+import br.cdb.context.monetary._1_application.command.ImportedTransactionCommand;
 import br.cdb.context.monetary._1_application.command.TransactionCommand;
 import br.cdb.context.monetary._1_application.service.*;
-import br.cdb.context.monetary._1_application.usecase.TransactionUseCase;
 import br.commons.Registry;
 import br.commons.Result;
 import br.commons.business.BusinessError;
@@ -20,9 +20,8 @@ import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-/** Cobre §4 (lançamentos + parcelamento + edição/exclusão). */
-
-class TransactionResponseUseCaseTest {
+/** Cobre lançamentos: criação/parcelamento, edição/exclusão (default/FUTURE), transferências, cardId. */
+class TransactionUseCaseTest {
 
     private InMemoryRepositories.Transactions txRepo;
     private InMemoryRepositories.Cards cardRepo;
@@ -72,7 +71,7 @@ class TransactionResponseUseCaseTest {
     }
 
     @Test
-    @DisplayName("§4.2 1 parcela: salva único lançamento sem groupId")
+    @DisplayName("1 parcela: salva único lançamento sem groupId")
     void singleInstallmentCreatesOne() {
         Result<Transaction, BusinessError> r = useCase.createTransaction(
                 cmd(LocalDate.of(2026, 5, 10), Transaction.Status.CONFIRMED, null));
@@ -86,7 +85,7 @@ class TransactionResponseUseCaseTest {
     }
 
     @Test
-    @DisplayName("§4.2 N parcelas: N lançamentos, mesmo groupId, datas +i meses, status pending exceto 1ª")
+    @DisplayName("N parcelas: N lançamentos, mesmo groupId, datas +i meses, status pending exceto 1ª")
     void nInstallmentsExpandsAndShiftsDates() {
         LocalDate base = LocalDate.of(2026, 5, 10);
         Result<Transaction, BusinessError> r = useCase.createTransaction(
@@ -106,7 +105,7 @@ class TransactionResponseUseCaseTest {
     }
 
     @Test
-    @DisplayName("§4.3 update default só altera o selecionado")
+    @DisplayName("update default só altera o selecionado")
     void updateDefaultModeOnlyOne() {
         useCase.createTransaction(cmd(LocalDate.of(2026, 5, 10), Transaction.Status.CONFIRMED, 3));
         List<Transaction> all = txRepo.findAll();
@@ -129,7 +128,7 @@ class TransactionResponseUseCaseTest {
     }
 
     @Test
-    @DisplayName("§4.3 FUTURE: atualiza atual+futuras, preserva status, ajusta datas proporcionalmente")
+    @DisplayName("FUTURE: atualiza atual+futuras, preserva status, ajusta datas proporcionalmente")
     void updateFutureModeShiftsDatesAndPreservesStatus() {
         useCase.createTransaction(cmd(LocalDate.of(2026, 5, 10), Transaction.Status.CONFIRMED, 4));
         Transaction second = txRepo.findAll().stream()
@@ -158,7 +157,7 @@ class TransactionResponseUseCaseTest {
     }
 
     @Test
-    @DisplayName("§4.5 updateStatus apenas muda status e paymentDate")
+    @DisplayName("updateStatus apenas muda status e paymentDate")
     void updateStatusBypassesClosing() {
         useCase.createTransaction(cmd(LocalDate.of(2026, 5, 10), Transaction.Status.PENDING, null));
         Transaction t = txRepo.findAll().get(0);
@@ -170,7 +169,7 @@ class TransactionResponseUseCaseTest {
     }
 
     @Test
-    @DisplayName("§4.4 delete default exclui só o lançamento, valida fechamento")
+    @DisplayName("delete default exclui só o lançamento")
     void deleteDefaultMode() {
         useCase.createTransaction(cmd(LocalDate.of(2026, 5, 10), Transaction.Status.CONFIRMED, 2));
         Transaction first = txRepo.findAll().stream()
@@ -181,7 +180,7 @@ class TransactionResponseUseCaseTest {
     }
 
     @Test
-    @DisplayName("§4.4 delete FUTURE exclui atual+futuras do grupo")
+    @DisplayName("delete FUTURE exclui atual+futuras do grupo")
     void deleteFutureMode() {
         useCase.createTransaction(cmd(LocalDate.of(2026, 5, 10), Transaction.Status.CONFIRMED, 4));
         Transaction second = txRepo.findAll().stream()
@@ -205,6 +204,17 @@ class TransactionResponseUseCaseTest {
     }
 
     @Test
+    @DisplayName("listPendingTransactions retorna só PENDING")
+    void listPendingReturnsOnlyPending() {
+        useCase.createTransaction(cmd(LocalDate.of(2026, 5, 10), Transaction.Status.CONFIRMED, null));
+        useCase.createTransaction(cmd(LocalDate.of(2026, 5, 11), Transaction.Status.PENDING, null));
+        List<Transaction> pending = ((Result.Success<List<Transaction>, BusinessError>)
+                useCase.listPendingTransactions()).value();
+        assertEquals(1, pending.size());
+        assertEquals(Transaction.Status.PENDING, pending.get(0).status());
+    }
+
+    @Test
     @DisplayName("lançamento criado guarda o centro de custo do comando")
     void persistsCostCenter() {
         useCase.createTransaction(cmd(LocalDate.of(2026, 5, 10), Transaction.Status.CONFIRMED, null));
@@ -221,6 +231,31 @@ class TransactionResponseUseCaseTest {
         txRepo.save(new Transaction(UUID.randomUUID(), "Transferência (entrada)", new BigDecimal("50.00"),
                 date, toAccount, Transaction.Status.CONFIRMED, Transaction.Type.INCOME, costCenterId, date, groupId, 2, 2, null, null));
         return groupId;
+    }
+
+    @Test
+    @DisplayName("createTransfer cria par indissociável saída/entrada")
+    void createTransferCreatesLinkedPair() {
+        UUID toAccount = UUID.randomUUID();
+        Result<Transaction, BusinessError> r = useCase.createTransfer(accountId, toAccount, LocalDate.of(2026, 5, 10), new BigDecimal("50.00"));
+        assertTrue(r.isSuccess());
+
+        List<Transaction> all = txRepo.findAll();
+        assertEquals(2, all.size());
+        UUID groupId = all.get(0).groupId();
+        assertNotNull(groupId);
+        assertTrue(all.stream().allMatch(t -> groupId.equals(t.groupId())));
+        assertTrue(all.stream().anyMatch(t -> Transaction.Type.EXPENSE.equals(t.type()) && accountId.equals(t.accountId())));
+        assertTrue(all.stream().anyMatch(t -> Transaction.Type.INCOME.equals(t.type()) && toAccount.equals(t.accountId())));
+    }
+
+    @Test
+    @DisplayName("createTransfer com mesma conta origem/destino é rejeitado")
+    void createTransferRejectsSameAccount() {
+        Result<Transaction, BusinessError> r = useCase.createTransfer(accountId, accountId, LocalDate.of(2026, 5, 10), new BigDecimal("50.00"));
+        assertTrue(r.isFailure());
+        assertInstanceOf(BusinessError.BusinessRule.class, ((Result.Failure<Transaction, BusinessError>) r).error());
+        assertTrue(txRepo.findAll().isEmpty());
     }
 
     @Test
@@ -370,6 +405,40 @@ class TransactionResponseUseCaseTest {
         Result<Transaction, BusinessError> r = useCase.updateTransactionStatus(t.id(), Transaction.Status.CONFIRMED, LocalDate.of(2026, 5, 12));
         assertTrue(r.isSuccess());
         assertEquals(creditCard.id(), txRepo.findById(t.id()).orElseThrow().cardId());
+    }
+
+    // ── createImported (importação de extrato já traduzida) ─────
+
+    @Test
+    @DisplayName("createImported persiste como CONFIRMED/1-1 quando comando não traz parcelamento")
+    void createImportedPersistsSingleInstallment() {
+        ImportedTransactionCommand cmd = new ImportedTransactionCommand(
+                accountId, "compra importada", new BigDecimal("42.00"), LocalDate.of(2026, 5, 10),
+                Transaction.Status.CONFIRMED, Transaction.Type.EXPENSE, null, null, null, null);
+
+        Result<Transaction, BusinessError> r = useCase.createImported(cmd);
+
+        assertTrue(r.isSuccess());
+        Transaction saved = txRepo.findAll().get(0);
+        assertEquals(1, saved.installmentNumber());
+        assertEquals(1, saved.totalInstallments());
+        assertNull(saved.groupId());
+        assertEquals(0, new BigDecimal("42.00").compareTo(saved.amount()));
+    }
+
+    @Test
+    @DisplayName("createImported com cardId de outra conta é rejeitado")
+    void createImportedRejectsCardFromAnotherAccount() {
+        CreditCard creditCard = seedCard(UUID.randomUUID(), "1234");
+        ImportedTransactionCommand cmd = new ImportedTransactionCommand(
+                accountId, "compra importada", new BigDecimal("42.00"), LocalDate.of(2026, 5, 10),
+                Transaction.Status.CONFIRMED, Transaction.Type.EXPENSE, null, null, null, creditCard.id());
+
+        Result<Transaction, BusinessError> r = useCase.createImported(cmd);
+
+        assertTrue(r.isFailure());
+        assertInstanceOf(BusinessError.BusinessRule.class, ((Result.Failure<Transaction, BusinessError>) r).error());
+        assertTrue(txRepo.findAll().isEmpty());
     }
 
     // ── deleteTransactions (exclusão em massa: categoria/tag DELETE) ─────

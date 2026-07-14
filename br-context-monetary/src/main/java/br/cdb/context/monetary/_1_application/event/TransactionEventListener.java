@@ -1,19 +1,16 @@
 package br.cdb.context.monetary._1_application.event;
 
 import br.cdb.context.monetary._0_domain.event.TransactionEvents;
-import br.cdb.context.monetary._1_application.service.AccountService;
 import br.cdb.context.monetary._1_application.service.BalanceRecalculationService;
+import br.commons.Registry;
 import br.commons.framework.message.MessageListener;
 import br.commons.framework.message.MessageResult;
-import lombok.RequiredArgsConstructor;
 import org.jspecify.annotations.NullMarked;
 
-@RequiredArgsConstructor
 @NullMarked
 public class TransactionEventListener {
 
-    private final AccountService accountService;
-    private final BalanceRecalculationService balanceRecalculationService;
+    private final BalanceRecalculationService balanceRecalculationService = Registry.tryGet(BalanceRecalculationService.class);
 
     @MessageListener
     public MessageResult onTransaction(TransactionEvents.Created transaction) {

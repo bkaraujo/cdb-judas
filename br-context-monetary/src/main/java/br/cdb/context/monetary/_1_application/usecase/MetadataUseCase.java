@@ -3,9 +3,9 @@ package br.cdb.context.monetary._1_application.usecase;
 import br.cdb.context.monetary._0_domain.model.CostCenter;
 import br.cdb.context.monetary._1_application.command.CostCenterCommand;
 import br.cdb.context.monetary._1_application.service.CostCenterService;
+import br.commons.Registry;
 import br.commons.Result;
 import br.commons.business.BusinessError;
-import lombok.RequiredArgsConstructor;
 import lombok.val;
 import org.jspecify.annotations.NullMarked;
 
@@ -13,10 +13,9 @@ import java.util.List;
 import java.util.UUID;
 
 @NullMarked
-@RequiredArgsConstructor
 public class MetadataUseCase {
 
-    private final CostCenterService costCenterService;
+    private final CostCenterService costCenterService = Registry.tryGet(CostCenterService.class);
 
     public Result<List<CostCenter>, BusinessError> listCostCenters() {
         return Result.success(costCenterService.findAll());

@@ -2,19 +2,18 @@ package br.cdb.context.monetary._1_application.service;
 
 import br.cdb.context.monetary._0_domain.model.Account;
 import br.cdb.context.monetary._0_domain.repository.AccountRepository;
+import br.commons.Registry;
 import br.commons.Result;
 import br.commons.business.BusinessError;
-import lombok.RequiredArgsConstructor;
 import org.jspecify.annotations.NullMarked;
 
 import java.util.List;
 import java.util.UUID;
 
 @NullMarked
-@RequiredArgsConstructor
 public class AccountService {
 
-    private final AccountRepository accountRepository;
+    private final AccountRepository accountRepository = Registry.get(AccountRepository.class);
 
     public List<Account> findAll() {
         return accountRepository.findAll();

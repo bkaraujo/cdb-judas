@@ -3,16 +3,16 @@ package br.cdb.context.monetary._1_application.usecase;
 import br.cdb.context.monetary._0_domain.event.AccountEvents;
 import br.cdb.context.monetary._0_domain.model.Account;
 import br.cdb.context.monetary._0_domain.model.CreditCard;
-import br.cdb.context.monetary._0_domain.model.MonthlyBalance;
+import br.cdb.context.monetary._0_domain.model.AccountBalance;
 import br.cdb.context.monetary._0_domain.model.Transaction;
 import br.cdb.context.monetary._1_application.command.AccountCommand;
 import br.cdb.context.monetary._1_application.command.TransactionPolicy;
 import br.cdb.context.monetary._1_application.service.*;
 import br.commons.MessageBus;
+import br.commons.Registry;
 import br.commons.Result;
 import br.commons.business.BusinessError;
 import br.commons.tools.Strings;
-import lombok.RequiredArgsConstructor;
 import lombok.val;
 import org.jspecify.annotations.NullMarked;
 
@@ -22,14 +22,13 @@ import java.util.List;
 import java.util.UUID;
 
 @NullMarked
-@RequiredArgsConstructor
 public class AccountUseCase {
 
-    private final AccountService accountService;
-    private final BalanceService balanceService;
-    private final TransactionService transactionService;
-    private final CardService cardService;
-    private final BalanceRecalculationService balanceRecalculationService;
+    private final AccountService accountService = Registry.tryGet(AccountService.class);
+    private final BalanceService balanceService = Registry.tryGet(BalanceService.class);
+    private final TransactionService transactionService = Registry.tryGet(TransactionService.class);
+    private final CardService cardService = Registry.tryGet(CardService.class);
+    private final BalanceRecalculationService balanceRecalculationService = Registry.tryGet(BalanceRecalculationService.class);
 
     public Result<List<Account>, BusinessError> listAccounts() {
         return Result.success(accountService.findAll());
@@ -39,12 +38,12 @@ public class AccountUseCase {
         return accountService.findById(id);
     }
 
-    public Result<MonthlyBalance, BusinessError> getMonthlyBalance(UUID accountId, YearMonth period) {
+    public Result<AccountBalance, BusinessError> getMonthlyBalance(UUID accountId, YearMonth period) {
         return accountService.findById(accountId)
                 .flatMap(ignored -> balanceService.findByAccountAndPeriod(accountId, period));
     }
 
-    public Result<List<MonthlyBalance>, BusinessError> getYearBalances(UUID accountId, int year) {
+    public Result<List<AccountBalance>, BusinessError> getYearBalances(UUID accountId, int year) {
         return accountService.findById(accountId)
                 .map(ignored -> balanceService.findByAccountAndYear(accountId, year));
     }
@@ -79,7 +78,7 @@ public class AccountUseCase {
             return Result.failure(new BusinessError.Conflict("Account has linked transactions and cannot be deleted: " + account.id()));
         }
         cardService.findByAccount(account.id()).forEach(c -> cardService.deleteById(c.id()));
-        balanceService.findByAccount(account.id()).forEach(b -> balanceService.deleteById(b.id()));
+        balanceService.findByAccount(account.id()).forEach(balanceService::deleteById);
         return accountService.deleteById(account.id()).map(ignored -> List.<UUID>of());
     }
 
@@ -99,7 +98,7 @@ public class AccountUseCase {
 
             cardService.findByAccount(account.id()).forEach(card ->
                     cardService.save(new CreditCard(card.id(), card.last4(), target.id(), card.active())));
-            balanceService.findByAccount(account.id()).forEach(b -> balanceService.deleteById(b.id()));
+            balanceService.findByAccount(account.id()).forEach(balanceService::deleteById);
 
             return accountService.deleteById(account.id()).map(ignored -> {
                 balanceRecalculationService.recalculate(target.id());
@@ -112,7 +111,7 @@ public class AccountUseCase {
         val ids = transactionService.findByAccount(account.id()).stream().map(Transaction::id).toList();
         ids.forEach(transactionService::deleteById);
         cardService.findByAccount(account.id()).forEach(c -> cardService.deleteById(c.id()));
-        balanceService.findByAccount(account.id()).forEach(b -> balanceService.deleteById(b.id()));
+        balanceService.findByAccount(account.id()).forEach(balanceService::deleteById);
 
         return accountService.deleteById(account.id()).map(ignored -> ids);
     }

@@ -2,17 +2,16 @@ package br.cdb.context.monetary._1_application.service;
 
 import br.cdb.context.monetary._0_domain.model.CostCenter;
 import br.cdb.context.monetary._0_domain.repository.CostCenterRepository;
-import lombok.RequiredArgsConstructor;
+import br.commons.Registry;
 import org.jspecify.annotations.NullMarked;
 
 import java.util.List;
 import java.util.UUID;
 
 @NullMarked
-@RequiredArgsConstructor
 public class CostCenterService {
 
-    private final CostCenterRepository costCenterRepository;
+    private final CostCenterRepository costCenterRepository = Registry.get(CostCenterRepository.class);
 
     public List<CostCenter> findAll() {
         return costCenterRepository.findAll();

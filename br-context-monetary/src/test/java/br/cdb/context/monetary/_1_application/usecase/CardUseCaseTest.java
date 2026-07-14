@@ -1,4 +1,4 @@
-package br.cdb.context.monetary;
+package br.cdb.context.monetary._1_application.usecase;
 
 import br.cdb.context.monetary._0_domain.model.Account;
 import br.cdb.context.monetary._0_domain.model.CreditCard;
@@ -7,7 +7,6 @@ import br.cdb.context.monetary._0_domain.repository.*;
 import br.cdb.context.monetary._1_application.command.CardCommand;
 import br.cdb.context.monetary._1_application.command.TransactionPolicy;
 import br.cdb.context.monetary._1_application.service.*;
-import br.cdb.context.monetary._1_application.usecase.CardUseCase;
 import br.commons.Registry;
 import br.commons.Result;
 import br.commons.business.BusinessError;
@@ -21,7 +20,7 @@ import java.util.UUID;
 import static org.junit.jupiter.api.Assertions.*;
 
 /** Cobre cartão: identificado só pelo last4, sempre vinculado a uma conta real existente e ativa. */
-class CreditCardUseCaseTest {
+class CardUseCaseTest {
 
     private InMemoryRepositories.Accounts accountRepo;
     private InMemoryRepositories.Cards cardRepo;

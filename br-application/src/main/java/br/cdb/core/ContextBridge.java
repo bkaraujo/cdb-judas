@@ -1,16 +1,25 @@
 package br.cdb.core;
 
-import br.cdb.context.monetary.MonetaryBootstrap;
 import br.cdb.context.monetary.MonetaryContext;
 import br.cdb.context.monetary._0_domain.repository.*;
 import br.cdb.context.people.PeopleBootstrap;
 import br.cdb.context.people.PeopleContext;
 import br.cdb.context.people._0_domain.repository.PersonRepository;
+import br.cdb.core.web.security.UserRepository;
+import br.cdb.infra.persistence.CachingPersonRepository;
+import br.cdb.infra.persistence.CachingUserRepository;
 import br.cdb.infra.persistence.Database;
 import br.cdb.infra.persistence.core.AccountLimitMigration;
 import br.cdb.infra.persistence.core.DuplicateCategoryMigration;
 import br.cdb.infra.persistence.core.FeatureSchemaMigration;
 import br.cdb.infra.persistence.core.LegacyCardMigration;
+import br.cdb.infra.persistence.features.UserAccountBalanceJDBCRepository;
+import br.cdb.infra.persistence.monetary.AccountJDBCRepository;
+import br.cdb.infra.persistence.monetary.CardJDBCRepository;
+import br.cdb.infra.persistence.monetary.CostCenterJDBCRepository;
+import br.cdb.infra.persistence.monetary.TransactionJDBCRepository;
+import br.cdb.infra.persistence.person.PersonJDBCRepository;
+import br.cdb.infra.persistence.security.UserJDBCRepository;
 import br.commons.Logger;
 import br.commons.Registry;
 import br.commons.Result;
@@ -26,6 +35,13 @@ import org.jspecify.annotations.NullMarked;
 
 /**
  * Costura entre a borda Quarkus/CDI (feature) e os contextos ligados por {@link Registry}.
+ *
+ * <p>Os métodos {@code @Produces} de repositório abaixo recebem {@link DataSource} como parâmetro
+ * mesmo sem usá-lo no corpo — força o CDI a produzir o {@code DataSource} (e criar o schema) antes
+ * de qualquer adaptador JDBC ser construído. A dependência real (adaptador → {@code DataSource}) é
+ * escondida dentro de {@link Registry}, invisível ao grafo de injeção do CDI; sem esse parâmetro
+ * "morto" a ordem de construção não é garantida e o adaptador pode tentar ler um {@code DataSource}
+ * que ainda não existe no {@link Registry}.
  */
 @NullMarked
 @Singleton
@@ -83,6 +99,48 @@ public class ContextBridge {
 
     @Produces
     @Singleton
+    public AccountRepository accountRepository(DataSource dataSource) {
+        return Registry.tryGet(AccountRepository.class, AccountJDBCRepository::new);
+    }
+
+    @Produces
+    @Singleton
+    public BalanceRepository balanceRepository(DataSource dataSource) {
+        return Registry.tryGet(BalanceRepository.class, UserAccountBalanceJDBCRepository::new);
+    }
+
+    @Produces
+    @Singleton
+    public CostCenterRepository costCenterRepository(DataSource dataSource) {
+        return Registry.tryGet(CostCenterRepository.class, CostCenterJDBCRepository::new);
+    }
+
+    @Produces
+    @Singleton
+    public TransactionRepository transactionRepository(DataSource dataSource) {
+        return Registry.tryGet(TransactionRepository.class, TransactionJDBCRepository::new);
+    }
+
+    @Produces
+    @Singleton
+    public CardRepository cardRepository(DataSource dataSource) {
+        return Registry.tryGet(CardRepository.class, CardJDBCRepository::new);
+    }
+
+    @Produces
+    @Singleton
+    public PersonRepository personRepository(DataSource dataSource) {
+        return Registry.tryGet(PersonRepository.class, () -> new CachingPersonRepository(new PersonJDBCRepository()));
+    }
+
+    @Produces
+    @Singleton
+    public UserRepository userRepository(DataSource dataSource) {
+        return Registry.tryGet(UserRepository.class, () -> new CachingUserRepository(new UserJDBCRepository()));
+    }
+
+    @Produces
+    @Singleton
     public MonetaryContext monetaryContext(
             AccountRepository accountRepository,
             BalanceRepository balanceRepository,
@@ -90,20 +148,12 @@ public class ContextBridge {
             TransactionRepository transactionRepository,
             CardRepository cardRepository
     ) {
-        Registry.set(AccountRepository.class, accountRepository);
-        Registry.set(BalanceRepository.class, balanceRepository);
-        Registry.set(CostCenterRepository.class, costCenterRepository);
-        Registry.set(TransactionRepository.class, transactionRepository);
-        Registry.set(CardRepository.class, cardRepository);
-
-        MonetaryBootstrap.register();
-        return Registry.get(MonetaryContext.class);
+        return MonetaryContext.instance();
     }
 
     @Produces
     @Singleton
     public PeopleContext peopleContext(PersonRepository personRepository) {
-        Registry.set(PersonRepository.class, personRepository);
         PeopleBootstrap.register();
         return Registry.get(PeopleContext.class);
     }

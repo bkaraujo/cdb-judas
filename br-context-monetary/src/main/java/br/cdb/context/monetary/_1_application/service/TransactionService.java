@@ -2,9 +2,9 @@ package br.cdb.context.monetary._1_application.service;
 
 import br.cdb.context.monetary._0_domain.model.Transaction;
 import br.cdb.context.monetary._0_domain.repository.TransactionRepository;
+import br.commons.Registry;
 import br.commons.Result;
 import br.commons.business.BusinessError;
-import lombok.RequiredArgsConstructor;
 import lombok.val;
 import org.jspecify.annotations.NullMarked;
 
@@ -13,10 +13,9 @@ import java.util.List;
 import java.util.UUID;
 
 @NullMarked
-@RequiredArgsConstructor
 public class TransactionService {
 
-    private final TransactionRepository transactionRepository;
+    private final TransactionRepository transactionRepository = Registry.get(TransactionRepository.class);
 
     public List<Transaction> findAll() {
         return transactionRepository.findAll();

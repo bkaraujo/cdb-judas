@@ -10,9 +10,9 @@ import br.cdb.context.monetary._1_application.service.BalanceRecalculationServic
 import br.cdb.context.monetary._1_application.service.CardService;
 import br.cdb.context.monetary._1_application.service.TransactionService;
 import br.commons.MessageBus;
+import br.commons.Registry;
 import br.commons.Result;
 import br.commons.business.BusinessError;
-import lombok.RequiredArgsConstructor;
 import lombok.val;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
@@ -22,11 +22,11 @@ import java.time.LocalDate;
 import java.util.*;
 
 @NullMarked
-@RequiredArgsConstructor
 public class TransactionUseCase {
-    private final TransactionService transactionService;
-    private final CardService cardService;
-    private final BalanceRecalculationService balanceRecalculationService;
+
+    private final CardService cardService = Registry.tryGet(CardService.class);
+    private final TransactionService transactionService = Registry.tryGet(TransactionService.class);
+    private final BalanceRecalculationService balanceRecalculationService = Registry.tryGet(BalanceRecalculationService.class);
 
     public Result<List<Transaction>, BusinessError> listTransactions() {
         val all = transactionService.findAll().stream()

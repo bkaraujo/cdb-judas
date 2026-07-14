@@ -7,8 +7,7 @@ import java.time.YearMonth;
 import java.util.UUID;
 
 @NullMarked
-public record MonthlyBalance(
-        UUID id,
+public record AccountBalance(
         UUID accountId,
         YearMonth period,
         BigDecimal balance

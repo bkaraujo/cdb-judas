@@ -3,6 +3,7 @@ package br.cdb.context.monetary;
 import br.cdb.context.monetary._0_domain.model.Account;
 import br.cdb.context.monetary._0_domain.model.CostCenter;
 import br.cdb.context.monetary._0_domain.model.Transaction;
+import br.cdb.context.monetary._0_domain.repository.*;
 import br.cdb.context.monetary._1_application.service.*;
 import br.cdb.context.monetary._1_application.usecase.AccountUseCase;
 import br.cdb.context.monetary._1_application.usecase.CardUseCase;
@@ -18,6 +19,7 @@ import br.cdb.feature.user.accounts.transactions.importer.StatementImportUseCase
 import br.cdb.feature.user.accounts.transactions.importer.confirm.BankStatementConfirmCommand;
 import br.cdb.feature.user.accounts.transactions.importer.preview.BankStatementPreview;
 import br.cdb.feature.user.accounts.transactions.importer.preview.ImportPreviewOutcome;
+import br.commons.Registry;
 import br.commons.Result;
 import br.commons.pdf.PdfTextExtractor;
 import org.junit.jupiter.api.Test;
@@ -180,21 +182,33 @@ class StatementImportUseCaseTest {
                 MAX_BYTES, CLOCK);
     }
 
+    /**
+     * Reseta o grafo Registry-wired do contexto (services/use cases/facade se auto-conectam via
+     * Registry.tryGet — sem isso, a chamada seguinte reaproveitaria os singletons presos aos fakes
+     * do teste anterior) e publica fakes novos antes de montar a {@link MonetaryContext}.
+     */
     private static MonetaryContext monetaryContext(
             InMemoryRepositories.Accounts accounts,
             InMemoryRepositories.Transactions transactions) {
-        final AccountService accountService = new AccountService(accounts);
-        final BalanceService balanceService = new BalanceService(new InMemoryRepositories.Balances());
-        final TransactionService transactionService = new TransactionService(transactions);
-        final CostCenterService costCenterService = new CostCenterService(new InMemoryRepositories.CostCenters());
-        final CardService cardService = new CardService(new InMemoryRepositories.Cards());
-        final BalanceRecalculationService balanceRecalculationService =
-                new BalanceRecalculationService(accountService, balanceService, transactionService);
-        final AccountUseCase ucAccount = new AccountUseCase(accountService, balanceService, transactionService, cardService, balanceRecalculationService);
-        final TransactionUseCase ucTransaction = new TransactionUseCase(transactionService, cardService, balanceRecalculationService);
-        final MetadataUseCase ucMetadata = new MetadataUseCase(costCenterService);
-        final CardUseCase ucCard = new CardUseCase(cardService, accountService, transactionService, balanceRecalculationService);
-        return new MonetaryContext(ucAccount, ucTransaction, ucMetadata, ucCard);
+        Registry.remove(AccountService.class);
+        Registry.remove(BalanceService.class);
+        Registry.remove(TransactionService.class);
+        Registry.remove(CardService.class);
+        Registry.remove(CostCenterService.class);
+        Registry.remove(BalanceRecalculationService.class);
+        Registry.remove(AccountUseCase.class);
+        Registry.remove(TransactionUseCase.class);
+        Registry.remove(MetadataUseCase.class);
+        Registry.remove(CardUseCase.class);
+        Registry.remove(MonetaryContext.class);
+
+        Registry.set(AccountRepository.class, accounts);
+        Registry.set(BalanceRepository.class, new InMemoryRepositories.Balances());
+        Registry.set(TransactionRepository.class, transactions);
+        Registry.set(CostCenterRepository.class, new InMemoryRepositories.CostCenters());
+        Registry.set(CardRepository.class, new InMemoryRepositories.Cards());
+
+        return MonetaryContext.instance();
     }
 
     private static Account checking(String name) {

@@ -1,15 +1,13 @@
-package br.cdb.context.monetary;
+package br.cdb.context.monetary._1_application.usecase;
 
 import br.cdb.context.monetary._0_domain.model.*;
 import br.cdb.context.monetary._0_domain.repository.*;
-import br.cdb.feature.user.accounts.closing.ClosingRepository;
-import lombok.val;
 import org.jspecify.annotations.NullMarked;
-import org.jspecify.annotations.Nullable;
 
 import java.time.YearMonth;
 import java.util.*;
 
+/** Fakes em memória das portas de repositório — usados via {@link br.commons.Registry}, não injeção direta. */
 @NullMarked
 @SuppressWarnings("MissingOverride")
 final class InMemoryRepositories {
@@ -85,12 +83,5 @@ final class InMemoryRepositories {
 
     static class Cards extends BaseRepo<CreditCard, UUID> implements CardRepository {
         public CreditCard save(CreditCard e) { data.put(e.id(), e); return e; }
-    }
-
-    static class Closings implements ClosingRepository {
-        private @Nullable YearMonth ym;
-        public Optional<YearMonth> find() { return Optional.ofNullable(ym); }
-        public void save(YearMonth ym) { this.ym = ym; }
-        public void clear() { this.ym = null; }
     }
 }

@@ -2,14 +2,16 @@ package br.cdb.context.monetary;
 
 import br.cdb.context.monetary._0_domain.model.*;
 import br.cdb.context.monetary._1_application.command.*;
+import br.cdb.context.monetary._1_application.event.TransactionEventListener;
 import br.cdb.context.monetary._1_application.usecase.AccountUseCase;
 import br.cdb.context.monetary._1_application.usecase.CardUseCase;
 import br.cdb.context.monetary._1_application.usecase.MetadataUseCase;
 import br.cdb.context.monetary._1_application.usecase.TransactionUseCase;
+import br.commons.MessageBus;
+import br.commons.Registry;
 import br.commons.Result;
 import br.commons.annotation.Facade;
 import br.commons.business.BusinessError;
-import lombok.RequiredArgsConstructor;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 
@@ -20,13 +22,21 @@ import java.util.List;
 import java.util.UUID;
 
 @NullMarked
-@RequiredArgsConstructor
 public class MonetaryContext implements Facade {
 
-    private final AccountUseCase ucAccount;
-    private final TransactionUseCase ucTransaction;
-    private final MetadataUseCase ucMetadata;
-    private final CardUseCase ucCard;
+    private final CardUseCase ucCard = Registry.tryGet(CardUseCase.class);
+    private final AccountUseCase ucAccount = Registry.tryGet(AccountUseCase.class);
+    private final MetadataUseCase ucMetadata = Registry.tryGet(MetadataUseCase.class);
+    private final TransactionUseCase ucTransaction = Registry.tryGet(TransactionUseCase.class);
+
+    private MonetaryContext() {}
+
+    public static synchronized MonetaryContext instance() {
+        return Registry.tryGet(MonetaryContext.class, () -> {
+            MessageBus.subscribe(new TransactionEventListener());
+            return new MonetaryContext();
+        });
+    }
 
     // ── Account operations ─────────────────────────────────────────
 
@@ -52,11 +62,11 @@ public class MonetaryContext implements Facade {
 
     // ── Balance operations ─────────────────────────────────────────
 
-    public Result<MonthlyBalance, BusinessError> getMonthlyBalance(UUID accountId, YearMonth period) {
+    public Result<AccountBalance, BusinessError> getMonthlyBalance(UUID accountId, YearMonth period) {
         return ucAccount.getMonthlyBalance(accountId, period);
     }
 
-    public Result<List<MonthlyBalance>, BusinessError> getYearBalances(UUID accountId, int year) {
+    public Result<List<AccountBalance>, BusinessError> getYearBalances(UUID accountId, int year) {
         return ucAccount.getYearBalances(accountId, year);
     }
 
