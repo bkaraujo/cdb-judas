@@ -6,6 +6,7 @@ import br.cdb.context.monetary._0_domain.model.CreditCard;
 import br.cdb.context.monetary._0_domain.model.Transaction;
 import br.cdb.context.monetary._1_application.command.ImportedTransactionCommand;
 import br.cdb.context.monetary._1_application.command.TransactionCommand;
+import br.cdb.context.monetary._1_application.command.TransactionScope;
 import br.cdb.context.monetary._1_application.event.TransactionEventListener;
 import br.cdb.context.monetary._1_application.service.BalanceRecalculationService;
 import br.cdb.context.monetary._1_application.service.CreditCardService;
@@ -110,7 +111,7 @@ public class TransactionUseCase {
     }
 
     private Result<Transaction, BusinessError> updateNonTransfer(UUID id, Transaction existing, TransactionCommand.Update cmd) {
-        val isFuture = "FUTURE".equalsIgnoreCase(cmd.editMode()) && existing.groupId() != null;
+        val isFuture = cmd.scope() instanceof TransactionScope.Future && existing.groupId() != null;
 
         if (!isFuture) {
             val updated = transactionService.save(toEntity(id, cmd.description(), cmd.amount(), cmd.date(), cmd.accountId(),
@@ -196,7 +197,7 @@ public class TransactionUseCase {
             val transferSiblings = transactionService.findTransferSiblings(existing);
             if (!transferSiblings.isEmpty()) return deleteTransferGroup(existing, transferSiblings);
 
-            val isFuture = "FUTURE".equalsIgnoreCase(command.mode()) && existing.groupId() != null;
+            val isFuture = command.scope() instanceof TransactionScope.Future && existing.groupId() != null;
             val groupId = existing.groupId();
 
             if (!isFuture || groupId == null) {

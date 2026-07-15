@@ -42,7 +42,7 @@ public sealed interface TransactionCommand {
             @NotNull UUID costCenterId,
             @NotNull Transaction.Status status,
             @NotNull Transaction.Type type,
-            @Nullable String editMode,
+            TransactionScope scope,
             @Nullable @Size(max = 250) String notes,
             @Nullable UUID cardId
     ) implements Upsert {}
@@ -50,7 +50,7 @@ public sealed interface TransactionCommand {
     @NullMarked
     record Delete(
             UUID id,
-            @Nullable String mode
+            TransactionScope scope
     ) implements TransactionCommand {}
 
 }

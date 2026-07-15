@@ -9,6 +9,7 @@ import br.cdb.context.monetary._1_application.command.AccountCommand;
 import br.cdb.context.monetary._1_application.command.CardCommand;
 import br.cdb.context.monetary._1_application.command.ImportConfirmCommand;
 import br.cdb.context.monetary._1_application.command.TransactionCommand;
+import br.cdb.context.monetary._1_application.command.TransactionScope;
 import br.cdb.context.monetary._1_application.usecase.AccountUseCase;
 import br.cdb.context.monetary._1_application.usecase.CreditCardUseCase;
 import br.cdb.context.monetary._1_application.usecase.TransactionUseCase;
@@ -330,7 +331,7 @@ public class UserUseCase {
         });
     }
 
-    public Result<Void, BusinessError> deleteTransaction(UUID txId, @Nullable String mode) {
+    public Result<Void, BusinessError> deleteTransaction(UUID txId, TransactionScope scope) {
         UUID accountId = null;
         if (ucTransaction.findTransaction(txId) instanceof Result.Success(var existing)) {
             if (closingService.validateDate(existing.date()) instanceof Result.Failure<Void, BusinessError>(var error)) {
@@ -340,7 +341,7 @@ public class UserUseCase {
         }
 
         val affected = accountId;
-        return ucTransaction.delete(new TransactionCommand.Delete(txId, mode)).map(ids -> {
+        return ucTransaction.delete(new TransactionCommand.Delete(txId, scope)).map(ids -> {
             ids.forEach(id -> {
                 userTransactionService.deleteByTransaction(id);
                 tagLinkService.deleteByTransaction(id);

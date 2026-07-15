@@ -2,6 +2,7 @@ package br.cdb.feature.user.accounts.transactions.core;
 
 import br.cdb.context.monetary._0_domain.model.Transaction;
 import br.cdb.context.monetary._1_application.command.TransactionCommand;
+import br.cdb.context.monetary._1_application.command.TransactionScope;
 import br.cdb.feature.user.accounts.transactions.TransactionRequest;
 import br.cdb.feature.user.accounts.transactions.TransactionResponse;
 import br.cdb.feature.user.accounts.transactions.UserTransaction;
@@ -61,9 +62,14 @@ public final class TransactionMapper {
                 req.costCenterId(),
                 req.status(),
                 req.type(),
-                req.editMode(),
+                toScope(req.editMode()),
                 req.notes(),
                 req.cardId()
         );
+    }
+
+    /** Qualquer valor além de {@code "FUTURE"} (inclusive {@code null}) vira {@link TransactionScope.Single}. */
+    public static TransactionScope toScope(@Nullable String mode) {
+        return "FUTURE".equalsIgnoreCase(mode) ? new TransactionScope.Future() : new TransactionScope.Single();
     }
 }

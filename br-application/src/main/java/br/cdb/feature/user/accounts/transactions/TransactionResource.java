@@ -85,7 +85,7 @@ public class TransactionResource {
     @DELETE
     @Path("/{accId}/transactions/{txId}")
     public void delete(@PathParam("txId") UUID txId, @QueryParam("mode") @Nullable String mode) {
-        if (userUseCase.deleteTransaction(txId, mode) instanceof Result.Failure(var error)) {
+        if (userUseCase.deleteTransaction(txId, TransactionMapper.toScope(mode)) instanceof Result.Failure(var error)) {
             throw new BusinessException(error);
         }
     }
