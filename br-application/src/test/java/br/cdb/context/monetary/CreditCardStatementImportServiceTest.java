@@ -96,6 +96,7 @@ class CreditCardStatementImportServiceTest {
             InMemoryRepositories.Accounts accounts,
             InMemoryRepositories.Transactions transactions,
             InMemoryRepositories.Cards cardRepo) {
+        MessageBus.reset();
         Registry.remove(AccountService.class);
         Registry.remove(BalanceService.class);
         Registry.remove(TransactionService.class);

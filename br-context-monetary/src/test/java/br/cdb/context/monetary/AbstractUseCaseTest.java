@@ -2,6 +2,7 @@ package br.cdb.context.monetary;
 
 import br.cdb.context.monetary._0_domain.repository.*;
 import br.cdb.context.monetary._1_application.service.*;
+import br.commons.MessageBus;
 import br.commons.Registry;
 import org.jspecify.annotations.NullMarked;
 import org.junit.jupiter.api.BeforeEach;
@@ -17,6 +18,7 @@ public abstract class AbstractUseCaseTest {
 
     @BeforeEach
     public void beforeEach() {
+        MessageBus.reset();
         Registry.remove(CreditCardService.class);
         Registry.remove(AccountService.class);
         Registry.remove(BalanceService.class);

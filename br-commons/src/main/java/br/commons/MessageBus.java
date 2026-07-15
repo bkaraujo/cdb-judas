@@ -31,6 +31,13 @@ public abstract class MessageBus {
     private static final ConcurrentMap<Class<?>, List<MessageProcessor>> dispatchCache = new ConcurrentHashMap<>();
     private static final Map<String, Integer> containers = new ConcurrentHashMap<>();
 
+    /** Clears all subscriptions and caches. Intended for test isolation only. */
+    public static void reset() {
+        processors.clear();
+        dispatchCache.clear();
+        containers.clear();
+    }
+
     public static int subscribe(Class<?> container) {
         return subscribe(Meta.instance(container));
     }

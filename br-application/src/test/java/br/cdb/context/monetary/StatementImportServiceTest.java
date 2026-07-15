@@ -19,6 +19,7 @@ import br.cdb.feature.user.accounts.transactions.importer.StatementImportService
 import br.cdb.feature.user.accounts.transactions.importer.confirm.BankStatementConfirmCommand;
 import br.cdb.feature.user.accounts.transactions.importer.preview.BankStatementPreview;
 import br.cdb.feature.user.accounts.transactions.importer.preview.ImportPreviewOutcome;
+import br.commons.MessageBus;
 import br.commons.Registry;
 import br.commons.Result;
 import br.commons.pdf.PdfTextExtractor;
@@ -191,6 +192,7 @@ class StatementImportServiceTest {
     private static void resetMonetaryRegistry(
             InMemoryRepositories.Accounts accounts,
             InMemoryRepositories.Transactions transactions) {
+        MessageBus.reset();
         Registry.remove(AccountService.class);
         Registry.remove(BalanceService.class);
         Registry.remove(TransactionService.class);
