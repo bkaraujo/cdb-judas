@@ -1,18 +1,13 @@
 package br.cdb.feature.user.accounts.transactions;
 
-import br.cdb.context.monetary.MonetaryContext;
-import br.cdb.context.monetary._0_domain.model.Transaction;
-import br.cdb.feature.user.accounts.closing.ClosingService;
-import br.cdb.feature.user.accounts.core.AccountStreamPublisher;
+import br.cdb.feature.user.UserUseCase;
 import br.cdb.feature.user.accounts.transactions.core.TransactionMapper;
-import br.cdb.feature.user.tags.UserTransactionTagService;
 import br.commons.Result;
 import br.commons.business.BusinessException;
 import jakarta.validation.Valid;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
 import lombok.RequiredArgsConstructor;
-import lombok.val;
 import org.jboss.resteasy.reactive.RestResponse;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
@@ -27,11 +22,7 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class TransactionResource {
 
-    private final MonetaryContext monetaryContext;
-    private final ClosingService closingService;
-    private final UserTransactionService userTransactionService;
-    private final UserTransactionTagService tagLinkService;
-    private final AccountStreamPublisher accountStreamPublisher;
+    private final UserUseCase userUseCase;
 
     // ── Cross-account collection ───────────────────────────────────
 
@@ -45,7 +36,7 @@ public class TransactionResource {
             @QueryParam("status") @Nullable String status,
             @QueryParam("type") @Nullable String type
     ) {
-        return query(uuid, null, limit, dateFrom, dateTo, status, type);
+        return query(uuid, new UserUseCase.TransactionFilter(null, limit, dateFrom, dateTo, status, type));
     }
 
     // ── Per-account collection + items ─────────────────────────────
@@ -61,21 +52,14 @@ public class TransactionResource {
             @QueryParam("status") @Nullable String status,
             @QueryParam("type") @Nullable String type
     ) {
-        return query(uuid, accId, limit, dateFrom, dateTo, status, type);
+        return query(uuid, new UserUseCase.TransactionFilter(accId, limit, dateFrom, dateTo, status, type));
     }
 
     @POST
     @Path("/{accId}/transactions")
     public RestResponse<TransactionResponse> create(@PathParam("uuid") UUID uuid, @PathParam("accId") UUID accId, @Valid TransactionRequest req) {
-        guardClosing(req.date());
-        return switch (monetaryContext.createTransaction(TransactionMapper.toCommand(accId, req))) {
-            case Result.Success(var t) -> {
-                // Create USER_TRANSACTION for first installment, then for group siblings
-                val ut = saveUserTransaction(t, uuid, req.categoryId());
-                saveUserTransactionForGroup(t, uuid, req.categoryId());
-                accountStreamPublisher.upsert(accId);
-                yield RestResponse.status(RestResponse.Status.CREATED, TransactionMapper.toDto(t, ut));
-            }
+        return switch (userUseCase.createTransaction(uuid, TransactionMapper.toCommand(accId, req), req.categoryId())) {
+            case Result.Success(var view) -> RestResponse.status(RestResponse.Status.CREATED, toDto(view));
             case Result.Failure(var error) -> throw new BusinessException(error);
         };
     }
@@ -83,29 +67,8 @@ public class TransactionResource {
     @PATCH
     @Path("/{accId}/transactions/{txId}")
     public TransactionResponse update(@PathParam("uuid") UUID uuid, @PathParam("accId") UUID accId, @PathParam("txId") UUID txId, @Valid TransactionRequest req) {
-        UUID previousAccountId = null;
-        if (monetaryContext.findTransaction(txId) instanceof Result.Success(var existing)) {
-            guardClosing(existing.date());
-            guardClosing(req.date());
-            previousAccountId = existing.accountId();
-        }
-        return switch (monetaryContext.updateTransaction(txId, TransactionMapper.toCommand(accId, req))) {
-            case Result.Success(var t) -> {
-                // USER_TRANSACTION's PK now includes the account: if this update moved the
-                // transaction to a different account, the old composite-key row would otherwise
-                // be orphaned (save() below would INSERT a new row instead of UPDATE-in-place).
-                if (previousAccountId != null && !previousAccountId.equals(t.accountId())) {
-                    userTransactionService.deleteByTransactionAccountAndUser(t.id(), previousAccountId, uuid);
-                }
-                val existing = userTransactionService.find(t.id(), t.accountId(), uuid);
-                val ut = userTransactionService.save(t.id(), t.accountId(), uuid, req.categoryId());
-                // If installment group: update category for all group members
-                if (t.groupId() != null && existing.isEmpty()) {
-                    saveUserTransactionForGroup(t, uuid, req.categoryId());
-                }
-                publishAccountUpdate(t.accountId(), previousAccountId);
-                yield TransactionMapper.toDto(t, ut);
-            }
+        return switch (userUseCase.updateTransaction(uuid, txId, TransactionMapper.toCommand(accId, req), req.categoryId())) {
+            case Result.Success(var view) -> toDto(view);
             case Result.Failure(var error) -> throw new BusinessException(error);
         };
     }
@@ -113,12 +76,8 @@ public class TransactionResource {
     @PATCH
     @Path("/{accId}/transactions/{txId}/status")
     public TransactionResponse patchStatus(@PathParam("uuid") UUID uuid, @PathParam("txId") UUID txId, @Valid PatchStatusRequest req) {
-        return switch (monetaryContext.updateTransactionStatus(txId, req.status(), req.paymentDate())) {
-            case Result.Success(var t) -> {
-                val ut = userTransactionService.find(t.id(), t.accountId(), uuid).orElse(null);
-                accountStreamPublisher.upsert(t.accountId());
-                yield TransactionMapper.toDto(t, ut);
-            }
+        return switch (userUseCase.updateTransactionStatus(uuid, txId, req.status(), req.paymentDate())) {
+            case Result.Success(var view) -> toDto(view);
             case Result.Failure(var error) -> throw new BusinessException(error);
         };
     }
@@ -126,79 +85,21 @@ public class TransactionResource {
     @DELETE
     @Path("/{accId}/transactions/{txId}")
     public void delete(@PathParam("txId") UUID txId, @QueryParam("mode") @Nullable String mode) {
-        UUID accountId = null;
-        if (monetaryContext.findTransaction(txId) instanceof Result.Success(var existing)) {
-            guardClosing(existing.date());
-            accountId = existing.accountId();
-        }
-        switch (monetaryContext.deleteTransaction(txId, mode)) {
-            case Result.Failure(var error) -> throw new BusinessException(error);
-            case Result.Success(var ids) -> {
-                ids.forEach(id -> {
-                    userTransactionService.deleteByTransaction(id);
-                    tagLinkService.deleteByTransaction(id);
-                });
-                if (accountId != null) accountStreamPublisher.upsert(accountId);
-            }
+        if (userUseCase.deleteTransaction(txId, mode) instanceof Result.Failure(var error)) {
+            throw new BusinessException(error);
         }
     }
 
     // ── Helpers ────────────────────────────────────────────────────
 
-    private void guardClosing(LocalDate date) {
-        if (closingService.validateDate(date) instanceof Result.Failure(var error)) {
-            throw new BusinessException(error);
-        }
-    }
-
-    /** Publica a conta atual e, se a transação mudou de conta, também a conta anterior. */
-    private void publishAccountUpdate(UUID accountId, @Nullable UUID previousAccountId) {
-        accountStreamPublisher.upsert(accountId);
-        if (previousAccountId != null && !previousAccountId.equals(accountId)) {
-            accountStreamPublisher.upsert(previousAccountId);
-        }
-    }
-
-    private UserTransaction saveUserTransaction(Transaction t, UUID userId, @Nullable UUID categoryId) {
-        return userTransactionService.save(t.id(), t.accountId(), userId, categoryId);
-    }
-
-    private void saveUserTransactionForGroup(Transaction first, UUID userId, @Nullable UUID categoryId) {
-        val groupId = first.groupId();
-        if (groupId == null) return;
-        monetaryContext.listTransactions().getOrElse(List.of()).stream()
-                .filter(t -> groupId.equals(t.groupId()))
-                .filter(t -> !t.id().equals(first.id()))
-                .forEach(t -> userTransactionService.save(t.id(), t.accountId(), userId, categoryId));
-    }
-
-    private List<TransactionResponse> query(
-            UUID userId,
-            @Nullable UUID accId,
-            @Nullable Integer limit,
-            @Nullable LocalDate dateFrom,
-            @Nullable LocalDate dateTo,
-            @Nullable String status,
-            @Nullable String type
-    ) {
-        return switch (monetaryContext.listTransactions()) {
+    private List<TransactionResponse> query(UUID userId, UserUseCase.TransactionFilter filter) {
+        return switch (userUseCase.transactions(userId, filter)) {
+            case Result.Success(var views) -> views.stream().map(TransactionResource::toDto).toList();
             case Result.Failure(var error) -> throw new BusinessException(error);
-            case Result.Success(var all) -> {
-                val userTxMap = userTransactionService.indexByTransaction(userId);
-                val filtered = all.stream()
-                        .filter(t -> accId == null || accId.equals(t.accountId()))
-                        .filter(t -> dateFrom == null || !t.date().isBefore(dateFrom))
-                        .filter(t -> dateTo == null || !t.date().isAfter(dateTo))
-                        .filter(t -> status == null || status.equalsIgnoreCase(t.status().name()))
-                        .filter(t -> type == null || type.equalsIgnoreCase(t.type().name()))
-                        .toList();
-                val transactions = (limit != null && limit > 0 && limit < filtered.size())
-                        ? filtered.subList(0, limit)
-                        : filtered;
-                yield transactions.stream()
-                        .map(t -> TransactionMapper.toDto(t, userTxMap.get(t.id())))
-                        .toList();
-            }
         };
+    }
+
+    private static TransactionResponse toDto(UserUseCase.TransactionView view) {
+        return TransactionMapper.toDto(view.transaction(), view.overlay());
     }
 }

@@ -1,6 +1,5 @@
 package br.cdb.feature.user.accounts.transactions.importer;
 
-import br.cdb.context.monetary.MonetaryContext;
 import br.cdb.feature.user.accounts.statement.provider.BTGInvoiceParser;
 import br.cdb.feature.user.accounts.statement.provider.BTGStatementParser;
 import br.cdb.feature.user.accounts.statement.provider.SantanderInvoiceParser;
@@ -15,8 +14,8 @@ import java.util.List;
 
 /**
  * Wires the credit-card statement-import feature: the PDF extractor (technical util), the parsing
- * services and the orchestrating {@link StatementImportUseCase}, which reaches the monetary context
- * only through its {@link MonetaryContext} facade.
+ * services and the orchestrating {@link StatementImportService}, which reaches the monetary context
+ * only through the use cases exposed by {@code MonetaryContext}.
  */
 @NullMarked
 @Singleton
@@ -33,13 +32,11 @@ public class StatementImportModule {
 
     @Produces
     @Singleton
-    StatementImportUseCase statementImportUseCase(
-            MonetaryContext monetaryContext,
+    StatementImportService statementImportService(
             CreditCardProvider creditCardProvider,
             PdfTextExtractor extractor
     ) {
-        return new StatementImportUseCase(
-                monetaryContext,
+        return new StatementImportService(
                 creditCardProvider,
                 extractor,
                 List.of(

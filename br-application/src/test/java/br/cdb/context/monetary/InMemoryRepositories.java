@@ -82,7 +82,7 @@ final class InMemoryRepositories {
         public void clearCache() { data.clear(); }
     }
 
-    static class Cards extends BaseRepo<CreditCard, UUID> implements CardRepository {
+    static class Cards extends BaseRepo<CreditCard, UUID> implements CreditCardRepository {
         public CreditCard save(CreditCard e) { data.put(e.id(), e); return e; }
     }
 

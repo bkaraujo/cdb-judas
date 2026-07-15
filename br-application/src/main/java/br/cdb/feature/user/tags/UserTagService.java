@@ -2,6 +2,7 @@ package br.cdb.feature.user.tags;
 
 import br.cdb.context.monetary.MonetaryContext;
 import br.cdb.context.monetary._0_domain.model.Transaction;
+import br.cdb.context.monetary._1_application.usecase.TransactionUseCase;
 import br.cdb.feature.user.accounts.core.AccountStreamPublisher;
 import br.cdb.feature.user.accounts.transactions.UserTransactionService;
 import br.cdb.feature.user.stream.SSE;
@@ -25,10 +26,11 @@ public class UserTagService {
 
     private static final String TYPE = "TAG";
 
+    private final TransactionUseCase ucTransaction = MonetaryContext.ucTransaction();
+
     private final UserTagRepository repo;
     private final UserTransactionTagService tagLinkService;
     private final UserTransactionService userTransactionService;
-    private final MonetaryContext monetaryContext;
     private final AccountStreamPublisher accountStreamPublisher;
     private final SSE sse;
 
@@ -87,7 +89,7 @@ public class UserTagService {
             val txIds = tagLinkService.findTransactionIdsByTag(userId, id);
             val affectedAccountIds = accountIdsOf(txIds);
 
-            if (monetaryContext.deleteTransactions(txIds) instanceof Result.Failure<Void, BusinessError>(var error)) {
+            if (ucTransaction.deleteTransactions(txIds) instanceof Result.Failure<Void, BusinessError>(var error)) {
                 return Result.failure(error);
             }
             txIds.forEach(txId -> {
@@ -105,7 +107,7 @@ public class UserTagService {
     /** Contas distintas das transações apagadas — resolvidas antes do delete, quando ainda existem. */
     private Set<UUID> accountIdsOf(List<UUID> txIds) {
         val txIdSet = Set.copyOf(txIds);
-        return monetaryContext.listTransactions().getOrElse(List.of()).stream()
+        return ucTransaction.listTransactions().getOrElse(List.of()).stream()
                 .filter(t -> txIdSet.contains(t.id()))
                 .map(Transaction::accountId)
                 .collect(Collectors.toSet());

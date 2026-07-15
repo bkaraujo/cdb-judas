@@ -7,5 +7,5 @@ import org.jspecify.annotations.NullMarked;
 import java.util.UUID;
 
 @NullMarked
-public interface CardRepository extends Repository<CreditCard, UUID> {
+public interface CreditCardRepository extends Repository<CreditCard, UUID> {
 }

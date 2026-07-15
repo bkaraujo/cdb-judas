@@ -1,7 +1,10 @@
 package br.cdb.core;
 
-import br.cdb.context.monetary.MonetaryContext;
-import br.cdb.context.monetary._0_domain.repository.*;
+import br.cdb.context.monetary._0_domain.repository.AccountRepository;
+import br.cdb.context.monetary._0_domain.repository.BalanceRepository;
+import br.cdb.context.monetary._0_domain.repository.CostCenterRepository;
+import br.cdb.context.monetary._0_domain.repository.CreditCardRepository;
+import br.cdb.context.monetary._0_domain.repository.TransactionRepository;
 import br.cdb.context.people.PeopleBootstrap;
 import br.cdb.context.people.PeopleContext;
 import br.cdb.context.people._0_domain.repository.PersonRepository;
@@ -15,8 +18,8 @@ import br.cdb.infra.persistence.core.FeatureSchemaMigration;
 import br.cdb.infra.persistence.core.LegacyCardMigration;
 import br.cdb.infra.persistence.features.UserAccountBalanceJDBCRepository;
 import br.cdb.infra.persistence.monetary.AccountJDBCRepository;
-import br.cdb.infra.persistence.monetary.CardJDBCRepository;
 import br.cdb.infra.persistence.monetary.CostCenterJDBCRepository;
+import br.cdb.infra.persistence.monetary.CreditCardJDBCRepository;
 import br.cdb.infra.persistence.monetary.TransactionJDBCRepository;
 import br.cdb.infra.persistence.person.PersonJDBCRepository;
 import br.cdb.infra.persistence.security.UserJDBCRepository;
@@ -36,12 +39,12 @@ import org.jspecify.annotations.NullMarked;
 /**
  * Costura entre a borda Quarkus/CDI (feature) e os contextos ligados por {@link Registry}.
  *
- * <p>Os métodos {@code @Produces} de repositório abaixo recebem {@link DataSource} como parâmetro
- * mesmo sem usá-lo no corpo — força o CDI a produzir o {@code DataSource} (e criar o schema) antes
- * de qualquer adaptador JDBC ser construído. A dependência real (adaptador → {@code DataSource}) é
- * escondida dentro de {@link Registry}, invisível ao grafo de injeção do CDI; sem esse parâmetro
- * "morto" a ordem de construção não é garantida e o adaptador pode tentar ler um {@code DataSource}
- * que ainda não existe no {@link Registry}.
+ * <p>As portas de repositório dos contextos são publicadas no {@link Registry} em
+ * {@link #initDataSource(StartupEvent, DataSource)} — depois do {@code DataSource} existir
+ * (os adaptadores {@code *JDBCRepository} o resolvem no construtor) e antes de qualquer
+ * requisição HTTP construir um use case de contexto via {@code MonetaryContext.uc*()}.
+ * Só {@link UserRepository}/{@link PersonRepository} continuam expostos também como beans CDI:
+ * têm consumidores injetados (login/perfil/seed) e caches que os testes precisam limpar.
  */
 @NullMarked
 @Singleton
@@ -89,42 +92,22 @@ public class ContextBridge {
     }
 
     /**
-     * Força a criação do {@link DataSource} (e do schema) no startup, antes de qualquer query.
-     * A prioridade baixa garante execução antes de observers de seed (ex.: {@code UserSeeder}) —
-     * substitui o {@code @DependsOn("dataSource")} do Spring.
+     * Força a criação do {@link DataSource} (e do schema) no startup, antes de qualquer query, e
+     * publica os adaptadores JDBC nas portas de repositório dos contextos. A prioridade baixa
+     * garante execução antes de observers de seed (ex.: {@code UserSeeder}).
      */
     void initDataSource(@Observes @Priority(1) StartupEvent event, DataSource dataSource) {
-        // A injeção de DataSource basta para acionar o producer e construir o schema.
+        configureRepositories();
     }
 
-    @Produces
-    @Singleton
-    public AccountRepository accountRepository(DataSource dataSource) {
-        return Registry.tryGet(AccountRepository.class, AccountJDBCRepository::new);
-    }
-
-    @Produces
-    @Singleton
-    public BalanceRepository balanceRepository(DataSource dataSource) {
-        return Registry.tryGet(BalanceRepository.class, UserAccountBalanceJDBCRepository::new);
-    }
-
-    @Produces
-    @Singleton
-    public CostCenterRepository costCenterRepository(DataSource dataSource) {
-        return Registry.tryGet(CostCenterRepository.class, CostCenterJDBCRepository::new);
-    }
-
-    @Produces
-    @Singleton
-    public TransactionRepository transactionRepository(DataSource dataSource) {
-        return Registry.tryGet(TransactionRepository.class, TransactionJDBCRepository::new);
-    }
-
-    @Produces
-    @Singleton
-    public CardRepository cardRepository(DataSource dataSource) {
-        return Registry.tryGet(CardRepository.class, CardJDBCRepository::new);
+    private static void configureRepositories() {
+        Registry.tryGet(AccountRepository.class, AccountJDBCRepository::new);
+        Registry.tryGet(BalanceRepository.class, UserAccountBalanceJDBCRepository::new);
+        Registry.tryGet(CostCenterRepository.class, CostCenterJDBCRepository::new);
+        Registry.tryGet(TransactionRepository.class, TransactionJDBCRepository::new);
+        Registry.tryGet(CreditCardRepository.class, CreditCardJDBCRepository::new);
+        Registry.tryGet(PersonRepository.class, () -> new CachingPersonRepository(new PersonJDBCRepository()));
+        Registry.tryGet(UserRepository.class, () -> new CachingUserRepository(new UserJDBCRepository()));
     }
 
     @Produces
@@ -137,18 +120,6 @@ public class ContextBridge {
     @Singleton
     public UserRepository userRepository(DataSource dataSource) {
         return Registry.tryGet(UserRepository.class, () -> new CachingUserRepository(new UserJDBCRepository()));
-    }
-
-    @Produces
-    @Singleton
-    public MonetaryContext monetaryContext(
-            AccountRepository accountRepository,
-            BalanceRepository balanceRepository,
-            CostCenterRepository costCenterRepository,
-            TransactionRepository transactionRepository,
-            CardRepository cardRepository
-    ) {
-        return MonetaryContext.instance();
     }
 
     @Produces

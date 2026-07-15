@@ -1,11 +1,9 @@
 package br.cdb.feature.user.accounts.transactions.importer;
 
-import br.cdb.context.monetary.MonetaryContext;
-import br.cdb.context.monetary._0_domain.model.Account;
 import br.cdb.context.monetary._0_domain.model.CreditCard;
 import br.cdb.context.monetary._1_application.command.ImportConfirmCommand;
 import br.cdb.core.web.error.ProblemDetail;
-import br.cdb.feature.user.accounts.core.AccountStreamPublisher;
+import br.cdb.feature.user.UserUseCase;
 import br.cdb.feature.user.accounts.transactions.importer.confirm.BankStatementConfirmCommand;
 import br.cdb.feature.user.accounts.transactions.importer.confirm.ImportConfirmResponse;
 import br.cdb.feature.user.accounts.transactions.importer.preview.*;
@@ -27,16 +25,13 @@ import org.jspecify.annotations.Nullable;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.util.*;
-import java.util.stream.Collectors;
 
 @NullMarked
 @Path("/api/{uuid}/accounts/transactions/import")
 @RequiredArgsConstructor
 public class StatementImportResource {
 
-    private final StatementImportUseCase statementImport;
-    private final MonetaryContext monetaryContext;
-    private final AccountStreamPublisher accountStreamPublisher;
+    private final UserUseCase userUseCase;
 
     @POST
     @Path("/preview")
@@ -57,15 +52,15 @@ public class StatementImportResource {
             return problem(Response.Status.BAD_REQUEST, "FILE_UNREADABLE", "Não foi possível ler o arquivo enviado.");
         }
 
-        return switch (statementImport.preview(bytes, password, accountId)) {
-            case Result.Success(var outcome) -> Response.ok(toResponseBody(outcome)).build();
+        return switch (userUseCase.importPreview(bytes, password, accountId)) {
+            case Result.Success(var view) -> Response.ok(toResponseBody(view)).build();
             case Result.Failure(var error) -> problem(error);
         };
     }
 
-    private Object toResponseBody(ImportPreviewOutcome outcome) {
-        return switch (outcome) {
-            case ImportPreviewOutcome.Invoice(var preview) -> toResponse(preview);
+    private static Object toResponseBody(UserUseCase.ImportPreviewView view) {
+        return switch (view.outcome()) {
+            case ImportPreviewOutcome.Invoice(var preview) -> toResponse(preview, view.accountNamesById());
             case ImportPreviewOutcome.Statement(var preview) -> toStatementResponse(preview);
         };
     }
@@ -85,25 +80,12 @@ public class StatementImportResource {
             return problem422("CARD_REQUIRED", "Cada lançamento precisa de um cartão de destino.");
         }
         val rows = req.rows().stream().map(StatementImportResource::toInvoiceRow).toList();
-        val cmd = new ImportConfirmCommand(rows);
 
-        return switch (statementImport.confirm(cmd)) {
-            case Result.Success(var res) -> {
-                affectedAccountIds(rows).forEach(accountStreamPublisher::upsert);
-                yield Response.ok(new ImportConfirmResponse(res.created(), res.reconciled(), res.skipped())).build();
-            }
+        return switch (userUseCase.confirmInvoiceImport(new ImportConfirmCommand(rows))) {
+            case Result.Success(var res) ->
+                    Response.ok(new ImportConfirmResponse(res.created(), res.reconciled(), res.skipped())).build();
             case Result.Failure(var error) -> problem422("CARD_NOT_FOUND", messageOf(error));
         };
-    }
-
-    /** Contas distintas donas dos cartões das linhas confirmadas, resolvidas via {@code MonetaryContext}. */
-    private Set<UUID> affectedAccountIds(List<ImportConfirmCommand.Row> rows) {
-        val accountByCard = monetaryContext.listCards().getOrElse(List.of()).stream()
-                .collect(Collectors.toMap(CreditCard::id, CreditCard::accountId));
-        return rows.stream()
-                .map(row -> accountByCard.get(row.cardId()))
-                .filter(Objects::nonNull)
-                .collect(Collectors.toSet());
     }
 
     private Response confirmBankStatement(StatementConfirmRequest req) {
@@ -113,13 +95,10 @@ public class StatementImportResource {
         val rows = req.rows().stream()
                 .map(r -> new BankStatementConfirmCommand.Row(r.description(), r.amount(), r.date(), r.transactionType(), r.categoryId()))
                 .toList();
-        val cmd = new BankStatementConfirmCommand(req.accountId(), rows);
 
-        return switch (statementImport.confirmStatement(cmd)) {
-            case Result.Success(var res) -> {
-                accountStreamPublisher.upsert(cmd.accountId());
-                yield Response.ok(new ImportConfirmResponse(res.created(), res.reconciled(), res.skipped())).build();
-            }
+        return switch (userUseCase.confirmStatementImport(new BankStatementConfirmCommand(req.accountId(), rows))) {
+            case Result.Success(var res) ->
+                    Response.ok(new ImportConfirmResponse(res.created(), res.reconciled(), res.skipped())).build();
             case Result.Failure(var error) -> problem422("ACCOUNT_NOT_FOUND", messageOf(error));
         };
     }
@@ -141,19 +120,12 @@ public class StatementImportResource {
         };
     }
 
-    private ImportPreviewResponse toResponse(ImportPreview preview) {
-        val accountNames = accountNamesById();
+    private static ImportPreviewResponse toResponse(ImportPreview preview, Map<UUID, String> accountNames) {
         val rows = preview.rows().stream().map(StatementImportResource::toRow).toList();
         val candidateCards = preview.candidateCards().stream()
                 .map(card -> toCardOption(card, accountNames)).toList();
         return new ImportPreviewResponse(
                 "CREDIT_CARD_INVOICE", preview.issuer().name(), preview.last4s(), rows, candidateCards);
-    }
-
-    /** Nome da conta a que cada cartão pertence, resolvido na borda para rotular a opção de cartão. */
-    private Map<UUID, String> accountNamesById() {
-        return monetaryContext.listAccounts().getOrElse(List.of()).stream()
-                .collect(Collectors.toMap(Account::id, Account::name));
     }
 
     private static BankStatementPreviewResponse toStatementResponse(BankStatementPreview preview) {

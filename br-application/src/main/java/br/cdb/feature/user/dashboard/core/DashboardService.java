@@ -1,6 +1,7 @@
 package br.cdb.feature.user.dashboard.core;
 
 import br.cdb.context.monetary.MonetaryContext;
+import br.cdb.context.monetary._1_application.usecase.TransactionUseCase;
 import br.commons.Result;
 import br.commons.business.BusinessError;
 import jakarta.inject.Singleton;
@@ -18,10 +19,10 @@ import java.util.List;
 @RequiredArgsConstructor
 public class DashboardService {
 
-    private final MonetaryContext monetaryContext;
+    private final TransactionUseCase ucTransaction = MonetaryContext.ucTransaction();
 
     public Result<MonthlyResult, BusinessError> getMonthlyResult(int month, int year) {
-        return monetaryContext.listTransactions()
+        return ucTransaction.listTransactions()
                 .map(all -> {
                     val start = LocalDate.of(year, month, 1);
                     val end = start.plusMonths(1).minusDays(1);

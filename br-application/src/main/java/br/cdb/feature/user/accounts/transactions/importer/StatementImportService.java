@@ -6,6 +6,8 @@ import br.cdb.context.monetary._0_domain.model.CreditCard;
 import br.cdb.context.monetary._0_domain.model.Transaction;
 import br.cdb.context.monetary._1_application.command.ImportConfirmCommand;
 import br.cdb.context.monetary._1_application.command.ImportedTransactionCommand;
+import br.cdb.context.monetary._1_application.usecase.AccountUseCase;
+import br.cdb.context.monetary._1_application.usecase.TransactionUseCase;
 import br.cdb.feature.user.accounts.statement.Issuer;
 import br.cdb.feature.user.accounts.statement.MonetaryDocument;
 import br.cdb.feature.user.accounts.statement.MonetaryDocumentEntry;
@@ -32,15 +34,17 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 /**
- * Orchestrates credit-card statement import via the monetary context facade.
+ * Orchestrates credit-card statement import against the monetary context use cases.
  * Category assignment is done by the feature layer on top of USER_TRANSACTION (not here).
  */
 @NullMarked
-public class StatementImportUseCase {
+public class StatementImportService {
 
     private static final int RECONCILE_WINDOW_DAYS = 3;
 
-    private final MonetaryContext monetaryContext;
+    private final AccountUseCase ucAccount = MonetaryContext.ucAccount();
+    private final TransactionUseCase ucTransaction = MonetaryContext.ucTransaction();
+
     private final CreditCardProvider creditCardProvider;
     private final PdfTextExtractor extractor;
     private final List<StatementParser> parsers;
@@ -51,12 +55,11 @@ public class StatementImportUseCase {
     private final Clock clock;
     private final long maxFileBytes;
 
-    public StatementImportUseCase(MonetaryContext monetaryContext, CreditCardProvider creditCardProvider, PdfTextExtractor extractor, List<StatementParser> parsers, long bytes) {
-        this(monetaryContext, creditCardProvider, extractor, parsers, bytes, Clock.system(ZoneId.systemDefault()));
+    public StatementImportService(CreditCardProvider creditCardProvider, PdfTextExtractor extractor, List<StatementParser> parsers, long bytes) {
+        this(creditCardProvider, extractor, parsers, bytes, Clock.system(ZoneId.systemDefault()));
     }
 
-    public StatementImportUseCase(MonetaryContext monetaryContext, CreditCardProvider creditCardProvider, PdfTextExtractor extractor, List<StatementParser> parsers, long bytes, Clock clock) {
-        this.monetaryContext = monetaryContext;
+    public StatementImportService(CreditCardProvider creditCardProvider, PdfTextExtractor extractor, List<StatementParser> parsers, long bytes, Clock clock) {
         this.creditCardProvider = creditCardProvider;
         this.extractor = extractor;
         this.expander = new InstallmentExpander(groupSignature);
@@ -98,7 +101,7 @@ public class StatementImportUseCase {
     public Result<ImportResult, BusinessError> confirm(ImportConfirmCommand cmd) {
         return resolveAccountsByCard(cmd).map(accountByCard -> {
             val today = LocalDate.now(clock);
-            val seen = Collections.unmodifiableList(monetaryContext.listTransactions().getOrElse(List.of()));
+            val seen = Collections.unmodifiableList(ucTransaction.listTransactions().getOrElse(List.of()));
             val existingGroups = seen.stream()
                     .map(Transaction::groupId)
                     .filter(Objects::nonNull)
@@ -195,11 +198,11 @@ public class StatementImportUseCase {
     // ── Bank-statement path ────────────────────────────────────────
 
     public Result<ImportResult, BusinessError> confirmStatement(BankStatementConfirmCommand cmd) {
-        return monetaryContext.findAccount(cmd.accountId()).map(account -> {
+        return ucAccount.findAccount(cmd.accountId()).map(account -> {
             val accountId = account.id();
             val today = LocalDate.now(clock);
 
-            val accountTx = monetaryContext.listTransactions().getOrElse(List.of()).stream()
+            val accountTx = ucTransaction.listTransactions().getOrElse(List.of()).stream()
                     .filter(t -> accountId.equals(t.accountId()))
                     .toList();
 
@@ -219,7 +222,7 @@ public class StatementImportUseCase {
                     case RECONCILE -> {
                         val target = cls.target();
                         if (target != null) {
-                            monetaryContext.updateTransactionStatus(target.id(), Transaction.Status.CONFIRMED, row.date());
+                            ucTransaction.updateTransactionStatus(target.id(), Transaction.Status.CONFIRMED, row.date());
                             reconciled++;
                         }
                     }
@@ -242,7 +245,7 @@ public class StatementImportUseCase {
                 accountId, row.description(), row.amount(), row.date(),
                 status, type, null, null, null, null);
         try {
-            return switch (monetaryContext.createImportedTransaction(command)) {
+            return switch (ucTransaction.createImported(command)) {
                 case Result.Success(var ignored) -> true;
                 case Result.Failure(var error) -> {
                     Logger.warn("Failed to persist statement row '%s': %s", row.description(), String.valueOf(error));
@@ -326,7 +329,7 @@ public class StatementImportUseCase {
                 accountId, row.description(), row.amount(), row.date(),
                 status, Transaction.Type.EXPENSE, groupId, installmentNumber, totalInstallments, row.cardId());
         try {
-            return switch (monetaryContext.createImportedTransaction(command)) {
+            return switch (ucTransaction.createImported(command)) {
                 case Result.Success(var saved) -> saved;
                 case Result.Failure(var error) -> {
                     Logger.warn("Failed to persist imported row '%s': %s", row.description(), String.valueOf(error));
@@ -340,12 +343,12 @@ public class StatementImportUseCase {
     }
 
     private Result<ImportPreviewOutcome, ImportError> preview(Issuer issuer, List<MonetaryDocumentEntry> statement, @Nullable UUID accountId) {
-        val candidates = monetaryContext.listAccounts().getOrElse(List.of()).stream()
+        val candidates = ucAccount.listAccounts().getOrElse(List.of()).stream()
                 .filter(Account::active)
                 .toList();
         val selectedAccountId = selectAccount(accountId, candidates);
 
-        val history = monetaryContext.listTransactions().getOrElse(List.of());
+        val history = ucTransaction.listTransactions().getOrElse(List.of());
         val accountTx = selectedAccountId != null
                 ? history.stream().filter(t -> selectedAccountId.equals(t.accountId())).toList()
                 : Collections.unmodifiableList(new ArrayList<Transaction>());
@@ -379,7 +382,7 @@ public class StatementImportUseCase {
         val cardByLast4 = cardMatcher.matchByLast4(last4s, cards);
 
         val today = LocalDate.now(clock);
-        val history = monetaryContext.listTransactions().getOrElse(List.of());
+        val history = ucTransaction.listTransactions().getOrElse(List.of());
 
         val rows = new ArrayList<PreviewRow>();
         for (val line : statement) {

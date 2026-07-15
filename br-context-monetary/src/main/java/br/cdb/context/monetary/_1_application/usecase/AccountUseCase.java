@@ -27,7 +27,7 @@ public class AccountUseCase {
     private final AccountService accountService = Registry.tryGet(AccountService.class);
     private final BalanceService balanceService = Registry.tryGet(BalanceService.class);
     private final TransactionService transactionService = Registry.tryGet(TransactionService.class);
-    private final CardService cardService = Registry.tryGet(CardService.class);
+    private final CreditCardService creditCardService = Registry.tryGet(CreditCardService.class);
     private final BalanceRecalculationService balanceRecalculationService = Registry.tryGet(BalanceRecalculationService.class);
 
     public Result<List<Account>, BusinessError> listAccounts() {
@@ -77,7 +77,7 @@ public class AccountUseCase {
         if (!transactionService.findByAccount(account.id()).isEmpty()) {
             return Result.failure(new BusinessError.Conflict("Account has linked transactions and cannot be deleted: " + account.id()));
         }
-        cardService.findByAccount(account.id()).forEach(c -> cardService.deleteById(c.id()));
+        creditCardService.findByAccount(account.id()).forEach(c -> creditCardService.deleteById(c.id()));
         balanceService.findByAccount(account.id()).forEach(balanceService::deleteById);
         return accountService.deleteById(account.id()).map(ignored -> List.<UUID>of());
     }
@@ -96,8 +96,8 @@ public class AccountUseCase {
             val movedIds = transactionService.findByAccount(account.id()).stream().map(Transaction::id).toList();
             transactionService.reassignAccount(account.id(), target.id());
 
-            cardService.findByAccount(account.id()).forEach(card ->
-                    cardService.save(new CreditCard(card.id(), card.last4(), target.id(), card.active())));
+            creditCardService.findByAccount(account.id()).forEach(card ->
+                    creditCardService.save(new CreditCard(card.id(), card.last4(), target.id(), card.active())));
             balanceService.findByAccount(account.id()).forEach(balanceService::deleteById);
 
             return accountService.deleteById(account.id()).map(ignored -> {
@@ -110,7 +110,7 @@ public class AccountUseCase {
     private Result<List<UUID>, BusinessError> deletePurge(Account account) {
         val ids = transactionService.findByAccount(account.id()).stream().map(Transaction::id).toList();
         ids.forEach(transactionService::deleteById);
-        cardService.findByAccount(account.id()).forEach(c -> cardService.deleteById(c.id()));
+        creditCardService.findByAccount(account.id()).forEach(c -> creditCardService.deleteById(c.id()));
         balanceService.findByAccount(account.id()).forEach(balanceService::deleteById);
 
         return accountService.deleteById(account.id()).map(ignored -> ids);

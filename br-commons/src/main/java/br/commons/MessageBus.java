@@ -12,29 +12,40 @@ import java.lang.invoke.MethodHandles;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.Queue;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.ConcurrentSkipListSet;
 
 import static br.commons.Logger.lazy;
 
 @NullMarked
 public abstract class MessageBus {
+
     private MessageBus() { /* Private constructor */ }
 
-    private static final MethodHandles.Lookup LOOKUP = MethodHandles.lookup();
     private static final List<MessageProcessor> EMPTY = List.of();
+    private static final MethodHandles.Lookup LOOKUP = MethodHandles.lookup();
 
     private static final ConcurrentMap<Class<?>, List<MessageProcessor>> processors = new ConcurrentHashMap<>();
     private static final ConcurrentMap<Class<?>, List<MessageProcessor>> dispatchCache = new ConcurrentHashMap<>();
+    private static final Map<String, Integer> containers = new ConcurrentHashMap<>();
 
     public static int subscribe(Class<?> container) {
         return subscribe(Meta.instance(container));
     }
 
     public static int subscribe(Object container) {
-        int subscribed = 0;
+        val fqn = Meta.fqn(container);
+        if (containers.containsKey(fqn)) {
+            Logger.warn("Attempt to resubscribe %s", fqn);
+            return containers.get(fqn);
+        }
 
-        Logger.verbose("Processing %s", lazy(() -> Meta.fqn(container)));
+        int subscribed = 0;
+        Logger.verbose("Processing %s", fqn);
         for (val method : container.getClass().getMethods()) {
             subscribed += tryRegister(container, method);
         }
@@ -42,6 +53,7 @@ public abstract class MessageBus {
         // Invalidate dispatch cache when new processors are registered
         dispatchCache.clear();
 
+        containers.put(fqn, subscribed);
         return subscribed;
     }
 

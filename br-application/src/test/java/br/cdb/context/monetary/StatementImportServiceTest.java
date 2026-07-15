@@ -6,8 +6,8 @@ import br.cdb.context.monetary._0_domain.model.Transaction;
 import br.cdb.context.monetary._0_domain.repository.*;
 import br.cdb.context.monetary._1_application.service.*;
 import br.cdb.context.monetary._1_application.usecase.AccountUseCase;
-import br.cdb.context.monetary._1_application.usecase.CardUseCase;
-import br.cdb.context.monetary._1_application.usecase.MetadataUseCase;
+import br.cdb.context.monetary._1_application.usecase.CreditCardUseCase;
+import br.cdb.context.monetary._1_application.usecase.CostCenterUseCase;
 import br.cdb.context.monetary._1_application.usecase.TransactionUseCase;
 import br.cdb.feature.user.accounts.statement.provider.BTGInvoiceParser;
 import br.cdb.feature.user.accounts.statement.provider.BTGStatementParser;
@@ -15,7 +15,7 @@ import br.cdb.feature.user.accounts.statement.provider.SantanderInvoiceParser;
 import br.cdb.feature.user.accounts.statement.provider.SantanderStatementParser;
 import br.cdb.feature.user.accounts.transactions.importer.ImportError;
 import br.cdb.feature.user.accounts.transactions.importer.ImportResult;
-import br.cdb.feature.user.accounts.transactions.importer.StatementImportUseCase;
+import br.cdb.feature.user.accounts.transactions.importer.StatementImportService;
 import br.cdb.feature.user.accounts.transactions.importer.confirm.BankStatementConfirmCommand;
 import br.cdb.feature.user.accounts.transactions.importer.preview.BankStatementPreview;
 import br.cdb.feature.user.accounts.transactions.importer.preview.ImportPreviewOutcome;
@@ -35,7 +35,7 @@ import java.util.UUID;
 import static org.junit.jupiter.api.Assertions.*;
 
 /** Bank-statement (extrato) import: detection, signed typing, reconciliation and dedup. */
-class StatementImportUseCaseTest {
+class StatementImportServiceTest {
 
     private static final long MAX_BYTES = 4096;
     private static final Clock CLOCK = Clock.fixed(Instant.parse("2025-07-15T12:00:00Z"), ZoneOffset.UTC);
@@ -172,43 +172,41 @@ class StatementImportUseCaseTest {
         return assertInstanceOf(ImportPreviewOutcome.Statement.class, outcome).preview();
     }
 
-    private StatementImportUseCase useCaseWith(InMemoryRepositories.Accounts accounts, InMemoryRepositories.Transactions transactions) {
+    private StatementImportService useCaseWith(InMemoryRepositories.Accounts accounts, InMemoryRepositories.Transactions transactions) {
         final PdfTextExtractor extractor = (bytes, password) -> Result.success(EXTRATO);
-        final MonetaryContext monetaryContext = monetaryContext(accounts, transactions);
-        return new StatementImportUseCase(
-                monetaryContext, List::of, extractor, // empty card provider (bank-statement path)
+        resetMonetaryRegistry(accounts, transactions);
+        return new StatementImportService(
+                List::of, extractor, // empty card provider (bank-statement path)
                 List.of(new BTGStatementParser(), new SantanderStatementParser(),
                         new BTGInvoiceParser(), new SantanderInvoiceParser()),
                 MAX_BYTES, CLOCK);
     }
 
     /**
-     * Reseta o grafo Registry-wired do contexto (services/use cases/facade se auto-conectam via
+     * Reseta o grafo Registry-wired do contexto (services/use cases se auto-conectam via
      * Registry.tryGet — sem isso, a chamada seguinte reaproveitaria os singletons presos aos fakes
-     * do teste anterior) e publica fakes novos antes de montar a {@link MonetaryContext}.
+     * do teste anterior) e publica fakes novos antes de construir o {@code StatementImportService},
+     * cujos campos resolvem os use cases via {@code MonetaryContext.uc*()} na construção.
      */
-    private static MonetaryContext monetaryContext(
+    private static void resetMonetaryRegistry(
             InMemoryRepositories.Accounts accounts,
             InMemoryRepositories.Transactions transactions) {
         Registry.remove(AccountService.class);
         Registry.remove(BalanceService.class);
         Registry.remove(TransactionService.class);
-        Registry.remove(CardService.class);
+        Registry.remove(CreditCardService.class);
         Registry.remove(CostCenterService.class);
         Registry.remove(BalanceRecalculationService.class);
         Registry.remove(AccountUseCase.class);
         Registry.remove(TransactionUseCase.class);
-        Registry.remove(MetadataUseCase.class);
-        Registry.remove(CardUseCase.class);
-        Registry.remove(MonetaryContext.class);
+        Registry.remove(CostCenterUseCase.class);
+        Registry.remove(CreditCardUseCase.class);
 
         Registry.set(AccountRepository.class, accounts);
         Registry.set(BalanceRepository.class, new InMemoryRepositories.Balances());
         Registry.set(TransactionRepository.class, transactions);
         Registry.set(CostCenterRepository.class, new InMemoryRepositories.CostCenters());
-        Registry.set(CardRepository.class, new InMemoryRepositories.Cards());
-
-        return MonetaryContext.instance();
+        Registry.set(CreditCardRepository.class, new InMemoryRepositories.Cards());
     }
 
     private static Account checking(String name) {

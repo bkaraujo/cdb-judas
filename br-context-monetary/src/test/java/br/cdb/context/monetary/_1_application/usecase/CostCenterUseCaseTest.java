@@ -1,6 +1,7 @@
 package br.cdb.context.monetary._1_application.usecase;
 
 import br.cdb.context.monetary.AbstractUseCaseTest;
+import br.cdb.context.monetary.MonetaryContext;
 import br.cdb.context.monetary._0_domain.model.CostCenter;
 import br.cdb.context.monetary._1_application.command.CostCenterCommand;
 import br.commons.Result;
@@ -16,39 +17,39 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /** Cobre centro de custo. Categorias e tags são camada feature (USER_CATEGORY / USER_TAG), não este contexto. */
-class MetadataUseCaseTest extends AbstractUseCaseTest {
+class CostCenterUseCaseTest extends AbstractUseCaseTest {
 
-    private MetadataUseCase useCase;
+    private CostCenterUseCase useCase = MonetaryContext.ucCostCenter();
 
     @BeforeEach
     void setUp() {
-        useCase = new MetadataUseCase();
+        useCase = new CostCenterUseCase();
     }
 
     @Test
     @DisplayName("CRUD de centro de custo")
     void costCenterCrud() {
-        Result<CostCenter, BusinessError> created = useCase.createCostCenter(new CostCenterCommand("Filial"));
+        val created = useCase.upsert(new CostCenterCommand.Create("Filial"));
         assertTrue(created.isSuccess());
         val id = ((Result.Success<CostCenter, BusinessError>) created).value().id();
 
-        useCase.updateCostCenter(id, new CostCenterCommand("Matriz"));
+        useCase.upsert(new CostCenterCommand.Update(id, "Matriz"));
         assertEquals("Matriz", costCenterRepository().findById(id).orElseThrow().description());
 
-        useCase.deleteCostCenter(id);
+        useCase.delete(new CostCenterCommand.Delete(id));
         assertTrue(costCenterRepository().findById(id).isEmpty());
     }
 
     @Test
     @DisplayName("listCostCenters retorna todos os centros salvos")
     void listsAllCostCenters() {
-        useCase.createCostCenter(new CostCenterCommand("Filial"));
-        useCase.createCostCenter(new CostCenterCommand("Matriz"));
+        useCase.upsert(new CostCenterCommand.Create("Matriz"));
+        useCase.upsert(new CostCenterCommand.Create("Filial"));
 
         val r = useCase.listCostCenters();
 
         assertTrue(r.isSuccess());
         val descriptions = ((Result.Success<List<CostCenter>, BusinessError>) r).value().stream().map(CostCenter::description).toList();
-        assertEquals(List.of("Filial", "Matriz"), descriptions);
+        assertEquals(List.of("Matriz", "Filial"), descriptions);
     }
 }

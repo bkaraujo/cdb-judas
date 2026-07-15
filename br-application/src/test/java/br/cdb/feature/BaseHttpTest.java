@@ -1,11 +1,23 @@
 package br.cdb.feature;
 
+import br.cdb.context.monetary._0_domain.repository.*;
+import br.cdb.context.monetary._1_application.service.*;
+import br.cdb.context.monetary._1_application.usecase.AccountUseCase;
+import br.cdb.context.monetary._1_application.usecase.CreditCardUseCase;
+import br.cdb.context.monetary._1_application.usecase.CostCenterUseCase;
+import br.cdb.context.monetary._1_application.usecase.TransactionUseCase;
 import br.cdb.core.JsonStorageProperties;
 import br.cdb.core.web.security.User;
 import br.cdb.core.web.security.UserRepository;
 import br.cdb.core.web.security.core.AccessTokenStore;
 import br.cdb.feature.system.auth.LoginResource;
 import br.cdb.infra.persistence.Database;
+import br.cdb.infra.persistence.features.UserAccountBalanceJDBCRepository;
+import br.cdb.infra.persistence.monetary.AccountJDBCRepository;
+import br.cdb.infra.persistence.monetary.CostCenterJDBCRepository;
+import br.cdb.infra.persistence.monetary.CreditCardJDBCRepository;
+import br.cdb.infra.persistence.monetary.TransactionJDBCRepository;
+import br.commons.Registry;
 import br.commons.framework.persistence.Storage;
 import br.commons.framework.persistence.jdbc.DataSource;
 import br.commons.framework.persistence.json.Repository;
@@ -65,7 +77,32 @@ public abstract class BaseHttpTest {
         // Clear repository caches
         repositories.forEach(Repository::clearCache);
 
+        // Reancora o contexto monetário nos adaptadores JDBC: os testes de unidade puros
+        // (br.cdb.context.monetary) trocam as portas do Registry por fakes in-memory e removem
+        // services/use cases — sem este reset, uma requisição HTTP posterior reconstruiria o
+        // grafo do contexto em cima dos fakes do último teste puro executado.
+        resetMonetaryRegistry();
+
         userRepository.save(new User(TEST_USER_ID, TEST_USERNAME, null, BcryptUtil.bcryptHash("test")));
+    }
+
+    private static void resetMonetaryRegistry() {
+        Registry.set(AccountRepository.class, new AccountJDBCRepository());
+        Registry.set(BalanceRepository.class, new UserAccountBalanceJDBCRepository());
+        Registry.set(CostCenterRepository.class, new CostCenterJDBCRepository());
+        Registry.set(TransactionRepository.class, new TransactionJDBCRepository());
+        Registry.set(CreditCardRepository.class, new CreditCardJDBCRepository());
+
+        Registry.remove(AccountService.class);
+        Registry.remove(BalanceService.class);
+        Registry.remove(TransactionService.class);
+        Registry.remove(CreditCardService.class);
+        Registry.remove(CostCenterService.class);
+        Registry.remove(BalanceRecalculationService.class);
+        Registry.remove(AccountUseCase.class);
+        Registry.remove(TransactionUseCase.class);
+        Registry.remove(CostCenterUseCase.class);
+        Registry.remove(CreditCardUseCase.class);
     }
 
     /**

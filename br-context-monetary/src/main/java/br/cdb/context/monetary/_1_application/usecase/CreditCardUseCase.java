@@ -8,7 +8,7 @@ import br.cdb.context.monetary._1_application.command.CardCommand;
 import br.cdb.context.monetary._1_application.command.TransactionPolicy;
 import br.cdb.context.monetary._1_application.service.AccountService;
 import br.cdb.context.monetary._1_application.service.BalanceRecalculationService;
-import br.cdb.context.monetary._1_application.service.CardService;
+import br.cdb.context.monetary._1_application.service.CreditCardService;
 import br.cdb.context.monetary._1_application.service.TransactionService;
 import br.commons.MessageBus;
 import br.commons.Registry;
@@ -22,21 +22,21 @@ import java.util.UUID;
 import java.util.regex.Pattern;
 
 @NullMarked
-public class CardUseCase {
+public class CreditCardUseCase {
 
     private static final Pattern LAST4 = Pattern.compile("\\d{4}");
 
-    private final CardService cardService = Registry.tryGet(CardService.class);
+    private final CreditCardService creditCardService = Registry.tryGet(CreditCardService.class);
     private final AccountService accountService = Registry.tryGet(AccountService.class);
     private final TransactionService transactionService = Registry.tryGet(TransactionService.class);
     private final BalanceRecalculationService balanceRecalculationService = Registry.tryGet(BalanceRecalculationService.class);
 
     public Result<List<CreditCard>, BusinessError> listCards() {
-        return Result.success(cardService.findAll());
+        return Result.success(creditCardService.findAll());
     }
 
     public Result<List<CreditCard>, BusinessError> listCardsByAccount(UUID accountId) {
-        return accountService.findById(accountId).map(ignored -> cardService.findByAccount(accountId));
+        return accountService.findById(accountId).map(ignored -> creditCardService.findByAccount(accountId));
     }
 
     public Result<CreditCard, BusinessError> createCard(CardCommand cmd) {
@@ -55,19 +55,19 @@ public class CardUseCase {
             return Result.failure(new BusinessError.BusinessRule("Account is inactive: " + account.id()));
         }
 
-        val duplicate = cardService.findByAccount(account.id()).stream()
+        val duplicate = creditCardService.findByAccount(account.id()).stream()
                 .anyMatch(c -> c.last4().equals(cmd.last4()));
         if (duplicate) {
             return Result.failure(new BusinessError.Conflict("CreditCard already registered for this account: " + cmd.last4()));
         }
 
-        val saved = cardService.save(new CreditCard(UUID.randomUUID(), cmd.last4(), account.id(), true));
+        val saved = creditCardService.save(new CreditCard(UUID.randomUUID(), cmd.last4(), account.id(), true));
         return Result.success(saved);
     }
 
     /** Ids das transações movidas/apagadas (vazio para {@link TransactionPolicy.Block}). */
     public Result<List<UUID>, BusinessError> deleteCard(UUID id, TransactionPolicy policy) {
-        return cardService.findById(id).flatMap(card -> switch (policy) {
+        return creditCardService.findById(id).flatMap(card -> switch (policy) {
             case TransactionPolicy.Block ignored -> deleteBlock(card);
             case TransactionPolicy.Move(var targetId) -> deleteMove(card, targetId);
             case TransactionPolicy.Purge ignored -> deletePurge(card);
@@ -79,12 +79,12 @@ public class CardUseCase {
         if (!transactionService.findByCard(creditCard.id()).isEmpty()) {
             return Result.failure(new BusinessError.Conflict("CreditCard has linked transactions and cannot be deleted: " + creditCard.id()));
         }
-        cardService.deleteById(creditCard.id());
+        creditCardService.deleteById(creditCard.id());
         return Result.success(List.of());
     }
 
     private Result<List<UUID>, BusinessError> deleteMove(CreditCard creditCard, UUID targetId) {
-        return cardService.findById(targetId).flatMap(target -> {
+        return creditCardService.findById(targetId).flatMap(target -> {
             if (target.id().equals(creditCard.id())) {
                 return Result.<List<UUID>>failure(
                         new BusinessError.BusinessRule("Target creditCard must be different from source: " + targetId));
@@ -100,7 +100,7 @@ public class CardUseCase {
 
             val movedIds = transactionService.findByCard(creditCard.id()).stream().map(Transaction::id).toList();
             transactionService.reassignCard(creditCard.id(), target.id());
-            cardService.deleteById(creditCard.id());
+            creditCardService.deleteById(creditCard.id());
             return Result.success(movedIds);
         });
     }
@@ -108,7 +108,7 @@ public class CardUseCase {
     private Result<List<UUID>, BusinessError> deletePurge(CreditCard creditCard) {
         val ids = transactionService.findByCard(creditCard.id()).stream().map(Transaction::id).toList();
         ids.forEach(transactionService::deleteById);
-        cardService.deleteById(creditCard.id());
+        creditCardService.deleteById(creditCard.id());
 
         return accountService.findById(creditCard.accountId()).map(account -> {
             balanceRecalculationService.recalculate(account.id());
@@ -117,8 +117,8 @@ public class CardUseCase {
     }
 
     public Result<CreditCard, BusinessError> setActive(UUID id, boolean active) {
-        return cardService.findById(id)
-                .map(card -> cardService.save(new CreditCard(card.id(), card.last4(), card.accountId(), active)))
+        return creditCardService.findById(id)
+                .map(card -> creditCardService.save(new CreditCard(card.id(), card.last4(), card.accountId(), active)))
                 .ifSuccess(account -> MessageBus.submit(new CreditCardEvents.Updated(account)));
     }
 }

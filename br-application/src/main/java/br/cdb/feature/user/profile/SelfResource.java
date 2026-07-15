@@ -1,7 +1,6 @@
 package br.cdb.feature.user.profile;
 
-import br.cdb.core.web.security.CurrentUser;
-import br.cdb.feature.system.user.UserService;
+import br.cdb.feature.user.UserUseCase;
 import br.commons.Result;
 import br.commons.business.BusinessException;
 import jakarta.validation.Valid;
@@ -10,6 +9,7 @@ import jakarta.ws.rs.core.MediaType;
 import lombok.RequiredArgsConstructor;
 import lombok.val;
 import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
 
 /**
  * Recurso {@code self}: a identidade vem do contexto autenticado (sem id no caminho →
@@ -21,12 +21,11 @@ import org.jspecify.annotations.NullMarked;
 @RequiredArgsConstructor
 public class SelfResource {
 
-    private final UserService userService;
-    private final UserProfileService profileService;
+    private final UserUseCase userUseCase;
 
     @GET
     public MeResponse getMe() {
-        return switch (profileService.getProfile(CurrentUser.getId())) {
+        return switch (userUseCase.profile()) {
             case Result.Success(var profile) -> MeResponse.from(profile);
             case Result.Failure(var error) -> throw new BusinessException(error);
         };
@@ -36,21 +35,16 @@ public class SelfResource {
     @PATCH
     @Consumes(MediaType.APPLICATION_JSON)
     public MeResponse update(@Valid UpdateMeRequest req) {
-        val id = CurrentUser.getId();
-
-        var result = req.name() != null
-                ? userService.updateName(id, req.name())
-                : profileService.getProfile(id);
-
-        val prefs = req.preferences();
-        if (prefs != null) {
-            val patch = new PreferencesPatch(prefs.theme(), prefs.language(), prefs.locale(), prefs.sidebarCollapsed());
-            result = result.flatMap(ignored -> profileService.updatePreferences(id, patch));
-        }
-
-        return switch (result) {
+        return switch (userUseCase.updateProfile(req.name(), toPatch(req))) {
             case Result.Success(var profile) -> MeResponse.from(profile);
             case Result.Failure(var error) -> throw new BusinessException(error);
         };
+    }
+
+    @Nullable
+    private static PreferencesPatch toPatch(UpdateMeRequest req) {
+        val prefs = req.preferences();
+        if (prefs == null) return null;
+        return new PreferencesPatch(prefs.theme(), prefs.language(), prefs.locale(), prefs.sidebarCollapsed());
     }
 }

@@ -1,5 +1,6 @@
 package br.cdb.feature.user.dashboard;
 
+import br.cdb.feature.user.UserUseCase;
 import br.cdb.feature.user.dashboard.core.DashboardService;
 import br.commons.Result;
 import br.commons.business.BusinessException;
@@ -9,7 +10,6 @@ import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.core.MediaType;
 import lombok.RequiredArgsConstructor;
-import lombok.val;
 import org.jspecify.annotations.NullMarked;
 
 @NullMarked
@@ -18,15 +18,14 @@ import org.jspecify.annotations.NullMarked;
 @RequiredArgsConstructor
 public class DashboardResource {
 
-    private final DashboardService service;
+    private final UserUseCase userUseCase;
 
     @GET
     @Path("/result")
     public DashboardService.MonthlyResult getMonthlyResult(
             @QueryParam("month") int month,
             @QueryParam("year") int year) {
-        val result = service.getMonthlyResult(month, year);
-        return switch (result) {
+        return switch (userUseCase.monthlyResult(month, year)) {
             case Result.Success(var data) -> data;
             case Result.Failure(var error) -> throw new BusinessException(error);
         };

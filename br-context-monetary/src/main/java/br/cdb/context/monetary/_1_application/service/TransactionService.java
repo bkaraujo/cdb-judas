@@ -2,6 +2,8 @@ package br.cdb.context.monetary._1_application.service;
 
 import br.cdb.context.monetary._0_domain.model.Transaction;
 import br.cdb.context.monetary._0_domain.repository.TransactionRepository;
+import br.cdb.context.monetary._1_application.event.TransactionEventListener;
+import br.commons.MessageBus;
 import br.commons.Registry;
 import br.commons.Result;
 import br.commons.business.BusinessError;

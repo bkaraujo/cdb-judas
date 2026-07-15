@@ -6,11 +6,17 @@ classDiagram
 
     class TransactionResource {
         <<Feature Resource CDI>>
+        so traducao de formato
         +create(userId, TransactionRequest) Response
         +patchStatus(userId, PatchStatusRequest) Response
     }
     class TransactionRequest {
         <<Feature DTO record>>
+    }
+    class UserUseCase {
+        <<Feature UseCase CDI - unico da fatia user>>
+        orquestra contexto + servicos de feature
+        +createTransaction(userId, Command, categoryId) Result
     }
     class ClosingService {
         <<Feature Policy>>
@@ -21,12 +27,13 @@ classDiagram
         dados overlay da propria fatia
     }
     class ContextBridge {
-        <<CDI Producer core>>
-        +monetaryContext() MonetaryContext
+        <<CDI core - costura CDI/Registry>>
+        registra portas no Registry no StartupEvent
     }
     class MonetaryContext {
         <<Facade do contexto>>
-        unico ponto de entrada para features
+        +ucTransaction()$ TransactionUseCase
+        +ucAccount()$ AccountUseCase
     }
     class TransactionUseCase {
         <<UseCase aplicacao>>
@@ -46,10 +53,6 @@ classDiagram
     class TransactionJDBCRepository {
         <<Adaptador infra JDBC-H2>>
     }
-    class MonetaryBootstrap {
-        <<Composition Root>>
-        monta o contexto sem framework
-    }
     class Registry {
         <<Service Locator commons>>
     }
@@ -62,19 +65,19 @@ classDiagram
     }
 
     TransactionResource ..> TransactionRequest : recebe DTO
-    TransactionResource ..> ClosingService : politica validada na FRONTEIRA da feature
-    TransactionResource ..> UserTransactionService : logica local da fatia
-    TransactionResource ..> MonetaryContext : SO via Facade - ArchUnit
+    TransactionResource ..> UserUseCase : delega TODA a orquestracao
     TransactionResource ..> Result : traduz em HTTP na borda
-    ContextBridge ..> MonetaryContext : reexpoe como bean CDI
-    MonetaryContext ..> TransactionUseCase : delega
+    UserUseCase ..> ClosingService : politica validada na FRONTEIRA da feature
+    UserUseCase ..> UserTransactionService : logica local da fatia
+    UserUseCase ..> MonetaryContext : use case do contexto via acessor estatico
+    MonetaryContext ..> TransactionUseCase : resolve no Registry - tryGet
     TransactionUseCase ..> TransactionService : orquestra
     TransactionUseCase ..> Result : retorna
     TransactionService ..> TransactionRepository : usa a PORTA
     TransactionService ..> MonetaryTransaction : opera o modelo
     TransactionRepository <|.. TransactionJDBCRepository : adaptador implementa
-    MonetaryBootstrap ..> Registry : liga porta ao adaptador no boot
+    ContextBridge ..> Registry : liga porta ao adaptador no startup
 
-    note for TransactionResource "VSA: a fatia contem Resource, DTOs,\npoliticas de usuario e servicos locais.\nProibido acessar repositorio de contexto."
-    note for MonetaryContext "Hexagonal: contexto livre de framework.\nDI via Registry, nunca CDI/Spring."
+    note for TransactionResource "VSA: o Resource so traduz formato.\nOrquestracao mora no UserUseCase.\nProibido acessar repositorio de contexto."
+    note for MonetaryContext "Hexagonal: contexto livre de framework.\nDI via Registry, nunca CDI/Spring.\nFacade expoe os use cases (estatico)."
     note for Result "Railway: sem excecao para fluxo de negocio.\nErro de dominio e objeto de valor."

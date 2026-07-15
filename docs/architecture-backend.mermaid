@@ -1,19 +1,19 @@
 flowchart LR
 %% CDB Finance — Backend: diagrama de pacotes (placement de classes).
 %% Cada caixa diz o que MORA no pacote; setas = dependências permitidas.
-%% ArchUnit proíbe: feature→contexto fora da Facade; Resource→Repository;
+%% ArchUnit proíbe: feature→contexto fora da Facade/use cases; Resource→Repository;
 %% contexto→framework; _1_application→infra; core→feature.
 
     subgraph feature["br.cdb.feature.*"]
-        FEAT["*Resource (borda HTTP)<br>*Request / *Response (DTOs da API)<br>services e repositórios locais da fatia<br>políticas de usuário (ex.: ClosingService)<br>user.* = /api/{uuid}/… · system.* = sem uuid"]
+        FEAT["*Resource (borda HTTP — só tradução de formato)<br>UserUseCase (único use case da fatia user — orquestra tudo)<br>*Request / *Response (DTOs da API)<br>services e repositórios locais da fatia<br>políticas de usuário (ex.: ClosingService)<br>user.* = /api/{uuid}/… · system.* = sem uuid"]
     end
 
     subgraph core["br.cdb.core"]
         CORE["filtros: token rotativo + OwnershipFilter<br>log de requisição + MDC<br>config HTTP/OpenAPI · persistência JSON<br>ContextBridge (costura CDI ↔ Registry)"]
     end
 
-    subgraph context["br.community.context.*  — monetary · people · shared"]
-        FAC["Facade (MonetaryContext, PeopleContext)<br>Bootstrap (composition root)"]
+    subgraph context["br.cdb.context.*  — monetary · people · shared"]
+        FAC["Facade (MonetaryContext = acessores estáticos p/ use cases, PeopleContext)<br>PeopleBootstrap (composition root de people; monetary se auto-monta)"]
         APP["_1_application<br>usecases · services · commands · listeners"]
         DOM["_0_domain<br>models (records) · events<br>repository = PORTAS (interfaces)"]
     end
@@ -28,7 +28,7 @@ flowchart LR
 
     DB[("H2 — dev: file ./database · teste: in-memory<br>schema canônico: docs/db-*.mermaid")]
 
-    FEAT -->|"só via Facade"| FAC
+    FEAT -->|"só via Facade / use cases"| FAC
     FEAT --> CORE
     FAC --> APP
     APP --> DOM

@@ -6,8 +6,9 @@ import br.cdb.context.monetary._0_domain.model.CreditCard;
 import br.cdb.context.monetary._0_domain.model.Transaction;
 import br.cdb.context.monetary._1_application.command.ImportedTransactionCommand;
 import br.cdb.context.monetary._1_application.command.TransactionCommand;
+import br.cdb.context.monetary._1_application.event.TransactionEventListener;
 import br.cdb.context.monetary._1_application.service.BalanceRecalculationService;
-import br.cdb.context.monetary._1_application.service.CardService;
+import br.cdb.context.monetary._1_application.service.CreditCardService;
 import br.cdb.context.monetary._1_application.service.TransactionService;
 import br.commons.MessageBus;
 import br.commons.Registry;
@@ -24,9 +25,13 @@ import java.util.*;
 @NullMarked
 public class TransactionUseCase {
 
-    private final CardService cardService = Registry.tryGet(CardService.class);
+    private final CreditCardService creditCardService = Registry.tryGet(CreditCardService.class);
     private final TransactionService transactionService = Registry.tryGet(TransactionService.class);
     private final BalanceRecalculationService balanceRecalculationService = Registry.tryGet(BalanceRecalculationService.class);
+
+    public TransactionUseCase() {
+        MessageBus.subscribe(new TransactionEventListener());
+    }
 
     public Result<List<Transaction>, BusinessError> listTransactions() {
         val all = transactionService.findAll().stream()
@@ -305,7 +310,7 @@ public class TransactionUseCase {
     /** No-op when {@code cardId} is absent; otherwise the card must exist and belong to {@code accountId}. */
     private Result<Void, BusinessError> validateCard(UUID accountId, @Nullable UUID cardId) {
         if (cardId == null) return Result.success();
-        return cardService.findById(cardId).flatMap(card -> validateCardOwner(accountId, card));
+        return creditCardService.findById(cardId).flatMap(card -> validateCardOwner(accountId, card));
     }
 
     private static Result<Void, BusinessError> validateCardOwner(UUID accountId, CreditCard creditCard) {

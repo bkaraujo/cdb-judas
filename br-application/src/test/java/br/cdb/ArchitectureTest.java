@@ -55,7 +55,7 @@ class ArchitectureTest {
     static final ArchRule feature_must_access_context_only_via_facade_or_domain_model =
             noClasses().that().resideInAPackage("..feature..")
                     .should().accessClassesThat(contextClassNotExposedViaFacade())
-                    .because("feature deve acessar context exclusivamente via Facade, modelos de domínio (_0_domain.model) ou eventos de domínio (_0_domain.event)");
+                    .because("feature deve acessar context exclusivamente via Facade, use cases (_1_application.usecase, obtidos pela Facade), modelos de domínio (_0_domain.model) ou eventos de domínio (_0_domain.event)");
 
     @ArchTest
     static final ArchRule context_must_not_depend_on_spring =
@@ -76,6 +76,7 @@ class ArchitectureTest {
                 .and(not(resideInAPackage("..context.._0_domain.event..")))
                 .and(not(resideInAPackage("..context.._1_application.command..")))
                 .and(not(resideInAPackage("..context.._1_application.event..")))
+                .and(not(resideInAPackage("..context.._1_application.usecase..")))
                 .and(not(implement(Facade.class)));
     }
 

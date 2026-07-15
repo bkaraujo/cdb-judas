@@ -3,6 +3,9 @@ package br.cdb.feature.user.accounts.core;
 import br.cdb.context.monetary.MonetaryContext;
 import br.cdb.context.monetary._0_domain.model.Account;
 import br.cdb.context.monetary._0_domain.model.Transaction;
+import br.cdb.context.monetary._1_application.usecase.AccountUseCase;
+import br.cdb.context.monetary._1_application.usecase.CreditCardUseCase;
+import br.cdb.context.monetary._1_application.usecase.TransactionUseCase;
 import br.cdb.core.web.security.CurrentUser;
 import br.cdb.feature.user.stream.SSE;
 import br.commons.Result;
@@ -27,14 +30,17 @@ public class AccountStreamPublisher {
 
     private static final String TYPE = "ACCOUNT";
 
+    private final AccountUseCase ucAccount = MonetaryContext.ucAccount();
+    private final CreditCardUseCase ucCreditCard = MonetaryContext.ucCreditCard();
+    private final TransactionUseCase ucTransaction = MonetaryContext.ucTransaction();
+
     private final SSE sse;
-    private final MonetaryContext monetaryContext;
     private final UserAccountService userAccountService;
 
     @SuppressWarnings("EmptyCatch")
     public void upsert(UUID accountId) {
         try {
-            switch (monetaryContext.findAccount(accountId)) {
+            switch (ucAccount.findAccount(accountId)) {
                 case Result.Success(var account) -> dispatchUpsert(account);
                 case Result.Failure(var ignored) -> { }
             }
@@ -51,12 +57,12 @@ public class AccountStreamPublisher {
     private void dispatchUpsert(Account account) {
         val userId = CurrentUser.getId();
         val ua = userAccountService.find(userId, account.id());
-        val cards = monetaryContext.listCardsByAccount(account.id()).getOrElse(List.of());
+        val cards = ucCreditCard.listCardsByAccount(account.id()).getOrElse(List.of());
         val dto = AccountResponse.from(account, ua, cards, allTransactions());
         sse.dispatch(userId, SSE.Event.UPSERT, Map.of("type", TYPE, "payload", dto));
     }
 
     private List<Transaction> allTransactions() {
-        return monetaryContext.listTransactions().getOrElse(List.of());
+        return ucTransaction.listTransactions().getOrElse(List.of());
     }
 }

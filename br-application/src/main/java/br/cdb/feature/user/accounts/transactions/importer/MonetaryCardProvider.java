@@ -2,6 +2,7 @@ package br.cdb.feature.user.accounts.transactions.importer;
 
 import br.cdb.context.monetary.MonetaryContext;
 import br.cdb.context.monetary._0_domain.model.CreditCard;
+import br.cdb.context.monetary._1_application.usecase.CreditCardUseCase;
 import jakarta.inject.Singleton;
 import lombok.RequiredArgsConstructor;
 import org.jspecify.annotations.NullMarked;
@@ -18,10 +19,10 @@ import java.util.List;
 @RequiredArgsConstructor
 public class MonetaryCardProvider implements CreditCardProvider {
 
-    private final MonetaryContext monetaryContext;
+    private final CreditCardUseCase ucCreditCard = MonetaryContext.ucCreditCard();
 
     @Override
     public List<CreditCard> creditCards() {
-        return monetaryContext.listCards().getOrElse(List.of());
+        return ucCreditCard.listCards().getOrElse(List.of());
     }
 }

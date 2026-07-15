@@ -1,6 +1,6 @@
 package br.cdb.feature.user.accounts.balance;
 
-import br.cdb.context.monetary.MonetaryContext;
+import br.cdb.feature.user.UserUseCase;
 import br.commons.Result;
 import br.commons.business.BusinessError;
 import br.commons.business.BusinessException;
@@ -21,7 +21,7 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class AccountBalanceResource {
 
-    private final MonetaryContext monetaryContext;
+    private final UserUseCase userUseCase;
 
     @GET
     @Path("/{id}/balance")
@@ -32,13 +32,13 @@ public class AccountBalanceResource {
     ) {
         if (period != null) {
             val ym = YearMonth.parse(period, DateTimeFormatter.ofPattern("yyyyMM"));
-            return switch (monetaryContext.getMonthlyBalance(id, ym)) {
+            return switch (userUseCase.monthlyBalance(id, ym)) {
                 case Result.Success(var b) -> b;
                 case Result.Failure(var error) -> throw new BusinessException(error);
             };
         }
         if (year != null) {
-            return switch (monetaryContext.getYearBalances(id, year)) {
+            return switch (userUseCase.yearBalances(id, year)) {
                 case Result.Success(var balances) -> balances;
                 case Result.Failure(var error) -> throw new BusinessException(error);
             };

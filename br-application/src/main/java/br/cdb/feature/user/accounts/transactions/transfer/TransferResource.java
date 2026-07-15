@@ -1,8 +1,6 @@
 package br.cdb.feature.user.accounts.transactions.transfer;
 
-import br.cdb.context.monetary.MonetaryContext;
-import br.cdb.feature.user.accounts.closing.ClosingService;
-import br.cdb.feature.user.accounts.core.AccountStreamPublisher;
+import br.cdb.feature.user.UserUseCase;
 import br.cdb.feature.user.accounts.transactions.TransactionResponse;
 import br.cdb.feature.user.accounts.transactions.core.TransactionMapper;
 import br.commons.Result;
@@ -22,22 +20,14 @@ import org.jspecify.annotations.NullMarked;
 @RequiredArgsConstructor
 public class TransferResource {
 
-    private final MonetaryContext monetaryContext;
-    private final ClosingService closingService;
-    private final AccountStreamPublisher accountStreamPublisher;
+    private final UserUseCase userUseCase;
 
     @POST
     @Path("/transactions/transfer")
     public RestResponse<TransactionResponse> transfer(@Valid TransferRequest req) {
-        if (closingService.validateDate(req.date()) instanceof Result.Failure(var error)) {
-            throw new BusinessException(error);
-        }
-        return switch (monetaryContext.createTransfer(req.fromAccountId(), req.toAccountId(), req.date(), req.amount())) {
-            case Result.Success(var t) -> {
-                accountStreamPublisher.upsert(req.fromAccountId());
-                accountStreamPublisher.upsert(req.toAccountId());
-                yield RestResponse.status(RestResponse.Status.CREATED, TransactionMapper.toDto(t, null));
-            }
+        return switch (userUseCase.transfer(req.fromAccountId(), req.toAccountId(), req.date(), req.amount())) {
+            case Result.Success(var view) ->
+                    RestResponse.status(RestResponse.Status.CREATED, TransactionMapper.toDto(view.transaction(), view.overlay()));
             case Result.Failure(var error) -> throw new BusinessException(error);
         };
     }

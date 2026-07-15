@@ -19,13 +19,13 @@ import java.util.UUID;
 import static org.junit.jupiter.api.Assertions.*;
 
 /** Cobre cartão: identificado só pelo last4, sempre vinculado a uma conta real existente e ativa. */
-class CardUseCaseTest extends AbstractUseCaseTest {
+class CreditCardUseCaseTest extends AbstractUseCaseTest {
 
-    private CardUseCase useCase;
+    private CreditCardUseCase useCase;
 
     @BeforeEach
     void setUp() {
-        useCase = new CardUseCase();
+        useCase = new CreditCardUseCase();
     }
 
     private Account seedChecking() {

@@ -1,7 +1,7 @@
 package br.cdb.infra.persistence.monetary;
 
 import br.cdb.context.monetary._0_domain.model.CreditCard;
-import br.cdb.context.monetary._0_domain.repository.CardRepository;
+import br.cdb.context.monetary._0_domain.repository.CreditCardRepository;
 import br.commons.chrono.Time;
 import br.commons.framework.persistence.jdbc.JDBCRepository;
 import br.commons.framework.persistence.jdbc.primitives.JDBCResultSet;
@@ -13,13 +13,13 @@ import java.sql.Timestamp;
 import java.util.*;
 
 /**
- * Adaptador JDBC (H2) da porta {@link CardRepository}; tabela {@code MON_CARD}.
+ * Adaptador JDBC (H2) da porta {@link CreditCardRepository}; tabela {@code MON_CARD}.
  * Cartão é identificado só pelo last4 e vinculado a uma conta real ({@code COD_ACCOUNT}).
  */
 @NullMarked
-public final class CardJDBCRepository extends JDBCRepository<CreditCard> implements CardRepository {
+public final class CreditCardJDBCRepository extends JDBCRepository<CreditCard> implements CreditCardRepository {
 
-    public CardJDBCRepository() {
+    public CreditCardJDBCRepository() {
         super("MON_CARD");
     }
 

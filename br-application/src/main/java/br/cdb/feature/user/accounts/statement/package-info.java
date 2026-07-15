@@ -2,7 +2,7 @@
  * Análise (parsing) de extratos e faturas em PDF: o modelo de documento e o contrato de parser,
  * compartilhados como suporte à importação ({@code transactions.importer}).
  *
- * <p>Não expõe rota HTTP — é consumido pelo {@code StatementImportUseCase}, que itera os
+ * <p>Não expõe rota HTTP — é consumido pelo {@code StatementImportService}, que itera os
  * {@link br.cdb.feature.user.accounts.statement.StatementParser} registrados, pergunta a cada um
  * via {@code parseable} se reconhece o texto extraído (emissor + tipo de documento) e deixa o único
  * capaz produzir o {@link br.cdb.feature.user.accounts.statement.MonetaryDocument}.
