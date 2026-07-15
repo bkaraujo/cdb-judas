@@ -1,10 +1,5 @@
 package br.cdb.feature.user.tags;
 
-import br.cdb.context.monetary.MonetaryContext;
-import br.cdb.context.monetary._0_domain.model.Transaction;
-import br.cdb.context.monetary._1_application.usecase.TransactionUseCase;
-import br.cdb.feature.user.accounts.core.AccountStreamPublisher;
-import br.cdb.feature.user.accounts.transactions.UserTransactionService;
 import br.cdb.feature.user.stream.SSE;
 import br.commons.Result;
 import br.commons.business.BusinessError;
@@ -15,9 +10,7 @@ import org.jspecify.annotations.NullMarked;
 
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.UUID;
-import java.util.stream.Collectors;
 
 @NullMarked
 @Singleton
@@ -26,12 +19,8 @@ public class UserTagService {
 
     private static final String TYPE = "TAG";
 
-    private final TransactionUseCase ucTransaction = MonetaryContext.ucTransaction();
-
     private final UserTagRepository repo;
     private final UserTransactionTagService tagLinkService;
-    private final UserTransactionService userTransactionService;
-    private final AccountStreamPublisher accountStreamPublisher;
     private final SSE sse;
 
     public List<UserTag> findAll(UUID userId) {
@@ -81,36 +70,6 @@ public class UserTagService {
             delete(userId, id);
             return Result.success();
         }));
-    }
-
-    /** Apaga as transações vinculadas à tag (via facade), depois a tag em si. */
-    public Result<Void, BusinessError> deleteWithTransactions(UUID id, UUID userId) {
-        return findById(id).flatMap(ignored -> {
-            val txIds = tagLinkService.findTransactionIdsByTag(userId, id);
-            val affectedAccountIds = accountIdsOf(txIds);
-
-            if (ucTransaction.deleteTransactions(txIds) instanceof Result.Failure<Void, BusinessError>(var error)) {
-                return Result.failure(error);
-            }
-            txIds.forEach(txId -> {
-                userTransactionService.deleteByTransaction(txId);
-                tagLinkService.deleteByTransaction(txId);
-            });
-
-            repo.deleteById(id);
-            delete(userId, id);
-            affectedAccountIds.forEach(accountStreamPublisher::upsert);
-            return Result.success();
-        });
-    }
-
-    /** Contas distintas das transações apagadas — resolvidas antes do delete, quando ainda existem. */
-    private Set<UUID> accountIdsOf(List<UUID> txIds) {
-        val txIdSet = Set.copyOf(txIds);
-        return ucTransaction.transactions().getOrElse(List.of()).stream()
-                .filter(t -> txIdSet.contains(t.id()))
-                .map(Transaction::accountId)
-                .collect(Collectors.toSet());
     }
 
     /** Desvincula (apaga só a associação) e exclui a tag; transações permanecem intactas. */

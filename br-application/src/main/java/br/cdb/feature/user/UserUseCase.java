@@ -456,17 +456,32 @@ public class UserUseCase {
             UUID userId, UUID id, @Nullable DeletionStrategy strategy, @Nullable UUID targetId) {
         return userCategoryService.subtreeIds(id, userId).flatMap(subtree -> {
             if (strategy == null) {
-                val count = userCategoryService.linkedTransactionIds(subtree, userId).size();
+                val count = userTransactionService.findTransactionIdsByCategories(userId, subtree).size();
                 if (count > 0) return Result.success(new DeletionOutcome.Linked(count));
                 userCategoryService.deletePlain(subtree, userId);
                 return Result.success(new DeletionOutcome.Completed());
             }
 
             val result = strategy == DeletionStrategy.MOVE
-                    ? userCategoryService.deleteMoving(id, Objects.requireNonNull(targetId), userId)
-                    : userCategoryService.deleteWithTransactions(subtree, userId);
+                    ? moveCategorySubtree(id, Objects.requireNonNull(targetId), userId)
+                    : deleteCategoryWithTransactions(subtree, userId);
             return result.map(ignored -> new DeletionOutcome.Completed());
         });
+    }
+
+    /** Reatribui toda a subárvore para {@code targetId} (já validado pelo service) e apaga a subárvore. */
+    private Result<Void, BusinessError> moveCategorySubtree(UUID id, UUID targetId, UUID userId) {
+        return userCategoryService.validateMoveTarget(id, targetId, userId).map(subtree -> {
+            subtree.forEach(nodeId -> userTransactionService.reassignCategory(nodeId, targetId, userId));
+            userCategoryService.deletePlain(subtree, userId);
+            return null;
+        });
+    }
+
+    /** Apaga as transações vinculadas à subárvore inteira e depois a subárvore. */
+    private Result<Void, BusinessError> deleteCategoryWithTransactions(List<UUID> subtreeIds, UUID userId) {
+        val txIds = userTransactionService.findTransactionIdsByCategories(userId, subtreeIds);
+        return deleteLinkedTransactions(txIds, () -> userCategoryService.deletePlain(subtreeIds, userId));
     }
 
     // ── Tags ───────────────────────────────────────────────────────
@@ -493,10 +508,45 @@ public class UserUseCase {
 
         val result = switch (strategy) {
             case MOVE -> userTagService.deleteMoving(id, Objects.requireNonNull(targetId), userId);
-            case DELETE -> userTagService.deleteWithTransactions(id, userId);
+            case DELETE -> deleteTagWithTransactions(id, userId);
             case DETACH -> userTagService.deleteDetached(id, userId);
         };
         return result.map(ignored -> new DeletionOutcome.Completed());
+    }
+
+    /** Apaga as transações vinculadas à tag e depois a tag em si. */
+    private Result<Void, BusinessError> deleteTagWithTransactions(UUID id, UUID userId) {
+        return userTagService.findById(id).flatMap(existing -> {
+            val txIds = userTagService.linkedTransactionIds(userId, id);
+            return deleteLinkedTransactions(txIds, () -> userTagService.deleteById(id));
+        });
+    }
+
+    /** Apaga as transações (via facade) + overlay/vínculo de tag, executa {@code afterCleanup} (ex.: apagar
+     *  categoria/tag agora desvinculada) e por fim publica o SSE de conta para cada conta afetada — resolvidas
+     *  antes do delete, quando as transações ainda existem. */
+    private Result<Void, BusinessError> deleteLinkedTransactions(List<UUID> txIds, Runnable afterCleanup) {
+        val affectedAccountIds = accountIdsOfTransactions(txIds);
+
+        if (ucTransaction.deleteTransactions(txIds) instanceof Result.Failure<Void, BusinessError>(var error)) {
+            return Result.failure(error);
+        }
+        txIds.forEach(txId -> {
+            userTransactionService.deleteByTransaction(txId);
+            tagLinkService.deleteByTransaction(txId);
+        });
+
+        afterCleanup.run();
+        affectedAccountIds.forEach(accountStreamPublisher::upsert);
+        return Result.success();
+    }
+
+    private Set<UUID> accountIdsOfTransactions(List<UUID> txIds) {
+        val txIdSet = Set.copyOf(txIds);
+        return ucTransaction.transactions().getOrElse(List.of()).stream()
+                .filter(t -> txIdSet.contains(t.id()))
+                .map(Transaction::accountId)
+                .collect(Collectors.toSet());
     }
 
     // ── Dashboard ──────────────────────────────────────────────────
