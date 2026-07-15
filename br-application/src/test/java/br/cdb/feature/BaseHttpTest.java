@@ -1,14 +1,14 @@
 package br.cdb.feature;
 
-import br.commons.framework.persistence.Storage;
-import br.commons.framework.persistence.jdbc.DataSource;
-import br.commons.framework.persistence.json.Repository;
 import br.cdb.core.JsonStorageProperties;
 import br.cdb.core.web.security.User;
 import br.cdb.core.web.security.UserRepository;
 import br.cdb.core.web.security.core.AccessTokenStore;
 import br.cdb.feature.system.auth.LoginResource;
 import br.cdb.infra.persistence.Database;
+import br.commons.framework.persistence.Storage;
+import br.commons.framework.persistence.jdbc.DataSource;
+import br.commons.framework.persistence.json.Repository;
 import io.quarkus.elytron.security.common.BcryptUtil;
 import io.quarkus.test.junit.QuarkusTest;
 import io.restassured.RestAssured;

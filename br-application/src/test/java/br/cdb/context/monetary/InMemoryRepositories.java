@@ -3,7 +3,6 @@ package br.cdb.context.monetary;
 import br.cdb.context.monetary._0_domain.model.*;
 import br.cdb.context.monetary._0_domain.repository.*;
 import br.cdb.feature.user.accounts.closing.ClosingRepository;
-import lombok.val;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 
@@ -20,7 +19,7 @@ final class InMemoryRepositories {
         public List<T> findAll() { return new ArrayList<>(data.values()); }
         public Optional<T> findById(ID id) { return Optional.ofNullable(data.get(id)); }
         public void deleteById(ID id) { data.remove(id); }
-        public void clearCache() {}
+        public void clearCache() { data.clear(); }
     }
 
     static class Accounts extends BaseRepo<Account, UUID> implements AccountRepository {
@@ -80,7 +79,7 @@ final class InMemoryRepositories {
             return data.stream().filter(b -> b.accountId().equals(accountId)).toList();
         }
 
-        public void clearCache() {}
+        public void clearCache() { data.clear(); }
     }
 
     static class Cards extends BaseRepo<CreditCard, UUID> implements CardRepository {

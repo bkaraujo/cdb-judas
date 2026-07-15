@@ -2,8 +2,8 @@ package br.cdb.context.monetary._1_application.usecase;
 
 import br.cdb.context.monetary._0_domain.event.AccountEvents;
 import br.cdb.context.monetary._0_domain.model.Account;
-import br.cdb.context.monetary._0_domain.model.CreditCard;
 import br.cdb.context.monetary._0_domain.model.AccountBalance;
+import br.cdb.context.monetary._0_domain.model.CreditCard;
 import br.cdb.context.monetary._0_domain.model.Transaction;
 import br.cdb.context.monetary._1_application.command.AccountCommand;
 import br.cdb.context.monetary._1_application.command.TransactionPolicy;

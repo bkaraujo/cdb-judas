@@ -20,6 +20,10 @@ public record Account(
         @Nullable LocalDateTime createdAt,
         @Nullable LocalDateTime updatedAt
 ) {
+    public Account( String name, Type type) {
+        this(UUID.randomUUID(), name, type, true);
+    }
+
     public Account(UUID id, String name, Type type, boolean active) {
         this(id, name, type, active, null, null, null, null, null, null);
     }

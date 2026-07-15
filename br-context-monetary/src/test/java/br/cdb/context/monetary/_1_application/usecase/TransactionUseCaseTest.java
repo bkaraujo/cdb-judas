@@ -1,11 +1,9 @@
 package br.cdb.context.monetary._1_application.usecase;
 
+import br.cdb.context.monetary.AbstractUseCaseTest;
 import br.cdb.context.monetary._0_domain.model.*;
-import br.cdb.context.monetary._0_domain.repository.*;
 import br.cdb.context.monetary._1_application.command.ImportedTransactionCommand;
 import br.cdb.context.monetary._1_application.command.TransactionCommand;
-import br.cdb.context.monetary._1_application.service.*;
-import br.commons.Registry;
 import br.commons.Result;
 import br.commons.business.BusinessError;
 import org.junit.jupiter.api.BeforeEach;
@@ -21,12 +19,8 @@ import java.util.UUID;
 import static org.junit.jupiter.api.Assertions.*;
 
 /** Cobre lançamentos: criação/parcelamento, edição/exclusão (default/FUTURE), transferências, cardId. */
-class TransactionUseCaseTest {
+class TransactionUseCaseTest extends AbstractUseCaseTest {
 
-    private InMemoryRepositories.Transactions txRepo;
-    private InMemoryRepositories.Cards cardRepo;
-    private InMemoryRepositories.Accounts accountRepo;
-    private InMemoryRepositories.Balances balanceRepo;
     private TransactionUseCase useCase;
 
     private final UUID accountId = UUID.randomUUID();
@@ -34,24 +28,7 @@ class TransactionUseCaseTest {
 
     @BeforeEach
     void setUp() {
-        // Services se auto-conectam via Registry.tryGet — força reconstrução contra os fakes desta
-        // rodada em vez de reaproveitar um singleton preso à instância de teste anterior.
-        Registry.remove(AccountService.class);
-        Registry.remove(BalanceService.class);
-        Registry.remove(TransactionService.class);
-        Registry.remove(CardService.class);
-        Registry.remove(BalanceRecalculationService.class);
-
-        txRepo = new InMemoryRepositories.Transactions();
-        cardRepo = new InMemoryRepositories.Cards();
-        accountRepo = new InMemoryRepositories.Accounts();
-        balanceRepo = new InMemoryRepositories.Balances();
-        accountRepo.save(new Account(accountId, "Banco", Account.Type.CHECKING, true));
-
-        Registry.set(TransactionRepository.class, txRepo);
-        Registry.set(CardRepository.class, cardRepo);
-        Registry.set(AccountRepository.class, accountRepo);
-        Registry.set(BalanceRepository.class, balanceRepo);
+        accountRepository().save(new Account(accountId, "Banco", Account.Type.CHECKING, true));
 
         useCase = new TransactionUseCase();
     }
@@ -67,7 +44,7 @@ class TransactionUseCaseTest {
     }
 
     private CreditCard seedCard(UUID forAccountId, String last4) {
-        return cardRepo.save(new CreditCard(UUID.randomUUID(), last4, forAccountId, true));
+        return cardRepository().save(new CreditCard(UUID.randomUUID(), last4, forAccountId, true));
     }
 
     @Test
@@ -76,8 +53,8 @@ class TransactionUseCaseTest {
         Result<Transaction, BusinessError> r = useCase.createTransaction(
                 cmd(LocalDate.of(2026, 5, 10), Transaction.Status.CONFIRMED, null));
         assertTrue(r.isSuccess());
-        assertEquals(1, txRepo.findAll().size());
-        Transaction t = txRepo.findAll().get(0);
+        assertEquals(1, transactionRepository().findAll().size());
+        Transaction t = transactionRepository().findAll().get(0);
         assertNull(t.groupId());
         assertEquals(1, t.installmentNumber());
         assertEquals(1, t.totalInstallments());
@@ -91,7 +68,7 @@ class TransactionUseCaseTest {
         Result<Transaction, BusinessError> r = useCase.createTransaction(
                 cmd(base, Transaction.Status.CONFIRMED, 3));
         assertTrue(r.isSuccess());
-        List<Transaction> all = txRepo.findAll();
+        List<Transaction> all = transactionRepository().findAll();
         assertEquals(3, all.size());
         UUID groupId = all.get(0).groupId();
         assertNotNull(groupId);
@@ -108,7 +85,7 @@ class TransactionUseCaseTest {
     @DisplayName("update default só altera o selecionado")
     void updateDefaultModeOnlyOne() {
         useCase.createTransaction(cmd(LocalDate.of(2026, 5, 10), Transaction.Status.CONFIRMED, 3));
-        List<Transaction> all = txRepo.findAll();
+        List<Transaction> all = transactionRepository().findAll();
         Transaction first = all.stream().filter(t -> t.installmentNumber() == 1).findFirst().orElseThrow();
 
         TransactionCommand upd = new TransactionCommand("upd", new BigDecimal("20.00"),
@@ -116,11 +93,11 @@ class TransactionUseCaseTest {
         Result<Transaction, BusinessError> r = useCase.updateTransaction(first.id(), upd);
         assertTrue(r.isSuccess());
 
-        Transaction reload = txRepo.findById(first.id()).orElseThrow();
+        Transaction reload = transactionRepository().findById(first.id()).orElseThrow();
         assertEquals(new BigDecimal("20.00"), reload.amount());
         assertEquals(LocalDate.of(2026, 5, 15), reload.date());
 
-        long unchanged = txRepo.findAll().stream()
+        long unchanged = transactionRepository().findAll().stream()
                 .filter(t -> !t.id().equals(first.id()))
                 .filter(t -> "desc".equals(t.description()))
                 .count();
@@ -131,7 +108,7 @@ class TransactionUseCaseTest {
     @DisplayName("FUTURE: atualiza atual+futuras, preserva status, ajusta datas proporcionalmente")
     void updateFutureModeShiftsDatesAndPreservesStatus() {
         useCase.createTransaction(cmd(LocalDate.of(2026, 5, 10), Transaction.Status.CONFIRMED, 4));
-        Transaction second = txRepo.findAll().stream()
+        Transaction second = transactionRepository().findAll().stream()
                 .filter(t -> t.installmentNumber() == 2).findFirst().orElseThrow();
 
         LocalDate newDate = LocalDate.of(2026, 7, 20);
@@ -140,14 +117,14 @@ class TransactionUseCaseTest {
         Result<Transaction, BusinessError> r = useCase.updateTransaction(second.id(), upd);
         assertTrue(r.isSuccess());
 
-        Transaction first = txRepo.findAll().stream()
+        Transaction first = transactionRepository().findAll().stream()
                 .filter(t -> t.installmentNumber() == 1).findFirst().orElseThrow();
         assertEquals("desc", first.description());
         assertEquals(new BigDecimal("10.00"), first.amount());
 
         for (int n = 2; n <= 4; n++) {
             int finalN = n;
-            Transaction t = txRepo.findAll().stream()
+            Transaction t = transactionRepository().findAll().stream()
                     .filter(x -> x.installmentNumber() == finalN).findFirst().orElseThrow();
             assertEquals("future", t.description());
             assertEquals(new BigDecimal("99.00"), t.amount());
@@ -160,35 +137,35 @@ class TransactionUseCaseTest {
     @DisplayName("updateStatus apenas muda status e paymentDate")
     void updateStatusBypassesClosing() {
         useCase.createTransaction(cmd(LocalDate.of(2026, 5, 10), Transaction.Status.PENDING, null));
-        Transaction t = txRepo.findAll().get(0);
+        Transaction t = transactionRepository().findAll().get(0);
         Result<Transaction, BusinessError> r = useCase.updateTransactionStatus(
                 t.id(), Transaction.Status.CONFIRMED, LocalDate.of(2026, 5, 12));
         assertTrue(r.isSuccess());
-        assertEquals(Transaction.Status.CONFIRMED, txRepo.findById(t.id()).orElseThrow().status());
-        assertEquals(LocalDate.of(2026, 5, 12), txRepo.findById(t.id()).orElseThrow().paymentDate());
+        assertEquals(Transaction.Status.CONFIRMED, transactionRepository().findById(t.id()).orElseThrow().status());
+        assertEquals(LocalDate.of(2026, 5, 12), transactionRepository().findById(t.id()).orElseThrow().paymentDate());
     }
 
     @Test
     @DisplayName("delete default exclui só o lançamento")
     void deleteDefaultMode() {
         useCase.createTransaction(cmd(LocalDate.of(2026, 5, 10), Transaction.Status.CONFIRMED, 2));
-        Transaction first = txRepo.findAll().stream()
+        Transaction first = transactionRepository().findAll().stream()
                 .filter(t -> t.installmentNumber() == 1).findFirst().orElseThrow();
         Result<List<UUID>, BusinessError> r = useCase.deleteTransaction(first.id(), null);
         assertTrue(r.isSuccess());
-        assertEquals(1, txRepo.findAll().size());
+        assertEquals(1, transactionRepository().findAll().size());
     }
 
     @Test
     @DisplayName("delete FUTURE exclui atual+futuras do grupo")
     void deleteFutureMode() {
         useCase.createTransaction(cmd(LocalDate.of(2026, 5, 10), Transaction.Status.CONFIRMED, 4));
-        Transaction second = txRepo.findAll().stream()
+        Transaction second = transactionRepository().findAll().stream()
                 .filter(t -> t.installmentNumber() == 2).findFirst().orElseThrow();
         Result<List<UUID>, BusinessError> r = useCase.deleteTransaction(second.id(), "FUTURE");
         assertTrue(r.isSuccess());
-        assertEquals(1, txRepo.findAll().size());
-        assertEquals(1, txRepo.findAll().get(0).installmentNumber());
+        assertEquals(1, transactionRepository().findAll().size());
+        assertEquals(1, transactionRepository().findAll().get(0).installmentNumber());
     }
 
     @Test
@@ -218,7 +195,7 @@ class TransactionUseCaseTest {
     @DisplayName("lançamento criado guarda o centro de custo do comando")
     void persistsCostCenter() {
         useCase.createTransaction(cmd(LocalDate.of(2026, 5, 10), Transaction.Status.CONFIRMED, null));
-        assertEquals(costCenterId, txRepo.findAll().get(0).costCenterId());
+        assertEquals(costCenterId, transactionRepository().findAll().get(0).costCenterId());
     }
 
     // ── Transferências: par indissociável ─────────────────────
@@ -226,9 +203,9 @@ class TransactionUseCaseTest {
     /** Persiste as duas pernas de uma transferência (saída + entrada) sob um mesmo groupId. */
     private UUID saveTransferPair(LocalDate date, UUID fromAccount, UUID toAccount) {
         UUID groupId = UUID.randomUUID();
-        txRepo.save(new Transaction(UUID.randomUUID(), "Transferência (saída)", new BigDecimal("-50.00"),
+        transactionRepository().save(new Transaction(UUID.randomUUID(), "Transferência (saída)", new BigDecimal("-50.00"),
                 date, fromAccount, Transaction.Status.CONFIRMED, Transaction.Type.EXPENSE, costCenterId, date, groupId, 1, 2, null, null));
-        txRepo.save(new Transaction(UUID.randomUUID(), "Transferência (entrada)", new BigDecimal("50.00"),
+        transactionRepository().save(new Transaction(UUID.randomUUID(), "Transferência (entrada)", new BigDecimal("50.00"),
                 date, toAccount, Transaction.Status.CONFIRMED, Transaction.Type.INCOME, costCenterId, date, groupId, 2, 2, null, null));
         return groupId;
     }
@@ -240,7 +217,7 @@ class TransactionUseCaseTest {
         Result<Transaction, BusinessError> r = useCase.createTransfer(accountId, toAccount, LocalDate.of(2026, 5, 10), new BigDecimal("50.00"));
         assertTrue(r.isSuccess());
 
-        List<Transaction> all = txRepo.findAll();
+        List<Transaction> all = transactionRepository().findAll();
         assertEquals(2, all.size());
         UUID groupId = all.get(0).groupId();
         assertNotNull(groupId);
@@ -255,30 +232,30 @@ class TransactionUseCaseTest {
         Result<Transaction, BusinessError> r = useCase.createTransfer(accountId, accountId, LocalDate.of(2026, 5, 10), new BigDecimal("50.00"));
         assertTrue(r.isFailure());
         assertInstanceOf(BusinessError.BusinessRule.class, ((Result.Failure<Transaction, BusinessError>) r).error());
-        assertTrue(txRepo.findAll().isEmpty());
+        assertTrue(transactionRepository().findAll().isEmpty());
     }
 
     @Test
     @DisplayName("excluir uma perna da transferência remove ambas")
     void deleteTransferLegRemovesBothLegs() {
         saveTransferPair(LocalDate.of(2026, 5, 10), accountId, UUID.randomUUID());
-        Transaction entrada = txRepo.findAll().stream()
+        Transaction entrada = transactionRepository().findAll().stream()
                 .filter(t -> Transaction.Type.INCOME.equals(t.type())).findFirst().orElseThrow();
 
         Result<List<UUID>, BusinessError> r = useCase.deleteTransaction(entrada.id(), null);
         assertTrue(r.isSuccess());
-        assertEquals(0, txRepo.findAll().size(), "as duas pernas removidas");
+        assertEquals(0, transactionRepository().findAll().size(), "as duas pernas removidas");
     }
 
     @Test
     @DisplayName("excluir perna de transferência ignora o mode (FUTURE remove ambas)")
     void deleteTransferLegIgnoresMode() {
         saveTransferPair(LocalDate.of(2026, 5, 10), accountId, UUID.randomUUID());
-        Transaction saida = txRepo.findAll().stream()
+        Transaction saida = transactionRepository().findAll().stream()
                 .filter(t -> Transaction.Type.EXPENSE.equals(t.type())).findFirst().orElseThrow();
 
         assertTrue(useCase.deleteTransaction(saida.id(), "FUTURE").isSuccess());
-        assertEquals(0, txRepo.findAll().size());
+        assertEquals(0, transactionRepository().findAll().size());
     }
 
     @Test
@@ -286,9 +263,9 @@ class TransactionUseCaseTest {
     void updateTransferLegKeepsPairAndMirrors() {
         UUID toAccount = UUID.randomUUID();
         UUID groupId = saveTransferPair(LocalDate.of(2026, 5, 10), accountId, toAccount);
-        Transaction entrada = txRepo.findAll().stream()
+        Transaction entrada = transactionRepository().findAll().stream()
                 .filter(t -> Transaction.Type.INCOME.equals(t.type())).findFirst().orElseThrow();
-        Transaction saida = txRepo.findAll().stream()
+        Transaction saida = transactionRepository().findAll().stream()
                 .filter(t -> Transaction.Type.EXPENSE.equals(t.type())).findFirst().orElseThrow();
 
         UUID newAccount = UUID.randomUUID();
@@ -298,9 +275,9 @@ class TransactionUseCaseTest {
         Result<Transaction, BusinessError> r = useCase.updateTransaction(entrada.id(), upd);
         assertTrue(r.isSuccess());
 
-        assertEquals(2, txRepo.findAll().size(), "par preservado");
-        Transaction newEntrada = txRepo.findById(entrada.id()).orElseThrow();
-        Transaction newSaida = txRepo.findById(saida.id()).orElseThrow();
+        assertEquals(2, transactionRepository().findAll().size(), "par preservado");
+        Transaction newEntrada = transactionRepository().findById(entrada.id()).orElseThrow();
+        Transaction newSaida = transactionRepository().findById(saida.id()).orElseThrow();
 
         assertEquals(groupId, newEntrada.groupId());
         assertEquals(groupId, newSaida.groupId());
@@ -320,30 +297,30 @@ class TransactionUseCaseTest {
     void updateTransferRejectsCollapsingToSameAccount() {
         UUID toAccount = UUID.randomUUID();
         saveTransferPair(LocalDate.of(2026, 5, 10), accountId, toAccount);
-        Transaction saida = txRepo.findAll().stream()
+        Transaction saida = transactionRepository().findAll().stream()
                 .filter(t -> Transaction.Type.EXPENSE.equals(t.type())).findFirst().orElseThrow();
 
         TransactionCommand upd = new TransactionCommand("x", new BigDecimal("50.00"),
                 LocalDate.of(2026, 5, 10), toAccount, costCenterId,
                 Transaction.Status.CONFIRMED, Transaction.Type.EXPENSE, null, null, null, null);
         assertTrue(useCase.updateTransaction(saida.id(), upd).isFailure());
-        assertEquals(2, txRepo.findAll().size(), "nada alterado");
-        assertEquals(accountId, txRepo.findById(saida.id()).orElseThrow().accountId(), "conta intacta");
+        assertEquals(2, transactionRepository().findAll().size(), "nada alterado");
+        assertEquals(accountId, transactionRepository().findById(saida.id()).orElseThrow().accountId(), "conta intacta");
     }
 
     @Test
     @DisplayName("grupo de parcelas (tipo único) não é tratado como transferência ao editar")
     void updateInstallmentGroupNotTreatedAsTransfer() {
         useCase.createTransaction(cmd(LocalDate.of(2026, 5, 10), Transaction.Status.CONFIRMED, 3));
-        Transaction first = txRepo.findAll().stream()
+        Transaction first = transactionRepository().findAll().stream()
                 .filter(t -> t.installmentNumber() == 1).findFirst().orElseThrow();
 
         TransactionCommand upd = new TransactionCommand("upd", new BigDecimal("20.00"),
                 LocalDate.of(2026, 5, 15), accountId, costCenterId, Transaction.Status.CONFIRMED, Transaction.Type.EXPENSE, null, null, null, null);
         assertTrue(useCase.updateTransaction(first.id(), upd).isSuccess());
 
-        assertEquals(3, txRepo.findAll().size(), "parcelas preservadas");
-        Transaction reload = txRepo.findById(first.id()).orElseThrow();
+        assertEquals(3, transactionRepository().findAll().size(), "parcelas preservadas");
+        Transaction reload = transactionRepository().findById(first.id()).orElseThrow();
         assertNotNull(reload.groupId(), "ainda parte do grupo de parcelas");
     }
 
@@ -355,7 +332,7 @@ class TransactionUseCaseTest {
         CreditCard creditCard = seedCard(accountId, "1234");
         Result<Transaction, BusinessError> r = useCase.createTransaction(cmdWithCard(LocalDate.of(2026, 5, 10), null, creditCard.id()));
         assertTrue(r.isSuccess());
-        assertEquals(creditCard.id(), txRepo.findAll().get(0).cardId());
+        assertEquals(creditCard.id(), transactionRepository().findAll().get(0).cardId());
     }
 
     @Test
@@ -365,7 +342,7 @@ class TransactionUseCaseTest {
         Result<Transaction, BusinessError> r = useCase.createTransaction(cmdWithCard(LocalDate.of(2026, 5, 10), null, creditCard.id()));
         assertTrue(r.isFailure());
         assertInstanceOf(BusinessError.BusinessRule.class, ((Result.Failure<Transaction, BusinessError>) r).error());
-        assertTrue(txRepo.findAll().isEmpty(), "nada deve ser persistido");
+        assertTrue(transactionRepository().findAll().isEmpty(), "nada deve ser persistido");
     }
 
     @Test
@@ -381,7 +358,7 @@ class TransactionUseCaseTest {
     void installmentsPropagateCardId() {
         CreditCard creditCard = seedCard(accountId, "1234");
         useCase.createTransaction(cmdWithCard(LocalDate.of(2026, 5, 10), 3, creditCard.id()));
-        List<Transaction> all = txRepo.findAll();
+        List<Transaction> all = transactionRepository().findAll();
         assertEquals(3, all.size());
         assertTrue(all.stream().allMatch(t -> creditCard.id().equals(t.cardId())));
     }
@@ -392,7 +369,7 @@ class TransactionUseCaseTest {
         seedCard(accountId, "1234");
         Result<Transaction, BusinessError> r = useCase.createTransfer(accountId, UUID.randomUUID(), LocalDate.of(2026, 5, 10), new BigDecimal("50.00"));
         assertTrue(r.isSuccess());
-        assertTrue(txRepo.findAll().stream().allMatch(t -> t.cardId() == null));
+        assertTrue(transactionRepository().findAll().stream().allMatch(t -> t.cardId() == null));
     }
 
     @Test
@@ -400,11 +377,11 @@ class TransactionUseCaseTest {
     void updateStatusPreservesCardId() {
         CreditCard creditCard = seedCard(accountId, "1234");
         useCase.createTransaction(cmdWithCard(LocalDate.of(2026, 5, 10), null, creditCard.id()));
-        Transaction t = txRepo.findAll().get(0);
+        Transaction t = transactionRepository().findAll().get(0);
 
         Result<Transaction, BusinessError> r = useCase.updateTransactionStatus(t.id(), Transaction.Status.CONFIRMED, LocalDate.of(2026, 5, 12));
         assertTrue(r.isSuccess());
-        assertEquals(creditCard.id(), txRepo.findById(t.id()).orElseThrow().cardId());
+        assertEquals(creditCard.id(), transactionRepository().findById(t.id()).orElseThrow().cardId());
     }
 
     // ── createImported (importação de extrato já traduzida) ─────
@@ -419,7 +396,7 @@ class TransactionUseCaseTest {
         Result<Transaction, BusinessError> r = useCase.createImported(cmd);
 
         assertTrue(r.isSuccess());
-        Transaction saved = txRepo.findAll().get(0);
+        Transaction saved = transactionRepository().findAll().get(0);
         assertEquals(1, saved.installmentNumber());
         assertEquals(1, saved.totalInstallments());
         assertNull(saved.groupId());
@@ -438,7 +415,7 @@ class TransactionUseCaseTest {
 
         assertTrue(r.isFailure());
         assertInstanceOf(BusinessError.BusinessRule.class, ((Result.Failure<Transaction, BusinessError>) r).error());
-        assertTrue(txRepo.findAll().isEmpty());
+        assertTrue(transactionRepository().findAll().isEmpty());
     }
 
     // ── deleteTransactions (exclusão em massa: categoria/tag DELETE) ─────
@@ -447,49 +424,49 @@ class TransactionUseCaseTest {
     @DisplayName("deleteTransactions: dedupe (mesmo id repetido) apaga uma vez")
     void deleteTransactionsDedupesRepeatedIds() {
         useCase.createTransaction(cmd(LocalDate.of(2026, 5, 10), Transaction.Status.CONFIRMED, null));
-        Transaction t = txRepo.findAll().get(0);
+        Transaction t = transactionRepository().findAll().get(0);
 
         Result<Void, BusinessError> r = useCase.deleteTransactions(List.of(t.id(), t.id()));
 
         assertTrue(r.isSuccess());
-        assertTrue(txRepo.findAll().isEmpty());
+        assertTrue(transactionRepository().findAll().isEmpty());
     }
 
     @Test
     @DisplayName("deleteTransactions: id inexistente é ignorado (idempotente)")
     void deleteTransactionsSkipsMissingIds() {
         useCase.createTransaction(cmd(LocalDate.of(2026, 5, 10), Transaction.Status.CONFIRMED, null));
-        Transaction t = txRepo.findAll().get(0);
+        Transaction t = transactionRepository().findAll().get(0);
 
         Result<Void, BusinessError> r = useCase.deleteTransactions(List.of(t.id(), UUID.randomUUID()));
 
         assertTrue(r.isSuccess());
-        assertTrue(txRepo.findAll().isEmpty());
+        assertTrue(transactionRepository().findAll().isEmpty());
     }
 
     @Test
     @DisplayName("deleteTransactions: passar só uma perna expande para a irmã de transferência")
     void deleteTransactionsExpandsTransferSiblings() {
         saveTransferPair(LocalDate.of(2026, 5, 10), accountId, UUID.randomUUID());
-        Transaction saida = txRepo.findAll().stream()
+        Transaction saida = transactionRepository().findAll().stream()
                 .filter(t -> Transaction.Type.EXPENSE.equals(t.type())).findFirst().orElseThrow();
 
         Result<Void, BusinessError> r = useCase.deleteTransactions(List.of(saida.id()));
 
         assertTrue(r.isSuccess());
-        assertTrue(txRepo.findAll().isEmpty(), "as duas pernas removidas");
+        assertTrue(transactionRepository().findAll().isEmpty(), "as duas pernas removidas");
     }
 
     @Test
     @DisplayName("deleteTransactions: recalcula saldo da conta (sem atividade → snapshot antigo cai)")
     void deleteTransactionsRecalculatesBalance() {
         useCase.createTransaction(cmd(LocalDate.of(2026, 5, 10), Transaction.Status.CONFIRMED, null));
-        Transaction t = txRepo.findAll().get(0);
-        balanceRepo.save(new AccountBalance(accountId, YearMonth.of(2026, 5), new BigDecimal("999.00")));
+        Transaction t = transactionRepository().findAll().get(0);
+        balanceRepository().save(new AccountBalance(accountId, YearMonth.of(2026, 5), new BigDecimal("999.00")));
 
         Result<Void, BusinessError> r = useCase.deleteTransactions(List.of(t.id()));
 
         assertTrue(r.isSuccess());
-        assertTrue(balanceRepo.findByAccount(accountId).isEmpty(), "sem atividade → snapshots removidos");
+        assertTrue(balanceRepository().findByAccount(accountId).isEmpty(), "sem atividade → snapshots removidos");
     }
 }

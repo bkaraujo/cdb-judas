@@ -1,10 +1,10 @@
 package br.cdb.core.persistence;
 
+import br.cdb.context.monetary._0_domain.model.Transaction;
+import br.cdb.core.JsonStorageProperties;
 import br.commons.framework.persistence.Storage;
 import br.commons.framework.persistence.json.LocalFileStorage;
 import br.commons.tools.Strings;
-import br.cdb.context.monetary._0_domain.model.Transaction;
-import br.cdb.core.JsonStorageProperties;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.*;

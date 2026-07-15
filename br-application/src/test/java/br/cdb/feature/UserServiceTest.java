@@ -4,12 +4,12 @@ import br.cdb.feature.system.user.UserService;
 import br.cdb.feature.user.categories.UserCategoryService;
 import io.quarkus.test.junit.QuarkusTest;
 import jakarta.inject.Inject;
-import lombok.val;
 import org.junit.jupiter.api.Test;
 
 import java.util.UUID;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @QuarkusTest
 class UserServiceTest extends BaseHttpTest {
