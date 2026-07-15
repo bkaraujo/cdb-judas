@@ -2,7 +2,8 @@ flowchart LR
 %% CDB Finance — Backend: diagrama de pacotes (placement de classes).
 %% Cada caixa diz o que MORA no pacote; setas = dependências permitidas.
 %% ArchUnit proíbe: feature→contexto fora da Facade/use cases; Resource→Repository;
-%% contexto→framework; _1_application→infra; core→feature.
+%% contexto→framework; _1_application→infra; core→feature; fatia↔fatia dentro de
+%% feature.user (composição só via UserUseCase); feature.system→feature.user.
 
     subgraph feature["br.cdb.feature.*"]
         FEAT["*Resource (borda HTTP — só tradução de formato)<br>UserUseCase (único use case da fatia user — orquestra tudo)<br>*Request / *Response (DTOs da API)<br>services e repositórios locais da fatia<br>políticas de usuário (ex.: ClosingService)<br>user.* = /api/{uuid}/… · system.* = sem uuid"]

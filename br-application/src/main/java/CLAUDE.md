@@ -74,8 +74,9 @@ Contrato completo, checklist por classe e integração com ArchUnit em **`@docs/
   3. `core_must_not_access_feature`: O núcleo comum não pode depender de fatias de features de entrega.
   4. `application_must_not_access_infrastructure`: Classes de aplicação (`_1_application`) não podem depender diretamente da infraestrutura (`_2_infrastructure`) — regra hoje **vazia/sem alvo**: nenhum contexto tem mais um pacote `_2_infrastructure` (os adaptadores `*JDBCRepository` moraram lá antes de serem extraídos para `br-application`/`br.cdb.infra.persistence`); mantida por segurança caso a camada volte a existir dentro de um contexto.
   5. `feature_must_access_context_only_via_facade_or_domain_model`: Garante o acoplamento correto entre a camada web e os contextos — apenas via Facade, use cases (`_1_application.usecase`), commands/eventos de aplicação e modelos/eventos de domínio.
-  6. `context_must_not_depend_on_spring`: Garante que o contexto é livre de framework (DI via `Registry`).
-  7. `no_class_depends_on_spring`: Nenhuma classe do app (não só o contexto) depende de Spring — checagem de que a migração para Quarkus não deixou resíduo.
+  6. `context_must_not_depend_on_framework`: O contexto é livre de framework — nem Spring (resíduo pré-Quarkus), nem `jakarta..`/`io.quarkus..` (a validação real mora nos `*Request` da borda, com `@Valid`).
+  7. `user_feature_slices_must_not_depend_on_each_other`: As fatias de `feature.user.(*)` (accounts, categories, tags, dashboard, profile, …) não se acessam entre si — a composição mora no `UserUseCase`, que não casa com o padrão de fatia por estar no pacote raiz. `stream` (transporte SSE) e `deletion` (vocabulário compartilhado) são isentos por serem intencionalmente cross-cutting.
+  8. `system_features_must_not_access_user_features`: `feature.system.*` (auth, seed, catálogo) é a base; `feature.user.*` depende dela, nunca o contrário.
 
 ---
 
