@@ -4,7 +4,8 @@ import br.commons.framework.message.Message;
 import br.commons.framework.message.MessageListener;
 import br.commons.framework.message.MessageProcessor;
 import br.commons.framework.message.MessageResult;
-import br.commons.tools.Meta; import br.commons.tools.Strings;
+import br.commons.tools.Meta;
+import br.commons.tools.Strings;
 import lombok.val;
 import org.jspecify.annotations.NullMarked;
 
@@ -13,11 +14,8 @@ import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.Queue;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.ConcurrentSkipListSet;
 
 import static br.commons.Logger.lazy;
 

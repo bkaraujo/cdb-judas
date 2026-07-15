@@ -1,10 +1,6 @@
 package br.cdb.core;
 
-import br.cdb.context.monetary._0_domain.repository.AccountRepository;
-import br.cdb.context.monetary._0_domain.repository.BalanceRepository;
-import br.cdb.context.monetary._0_domain.repository.CostCenterRepository;
-import br.cdb.context.monetary._0_domain.repository.CreditCardRepository;
-import br.cdb.context.monetary._0_domain.repository.TransactionRepository;
+import br.cdb.context.monetary._0_domain.repository.*;
 import br.cdb.context.people.PeopleBootstrap;
 import br.cdb.context.people.PeopleContext;
 import br.cdb.context.people._0_domain.repository.PersonRepository;
@@ -97,10 +93,6 @@ public class ContextBridge {
      * garante execução antes de observers de seed (ex.: {@code UserSeeder}).
      */
     void initDataSource(@Observes @Priority(1) StartupEvent event, DataSource dataSource) {
-        configureRepositories();
-    }
-
-    private static void configureRepositories() {
         Registry.tryGet(AccountRepository.class, AccountJDBCRepository::new);
         Registry.tryGet(BalanceRepository.class, UserAccountBalanceJDBCRepository::new);
         Registry.tryGet(CostCenterRepository.class, CostCenterJDBCRepository::new);
