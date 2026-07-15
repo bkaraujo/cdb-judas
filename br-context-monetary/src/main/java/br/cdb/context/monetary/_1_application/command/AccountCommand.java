@@ -9,6 +9,7 @@ import java.util.UUID;
 @NullMarked
 public sealed interface AccountCommand {
 
+    @NullMarked
     sealed interface Upsert extends AccountCommand {}
 
     @NullMarked

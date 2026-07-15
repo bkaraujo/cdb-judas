@@ -7,6 +7,7 @@ import java.util.UUID;
 @NullMarked
 public sealed interface CostCenterCommand {
 
+    @NullMarked
     sealed interface Upsert extends CostCenterCommand {}
 
     @NullMarked

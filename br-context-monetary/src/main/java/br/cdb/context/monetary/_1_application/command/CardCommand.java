@@ -7,6 +7,7 @@ import java.util.UUID;
 @NullMarked
 public sealed interface CardCommand {
 
+    @NullMarked
     sealed interface Upsert extends CardCommand {}
 
     @NullMarked

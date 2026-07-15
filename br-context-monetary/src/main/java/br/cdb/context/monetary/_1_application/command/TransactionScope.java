@@ -6,7 +6,9 @@ import org.jspecify.annotations.NullMarked;
 @NullMarked
 public sealed interface TransactionScope {
 
+    @NullMarked
     record Single() implements TransactionScope {}
 
+    @NullMarked
     record Future() implements TransactionScope {}
 }

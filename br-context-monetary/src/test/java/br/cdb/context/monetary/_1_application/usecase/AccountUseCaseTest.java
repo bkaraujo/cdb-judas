@@ -47,7 +47,7 @@ class AccountUseCaseTest extends AbstractUseCaseTest {
     }
 
     private AccountCommand.Create checkingCmd() {
-        return new AccountCommand.Create("Banco", "CHECKING", "#112233", true, null, null, null, null);
+        return new AccountCommand.Create("Banco", "CHECKING", true, null, null, null, null);
     }
 
     private Transaction seedTransaction(UUID accountId) {
@@ -66,7 +66,7 @@ class AccountUseCaseTest extends AbstractUseCaseTest {
     @Test
     @DisplayName("tipo desconhecido → Validation")
     void rejectsUnknownAccountType() {
-        val cmd = new AccountCommand.Create("X", "SAVINGS", "#112233", true, null, null, null, null);
+        val cmd = new AccountCommand.Create("X", "SAVINGS", true, null, null, null, null);
         val r = useCase.upsert(cmd);
         assertTrue(r.isFailure());
         assertInstanceOf(BusinessError.Validation.class, ((Result.Failure<Account, BusinessError>) r).error());
@@ -75,14 +75,14 @@ class AccountUseCaseTest extends AbstractUseCaseTest {
     @Test
     @DisplayName("limite/ciclo de fatura sobrevivem a create e update, e all-null limpa")
     void limitFieldsRoundTripThroughCreateAndUpdate() {
-        val withLimit = new AccountCommand.Create("Banco", "CHECKING", "#112233", true, new BigDecimal("1000.00"), new BigDecimal("200.00"), 5, 10);
+        val withLimit = new AccountCommand.Create("Banco", "CHECKING", true, new BigDecimal("1000.00"), new BigDecimal("200.00"), 5, 10);
         val created = ((Result.Success<Account, BusinessError>) useCase.upsert(withLimit)).value();
         assertEquals(0, new BigDecimal("1000.00").compareTo(created.creditLimit()));
         assertEquals(0, new BigDecimal("200.00").compareTo(created.overdraftLimit()));
         assertEquals(5, created.closingDay());
         assertEquals(10, created.dueDay());
 
-        val cleared = new AccountCommand.Update(created.id(), "Banco", "CHECKING", "#112233", true, null, null, null, null);
+        val cleared = new AccountCommand.Update(created.id(), "Banco", "CHECKING", true, null, null, null, null);
         val updated = ((Result.Success<Account, BusinessError>) useCase.upsert(cleared)).value();
         assertNull(updated.creditLimit());
         assertNull(updated.overdraftLimit());

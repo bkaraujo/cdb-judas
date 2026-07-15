@@ -58,16 +58,11 @@ class ArchitectureTest {
                     .because("feature deve acessar context exclusivamente via Facade, use cases (_1_application.usecase, obtidos pela Facade), modelos de domínio (_0_domain.model) ou eventos de domínio (_0_domain.event)");
 
     @ArchTest
-    static final ArchRule context_must_not_depend_on_spring =
+    static final ArchRule context_must_not_depend_on_framework =
             noClasses().that().resideInAPackage("..context..")
-                    .should().dependOnClassesThat().resideInAPackage("org.springframework..")
-                    .because("o contexto é livre de framework: a injeção é via Registry e o Spring fica na borda (feature/core)");
-
-    @ArchTest
-    static final ArchRule no_class_depends_on_spring =
-            noClasses().that().resideInAPackage("br..")
-                    .should().dependOnClassesThat().resideInAPackage("org.springframework..")
-                    .because("a migração para Quarkus removeu o Spring da borda (feature/core); nenhuma classe do app deve depender dele");
+                    .should().dependOnClassesThat().resideInAnyPackage(
+                            "org.springframework..", "jakarta..", "io.quarkus..")
+                    .because("o contexto é livre de framework: DI via Registry, validação na borda (@Valid nos *Request)");
 
     private static DescribedPredicate<JavaClass> contextClassNotExposedViaFacade() {
         return resideInAPackage("..context..")

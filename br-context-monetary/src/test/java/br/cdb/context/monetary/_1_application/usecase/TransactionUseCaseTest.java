@@ -4,6 +4,7 @@ import br.cdb.context.monetary.AbstractUseCaseTest;
 import br.cdb.context.monetary._0_domain.model.*;
 import br.cdb.context.monetary._1_application.command.ImportedTransactionCommand;
 import br.cdb.context.monetary._1_application.command.TransactionCommand;
+import br.cdb.context.monetary._1_application.command.TransactionScope;
 import br.commons.Result;
 import br.commons.business.BusinessError;
 import org.junit.jupiter.api.BeforeEach;
@@ -89,7 +90,7 @@ class TransactionUseCaseTest extends AbstractUseCaseTest {
         Transaction first = all.stream().filter(t -> t.installmentNumber() == 1).findFirst().orElseThrow();
 
         TransactionCommand.Update upd = new TransactionCommand.Update(first.id(), "upd", new BigDecimal("20.00"),
-                LocalDate.of(2026, 5, 15), accountId, costCenterId, Transaction.Status.CONFIRMED, Transaction.Type.EXPENSE, null, null, null);
+                LocalDate.of(2026, 5, 15), accountId, costCenterId, Transaction.Status.CONFIRMED, Transaction.Type.EXPENSE, new TransactionScope.Single(), null, null);
         Result<Transaction, BusinessError> r = useCase.upsert(upd);
         assertTrue(r.isSuccess());
 
@@ -113,7 +114,7 @@ class TransactionUseCaseTest extends AbstractUseCaseTest {
 
         LocalDate newDate = LocalDate.of(2026, 7, 20);
         TransactionCommand.Update upd = new TransactionCommand.Update(second.id(), "future", new BigDecimal("99.00"),
-                newDate, accountId, costCenterId, Transaction.Status.CONFIRMED, Transaction.Type.EXPENSE, "FUTURE", null, null);
+                newDate, accountId, costCenterId, Transaction.Status.CONFIRMED, Transaction.Type.EXPENSE, new TransactionScope.Future(), null, null);
         Result<Transaction, BusinessError> r = useCase.upsert(upd);
         assertTrue(r.isSuccess());
 
@@ -151,7 +152,7 @@ class TransactionUseCaseTest extends AbstractUseCaseTest {
         useCase.upsert(cmd(LocalDate.of(2026, 5, 10), Transaction.Status.CONFIRMED, 2));
         Transaction first = transactionRepository().findAll().stream()
                 .filter(t -> t.installmentNumber() == 1).findFirst().orElseThrow();
-        Result<List<UUID>, BusinessError> r = useCase.delete(new TransactionCommand.Delete(first.id(), null));
+        Result<List<UUID>, BusinessError> r = useCase.delete(new TransactionCommand.Delete(first.id(), new TransactionScope.Single()));
         assertTrue(r.isSuccess());
         assertEquals(1, transactionRepository().findAll().size());
     }
@@ -162,7 +163,7 @@ class TransactionUseCaseTest extends AbstractUseCaseTest {
         useCase.upsert(cmd(LocalDate.of(2026, 5, 10), Transaction.Status.CONFIRMED, 4));
         Transaction second = transactionRepository().findAll().stream()
                 .filter(t -> t.installmentNumber() == 2).findFirst().orElseThrow();
-        Result<List<UUID>, BusinessError> r = useCase.delete(new TransactionCommand.Delete(second.id(), "FUTURE"));
+        Result<List<UUID>, BusinessError> r = useCase.delete(new TransactionCommand.Delete(second.id(), new TransactionScope.Future()));
         assertTrue(r.isSuccess());
         assertEquals(1, transactionRepository().findAll().size());
         assertEquals(1, transactionRepository().findAll().get(0).installmentNumber());
@@ -242,7 +243,7 @@ class TransactionUseCaseTest extends AbstractUseCaseTest {
         Transaction entrada = transactionRepository().findAll().stream()
                 .filter(t -> Transaction.Type.INCOME.equals(t.type())).findFirst().orElseThrow();
 
-        Result<List<UUID>, BusinessError> r = useCase.delete(new TransactionCommand.Delete(entrada.id(), null));
+        Result<List<UUID>, BusinessError> r = useCase.delete(new TransactionCommand.Delete(entrada.id(), new TransactionScope.Single()));
         assertTrue(r.isSuccess());
         assertEquals(0, transactionRepository().findAll().size(), "as duas pernas removidas");
     }
@@ -254,7 +255,7 @@ class TransactionUseCaseTest extends AbstractUseCaseTest {
         Transaction saida = transactionRepository().findAll().stream()
                 .filter(t -> Transaction.Type.EXPENSE.equals(t.type())).findFirst().orElseThrow();
 
-        assertTrue(useCase.delete(new TransactionCommand.Delete(saida.id(), "FUTURE")).isSuccess());
+        assertTrue(useCase.delete(new TransactionCommand.Delete(saida.id(), new TransactionScope.Future())).isSuccess());
         assertEquals(0, transactionRepository().findAll().size());
     }
 
@@ -271,7 +272,7 @@ class TransactionUseCaseTest extends AbstractUseCaseTest {
         UUID newAccount = UUID.randomUUID();
         TransactionCommand.Update upd = new TransactionCommand.Update(entrada.id(), "ajuste", new BigDecimal("70.00"),
                 LocalDate.of(2026, 5, 12), newAccount, costCenterId,
-                Transaction.Status.CONFIRMED, Transaction.Type.INCOME, null, null, null);
+                Transaction.Status.CONFIRMED, Transaction.Type.INCOME, new TransactionScope.Single(), null, null);
         Result<Transaction, BusinessError> r = useCase.upsert(upd);
         assertTrue(r.isSuccess());
 
@@ -302,7 +303,7 @@ class TransactionUseCaseTest extends AbstractUseCaseTest {
 
         TransactionCommand.Update upd = new TransactionCommand.Update(saida.id(), "x", new BigDecimal("50.00"),
                 LocalDate.of(2026, 5, 10), toAccount, costCenterId,
-                Transaction.Status.CONFIRMED, Transaction.Type.EXPENSE, null, null, null);
+                Transaction.Status.CONFIRMED, Transaction.Type.EXPENSE, new TransactionScope.Single(), null, null);
         assertTrue(useCase.upsert(upd).isFailure());
         assertEquals(2, transactionRepository().findAll().size(), "nada alterado");
         assertEquals(accountId, transactionRepository().findById(saida.id()).orElseThrow().accountId(), "conta intacta");
@@ -316,7 +317,7 @@ class TransactionUseCaseTest extends AbstractUseCaseTest {
                 .filter(t -> t.installmentNumber() == 1).findFirst().orElseThrow();
 
         TransactionCommand.Update upd = new TransactionCommand.Update(first.id(), "upd", new BigDecimal("20.00"),
-                LocalDate.of(2026, 5, 15), accountId, costCenterId, Transaction.Status.CONFIRMED, Transaction.Type.EXPENSE, null, null, null);
+                LocalDate.of(2026, 5, 15), accountId, costCenterId, Transaction.Status.CONFIRMED, Transaction.Type.EXPENSE, new TransactionScope.Single(), null, null);
         assertTrue(useCase.upsert(upd).isSuccess());
 
         assertEquals(3, transactionRepository().findAll().size(), "parcelas preservadas");

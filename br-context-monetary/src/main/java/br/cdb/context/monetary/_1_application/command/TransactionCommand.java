@@ -11,6 +11,7 @@ import java.util.UUID;
 @NullMarked
 public sealed interface TransactionCommand {
 
+    @NullMarked
     sealed interface Upsert extends TransactionCommand {}
 
     @NullMarked
