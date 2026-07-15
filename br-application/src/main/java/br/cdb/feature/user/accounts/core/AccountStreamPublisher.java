@@ -63,6 +63,6 @@ public class AccountStreamPublisher {
     }
 
     private List<Transaction> allTransactions() {
-        return ucTransaction.listTransactions().getOrElse(List.of());
+        return ucTransaction.transactions().getOrElse(List.of());
     }
 }

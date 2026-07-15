@@ -169,13 +169,13 @@ class TransactionUseCaseTest extends AbstractUseCaseTest {
     }
 
     @Test
-    @DisplayName("listTransactions ordena por data desc")
+    @DisplayName("transactions ordena por data desc")
     void listOrdersByDateDesc() {
         useCase.createTransaction(cmd(LocalDate.of(2026, 5, 10), Transaction.Status.CONFIRMED, null));
         useCase.createTransaction(cmd(LocalDate.of(2026, 6, 10), Transaction.Status.CONFIRMED, null));
         useCase.createTransaction(cmd(LocalDate.of(2026, 4, 10), Transaction.Status.CONFIRMED, null));
         List<Transaction> list = ((Result.Success<List<Transaction>, BusinessError>)
-                useCase.listTransactions()).value();
+                useCase.transactions()).value();
         assertEquals(LocalDate.of(2026, 6, 10), list.get(0).date());
         assertEquals(LocalDate.of(2026, 4, 10), list.get(list.size() - 1).date());
     }

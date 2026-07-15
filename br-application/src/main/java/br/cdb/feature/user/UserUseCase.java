@@ -83,8 +83,12 @@ public class UserUseCase {
     /** Conta do contexto + overlay do usuário + cartões; {@code transactions} é a lista completa
      *  (o saldo corrente do DTO é derivado dela). */
     @NullMarked
-    public record AccountView(Account account, @Nullable UserAccount overlay,
-                              List<CreditCard> cards, List<Transaction> transactions) {}
+    public record AccountView(
+            Account account,
+            @Nullable UserAccount overlay,
+            List<CreditCard> cards,
+            List<Transaction> transactions
+    ) {}
 
     @NullMarked
     public record TransactionView(Transaction transaction, @Nullable UserTransaction overlay) {}
@@ -102,22 +106,27 @@ public class UserUseCase {
 
     public Result<List<AccountView>, BusinessError> accounts() {
         val userId = CurrentUser.getId();
-        val transactions = allTransactions();
-        val overlays = userAccountService.findByUser(userId).stream()
-                .collect(Collectors.toMap(UserAccount::accountId, Function.identity()));
-        val cardsByAccount = ucCreditCard.listCards().getOrElse(List.of()).stream()
-                .collect(Collectors.groupingBy(CreditCard::accountId));
+        val overlays = userAccountService.findByUser(userId).stream().collect(Collectors.toMap(UserAccount::accountId, Function.identity()));
+        val cardsByAccount = ucCreditCard.listCards().getOrElse(List.of()).stream().collect(Collectors.groupingBy(CreditCard::accountId));
 
         return ucAccount.listAccounts().map(accounts -> accounts.stream()
-                .map(account -> new AccountView(account, overlays.get(account.id()),
-                        cardsByAccount.getOrDefault(account.id(), List.of()), transactions))
+                .map(account -> new AccountView(
+                        account,
+                        overlays.get(account.id()),
+                        cardsByAccount.getOrDefault(account.id(), List.of()),
+                        List.of()
+                ))
                 .toList());
     }
 
     public Result<AccountView, BusinessError> account(UUID id) {
         val userId = CurrentUser.getId();
-        return ucAccount.findAccount(id).map(account -> new AccountView(account,
-                userAccountService.find(userId, account.id()), cardsOf(account.id()), allTransactions()));
+        return ucAccount.findAccount(id).map(account -> new AccountView(
+                account,
+                userAccountService.find(userId, account.id()),
+                cardsOf(account.id()),
+                List.of()
+        ));
     }
 
     public Result<AccountView, BusinessError> createAccount(AccountCommand cmd) {
@@ -126,7 +135,7 @@ public class UserUseCase {
             val overlay = new UserAccount(userId, account.id(), cmd.color());
             userAccountService.save(overlay);
             accountStreamPublisher.upsert(account.id());
-            return new AccountView(account, overlay, List.of(), allTransactions());
+            return new AccountView(account, overlay, List.of(), List.of());
         });
     }
 
@@ -136,7 +145,7 @@ public class UserUseCase {
             val overlay = new UserAccount(userId, account.id(), cmd.color());
             userAccountService.save(overlay);
             accountStreamPublisher.upsert(account.id());
-            return new AccountView(account, overlay, cardsOf(account.id()), allTransactions());
+            return new AccountView(account, overlay, cardsOf(account.id()), List.of());
         });
     }
 
@@ -255,7 +264,7 @@ public class UserUseCase {
         val type = filter.type();
         val limit = filter.limit();
 
-        return ucTransaction.listTransactions().map(all -> {
+        return ucTransaction.transactions().map(all -> {
             val overlays = userTransactionService.indexByTransaction(userId);
             val filtered = all.stream()
                     .filter(t -> accountId == null || accountId.equals(t.accountId()))
@@ -521,6 +530,11 @@ public class UserUseCase {
     }
 
     private List<Transaction> allTransactions() {
-        return ucTransaction.listTransactions().getOrElse(List.of());
+        val transactions = new ArrayList<Transaction>();
+        accounts().ifSuccess(accounts -> accounts.forEach(account -> {
+            ucTransaction.transactions(account.account.id()).ifSuccess(transactions::addAll);
+        }));
+
+        return transactions;
     }
 }

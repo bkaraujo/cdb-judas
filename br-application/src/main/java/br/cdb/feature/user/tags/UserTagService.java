@@ -107,7 +107,7 @@ public class UserTagService {
     /** Contas distintas das transações apagadas — resolvidas antes do delete, quando ainda existem. */
     private Set<UUID> accountIdsOf(List<UUID> txIds) {
         val txIdSet = Set.copyOf(txIds);
-        return ucTransaction.listTransactions().getOrElse(List.of()).stream()
+        return ucTransaction.transactions().getOrElse(List.of()).stream()
                 .filter(t -> txIdSet.contains(t.id()))
                 .map(Transaction::accountId)
                 .collect(Collectors.toSet());

@@ -22,7 +22,7 @@ public class DashboardService {
     private final TransactionUseCase ucTransaction = MonetaryContext.ucTransaction();
 
     public Result<MonthlyResult, BusinessError> getMonthlyResult(int month, int year) {
-        return ucTransaction.listTransactions()
+        return ucTransaction.transactions()
                 .map(all -> {
                     val start = LocalDate.of(year, month, 1);
                     val end = start.plusMonths(1).minusDays(1);

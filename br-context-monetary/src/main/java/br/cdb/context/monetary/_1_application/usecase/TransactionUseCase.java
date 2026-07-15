@@ -33,7 +33,15 @@ public class TransactionUseCase {
         MessageBus.subscribe(new TransactionEventListener());
     }
 
-    public Result<List<Transaction>, BusinessError> listTransactions() {
+
+    public Result<List<Transaction>, BusinessError> transactions(UUID accountId) {
+        val all = transactionService.findByAccount(accountId).stream()
+                .sorted(Comparator.comparing(Transaction::date).reversed())
+                .toList();
+        return Result.success(all);
+    }
+
+    public Result<List<Transaction>, BusinessError> transactions() {
         val all = transactionService.findAll().stream()
                 .sorted(Comparator.comparing(Transaction::date).reversed())
                 .toList();

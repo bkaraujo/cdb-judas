@@ -101,7 +101,7 @@ public class StatementImportService {
     public Result<ImportResult, BusinessError> confirm(ImportConfirmCommand cmd) {
         return resolveAccountsByCard(cmd).map(accountByCard -> {
             val today = LocalDate.now(clock);
-            val seen = Collections.unmodifiableList(ucTransaction.listTransactions().getOrElse(List.of()));
+            val seen = Collections.unmodifiableList(ucTransaction.transactions().getOrElse(List.of()));
             val existingGroups = seen.stream()
                     .map(Transaction::groupId)
                     .filter(Objects::nonNull)
@@ -202,7 +202,7 @@ public class StatementImportService {
             val accountId = account.id();
             val today = LocalDate.now(clock);
 
-            val accountTx = ucTransaction.listTransactions().getOrElse(List.of()).stream()
+            val accountTx = ucTransaction.transactions().getOrElse(List.of()).stream()
                     .filter(t -> accountId.equals(t.accountId()))
                     .toList();
 
@@ -348,7 +348,7 @@ public class StatementImportService {
                 .toList();
         val selectedAccountId = selectAccount(accountId, candidates);
 
-        val history = ucTransaction.listTransactions().getOrElse(List.of());
+        val history = ucTransaction.transactions().getOrElse(List.of());
         val accountTx = selectedAccountId != null
                 ? history.stream().filter(t -> selectedAccountId.equals(t.accountId())).toList()
                 : Collections.unmodifiableList(new ArrayList<Transaction>());
@@ -382,7 +382,7 @@ public class StatementImportService {
         val cardByLast4 = cardMatcher.matchByLast4(last4s, cards);
 
         val today = LocalDate.now(clock);
-        val history = ucTransaction.listTransactions().getOrElse(List.of());
+        val history = ucTransaction.transactions().getOrElse(List.of());
 
         val rows = new ArrayList<PreviewRow>();
         for (val line : statement) {
