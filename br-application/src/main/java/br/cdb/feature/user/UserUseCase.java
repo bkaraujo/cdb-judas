@@ -114,7 +114,7 @@ public class UserUseCase {
                         account,
                         overlays.get(account.id()),
                         cardsByAccount.getOrDefault(account.id(), List.of()),
-                        List.of()
+                        transactionsOf(account.id())
                 ))
                 .toList());
     }
@@ -125,7 +125,7 @@ public class UserUseCase {
                 account,
                 userAccountService.find(userId, account.id()),
                 cardsOf(account.id()),
-                List.of()
+                transactionsOf(account.id())
         ));
     }
 
@@ -529,12 +529,11 @@ public class UserUseCase {
         return ucCreditCard.listCardsByAccount(accountId).getOrElse(List.of());
     }
 
-    private List<Transaction> allTransactions() {
-        val transactions = new ArrayList<Transaction>();
-        accounts().ifSuccess(accounts -> accounts.forEach(account -> {
-            ucTransaction.transactions(account.account.id()).ifSuccess(transactions::addAll);
-        }));
+    private List<Transaction> transactionsOf(UUID accountId) {
+        return ucTransaction.transactions(accountId).getOrElse(List.of());
+    }
 
-        return transactions;
+    private List<Transaction> allTransactions() {
+        return ucTransaction.transactions().getOrElse(List.of());
     }
 }
