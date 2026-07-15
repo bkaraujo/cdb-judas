@@ -129,9 +129,9 @@ public class UserUseCase {
         ));
     }
 
-    public Result<AccountView, BusinessError> createAccount(AccountCommand cmd) {
+    public Result<AccountView, BusinessError> createAccount(AccountCommand.Create cmd) {
         val userId = CurrentUser.getId();
-        return ucAccount.createAccount(cmd).map(account -> {
+        return ucAccount.upsert(cmd).map(account -> {
             val overlay = new UserAccount(userId, account.id(), cmd.color());
             userAccountService.save(overlay);
             accountStreamPublisher.upsert(account.id());
@@ -139,9 +139,9 @@ public class UserUseCase {
         });
     }
 
-    public Result<AccountView, BusinessError> updateAccount(UUID id, AccountCommand cmd) {
+    public Result<AccountView, BusinessError> updateAccount(AccountCommand.Update cmd) {
         val userId = CurrentUser.getId();
-        return ucAccount.updateAccount(id, cmd).map(account -> {
+        return ucAccount.upsert(cmd).map(account -> {
             val overlay = new UserAccount(userId, account.id(), cmd.color());
             userAccountService.save(overlay);
             accountStreamPublisher.upsert(account.id());
@@ -172,7 +172,7 @@ public class UserUseCase {
         }
         userAccountService.delete(CurrentUser.getId(), id);
 
-        return ucAccount.deleteAccount(id, Deletions.toPolicy(strategy, targetId)).map(ids -> {
+        return ucAccount.delete(new AccountCommand.Delete(id, Deletions.toPolicy(strategy, targetId))).map(ids -> {
             if (strategy != DeletionStrategy.MOVE) {
                 ids.forEach(tagLinkService::deleteByTransaction);
             }
@@ -212,8 +212,8 @@ public class UserUseCase {
         return ucCreditCard.listCardsByAccount(accountId);
     }
 
-    public Result<CreditCard, BusinessError> createCard(CardCommand cmd) {
-        return ucCreditCard.createCard(cmd)
+    public Result<CreditCard, BusinessError> createCard(CardCommand.Create cmd) {
+        return ucCreditCard.upsert(cmd)
                 .ifSuccess(ignored -> accountStreamPublisher.upsert(cmd.accountId()));
     }
 
@@ -225,7 +225,7 @@ public class UserUseCase {
                 if (count > 0) return Result.success(new DeletionOutcome.Linked(count));
             }
 
-            return ucCreditCard.deleteCard(cardId, Deletions.toPolicy(strategy, targetId)).map(ids -> {
+            return ucCreditCard.delete(new CardCommand.Delete(cardId, Deletions.toPolicy(strategy, targetId))).map(ids -> {
                 // MOVE mantém o cartão de destino na mesma conta: sem re-key de overlay a fazer.
                 if (strategy != DeletionStrategy.MOVE) {
                     ids.forEach(id -> {
@@ -241,7 +241,7 @@ public class UserUseCase {
 
     public Result<CreditCard, BusinessError> setCardActive(UUID accountId, UUID cardId, boolean active) {
         return guardCardBelongsToAccount(accountId, cardId)
-                .flatMap(ignored -> ucCreditCard.setActive(cardId, active))
+                .flatMap(ignored -> ucCreditCard.upsert(new CardCommand.Update(cardId, active)))
                 .ifSuccess(ignored -> accountStreamPublisher.upsert(accountId));
     }
 
@@ -280,11 +280,11 @@ public class UserUseCase {
         });
     }
 
-    public Result<TransactionView, BusinessError> createTransaction(UUID userId, TransactionCommand cmd, @Nullable UUID categoryId) {
+    public Result<TransactionView, BusinessError> createTransaction(UUID userId, TransactionCommand.Create cmd, @Nullable UUID categoryId) {
         if (closingService.validateDate(cmd.date()) instanceof Result.Failure<Void, BusinessError>(var error)) {
             return Result.failure(error);
         }
-        return ucTransaction.createTransaction(cmd).map(t -> {
+        return ucTransaction.upsert(cmd).map(t -> {
             // Cria o USER_TRANSACTION da primeira parcela e depois o das irmãs do grupo
             val overlay = userTransactionService.save(t.id(), t.accountId(), userId, categoryId);
             saveUserTransactionForGroup(t, userId, categoryId);
@@ -293,7 +293,8 @@ public class UserUseCase {
         });
     }
 
-    public Result<TransactionView, BusinessError> updateTransaction(UUID userId, UUID txId, TransactionCommand cmd, @Nullable UUID categoryId) {
+    public Result<TransactionView, BusinessError> updateTransaction(UUID userId, TransactionCommand.Update cmd, @Nullable UUID categoryId) {
+        val txId = cmd.id();
         UUID previous = null;
         if (ucTransaction.findTransaction(txId) instanceof Result.Success(var existing)) {
             val guard = closingService.validateDate(existing.date())
@@ -303,7 +304,7 @@ public class UserUseCase {
         }
 
         val previousAccountId = previous;
-        return ucTransaction.updateTransaction(txId, cmd).map(t -> {
+        return ucTransaction.upsert(cmd).map(t -> {
             // A PK do USER_TRANSACTION inclui a conta: se a atualização moveu a transação de conta,
             // a linha antiga da chave composta ficaria órfã (o save abaixo faria INSERT, não UPDATE).
             if (previousAccountId != null && !previousAccountId.equals(t.accountId())) {
@@ -339,7 +340,7 @@ public class UserUseCase {
         }
 
         val affected = accountId;
-        return ucTransaction.deleteTransaction(txId, mode).map(ids -> {
+        return ucTransaction.delete(new TransactionCommand.Delete(txId, mode)).map(ids -> {
             ids.forEach(id -> {
                 userTransactionService.deleteByTransaction(id);
                 tagLinkService.deleteByTransaction(id);

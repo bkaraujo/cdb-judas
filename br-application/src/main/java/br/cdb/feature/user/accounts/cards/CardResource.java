@@ -39,7 +39,7 @@ public class CardResource {
 
     @POST
     public RestResponse<CardResponse> create(@PathParam("accountId") UUID accountId, @Valid CardRequest req) {
-        return switch (userUseCase.createCard(new CardCommand(accountId, req.last4()))) {
+        return switch (userUseCase.createCard(new CardCommand.Create(accountId, req.last4()))) {
             case Result.Success(var card) -> RestResponse.status(RestResponse.Status.CREATED, CardResponse.from(card));
             case Result.Failure(var error) -> throw new BusinessException(error);
         };

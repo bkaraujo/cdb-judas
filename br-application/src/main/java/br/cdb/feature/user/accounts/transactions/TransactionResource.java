@@ -58,7 +58,7 @@ public class TransactionResource {
     @POST
     @Path("/{accId}/transactions")
     public RestResponse<TransactionResponse> create(@PathParam("uuid") UUID uuid, @PathParam("accId") UUID accId, @Valid TransactionRequest req) {
-        return switch (userUseCase.createTransaction(uuid, TransactionMapper.toCommand(accId, req), req.categoryId())) {
+        return switch (userUseCase.createTransaction(uuid, TransactionMapper.toCreateCommand(accId, req), req.categoryId())) {
             case Result.Success(var view) -> RestResponse.status(RestResponse.Status.CREATED, toDto(view));
             case Result.Failure(var error) -> throw new BusinessException(error);
         };
@@ -67,7 +67,7 @@ public class TransactionResource {
     @PATCH
     @Path("/{accId}/transactions/{txId}")
     public TransactionResponse update(@PathParam("uuid") UUID uuid, @PathParam("accId") UUID accId, @PathParam("txId") UUID txId, @Valid TransactionRequest req) {
-        return switch (userUseCase.updateTransaction(uuid, txId, TransactionMapper.toCommand(accId, req), req.categoryId())) {
+        return switch (userUseCase.updateTransaction(uuid, TransactionMapper.toUpdateCommand(txId, accId, req), req.categoryId())) {
             case Result.Success(var view) -> toDto(view);
             case Result.Failure(var error) -> throw new BusinessException(error);
         };

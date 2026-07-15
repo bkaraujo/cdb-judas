@@ -56,33 +56,41 @@ public class TransactionUseCase {
         return transactionService.findById(id);
     }
 
-    public Result<Transaction, BusinessError> createTransaction(TransactionCommand cmd) {
-        return validateCard(cmd.accountId(), cmd.cardId()).flatMap(ignored -> dispatchCreate(cmd));
+    public Result<Transaction, BusinessError> upsert(TransactionCommand cmd) {
+        return switch (cmd) {
+            case TransactionCommand.Create create ->
+                    validateCard(create.accountId(), create.cardId()).flatMap(ignored -> dispatchCreate(create));
+            case TransactionCommand.Update update ->
+                    transactionService.findById(update.id()).flatMap(existing -> dispatchUpdate(update.id(), existing, update));
+            default -> Result.failure(new BusinessError.NotFound("Unknown command"));
+        };
     }
 
-    private Result<Transaction, BusinessError> dispatchCreate(TransactionCommand cmd) {
+    private Result<Transaction, BusinessError> dispatchCreate(TransactionCommand.Create cmd) {
         val count = installmentCount(cmd);
         return count == 1 ? createSingle(cmd) : createInstallments(cmd, count);
     }
 
-    private static int installmentCount(TransactionCommand cmd) {
+    private static int installmentCount(TransactionCommand.Create cmd) {
         return cmd.installments() != null && cmd.installments() > 1 ? cmd.installments() : 1;
     }
 
-    private Result<Transaction, BusinessError> createSingle(TransactionCommand cmd) {
-        val saved = transactionService.save(toEntity(UUID.randomUUID(), cmd, cmd.date(), cmd.status(), null, null, null));
+    private Result<Transaction, BusinessError> createSingle(TransactionCommand.Create cmd) {
+        val saved = transactionService.save(toEntity(UUID.randomUUID(), cmd.description(), cmd.amount(), cmd.date(),
+                cmd.accountId(), cmd.status(), cmd.type(), cmd.costCenterId(), cmd.notes(), cmd.cardId(), null, null, null));
         MessageBus.submit(new TransactionEvents.Created(saved));
         return Result.success(saved);
     }
 
-    private Result<Transaction, BusinessError> createInstallments(TransactionCommand cmd, int installmentsCount) {
+    private Result<Transaction, BusinessError> createInstallments(TransactionCommand.Create cmd, int installmentsCount) {
         val groupId = UUID.randomUUID();
         val batch = new ArrayList<Transaction>();
 
         for (int i = 1; i <= installmentsCount; i++) {
             val date = cmd.date().plusMonths(i - 1);
             val status = (i == 1) ? cmd.status() : Transaction.Status.PENDING;
-            batch.add(toEntity(UUID.randomUUID(), cmd, date, status, groupId, i, installmentsCount));
+            batch.add(toEntity(UUID.randomUUID(), cmd.description(), cmd.amount(), date, cmd.accountId(), status,
+                    cmd.type(), cmd.costCenterId(), cmd.notes(), cmd.cardId(), groupId, i, installmentsCount));
         }
 
         Transaction first = null;
@@ -96,21 +104,18 @@ public class TransactionUseCase {
         return Result.success(first);
     }
 
-    public Result<Transaction, BusinessError> updateTransaction(UUID id, TransactionCommand cmd) {
-        return transactionService.findById(id).flatMap(existing -> dispatchUpdate(id, existing, cmd));
-    }
-
-    private Result<Transaction, BusinessError> dispatchUpdate(UUID id, Transaction existing, TransactionCommand cmd) {
+    private Result<Transaction, BusinessError> dispatchUpdate(UUID id, Transaction existing, TransactionCommand.Update cmd) {
         val transferSiblings = transactionService.findTransferSiblings(existing);
         if (!transferSiblings.isEmpty()) return updateTransfer(existing, transferSiblings, cmd);
         return validateCard(cmd.accountId(), cmd.cardId()).flatMap(ignored -> updateNonTransfer(id, existing, cmd));
     }
 
-    private Result<Transaction, BusinessError> updateNonTransfer(UUID id, Transaction existing, TransactionCommand cmd) {
+    private Result<Transaction, BusinessError> updateNonTransfer(UUID id, Transaction existing, TransactionCommand.Update cmd) {
         val isFuture = "FUTURE".equalsIgnoreCase(cmd.editMode()) && existing.groupId() != null;
 
         if (!isFuture) {
-            val updated = transactionService.save(toEntity(id, cmd, cmd.date(), cmd.status(),
+            val updated = transactionService.save(toEntity(id, cmd.description(), cmd.amount(), cmd.date(), cmd.accountId(),
+                    cmd.status(), cmd.type(), cmd.costCenterId(), cmd.notes(), cmd.cardId(),
                     existing.groupId(), existing.installmentNumber(), existing.totalInstallments()));
             MessageBus.submit(new TransactionEvents.Updated(existing));
             MessageBus.submit(new TransactionEvents.Updated(updated));
@@ -130,7 +135,8 @@ public class TransactionUseCase {
         for (val t : all) {
             val currentNumber = t.installmentNumber();
             val newDate = cmd.date().plusMonths(currentNumber - installmentNumber);
-            val updated = transactionService.save(toEntity(t.id(), cmd, newDate, t.status(),
+            val updated = transactionService.save(toEntity(t.id(), cmd.description(), cmd.amount(), newDate, cmd.accountId(),
+                    t.status(), cmd.type(), cmd.costCenterId(), cmd.notes(), cmd.cardId(),
                     t.groupId(), t.installmentNumber(), t.totalInstallments()));
             if (t.id().equals(id)) firstSaved = updated;
         }
@@ -144,7 +150,7 @@ public class TransactionUseCase {
     }
 
     /** A transfer stays an inseparable pair when edited. */
-    private Result<Transaction, BusinessError> updateTransfer(Transaction edited, List<Transaction> siblings, TransactionCommand cmd) {
+    private Result<Transaction, BusinessError> updateTransfer(Transaction edited, List<Transaction> siblings, TransactionCommand.Update cmd) {
         val newAccount = cmd.accountId();
         if (siblings.stream().anyMatch(sib -> newAccount.equals(sib.accountId()))) {
             return Result.failure(new BusinessError.BusinessRule("Conta de origem e destino devem ser diferentes"));
@@ -186,18 +192,18 @@ public class TransactionUseCase {
     }
 
     /** Ids das transações apagadas (par de transferência / lote FUTURE / unitário). */
-    public Result<List<UUID>, BusinessError> deleteTransaction(UUID id, @Nullable String mode) {
-        return transactionService.findById(id).flatMap(existing -> {
+    public Result<List<UUID>, BusinessError> delete(TransactionCommand.Delete command) {
+        return transactionService.findById(command.id()).flatMap(existing -> {
             val transferSiblings = transactionService.findTransferSiblings(existing);
             if (!transferSiblings.isEmpty()) return deleteTransferGroup(existing, transferSiblings);
 
-            val isFuture = "FUTURE".equalsIgnoreCase(mode) && existing.groupId() != null;
+            val isFuture = "FUTURE".equalsIgnoreCase(command.mode()) && existing.groupId() != null;
             val groupId = existing.groupId();
 
             if (!isFuture || groupId == null) {
-                return transactionService.deleteById(id).map(ignored -> {
+                return transactionService.deleteById(command.id()).map(ignored -> {
                     MessageBus.submit(new TransactionEvents.Deleted(existing));
-                    return List.of(id);
+                    return List.of(command.id());
                 });
             }
 
@@ -303,12 +309,14 @@ public class TransactionUseCase {
         return Result.success(saved);
     }
 
-    private Transaction toEntity(UUID id, TransactionCommand cmd, LocalDate date, Transaction.Status status,
+    private Transaction toEntity(UUID id, String description, BigDecimal amount, LocalDate date, UUID accountId,
+                                 Transaction.Status status, Transaction.Type type, UUID costCenterId,
+                                 @Nullable String notes, @Nullable UUID cardId,
                                  @Nullable UUID groupId, @Nullable Integer installmentNumber, @Nullable Integer totalInstallments) {
-        return new Transaction(id, cmd.description(), cmd.amount().abs(), date,
-                cmd.accountId(), status, cmd.type(), cmd.costCenterId(), null,
-                groupId, installmentOrDefault(installmentNumber), installmentOrDefault(totalInstallments), cmd.notes(),
-                cmd.cardId());
+        return new Transaction(id, description, amount.abs(), date,
+                accountId, status, type, costCenterId, null,
+                groupId, installmentOrDefault(installmentNumber), installmentOrDefault(totalInstallments), notes,
+                cardId);
     }
 
     private static int installmentOrDefault(@Nullable Integer value) {

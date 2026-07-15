@@ -15,7 +15,9 @@ import br.commons.business.BusinessError;
 import br.commons.tools.Strings;
 import lombok.val;
 import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
 
+import java.math.BigDecimal;
 import java.time.YearMonth;
 import java.util.Arrays;
 import java.util.List;
@@ -48,28 +50,29 @@ public class AccountUseCase {
                 .map(ignored -> balanceService.findByAccountAndYear(accountId, year));
     }
 
-    public Result<Account, BusinessError> createAccount(AccountCommand cmd) {
-        return parse(UUID.randomUUID(), cmd).map(accountService::save).ifSuccess(
-                account -> MessageBus.submit(new AccountEvents.Created(account))
-        );
-    }
-
-    public Result<Account, BusinessError> updateAccount(UUID accountId, AccountCommand cmd) {
-        return accountService.findById(accountId)
-                .flatMap(existing -> parse(accountId, cmd))
-                .map(accountService::save).ifSuccess(
-                        account -> MessageBus.submit(new AccountEvents.Updated(account))
-                );
+    public Result<Account, BusinessError> upsert(AccountCommand cmd) {
+        return switch (cmd) {
+            case AccountCommand.Create(var name, var type, var _, var active, var creditLimit, var overdraftLimit, var closingDay, var dueDay) ->
+                    parse(UUID.randomUUID(), name, type, active, creditLimit, overdraftLimit, closingDay, dueDay)
+                            .map(accountService::save)
+                            .ifSuccess(account -> MessageBus.submit(new AccountEvents.Created(account)));
+            case AccountCommand.Update(var id, var name, var type, var _, var active, var creditLimit, var overdraftLimit, var closingDay, var dueDay) ->
+                    accountService.findById(id)
+                            .flatMap(existing -> parse(id, name, type, active, creditLimit, overdraftLimit, closingDay, dueDay))
+                            .map(accountService::save)
+                            .ifSuccess(account -> MessageBus.submit(new AccountEvents.Updated(account)));
+            default -> Result.failure(new BusinessError.NotFound("Unknown command"));
+        };
     }
 
     /** Ids das transações movidas/apagadas (vazio para {@link TransactionPolicy.Block}). */
-    public Result<List<UUID>, BusinessError> deleteAccount(UUID accountId, TransactionPolicy policy) {
-        return accountService.findById(accountId).flatMap(account -> switch (policy) {
+    public Result<List<UUID>, BusinessError> delete(AccountCommand.Delete command) {
+        return accountService.findById(command.id()).flatMap(account -> switch (command.policy()) {
             case TransactionPolicy.Block ignored -> deleteBlock(account);
             case TransactionPolicy.Move(var targetId) -> deleteMove(account, targetId);
             case TransactionPolicy.Purge ignored -> deletePurge(account);
         }).ifSuccess(
-                _ -> MessageBus.submit(new AccountEvents.Deleted(accountId))
+                _ -> MessageBus.submit(new AccountEvents.Deleted(command.id()))
         );
     }
 
@@ -116,11 +119,13 @@ public class AccountUseCase {
         return accountService.deleteById(account.id()).map(ignored -> ids);
     }
 
-    private Result<Account, BusinessError> parse(UUID accountId, AccountCommand cmd) {
-        val typeName = Strings.upper(cmd.type());
+    private Result<Account, BusinessError> parse(UUID accountId, String name, String type, boolean active,
+                                                  @Nullable BigDecimal creditLimit, @Nullable BigDecimal overdraftLimit,
+                                                  @Nullable Integer closingDay, @Nullable Integer dueDay) {
+        val typeName = Strings.upper(type);
         val valid = Arrays.stream(Account.Type.values()).anyMatch(t -> t.name().equals(typeName));
-        if (!valid) return Result.failure(new BusinessError.Validation("Unknown account type: " + cmd.type()));
-        return Result.success(new Account(accountId, cmd.name(), Account.Type.valueOf(typeName), cmd.active(),
-                cmd.creditLimit(), cmd.overdraftLimit(), cmd.closingDay(), cmd.dueDay(), null, null));
+        if (!valid) return Result.failure(new BusinessError.Validation("Unknown account type: " + type));
+        return Result.success(new Account(accountId, name, Account.Type.valueOf(typeName), active,
+                creditLimit, overdraftLimit, closingDay, dueDay, null, null));
     }
 }

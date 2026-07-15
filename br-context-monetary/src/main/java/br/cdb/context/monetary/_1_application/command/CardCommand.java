@@ -8,7 +8,24 @@ import org.jspecify.annotations.NullMarked;
 import java.util.UUID;
 
 @NullMarked
-public record CardCommand(
-        @NotNull UUID accountId,
-        @NotBlank @Pattern(regexp = "\\d{4}") String last4
-) {}
+public interface CardCommand {
+
+    @NullMarked
+    record Create(
+            @NotNull UUID accountId,
+            @NotBlank @Pattern(regexp = "\\d{4}") String last4
+    ) implements CardCommand {}
+
+    @NullMarked
+    record Update(
+            UUID id,
+            boolean active
+    ) implements CardCommand {}
+
+    @NullMarked
+    record Delete(
+            UUID id,
+            TransactionPolicy policy
+    ) implements CardCommand {}
+
+}

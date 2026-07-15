@@ -36,8 +36,8 @@ public final class TransactionMapper {
         );
     }
 
-    public static TransactionCommand toCommand(UUID accId, TransactionRequest req) {
-        return new TransactionCommand(
+    public static TransactionCommand.Create toCreateCommand(UUID accId, TransactionRequest req) {
+        return new TransactionCommand.Create(
                 req.description(),
                 req.amount(),
                 req.date(),
@@ -46,6 +46,21 @@ public final class TransactionMapper {
                 req.status(),
                 req.type(),
                 req.installments(),
+                req.notes(),
+                req.cardId()
+        );
+    }
+
+    public static TransactionCommand.Update toUpdateCommand(UUID txId, UUID accId, TransactionRequest req) {
+        return new TransactionCommand.Update(
+                txId,
+                req.description(),
+                req.amount(),
+                req.date(),
+                accId,
+                req.costCenterId(),
+                req.status(),
+                req.type(),
                 req.editMode(),
                 req.notes(),
                 req.cardId()

@@ -46,8 +46,8 @@ class AccountUseCaseTest extends AbstractUseCaseTest {
         return accountRepository().save(acc);
     }
 
-    private AccountCommand checkingCmd() {
-        return new AccountCommand("Banco", "CHECKING", "#112233", true, null, null, null, null);
+    private AccountCommand.Create checkingCmd() {
+        return new AccountCommand.Create("Banco", "CHECKING", "#112233", true, null, null, null, null);
     }
 
     private Transaction seedTransaction(UUID accountId) {
@@ -58,7 +58,7 @@ class AccountUseCaseTest extends AbstractUseCaseTest {
     @Test
     @DisplayName("cria CHECKING normalmente")
     void createsCheckingAccount() {
-        val r = useCase.createAccount(checkingCmd());
+        val r = useCase.upsert(checkingCmd());
         assertTrue(r.isSuccess());
         assertEquals(1, accountRepository().findAll().size());
     }
@@ -66,8 +66,8 @@ class AccountUseCaseTest extends AbstractUseCaseTest {
     @Test
     @DisplayName("tipo desconhecido → Validation")
     void rejectsUnknownAccountType() {
-        val cmd = new AccountCommand("X", "SAVINGS", "#112233", true, null, null, null, null);
-        val r = useCase.createAccount(cmd);
+        val cmd = new AccountCommand.Create("X", "SAVINGS", "#112233", true, null, null, null, null);
+        val r = useCase.upsert(cmd);
         assertTrue(r.isFailure());
         assertInstanceOf(BusinessError.Validation.class, ((Result.Failure<Account, BusinessError>) r).error());
     }
@@ -75,15 +75,15 @@ class AccountUseCaseTest extends AbstractUseCaseTest {
     @Test
     @DisplayName("limite/ciclo de fatura sobrevivem a create e update, e all-null limpa")
     void limitFieldsRoundTripThroughCreateAndUpdate() {
-        val withLimit = new AccountCommand("Banco", "CHECKING", "#112233", true, new BigDecimal("1000.00"), new BigDecimal("200.00"), 5, 10);
-        val created = ((Result.Success<Account, BusinessError>) useCase.createAccount(withLimit)).value();
+        val withLimit = new AccountCommand.Create("Banco", "CHECKING", "#112233", true, new BigDecimal("1000.00"), new BigDecimal("200.00"), 5, 10);
+        val created = ((Result.Success<Account, BusinessError>) useCase.upsert(withLimit)).value();
         assertEquals(0, new BigDecimal("1000.00").compareTo(created.creditLimit()));
         assertEquals(0, new BigDecimal("200.00").compareTo(created.overdraftLimit()));
         assertEquals(5, created.closingDay());
         assertEquals(10, created.dueDay());
 
-        val cleared = new AccountCommand("Banco", "CHECKING", "#112233", true, null, null, null, null);
-        val updated = ((Result.Success<Account, BusinessError>) useCase.updateAccount(created.id(), cleared)).value();
+        val cleared = new AccountCommand.Update(created.id(), "Banco", "CHECKING", "#112233", true, null, null, null, null);
+        val updated = ((Result.Success<Account, BusinessError>) useCase.upsert(cleared)).value();
         assertNull(updated.creditLimit());
         assertNull(updated.overdraftLimit());
         assertNull(updated.closingDay());
@@ -93,7 +93,7 @@ class AccountUseCaseTest extends AbstractUseCaseTest {
     @Test
     @DisplayName("deleteAccount inexistente → NotFound")
     void deleteUnknownAccount() {
-        val r = useCase.deleteAccount(UUID.randomUUID(), new TransactionPolicy.Block());
+        val r = useCase.delete(new AccountCommand.Delete(UUID.randomUUID(), new TransactionPolicy.Block()));
         assertTrue(r.isFailure());
         assertInstanceOf(BusinessError.NotFound.class, ((Result.Failure<List<UUID>, BusinessError>) r).error());
     }
@@ -102,7 +102,7 @@ class AccountUseCaseTest extends AbstractUseCaseTest {
     @DisplayName("Block sem transações remove a conta")
     void blockDeletesEmptyAccount() {
         val checking = seedChecking();
-        val r = useCase.deleteAccount(checking.id(), new TransactionPolicy.Block());
+        val r = useCase.delete(new AccountCommand.Delete(checking.id(), new TransactionPolicy.Block()));
         assertTrue(r.isSuccess());
         assertTrue(accountRepository().findAll().isEmpty());
     }
@@ -113,7 +113,7 @@ class AccountUseCaseTest extends AbstractUseCaseTest {
         val checking = seedChecking();
         seedTransaction(checking.id());
 
-        val r = useCase.deleteAccount(checking.id(), new TransactionPolicy.Block());
+        val r = useCase.delete(new AccountCommand.Delete(checking.id(), new TransactionPolicy.Block()));
 
         assertTrue(r.isFailure());
         assertInstanceOf(BusinessError.Conflict.class, ((Result.Failure<List<UUID>, BusinessError>) r).error());
@@ -129,7 +129,7 @@ class AccountUseCaseTest extends AbstractUseCaseTest {
         cardRepository().save(new CreditCard(UUID.randomUUID(), "1234", source.id(), true));
         balanceRepository().save(new AccountBalance(source.id(), YearMonth.of(2026, 5), new BigDecimal("50.00")));
 
-        val r = useCase.deleteAccount(source.id(), new TransactionPolicy.Move(target.id()));
+        val r = useCase.delete(new AccountCommand.Delete(source.id(), new TransactionPolicy.Move(target.id())));
 
         assertTrue(r.isSuccess());
         assertEquals(List.of(tx.id()), ((Result.Success<List<UUID>, BusinessError>) r).value());
@@ -143,7 +143,7 @@ class AccountUseCaseTest extends AbstractUseCaseTest {
     @DisplayName("Move para si mesma é rejeitado")
     void moveRejectsSelfTarget() {
         val account = seedChecking();
-        val r = useCase.deleteAccount(account.id(), new TransactionPolicy.Move(account.id()));
+        val r = useCase.delete(new AccountCommand.Delete(account.id(), new TransactionPolicy.Move(account.id())));
         assertTrue(r.isFailure());
         assertInstanceOf(BusinessError.BusinessRule.class, ((Result.Failure<List<UUID>, BusinessError>) r).error());
     }
@@ -152,7 +152,7 @@ class AccountUseCaseTest extends AbstractUseCaseTest {
     @DisplayName("Move para conta inexistente → NotFound")
     void moveRejectsUnknownTarget() {
         val account = seedChecking();
-        val r = useCase.deleteAccount(account.id(), new TransactionPolicy.Move(UUID.randomUUID()));
+        val r = useCase.delete(new AccountCommand.Delete(account.id(), new TransactionPolicy.Move(UUID.randomUUID())));
         assertTrue(r.isFailure());
         assertInstanceOf(BusinessError.NotFound.class, ((Result.Failure<List<UUID>, BusinessError>) r).error());
     }
@@ -162,7 +162,7 @@ class AccountUseCaseTest extends AbstractUseCaseTest {
     void moveRejectsInactiveTarget() {
         val source = seedChecking("Origem", true);
         val inactiveTarget = seedChecking("Destino inativo", false);
-        val r = useCase.deleteAccount(source.id(), new TransactionPolicy.Move(inactiveTarget.id()));
+        val r = useCase.delete(new AccountCommand.Delete(source.id(), new TransactionPolicy.Move(inactiveTarget.id())));
         assertTrue(r.isFailure());
         assertInstanceOf(BusinessError.BusinessRule.class, ((Result.Failure<List<UUID>, BusinessError>) r).error());
     }
@@ -177,7 +177,7 @@ class AccountUseCaseTest extends AbstractUseCaseTest {
         val outLeg = transactionRepository().save(new Transaction(UUID.randomUUID(), "Transferência (saída)", new BigDecimal("50.00"), LocalDate.of(2026, 5, 10), source.id(), Transaction.Status.CONFIRMED, Transaction.Type.EXPENSE, UUID.randomUUID(), null, groupId, 1, 2, null, null));
         val inLeg = transactionRepository().save(new Transaction(UUID.randomUUID(), "Transferência (entrada)", new BigDecimal("50.00"), LocalDate.of(2026, 5, 10), other.id(), Transaction.Status.CONFIRMED, Transaction.Type.INCOME, UUID.randomUUID(), null, groupId, 2, 2, null, null));
 
-        val r = useCase.deleteAccount(source.id(), new TransactionPolicy.Purge());
+        val r = useCase.delete(new AccountCommand.Delete(source.id(), new TransactionPolicy.Purge()));
 
         assertTrue(r.isSuccess());
         assertEquals(List.of(outLeg.id()), ((Result.Success<List<UUID>, BusinessError>) r).value());

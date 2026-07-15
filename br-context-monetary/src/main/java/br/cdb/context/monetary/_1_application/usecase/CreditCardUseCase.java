@@ -39,40 +39,48 @@ public class CreditCardUseCase {
         return accountService.findById(accountId).map(ignored -> creditCardService.findByAccount(accountId));
     }
 
-    public Result<CreditCard, BusinessError> createCard(CardCommand cmd) {
-        if (!LAST4.matcher(cmd.last4()).matches()) {
+    public Result<CreditCard, BusinessError> upsert(CardCommand cmd) {
+        return switch (cmd) {
+            case CardCommand.Create(var accountId, var last4) -> createCard(accountId, last4);
+            case CardCommand.Update(var id, var active) -> setActive(id, active);
+            default -> Result.failure(new BusinessError.NotFound("Unknown command"));
+        };
+    }
+
+    private Result<CreditCard, BusinessError> createCard(UUID accountId, String last4) {
+        if (!LAST4.matcher(last4).matches()) {
             return Result.failure(new BusinessError.Validation("last4 must be exactly 4 digits"));
         }
 
         return accountService
-                .findById(cmd.accountId())
-                .flatMap(account -> createCardFor(cmd, account))
+                .findById(accountId)
+                .flatMap(account -> createCardFor(last4, account))
                 .ifSuccess(account -> MessageBus.submit(new CreditCardEvents.Created(account)));
     }
 
-    private Result<CreditCard, BusinessError> createCardFor(CardCommand cmd, Account account) {
+    private Result<CreditCard, BusinessError> createCardFor(String last4, Account account) {
         if (!account.active()) {
             return Result.failure(new BusinessError.BusinessRule("Account is inactive: " + account.id()));
         }
 
         val duplicate = creditCardService.findByAccount(account.id()).stream()
-                .anyMatch(c -> c.last4().equals(cmd.last4()));
+                .anyMatch(c -> c.last4().equals(last4));
         if (duplicate) {
-            return Result.failure(new BusinessError.Conflict("CreditCard already registered for this account: " + cmd.last4()));
+            return Result.failure(new BusinessError.Conflict("CreditCard already registered for this account: " + last4));
         }
 
-        val saved = creditCardService.save(new CreditCard(UUID.randomUUID(), cmd.last4(), account.id(), true));
+        val saved = creditCardService.save(new CreditCard(UUID.randomUUID(), last4, account.id(), true));
         return Result.success(saved);
     }
 
     /** Ids das transações movidas/apagadas (vazio para {@link TransactionPolicy.Block}). */
-    public Result<List<UUID>, BusinessError> deleteCard(UUID id, TransactionPolicy policy) {
-        return creditCardService.findById(id).flatMap(card -> switch (policy) {
+    public Result<List<UUID>, BusinessError> delete(CardCommand.Delete command) {
+        return creditCardService.findById(command.id()).flatMap(card -> switch (command.policy()) {
             case TransactionPolicy.Block ignored -> deleteBlock(card);
             case TransactionPolicy.Move(var targetId) -> deleteMove(card, targetId);
             case TransactionPolicy.Purge ignored -> deletePurge(card);
         })
-                .ifSuccess(_ -> MessageBus.submit(new CreditCardEvents.Deleted(id)));
+                .ifSuccess(_ -> MessageBus.submit(new CreditCardEvents.Deleted(command.id())));
     }
 
     private Result<List<UUID>, BusinessError> deleteBlock(CreditCard creditCard) {
@@ -116,7 +124,7 @@ public class CreditCardUseCase {
         });
     }
 
-    public Result<CreditCard, BusinessError> setActive(UUID id, boolean active) {
+    private Result<CreditCard, BusinessError> setActive(UUID id, boolean active) {
         return creditCardService.findById(id)
                 .map(card -> creditCardService.save(new CreditCard(card.id(), card.last4(), card.accountId(), active)))
                 .ifSuccess(account -> MessageBus.submit(new CreditCardEvents.Updated(account)));
