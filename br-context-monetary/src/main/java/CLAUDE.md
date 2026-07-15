@@ -10,12 +10,12 @@ Módulo Maven `context-monetary` (`br.cdb.contexts:context-monetary`, artifactId
 br.cdb.context.monetary
 ├── _0_domain
 │   ├── model/       Account, AccountBalance, CostCenter, CreditCard, Statement, Transaction
-│   ├── event/       TransactionEvents (Created / Updated / Deleted)
+│   ├── event/       AccountEvents, CreditCardEvents, TransactionEvents (cada um Created / Updated / Deleted)
 │   └── repository/  AccountRepository, BalanceRepository, CreditCardRepository, CostCenterRepository, TransactionRepository  (portas)
 ├── _1_application
-│   ├── command/     AccountCommand, CardCommand, CostCenterCommand, TransactionCommand,
+│   ├── command/     AccountCommand, CardCommand, CostCenterCommand, TransactionCommand, TransactionScope,
 │   │                ImportedTransactionCommand, ImportConfirmCommand, TransactionPolicy
-│   ├── event/       AccountEventListener (placeholder, sem listeners registrados), TransactionEventListener
+│   ├── event/       TransactionEventListener (único listener registrado)
 │   ├── service/     AccountService, BalanceService, BalanceRecalculationService, CreditCardService,
 │   │                CostCenterService, TransactionService
 │   └── usecase/     AccountUseCase, CreditCardUseCase, CostCenterUseCase, TransactionUseCase
@@ -29,9 +29,10 @@ br.cdb.context.monetary
 
 ## Pontos não óbvios
 
-* **`AccountEventListener` é um placeholder vazio** (`private AccountEventListener() {}`, sem métodos `@MessageListener`) — existe o pacote/classe mas nada está registrado nele. Só `TransactionEventListener` é assinado (no construtor de `TransactionUseCase`) hoje (reage a `TransactionEvents.Created/Updated/Deleted` acionando `BalanceRecalculationService`).
+* **`AccountEvents`/`CreditCardEvents` são write-only** — `AccountUseCase`/`CreditCardUseCase` publicam esses eventos no `MessageBus`, mas não existe listener registrado para eles (não há `AccountEventListener`). Só `TransactionEventListener` é assinado (no construtor de `TransactionUseCase`) hoje (reage a `TransactionEvents.Created/Updated/Deleted` acionando `BalanceRecalculationService`).
 * **`BalanceRecalculationService` usa `Registry.tryGet` (não `Registry.get`) para `AccountService`/`BalanceService`/`TransactionService`** — de propósito: como não há composition root, a ordem em que `CreditCardUseCase`/`TransactionUseCase`/`TransactionEventListener` são construídos primeiro varia; `tryGet` deixa cada dependência se auto-registrar sob demanda em vez de exigir que outra classe já tenha "aquecido" o `Registry` antes. Trocar de volta para `get` reintroduz um `IllegalStateException` de startup dependente de ordem.
-* **`TransactionPolicy`** (sealed: `Block`/`Move(targetId)`/`Purge`) — parâmetro de `deleteAccount`/`deleteCard` na Facade; decide o que fazer com transações vinculadas à entidade excluída. É passado de fora (a UI decide a política, não o contexto).
+* **`TransactionPolicy`** (sealed: `Block`/`Move(targetId)`/`Purge`) — viaja dentro de `AccountCommand.Delete`/`CardCommand.Delete` (não como parâmetro solto da Facade); decide o que fazer com transações vinculadas à entidade excluída. É passado de fora (a UI decide a política, não o contexto).
+* **`TransactionScope`** (sealed: `Single`/`Future`) — viaja dentro de `TransactionCommand.Update`/`Delete`; substitui o antigo par de Strings mágicas `editMode`/`mode` (`"FUTURE"` vs. qualquer outra coisa). O parse da String de HTTP para `TransactionScope` acontece na borda da feature (`TransactionMapper.toScope`), não aqui.
 * **Cartão (`CreditCard`)** é entidade própria do contexto (`last4`, `accountId`, `active`) desde a migração cartão-como-entidade; limite de crédito/cheque especial e ciclo de fatura continuam sendo colunas de `Account` (compartilhadas por todos os cartões da conta) — ver `@docs/backend/persistence-jdbc.md`.
 * **`AccountBalance`** — projeção de saldo por competência (`?period=yyyyMM`/`?year=yyyy`) exposta por `AccountUseCase` (`getMonthlyBalance`/`getYearBalances`). Chave de negócio é o par `(accountId, period)` — o record não carrega `id` próprio; `BalanceRepository.delete(UUID, YearMonth)` (não `deleteById`) é o caminho real de exclusão usado por `BalanceService`/`BalanceRecalculationService`.
 * O contexto **não valida política de usuário** (ex.: período de fechamento) — isso é fronteira da feature (`ClosingService.validateDate`, chamado pelo `UserUseCase` em `br-application`), não deste contexto. O contexto aceita qualquer transação bem-formada.
