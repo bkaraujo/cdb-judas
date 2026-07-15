@@ -20,7 +20,7 @@ public class CostCenterUseCase {
     public Result<List<CostCenter>, BusinessError> listCostCenters() {
         return Result.success(costCenterService.findAll());
     }
-    public Result<CostCenter, BusinessError> upsert(CostCenterCommand cmd) {
+    public Result<CostCenter, BusinessError> upsert(CostCenterCommand.Upsert cmd) {
         return switch (cmd) {
             case CostCenterCommand.Create(var description) -> {
                 val created = costCenterService.save(UUID.randomUUID(), description);
@@ -30,7 +30,6 @@ public class CostCenterUseCase {
                 val updated = costCenterService.save(id, description);
                 yield Result.success(updated);
             }
-            default -> Result.failure(new BusinessError.NotFound("Unkown command"));
         };
     }
 

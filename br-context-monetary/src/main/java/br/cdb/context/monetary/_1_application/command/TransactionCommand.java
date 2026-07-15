@@ -14,7 +14,9 @@ import java.time.LocalDate;
 import java.util.UUID;
 
 @NullMarked
-public interface TransactionCommand {
+public sealed interface TransactionCommand {
+
+    sealed interface Upsert extends TransactionCommand {}
 
     @NullMarked
     record Create(
@@ -28,7 +30,7 @@ public interface TransactionCommand {
             @Nullable @Min(1) Integer installments,
             @Nullable @Size(max = 250) String notes,
             @Nullable UUID cardId
-    ) implements TransactionCommand {}
+    ) implements Upsert {}
 
     @NullMarked
     record Update(
@@ -43,7 +45,7 @@ public interface TransactionCommand {
             @Nullable String editMode,
             @Nullable @Size(max = 250) String notes,
             @Nullable UUID cardId
-    ) implements TransactionCommand {}
+    ) implements Upsert {}
 
     @NullMarked
     record Delete(

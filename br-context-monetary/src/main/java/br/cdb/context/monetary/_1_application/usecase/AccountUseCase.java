@@ -50,18 +50,17 @@ public class AccountUseCase {
                 .map(ignored -> balanceService.findByAccountAndYear(accountId, year));
     }
 
-    public Result<Account, BusinessError> upsert(AccountCommand cmd) {
+    public Result<Account, BusinessError> upsert(AccountCommand.Upsert cmd) {
         return switch (cmd) {
-            case AccountCommand.Create(var name, var type, var _, var active, var creditLimit, var overdraftLimit, var closingDay, var dueDay) ->
+            case AccountCommand.Create(var name, var type, var active, var creditLimit, var overdraftLimit, var closingDay, var dueDay) ->
                     parse(UUID.randomUUID(), name, type, active, creditLimit, overdraftLimit, closingDay, dueDay)
                             .map(accountService::save)
                             .ifSuccess(account -> MessageBus.submit(new AccountEvents.Created(account)));
-            case AccountCommand.Update(var id, var name, var type, var _, var active, var creditLimit, var overdraftLimit, var closingDay, var dueDay) ->
+            case AccountCommand.Update(var id, var name, var type, var active, var creditLimit, var overdraftLimit, var closingDay, var dueDay) ->
                     accountService.findById(id)
                             .flatMap(existing -> parse(id, name, type, active, creditLimit, overdraftLimit, closingDay, dueDay))
                             .map(accountService::save)
                             .ifSuccess(account -> MessageBus.submit(new AccountEvents.Updated(account)));
-            default -> Result.failure(new BusinessError.NotFound("Unknown command"));
         };
     }
 

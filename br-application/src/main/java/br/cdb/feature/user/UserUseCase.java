@@ -129,20 +129,20 @@ public class UserUseCase {
         ));
     }
 
-    public Result<AccountView, BusinessError> createAccount(AccountCommand.Create cmd) {
+    public Result<AccountView, BusinessError> createAccount(AccountCommand.Create cmd, String color) {
         val userId = CurrentUser.getId();
         return ucAccount.upsert(cmd).map(account -> {
-            val overlay = new UserAccount(userId, account.id(), cmd.color());
+            val overlay = new UserAccount(userId, account.id(), color);
             userAccountService.save(overlay);
             accountStreamPublisher.upsert(account.id());
             return new AccountView(account, overlay, List.of(), List.of());
         });
     }
 
-    public Result<AccountView, BusinessError> updateAccount(AccountCommand.Update cmd) {
+    public Result<AccountView, BusinessError> updateAccount(AccountCommand.Update cmd, String color) {
         val userId = CurrentUser.getId();
         return ucAccount.upsert(cmd).map(account -> {
-            val overlay = new UserAccount(userId, account.id(), cmd.color());
+            val overlay = new UserAccount(userId, account.id(), color);
             userAccountService.save(overlay);
             accountStreamPublisher.upsert(account.id());
             return new AccountView(account, overlay, cardsOf(account.id()), List.of());

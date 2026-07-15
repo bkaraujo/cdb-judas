@@ -39,11 +39,10 @@ public class CreditCardUseCase {
         return accountService.findById(accountId).map(ignored -> creditCardService.findByAccount(accountId));
     }
 
-    public Result<CreditCard, BusinessError> upsert(CardCommand cmd) {
+    public Result<CreditCard, BusinessError> upsert(CardCommand.Upsert cmd) {
         return switch (cmd) {
             case CardCommand.Create(var accountId, var last4) -> createCard(accountId, last4);
             case CardCommand.Update(var id, var active) -> setActive(id, active);
-            default -> Result.failure(new BusinessError.NotFound("Unknown command"));
         };
     }
 

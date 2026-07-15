@@ -48,7 +48,7 @@ public class AccountResource {
 
     @POST
     public RestResponse<AccountResponse> create(@Valid AccountRequest req) {
-        return switch (userUseCase.createAccount(toCreateCommand(req))) {
+        return switch (userUseCase.createAccount(toCreateCommand(req), req.color())) {
             case Result.Success(var view) -> RestResponse.status(RestResponse.Status.CREATED, toDto(view));
             case Result.Failure(var error) -> throw new BusinessException(error);
         };
@@ -57,7 +57,7 @@ public class AccountResource {
     @PATCH
     @Path("/{id}")
     public AccountResponse update(@PathParam("id") UUID id, @Valid AccountRequest req) {
-        return switch (userUseCase.updateAccount(toUpdateCommand(id, req))) {
+        return switch (userUseCase.updateAccount(toUpdateCommand(id, req), req.color())) {
             case Result.Success(var view) -> toDto(view);
             case Result.Failure(var error) -> throw new BusinessException(error);
         };
@@ -81,12 +81,12 @@ public class AccountResource {
     }
 
     private static AccountCommand.Create toCreateCommand(AccountRequest req) {
-        return new AccountCommand.Create(req.name(), req.type(), req.color(), req.active(),
+        return new AccountCommand.Create(req.name(), req.type(), req.active(),
                 req.creditLimit(), req.overdraftLimit(), req.closingDay(), req.dueDay());
     }
 
     private static AccountCommand.Update toUpdateCommand(UUID id, AccountRequest req) {
-        return new AccountCommand.Update(id, req.name(), req.type(), req.color(), req.active(),
+        return new AccountCommand.Update(id, req.name(), req.type(), req.active(),
                 req.creditLimit(), req.overdraftLimit(), req.closingDay(), req.dueDay());
     }
 }

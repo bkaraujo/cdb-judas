@@ -56,13 +56,12 @@ public class TransactionUseCase {
         return transactionService.findById(id);
     }
 
-    public Result<Transaction, BusinessError> upsert(TransactionCommand cmd) {
+    public Result<Transaction, BusinessError> upsert(TransactionCommand.Upsert cmd) {
         return switch (cmd) {
             case TransactionCommand.Create create ->
                     validateCard(create.accountId(), create.cardId()).flatMap(ignored -> dispatchCreate(create));
             case TransactionCommand.Update update ->
                     transactionService.findById(update.id()).flatMap(existing -> dispatchUpdate(update.id(), existing, update));
-            default -> Result.failure(new BusinessError.NotFound("Unknown command"));
         };
     }
 

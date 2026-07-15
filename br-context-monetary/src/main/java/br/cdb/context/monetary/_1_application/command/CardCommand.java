@@ -8,19 +8,21 @@ import org.jspecify.annotations.NullMarked;
 import java.util.UUID;
 
 @NullMarked
-public interface CardCommand {
+public sealed interface CardCommand {
+
+    sealed interface Upsert extends CardCommand {}
 
     @NullMarked
     record Create(
             @NotNull UUID accountId,
             @NotBlank @Pattern(regexp = "\\d{4}") String last4
-    ) implements CardCommand {}
+    ) implements Upsert {}
 
     @NullMarked
     record Update(
             UUID id,
             boolean active
-    ) implements CardCommand {}
+    ) implements Upsert {}
 
     @NullMarked
     record Delete(
