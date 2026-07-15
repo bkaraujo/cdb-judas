@@ -2,9 +2,6 @@ package br.cdb.feature;
 
 import br.cdb.core.web.security.User;
 import br.cdb.core.web.security.UserRepository;
-import br.cdb.feature.system.user.UserService;
-import br.cdb.feature.user.categories.UserCategory;
-import br.cdb.feature.user.categories.UserCategoryRepository;
 import br.cdb.feature.user.profile.*;
 import br.commons.Result;
 import br.commons.business.BusinessError;
@@ -45,32 +42,15 @@ class UserProfileServiceTest {
         }
     }
 
-    /** Categorias em memória — não exercitado nestes testes, além de suportar a injeção. */
-    static final class InMemoryCategories implements UserCategoryRepository {
-        private final Map<UUID, UserCategory> byId = new LinkedHashMap<>();
-
-        @Override public java.util.List<UserCategory> findAllByUser(UUID userId) {
-            return byId.values().stream().filter(c -> c.userId().equals(userId)).toList();
-        }
-        @Override public java.util.List<UserCategory> findByNature(UUID userId, br.cdb.context.monetary._0_domain.model.Transaction.Type nature) {
-            return byId.values().stream().filter(c -> c.userId().equals(userId) && c.nature() == nature).toList();
-        }
-        @Override public Optional<UserCategory> findById(UUID id) { return Optional.ofNullable(byId.get(id)); }
-        @Override public UserCategory save(UserCategory category) { byId.put(category.id(), category); return category; }
-        @Override public void deleteById(UUID id) { byId.remove(id); }
-    }
-
     private InMemoryUsers repo;
     private InMemoryPreferences prefs;
     private UserProfileService useCase;
-    private UserService userService;
 
     @BeforeEach
     void setUp() {
         repo = new InMemoryUsers();
         prefs = new InMemoryPreferences();
         useCase = new UserProfileService(repo, prefs);
-        userService = new UserService(repo, prefs, new InMemoryCategories());
     }
 
     @Test
@@ -103,7 +83,7 @@ class UserProfileServiceTest {
     void updateNameAplicaTrim() {
         String id = seed("admin", null, Preferences.defaults());
 
-        Profile profile = value(userService.updateName(id, "  Bruno  "));
+        Profile profile = value(useCase.updateName(id, "  Bruno  "));
 
         assertEquals("Bruno", profile.user().name());
     }
@@ -112,7 +92,7 @@ class UserProfileServiceTest {
     void updateNameEmBrancoViraNuloEExibePeloUsername() {
         String id = seed("admin", "Antigo", Preferences.defaults());
 
-        Profile profile = value(userService.updateName(id, "   "));
+        Profile profile = value(useCase.updateName(id, "   "));
 
         assertNull(profile.user().name());
         assertEquals("admin", profile.user().displayName());
@@ -136,7 +116,7 @@ class UserProfileServiceTest {
         LocalDateTime created = LocalDateTime.of(2020, 1, 1, 0, 0);
         repo.save(new User(id, "admin", null, "hash", false, created, created));
 
-        Profile profile = value(userService.updateName(id, "Novo Nome"));
+        Profile profile = value(useCase.updateName(id, "Novo Nome"));
 
         assertFalse(profile.user().active(), "active não deve resetar pra true ao só renomear");
         assertEquals(created, profile.user().createdAt(), "createdAt não deve se perder ao só renomear");

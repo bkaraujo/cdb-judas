@@ -14,7 +14,6 @@ import br.cdb.context.monetary._1_application.usecase.AccountUseCase;
 import br.cdb.context.monetary._1_application.usecase.CreditCardUseCase;
 import br.cdb.context.monetary._1_application.usecase.TransactionUseCase;
 import br.cdb.core.web.security.CurrentUser;
-import br.cdb.feature.system.user.UserService;
 import br.cdb.feature.user.accounts.closing.ClosingService;
 import br.cdb.feature.user.accounts.core.AccountStreamPublisher;
 import br.cdb.feature.user.accounts.core.UserAccount;
@@ -75,7 +74,6 @@ public class UserUseCase {
     private final ClosingService closingService;
     private final DashboardService dashboardService;
     private final UserProfileService profileService;
-    private final UserService userService;
     private final StatementImportService statementImportService;
     private final AccountStreamPublisher accountStreamPublisher;
 
@@ -566,7 +564,7 @@ public class UserUseCase {
         val id = CurrentUser.getId();
 
         var result = name != null
-                ? userService.updateName(id, name)
+                ? profileService.updateName(id, name)
                 : profileService.getProfile(id);
 
         if (preferences != null) {
