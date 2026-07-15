@@ -1,6 +1,5 @@
 package br.cdb.context.monetary._1_application.command;
 
-import jakarta.validation.constraints.NotBlank;
 import org.jspecify.annotations.NullMarked;
 
 import java.util.UUID;
@@ -12,12 +11,12 @@ public sealed interface CostCenterCommand {
 
     @NullMarked
     record Create(
-            @NotBlank String description
+            String description
     ) implements Upsert {}
     @NullMarked
     record Update(
             UUID id,
-            @NotBlank String description
+            String description
     ) implements Upsert {}
     @NullMarked
     record Delete(

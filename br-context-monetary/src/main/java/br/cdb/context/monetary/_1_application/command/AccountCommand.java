@@ -1,7 +1,5 @@
 package br.cdb.context.monetary._1_application.command;
 
-import br.commons.validation.TwoDecimalPlaces;
-import jakarta.validation.constraints.*;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 
@@ -15,25 +13,25 @@ public sealed interface AccountCommand {
 
     @NullMarked
     record Create(
-            @NotBlank String name,
-            @NotBlank String type,
+            String name,
+            String type,
             boolean active,
-            @Nullable @PositiveOrZero @TwoDecimalPlaces BigDecimal creditLimit,
-            @Nullable @PositiveOrZero @TwoDecimalPlaces BigDecimal overdraftLimit,
-            @Nullable @Min(1) @Max(31) Integer closingDay,
-            @Nullable @Min(1) @Max(31) Integer dueDay
+            @Nullable BigDecimal creditLimit,
+            @Nullable BigDecimal overdraftLimit,
+            @Nullable Integer closingDay,
+            @Nullable Integer dueDay
     ) implements Upsert {}
 
     @NullMarked
     record Update(
             UUID id,
-            @NotBlank String name,
-            @NotBlank String type,
+            String name,
+            String type,
             boolean active,
-            @Nullable @PositiveOrZero @TwoDecimalPlaces BigDecimal creditLimit,
-            @Nullable @PositiveOrZero @TwoDecimalPlaces BigDecimal overdraftLimit,
-            @Nullable @Min(1) @Max(31) Integer closingDay,
-            @Nullable @Min(1) @Max(31) Integer dueDay
+            @Nullable BigDecimal creditLimit,
+            @Nullable BigDecimal overdraftLimit,
+            @Nullable Integer closingDay,
+            @Nullable Integer dueDay
     ) implements Upsert {}
 
     @NullMarked

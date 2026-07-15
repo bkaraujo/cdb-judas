@@ -1,8 +1,5 @@
 package br.cdb.context.monetary._1_application.command;
 
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Pattern;
 import org.jspecify.annotations.NullMarked;
 
 import java.util.UUID;
@@ -14,8 +11,8 @@ public sealed interface CardCommand {
 
     @NullMarked
     record Create(
-            @NotNull UUID accountId,
-            @NotBlank @Pattern(regexp = "\\d{4}") String last4
+            UUID accountId,
+            String last4
     ) implements Upsert {}
 
     @NullMarked

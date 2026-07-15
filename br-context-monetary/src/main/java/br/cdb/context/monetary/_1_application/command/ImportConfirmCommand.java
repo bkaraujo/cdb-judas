@@ -1,6 +1,5 @@
 package br.cdb.context.monetary._1_application.command;
 
-import jakarta.validation.constraints.NotNull;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 
@@ -19,7 +18,7 @@ import java.util.UUID;
  * identity) is resolved per row from that card.
  */
 @NullMarked
-public record ImportConfirmCommand(@NotNull List<Row> rows) {
+public record ImportConfirmCommand(List<Row> rows) {
 
     @NullMarked
     public record Row(
