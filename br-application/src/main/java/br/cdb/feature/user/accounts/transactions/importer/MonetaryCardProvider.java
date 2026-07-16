@@ -23,6 +23,6 @@ public class MonetaryCardProvider implements CreditCardProvider {
 
     @Override
     public List<CreditCard> creditCards() {
-        return ucCreditCard.listCards().getOrElse(List.of());
+        return ucCreditCard.list().getOrElse(List.of());
     }
 }

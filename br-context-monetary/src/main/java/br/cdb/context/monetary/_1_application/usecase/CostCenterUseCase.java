@@ -17,7 +17,7 @@ public class CostCenterUseCase {
 
     private final CostCenterService costCenterService = Registry.tryGet(CostCenterService.class);
 
-    public Result<List<CostCenter>, BusinessError> listCostCenters() {
+    public Result<List<CostCenter>, BusinessError> list() {
         return Result.success(costCenterService.findAll());
     }
     public Result<CostCenter, BusinessError> upsert(CostCenterCommand.Upsert cmd) {

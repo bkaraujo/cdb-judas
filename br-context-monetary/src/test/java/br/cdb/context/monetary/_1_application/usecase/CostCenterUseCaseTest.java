@@ -41,12 +41,12 @@ class CostCenterUseCaseTest extends AbstractUseCaseTest {
     }
 
     @Test
-    @DisplayName("listCostCenters retorna todos os centros salvos")
+    @DisplayName("list retorna todos os centros salvos")
     void listsAllCostCenters() {
         useCase.upsert(new CostCenterCommand.Create("Matriz"));
         useCase.upsert(new CostCenterCommand.Create("Filial"));
 
-        val r = useCase.listCostCenters();
+        val r = useCase.list();
 
         assertTrue(r.isSuccess());
         val descriptions = ((Result.Success<List<CostCenter>, BusinessError>) r).value().stream().map(CostCenter::description).toList();

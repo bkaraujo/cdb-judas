@@ -107,7 +107,7 @@ class CreditCardUseCaseTest extends AbstractUseCaseTest {
         val creditCard = createCard(account.id(), "1234");
         val r = useCase.delete(new CardCommand.Delete(creditCard.id(), new TransactionPolicy.Block()));
         assertTrue(r.isSuccess());
-        assertTrue(((Result.Success<List<CreditCard>, BusinessError>) useCase.listCardsByAccount(account.id())).value().isEmpty());
+        assertTrue(((Result.Success<List<CreditCard>, BusinessError>) useCase.list(account.id())).value().isEmpty());
     }
 
     @Test

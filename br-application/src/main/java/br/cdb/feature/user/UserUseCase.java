@@ -106,7 +106,7 @@ public class UserUseCase {
     public Result<List<AccountView>, BusinessError> accounts() {
         val userId = CurrentUser.getId();
         val overlays = userAccountService.findByUser(userId).stream().collect(Collectors.toMap(UserAccount::accountId, Function.identity()));
-        val cardsByAccount = ucCreditCard.listCards().getOrElse(List.of()).stream().collect(Collectors.groupingBy(CreditCard::accountId));
+        val cardsByAccount = ucCreditCard.list().getOrElse(List.of()).stream().collect(Collectors.groupingBy(CreditCard::accountId));
 
         return ucAccount.listAccounts().map(accounts -> accounts.stream()
                 .map(account -> new AccountView(
@@ -208,7 +208,7 @@ public class UserUseCase {
     // ── Credit cards ───────────────────────────────────────────────
 
     public Result<List<CreditCard>, BusinessError> cards(UUID accountId) {
-        return ucCreditCard.listCardsByAccount(accountId);
+        return ucCreditCard.list(accountId);
     }
 
     public Result<CreditCard, BusinessError> createCard(CardCommand.Create cmd) {
@@ -245,7 +245,7 @@ public class UserUseCase {
     }
 
     private Result<Void, BusinessError> guardCardBelongsToAccount(UUID accountId, UUID cardId) {
-        return ucCreditCard.listCardsByAccount(accountId).flatMap(cards -> {
+        return ucCreditCard.list(accountId).flatMap(cards -> {
             if (cards.stream().noneMatch(c -> c.id().equals(cardId))) {
                 return Result.failure(new BusinessError.NotFound("CreditCard not found: " + cardId));
             }
@@ -402,7 +402,7 @@ public class UserUseCase {
 
     /** Contas distintas donas dos cartões das linhas confirmadas. */
     private List<UUID> affectedAccountIds(List<ImportConfirmCommand.Row> rows) {
-        val accountByCard = ucCreditCard.listCards().getOrElse(List.of()).stream()
+        val accountByCard = ucCreditCard.list().getOrElse(List.of()).stream()
                 .collect(Collectors.toMap(CreditCard::id, CreditCard::accountId));
         return rows.stream()
                 .map(row -> accountByCard.get(row.cardId()))
@@ -576,7 +576,7 @@ public class UserUseCase {
     // ── Helpers ────────────────────────────────────────────────────
 
     private List<CreditCard> cardsOf(UUID accountId) {
-        return ucCreditCard.listCardsByAccount(accountId).getOrElse(List.of());
+        return ucCreditCard.list(accountId).getOrElse(List.of());
     }
 
     private List<Transaction> transactionsOf(UUID accountId) {
