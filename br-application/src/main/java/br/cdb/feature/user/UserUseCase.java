@@ -5,11 +5,7 @@ import br.cdb.context.monetary._0_domain.model.Account;
 import br.cdb.context.monetary._0_domain.model.AccountBalance;
 import br.cdb.context.monetary._0_domain.model.CreditCard;
 import br.cdb.context.monetary._0_domain.model.Transaction;
-import br.cdb.context.monetary._1_application.command.AccountCommand;
-import br.cdb.context.monetary._1_application.command.CardCommand;
-import br.cdb.context.monetary._1_application.command.ImportConfirmCommand;
-import br.cdb.context.monetary._1_application.command.TransactionCommand;
-import br.cdb.context.monetary._1_application.command.TransactionScope;
+import br.cdb.context.monetary._1_application.command.*;
 import br.cdb.context.monetary._1_application.usecase.AccountUseCase;
 import br.cdb.context.monetary._1_application.usecase.CreditCardUseCase;
 import br.cdb.context.monetary._1_application.usecase.TransactionUseCase;
@@ -37,6 +33,7 @@ import br.cdb.feature.user.profile.UserProfileService;
 import br.cdb.feature.user.tags.UserTag;
 import br.cdb.feature.user.tags.UserTagService;
 import br.cdb.feature.user.tags.UserTransactionTagService;
+import br.commons.Logger;
 import br.commons.Result;
 import br.commons.business.BusinessError;
 import jakarta.inject.Singleton;
@@ -49,7 +46,6 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.YearMonth;
 import java.util.*;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 
 /**
@@ -66,6 +62,7 @@ public class UserUseCase {
     private final CreditCardUseCase ucCreditCard = MonetaryContext.ucCreditCard();
     private final TransactionUseCase ucTransaction = MonetaryContext.ucTransaction();
 
+    private final UserGuards guards;
     private final UserAccountService userAccountService;
     private final UserTransactionService userTransactionService;
     private final UserTransactionTagService tagLinkService;
@@ -105,27 +102,43 @@ public class UserUseCase {
 
     public Result<List<AccountView>, BusinessError> accounts() {
         val userId = CurrentUser.getId();
-        val overlays = userAccountService.findByUser(userId).stream().collect(Collectors.toMap(UserAccount::accountId, Function.identity()));
-        val cardsByAccount = ucCreditCard.list().getOrElse(List.of()).stream().collect(Collectors.groupingBy(CreditCard::accountId));
 
-        return ucAccount.listAccounts().map(accounts -> accounts.stream()
-                .map(account -> new AccountView(
-                        account,
-                        overlays.get(account.id()),
-                        cardsByAccount.getOrDefault(account.id(), List.of()),
-                        transactionsOf(account.id())
-                ))
-                .toList());
+        val views = new ArrayList<AccountView>();
+        for (val overlay : userAccountService.findByUser(userId)) {
+            val account = ucAccount.findAccount(overlay.accountId());
+            if (account.isFailure()) {
+                Logger.warn("overlay %s aponta para conta inexistente %s", overlay.userId(), overlay.accountId());
+                continue;
+            }
+
+            views.add(new AccountView(
+                    account.get(),
+                    overlay,
+                    ucCreditCard.list(overlay.accountId()).getOrElse(List.of()),
+                    transactionsOf(overlay.accountId())
+            ));
+        }
+
+        return Result.success(views);
     }
 
-    public Result<AccountView, BusinessError> account(UUID id) {
-        val userId = CurrentUser.getId();
-        return ucAccount.findAccount(id).map(account -> new AccountView(
-                account,
-                userAccountService.find(userId, account.id()),
-                cardsOf(account.id()),
-                transactionsOf(account.id())
-        ));
+    public Result<AccountView, BusinessError> account(UUID accountId) {
+        return guards.ownsAccount(accountId).flatMap(ignored -> {
+            val overlay = userAccountService.find(CurrentUser.getId(), accountId);
+
+            val account = ucAccount.findAccount(accountId);
+            if (account.isFailure()) {
+                Logger.warn("Conta %s não pertence ao usuário", accountId.toString());
+                return Result.failure(new BusinessError.NotFound(accountId.toString()));
+            }
+
+            return Result.success(new AccountView(
+                    account.get(),
+                    overlay,
+                    ucCreditCard.list(accountId).getOrElse(List.of()),
+                    transactionsOf(accountId)
+            ));
+        });
     }
 
     public Result<AccountView, BusinessError> createAccount(AccountCommand.Create cmd, String color) {
@@ -139,12 +152,14 @@ public class UserUseCase {
     }
 
     public Result<AccountView, BusinessError> updateAccount(AccountCommand.Update cmd, String color) {
-        val userId = CurrentUser.getId();
-        return ucAccount.upsert(cmd).map(account -> {
-            val overlay = new UserAccount(userId, account.id(), color);
-            userAccountService.save(overlay);
-            accountStreamPublisher.upsert(account.id());
-            return new AccountView(account, overlay, cardsOf(account.id()), List.of());
+        return guards.ownsAccount(cmd.id()).flatMap(ignored -> {
+            val userId = CurrentUser.getId();
+            return ucAccount.upsert(cmd).map(account -> {
+                val overlay = new UserAccount(userId, account.id(), color);
+                userAccountService.save(overlay);
+                accountStreamPublisher.upsert(account.id());
+                return new AccountView(account, overlay, cardsOf(account.id()), List.of());
+            });
         });
     }
 
@@ -156,6 +171,11 @@ public class UserUseCase {
      */
     public Result<DeletionOutcome, BusinessError> deleteAccount(
             UUID userId, UUID id, @Nullable DeletionStrategy strategy, @Nullable UUID targetId) {
+        val guard = strategy == DeletionStrategy.MOVE
+                ? guards.ownsAccounts(id, Objects.requireNonNull(targetId))
+                : guards.ownsAccount(id);
+        if (guard instanceof Result.Failure<Void, BusinessError>(var error)) return Result.failure(error);
+
         if (strategy == null) {
             val count = (int) allTransactions().stream().filter(t -> id.equals(t.accountId())).count();
             if (count > 0) return Result.success(new DeletionOutcome.Linked(count));
@@ -198,27 +218,27 @@ public class UserUseCase {
     // ── Balances ───────────────────────────────────────────────────
 
     public Result<AccountBalance, BusinessError> monthlyBalance(UUID accountId, YearMonth period) {
-        return ucAccount.getMonthlyBalance(accountId, period);
+        return guards.ownsAccount(accountId).flatMap(ignored -> ucAccount.getMonthlyBalance(accountId, period));
     }
 
     public Result<List<AccountBalance>, BusinessError> yearBalances(UUID accountId, int year) {
-        return ucAccount.getYearBalances(accountId, year);
+        return guards.ownsAccount(accountId).flatMap(ignored -> ucAccount.getYearBalances(accountId, year));
     }
 
     // ── Credit cards ───────────────────────────────────────────────
 
     public Result<List<CreditCard>, BusinessError> cards(UUID accountId) {
-        return ucCreditCard.list(accountId);
+        return guards.ownsAccount(accountId).flatMap(ignored -> ucCreditCard.list(accountId));
     }
 
     public Result<CreditCard, BusinessError> createCard(CardCommand.Create cmd) {
-        return ucCreditCard.upsert(cmd)
+        return guards.ownsAccount(cmd.accountId()).flatMap(ignored -> ucCreditCard.upsert(cmd))
                 .ifSuccess(ignored -> accountStreamPublisher.upsert(cmd.accountId()));
     }
 
     public Result<DeletionOutcome, BusinessError> deleteCard(
             UUID accountId, UUID cardId, @Nullable DeletionStrategy strategy, @Nullable UUID targetId) {
-        return guardCardBelongsToAccount(accountId, cardId).flatMap(ignored -> {
+        return guards.ownsCard(accountId, cardId).flatMap(ignored -> {
             if (strategy == null) {
                 val count = (int) allTransactions().stream().filter(t -> cardId.equals(t.cardId())).count();
                 if (count > 0) return Result.success(new DeletionOutcome.Linked(count));
@@ -239,47 +259,45 @@ public class UserUseCase {
     }
 
     public Result<CreditCard, BusinessError> setCardActive(UUID accountId, UUID cardId, boolean active) {
-        return guardCardBelongsToAccount(accountId, cardId)
+        return guards.ownsCard(accountId, cardId)
                 .flatMap(ignored -> ucCreditCard.upsert(new CardCommand.Update(cardId, active)))
                 .ifSuccess(ignored -> accountStreamPublisher.upsert(accountId));
-    }
-
-    private Result<Void, BusinessError> guardCardBelongsToAccount(UUID accountId, UUID cardId) {
-        return ucCreditCard.list(accountId).flatMap(cards -> {
-            if (cards.stream().noneMatch(c -> c.id().equals(cardId))) {
-                return Result.failure(new BusinessError.NotFound("CreditCard not found: " + cardId));
-            }
-            return Result.success();
-        });
     }
 
     // ── Transactions ───────────────────────────────────────────────
 
     public Result<List<TransactionView>, BusinessError> transactions(UUID userId, TransactionFilter filter) {
         val accountId = filter.accountId();
-        val dateFrom = filter.dateFrom();
-        val dateTo = filter.dateTo();
-        val status = filter.status();
-        val type = filter.type();
-        val limit = filter.limit();
+        val guard = accountId == null ? Result.<BusinessError>success() : guards.ownsAccount(accountId);
 
-        return ucTransaction.transactions().map(all -> {
-            val overlays = userTransactionService.indexByTransaction(userId);
-            val filtered = all.stream()
-                    .filter(t -> accountId == null || accountId.equals(t.accountId()))
-                    .filter(t -> dateFrom == null || !t.date().isBefore(dateFrom))
-                    .filter(t -> dateTo == null || !t.date().isAfter(dateTo))
-                    .filter(t -> status == null || status.equalsIgnoreCase(t.status().name()))
-                    .filter(t -> type == null || type.equalsIgnoreCase(t.type().name()))
-                    .toList();
-            val page = (limit != null && limit > 0 && limit < filtered.size())
-                    ? filtered.subList(0, limit)
-                    : filtered;
-            return page.stream().map(t -> new TransactionView(t, overlays.get(t.id()))).toList();
+        return guard.flatMap(ignored -> {
+            val dateFrom = filter.dateFrom();
+            val dateTo = filter.dateTo();
+            val status = filter.status();
+            val type = filter.type();
+            val limit = filter.limit();
+
+            return ucTransaction.transactions().map(all -> {
+                val overlays = userTransactionService.indexByTransaction(userId);
+                val filtered = all.stream()
+                        .filter(t -> accountId == null || accountId.equals(t.accountId()))
+                        .filter(t -> dateFrom == null || !t.date().isBefore(dateFrom))
+                        .filter(t -> dateTo == null || !t.date().isAfter(dateTo))
+                        .filter(t -> status == null || status.equalsIgnoreCase(t.status().name()))
+                        .filter(t -> type == null || type.equalsIgnoreCase(t.type().name()))
+                        .toList();
+                val page = (limit != null && limit > 0 && limit < filtered.size())
+                        ? filtered.subList(0, limit)
+                        : filtered;
+                return page.stream().map(t -> new TransactionView(t, overlays.get(t.id()))).toList();
+            });
         });
     }
 
     public Result<TransactionView, BusinessError> createTransaction(UUID userId, TransactionCommand.Create cmd, @Nullable UUID categoryId) {
+        if (guards.ownsAccountAndCard(cmd.accountId(), cmd.cardId()) instanceof Result.Failure<Void, BusinessError>(var error)) {
+            return Result.failure(error);
+        }
         if (closingService.validateDate(cmd.date()) instanceof Result.Failure<Void, BusinessError>(var error)) {
             return Result.failure(error);
         }
@@ -293,9 +311,16 @@ public class UserUseCase {
     }
 
     public Result<TransactionView, BusinessError> updateTransaction(UUID userId, TransactionCommand.Update cmd, @Nullable UUID categoryId) {
+        if (guards.ownsAccountAndCard(cmd.accountId(), cmd.cardId()) instanceof Result.Failure<Void, BusinessError>(var error)) {
+            return Result.failure(error);
+        }
+
         val txId = cmd.id();
         UUID previous = null;
         if (ucTransaction.findTransaction(txId) instanceof Result.Success(var existing)) {
+            if (guards.ownsAccount(existing.accountId()) instanceof Result.Failure<Void, BusinessError>(var error)) {
+                return Result.failure(error);
+            }
             val guard = closingService.validateDate(existing.date())
                     .flatMap(ignored -> closingService.validateDate(cmd.date()));
             if (guard instanceof Result.Failure<Void, BusinessError>(var error)) return Result.failure(error);
@@ -322,16 +347,21 @@ public class UserUseCase {
 
     public Result<TransactionView, BusinessError> updateTransactionStatus(
             UUID userId, UUID txId, Transaction.Status status, @Nullable LocalDate paymentDate) {
-        return ucTransaction.updateTransactionStatus(txId, status, paymentDate).map(t -> {
-            val overlay = userTransactionService.find(t.id(), t.accountId(), userId).orElse(null);
-            accountStreamPublisher.upsert(t.accountId());
-            return new TransactionView(t, overlay);
-        });
+        return ucTransaction.findTransaction(txId)
+                .flatMap(existing -> guards.ownsAccount(existing.accountId()))
+                .flatMap(ignored -> ucTransaction.updateTransactionStatus(txId, status, paymentDate).map(t -> {
+                    val overlay = userTransactionService.find(t.id(), t.accountId(), userId).orElse(null);
+                    accountStreamPublisher.upsert(t.accountId());
+                    return new TransactionView(t, overlay);
+                }));
     }
 
     public Result<Void, BusinessError> deleteTransaction(UUID txId, TransactionScope scope) {
         UUID accountId = null;
         if (ucTransaction.findTransaction(txId) instanceof Result.Success(var existing)) {
+            if (guards.ownsAccount(existing.accountId()) instanceof Result.Failure<Void, BusinessError>(var error)) {
+                return Result.failure(error);
+            }
             if (closingService.validateDate(existing.date()) instanceof Result.Failure<Void, BusinessError>(var error)) {
                 return Result.failure(error);
             }
@@ -350,6 +380,9 @@ public class UserUseCase {
     }
 
     public Result<TransactionView, BusinessError> transfer(UUID fromAccountId, UUID toAccountId, LocalDate date, BigDecimal amount) {
+        if (guards.ownsAccounts(fromAccountId, toAccountId) instanceof Result.Failure<Void, BusinessError>(var error)) {
+            return Result.failure(error);
+        }
         if (closingService.validateDate(date) instanceof Result.Failure<Void, BusinessError>(var error)) {
             return Result.failure(error);
         }
@@ -380,17 +413,25 @@ public class UserUseCase {
     // ── Statement import ───────────────────────────────────────────
 
     public Result<ImportPreviewView, ImportError> importPreview(byte[] fileBytes, @Nullable String password, @Nullable UUID accountId) {
+        if (accountId != null && guards.ownsAccount(accountId).isFailure()) {
+            return new Result.Failure<>(new ImportError.AccountNotFound());
+        }
         return statementImportService.preview(fileBytes, password, accountId)
                 .map(outcome -> new ImportPreviewView(outcome, accountNamesById()));
     }
 
     public Result<ImportResult, BusinessError> confirmInvoiceImport(ImportConfirmCommand cmd) {
+        for (val row : cmd.rows()) {
+            if (guards.ownsCard(row.cardId()) instanceof Result.Failure<Void, BusinessError>(var error)) {
+                return Result.failure(error);
+            }
+        }
         return statementImportService.confirm(cmd)
                 .ifSuccess(ignored -> affectedAccountIds(cmd.rows()).forEach(accountStreamPublisher::upsert));
     }
 
     public Result<ImportResult, BusinessError> confirmStatementImport(BankStatementConfirmCommand cmd) {
-        return statementImportService.confirmStatement(cmd)
+        return guards.ownsAccount(cmd.accountId()).flatMap(ignored -> statementImportService.confirmStatement(cmd))
                 .ifSuccess(ignored -> accountStreamPublisher.upsert(cmd.accountId()));
     }
 

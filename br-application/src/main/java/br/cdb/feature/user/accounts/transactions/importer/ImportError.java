@@ -34,6 +34,12 @@ public sealed interface ImportError {
     }
 
     @NullMarked
+    record AccountNotFound() implements ImportError {
+        @Override public String code() { return "ACCOUNT_NOT_FOUND"; }
+        @Override public String message() { return "Conta não encontrada."; }
+    }
+
+    @NullMarked
     record UnknownIssuer() implements ImportError {
         @Override public String code() { return "UNKNOWN_ISSUER"; }
         @Override public String message() {
