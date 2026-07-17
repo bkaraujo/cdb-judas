@@ -156,5 +156,5 @@
   }
 
   window.Infra = window.Infra || {};
-  window.Infra.HttpClient = { create: create, deletionQuery: deletionQuery };
+  window.Infra.HttpClient = { create: create, deletionQuery: deletionQuery, reqId: reqId };
 })();

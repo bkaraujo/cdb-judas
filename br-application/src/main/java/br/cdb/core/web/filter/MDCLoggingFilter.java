@@ -26,7 +26,9 @@ public class MDCLoggingFilter implements ContainerRequestFilter, ContainerRespon
 
     @Override
     public void filter(ContainerRequestContext request) {
-        if (RequestUtils.isStatic(request)) return;
+        // isStatic() é o gate de autorização (isApi negado) — /login fica de fora dele de propósito
+        // (rota pública, fora de /api/*), mas ainda é um endpoint real e merece correlação de log.
+        if (RequestUtils.isStatic(request) && !isLogin(request)) return;
 
         var xRequestId = request.getHeaderString(REQUEST_ID);
         if (xRequestId == null) { xRequestId = UUID.randomUUID().toString(); }
@@ -38,5 +40,9 @@ public class MDCLoggingFilter implements ContainerRequestFilter, ContainerRespon
     public void filter(ContainerRequestContext request, ContainerResponseContext response) {
         MDC.pop(REQUEST_USER);
         MDC.pop(REQUEST_ID);
+    }
+
+    private static boolean isLogin(ContainerRequestContext request) {
+        return "/login".equals(RequestUtils.path(request));
     }
 }

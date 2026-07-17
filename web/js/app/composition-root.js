@@ -56,7 +56,7 @@
   function loginFn(username, password) {
     return fetch(loginUrl, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', 'X-request-id': window.Infra.HttpClient.reqId() },
       body: JSON.stringify({ username: username, password: password }),
     }).then(function (res) {
       if (!res.ok) {
