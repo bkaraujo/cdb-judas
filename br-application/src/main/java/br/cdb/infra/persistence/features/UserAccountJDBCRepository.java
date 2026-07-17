@@ -1,6 +1,6 @@
 package br.cdb.infra.persistence.features;
 
-import br.cdb.feature.user.accounts.core.UserAccount;
+import br.cdb.feature.finance.accounts.core.UserAccount;
 import br.commons.framework.persistence.jdbc.JDBCRepository;
 import br.commons.framework.persistence.jdbc.primitives.JDBCParameter;
 import br.commons.framework.persistence.jdbc.primitives.JDBCResultSet;

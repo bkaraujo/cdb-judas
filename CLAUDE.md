@@ -1,6 +1,6 @@
 # CDB Finance — Guia Central
 
-Gestor de finanças pessoais. Backend **Java 25 + Quarkus** (JVM mode); frontend **SPA Vanilla JS/CSS + jQuery 4** (servido pelo próprio backend). Arquitetura híbrida: **Vertical Slice** nas features de entrega HTTP (`br.cdb.feature.*`) sobre **Hexagonal** nos contextos de negócio (`br.cdb.context.*`) — features falam com contextos **apenas via os use cases expostos pela Facade** (`MonetaryContext.uc*()`); em `feature.user`, os `*Resource` delegam a orquestração ao **`UserUseCase`** (único use case da fatia) e fazem só tradução de formato. Persistência: **JDBC/H2** (dev: file `./database`; teste: in-memory) + JSON para `Closing` e o catálogo de centros de custo. Rotas de dados escopadas por `/api/{uuid}/…` com guarda de propriedade (anti-IDOR).
+Gestor de finanças pessoais. Backend **Java 25 + Quarkus** (JVM mode); frontend **SPA Vanilla JS/CSS + jQuery 4** (servido pelo próprio backend). Arquitetura híbrida: **Vertical Slice** nas features de entrega HTTP (`br.cdb.feature.*`) sobre **Hexagonal** nos contextos de negócio (`br.cdb.context.*`) — features falam com contextos **apenas via os use cases expostos pela Facade** (`MonetaryContext.uc*()`); os `*Resource` que atuam sobre dados do usuário delegam a orquestração ao **`UserUseCase`** (`br.cdb.feature.user`, único use case da fatia) e fazem só tradução de formato. Persistência: **JDBC/H2** (dev: file `./database`; teste: in-memory) + JSON para `Closing` e o catálogo de centros de custo. Rotas de dados escopadas por `/api/{uuid}/…` com guarda de propriedade (anti-IDOR).
 
 > Este é o índice central. As diretrizes detalhadas vivem nos `CLAUDE.md` de cada módulo (`br-parent/`, `br-commons/src/main/java/`, `br-context-people/src/main/java/`, `br-context-monetary/src/main/java/`, `br-application/src/main/java/`, `web/`) e em `docs/`.
 > **Schema do banco: os diagramas `docs/*.mermaid` são a fonte da verdade** — o código (DDL em `Database`) conforma ao diagrama, nunca o inverso.
@@ -14,24 +14,28 @@ Gestor de finanças pessoais. Backend **Java 25 + Quarkus** (JVM mode); frontend
 
 ### Contextos de negócio — `br.cdb.context.*` (Hexagonal, livre de framework; DI via `Registry`)
 - **`monetary`** (módulo `br-context-monetary`) — lógica financeira. Facade `MonetaryUseCases` (acessores estáticos para os use cases); modelos `Account`, `Balance`, `CostCenter`, `CreditCard`, `Statement`, `Transaction`; use cases `AccountUseCase`, `CreditCardUseCase`, `CostCenterUseCase`, `TransactionUseCase`.
-- **`people`** (módulo `br-context-people`) — identidade mínima. Facade `PeopleContext`; modelo `Person` (id/name/locale/language). **Não** inclui `User` (login) nem `Preferences` — esses são agregados de `br-application` (`br.cdb.core.web.security.User` e `br.cdb.feature.user.profile.Preferences`), não deste contexto. Hoje `PeopleContext` está montado mas não é consumido por nenhuma feature — ver `br-context-people/src/main/java/CLAUDE.md`.
+- **`people`** (módulo `br-context-people`) — identidade mínima. Facade `PeopleContext`; modelo `Person` (id/name/locale/language). **Não** inclui `User` (login) nem `Preferences` — esses são agregados de `br-application` (`br.cdb.core.web.security.User` e `br.cdb.feature.user.profile.preference.Preferences`), não deste contexto. Hoje `PeopleContext` está montado mas não é consumido por nenhuma feature — ver `br-context-people/src/main/java/CLAUDE.md`.
 - **Núcleo comum entre contextos**: não existe um contexto `shared` — o pacote `context..shared..` é apenas reservado nas regras ArchUnit, sem implementação. O vocabulário compartilhado hoje (erro/evento de domínio) é `br.commons.business.{BusinessError,BusinessEvent,BusinessException}`, em `br-commons`.
 
-### Features de usuário — `br.cdb.feature.user.*` (HTTP, `/api/{uuid}/…`)
-- **`dashboard`** — agrega resultado mensal por categoria (receitas/despesas/líquido).
-- **`accounts`** — CRUD de contas e cartões, com sub-áreas:
+### Features de entrega — `br.cdb.feature.*` (achatadas direto sob `feature.*`, sem prefixo `user.`/`system.`)
+- **`dashboard`** — agrega resultado mensal por categoria (receitas/despesas/líquido). `/api/{uuid}/…`.
+- **`finance.accounts`** — CRUD de contas e cartões, com sub-áreas (`/api/{uuid}/…`):
   - **saldo** — consulta por período (`?period=yyyyMM` / `?year=yyyy`);
   - **closing** — período de fechamento (a validação de data é **fronteira da feature**, não do contexto);
   - **statement** — histórico mensal por conta;
   - **importação** — leitura de PDF (preview→confirm), parsers **BTG** e **Santander** (cartão + conta), expansão de parcelas, sugestão de categoria, casamento de cartão;
   - **transactions** — créditos, débitos, transferências, parcelas; filtros, patch de status, delete unitário/em grupo.
-- **`categories`** / **`tags`** — classificação macro/micro; mudanças propagadas via **SSE**.
-- **`profile`** — self-service `/api/me` (nome + preferências write-through).
+- **`finance.categories`** / **`finance.tags`** — classificação macro/micro; mudanças propagadas via **SSE**. `/api/{uuid}/…`.
+- **`finance.costcenter`** — catálogo somente-leitura (`GET /api/cost-center`, sem `{uuid}`).
+- **`finance.deletion`** — vocabulário de exclusão compartilhado entre as fatias de `finance.*`.
 - **`stream`** — canal SSE (`/api/{uuid}/stream`).
+- **`version`** — versão da aplicação (sem `{uuid}`).
+- **`auth`** — login e emissão de token (`POST /login`, token opaco rotativo; sem `{uuid}`) — única fatia-base, as demais podem depender dela mas nunca o contrário.
 
-### Features de sistema — `br.cdb.feature.system.*` (sem `{uuid}`)
-- **`auth`** — login e emissão de token (`POST /login`, token opaco rotativo).
-- **`costcenter`** — catálogo somente-leitura (`GET /api/cost-center`).
+### Fatia do agregado `User` — `br.cdb.feature.user.*`
+Pacote raiz com **`UserUseCase`** (único use case da fatia: todo `*Resource` que atua sobre dados do usuário injeta só ele; orquestra use cases de contexto + serviços de feature + SSE), `UserService`, `UserGuards` (guarda de propriedade/anti-IDOR). Subpacotes:
+- **`profile`** — self-service `/api/me` (nome + preferências write-through); `profile.api` tem os DTOs HTTP, `profile.preference` tem `Preferences`/`PreferencesRepository` — aninhados sob `profile` para contar como uma única fatia perante o ArchUnit.
+- **`seed`** — provisionamento inicial (usuário + categorias default).
 
 ### Plataforma — `br.cdb.core` (módulo `br-application`)
 Autenticação/autorização (token opaco rotativo, `OwnershipFilter`), observabilidade (log de requisição + MDC), persistência JSON, config HTTP/OpenAPI, `ContextBridge` (costura CDI↔`Registry`).

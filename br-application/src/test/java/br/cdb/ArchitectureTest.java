@@ -74,10 +74,10 @@ class ArchitectureTest {
                     .because("a composição entre fatias mora no UserUseCase; stream (transporte SSE) e deletion (vocabulário) são compartilhados");
 
     @ArchTest
-    static final ArchRule system_features_must_not_access_user_features =
-            noClasses().that().resideInAPackage("..feature.system..")
+    static final ArchRule auth_feature_must_not_access_user_features =
+            noClasses().that().resideInAPackage("..feature.auth..")
                     .should().accessClassesThat().resideInAPackage("..feature.user..")
-                    .because("features de sistema (auth, seed, catálogo) são a base; user.* depende delas, nunca o contrário");
+                    .because("auth é a fatia-base (login/token); user.* depende dela, nunca o contrário");
 
     private static DescribedPredicate<JavaClass> contextClassNotExposedViaFacade() {
         return resideInAPackage("..context..")

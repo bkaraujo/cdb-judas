@@ -2,7 +2,11 @@ package br.cdb.feature;
 
 import br.cdb.core.web.security.User;
 import br.cdb.core.web.security.UserRepository;
-import br.cdb.feature.user.profile.*;
+import br.cdb.feature.user.profile.api.PreferencesPatch;
+import br.cdb.feature.user.profile.preference.Preferences;
+import br.cdb.feature.user.profile.preference.PreferencesRepository;
+import br.cdb.feature.user.profile.Profile;
+import br.cdb.feature.user.profile.UserProfileService;
 import br.commons.Result;
 import br.commons.business.BusinessError;
 import org.junit.jupiter.api.BeforeEach;

@@ -2,7 +2,7 @@ package br.cdb.context.monetary;
 
 import br.cdb.context.monetary._0_domain.model.*;
 import br.cdb.context.monetary._0_domain.repository.*;
-import br.cdb.feature.user.accounts.closing.ClosingRepository;
+import br.cdb.feature.finance.accounts.closing.ClosingRepository;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 

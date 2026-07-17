@@ -1,6 +1,6 @@
 package br.cdb.context.monetary;
 
-import br.cdb.feature.user.accounts.transactions.importer.CategoryGuesser;
+import br.cdb.feature.finance.accounts.transactions.importer.CategoryGuesser;
 import org.jspecify.annotations.NullMarked;
 import org.junit.jupiter.api.Test;
 

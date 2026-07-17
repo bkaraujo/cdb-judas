@@ -1,6 +1,6 @@
 package br.cdb.context.monetary;
 
-import br.cdb.feature.user.accounts.transactions.importer.GroupSignature;
+import br.cdb.feature.finance.accounts.transactions.importer.GroupSignature;
 import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;

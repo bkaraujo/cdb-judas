@@ -1,10 +1,10 @@
 package br.cdb.context.monetary;
 
-import br.cdb.feature.user.accounts.statement.StatementParser;
-import br.cdb.feature.user.accounts.statement.provider.BTGInvoiceParser;
-import br.cdb.feature.user.accounts.statement.provider.BTGStatementParser;
-import br.cdb.feature.user.accounts.statement.provider.SantanderInvoiceParser;
-import br.cdb.feature.user.accounts.statement.provider.SantanderStatementParser;
+import br.cdb.feature.finance.accounts.statement.StatementParser;
+import br.cdb.feature.finance.accounts.statement.provider.BTGInvoiceParser;
+import br.cdb.feature.finance.accounts.statement.provider.BTGStatementParser;
+import br.cdb.feature.finance.accounts.statement.provider.SantanderInvoiceParser;
+import br.cdb.feature.finance.accounts.statement.provider.SantanderStatementParser;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;

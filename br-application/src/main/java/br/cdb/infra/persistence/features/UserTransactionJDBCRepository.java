@@ -1,7 +1,7 @@
 package br.cdb.infra.persistence.features;
 
-import br.cdb.feature.user.accounts.transactions.UserTransaction;
-import br.cdb.feature.user.accounts.transactions.UserTransactionRepository;
+import br.cdb.feature.finance.accounts.transactions.UserTransaction;
+import br.cdb.feature.finance.accounts.transactions.UserTransactionRepository;
 import br.commons.chrono.Time;
 import br.commons.framework.persistence.jdbc.JDBCRepository;
 import br.commons.framework.persistence.jdbc.primitives.JDBCParameter;

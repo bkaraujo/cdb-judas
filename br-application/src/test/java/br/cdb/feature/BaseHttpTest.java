@@ -10,7 +10,7 @@ import br.cdb.core.JsonStorageProperties;
 import br.cdb.core.web.security.User;
 import br.cdb.core.web.security.UserRepository;
 import br.cdb.core.web.security.core.AccessTokenStore;
-import br.cdb.feature.system.auth.LoginResource;
+import br.cdb.feature.auth.LoginResource;
 import br.cdb.infra.persistence.Database;
 import br.cdb.infra.persistence.features.UserAccountBalanceJDBCRepository;
 import br.cdb.infra.persistence.monetary.AccountJDBCRepository;

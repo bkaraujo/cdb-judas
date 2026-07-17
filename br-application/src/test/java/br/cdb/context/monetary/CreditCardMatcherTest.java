@@ -1,8 +1,8 @@
 package br.cdb.context.monetary;
 
 import br.cdb.context.monetary._0_domain.model.CreditCard;
-import br.cdb.feature.user.accounts.transactions.importer.CardMatch;
-import br.cdb.feature.user.accounts.transactions.importer.CardMatcher;
+import br.cdb.feature.finance.accounts.transactions.importer.CardMatch;
+import br.cdb.feature.finance.accounts.transactions.importer.CardMatcher;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;

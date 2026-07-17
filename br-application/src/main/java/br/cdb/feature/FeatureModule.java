@@ -1,14 +1,14 @@
 package br.cdb.feature;
 
-import br.cdb.feature.user.accounts.closing.ClosingRepository;
-import br.cdb.feature.user.accounts.closing.ClosingService;
-import br.cdb.feature.user.accounts.transactions.UserTransactionRepository;
-import br.cdb.feature.user.categories.UserCategoryRepository;
-import br.cdb.feature.user.profile.PreferencesRepository;
-import br.cdb.feature.user.stream.SSE;
-import br.cdb.feature.user.stream.SseService;
-import br.cdb.feature.user.tags.UserTagRepository;
-import br.cdb.feature.user.tags.UserTransactionTagRepository;
+import br.cdb.feature.finance.accounts.closing.ClosingRepository;
+import br.cdb.feature.finance.accounts.closing.ClosingService;
+import br.cdb.feature.finance.accounts.transactions.UserTransactionRepository;
+import br.cdb.feature.finance.categories.UserCategoryRepository;
+import br.cdb.feature.finance.tags.UserTagRepository;
+import br.cdb.feature.finance.tags.UserTransactionTagRepository;
+import br.cdb.feature.stream.SSE;
+import br.cdb.feature.stream.SseService;
+import br.cdb.feature.user.profile.preference.PreferencesRepository;
 import br.cdb.infra.persistence.features.*;
 import br.commons.Registry;
 import br.commons.framework.persistence.jdbc.DataSource;

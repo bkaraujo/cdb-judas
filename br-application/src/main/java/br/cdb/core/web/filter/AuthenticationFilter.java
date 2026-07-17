@@ -5,6 +5,7 @@ import br.cdb.core.web.security.AuthenticatedUser;
 import br.cdb.core.web.security.CurrentUserContext;
 import br.cdb.core.web.security.UserRepository;
 import br.cdb.core.web.security.core.AccessTokenStore;
+import br.cdb.feature.auth.LoginResource;
 import br.commons.Logger;
 import br.commons.framework.logger.MDC;
 import jakarta.annotation.Priority;
@@ -17,10 +18,10 @@ import jakarta.ws.rs.ext.Provider;
 import lombok.val;
 import org.jspecify.annotations.NullMarked;
 
-import static br.cdb.feature.system.auth.LoginResource.TOKEN_HEADER;
+import static br.cdb.feature.auth.LoginResource.TOKEN_HEADER;
 
 /**
- * Valida o token de acesso (header {@value br.cdb.feature.system.auth.LoginResource#TOKEN_HEADER}),
+ * Valida o token de acesso (header {@value LoginResource#TOKEN_HEADER}),
  * popula o {@link CurrentUserContext} e — fora do stream — rotaciona o token, guardando o próximo em
  * {@link #NEXT_TOKEN_PROPERTY} para o {@link AuthTokenResponseFilter} emitir na resposta.
  */

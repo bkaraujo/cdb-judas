@@ -1,6 +1,7 @@
 package br.cdb.feature.user.profile;
 
 import br.cdb.core.web.security.User;
+import br.cdb.feature.user.profile.preference.Preferences;
 import org.jspecify.annotations.NullMarked;
 
 /**

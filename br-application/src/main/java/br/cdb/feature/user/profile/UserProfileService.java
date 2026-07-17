@@ -2,6 +2,8 @@ package br.cdb.feature.user.profile;
 
 import br.cdb.core.web.security.User;
 import br.cdb.core.web.security.UserRepository;
+import br.cdb.feature.user.profile.api.PreferencesPatch;
+import br.cdb.feature.user.profile.preference.PreferencesRepository;
 import br.commons.Result;
 import br.commons.business.BusinessError;
 import jakarta.inject.Singleton;

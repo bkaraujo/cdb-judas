@@ -1,7 +1,7 @@
 package br.cdb.feature;
 
 import br.cdb.PdfFixtures;
-import br.cdb.feature.system.auth.LoginResource;
+import br.cdb.feature.auth.LoginResource;
 import io.quarkus.test.junit.QuarkusTest;
 import io.restassured.RestAssured;
 import io.restassured.specification.RequestSpecification;

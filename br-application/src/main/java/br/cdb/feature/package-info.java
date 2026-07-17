@@ -8,23 +8,30 @@
  * <h2>Decomposição de alto nível</h2>
  * <pre>
  * feature
- * ├── system   — recursos transversais, sem namespace de usuário ({uuid})
- * │   ├── auth         POST /login
- * │   ├── costcenter   GET  /api/cost-center
- * │   └── version      GET  /api/version
- * └── user     — recursos do usuário autenticado (a maioria sob /api/{uuid}/…)
- *     ├── accounts     CRUD /api/{uuid}/accounts  + sub-recursos
- *     │   ├── value       GET  …/value?period=|year=
- *     │   ├── closing       GET/POST/DELETE …/closing
- *     │   ├── statement     parsing de extrato/fatura PDF (suporte, sem rota)
- *     │   └── transactions  CRUD …/{accId}/transactions
- *     │       ├── transfer  POST …/transactions/transfer
- *     │       └── importer  POST …/transactions/import/preview|confirm
- *     ├── categories   CRUD /api/{uuid}/categories
- *     ├── dashboard    GET  /api/{uuid}/dashboard/result
- *     ├── tags         CRUD /api/{uuid}/tags
- *     ├── stream       GET  /api/{uuid}/stream  (Server-Sent Events)
- *     └── profile      GET/PATCH /api/me
+ * ├── auth       POST /login — fatia-base sem namespace de usuário; as demais podem depender
+ * │              dela, nunca o contrário (ver ArchitectureTest)
+ * ├── dashboard  GET  /api/{uuid}/dashboard/result
+ * ├── finance    — fatias financeiras escopadas por usuário (ver {@link br.cdb.feature.finance})
+ * │   ├── accounts     CRUD /api/{uuid}/accounts  + sub-recursos
+ * │   │   ├── balance      GET  …/value?period=|year=
+ * │   │   ├── cards        CRUD …/{accId}/cards
+ * │   │   ├── closing      GET/POST/DELETE …/closing
+ * │   │   ├── statement    parsing de extrato/fatura PDF (suporte, sem rota)
+ * │   │   └── transactions CRUD …/{accId}/transactions
+ * │   │       ├── transfer  POST …/transactions/transfer
+ * │   │       └── importer  POST …/transactions/import/preview|confirm
+ * │   ├── categories   CRUD /api/{uuid}/categories
+ * │   ├── tags         CRUD /api/{uuid}/tags
+ * │   ├── costcenter   GET  /api/cost-center — sem namespace de usuário
+ * │   └── deletion     contrato de exclusão compartilhado (accounts/cards/categories/tags)
+ * ├── stream     GET  /api/{uuid}/stream  (Server-Sent Events)
+ * ├── version    GET  /api/version — sem namespace de usuário
+ * └── user       — fatia do agregado {@code User}; pacote raiz tem o {@code UserUseCase}
+ *                (único use case da fatia, orquestra as demais features acima)
+ *     ├── profile    GET/PATCH /api/me — self-service
+ *     │   ├── api         DTOs HTTP (request/response)
+ *     │   └── preference  {@code Preferences}/{@code PreferencesRepository}
+ *     └── seed       provisionamento inicial (usuário + categorias default)
  * </pre>
  */
 @NullMarked

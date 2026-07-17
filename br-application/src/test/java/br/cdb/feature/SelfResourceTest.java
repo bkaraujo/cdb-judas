@@ -1,8 +1,8 @@
 package br.cdb.feature;
 
 import br.cdb.core.web.security.User;
-import br.cdb.feature.user.profile.Preferences;
-import br.cdb.feature.user.profile.PreferencesRepository;
+import br.cdb.feature.user.profile.preference.Preferences;
+import br.cdb.feature.user.profile.preference.PreferencesRepository;
 import io.quarkus.test.junit.QuarkusTest;
 import io.restassured.RestAssured;
 import io.restassured.http.ContentType;

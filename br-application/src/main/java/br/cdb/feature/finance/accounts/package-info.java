@@ -1,0 +1,30 @@
+/**
+ * Gestão de contas bancárias e cartões de crédito do usuário.
+ *
+ * <p>Rotas principais ({@code /api/{uuid}/accounts}):
+ * <pre>
+ * GET    /accounts          — lista todas as contas (com limites e cartões embutidos)
+ * GET    /accounts/{id}     — detalhe de uma conta
+ * POST   /accounts          — cria conta (aceita limite de crédito/cheque especial e ciclo de fatura)
+ * PATCH  /accounts/{id}     — atualiza conta
+ * DELETE /accounts/{id}     — remove conta
+ * </pre>
+ *
+ * <p>Sub-recursos organizados em subpacotes:
+ * <ul>
+ *   <li>{@link br.cdb.feature.finance.accounts.balance}      — saldo mensal/anual por conta</li>
+ *   <li>{@link br.cdb.feature.finance.accounts.cards}        — CRUD de cartões (entidade do contexto monetário, identificada só pelo last4)</li>
+ *   <li>{@link br.cdb.feature.finance.accounts.closing}      — período de fechamento de fatura</li>
+ *   <li>{@link br.cdb.feature.finance.accounts.statement}    — parsing de extratos/faturas PDF (suporte à importação, sem rota própria)</li>
+ *   <li>{@link br.cdb.feature.finance.accounts.transactions} — lançamentos financeiros (inclui importação de extrato/fatura)</li>
+ * </ul>
+ *
+ * <p>A feature delega toda a lógica de domínio ao {@code MonetaryUseCases} e é dona do SSE de
+ * conta: cada Resource despacha a atualização via {@link AccountStreamPublisher}
+ * logo após persistir sua própria mutação — nunca em reação a um evento do contexto.
+ */
+@NullMarked
+package br.cdb.feature.finance.accounts;
+
+import br.cdb.feature.finance.accounts.core.AccountStreamPublisher;
+import org.jspecify.annotations.NullMarked;

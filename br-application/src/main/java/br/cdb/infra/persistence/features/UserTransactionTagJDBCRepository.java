@@ -1,6 +1,6 @@
 package br.cdb.infra.persistence.features;
 
-import br.cdb.feature.user.tags.UserTransactionTagRepository;
+import br.cdb.feature.finance.tags.UserTransactionTagRepository;
 import br.commons.Registry;
 import br.commons.framework.persistence.jdbc.DataSource;
 import br.commons.framework.persistence.jdbc.primitives.JDBCParameter;

@@ -1,7 +1,7 @@
 package br.cdb.feature;
 
 import br.cdb.core.web.security.User;
-import br.cdb.feature.system.auth.LoginResource;
+import br.cdb.feature.auth.LoginResource;
 import io.quarkus.elytron.security.common.BcryptUtil;
 import io.quarkus.test.junit.QuarkusTest;
 import io.restassured.RestAssured;
@@ -18,7 +18,7 @@ import static org.hamcrest.Matchers.is;
 /**
  * IDOR de conta/cartão: {@code accountId}/{@code cardId} que chegam por path, query ou corpo —
  * fora do primeiro segmento {@code /api/{uuid}/…} — não têm nenhuma verificação de propriedade
- * antes do {@link br.cdb.feature.user.UserGuards}. Cobre exatamente os caminhos que um filtro
+ * antes do {@link UserGuards}. Cobre exatamente os caminhos que um filtro
  * JAX-RS por path jamais pegaria.
  */
 @QuarkusTest
