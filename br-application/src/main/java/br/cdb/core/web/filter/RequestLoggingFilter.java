@@ -9,7 +9,7 @@ import jakarta.ws.rs.ext.Provider;
 import lombok.val;
 import org.jspecify.annotations.NullMarked;
 
-/** Log de requisição em nível TRACE (método + caminho). */
+/** Log de requisição em nível TRACE (método + caminho + query string, ex.: {@code period=xxxx}). */
 @Provider
 @Priority(600)
 @NullMarked
@@ -20,6 +20,8 @@ public class RequestLoggingFilter implements ContainerRequestFilter {
         val path = RequestUtils.path(request);
         if (path.contains("favicon")) return;
 
-        Logger.trace("%s %s", request.getMethod(), path);
+        val query = request.getUriInfo().getRequestUri().getRawQuery();
+        val suffix = query == null || query.isEmpty() ? "" : "?" + query;
+        Logger.trace("%s %s%s", request.getMethod(), path, suffix);
     }
 }
