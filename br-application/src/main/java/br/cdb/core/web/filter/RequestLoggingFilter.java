@@ -20,8 +20,9 @@ public class RequestLoggingFilter implements ContainerRequestFilter {
         val path = RequestUtils.path(request);
         if (path.contains("favicon")) return;
 
-        val query = request.getUriInfo().getRequestUri().getRawQuery();
-        val suffix = query == null || query.isEmpty() ? "" : "?" + query;
-        Logger.trace("%s %s%s", request.getMethod(), path, suffix);
+        Logger.trace("%s %s%s", request.getMethod(), path, Logger.lazy(() -> {
+            val query = request.getUriInfo().getRequestUri().getRawQuery();
+            return query == null || query.isEmpty() ? "" : "?" + query;
+        }));
     }
 }
