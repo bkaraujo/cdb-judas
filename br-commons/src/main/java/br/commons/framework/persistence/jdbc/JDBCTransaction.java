@@ -104,7 +104,7 @@ public class JDBCTransaction {
     }
 
     public Result<Boolean, String> commit() {
-        Logger.debug("Committing transaction");
+        Logger.trace("Committing transaction");
         return connection.commit().map(c -> {
             connection.close() ;
             return true;
@@ -112,7 +112,7 @@ public class JDBCTransaction {
     }
 
     public Result<Boolean, String> rollback() {
-        Logger.debug("Rolling back transaction");
+        Logger.trace("Rolling back transaction");
         return connection.rollback().map(c -> {
             connection.close() ;
             return true;

@@ -60,14 +60,14 @@ public final class ConnectionPool {
         });
 
         Logger.info("Connection pool '%s' initialized (min=%d, max=%d)", properties.name(), properties.minPoolSize(), properties.maxPoolSize());
-        Logger.debug("%s", Logger.lazy(() -> Objects.toString(properties)));
+        Logger.trace("%s", Logger.lazy(() -> Objects.toString(properties)));
     }
 
     /** Cria uma conexão e contabiliza-a no total. Usado por initialize()/manutenção. */
     private PooledConnection createConnection() throws SQLException {
         val pooled = openConnection();
         totalConnections.incrementAndGet();
-        Logger.debug("Created new connection for pool '%s' (total=%d)", properties.name(), totalConnections.get());
+        Logger.trace("Created new connection for pool '%s' (total=%d)", properties.name(), totalConnections.get());
 
         return pooled;
     }
@@ -195,7 +195,7 @@ public final class ConnectionPool {
         try {
             // Check if connection exceeded max lifetime
             if (System.currentTimeMillis() - pooled.createdAt() > properties.maxLifetime()) {
-                Logger.debug("Connection exceeded max lifetime in pool '%s'", properties.name());
+                Logger.trace("Connection exceeded max lifetime in pool '%s'", properties.name());
                 return false;
             }
 
@@ -215,7 +215,7 @@ public final class ConnectionPool {
             return pooled.connection().isValid(1);
 
         } catch (SQLException e) {
-            Logger.debug("Connection validation failed in pool '%s': %s", properties.name(), Strings.orEmpty(e.getMessage()));
+            Logger.trace("Connection validation failed in pool '%s': %s", properties.name(), Strings.orEmpty(e.getMessage()));
             return false;
         }
     }
@@ -226,7 +226,7 @@ public final class ConnectionPool {
 
             val removed = removeIdleConnections();
             if (removed > 0) {
-                Logger.debug("Removed %d idle connections from pool '%s'", removed, properties.name());
+                Logger.trace("Removed %d idle connections from pool '%s'", removed, properties.name());
             }
 
             ensureMinimumPoolSize();
