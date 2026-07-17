@@ -47,9 +47,13 @@
     }
     state.loading = true;
     render();
+    const account = selectedAccount();
+    const sum = state.summary[String(state.accountId)];
+    const openingBalance = sum ? sum.openingBalance : (account ? (+account.balance || 0) : 0);
     return window.App.StatementService.load(
         state.accountId,
-        window.Domain.Period.create(state.month, state.year)
+        window.Domain.Period.create(state.month, state.year),
+        openingBalance
       )
       .then(function (list) {
         state.items = Array.isArray(list) ? list : [];
@@ -92,8 +96,8 @@
     );
     const $periodNav = window.periodNav({
       label: window.monthLabel(state.month, state.year),
-      onPrev: function () { window.shiftMonth(state, -1, true); loadStatement(); loadSummary(); },
-      onNext: function () { window.shiftMonth(state, +1, true); loadStatement(); loadSummary(); },
+      onPrev: function () { window.shiftMonth(state, -1, true); loadSummary().then(loadStatement); },
+      onNext: function () { window.shiftMonth(state, +1, true); loadSummary().then(loadStatement); },
     });
     $header.find('[data-region=head-actions]').append($periodNav);
     $page.append($header);
@@ -241,8 +245,9 @@
         state.accountId = String(accs[0].id);
       }
       render();
-      loadSummary();
-      if (state.accountId) loadStatement();
+      loadSummary().then(function () {
+        if (state.accountId) loadStatement();
+      });
     },
     unmount: function () {
       if (state && state.$root) {

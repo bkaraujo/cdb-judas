@@ -17,45 +17,47 @@
     return cache.accounts();
   }
 
-  /* Opening balance = previous month's closing snapshot; on 404 (no snapshot for a month
-     before the account's first activity) fall back to the account's initial balance. */
-  function opening(account, period) {
-    return balance.monthly(account.id, window.Domain.Period.shift(period, -1))
-      .then(function (b) { return b ? (+b.balance || 0) : (+account.balance || 0); })
-      .catch(function (err) {
-        if (err && err.status === 404) return +account.balance || 0;
-        throw err;
-      });
-  }
-
   /* Detail for one account in a period: a "Saldo anterior" row carrying the opening
-     balance, then each transaction (all statuses) with its running balance. */
-  function load(accountId, period) {
+     balance (previous period's closing, resolved by summary() — no balance fetch here),
+     then each transaction (all statuses) with its running balance. */
+  function load(accountId, period, openingBalance) {
     const account = cache.findById('accounts', accountId);
     if (!account) return Promise.resolve([]);
     const b = window.Domain.Period.bounds(period);
-    return Promise.all([
-      txRepo.listByAccount(accountId, 'dateFrom=' + b.from + '&dateTo=' + b.to),
-      opening(account, period),
-    ]).then(function (res) {
-      const txs = Array.isArray(res[0]) ? res[0] : [];
-      return window.Domain.StatementItem.buildRows(res[1], txs, b.from);
-    });
+    return txRepo.listByAccount(accountId, 'dateFrom=' + b.from + '&dateTo=' + b.to)
+      .then(function (txs) {
+        return window.Domain.StatementItem.buildRows(openingBalance, Array.isArray(txs) ? txs : [], b.from);
+      });
   }
 
-  /* Left-column panorama: closing balance per checking account for the period.
-     One balance read per account; 404 falls back to the account's current balance. */
+  /* Left-column panorama: closing + opening (previous period's closing) balance per
+     checking account for the period. Two batch requests total (GET /accounts/balance for
+     the period and for period-1) instead of one per account — fetched once per period
+     (mount + prev/next), never per account selection; the statement screen reuses this
+     cache instead of re-fetching. Accounts absent from a batch response (no snapshot yet)
+     fall back to the account's current/initial balance. */
   function summary(period) {
-    return Promise.all(checkings().map(function (a) {
-      return balance.monthly(a.id, period)
-        .then(function (b) {
-          return { accountId: a.id, closingBalance: b ? (+b.balance || 0) : window.Domain.Account.currentBalance(a) };
-        })
-        .catch(function (err) {
-          if (err && err.status === 404) return { accountId: a.id, closingBalance: window.Domain.Account.currentBalance(a) };
-          throw err;
-        });
-    }));
+    const prevPeriod = window.Domain.Period.shift(period, -1);
+    function byAccountId(list) {
+      const map = {};
+      (Array.isArray(list) ? list : []).forEach(function (b) { map[String(b.accountId)] = +b.balance || 0; });
+      return map;
+    }
+    return Promise.all([
+      balance.allAccounts(period),
+      balance.allAccounts(prevPeriod),
+    ]).then(function (res) {
+      const closingByAccount = byAccountId(res[0]);
+      const openingByAccount = byAccountId(res[1]);
+      return checkings().map(function (a) {
+        const id = String(a.id);
+        return {
+          accountId: a.id,
+          closingBalance: id in closingByAccount ? closingByAccount[id] : window.Domain.Account.currentBalance(a),
+          openingBalance: id in openingByAccount ? openingByAccount[id] : (+a.balance || 0),
+        };
+      });
+    });
   }
 
   window.App = window.App || {};

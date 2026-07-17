@@ -11,9 +11,17 @@
     return repo.monthly(accountId, window.Domain.Period.yyyymm(period));
   }
 
+  /* Resolves to BalanceResponse[] ({ accountId, period, balance }) for every account of the
+     current user in the given period, in a single request — accounts without a snapshot for
+     the period (e.g. before their first activity) are simply absent from the list. */
+  function allAccounts(period) {
+    return repo.allAccounts(window.Domain.Period.yyyymm(period));
+  }
+
   window.App = window.App || {};
   window.App.BalanceService = {
     init: init,
     monthly: monthly,
+    allAccounts: allAccounts,
   };
 })();

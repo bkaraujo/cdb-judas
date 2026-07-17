@@ -13,6 +13,7 @@ import org.jspecify.annotations.Nullable;
 
 import java.time.YearMonth;
 import java.time.format.DateTimeFormatter;
+import java.util.List;
 import java.util.UUID;
 
 @NullMarked
@@ -22,6 +23,21 @@ import java.util.UUID;
 public class AccountBalanceResource {
 
     private final UserUseCase userUseCase;
+
+    /** Saldo do período de todas as contas do usuário numa só resposta — evita N chamadas
+     *  por conta no frontend (usado pela tela de Extrato de Contas). */
+    @GET
+    @Path("/balance")
+    public List<BalanceResponse> listBalances(@QueryParam("period") String period) {
+        if (period == null) {
+            throw new BusinessException(new BusinessError.Validation("'period' must be provided"));
+        }
+        val ym = YearMonth.parse(period, DateTimeFormatter.ofPattern("yyyyMM"));
+        return switch (userUseCase.balances(ym)) {
+            case Result.Success(var balances) -> balances.stream().map(BalanceResponse::of).toList();
+            case Result.Failure(var error) -> throw new BusinessException(error);
+        };
+    }
 
     @GET
     @Path("/{id}/balance")

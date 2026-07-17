@@ -230,6 +230,20 @@ public class UserUseCase {
         return guards.ownsAccount(accountId).flatMap(ignored -> ucAccount.getYearBalances(accountId, year));
     }
 
+    /** Saldo do período para todas as contas do usuário numa única leitura (evita N requisições
+     *  no frontend). Contas sem snapshot no período (ex.: antes da primeira movimentação) são
+     *  omitidas — o chamador decide o fallback (ex.: saldo atual da conta). */
+    public Result<List<Balance>, BusinessError> balances(YearMonth period) {
+        val userId = CurrentUser.getId();
+        val result = new ArrayList<Balance>();
+        for (val overlay : userAccountService.findByUser(userId)) {
+            if (ucAccount.getMonthlyBalance(overlay.accountId(), period) instanceof Result.Success(var balance)) {
+                result.add(balance);
+            }
+        }
+        return Result.success(result);
+    }
+
     // ── Credit cards ───────────────────────────────────────────────
 
     public Result<List<CreditCard>, BusinessError> cards(UUID accountId) {
