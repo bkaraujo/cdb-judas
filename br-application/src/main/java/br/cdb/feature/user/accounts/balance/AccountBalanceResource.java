@@ -33,13 +33,13 @@ public class AccountBalanceResource {
         if (period != null) {
             val ym = YearMonth.parse(period, DateTimeFormatter.ofPattern("yyyyMM"));
             return switch (userUseCase.monthlyBalance(id, ym)) {
-                case Result.Success(var b) -> b;
+                case Result.Success(var b) -> BalanceResponse.of(b);
                 case Result.Failure(var error) -> throw new BusinessException(error);
             };
         }
         if (year != null) {
             return switch (userUseCase.yearBalances(id, year)) {
-                case Result.Success(var balances) -> balances;
+                case Result.Success(var balances) -> balances.stream().map(BalanceResponse::of).toList();
                 case Result.Failure(var error) -> throw new BusinessException(error);
             };
         }

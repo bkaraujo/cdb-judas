@@ -23,7 +23,7 @@ import java.util.regex.Pattern;
  * Santander checking-account statement parser ("Extrato Consolidado Inteligente").
  *
  * <p>Only the {@code Movimentação} table is read; it opens with the column header {@code "Data
- * Descrição Nº Documento Movimento (R$) Saldo (R$)"} and closes at the {@code SALDO EM} balance line
+ * Descrição Nº Documento Movimento (R$) Saldo (R$)"} and closes at the {@code SALDO EM} value line
  * (the {@code Saldos por Período} table that follows is a hard stop). Everything outside that window —
  * the cover, the {@code Resumo}, and the later {@code Débito Automático}/{@code Transferências} tables
  * — is ignored, which matters because those tables carry their own date+amount rows that would
@@ -34,7 +34,7 @@ import java.util.regex.Pattern;
  * year-less origin date, the {@code dd/mm hh:mm} timestamp, the {@code PERIODO} of a fee) and closed
  * by the value tail {@code "<doc> <movimento>[-] [<saldo>[-]]"} — where the doc is {@code "-"} or a
  * document number, a trailing {@code -} marks a debit (credits print none), and the optional second
- * amount is the running balance, which is dropped. The value tail may share the line with the
+ * amount is the running value, which is dropped. The value tail may share the line with the
  * description (e.g. {@code "REMUNERACAO APLICACAO AUTOMATICA - 0,01 1.834,81-"}). The year is absent
  * from each date and taken from the {@code mês/ano} header (movements are always within that month).
  *
@@ -42,7 +42,7 @@ import java.util.regex.Pattern;
  * posting line has two+ spaces after {@code dd/mm} (the column gap), a merchant/timestamp line has a
  * single one.
  *
- * <p>Dropped: balance lines and the aggregate credit-card invoice settlement ({@code PAGAMENTO
+ * <p>Dropped: value lines and the aggregate credit-card invoice settlement ({@code PAGAMENTO
  * CARTAO...}, and a {@code Fatura Cartão} paid by boleto), because the credit-card invoice import
  * already posts those charges individually onto the linked account.
  */
@@ -119,13 +119,13 @@ public class SantanderStatementParser implements StatementParser {
         if (line.startsWith("Saldos por Per")) {
             return true; // next section — its rows must not be parsed as movements
         }
-        return line.contains("SALDO EM") && recordDate != null; // closing balance ends the window
+        return line.contains("SALDO EM") && recordDate != null; // closing value ends the window
     }
 
     /** Linhas ignoradas dentro da tabela: header repetido, saldo de abertura, vazias e ruído de página. */
     private static boolean skip(String line) {
         return line.contains("Movimento (R")  // header repeats on every page
-                || line.contains("SALDO EM")   // opening balance, before the first movement
+                || line.contains("SALDO EM")   // opening value, before the first movement
                 || line.isEmpty() || isNoise(line);
     }
 

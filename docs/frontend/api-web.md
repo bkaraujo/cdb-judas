@@ -140,7 +140,7 @@ compartilhada por todos os cartões nela cadastrados.
 - **Response (200 OK — `period`):**
 ```json
 {
-  "id": "uuid-balance",
+  "id": "uuid-value",
   "accountId": "550e8400-e29b-41d4-a716-446655440000",
   "period": "2024-01",
   "balance": 5000.00
@@ -529,7 +529,7 @@ Outros: `401` (não autenticado), `403` (guarda de propriedade), `405` (método 
   "type": "about:blank",
   "title": "Unprocessable Content",
   "status": 422,
-  "detail": "name: must not be blank; balance: must not be null",
+  "detail": "name: must not be blank; value: must not be null",
   "instance": "/api/u-123/accounts"
 }
 ```

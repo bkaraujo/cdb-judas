@@ -14,11 +14,13 @@ public sealed interface CostCenterCommand {
     record Create(
             String description
     ) implements Upsert {}
+
     @NullMarked
     record Update(
             UUID id,
             String description
     ) implements Upsert {}
+
     @NullMarked
     record Delete(
             UUID id

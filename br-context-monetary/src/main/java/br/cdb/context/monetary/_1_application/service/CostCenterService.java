@@ -11,17 +11,17 @@ import java.util.UUID;
 @NullMarked
 public class CostCenterService {
 
-    private final CostCenterRepository costCenterRepository = Registry.get(CostCenterRepository.class);
+    private final CostCenterRepository repository = Registry.get(CostCenterRepository.class);
 
     public List<CostCenter> findAll() {
-        return costCenterRepository.findAll();
+        return repository.findAll();
     }
 
     public CostCenter save(UUID id, String description) {
-        return costCenterRepository.save(new CostCenter(id, description));
+        return repository.save(new CostCenter(id, description));
     }
 
     public void deleteById(UUID id) {
-        costCenterRepository.deleteById(id);
+        repository.deleteById(id);
     }
 }

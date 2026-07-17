@@ -28,7 +28,7 @@ import java.util.regex.Pattern;
  * descrição text.
  *
  * <p>Dropped: {@code Saldo Diário}/{@code Saldo final} running balances, the {@code Lançamentos:}
- * header line (its value is the period's closing balance, not a movement) and any {@code Pagamento de
+ * header line (its value is the period's closing value, not a movement) and any {@code Pagamento de
  * fatura do cartão} aggregate (already covered, item by item, by the credit-card invoice import).
  */
 @NullMarked

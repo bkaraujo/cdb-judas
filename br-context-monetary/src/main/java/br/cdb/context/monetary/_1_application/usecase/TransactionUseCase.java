@@ -4,11 +4,10 @@ import br.cdb.context.monetary._0_domain.event.TransactionEvents;
 import br.cdb.context.monetary._0_domain.model.CostCenter;
 import br.cdb.context.monetary._0_domain.model.CreditCard;
 import br.cdb.context.monetary._0_domain.model.Transaction;
-import br.cdb.context.monetary._1_application.command.ImportedTransactionCommand;
 import br.cdb.context.monetary._1_application.command.TransactionCommand;
 import br.cdb.context.monetary._1_application.command.TransactionScope;
 import br.cdb.context.monetary._1_application.event.TransactionEventListener;
-import br.cdb.context.monetary._1_application.service.BalanceRecalculationService;
+import br.cdb.context.monetary._1_application.service.BalanceService;
 import br.cdb.context.monetary._1_application.service.CreditCardService;
 import br.cdb.context.monetary._1_application.service.TransactionService;
 import br.commons.MessageBus;
@@ -26,9 +25,9 @@ import java.util.*;
 @NullMarked
 public class TransactionUseCase {
 
+    private final TransactionService service = Registry.tryGet(TransactionService.class);
+    private final BalanceService balanceService = Registry.tryGet(BalanceService.class);
     private final CreditCardService creditCardService = Registry.tryGet(CreditCardService.class);
-    private final TransactionService transactionService = Registry.tryGet(TransactionService.class);
-    private final BalanceRecalculationService balanceRecalculationService = Registry.tryGet(BalanceRecalculationService.class);
 
     public TransactionUseCase() {
         MessageBus.subscribe(new TransactionEventListener());
@@ -36,25 +35,25 @@ public class TransactionUseCase {
 
 
     public Result<List<Transaction>, BusinessError> transactions(UUID accountId) {
-        val all = transactionService.findByAccount(accountId).stream()
+        val all = service.findByAccount(accountId).stream()
                 .sorted(Comparator.comparing(Transaction::date).reversed())
                 .toList();
         return Result.success(all);
     }
 
     public Result<List<Transaction>, BusinessError> transactions() {
-        val all = transactionService.findAll().stream()
+        val all = service.findAll().stream()
                 .sorted(Comparator.comparing(Transaction::date).reversed())
                 .toList();
         return Result.success(all);
     }
 
     public Result<List<Transaction>, BusinessError> listPendingTransactions() {
-        return Result.success(transactionService.findPending());
+        return Result.success(service.findPending());
     }
 
     public Result<Transaction, BusinessError> findTransaction(UUID id) {
-        return transactionService.findById(id);
+        return service.findById(id);
     }
 
     public Result<Transaction, BusinessError> upsert(TransactionCommand.Upsert cmd) {
@@ -62,7 +61,7 @@ public class TransactionUseCase {
             case TransactionCommand.Create create ->
                     validateCard(create.accountId(), create.cardId()).flatMap(ignored -> dispatchCreate(create));
             case TransactionCommand.Update update ->
-                    transactionService.findById(update.id()).flatMap(existing -> dispatchUpdate(update.id(), existing, update));
+                    service.findById(update.id()).flatMap(existing -> dispatchUpdate(update.id(), existing, update));
         };
     }
 
@@ -76,7 +75,7 @@ public class TransactionUseCase {
     }
 
     private Result<Transaction, BusinessError> createSingle(TransactionCommand.Create cmd) {
-        val saved = transactionService.save(toEntity(UUID.randomUUID(), cmd.description(), cmd.amount(), cmd.date(),
+        val saved = service.save(toEntity(UUID.randomUUID(), cmd.description(), cmd.amount(), cmd.date(),
                 cmd.accountId(), cmd.status(), cmd.type(), cmd.costCenterId(), cmd.notes(), cmd.cardId(), null, null, null));
         MessageBus.submit(new TransactionEvents.Created(saved));
         return Result.success(saved);
@@ -95,7 +94,7 @@ public class TransactionUseCase {
 
         Transaction first = null;
         for (val t : batch) {
-            val saved = transactionService.save(t);
+            val saved = service.save(t);
             if (first == null) first = saved;
         }
 
@@ -105,7 +104,7 @@ public class TransactionUseCase {
     }
 
     private Result<Transaction, BusinessError> dispatchUpdate(UUID id, Transaction existing, TransactionCommand.Update cmd) {
-        val transferSiblings = transactionService.findTransferSiblings(existing);
+        val transferSiblings = service.findTransferSiblings(existing);
         if (!transferSiblings.isEmpty()) return updateTransfer(existing, transferSiblings, cmd);
         return validateCard(cmd.accountId(), cmd.cardId()).flatMap(ignored -> updateNonTransfer(id, existing, cmd));
     }
@@ -114,7 +113,7 @@ public class TransactionUseCase {
         val isFuture = cmd.scope() instanceof TransactionScope.Future && existing.groupId() != null;
 
         if (!isFuture) {
-            val updated = transactionService.save(toEntity(id, cmd.description(), cmd.amount(), cmd.date(), cmd.accountId(),
+            val updated = service.save(toEntity(id, cmd.description(), cmd.amount(), cmd.date(), cmd.accountId(),
                     cmd.status(), cmd.type(), cmd.costCenterId(), cmd.notes(), cmd.cardId(),
                     existing.groupId(), existing.installmentNumber(), existing.totalInstallments()));
             MessageBus.submit(new TransactionEvents.Updated(existing));
@@ -126,7 +125,7 @@ public class TransactionUseCase {
         val installmentNumber = existing.installmentNumber();
         if (groupId == null) return Result.<Transaction, BusinessError>success(existing);
 
-        val all = transactionService.findByGroupId(groupId).stream()
+        val all = service.findByGroupId(groupId).stream()
                 .filter(t -> t.installmentNumber() >= installmentNumber)
                 .sorted(Comparator.comparing(Transaction::installmentNumber))
                 .toList();
@@ -135,7 +134,7 @@ public class TransactionUseCase {
         for (val t : all) {
             val currentNumber = t.installmentNumber();
             val newDate = cmd.date().plusMonths(currentNumber - installmentNumber);
-            val updated = transactionService.save(toEntity(t.id(), cmd.description(), cmd.amount(), newDate, cmd.accountId(),
+            val updated = service.save(toEntity(t.id(), cmd.description(), cmd.amount(), newDate, cmd.accountId(),
                     t.status(), cmd.type(), cmd.costCenterId(), cmd.notes(), cmd.cardId(),
                     t.groupId(), t.installmentNumber(), t.totalInstallments()));
             if (t.id().equals(id)) firstSaved = updated;
@@ -157,12 +156,12 @@ public class TransactionUseCase {
         }
 
         val absAmount = cmd.amount().abs();
-        val updatedEdited = transactionService.save(withTransferEdits(edited, newAccount, absAmount, cmd.date(), cmd.status()));
+        val updatedEdited = service.save(withTransferEdits(edited, newAccount, absAmount, cmd.date(), cmd.status()));
         MessageBus.submit(new TransactionEvents.Updated(edited));
         MessageBus.submit(new TransactionEvents.Updated(updatedEdited));
 
         for (val sib : siblings) {
-            val updatedSib = transactionService.save(withTransferEdits(sib, sib.accountId(), absAmount, cmd.date(), cmd.status()));
+            val updatedSib = service.save(withTransferEdits(sib, sib.accountId(), absAmount, cmd.date(), cmd.status()));
             MessageBus.submit(new TransactionEvents.Updated(updatedSib));
         }
         return Result.success(updatedEdited);
@@ -178,9 +177,9 @@ public class TransactionUseCase {
     }
 
     public Result<Transaction, BusinessError> updateTransactionStatus(UUID id, Transaction.Status status, @Nullable LocalDate paymentDate) {
-        return transactionService.findById(id)
+        return service.findById(id)
                 .map(existing -> {
-                    val saved = transactionService.save(new Transaction(
+                    val saved = service.save(new Transaction(
                             existing.id(), existing.description(), existing.amount(), existing.date(),
                             existing.accountId(), status, existing.type(), existing.costCenterId(), paymentDate,
                             existing.groupId(), existing.installmentNumber(), existing.totalInstallments(), existing.notes(),
@@ -193,27 +192,27 @@ public class TransactionUseCase {
 
     /** Ids das transações apagadas (par de transferência / lote FUTURE / unitário). */
     public Result<List<UUID>, BusinessError> delete(TransactionCommand.Delete command) {
-        return transactionService.findById(command.id()).flatMap(existing -> {
-            val transferSiblings = transactionService.findTransferSiblings(existing);
+        return service.findById(command.id()).flatMap(existing -> {
+            val transferSiblings = service.findTransferSiblings(existing);
             if (!transferSiblings.isEmpty()) return deleteTransferGroup(existing, transferSiblings);
 
             val isFuture = command.scope() instanceof TransactionScope.Future && existing.groupId() != null;
             val groupId = existing.groupId();
 
             if (!isFuture || groupId == null) {
-                return transactionService.deleteById(command.id()).map(ignored -> {
+                return service.deleteById(command.id()).map(ignored -> {
                     MessageBus.submit(new TransactionEvents.Deleted(existing));
                     return List.of(command.id());
                 });
             }
 
             val installmentNumber = existing.installmentNumber();
-            val toDelete = transactionService.findByGroupId(groupId).stream()
+            val toDelete = service.findByGroupId(groupId).stream()
                     .filter(t -> t.installmentNumber() >= installmentNumber)
                     .toList();
 
             for (val t : toDelete) {
-                val delRes = transactionService.deleteById(t.id());
+                val delRes = service.deleteById(t.id());
                 if (delRes instanceof Result.Failure<Void, BusinessError>(BusinessError error)) return Result.<List<UUID>>failure(error);
             }
 
@@ -227,7 +226,7 @@ public class TransactionUseCase {
         legs.add(leg);
         legs.addAll(siblings);
         for (val t : legs) {
-            if (transactionService.deleteById(t.id()) instanceof Result.Failure<Void, BusinessError>(BusinessError error)) {
+            if (service.deleteById(t.id()) instanceof Result.Failure<Void, BusinessError>(BusinessError error)) {
                 return Result.failure(error);
             }
         }
@@ -245,10 +244,10 @@ public class TransactionUseCase {
         val toDelete = new LinkedHashMap<UUID, Transaction>();
         for (val id : ids) {
             if (toDelete.containsKey(id)) continue;
-            if (!(transactionService.findById(id) instanceof Result.Success<Transaction, BusinessError>(var existing))) continue;
+            if (!(service.findById(id) instanceof Result.Success<Transaction, BusinessError>(var existing))) continue;
 
             toDelete.put(existing.id(), existing);
-            for (val sibling : transactionService.findTransferSiblings(existing)) {
+            for (val sibling : service.findTransferSiblings(existing)) {
                 toDelete.putIfAbsent(sibling.id(), sibling);
             }
         }
@@ -256,11 +255,11 @@ public class TransactionUseCase {
         val accountIds = new LinkedHashSet<UUID>();
         for (val tx : toDelete.values()) {
             accountIds.add(tx.accountId());
-            transactionService.deleteById(tx.id());
+            service.deleteById(tx.id());
         }
 
         for (val accountId : accountIds) {
-            balanceRecalculationService.recalculate(accountId);
+            balanceService.recalculate(accountId);
         }
 
         return Result.success();
@@ -287,24 +286,24 @@ public class TransactionUseCase {
                 groupId, 2, 2, null, null
         );
 
-        val savedOut = transactionService.save(outflow);
-        val savedIn = transactionService.save(inflow);
+        val savedOut = service.save(outflow);
+        val savedIn = service.save(inflow);
         MessageBus.submit(new TransactionEvents.Created(savedOut));
         MessageBus.submit(new TransactionEvents.Created(savedIn));
         return Result.success(savedOut);
     }
 
-    public Result<Transaction, BusinessError> createImported(ImportedTransactionCommand cmd) {
+    public Result<Transaction, BusinessError> createImported(TransactionCommand.Import cmd) {
         return validateCard(cmd.accountId(), cmd.cardId()).flatMap(ignored -> persistImported(cmd));
     }
 
-    private Result<Transaction, BusinessError> persistImported(ImportedTransactionCommand cmd) {
+    private Result<Transaction, BusinessError> persistImported(TransactionCommand.Import cmd) {
         val tx = new Transaction(
                 UUID.randomUUID(), cmd.description(), cmd.amount().abs(), cmd.date(),
                 cmd.accountId(), cmd.status(), cmd.type(), CostCenter.VARIAVEL.id(), null,
                 cmd.groupId(), installmentOrDefault(cmd.installmentNumber()), installmentOrDefault(cmd.totalInstallments()), null,
                 cmd.cardId());
-        val saved = transactionService.save(tx);
+        val saved = service.save(tx);
         MessageBus.submit(new TransactionEvents.Created(saved));
         return Result.success(saved);
     }

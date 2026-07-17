@@ -54,17 +54,17 @@ final class InMemoryRepositories {
         public CostCenter save(CostCenter e) { data.put(e.id(), e); return e; }
     }
 
-    /** AccountBalance tem chave de negócio (accountId, period) — sem id próprio, não cabe em BaseRepo. */
+    /** Balance tem chave de negócio (accountId, period) — sem id próprio, não cabe em BaseRepo. */
     static class Balances implements BalanceRepository {
-        private final List<AccountBalance> data = new ArrayList<>();
+        private final List<Balance> data = new ArrayList<>();
 
-        public List<AccountBalance> findAll() { return new ArrayList<>(data); }
+        public List<Balance> findAll() { return new ArrayList<>(data); }
 
         /** Sem id próprio: nada aqui indexa por UUID solto — ver {@link #delete}. */
-        public Optional<AccountBalance> findById(UUID id) { return Optional.empty(); }
+        public Optional<Balance> findById(UUID id) { return Optional.empty(); }
 
-        public AccountBalance save(AccountBalance e) {
-            data.removeIf(b -> b.accountId().equals(e.accountId()) && b.period().equals(e.period()));
+        public Balance save(Balance e) {
+            data.removeIf(b -> b.account().id().equals(e.account().id()) && b.period().equals(e.period()));
             data.add(e);
             return e;
         }
@@ -72,11 +72,11 @@ final class InMemoryRepositories {
         public void deleteById(UUID id) { /* sem id próprio; ver delete(accountId, period) */ }
 
         public void delete(UUID accountId, YearMonth period) {
-            data.removeIf(b -> b.accountId().equals(accountId) && b.period().equals(period));
+            data.removeIf(b -> b.account().id().equals(accountId) && b.period().equals(period));
         }
 
-        public List<AccountBalance> findByAccount(UUID accountId) {
-            return data.stream().filter(b -> b.accountId().equals(accountId)).toList();
+        public List<Balance> findByAccount(UUID accountId) {
+            return data.stream().filter(b -> b.account().id().equals(accountId)).toList();
         }
 
         public void clearCache() { data.clear(); }

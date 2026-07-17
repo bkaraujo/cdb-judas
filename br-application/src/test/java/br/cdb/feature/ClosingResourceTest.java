@@ -37,7 +37,7 @@ public class ClosingResourceTest extends BaseHttpTest {
     @Test
     void deveBloquearLancamentoEmPeriodoFechado() {
         UUID accountId = UUID.fromString(asTestUser()
-                .body("{\"name\":\"Conta F\",\"balance\":0.00,\"type\":\"CHECKING\",\"color\":\"#000000\",\"active\":true}")
+                .body("{\"name\":\"Conta F\",\"value\":0.00,\"type\":\"CHECKING\",\"color\":\"#000000\",\"active\":true}")
                 .when().post("/api/" + TEST_USER_ID + "/accounts")
                 .then().extract().jsonPath().getString("id"));
 
@@ -75,7 +75,7 @@ public class ClosingResourceTest extends BaseHttpTest {
     @Test
     void deveBloquearEdicaoEExclusaoEmPeriodoFechado() {
         UUID accountId = UUID.fromString(asTestUser()
-                .body("{\"name\":\"Conta E\",\"balance\":0.00,\"type\":\"CHECKING\",\"color\":\"#000000\",\"active\":true}")
+                .body("{\"name\":\"Conta E\",\"value\":0.00,\"type\":\"CHECKING\",\"color\":\"#000000\",\"active\":true}")
                 .when().post("/api/" + TEST_USER_ID + "/accounts")
                 .then().extract().jsonPath().getString("id"));
 
@@ -120,11 +120,11 @@ public class ClosingResourceTest extends BaseHttpTest {
     @Test
     void deveBloquearTransferenciaEmPeriodoFechado() {
         String from = asTestUser()
-                .body("{\"name\":\"Origem\",\"balance\":100.00,\"type\":\"CHECKING\",\"color\":\"#000000\",\"active\":true}")
+                .body("{\"name\":\"Origem\",\"value\":100.00,\"type\":\"CHECKING\",\"color\":\"#000000\",\"active\":true}")
                 .when().post("/api/" + TEST_USER_ID + "/accounts")
                 .then().extract().jsonPath().getString("id");
         String to = asTestUser()
-                .body("{\"name\":\"Destino\",\"balance\":0.00,\"type\":\"CHECKING\",\"color\":\"#000000\",\"active\":true}")
+                .body("{\"name\":\"Destino\",\"value\":0.00,\"type\":\"CHECKING\",\"color\":\"#000000\",\"active\":true}")
                 .when().post("/api/" + TEST_USER_ID + "/accounts")
                 .then().extract().jsonPath().getString("id");
 

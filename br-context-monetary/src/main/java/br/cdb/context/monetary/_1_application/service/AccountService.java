@@ -13,25 +13,25 @@ import java.util.UUID;
 @NullMarked
 public class AccountService {
 
-    private final AccountRepository accountRepository = Registry.get(AccountRepository.class);
+    private final AccountRepository repository = Registry.get(AccountRepository.class);
 
     public List<Account> findAll() {
-        return accountRepository.findAll();
+        return repository.findAll();
     }
 
     public Result<Account, BusinessError> findById(UUID accountId) {
-        return accountRepository.findById(accountId)
+        return repository.findById(accountId)
                 .<Result<Account, BusinessError>>map(Result::success)
                 .orElseGet(() -> Result.failure(new BusinessError.NotFound("Account not found: " + accountId)));
     }
 
     public Account save(Account account) {
-        return accountRepository.save(account);
+        return repository.save(account);
     }
 
     public Result<Void, BusinessError> deleteById(UUID accountId) {
-        return findById(accountId).flatMap(existing -> {
-            accountRepository.deleteById(accountId);
+        return findById(accountId).flatMap(_ -> {
+            repository.deleteById(accountId);
             return Result.success();
         });
     }

@@ -2,11 +2,11 @@ package br.cdb.context.monetary._1_application.usecase;
 
 import br.cdb.context.monetary.AbstractUseCaseTest;
 import br.cdb.context.monetary._0_domain.model.*;
-import br.cdb.context.monetary._1_application.command.ImportedTransactionCommand;
 import br.cdb.context.monetary._1_application.command.TransactionCommand;
 import br.cdb.context.monetary._1_application.command.TransactionScope;
 import br.commons.Result;
 import br.commons.business.BusinessError;
+import lombok.val;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -390,7 +390,7 @@ class TransactionUseCaseTest extends AbstractUseCaseTest {
     @Test
     @DisplayName("createImported persiste como CONFIRMED/1-1 quando comando não traz parcelamento")
     void createImportedPersistsSingleInstallment() {
-        ImportedTransactionCommand cmd = new ImportedTransactionCommand(
+        val cmd = new TransactionCommand.Import(
                 accountId, "compra importada", new BigDecimal("42.00"), LocalDate.of(2026, 5, 10),
                 Transaction.Status.CONFIRMED, Transaction.Type.EXPENSE, null, null, null, null);
 
@@ -408,7 +408,7 @@ class TransactionUseCaseTest extends AbstractUseCaseTest {
     @DisplayName("createImported com cardId de outra conta é rejeitado")
     void createImportedRejectsCardFromAnotherAccount() {
         CreditCard creditCard = seedCard(UUID.randomUUID(), "1234");
-        ImportedTransactionCommand cmd = new ImportedTransactionCommand(
+        val cmd = new TransactionCommand.Import(
                 accountId, "compra importada", new BigDecimal("42.00"), LocalDate.of(2026, 5, 10),
                 Transaction.Status.CONFIRMED, Transaction.Type.EXPENSE, null, null, null, creditCard.id());
 
@@ -463,7 +463,7 @@ class TransactionUseCaseTest extends AbstractUseCaseTest {
     void deleteTransactionsRecalculatesBalance() {
         useCase.upsert(cmd(LocalDate.of(2026, 5, 10), Transaction.Status.CONFIRMED, null));
         Transaction t = transactionRepository().findAll().get(0);
-        balanceRepository().save(new AccountBalance(accountId, YearMonth.of(2026, 5), new BigDecimal("999.00")));
+        balanceRepository().save(new Balance(accountRepository().findById(accountId).orElseThrow(), YearMonth.of(2026, 5), new BigDecimal("999.00")));
 
         Result<Void, BusinessError> r = useCase.deleteTransactions(List.of(t.id()));
 

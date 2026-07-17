@@ -1,13 +1,19 @@
 package br.cdb.context.monetary._1_application.service;
 
-import br.cdb.context.monetary._0_domain.model.AccountBalance;
+import br.cdb.context.monetary._0_domain.model.Account;
+import br.cdb.context.monetary._0_domain.model.Balance;
 import br.cdb.context.monetary._0_domain.repository.BalanceRepository;
+import br.commons.Logger;
 import br.commons.Registry;
 import br.commons.Result;
 import br.commons.business.BusinessError;
+import lombok.val;
 import org.jspecify.annotations.NullMarked;
 
+import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.YearMonth;
+import java.time.ZoneId;
 import java.util.Comparator;
 import java.util.List;
 import java.util.UUID;
@@ -15,32 +21,111 @@ import java.util.UUID;
 @NullMarked
 public class BalanceService {
 
-    private final BalanceRepository balanceRepository = Registry.get(BalanceRepository.class);
+    private final BalanceRepository repository = Registry.get(BalanceRepository.class);
+    private final AccountService accountService = Registry.tryGet(AccountService.class);
+    private final TransactionService transactionService = Registry.tryGet(TransactionService.class);
 
-    public List<AccountBalance> findByAccount(UUID accountId) {
-        return balanceRepository.findByAccount(accountId);
+    public List<Balance> findByAccount(UUID accountId) {
+        return repository.findByAccount(accountId);
     }
 
-    public Result<AccountBalance, BusinessError> findByAccountAndPeriod(UUID accountId, YearMonth period) {
-        return balanceRepository.findByAccount(accountId).stream()
+    public Result<Balance, BusinessError> findByAccountAndPeriod(UUID accountId, YearMonth period) {
+        return repository.findByAccount(accountId).stream()
                 .filter(b -> b.period().equals(period))
                 .findFirst()
-                .<Result<AccountBalance, BusinessError>>map(Result::success)
-                .orElseGet(() -> Result.failure(new BusinessError.NotFound("Balance not found for period: " + period)));
+                .<Result<Balance, BusinessError>>map(Result::success)
+                .orElseGet(() -> Result.failure(new BusinessError.NotFound("MonthBalance not found for period: " + period)));
     }
 
-    public List<AccountBalance> findByAccountAndYear(UUID accountId, int year) {
-        return balanceRepository.findByAccount(accountId).stream()
+    public List<Balance> findByAccountAndYear(UUID accountId, int year) {
+        return repository.findByAccount(accountId).stream()
                 .filter(b -> b.period().getYear() == year)
-                .sorted(Comparator.comparing(AccountBalance::period))
+                .sorted(Comparator.comparing(Balance::period))
                 .toList();
     }
 
-    public AccountBalance save(AccountBalance balance) {
-        return balanceRepository.save(balance);
+    public Balance save(Balance balance) {
+        return repository.save(balance);
     }
 
-    public void deleteById(AccountBalance balance) {
-        balanceRepository.delete(balance.accountId(), balance.period());
+    public void deleteById(Balance balance) {
+        repository.delete(balance.account().id(), balance.period());
+    }
+
+
+    @NullMarked
+    private record MonthBalance(
+            LocalDate date,
+            BigDecimal amount
+    ) {}
+
+    public void recalculate(UUID accountId) {
+        val accountResult = accountService.findById(accountId);
+        if (accountResult.isFailure()) return;
+        val transactions = transactionService.findByAccount(accountId).stream()
+                .map(t -> new MonthBalance(t.date(), BigDecimal.valueOf(t.signal()).multiply(t.amount())))
+                .toList();
+
+        recalculateBalance(accountResult.get(), transactions);
+    }
+
+    private void recalculateBalance(Account account, List<MonthBalance> transactions) {
+        val existingBalances = findByAccount(account.id());
+
+        if (transactions.isEmpty()) {
+            // No activity left → no monthly snapshots make sense; drop any stale rows so reads
+            // fall back to the account's initial value.
+            existingBalances.forEach(this::deleteById);
+            return;
+        }
+
+        val firstMonth = transactions.stream()
+                .map(t -> YearMonth.from(t.date()))
+                .min(Comparator.naturalOrder())
+                .orElse(YearMonth.now(ZoneId.systemDefault()));
+
+        // Recompute the whole timeline from the first activity through the current month, so every
+        // month up to today has a snapshot (months with no movement carry the prior value forward).
+        var endMonth = YearMonth.now(ZoneId.systemDefault());
+        for (val t : transactions) {
+            val month = YearMonth.from(t.date());
+            if (month.isAfter(endMonth)) endMonth = month;
+        }
+        for (val b : existingBalances) {
+            if (b.period().isAfter(endMonth)) endMonth = b.period();
+        }
+
+        // Drop snapshots that precede all current activity (e.g. the earliest transactions were deleted).
+        existingBalances.stream()
+                .filter(b -> b.period().isBefore(firstMonth))
+                .forEach(this::deleteById);
+
+        Logger.verbose("Recalculating balance for account %s from %s to %s", account.id(), firstMonth, endMonth);
+
+        var runningBalance = BigDecimal.ZERO;
+        var current = firstMonth;
+        while (!current.isAfter(endMonth)) {
+            val finalCurrent = current;
+            val monthSum = transactions.stream()
+                    .filter(t -> YearMonth.from(t.date()).equals(finalCurrent))
+                    .map(MonthBalance::amount)
+                    .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+            runningBalance = runningBalance.add(monthSum);
+            upsertBalance(account, current, runningBalance, existingBalances);
+            current = current.plusMonths(1);
+        }
+    }
+
+    private void upsertBalance(Account account, YearMonth period, BigDecimal balance, List<Balance> existing) {
+        val existingOpt = existing.stream().filter(b -> b.period().equals(period)).findFirst();
+        if (existingOpt.isPresent()) {
+            val b = existingOpt.get();
+            if (b.value().compareTo(balance) != 0) {
+                save(new Balance(account, period, balance));
+            }
+        } else {
+            save(new Balance(account, period, balance));
+        }
     }
 }

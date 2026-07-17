@@ -15,7 +15,7 @@ import java.util.List;
 /**
  * Wires the credit-card statement-import feature: the PDF extractor (technical util), the parsing
  * services and the orchestrating {@link StatementImportService}, which reaches the monetary context
- * only through the use cases exposed by {@code MonetaryContext}.
+ * only through the use cases exposed by {@code MonetaryUseCases}.
  */
 @NullMarked
 @Singleton

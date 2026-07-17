@@ -5,10 +5,10 @@ import org.jspecify.annotations.NullMarked;
 import java.util.UUID;
 
 @NullMarked
-public sealed interface CardCommand {
+public sealed interface CreditCardCommand {
 
     @NullMarked
-    sealed interface Upsert extends CardCommand {}
+    sealed interface Upsert extends CreditCardCommand {}
 
     @NullMarked
     record Create(
@@ -26,6 +26,6 @@ public sealed interface CardCommand {
     record Delete(
             UUID id,
             TransactionPolicy policy
-    ) implements CardCommand {}
+    ) implements CreditCardCommand {}
 
 }

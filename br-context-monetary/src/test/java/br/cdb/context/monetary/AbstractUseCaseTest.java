@@ -24,7 +24,6 @@ public abstract class AbstractUseCaseTest {
         Registry.remove(BalanceService.class);
         Registry.remove(CostCenterService.class);
         Registry.remove(TransactionService.class);
-        Registry.remove(BalanceRecalculationService.class);
 
         Registry.tryGet(CreditCardRepository.class, InMemoryRepositories.Cards::new).clearCache();
         Registry.tryGet(BalanceRepository.class, InMemoryRepositories.Balances::new).clearCache();

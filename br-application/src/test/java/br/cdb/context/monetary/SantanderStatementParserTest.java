@@ -41,7 +41,7 @@ class SantanderStatementParserTest {
                         && l.description().contains("JUROS SALDO UTILIZ ATE LIMITE")
                         && l.description().contains("PERIODO: 01/11 A 30/11/25")
                         && l.amount().compareTo(new BigDecimal("-23.93")) == 0));
-        // The running balance (552,80) on that same value line must never become a movement amount.
+        // The running value (552,80) on that same value line must never become a movement amount.
         assertTrue(lines.stream().noneMatch(l -> l.amount().abs().compareTo(new BigDecimal("552.80")) == 0));
     }
 
@@ -87,7 +87,7 @@ class SantanderStatementParserTest {
     @Test
     void ignoresEverythingOutsideTheMovimentacaoTable() throws IOException {
         List<MonetaryDocumentEntry> lines = movements();
-        // Opening/closing "SALDO EM" balance lines are not movements.
+        // Opening/closing "SALDO EM" value lines are not movements.
         assertTrue(lines.stream().noneMatch(l -> l.description().contains("SALDO EM")));
         // The "Saldos por Período" / "Débito Automático" / "Transferências" tables that follow carry
         // their own date+amount rows and must not leak in: their zero columns and the Provisão-only

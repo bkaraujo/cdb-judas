@@ -1,6 +1,6 @@
 package br.cdb.feature.user;
 
-import br.cdb.context.monetary.MonetaryContext;
+import br.cdb.context.monetary.MonetaryUseCases;
 import br.cdb.context.monetary._0_domain.model.CreditCard;
 import br.cdb.core.web.security.CurrentUser;
 import br.cdb.feature.user.accounts.core.UserAccount;
@@ -93,7 +93,7 @@ public class UserGuards {
     private Map<UUID, UUID> accountByCard() {
         var cached = accountByCard;
         if (cached == null) {
-            cached = MonetaryContext.ucCreditCard().list().getOrElse(List.of()).stream()
+            cached = MonetaryUseCases.ucCreditCard().list().getOrElse(List.of()).stream()
                     .collect(Collectors.toUnmodifiableMap(CreditCard::id, CreditCard::accountId));
             accountByCard = cached;
         }

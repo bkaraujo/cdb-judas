@@ -4,7 +4,7 @@ import br.cdb.context.monetary.AbstractUseCaseTest;
 import br.cdb.context.monetary._0_domain.model.Account;
 import br.cdb.context.monetary._0_domain.model.CreditCard;
 import br.cdb.context.monetary._0_domain.model.Transaction;
-import br.cdb.context.monetary._1_application.command.CardCommand;
+import br.cdb.context.monetary._1_application.command.CreditCardCommand;
 import br.cdb.context.monetary._1_application.command.TransactionPolicy;
 import br.commons.Result;
 import br.commons.business.BusinessError;
@@ -39,14 +39,14 @@ class CreditCardUseCaseTest extends AbstractUseCaseTest {
     }
 
     private CreditCard createCard(UUID accountId, String last4) {
-        return ((Result.Success<CreditCard, BusinessError>) useCase.upsert(new CardCommand.Create(accountId, last4))).value();
+        return ((Result.Success<CreditCard, BusinessError>) useCase.upsert(new CreditCardCommand.Create(accountId, last4))).value();
     }
 
     @Test
     @DisplayName("cria cartão vinculado a conta existente e ativa")
     void createsCard() {
         val account = seedChecking();
-        val r = useCase.upsert(new CardCommand.Create(account.id(), "1234"));
+        val r = useCase.upsert(new CreditCardCommand.Create(account.id(), "1234"));
 
         assertTrue(r.isSuccess());
         val creditCard = ((Result.Success<CreditCard, BusinessError>) r).value();
@@ -59,7 +59,7 @@ class CreditCardUseCaseTest extends AbstractUseCaseTest {
     @DisplayName("last4 fora do formato \\d{4} → Validation")
     void rejectsMalformedLast4() {
         val account = seedChecking();
-        val r = useCase.upsert(new CardCommand.Create(account.id(), "12a4"));
+        val r = useCase.upsert(new CreditCardCommand.Create(account.id(), "12a4"));
         assertTrue(r.isFailure());
         assertInstanceOf(BusinessError.Validation.class, ((Result.Failure<CreditCard, BusinessError>) r).error());
     }
@@ -67,7 +67,7 @@ class CreditCardUseCaseTest extends AbstractUseCaseTest {
     @Test
     @DisplayName("conta inexistente → NotFound")
     void rejectsUnknownAccount() {
-        val r = useCase.upsert(new CardCommand.Create(UUID.randomUUID(), "1234"));
+        val r = useCase.upsert(new CreditCardCommand.Create(UUID.randomUUID(), "1234"));
         assertTrue(r.isFailure());
         assertInstanceOf(BusinessError.NotFound.class, ((Result.Failure<CreditCard, BusinessError>) r).error());
     }
@@ -76,7 +76,7 @@ class CreditCardUseCaseTest extends AbstractUseCaseTest {
     @DisplayName("conta inativa → BusinessRule")
     void rejectsInactiveAccount() {
         val inactive = seedInactive();
-        val r = useCase.upsert(new CardCommand.Create(inactive.id(), "1234"));
+        val r = useCase.upsert(new CreditCardCommand.Create(inactive.id(), "1234"));
         assertTrue(r.isFailure());
         assertInstanceOf(BusinessError.BusinessRule.class, ((Result.Failure<CreditCard, BusinessError>) r).error());
     }
@@ -85,8 +85,8 @@ class CreditCardUseCaseTest extends AbstractUseCaseTest {
     @DisplayName("last4 duplicado na mesma conta → Conflict")
     void rejectsDuplicateLast4OnSameAccount() {
         val account = seedChecking();
-        assertTrue(useCase.upsert(new CardCommand.Create(account.id(), "1234")).isSuccess());
-        val r = useCase.upsert(new CardCommand.Create(account.id(), "1234"));
+        assertTrue(useCase.upsert(new CreditCardCommand.Create(account.id(), "1234")).isSuccess());
+        val r = useCase.upsert(new CreditCardCommand.Create(account.id(), "1234"));
         assertTrue(r.isFailure());
         assertInstanceOf(BusinessError.Conflict.class, ((Result.Failure<CreditCard, BusinessError>) r).error());
     }
@@ -96,8 +96,8 @@ class CreditCardUseCaseTest extends AbstractUseCaseTest {
     void allowsSameLast4OnDifferentAccounts() {
         val a = seedChecking();
         val b = seedChecking();
-        assertTrue(useCase.upsert(new CardCommand.Create(a.id(), "1234")).isSuccess());
-        assertTrue(useCase.upsert(new CardCommand.Create(b.id(), "1234")).isSuccess());
+        assertTrue(useCase.upsert(new CreditCardCommand.Create(a.id(), "1234")).isSuccess());
+        assertTrue(useCase.upsert(new CreditCardCommand.Create(b.id(), "1234")).isSuccess());
     }
 
     @Test
@@ -105,7 +105,7 @@ class CreditCardUseCaseTest extends AbstractUseCaseTest {
     void blockDeletesCardWithoutTransactions() {
         val account = seedChecking();
         val creditCard = createCard(account.id(), "1234");
-        val r = useCase.delete(new CardCommand.Delete(creditCard.id(), new TransactionPolicy.Block()));
+        val r = useCase.delete(new CreditCardCommand.Delete(creditCard.id(), new TransactionPolicy.Block()));
         assertTrue(r.isSuccess());
         assertTrue(((Result.Success<List<CreditCard>, BusinessError>) useCase.list(account.id())).value().isEmpty());
     }
@@ -113,7 +113,7 @@ class CreditCardUseCaseTest extends AbstractUseCaseTest {
     @Test
     @DisplayName("deleteCard inexistente → NotFound")
     void deleteUnknownCard() {
-        val r = useCase.delete(new CardCommand.Delete(UUID.randomUUID(), new TransactionPolicy.Block()));
+        val r = useCase.delete(new CreditCardCommand.Delete(UUID.randomUUID(), new TransactionPolicy.Block()));
         assertTrue(r.isFailure());
         assertInstanceOf(BusinessError.NotFound.class, ((Result.Failure<List<UUID>, BusinessError>) r).error());
     }
@@ -126,7 +126,7 @@ class CreditCardUseCaseTest extends AbstractUseCaseTest {
         transactionRepository().save(new Transaction(UUID.randomUUID(), "compra", java.math.BigDecimal.TEN, java.time.LocalDate.now(),
                 account.id(), Transaction.Status.CONFIRMED, Transaction.Type.EXPENSE, UUID.randomUUID(), null, null, 1, 1, null, creditCard.id()));
 
-        val r = useCase.delete(new CardCommand.Delete(creditCard.id(), new TransactionPolicy.Block()));
+        val r = useCase.delete(new CreditCardCommand.Delete(creditCard.id(), new TransactionPolicy.Block()));
 
         assertTrue(r.isFailure());
         assertInstanceOf(BusinessError.Conflict.class, ((Result.Failure<List<UUID>, BusinessError>) r).error());
@@ -143,7 +143,7 @@ class CreditCardUseCaseTest extends AbstractUseCaseTest {
                 java.time.LocalDate.now(), account.id(), Transaction.Status.CONFIRMED, Transaction.Type.EXPENSE,
                 UUID.randomUUID(), null, null, 1, 1, null, source.id()));
 
-        val r = useCase.delete(new CardCommand.Delete(source.id(), new TransactionPolicy.Move(target.id())));
+        val r = useCase.delete(new CreditCardCommand.Delete(source.id(), new TransactionPolicy.Move(target.id())));
 
         assertTrue(r.isSuccess());
         assertEquals(List.of(tx.id()), ((Result.Success<List<UUID>, BusinessError>) r).value());
@@ -156,7 +156,7 @@ class CreditCardUseCaseTest extends AbstractUseCaseTest {
     void moveRejectsSelfTarget() {
         val account = seedChecking();
         val creditCard = createCard(account.id(), "1234");
-        val r = useCase.delete(new CardCommand.Delete(creditCard.id(), new TransactionPolicy.Move(creditCard.id())));
+        val r = useCase.delete(new CreditCardCommand.Delete(creditCard.id(), new TransactionPolicy.Move(creditCard.id())));
         assertTrue(r.isFailure());
         assertInstanceOf(BusinessError.BusinessRule.class, ((Result.Failure<List<UUID>, BusinessError>) r).error());
     }
@@ -166,7 +166,7 @@ class CreditCardUseCaseTest extends AbstractUseCaseTest {
     void moveRejectsUnknownTarget() {
         val account = seedChecking();
         val creditCard = createCard(account.id(), "1234");
-        val r = useCase.delete(new CardCommand.Delete(creditCard.id(), new TransactionPolicy.Move(UUID.randomUUID())));
+        val r = useCase.delete(new CreditCardCommand.Delete(creditCard.id(), new TransactionPolicy.Move(UUID.randomUUID())));
         assertTrue(r.isFailure());
         assertInstanceOf(BusinessError.NotFound.class, ((Result.Failure<List<UUID>, BusinessError>) r).error());
     }
@@ -178,7 +178,7 @@ class CreditCardUseCaseTest extends AbstractUseCaseTest {
         val b = seedChecking();
         val source = createCard(a.id(), "1234");
         val target = createCard(b.id(), "5678");
-        val r = useCase.delete(new CardCommand.Delete(source.id(), new TransactionPolicy.Move(target.id())));
+        val r = useCase.delete(new CreditCardCommand.Delete(source.id(), new TransactionPolicy.Move(target.id())));
         assertTrue(r.isFailure());
         assertInstanceOf(BusinessError.BusinessRule.class, ((Result.Failure<List<UUID>, BusinessError>) r).error());
     }
@@ -189,9 +189,9 @@ class CreditCardUseCaseTest extends AbstractUseCaseTest {
         val account = seedChecking();
         val source = createCard(account.id(), "1234");
         val target = createCard(account.id(), "5678");
-        useCase.upsert(new CardCommand.Update(target.id(), false));
+        useCase.upsert(new CreditCardCommand.Update(target.id(), false));
 
-        val r = useCase.delete(new CardCommand.Delete(source.id(), new TransactionPolicy.Move(target.id())));
+        val r = useCase.delete(new CreditCardCommand.Delete(source.id(), new TransactionPolicy.Move(target.id())));
         assertTrue(r.isFailure());
         assertInstanceOf(BusinessError.BusinessRule.class, ((Result.Failure<List<UUID>, BusinessError>) r).error());
     }
@@ -205,7 +205,7 @@ class CreditCardUseCaseTest extends AbstractUseCaseTest {
                 java.time.LocalDate.now(), account.id(), Transaction.Status.CONFIRMED, Transaction.Type.EXPENSE,
                 UUID.randomUUID(), null, null, 1, 1, null, creditCard.id()));
 
-        val r = useCase.delete(new CardCommand.Delete(creditCard.id(), new TransactionPolicy.Purge()));
+        val r = useCase.delete(new CreditCardCommand.Delete(creditCard.id(), new TransactionPolicy.Purge()));
 
         assertTrue(r.isSuccess());
         assertEquals(List.of(tx.id()), ((Result.Success<List<UUID>, BusinessError>) r).value());
@@ -219,7 +219,7 @@ class CreditCardUseCaseTest extends AbstractUseCaseTest {
         val account = seedChecking();
         val creditCard = createCard(account.id(), "1234");
 
-        val r = useCase.upsert(new CardCommand.Update(creditCard.id(), false));
+        val r = useCase.upsert(new CreditCardCommand.Update(creditCard.id(), false));
 
         assertTrue(r.isSuccess());
         assertFalse(((Result.Success<CreditCard, BusinessError>) r).value().active());

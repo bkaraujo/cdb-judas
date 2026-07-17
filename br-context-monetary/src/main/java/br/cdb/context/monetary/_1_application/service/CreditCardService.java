@@ -13,29 +13,29 @@ import java.util.UUID;
 @NullMarked
 public class CreditCardService {
 
-    private final CreditCardRepository creditCardRepository = Registry.get(CreditCardRepository.class);
+    private final CreditCardRepository repository = Registry.get(CreditCardRepository.class);
 
     public List<CreditCard> findAll() {
-        return creditCardRepository.findAll();
+        return repository.findAll();
     }
 
     public List<CreditCard> findByAccount(UUID accountId) {
-        return creditCardRepository.findAll().stream()
+        return repository.findAll().stream()
                 .filter(c -> accountId.equals(c.accountId()))
                 .toList();
     }
 
     public Result<CreditCard, BusinessError> findById(UUID id) {
-        return creditCardRepository.findById(id)
+        return repository.findById(id)
                 .<Result<CreditCard, BusinessError>>map(Result::success)
                 .orElseGet(() -> Result.failure(new BusinessError.NotFound("CreditCard not found: " + id)));
     }
 
     public CreditCard save(CreditCard creditCard) {
-        return creditCardRepository.save(creditCard);
+        return repository.save(creditCard);
     }
 
     public void deleteById(UUID id) {
-        creditCardRepository.deleteById(id);
+        repository.deleteById(id);
     }
 }

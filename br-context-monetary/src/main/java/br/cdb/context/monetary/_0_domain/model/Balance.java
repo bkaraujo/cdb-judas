@@ -4,11 +4,10 @@ import org.jspecify.annotations.NullMarked;
 
 import java.math.BigDecimal;
 import java.time.YearMonth;
-import java.util.UUID;
 
 @NullMarked
-public record AccountBalance(
-        UUID accountId,
+public record Balance(
+        Account account,
         YearMonth period,
-        BigDecimal balance
+        BigDecimal value
 ) {}

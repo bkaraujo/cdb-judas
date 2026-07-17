@@ -38,7 +38,7 @@ import org.jspecify.annotations.NullMarked;
  * <p>As portas de repositório dos contextos são publicadas no {@link Registry} em
  * {@link #initDataSource(StartupEvent, DataSource)} — depois do {@code DataSource} existir
  * (os adaptadores {@code *JDBCRepository} o resolvem no construtor) e antes de qualquer
- * requisição HTTP construir um use case de contexto via {@code MonetaryContext.uc*()}.
+ * requisição HTTP construir um use case de contexto via {@code MonetaryUseCases.uc*()}.
  * Só {@link UserRepository}/{@link PersonRepository} continuam expostos também como beans CDI:
  * têm consumidores injetados (login/perfil/seed) e caches que os testes precisam limpar.
  */

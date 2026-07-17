@@ -1,7 +1,7 @@
 package br.cdb.feature.user.accounts.transactions.importer;
 
 import br.cdb.context.monetary._0_domain.model.CreditCard;
-import br.cdb.context.monetary._1_application.command.ImportConfirmCommand;
+import br.cdb.context.monetary._1_application.command.TransactionCommand;
 import br.cdb.core.web.error.ProblemDetail;
 import br.cdb.feature.user.UserUseCase;
 import br.cdb.feature.user.accounts.transactions.importer.confirm.BankStatementConfirmCommand;
@@ -83,7 +83,7 @@ public class StatementImportResource {
         }
         val rows = req.rows().stream().map(StatementImportResource::toInvoiceRow).toList();
 
-        return switch (userUseCase.confirmInvoiceImport(new ImportConfirmCommand(rows))) {
+        return switch (userUseCase.confirmInvoiceImport(new TransactionCommand.ImportConfirm(rows))) {
             case Result.Success(var res) ->
                     Response.ok(new ImportConfirmResponse(res.created(), res.reconciled(), res.skipped())).build();
             case Result.Failure(var error) -> problem422("CARD_NOT_FOUND", messageOf(error));
@@ -106,8 +106,8 @@ public class StatementImportResource {
     }
 
     /** {@code cardId} is guaranteed non-null by the {@code CARD_REQUIRED} guard in {@link #confirmInvoice}. */
-    private static ImportConfirmCommand.Row toInvoiceRow(StatementConfirmRequest.Row row) {
-        return new ImportConfirmCommand.Row(
+    private static TransactionCommand.ImportConfirm.Row toInvoiceRow(StatementConfirmRequest.Row row) {
+        return new TransactionCommand.ImportConfirm.Row(
                 row.description(), row.amount(), row.date(), row.originalDate(),
                 row.installmentNumber(), row.installmentTotal(), row.categoryId(),
                 Objects.requireNonNull(row.cardId()));

@@ -1,7 +1,7 @@
 package br.cdb.context.monetary._1_application.usecase;
 
 import br.cdb.context.monetary.AbstractUseCaseTest;
-import br.cdb.context.monetary.MonetaryContext;
+import br.cdb.context.monetary.MonetaryUseCases;
 import br.cdb.context.monetary._0_domain.model.CostCenter;
 import br.cdb.context.monetary._1_application.command.CostCenterCommand;
 import br.commons.Result;
@@ -19,7 +19,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 /** Cobre centro de custo. Categorias e tags são camada feature (USER_CATEGORY / USER_TAG), não este contexto. */
 class CostCenterUseCaseTest extends AbstractUseCaseTest {
 
-    private CostCenterUseCase useCase = MonetaryContext.ucCostCenter();
+    private CostCenterUseCase useCase = MonetaryUseCases.ucCostCenter();
 
     @BeforeEach
     void setUp() {

@@ -1,11 +1,14 @@
 package br.cdb.feature.user;
 
-import br.cdb.context.monetary.MonetaryContext;
+import br.cdb.context.monetary.MonetaryUseCases;
 import br.cdb.context.monetary._0_domain.model.Account;
-import br.cdb.context.monetary._0_domain.model.AccountBalance;
+import br.cdb.context.monetary._0_domain.model.Balance;
 import br.cdb.context.monetary._0_domain.model.CreditCard;
 import br.cdb.context.monetary._0_domain.model.Transaction;
-import br.cdb.context.monetary._1_application.command.*;
+import br.cdb.context.monetary._1_application.command.AccountCommand;
+import br.cdb.context.monetary._1_application.command.CreditCardCommand;
+import br.cdb.context.monetary._1_application.command.TransactionCommand;
+import br.cdb.context.monetary._1_application.command.TransactionScope;
 import br.cdb.context.monetary._1_application.usecase.AccountUseCase;
 import br.cdb.context.monetary._1_application.usecase.CreditCardUseCase;
 import br.cdb.context.monetary._1_application.usecase.TransactionUseCase;
@@ -50,7 +53,7 @@ import java.util.stream.Collectors;
 
 /**
  * Único use case da fatia {@code feature.user}: orquestra os use cases do contexto monetário
- * (via {@link MonetaryContext}) e os serviços de feature (overlays, SSE, fechamento, importação).
+ * (via {@link MonetaryUseCases}) e os serviços de feature (overlays, SSE, fechamento, importação).
  * Os {@code *Resource} apenas traduzem formato (HTTP ⇄ comandos/views) e delegam aqui.
  */
 @NullMarked
@@ -58,9 +61,9 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class UserUseCase {
 
-    private final AccountUseCase ucAccount = MonetaryContext.ucAccount();
-    private final CreditCardUseCase ucCreditCard = MonetaryContext.ucCreditCard();
-    private final TransactionUseCase ucTransaction = MonetaryContext.ucTransaction();
+    private final AccountUseCase ucAccount = MonetaryUseCases.ucAccount();
+    private final CreditCardUseCase ucCreditCard = MonetaryUseCases.ucCreditCard();
+    private final TransactionUseCase ucTransaction = MonetaryUseCases.ucTransaction();
 
     private final UserGuards guards;
     private final UserAccountService userAccountService;
@@ -217,11 +220,11 @@ public class UserUseCase {
 
     // ── Balances ───────────────────────────────────────────────────
 
-    public Result<AccountBalance, BusinessError> monthlyBalance(UUID accountId, YearMonth period) {
+    public Result<Balance, BusinessError> monthlyBalance(UUID accountId, YearMonth period) {
         return guards.ownsAccount(accountId).flatMap(ignored -> ucAccount.getMonthlyBalance(accountId, period));
     }
 
-    public Result<List<AccountBalance>, BusinessError> yearBalances(UUID accountId, int year) {
+    public Result<List<Balance>, BusinessError> yearBalances(UUID accountId, int year) {
         return guards.ownsAccount(accountId).flatMap(ignored -> ucAccount.getYearBalances(accountId, year));
     }
 
@@ -231,7 +234,7 @@ public class UserUseCase {
         return guards.ownsAccount(accountId).flatMap(ignored -> ucCreditCard.list(accountId));
     }
 
-    public Result<CreditCard, BusinessError> createCard(CardCommand.Create cmd) {
+    public Result<CreditCard, BusinessError> createCard(CreditCardCommand.Create cmd) {
         return guards.ownsAccount(cmd.accountId()).flatMap(ignored -> ucCreditCard.upsert(cmd))
                 .ifSuccess(ignored -> accountStreamPublisher.upsert(cmd.accountId()));
     }
@@ -244,7 +247,7 @@ public class UserUseCase {
                 if (count > 0) return Result.success(new DeletionOutcome.Linked(count));
             }
 
-            return ucCreditCard.delete(new CardCommand.Delete(cardId, Deletions.toPolicy(strategy, targetId))).map(ids -> {
+            return ucCreditCard.delete(new CreditCardCommand.Delete(cardId, Deletions.toPolicy(strategy, targetId))).map(ids -> {
                 // MOVE mantém o cartão de destino na mesma conta: sem re-key de overlay a fazer.
                 if (strategy != DeletionStrategy.MOVE) {
                     ids.forEach(id -> {
@@ -260,7 +263,7 @@ public class UserUseCase {
 
     public Result<CreditCard, BusinessError> setCardActive(UUID accountId, UUID cardId, boolean active) {
         return guards.ownsCard(accountId, cardId)
-                .flatMap(ignored -> ucCreditCard.upsert(new CardCommand.Update(cardId, active)))
+                .flatMap(ignored -> ucCreditCard.upsert(new CreditCardCommand.Update(cardId, active)))
                 .ifSuccess(ignored -> accountStreamPublisher.upsert(accountId));
     }
 
@@ -420,7 +423,7 @@ public class UserUseCase {
                 .map(outcome -> new ImportPreviewView(outcome, accountNamesById()));
     }
 
-    public Result<ImportResult, BusinessError> confirmInvoiceImport(ImportConfirmCommand cmd) {
+    public Result<ImportResult, BusinessError> confirmInvoiceImport(TransactionCommand.ImportConfirm cmd) {
         for (val row : cmd.rows()) {
             if (guards.ownsCard(row.cardId()) instanceof Result.Failure<Void, BusinessError>(var error)) {
                 return Result.failure(error);
@@ -442,7 +445,7 @@ public class UserUseCase {
     }
 
     /** Contas distintas donas dos cartões das linhas confirmadas. */
-    private List<UUID> affectedAccountIds(List<ImportConfirmCommand.Row> rows) {
+    private List<UUID> affectedAccountIds(List<TransactionCommand.ImportConfirm.Row> rows) {
         val accountByCard = ucCreditCard.list().getOrElse(List.of()).stream()
                 .collect(Collectors.toMap(CreditCard::id, CreditCard::accountId));
         return rows.stream()

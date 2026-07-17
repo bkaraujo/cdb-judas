@@ -13,7 +13,7 @@
  *       {@code skipped}</li>
  * </ul>
  *
- * <p>O fluxo de fatura de cartão reusa o {@code ImportConfirmCommand} do contexto monetário; o request
+ * <p>O fluxo de fatura de cartão reusa o {@code ImportConfirm} do contexto monetário; o request
  * unificado de entrada ({@code StatementConfirmRequest}, discriminado por {@code type}) vive no pacote
  * {@code importer}.
  */

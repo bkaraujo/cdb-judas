@@ -98,7 +98,6 @@ public abstract class BaseHttpTest {
         Registry.remove(TransactionService.class);
         Registry.remove(CreditCardService.class);
         Registry.remove(CostCenterService.class);
-        Registry.remove(BalanceRecalculationService.class);
         Registry.remove(AccountUseCase.class);
         Registry.remove(TransactionUseCase.class);
         Registry.remove(CostCenterUseCase.class);

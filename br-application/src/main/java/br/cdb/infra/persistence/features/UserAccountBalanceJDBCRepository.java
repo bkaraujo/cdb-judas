@@ -1,7 +1,9 @@
 package br.cdb.infra.persistence.features;
 
-import br.cdb.context.monetary._0_domain.model.AccountBalance;
+import br.cdb.context.monetary._0_domain.model.Balance;
+import br.cdb.context.monetary._0_domain.repository.AccountRepository;
 import br.cdb.context.monetary._0_domain.repository.BalanceRepository;
+import br.commons.Registry;
 import br.commons.Result;
 import br.commons.framework.persistence.jdbc.JDBCRepository;
 import br.commons.framework.persistence.jdbc.primitives.JDBCParameter;
@@ -18,19 +20,19 @@ import java.util.*;
  * (períodos mensais por utilizador, período como YYYYMM inteiro).
  */
 @NullMarked
-public final class UserAccountBalanceJDBCRepository extends JDBCRepository<AccountBalance> implements BalanceRepository {
+public final class UserAccountBalanceJDBCRepository extends JDBCRepository<Balance> implements BalanceRepository {
 
     public UserAccountBalanceJDBCRepository() {
         super("USER_ACCOUNT_BALANCE");
     }
 
     @Override
-    public Optional<AccountBalance> findById(UUID id) {
+    public Optional<Balance> findById(UUID id) {
         return findById(id.toString());
     }
 
     @Override
-    public List<AccountBalance> findByAccount(UUID accountId) {
+    public List<Balance> findByAccount(UUID accountId) {
         return datasource.query(
                 "SELECT " + columnList() + " FROM " + table() + " WHERE COD_ACCOUNT = ?",
                 JDBCParameter.of(accountId.toString()),
@@ -39,14 +41,14 @@ public final class UserAccountBalanceJDBCRepository extends JDBCRepository<Accou
     }
 
     /**
-     * Upsert por (COD_ACCOUNT, NUM_PERIOD): {@link AccountBalance} não carrega {@code id} — a PK
+     * Upsert por (COD_ACCOUNT, NUM_PERIOD): {@link Balance} não carrega {@code id} — a PK
      * física ({@code ID}) é gerada aqui só no INSERT; a existência é checada pela chave de negócio.
      */
     @Override
-    public AccountBalance save(AccountBalance entity) {
-        val accountId = entity.accountId().toString();
+    public Balance save(Balance entity) {
+        val accountId = entity.account().id().toString();
         val numPeriod = toNumPeriod(entity.period());
-        val codUser = findUserIdForAccount(entity.accountId());
+        val codUser = findUserIdForAccount(entity.account().id());
 
         datasource.transaction(tx -> {
             val exists = tx.query(
@@ -58,12 +60,12 @@ public final class UserAccountBalanceJDBCRepository extends JDBCRepository<Accou
             if (exists) {
                 tx.execute(
                         "UPDATE " + table() + " SET DEC_BALANCE = ? WHERE COD_ACCOUNT = ? AND NUM_PERIOD = ?",
-                        JDBCParameter.of(entity.balance(), accountId, numPeriod)
+                        JDBCParameter.of(entity.value(), accountId, numPeriod)
                 ).get();
             } else {
                 tx.execute(
                         "INSERT INTO " + table() + " (ID, COD_USER, COD_ACCOUNT, NUM_PERIOD, DEC_BALANCE) VALUES (?, ?, ?, ?, ?)",
-                        JDBCParameter.of(UUID.randomUUID().toString(), codUser, accountId, numPeriod, entity.balance())
+                        JDBCParameter.of(UUID.randomUUID().toString(), codUser, accountId, numPeriod, entity.value())
                 ).get();
             }
 
@@ -93,19 +95,23 @@ public final class UserAccountBalanceJDBCRepository extends JDBCRepository<Accou
     }
 
     @Override
-    protected Map<String, @Nullable Object> values(AccountBalance entity) {
+    protected Map<String, @Nullable Object> values(Balance entity) {
         val values = new LinkedHashMap<String, @Nullable Object>();
-        values.put("COD_USER", findUserIdForAccount(entity.accountId()));
-        values.put("COD_ACCOUNT", entity.accountId().toString());
+        values.put("COD_USER", findUserIdForAccount(entity.account().id()));
+        values.put("COD_ACCOUNT", entity.account().id().toString());
         values.put("NUM_PERIOD", toNumPeriod(entity.period()));
-        values.put("DEC_BALANCE", entity.balance());
+        values.put("DEC_BALANCE", entity.value());
         return values;
     }
 
+    /** Resolve o {@code Account} pela porta no Registry (lazy — a ordem de registro dos adaptadores não importa); a FK de COD_ACCOUNT garante que a conta existe. */
     @Override
-    protected AccountBalance map(JDBCResultSet rs) {
-        return new AccountBalance(
-                UUID.fromString(rs.getString("COD_ACCOUNT").get()),
+    protected Balance map(JDBCResultSet rs) {
+        val accountId = UUID.fromString(rs.getString("COD_ACCOUNT").get());
+        val account = Registry.get(AccountRepository.class).findById(accountId)
+                .orElseThrow(() -> new IllegalStateException("Account not found for balance row: " + accountId));
+        return new Balance(
+                account,
                 fromNumPeriod(rs.getInt("NUM_PERIOD").get()),
                 rs.getBigDecimal("DEC_BALANCE").get()
         );

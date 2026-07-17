@@ -1,6 +1,6 @@
 package br.cdb.feature.user.accounts.transactions.importer;
 
-import br.cdb.context.monetary.MonetaryContext;
+import br.cdb.context.monetary.MonetaryUseCases;
 import br.cdb.context.monetary._0_domain.model.CreditCard;
 import br.cdb.context.monetary._1_application.usecase.CreditCardUseCase;
 import jakarta.inject.Singleton;
@@ -19,7 +19,7 @@ import java.util.List;
 @RequiredArgsConstructor
 public class MonetaryCardProvider implements CreditCardProvider {
 
-    private final CreditCardUseCase ucCreditCard = MonetaryContext.ucCreditCard();
+    private final CreditCardUseCase ucCreditCard = MonetaryUseCases.ucCreditCard();
 
     @Override
     public List<CreditCard> creditCards() {

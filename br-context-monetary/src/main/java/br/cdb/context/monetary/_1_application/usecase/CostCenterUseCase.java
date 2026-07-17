@@ -15,26 +15,26 @@ import java.util.UUID;
 @NullMarked
 public class CostCenterUseCase {
 
-    private final CostCenterService costCenterService = Registry.tryGet(CostCenterService.class);
+    private final CostCenterService service = Registry.tryGet(CostCenterService.class);
 
     public Result<List<CostCenter>, BusinessError> list() {
-        return Result.success(costCenterService.findAll());
+        return Result.success(service.findAll());
     }
     public Result<CostCenter, BusinessError> upsert(CostCenterCommand.Upsert cmd) {
         return switch (cmd) {
             case CostCenterCommand.Create(var description) -> {
-                val created = costCenterService.save(UUID.randomUUID(), description);
+                val created = service.save(UUID.randomUUID(), description);
                 yield Result.success(created);
             }
             case CostCenterCommand.Update(var id, var description) -> {
-                val updated = costCenterService.save(id, description);
+                val updated = service.save(id, description);
                 yield Result.success(updated);
             }
         };
     }
 
     public Result<Void, BusinessError> delete(CostCenterCommand.Delete command) {
-        costCenterService.deleteById(command.id());
+        service.deleteById(command.id());
         return Result.success();
     }
 }

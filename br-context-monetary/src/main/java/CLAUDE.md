@@ -9,7 +9,7 @@ Módulo Maven `context-monetary` (`br.cdb.contexts:context-monetary`, artifactId
 ```
 br.cdb.context.monetary
 ├── _0_domain
-│   ├── model/       Account, AccountBalance, CostCenter, CreditCard, Statement, Transaction
+│   ├── model/       Account, Balance, CostCenter, CreditCard, Statement, Transaction
 │   ├── event/       AccountEvents, CreditCardEvents, TransactionEvents (cada um Created / Updated / Deleted)
 │   └── repository/  AccountRepository, BalanceRepository, CreditCardRepository, CostCenterRepository, TransactionRepository  (portas)
 ├── _1_application
@@ -24,7 +24,7 @@ br.cdb.context.monetary
 
 * **`_0_domain`** — modelos imutáveis (`record`) e portas de repositório. Sem dependência de infraestrutura. `CostCenter` é o modelo de domínio para "centro de custo" — não confundir com o catálogo global somente-leitura da feature de sistema `br.cdb.feature.system.costcenter` (persistido em JSON, é outra coisa).
 * **`_1_application`** — `service/` encapsula acesso a repositório + validação de domínio (parâmetros simples); `usecase/` orquestra services e publica eventos (recebe `Command`s); `event/` reage a eventos via `@MessageListener` (`MessageBus`, de `br-commons`).
-* **`MonetaryContext`** — `implements br.commons.annotation.Facade`; ponto de acesso a partir de `br-application`, mas **sem métodos de delegação**: expõe só acessores estáticos `ucAccount()`/`ucCreditCard()`/`ucCostCenter()`/`ucTransaction()` que resolvem (e registram sob demanda) o use case no `Registry` via `tryGet`. O chamador trabalha direto com o use case devolvido (ArchUnit permite `_1_application.usecase` a partir de `feature`).
+* **`MonetaryUseCases`** — `implements br.commons.annotation.Facade`; ponto de acesso a partir de `br-application`, mas **sem métodos de delegação**: expõe só acessores estáticos `ucAccount()`/`ucCreditCard()`/`ucCostCenter()`/`ucTransaction()` que resolvem (e registram sob demanda) o use case no `Registry` via `tryGet`. O chamador trabalha direto com o use case devolvido (ArchUnit permite `_1_application.usecase` a partir de `feature`).
 * **Sem composition root separado** — `Service`/`UseCase` se auto-conectam via `Registry.tryGet`/`Registry.get` nos próprios inicializadores de campo (sem construtor explícito, sem `MonetaryBootstrap`). Não existe mais `MonetaryContext.instance()`: a assinatura do `TransactionEventListener` no `MessageBus` acontece no construtor de `TransactionUseCase` (o `MessageBus` guarda os containers já assinados por FQN e ignora reassinaturas). As 5 portas de repositório precisam estar no `Registry` antes do primeiro acesso — em produção/`@QuarkusTest` isso é feito por `br.cdb.core.ContextBridge` no `StartupEvent`.
 
 ## Pontos não óbvios
@@ -34,7 +34,7 @@ br.cdb.context.monetary
 * **`TransactionPolicy`** (sealed: `Block`/`Move(targetId)`/`Purge`) — viaja dentro de `AccountCommand.Delete`/`CardCommand.Delete` (não como parâmetro solto da Facade); decide o que fazer com transações vinculadas à entidade excluída. É passado de fora (a UI decide a política, não o contexto).
 * **`TransactionScope`** (sealed: `Single`/`Future`) — viaja dentro de `TransactionCommand.Update`/`Delete`; substitui o antigo par de Strings mágicas `editMode`/`mode` (`"FUTURE"` vs. qualquer outra coisa). O parse da String de HTTP para `TransactionScope` acontece na borda da feature (`TransactionMapper.toScope`), não aqui.
 * **Cartão (`CreditCard`)** é entidade própria do contexto (`last4`, `accountId`, `active`) desde a migração cartão-como-entidade; limite de crédito/cheque especial e ciclo de fatura continuam sendo colunas de `Account` (compartilhadas por todos os cartões da conta) — ver `@docs/backend/persistence-jdbc.md`.
-* **`AccountBalance`** — projeção de saldo por competência (`?period=yyyyMM`/`?year=yyyy`) exposta por `AccountUseCase` (`getMonthlyBalance`/`getYearBalances`). Chave de negócio é o par `(accountId, period)` — o record não carrega `id` próprio; `BalanceRepository.delete(UUID, YearMonth)` (não `deleteById`) é o caminho real de exclusão usado por `BalanceService`/`BalanceRecalculationService`.
+* **`Balance`** — projeção de saldo por competência (`?period=yyyyMM`/`?year=yyyy`) exposta por `AccountUseCase` (`getMonthlyBalance`/`getYearBalances`). O record referencia o `Account` inteiro (`account`, não um `accountId` solto) e o valor fica em `value`; a chave de negócio segue sendo o par `(account.id(), period)` — sem `id` próprio; `BalanceRepository.delete(UUID, YearMonth)` (não `deleteById`) é o caminho real de exclusão usado por `BalanceService`/`BalanceRecalculationService`.
 * O contexto **não valida política de usuário** (ex.: período de fechamento) — isso é fronteira da feature (`ClosingService.validateDate`, chamado pelo `UserUseCase` em `br-application`), não deste contexto. O contexto aceita qualquer transação bem-formada.
 
 ## Testes
@@ -43,7 +43,7 @@ br.cdb.context.monetary
 
 * **Sem construtor a injetar** — como `Service`/`UseCase` se auto-conectam via `Registry` (não recebem dependências por construtor), o setup do teste não monta objetos com `new X(fakeRepo)`; ele publica os fakes no `Registry` (`Registry.set(AccountRepository.class, fakeRepo)`) e deixa o `new AccountUseCase()` (sem args) resolver sozinho.
 * **`Registry` é global e persiste entre métodos de teste** — todo `@BeforeEach` começa com `Registry.remove(XService.class)` para cada `Service` que o use case toca, forçando reconstrução contra os fakes da rodada atual. Sem isso, o `Registry.tryGet` de um teste anterior devolveria um `Service` já resolvido e preso ao fake (ou repositório JDBC real, se um `@QuarkusTest` rodou antes no mesmo fork) de outra rodada.
-* **Não passa pela `MonetaryContext`** — os testes constroem o use case sob teste diretamente; não chamam `MonetaryContext.instance()` (isso evita depender da assinatura do `TransactionEventListener` no `MessageBus`, que é cumulativa e nunca desfeita entre testes).
+* **Não passa pela `MonetaryUseCases`** — os testes constroem o use case sob teste diretamente; não chamam `MonetaryContext.instance()` (isso evita depender da assinatura do `TransactionEventListener` no `MessageBus`, que é cumulativa e nunca desfeita entre testes).
 
 ## O que NÃO está aqui
 

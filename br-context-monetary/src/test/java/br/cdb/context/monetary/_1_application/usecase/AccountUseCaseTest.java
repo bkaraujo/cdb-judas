@@ -2,7 +2,7 @@ package br.cdb.context.monetary._1_application.usecase;
 
 import br.cdb.context.monetary.AbstractUseCaseTest;
 import br.cdb.context.monetary._0_domain.model.Account;
-import br.cdb.context.monetary._0_domain.model.AccountBalance;
+import br.cdb.context.monetary._0_domain.model.Balance;
 import br.cdb.context.monetary._0_domain.model.CreditCard;
 import br.cdb.context.monetary._0_domain.model.Transaction;
 import br.cdb.context.monetary._1_application.command.AccountCommand;
@@ -127,7 +127,7 @@ class AccountUseCaseTest extends AbstractUseCaseTest {
         val target = seedChecking("Destino", true);
         val tx = seedTransaction(source.id());
         cardRepository().save(new CreditCard(UUID.randomUUID(), "1234", source.id(), true));
-        balanceRepository().save(new AccountBalance(source.id(), YearMonth.of(2026, 5), new BigDecimal("50.00")));
+        balanceRepository().save(new Balance(source, YearMonth.of(2026, 5), new BigDecimal("50.00")));
 
         val r = useCase.delete(new AccountCommand.Delete(source.id(), new TransactionPolicy.Move(target.id())));
 

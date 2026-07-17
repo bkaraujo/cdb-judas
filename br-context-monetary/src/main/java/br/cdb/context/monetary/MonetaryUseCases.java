@@ -9,7 +9,7 @@ import br.commons.annotation.Facade;
 import org.jspecify.annotations.NullMarked;
 
 @NullMarked
-public class MonetaryContext implements Facade {
+public class MonetaryUseCases implements Facade {
 
     public static CreditCardUseCase ucCreditCard() {
         return Registry.tryGet(CreditCardUseCase.class);

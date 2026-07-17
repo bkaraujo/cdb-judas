@@ -187,7 +187,7 @@ class StatementImportServiceTest {
      * Reseta o grafo Registry-wired do contexto (services/use cases se auto-conectam via
      * Registry.tryGet — sem isso, a chamada seguinte reaproveitaria os singletons presos aos fakes
      * do teste anterior) e publica fakes novos antes de construir o {@code StatementImportService},
-     * cujos campos resolvem os use cases via {@code MonetaryContext.uc*()} na construção.
+     * cujos campos resolvem os use cases via {@code MonetaryUseCases.uc*()} na construção.
      */
     private static void resetMonetaryRegistry(
             InMemoryRepositories.Accounts accounts,
@@ -198,7 +198,6 @@ class StatementImportServiceTest {
         Registry.remove(TransactionService.class);
         Registry.remove(CreditCardService.class);
         Registry.remove(CostCenterService.class);
-        Registry.remove(BalanceRecalculationService.class);
         Registry.remove(AccountUseCase.class);
         Registry.remove(TransactionUseCase.class);
         Registry.remove(CostCenterUseCase.class);

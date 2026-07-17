@@ -1,6 +1,6 @@
 package br.cdb.feature.user.dashboard.core;
 
-import br.cdb.context.monetary.MonetaryContext;
+import br.cdb.context.monetary.MonetaryUseCases;
 import br.cdb.context.monetary._1_application.usecase.TransactionUseCase;
 import br.commons.Result;
 import br.commons.business.BusinessError;
@@ -19,7 +19,7 @@ import java.util.List;
 @RequiredArgsConstructor
 public class DashboardService {
 
-    private final TransactionUseCase ucTransaction = MonetaryContext.ucTransaction();
+    private final TransactionUseCase ucTransaction = MonetaryUseCases.ucTransaction();
 
     public Result<MonthlyResult, BusinessError> getMonthlyResult(int month, int year) {
         return ucTransaction.transactions()

@@ -2,12 +2,15 @@ package br.cdb.context.monetary._1_application.usecase;
 
 import br.cdb.context.monetary._0_domain.event.AccountEvents;
 import br.cdb.context.monetary._0_domain.model.Account;
-import br.cdb.context.monetary._0_domain.model.AccountBalance;
+import br.cdb.context.monetary._0_domain.model.Balance;
 import br.cdb.context.monetary._0_domain.model.CreditCard;
 import br.cdb.context.monetary._0_domain.model.Transaction;
 import br.cdb.context.monetary._1_application.command.AccountCommand;
 import br.cdb.context.monetary._1_application.command.TransactionPolicy;
-import br.cdb.context.monetary._1_application.service.*;
+import br.cdb.context.monetary._1_application.service.AccountService;
+import br.cdb.context.monetary._1_application.service.BalanceService;
+import br.cdb.context.monetary._1_application.service.CreditCardService;
+import br.cdb.context.monetary._1_application.service.TransactionService;
 import br.commons.MessageBus;
 import br.commons.Registry;
 import br.commons.Result;
@@ -26,27 +29,26 @@ import java.util.UUID;
 @NullMarked
 public class AccountUseCase {
 
-    private final AccountService accountService = Registry.tryGet(AccountService.class);
+    private final AccountService service = Registry.tryGet(AccountService.class);
     private final BalanceService balanceService = Registry.tryGet(BalanceService.class);
-    private final TransactionService transactionService = Registry.tryGet(TransactionService.class);
     private final CreditCardService creditCardService = Registry.tryGet(CreditCardService.class);
-    private final BalanceRecalculationService balanceRecalculationService = Registry.tryGet(BalanceRecalculationService.class);
+    private final TransactionService transactionService = Registry.tryGet(TransactionService.class);
 
     public Result<List<Account>, BusinessError> listAccounts() {
-        return Result.success(accountService.findAll());
+        return Result.success(service.findAll());
     }
 
     public Result<Account, BusinessError> findAccount(UUID id) {
-        return accountService.findById(id);
+        return service.findById(id);
     }
 
-    public Result<AccountBalance, BusinessError> getMonthlyBalance(UUID accountId, YearMonth period) {
-        return accountService.findById(accountId)
+    public Result<Balance, BusinessError> getMonthlyBalance(UUID accountId, YearMonth period) {
+        return service.findById(accountId)
                 .flatMap(ignored -> balanceService.findByAccountAndPeriod(accountId, period));
     }
 
-    public Result<List<AccountBalance>, BusinessError> getYearBalances(UUID accountId, int year) {
-        return accountService.findById(accountId)
+    public Result<List<Balance>, BusinessError> getYearBalances(UUID accountId, int year) {
+        return service.findById(accountId)
                 .map(ignored -> balanceService.findByAccountAndYear(accountId, year));
     }
 
@@ -54,19 +56,19 @@ public class AccountUseCase {
         return switch (cmd) {
             case AccountCommand.Create(var name, var type, var active, var creditLimit, var overdraftLimit, var closingDay, var dueDay) ->
                     parse(UUID.randomUUID(), name, type, active, creditLimit, overdraftLimit, closingDay, dueDay)
-                            .map(accountService::save)
+                            .map(service::save)
                             .ifSuccess(account -> MessageBus.submit(new AccountEvents.Created(account)));
             case AccountCommand.Update(var id, var name, var type, var active, var creditLimit, var overdraftLimit, var closingDay, var dueDay) ->
-                    accountService.findById(id)
+                    service.findById(id)
                             .flatMap(existing -> parse(id, name, type, active, creditLimit, overdraftLimit, closingDay, dueDay))
-                            .map(accountService::save)
+                            .map(service::save)
                             .ifSuccess(account -> MessageBus.submit(new AccountEvents.Updated(account)));
         };
     }
 
     /** Ids das transações movidas/apagadas (vazio para {@link TransactionPolicy.Block}). */
     public Result<List<UUID>, BusinessError> delete(AccountCommand.Delete command) {
-        return accountService.findById(command.id()).flatMap(account -> switch (command.policy()) {
+        return service.findById(command.id()).flatMap(account -> switch (command.policy()) {
             case TransactionPolicy.Block ignored -> deleteBlock(account);
             case TransactionPolicy.Move(var targetId) -> deleteMove(account, targetId);
             case TransactionPolicy.Purge ignored -> deletePurge(account);
@@ -81,11 +83,11 @@ public class AccountUseCase {
         }
         creditCardService.findByAccount(account.id()).forEach(c -> creditCardService.deleteById(c.id()));
         balanceService.findByAccount(account.id()).forEach(balanceService::deleteById);
-        return accountService.deleteById(account.id()).map(ignored -> List.<UUID>of());
+        return service.deleteById(account.id()).map(ignored -> List.<UUID>of());
     }
 
     private Result<List<UUID>, BusinessError> deleteMove(Account account, UUID targetId) {
-        return accountService.findById(targetId).flatMap(target -> {
+        return service.findById(targetId).flatMap(target -> {
             if (target.id().equals(account.id())) {
                 return Result.<List<UUID>>failure(
                         new BusinessError.BusinessRule("Target account must be different from source: " + targetId));
@@ -102,8 +104,8 @@ public class AccountUseCase {
                     creditCardService.save(new CreditCard(card.id(), card.last4(), target.id(), card.active())));
             balanceService.findByAccount(account.id()).forEach(balanceService::deleteById);
 
-            return accountService.deleteById(account.id()).map(ignored -> {
-                balanceRecalculationService.recalculate(target.id());
+            return service.deleteById(account.id()).map(ignored -> {
+                balanceService.recalculate(target.id());
                 return movedIds;
             });
         });
@@ -115,7 +117,7 @@ public class AccountUseCase {
         creditCardService.findByAccount(account.id()).forEach(c -> creditCardService.deleteById(c.id()));
         balanceService.findByAccount(account.id()).forEach(balanceService::deleteById);
 
-        return accountService.deleteById(account.id()).map(ignored -> ids);
+        return service.deleteById(account.id()).map(ignored -> ids);
     }
 
     private Result<Account, BusinessError> parse(UUID accountId, String name, String type, boolean active,

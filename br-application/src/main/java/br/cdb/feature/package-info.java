@@ -14,7 +14,7 @@
  * │   └── version      GET  /api/version
  * └── user     — recursos do usuário autenticado (a maioria sob /api/{uuid}/…)
  *     ├── accounts     CRUD /api/{uuid}/accounts  + sub-recursos
- *     │   ├── balance       GET  …/balance?period=|year=
+ *     │   ├── value       GET  …/value?period=|year=
  *     │   ├── closing       GET/POST/DELETE …/closing
  *     │   ├── statement     parsing de extrato/fatura PDF (suporte, sem rota)
  *     │   └── transactions  CRUD …/{accId}/transactions

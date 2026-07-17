@@ -1,11 +1,10 @@
 package br.cdb.feature.user.accounts.transactions.importer;
 
-import br.cdb.context.monetary.MonetaryContext;
+import br.cdb.context.monetary.MonetaryUseCases;
 import br.cdb.context.monetary._0_domain.model.Account;
 import br.cdb.context.monetary._0_domain.model.CreditCard;
 import br.cdb.context.monetary._0_domain.model.Transaction;
-import br.cdb.context.monetary._1_application.command.ImportConfirmCommand;
-import br.cdb.context.monetary._1_application.command.ImportedTransactionCommand;
+import br.cdb.context.monetary._1_application.command.TransactionCommand;
 import br.cdb.context.monetary._1_application.usecase.AccountUseCase;
 import br.cdb.context.monetary._1_application.usecase.TransactionUseCase;
 import br.cdb.feature.user.accounts.statement.Issuer;
@@ -42,8 +41,8 @@ public class StatementImportService {
 
     private static final int RECONCILE_WINDOW_DAYS = 3;
 
-    private final AccountUseCase ucAccount = MonetaryContext.ucAccount();
-    private final TransactionUseCase ucTransaction = MonetaryContext.ucTransaction();
+    private final AccountUseCase ucAccount = MonetaryUseCases.ucAccount();
+    private final TransactionUseCase ucTransaction = MonetaryUseCases.ucTransaction();
 
     private final CreditCardProvider creditCardProvider;
     private final PdfTextExtractor extractor;
@@ -98,7 +97,7 @@ public class StatementImportService {
         };
     }
 
-    public Result<ImportResult, BusinessError> confirm(ImportConfirmCommand cmd) {
+    public Result<ImportResult, BusinessError> confirm(TransactionCommand.ImportConfirm cmd) {
         return resolveAccountsByCard(cmd).map(accountByCard -> {
             val today = LocalDate.now(clock);
             val seen = Collections.unmodifiableList(ucTransaction.transactions().getOrElse(List.of()));
@@ -115,11 +114,11 @@ public class StatementImportService {
         });
     }
 
-    private Result<Map<UUID, UUID>, BusinessError> resolveAccountsByCard(ImportConfirmCommand cmd) {
+    private Result<Map<UUID, UUID>, BusinessError> resolveAccountsByCard(TransactionCommand.ImportConfirm cmd) {
         val accountByCardId = creditCardProvider.creditCards().stream()
                 .collect(Collectors.toMap(CreditCard::id, CreditCard::accountId));
         val accountByCard = new HashMap<UUID, UUID>();
-        for (val cardId : cmd.rows().stream().map(ImportConfirmCommand.Row::cardId).distinct().toList()) {
+        for (val cardId : cmd.rows().stream().map(TransactionCommand.ImportConfirm.Row::cardId).distinct().toList()) {
             val accountId = accountByCardId.get(cardId);
             if (accountId == null) {
                 return new Result.Failure<>(new BusinessError.NotFound("CreditCard not found: " + cardId));
@@ -129,8 +128,8 @@ public class StatementImportService {
         return new Result.Success<>(accountByCard);
     }
 
-    private Map<UUID, List<ImportConfirmCommand.Row>> partitionInstallments(ImportConfirmCommand cmd, Map<UUID, UUID> accountByCard) {
-        val installmentByGroup = new LinkedHashMap<UUID, List<ImportConfirmCommand.Row>>();
+    private Map<UUID, List<TransactionCommand.ImportConfirm.Row>> partitionInstallments(TransactionCommand.ImportConfirm cmd, Map<UUID, UUID> accountByCard) {
+        val installmentByGroup = new LinkedHashMap<UUID, List<TransactionCommand.ImportConfirm.Row>>();
         for (val row : cmd.rows()) {
             if (row.installmentTotal() != null && row.installmentNumber() != null) {
                 val accountId = accountOf(accountByCard, row);
@@ -141,7 +140,7 @@ public class StatementImportService {
         return installmentByGroup;
     }
 
-    private Counts persistInstallments(Map<UUID, List<ImportConfirmCommand.Row>> installmentByGroup,
+    private Counts persistInstallments(Map<UUID, List<TransactionCommand.ImportConfirm.Row>> installmentByGroup,
                                        Map<UUID, UUID> accountByCard, LocalDate today,
                                        Set<UUID> existingGroups, List<Transaction> saved) {
         val seenGroups = new HashSet<UUID>();
@@ -166,7 +165,7 @@ public class StatementImportService {
         return new Counts(created, skipped);
     }
 
-    private Counts persistAvista(ImportConfirmCommand cmd, Map<UUID, UUID> accountByCard, LocalDate today,
+    private Counts persistAvista(TransactionCommand.ImportConfirm cmd, Map<UUID, UUID> accountByCard, LocalDate today,
                                  List<Transaction> seen, List<Transaction> saved) {
         int created = 0;
         int skipped = 0;
@@ -191,7 +190,7 @@ public class StatementImportService {
     @NullMarked
     private record Counts(int created, int skipped) {}
 
-    private static UUID accountOf(Map<UUID, UUID> accountByCard, ImportConfirmCommand.Row row) {
+    private static UUID accountOf(Map<UUID, UUID> accountByCard, TransactionCommand.ImportConfirm.Row row) {
         return Objects.requireNonNull(accountByCard.get(row.cardId()));
     }
 
@@ -241,7 +240,7 @@ public class StatementImportService {
     private boolean persistStatementRow(BankStatementConfirmCommand.Row row, UUID accountId, LocalDate today) {
         val status = YearMonth.from(row.date()).isAfter(YearMonth.from(today)) ? Transaction.Status.SCHEDULED : Transaction.Status.CONFIRMED;
         val type = row.type() != null ? row.type() : (row.amount().signum() < 0 ? Transaction.Type.EXPENSE : Transaction.Type.INCOME);
-        val command = new ImportedTransactionCommand(
+        val command = new TransactionCommand.Import(
                 accountId, row.description(), row.amount(), row.date(),
                 status, type, null, null, null, null);
         try {
@@ -310,7 +309,7 @@ public class StatementImportService {
     @NullMarked
     private record Classification(RowState state, @Nullable Transaction target) {}
 
-    private static boolean isAvistaDuplicate(ImportConfirmCommand.Row row, UUID accountId, List<Transaction> seen) {
+    private static boolean isAvistaDuplicate(TransactionCommand.ImportConfirm.Row row, UUID accountId, List<Transaction> seen) {
         val desc = GroupSignature.normalize(row.description());
         return seen.stream().anyMatch(t ->
                 accountId.equals(t.accountId())
@@ -320,12 +319,12 @@ public class StatementImportService {
     }
 
     @Nullable
-    private Transaction persist(ImportConfirmCommand.Row row, UUID accountId, LocalDate today,
-                                        @Nullable UUID groupId, @Nullable Integer installmentNumber,
-                                        @Nullable Integer totalInstallments
+    private Transaction persist(TransactionCommand.ImportConfirm.Row row, UUID accountId, LocalDate today,
+                                @Nullable UUID groupId, @Nullable Integer installmentNumber,
+                                @Nullable Integer totalInstallments
     ) {
         val status = YearMonth.from(row.date()).isAfter(YearMonth.from(today)) ? Transaction.Status.SCHEDULED : Transaction.Status.CONFIRMED;
-        val command = new ImportedTransactionCommand(
+        val command = new TransactionCommand.Import(
                 accountId, row.description(), row.amount(), row.date(),
                 status, Transaction.Type.EXPENSE, groupId, installmentNumber, totalInstallments, row.cardId());
         try {
