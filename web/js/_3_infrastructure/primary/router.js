@@ -47,6 +47,7 @@
 
   function onHashChange() {
     const id = parseHash() || localStorage.getItem(KEY_SCREEN) || 'dashboard';
+    if (id === state.current) return;
     apply(id);
   }
 

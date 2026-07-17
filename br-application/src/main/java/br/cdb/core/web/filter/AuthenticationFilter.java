@@ -56,7 +56,11 @@ public class AuthenticationFilter implements ContainerRequestFilter {
         if (token == null) return;
 
         if (RequestUtils.isStream(request)) {
-            tokenStore.validate(token).ifPresent(userId -> authenticate(userId, request));
+            // Worker thread devolvido ao pool assim que o subscribe registra o listener — a conexão
+            // fica aberta indefinidamente e o ContainerResponseFilter que limparia o MDC só roda no
+            // fechamento do stream. Não empurra X-REQUEST-USER pra não vazar pra próxima requisição
+            // que reaproveitar a mesma thread (CurrentUserContext já resolve a autorização em si).
+            tokenStore.validate(token).ifPresent(userId -> authenticateStream(userId, request));
         } else {
             val result = tokenStore.rotate(token);
             if (result.isPresent()) {
@@ -66,6 +70,15 @@ public class AuthenticationFilter implements ContainerRequestFilter {
                 Logger.debug("AUTHN %s %s => invalid or expired token", request.getMethod(), RequestUtils.path(request));
             }
         }
+    }
+
+    private void authenticateStream(String userId, ContainerRequestContext request) {
+        val user = userRepository.get().findById(userId).orElse(null);
+        if (user == null) {
+            Logger.debug("AUTHN %s %s => token references unknown user '%s'", request.getMethod(), RequestUtils.path(request), userId);
+            return;
+        }
+        currentUser.set(new AuthenticatedUser(userId, user.username()));
     }
 
     private void authenticate(String userId, ContainerRequestContext request) {

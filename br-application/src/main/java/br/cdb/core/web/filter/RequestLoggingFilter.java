@@ -18,8 +18,8 @@ public class RequestLoggingFilter implements ContainerRequestFilter {
     @Override
     public void filter(ContainerRequestContext request) {
         val path = RequestUtils.path(request);
-        if (!path.contains("favicon")) {
-            Logger.trace("%s %s", request.getMethod(), path);
-        }
+        if (path.contains("favicon")) return;
+
+        Logger.trace("%s %s", request.getMethod(), path);
     }
 }

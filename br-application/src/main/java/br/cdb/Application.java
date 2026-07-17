@@ -59,7 +59,9 @@ public class Application implements QuarkusApplication {
         Logger.level(parseLevel(System.getenv(LOG_LEVEL_ROOT), LogLevel.INFO));
 
         System.getenv().forEach((key, value) -> {
-            if (!key.startsWith(LOG_LEVEL_PREFIX) || key.equals(LOG_LEVEL_ROOT)) return;
+            if (!key.startsWith(LOG_LEVEL_PREFIX)) return;
+            if (key.equals(LOG_LEVEL_ROOT)) return;
+
             val pattern = Strings.lower(key.substring(LOG_LEVEL_PREFIX.length())).replace('_', '.');
 
             try { Logger.level(pattern, LogLevel.valueOf(Strings.upper(value))); }

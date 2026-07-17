@@ -12,13 +12,13 @@
     return '' + n;
   }
 
-  function reqId(user) {
+  function reqId() {
     const d = new Date();
     let v = d.getMilliseconds() * 100;
     if (typeof performance !== 'undefined') v += (performance.now() % 1) * 100 | 0;
     return '' + d.getFullYear() + p2(d.getMonth() + 1) + p2(d.getDate()) +
       p2(d.getHours()) + p2(d.getMinutes()) + p2(d.getSeconds()) +
-      p5(v) + user;
+      p5(v);
   }
 
   /* Reversed from the deletion contract: 409 LINKED_TRANSACTIONS -> pick a strategy -> retry the
@@ -44,7 +44,7 @@
 
     function doRequest(method, path, body) {
       const auth = window.Infra.AuthStore;
-      const headers = { 'X-request-id': reqId(auth.decodeUser()) };
+      const headers = { 'X-request-id': reqId() };
       const token = auth.get();
       if (token) headers[TOKEN_HEADER] = token;
       if (body)  headers['Content-Type'] = 'application/json';
@@ -91,7 +91,7 @@
      * server's ProblemDetail `code` on the rejection so callers can map error UX. */
     function doUpload(method, path, formData) {
       const auth = window.Infra.AuthStore;
-      const headers = { 'X-request-id': reqId(auth.decodeUser()) };
+      const headers = { 'X-request-id': reqId() };
       const token = auth.get();
       if (token) headers[TOKEN_HEADER] = token;
 
