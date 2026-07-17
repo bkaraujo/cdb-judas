@@ -14,7 +14,7 @@ br.cdb.context.monetary
 │   └── repository/  AccountRepository, BalanceRepository, CreditCardRepository, CostCenterRepository, TransactionRepository  (portas)
 ├── _1_application
 │   ├── command/     AccountCommand, CardCommand, CostCenterCommand, TransactionCommand, TransactionScope,
-│   │                ImportedTransactionCommand, ImportConfirmCommand, TransactionPolicy
+│   │                TransactionPolicy
 │   ├── event/       TransactionEventListener (único listener registrado)
 │   ├── service/     AccountService, BalanceService, BalanceRecalculationService, CreditCardService,
 │   │                CostCenterService, TransactionService
@@ -49,7 +49,7 @@ br.cdb.context.monetary
 
 * **Adaptadores de persistência** — `AccountJDBCRepository`, `BalanceJDBCRepository` (dentro de `AccountJDBCRepository` ou correlato), `CardJDBCRepository`, `CostCenterJDBCRepository`, `TransactionJDBCRepository` vivem em `br-application` (`br.cdb.infra.persistence.monetary`), não neste módulo. O contexto só conhece as portas (`_0_domain.repository`).
 * **ArchUnit e integração HTTP** — essa parte da suíte roda em `br-application/src/test/java/br/cdb/context/monetary/**` (precisa de CDI/Quarkus ou do classpath completo da borda HTTP) — ver `@br-application/src/main/java/CLAUDE.md`.
-* **Importação de extrato/PDF (parsers BTG/Santander, casamento de cartão, sugestão de categoria)** — é lógica de feature (`br.cdb.feature.user.accounts.transactions.importer`), não deste contexto. O contexto só recebe o resultado já traduzido via `createImportedTransaction(ImportedTransactionCommand)`.
+* **Importação de extrato/PDF (parsers BTG/Santander, casamento de cartão, sugestão de categoria)** — é lógica de feature (`br.cdb.feature.finance.accounts.transactions.importer`), não deste contexto. O contexto **não tem** conceito de importação: a feature monta o `Transaction` (domain model) e chama `TransactionUseCase.create(Transaction)` — CRUD puro (valida cartão + persiste + emite evento).
 
 ## Convenções
 

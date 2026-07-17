@@ -10,12 +10,15 @@
  *   <li>{@code BankStatementConfirmCommand} — comando do fluxo de extrato bancário (conta de destino +
  *       linhas; {@code amount} com sinal), construído a partir do {@code StatementConfirmRequest}
  *       unificado</li>
+ *   <li>{@code InvoiceConfirmCommand} — comando do fluxo de fatura de cartão (linhas mantidas pelo
+ *       usuário, {@code amount} sempre positivo, {@code cardId} por linha)</li>
  *   <li>{@code ImportConfirmResponse} — resultado comum: {@code created} / {@code reconciled} /
  *       {@code skipped}</li>
  * </ul>
  *
- * <p>O fluxo de fatura de cartão reusa o {@code ImportConfirm} do contexto monetário; o request
- * unificado de entrada ({@code StatementConfirmRequest}, discriminado por {@code type}) vive no pacote
+ * <p>O contexto monetário não conhece "importação": esta fatia monta o {@code Transaction} (domain
+ * model) e chama {@code TransactionUseCase.create(Transaction)}, CRUD puro. O request unificado de
+ * entrada ({@code StatementConfirmRequest}, discriminado por {@code type}) vive no pacote
  * {@code importer}.
  */
 @NullMarked

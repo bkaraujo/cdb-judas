@@ -6,7 +6,6 @@ import br.cdb.context.monetary._0_domain.model.CostCenter;
 import br.cdb.context.monetary._0_domain.model.CreditCard;
 import br.cdb.context.monetary._0_domain.model.Transaction;
 import br.cdb.context.monetary._0_domain.repository.*;
-import br.cdb.context.monetary._1_application.command.TransactionCommand;
 import br.cdb.context.monetary._1_application.service.*;
 import br.cdb.context.monetary._1_application.usecase.AccountUseCase;
 import br.cdb.context.monetary._1_application.usecase.CostCenterUseCase;
@@ -20,6 +19,7 @@ import br.cdb.feature.finance.accounts.statement.provider.SantanderInvoiceParser
 import br.cdb.feature.finance.accounts.statement.provider.SantanderStatementParser;
 import br.cdb.feature.finance.accounts.transactions.core.ChargeKind;
 import br.cdb.feature.finance.accounts.transactions.importer.*;
+import br.cdb.feature.finance.accounts.transactions.importer.confirm.InvoiceConfirmCommand;
 import br.cdb.feature.finance.accounts.transactions.importer.preview.ImportPreview;
 import br.cdb.feature.finance.accounts.transactions.importer.preview.ImportPreviewOutcome;
 import br.cdb.feature.finance.accounts.transactions.importer.preview.PreviewRow;
@@ -421,14 +421,14 @@ class CreditCardStatementImportServiceTest {
         var useCase = useCaseWith(NOOP_EXTRACTOR, accounts, transactions, List.of(cardA, cardB));
         var categoryId = UUID.randomUUID();
 
-        var rowA = new TransactionCommand.ImportConfirm.Row(
+        var rowA = new InvoiceConfirmCommand.Row(
                 "Compra A", new BigDecimal("50.00"), LocalDate.of(2025, 7, 3), LocalDate.of(2025, 7, 3),
                 null, null, categoryId, cardA.id());
-        var rowB = new TransactionCommand.ImportConfirm.Row(
+        var rowB = new InvoiceConfirmCommand.Row(
                 "Compra B", new BigDecimal("70.00"), LocalDate.of(2025, 7, 4), LocalDate.of(2025, 7, 4),
                 null, null, categoryId, cardB.id());
 
-        var cmd = new TransactionCommand.ImportConfirm(List.of(rowA, rowB));
+        var cmd = new InvoiceConfirmCommand(List.of(rowA, rowB));
         var result = (ImportResult) assertInstanceOf(Result.Success.class, useCase.confirm(cmd)).value();
 
         assertEquals(2, result.created());
@@ -450,22 +450,22 @@ class CreditCardStatementImportServiceTest {
         var useCase = useCaseWith(NOOP_EXTRACTOR, accounts, transactions, List.of(card));
         var categoryId = UUID.randomUUID();
 
-        var avistaConfirmed = new TransactionCommand.ImportConfirm.Row(
+        var avistaConfirmed = new InvoiceConfirmCommand.Row(
                 "Mercado", new BigDecimal("80.00"), LocalDate.of(2025, 7, 10), LocalDate.of(2025, 7, 10),
                 null, null, categoryId, card.id());
-        var avistaScheduled = new TransactionCommand.ImportConfirm.Row(
+        var avistaScheduled = new InvoiceConfirmCommand.Row(
                 "Streaming", new BigDecimal("30.00"), LocalDate.of(2025, 9, 5), LocalDate.of(2025, 9, 5),
                 null, null, categoryId, card.id());
-        var parc1 = new TransactionCommand.ImportConfirm.Row(
+        var parc1 = new InvoiceConfirmCommand.Row(
                 "Geladeira", new BigDecimal("100.00"), LocalDate.of(2025, 7, 15), LocalDate.of(2025, 7, 15),
                 1, 2, categoryId, card.id());
-        var parc2 = new TransactionCommand.ImportConfirm.Row(
+        var parc2 = new InvoiceConfirmCommand.Row(
                 "Geladeira", new BigDecimal("100.00"), LocalDate.of(2025, 8, 15), LocalDate.of(2025, 7, 15),
                 2, 2, categoryId, card.id());
 
         assertTrue(transactions.findAll().isEmpty());
 
-        var cmd = new TransactionCommand.ImportConfirm(List.of(avistaConfirmed, avistaScheduled, parc1, parc2));
+        var cmd = new InvoiceConfirmCommand(List.of(avistaConfirmed, avistaScheduled, parc1, parc2));
         var result = (ImportResult) assertInstanceOf(Result.Success.class, useCase.confirm(cmd)).value();
 
         assertEquals(4, result.created());
@@ -515,16 +515,16 @@ class CreditCardStatementImportServiceTest {
             }
         });
 
-        var row1 = new TransactionCommand.ImportConfirm.Row(
+        var row1 = new InvoiceConfirmCommand.Row(
                 "Padaria", new BigDecimal("12.00"), LocalDate.of(2025, 7, 1), LocalDate.of(2025, 7, 1),
                 null, null, categoryId, card.id());
-        var row2 = new TransactionCommand.ImportConfirm.Row(
+        var row2 = new InvoiceConfirmCommand.Row(
                 "Farmácia", new BigDecimal("45.00"), LocalDate.of(2025, 7, 2), LocalDate.of(2025, 7, 2),
                 null, null, categoryId, card.id());
 
         int before = counter.get();
         var result = (ImportResult) assertInstanceOf(Result.Success.class,
-                useCase.confirm(new TransactionCommand.ImportConfirm(List.of(row1, row2)))).value();
+                useCase.confirm(new InvoiceConfirmCommand(List.of(row1, row2)))).value();
 
         assertEquals(2, result.created());
         assertEquals(2, counter.get() - before);
@@ -541,16 +541,16 @@ class CreditCardStatementImportServiceTest {
         var useCase = useCaseWith(NOOP_EXTRACTOR, accounts, transactions, List.of(card));
         var categoryId = UUID.randomUUID();
 
-        var avista = new TransactionCommand.ImportConfirm.Row(
+        var avista = new InvoiceConfirmCommand.Row(
                 "Uber", new BigDecimal("25.00"), LocalDate.of(2025, 7, 8), LocalDate.of(2025, 7, 8),
                 null, null, categoryId, card.id());
-        var parc1 = new TransactionCommand.ImportConfirm.Row(
+        var parc1 = new InvoiceConfirmCommand.Row(
                 "Notebook", new BigDecimal("200.00"), LocalDate.of(2025, 7, 15), LocalDate.of(2025, 7, 15),
                 3, 4, categoryId, card.id());
-        var parc2 = new TransactionCommand.ImportConfirm.Row(
+        var parc2 = new InvoiceConfirmCommand.Row(
                 "Notebook", new BigDecimal("200.00"), LocalDate.of(2025, 8, 15), LocalDate.of(2025, 7, 15),
                 4, 4, categoryId, card.id());
-        var cmd = new TransactionCommand.ImportConfirm(List.of(avista, parc1, parc2));
+        var cmd = new InvoiceConfirmCommand(List.of(avista, parc1, parc2));
 
         var first = (ImportResult) assertInstanceOf(Result.Success.class, useCase.confirm(cmd)).value();
         assertEquals(3, first.created());
@@ -578,11 +578,11 @@ class CreditCardStatementImportServiceTest {
 
         var useCase = useCaseWith(NOOP_EXTRACTOR, accounts, transactions, List.of(card));
 
-        var row = new TransactionCommand.ImportConfirm.Row(
+        var row = new InvoiceConfirmCommand.Row(
                 "Mercado Livre", new BigDecimal("90.00"), LocalDate.of(2025, 7, 4), LocalDate.of(2025, 7, 4),
                 null, null, UUID.randomUUID(), card.id());
         var result = (ImportResult) assertInstanceOf(Result.Success.class,
-                useCase.confirm(new TransactionCommand.ImportConfirm(List.of(row)))).value();
+                useCase.confirm(new InvoiceConfirmCommand(List.of(row)))).value();
 
         assertEquals(0, result.created());
         assertEquals(1, result.skipped());
@@ -592,10 +592,10 @@ class CreditCardStatementImportServiceTest {
     @Test
     void confirmFailsWhenRowCardNotFound() {
         var useCase = useCaseWith(NOOP_EXTRACTOR);
-        var row = new TransactionCommand.ImportConfirm.Row(
+        var row = new InvoiceConfirmCommand.Row(
                 "Compra", new BigDecimal("10.00"), LocalDate.of(2025, 7, 1), LocalDate.of(2025, 7, 1),
                 null, null, UUID.randomUUID(), UUID.randomUUID());
-        var cmd = new TransactionCommand.ImportConfirm(List.of(row));
+        var cmd = new InvoiceConfirmCommand(List.of(row));
         var error = assertInstanceOf(Result.Failure.class, useCase.confirm(cmd)).error();
         assertInstanceOf(BusinessError.NotFound.class, error);
     }
@@ -617,18 +617,18 @@ class CreditCardStatementImportServiceTest {
         var useCase = useCaseWith(NOOP_EXTRACTOR, accounts, transactions, List.of(card));
         var categoryId = UUID.randomUUID();
 
-        var ok1 = new TransactionCommand.ImportConfirm.Row(
+        var ok1 = new InvoiceConfirmCommand.Row(
                 "Antes", new BigDecimal("10.00"), LocalDate.of(2025, 7, 1), LocalDate.of(2025, 7, 1),
                 null, null, categoryId, card.id());
-        var boom = new TransactionCommand.ImportConfirm.Row(
+        var boom = new InvoiceConfirmCommand.Row(
                 "BOOM", new BigDecimal("20.00"), LocalDate.of(2025, 7, 2), LocalDate.of(2025, 7, 2),
                 null, null, categoryId, card.id());
-        var ok2 = new TransactionCommand.ImportConfirm.Row(
+        var ok2 = new InvoiceConfirmCommand.Row(
                 "Depois", new BigDecimal("30.00"), LocalDate.of(2025, 7, 3), LocalDate.of(2025, 7, 3),
                 null, null, categoryId, card.id());
 
         var result = (ImportResult) assertInstanceOf(Result.Success.class,
-                useCase.confirm(new TransactionCommand.ImportConfirm(List.of(ok1, boom, ok2)))).value();
+                useCase.confirm(new InvoiceConfirmCommand(List.of(ok1, boom, ok2)))).value();
 
         assertEquals(2, result.created());
         var saved = transactions.findAll();

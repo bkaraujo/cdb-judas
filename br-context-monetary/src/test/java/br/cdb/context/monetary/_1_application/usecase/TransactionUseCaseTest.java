@@ -182,12 +182,12 @@ class TransactionUseCaseTest extends AbstractUseCaseTest {
     }
 
     @Test
-    @DisplayName("listPendingTransactions retorna só PENDING")
+    @DisplayName("pending retorna só PENDING")
     void listPendingReturnsOnlyPending() {
         useCase.upsert(cmd(LocalDate.of(2026, 5, 10), Transaction.Status.CONFIRMED, null));
         useCase.upsert(cmd(LocalDate.of(2026, 5, 11), Transaction.Status.PENDING, null));
         List<Transaction> pending = ((Result.Success<List<Transaction>, BusinessError>)
-                useCase.listPendingTransactions()).value();
+                useCase.pending()).value();
         assertEquals(1, pending.size());
         assertEquals(Transaction.Status.PENDING, pending.get(0).status());
     }
@@ -385,16 +385,17 @@ class TransactionUseCaseTest extends AbstractUseCaseTest {
         assertEquals(creditCard.id(), transactionRepository().findById(t.id()).orElseThrow().cardId());
     }
 
-    // ── createImported (importação de extrato já traduzida) ─────
+    // ── create (CRUD) ─────
 
     @Test
-    @DisplayName("createImported persiste como CONFIRMED/1-1 quando comando não traz parcelamento")
-    void createImportedPersistsSingleInstallment() {
-        val cmd = new TransactionCommand.Import(
-                accountId, "compra importada", new BigDecimal("42.00"), LocalDate.of(2026, 5, 10),
-                Transaction.Status.CONFIRMED, Transaction.Type.EXPENSE, null, null, null, null);
+    @DisplayName("create persiste a transação exatamente como recebida")
+    void createPersistsTransactionAsReceived() {
+        val tx = new Transaction(
+                UUID.randomUUID(), "compra importada", new BigDecimal("42.00"), LocalDate.of(2026, 5, 10),
+                accountId, Transaction.Status.CONFIRMED, Transaction.Type.EXPENSE, costCenterId, null, null,
+                1, 1, null, null);
 
-        Result<Transaction, BusinessError> r = useCase.createImported(cmd);
+        Result<Transaction, BusinessError> r = useCase.create(tx);
 
         assertTrue(r.isSuccess());
         Transaction saved = transactionRepository().findAll().get(0);
@@ -405,14 +406,15 @@ class TransactionUseCaseTest extends AbstractUseCaseTest {
     }
 
     @Test
-    @DisplayName("createImported com cardId de outra conta é rejeitado")
-    void createImportedRejectsCardFromAnotherAccount() {
+    @DisplayName("create com cardId de outra conta é rejeitado")
+    void createRejectsCardFromAnotherAccount() {
         CreditCard creditCard = seedCard(UUID.randomUUID(), "1234");
-        val cmd = new TransactionCommand.Import(
-                accountId, "compra importada", new BigDecimal("42.00"), LocalDate.of(2026, 5, 10),
-                Transaction.Status.CONFIRMED, Transaction.Type.EXPENSE, null, null, null, creditCard.id());
+        val tx = new Transaction(
+                UUID.randomUUID(), "compra importada", new BigDecimal("42.00"), LocalDate.of(2026, 5, 10),
+                accountId, Transaction.Status.CONFIRMED, Transaction.Type.EXPENSE, costCenterId, null, null,
+                1, 1, null, creditCard.id());
 
-        Result<Transaction, BusinessError> r = useCase.createImported(cmd);
+        Result<Transaction, BusinessError> r = useCase.create(tx);
 
         assertTrue(r.isFailure());
         assertInstanceOf(BusinessError.BusinessRule.class, ((Result.Failure<Transaction, BusinessError>) r).error());

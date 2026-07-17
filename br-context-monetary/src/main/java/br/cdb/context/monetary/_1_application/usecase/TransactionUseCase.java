@@ -48,11 +48,11 @@ public class TransactionUseCase {
         return Result.success(all);
     }
 
-    public Result<List<Transaction>, BusinessError> listPendingTransactions() {
+    public Result<List<Transaction>, BusinessError> pending() {
         return Result.success(service.findPending());
     }
 
-    public Result<Transaction, BusinessError> findTransaction(UUID id) {
+    public Result<Transaction, BusinessError> transaction(UUID id) {
         return service.findById(id);
     }
 
@@ -61,7 +61,7 @@ public class TransactionUseCase {
             case TransactionCommand.Create create ->
                     validateCard(create.accountId(), create.cardId()).flatMap(ignored -> dispatchCreate(create));
             case TransactionCommand.Update update ->
-                    service.findById(update.id()).flatMap(existing -> dispatchUpdate(update.id(), existing, update));
+                    transaction(update.id()).flatMap(existing -> dispatchUpdate(update.id(), existing, update));
         };
     }
 
@@ -177,7 +177,7 @@ public class TransactionUseCase {
     }
 
     public Result<Transaction, BusinessError> updateTransactionStatus(UUID id, Transaction.Status status, @Nullable LocalDate paymentDate) {
-        return service.findById(id)
+        return transaction(id)
                 .map(existing -> {
                     val saved = service.save(new Transaction(
                             existing.id(), existing.description(), existing.amount(), existing.date(),
@@ -192,7 +192,7 @@ public class TransactionUseCase {
 
     /** Ids das transações apagadas (par de transferência / lote FUTURE / unitário). */
     public Result<List<UUID>, BusinessError> delete(TransactionCommand.Delete command) {
-        return service.findById(command.id()).flatMap(existing -> {
+        return transaction(command.id()).flatMap(existing -> {
             val transferSiblings = service.findTransferSiblings(existing);
             if (!transferSiblings.isEmpty()) return deleteTransferGroup(existing, transferSiblings);
 
@@ -244,7 +244,7 @@ public class TransactionUseCase {
         val toDelete = new LinkedHashMap<UUID, Transaction>();
         for (val id : ids) {
             if (toDelete.containsKey(id)) continue;
-            if (!(service.findById(id) instanceof Result.Success<Transaction, BusinessError>(var existing))) continue;
+            if (!(transaction(id) instanceof Result.Success<Transaction, BusinessError>(var existing))) continue;
 
             toDelete.put(existing.id(), existing);
             for (val sibling : service.findTransferSiblings(existing)) {
@@ -293,19 +293,13 @@ public class TransactionUseCase {
         return Result.success(savedOut);
     }
 
-    public Result<Transaction, BusinessError> createImported(TransactionCommand.Import cmd) {
-        return validateCard(cmd.accountId(), cmd.cardId()).flatMap(ignored -> persistImported(cmd));
-    }
-
-    private Result<Transaction, BusinessError> persistImported(TransactionCommand.Import cmd) {
-        val tx = new Transaction(
-                UUID.randomUUID(), cmd.description(), cmd.amount().abs(), cmd.date(),
-                cmd.accountId(), cmd.status(), cmd.type(), CostCenter.VARIAVEL.id(), null,
-                cmd.groupId(), installmentOrDefault(cmd.installmentNumber()), installmentOrDefault(cmd.totalInstallments()), null,
-                cmd.cardId());
-        val saved = service.save(tx);
-        MessageBus.submit(new TransactionEvents.Created(saved));
-        return Result.success(saved);
+    /** Persiste uma transação já montada pelo chamador. Valida a invariante de cartão. */
+    public Result<Transaction, BusinessError> create(Transaction tx) {
+        return validateCard(tx.accountId(), tx.cardId()).flatMap(ignored -> {
+            val saved = service.save(tx);
+            MessageBus.submit(new TransactionEvents.Created(saved));
+            return Result.success(saved);
+        });
     }
 
     private Transaction toEntity(UUID id, String description, BigDecimal amount, LocalDate date, UUID accountId,

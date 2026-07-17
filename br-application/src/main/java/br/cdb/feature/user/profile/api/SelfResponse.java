@@ -1,7 +1,7 @@
 package br.cdb.feature.user.profile.api;
 
-import br.cdb.feature.user.profile.preference.Preferences;
 import br.cdb.feature.user.profile.Profile;
+import br.cdb.feature.user.profile.preference.Preferences;
 import lombok.val;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;

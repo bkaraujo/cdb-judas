@@ -25,6 +25,7 @@ import br.cdb.feature.finance.accounts.transactions.importer.ImportError;
 import br.cdb.feature.finance.accounts.transactions.importer.ImportResult;
 import br.cdb.feature.finance.accounts.transactions.importer.StatementImportService;
 import br.cdb.feature.finance.accounts.transactions.importer.confirm.BankStatementConfirmCommand;
+import br.cdb.feature.finance.accounts.transactions.importer.confirm.InvoiceConfirmCommand;
 import br.cdb.feature.finance.accounts.transactions.importer.preview.ImportPreviewOutcome;
 import br.cdb.feature.finance.categories.UserCategory;
 import br.cdb.feature.finance.categories.UserCategoryService;
@@ -34,9 +35,9 @@ import br.cdb.feature.finance.deletion.Deletions;
 import br.cdb.feature.finance.tags.UserTag;
 import br.cdb.feature.finance.tags.UserTagService;
 import br.cdb.feature.finance.tags.UserTransactionTagService;
-import br.cdb.feature.user.profile.api.PreferencesPatch;
 import br.cdb.feature.user.profile.Profile;
 import br.cdb.feature.user.profile.UserProfileService;
+import br.cdb.feature.user.profile.api.PreferencesPatch;
 import br.commons.Logger;
 import br.commons.Result;
 import br.commons.business.BusinessError;
@@ -321,7 +322,7 @@ public class UserUseCase {
 
         val txId = cmd.id();
         UUID previous = null;
-        if (ucTransaction.findTransaction(txId) instanceof Result.Success(var existing)) {
+        if (ucTransaction.transaction(txId) instanceof Result.Success(var existing)) {
             if (guards.ownsAccount(existing.accountId()) instanceof Result.Failure<Void, BusinessError>(var error)) {
                 return Result.failure(error);
             }
@@ -351,7 +352,7 @@ public class UserUseCase {
 
     public Result<TransactionView, BusinessError> updateTransactionStatus(
             UUID userId, UUID txId, Transaction.Status status, @Nullable LocalDate paymentDate) {
-        return ucTransaction.findTransaction(txId)
+        return ucTransaction.transaction(txId)
                 .flatMap(existing -> guards.ownsAccount(existing.accountId()))
                 .flatMap(ignored -> ucTransaction.updateTransactionStatus(txId, status, paymentDate).map(t -> {
                     val overlay = userTransactionService.find(t.id(), t.accountId(), userId).orElse(null);
@@ -362,7 +363,7 @@ public class UserUseCase {
 
     public Result<Void, BusinessError> deleteTransaction(UUID txId, TransactionScope scope) {
         UUID accountId = null;
-        if (ucTransaction.findTransaction(txId) instanceof Result.Success(var existing)) {
+        if (ucTransaction.transaction(txId) instanceof Result.Success(var existing)) {
             if (guards.ownsAccount(existing.accountId()) instanceof Result.Failure<Void, BusinessError>(var error)) {
                 return Result.failure(error);
             }
@@ -424,7 +425,7 @@ public class UserUseCase {
                 .map(outcome -> new ImportPreviewView(outcome, accountNamesById()));
     }
 
-    public Result<ImportResult, BusinessError> confirmInvoiceImport(TransactionCommand.ImportConfirm cmd) {
+    public Result<ImportResult, BusinessError> confirmInvoiceImport(InvoiceConfirmCommand cmd) {
         for (val row : cmd.rows()) {
             if (guards.ownsCard(row.cardId()) instanceof Result.Failure<Void, BusinessError>(var error)) {
                 return Result.failure(error);
@@ -446,7 +447,7 @@ public class UserUseCase {
     }
 
     /** Contas distintas donas dos cartões das linhas confirmadas. */
-    private List<UUID> affectedAccountIds(List<TransactionCommand.ImportConfirm.Row> rows) {
+    private List<UUID> affectedAccountIds(List<InvoiceConfirmCommand.Row> rows) {
         val accountByCard = ucCreditCard.list().getOrElse(List.of()).stream()
                 .collect(Collectors.toMap(CreditCard::id, CreditCard::accountId));
         return rows.stream()
