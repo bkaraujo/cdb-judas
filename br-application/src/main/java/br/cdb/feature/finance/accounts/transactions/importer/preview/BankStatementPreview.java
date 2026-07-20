@@ -1,7 +1,6 @@
 package br.cdb.feature.finance.accounts.transactions.importer.preview;
 
 import br.cdb.context.monetary._0_domain.model.Account;
-import br.cdb.feature.finance.accounts.statement.Issuer;
 import br.cdb.feature.finance.accounts.transactions.importer.RowState;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
@@ -17,7 +16,7 @@ import java.util.UUID;
  */
 @NullMarked
 public record BankStatementPreview(
-        Issuer issuer,
+        String issuer,
         List<Account> candidateAccounts,
         @Nullable UUID selectedAccountId,
         List<BankStatementPreviewRow> rows) {}

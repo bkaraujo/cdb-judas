@@ -33,4 +33,9 @@ public record TransactionDraft(
         @Nullable Integer installmentNumber,
         @Nullable Integer installmentTotal,
         ChargeKind kind
-) {}
+) {
+    @Override
+    public String toString() {
+        return accountId + " " + last4 + " " + type + " " + description + " " + amount;
+    }
+}

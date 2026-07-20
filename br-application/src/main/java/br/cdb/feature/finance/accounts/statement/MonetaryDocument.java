@@ -14,11 +14,11 @@ import java.util.List;
 @NullMarked
 public sealed interface MonetaryDocument {
 
-    Issuer issuer();
+    String issuer();
 
     @NullMarked
-    record Invoice(Issuer issuer, List<MonetaryDocumentEntry> statement) implements MonetaryDocument {}
+    record Invoice(String issuer, List<MonetaryDocumentEntry> statement) implements MonetaryDocument {}
 
     @NullMarked
-    record Statement(Issuer issuer, List<MonetaryDocumentEntry> statement) implements MonetaryDocument {}
+    record Statement(String issuer, List<MonetaryDocumentEntry> statement) implements MonetaryDocument {}
 }

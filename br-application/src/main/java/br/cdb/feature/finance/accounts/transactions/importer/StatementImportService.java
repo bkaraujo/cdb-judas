@@ -7,7 +7,6 @@ import br.cdb.context.monetary._0_domain.model.CreditCard;
 import br.cdb.context.monetary._0_domain.model.Transaction;
 import br.cdb.context.monetary._1_application.usecase.AccountUseCase;
 import br.cdb.context.monetary._1_application.usecase.TransactionUseCase;
-import br.cdb.feature.finance.accounts.statement.Issuer;
 import br.cdb.feature.finance.accounts.statement.MonetaryDocument;
 import br.cdb.feature.finance.accounts.statement.MonetaryDocumentEntry;
 import br.cdb.feature.finance.accounts.statement.StatementParser;
@@ -73,10 +72,12 @@ public class StatementImportService {
             return new Result.Failure<>(new ImportError.FileTooLarge(fileBytes.length, maxFileBytes));
         }
 
+        Logger.trace("Processing %s bytes", fileBytes.length);
         return switch (extractor.extract(fileBytes, password)) {
 
             case Result.Success(var text) -> {
                 if (text == null) yield new Result.Failure<>(new ImportError.NoTextLayer());
+                Logger.verbose("Extracted %s characters", text.length());
 
                 val capable = parsers.stream().filter(parser -> parser.parseable(text)).toList();
                 if (capable.size() != 1) {
@@ -345,11 +346,11 @@ public class StatementImportService {
         }
     }
 
-    private Result<ImportPreviewOutcome, ImportError> preview(Issuer issuer, List<MonetaryDocumentEntry> statement, @Nullable UUID accountId) {
+    private Result<ImportPreviewOutcome, ImportError> preview(String issuer, List<MonetaryDocumentEntry> statement, @Nullable UUID accountId) {
         val candidates = ucAccount.listAccounts().getOrElse(List.of()).stream()
                 .filter(Account::active)
                 .toList();
-        val selectedAccountId = selectAccount(accountId, candidates);
+        val selectedAccountId = selectAccount(accountId, candidates, Strings.lower(issuer));
 
         val history = ucTransaction.transactions().getOrElse(List.of());
         val accountTx = selectedAccountId != null
@@ -368,16 +369,26 @@ public class StatementImportService {
         );
     }
 
-    private static @Nullable UUID selectAccount(@Nullable UUID accountId, List<Account> candidates) {
+    private static @Nullable UUID selectAccount(@Nullable UUID accountId, List<Account> candidates, String issuer) {
         if (accountId != null) {
             return accountId;
         }
-        return candidates.size() == 1 ? candidates.getFirst().id() : null;
+        if (candidates.size() == 1) {
+            return candidates.getFirst().id();
+        }
+        // Account não guarda banco/emissor — na ausência de accountId explícito, o único sinal
+        // disponível é o nome da conta citar o issuer detectado no PDF (ex.: "Conta BTG").
+        // Só decide quando é inequívoco; com 0 ou 2+ nomes batendo, o usuário escolhe manualmente.
+        val byName = candidates.stream()
+                .filter(a -> Strings.lower(a.name()).contains(issuer))
+                .toList();
+        return byName.size() == 1 ? byName.getFirst().id() : null;
     }
 
-    private Result<ImportPreviewOutcome, ImportError> preview(Issuer issuer, List<MonetaryDocumentEntry> statement) {
+    private Result<ImportPreviewOutcome, ImportError> preview(String issuer, List<MonetaryDocumentEntry> statement) {
         val last4s = statement.stream().map(MonetaryDocumentEntry::last4)
                 .filter(Objects::nonNull).collect(Collectors.toSet());
+
         val cards = creditCardProvider.creditCards().stream()
                 .filter(card -> last4s.contains(card.last4()))
                 .toList();
@@ -394,6 +405,7 @@ public class StatementImportService {
             val suggestedCardId = suggestedCard != null ? suggestedCard.id() : null;
             for (val draft : expander.expand(line, accountId, today)) {
                 val dup = suggestedCard != null && isDuplicate(draft, history);
+                Logger.verbose("Attaching %s", draft);
                 rows.add(new PreviewRow(draft, dup, null, suggestedCardId));
             }
         }

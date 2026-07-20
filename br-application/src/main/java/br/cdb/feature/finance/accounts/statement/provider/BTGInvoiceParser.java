@@ -1,11 +1,11 @@
 package br.cdb.feature.finance.accounts.statement.provider;
 
-import br.cdb.feature.finance.accounts.statement.Issuer;
 import br.cdb.feature.finance.accounts.statement.MonetaryDocument;
 import br.cdb.feature.finance.accounts.statement.MonetaryDocumentEntry;
 import br.cdb.feature.finance.accounts.statement.StatementParser;
 import br.cdb.feature.finance.accounts.transactions.core.ChargeKind;
 import br.cdb.feature.finance.accounts.transactions.importer.Amounts;
+import br.commons.Logger;
 import br.commons.tools.Strings;
 import lombok.val;
 import org.jspecify.annotations.NullMarked;
@@ -55,6 +55,7 @@ public class BTGInvoiceParser implements StatementParser {
 
     @Override
     public MonetaryDocument parse(String text) {
+        Logger.debug("Parsing Invoice");
         val lines = new ArrayList<MonetaryDocumentEntry>();
         String last4 = null;
         var keep = false;
@@ -83,7 +84,7 @@ public class BTGInvoiceParser implements StatementParser {
             }
         }
 
-        return new MonetaryDocument.Invoice(Issuer.BTG, List.copyOf(lines));
+        return new MonetaryDocument.Invoice("BTG Pactual", List.copyOf(lines));
     }
 
     /** {@code true}/{@code false} se a linha alterna a seção de interesse; {@code null} caso contrário. */

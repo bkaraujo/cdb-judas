@@ -1,10 +1,10 @@
 package br.cdb.feature.finance.accounts.statement.provider;
 
-import br.cdb.feature.finance.accounts.statement.Issuer;
 import br.cdb.feature.finance.accounts.statement.MonetaryDocument;
 import br.cdb.feature.finance.accounts.statement.MonetaryDocumentEntry;
 import br.cdb.feature.finance.accounts.statement.StatementParser;
 import br.cdb.feature.finance.accounts.transactions.importer.Amounts;
+import br.commons.Logger;
 import br.commons.chrono.Dates;
 import br.commons.tools.Strings;
 import lombok.val;
@@ -73,6 +73,7 @@ public class SantanderStatementParser implements StatementParser {
 
     @Override
     public MonetaryDocument parse(String text) {
+        Logger.debug("Parsing Statement");
         val year = referenceYear(text);
         val refMonth = referenceMonth(text);
         val lines = new ArrayList<MonetaryDocumentEntry>();
@@ -111,7 +112,7 @@ public class SantanderStatementParser implements StatementParser {
             finalizeIfComplete(recordDate, buffer, lines);
         }
 
-        return new MonetaryDocument.Statement(Issuer.SANTANDER, List.copyOf(lines));
+        return new MonetaryDocument.Statement("Santander", List.copyOf(lines));
     }
 
     /** Fim da janela de movimentos: a tabela {@code Saldos por Período} ou o saldo de fechamento. */

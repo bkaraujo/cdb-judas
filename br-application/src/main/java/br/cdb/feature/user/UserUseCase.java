@@ -435,6 +435,7 @@ public class UserUseCase {
         if (accountId != null && guards.ownsAccount(accountId).isFailure()) {
             return new Result.Failure<>(new ImportError.AccountNotFound());
         }
+
         return statementImportService.preview(fileBytes, password, accountId)
                 .map(outcome -> new ImportPreviewView(outcome, accountNamesById()));
     }

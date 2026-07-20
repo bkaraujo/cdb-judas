@@ -7,6 +7,7 @@ import br.cdb.feature.finance.accounts.transactions.importer.confirm.ImportConfi
 import br.cdb.feature.finance.accounts.transactions.importer.confirm.InvoiceConfirmCommand;
 import br.cdb.feature.finance.accounts.transactions.importer.preview.*;
 import br.cdb.feature.user.UserUseCase;
+import br.commons.Logger;
 import br.commons.Result;
 import br.commons.business.BusinessError;
 import jakarta.validation.Valid;
@@ -49,6 +50,7 @@ public class StatementImportResource {
 
         final byte[] bytes;
         try {
+            Logger.debug("Importing statement %s", file.uploadedFile());
             bytes = Files.readAllBytes(file.filePath());
         } catch (IOException e) {
             return problem(Response.Status.BAD_REQUEST, "FILE_UNREADABLE", "Não foi possível ler o arquivo enviado.");
@@ -127,7 +129,7 @@ public class StatementImportResource {
         val candidateCards = preview.candidateCards().stream()
                 .map(card -> toCardOption(card, accountNames)).toList();
         return new ImportPreviewResponse(
-                "CREDIT_CARD_INVOICE", preview.issuer().name(), preview.last4s(), rows, candidateCards);
+                "CREDIT_CARD_INVOICE", preview.issuer(), preview.last4s(), rows, candidateCards);
     }
 
     private static BankStatementPreviewResponse toStatementResponse(BankStatementPreview preview) {
@@ -140,7 +142,7 @@ public class StatementImportResource {
                         r.state().name(), r.categoryId(), r.reconcileDescription()))
                 .toList();
         return new BankStatementPreviewResponse(
-                "BANK_STATEMENT", preview.issuer().name(), accounts, preview.selectedAccountId(), rows);
+                "BANK_STATEMENT", preview.issuer(), accounts, preview.selectedAccountId(), rows);
     }
 
     private static ImportPreviewResponse.CardOption toCardOption(CreditCard card, Map<UUID, String> accountNames) {

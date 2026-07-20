@@ -1,7 +1,6 @@
 package br.cdb.feature.finance.accounts.transactions.importer.preview;
 
 import br.cdb.context.monetary._0_domain.model.CreditCard;
-import br.cdb.feature.finance.accounts.statement.Issuer;
 import br.cdb.feature.finance.accounts.statement.MonetaryDocumentEntry;
 import org.jspecify.annotations.NullMarked;
 
@@ -15,7 +14,7 @@ import java.util.List;
  */
 @NullMarked
 public record ImportPreview(
-        Issuer issuer,
+        String issuer,
         List<MonetaryDocumentEntry> statement,
         List<CreditCard> candidateCards,
         List<PreviewRow> rows) {

@@ -395,8 +395,9 @@
                         : issuer === 'BTG' ? 'BTG Pactual'
                         : issuer;
       const accounts = (preview && preview.candidateAccounts) || [];
-      selectedAccountId = (preview && preview.selectedAccountId) || selectedAccountId ||
-        (accounts[0] && accounts[0].id) || null;
+      // Backend só resolve selectedAccountId quando inequívoco (accountId explícito ou única conta ativa).
+      // Sem isso, não há dado algum ligando o issuer detectado a uma conta — não adivinhar, forçar escolha.
+      selectedAccountId = (preview && preview.selectedAccountId) || selectedAccountId || null;
       const rows = (preview && preview.rows) || [];
 
       const accOptions = (selectedAccountId ? '' : '<option value="" selected>Selecione a conta</option>') +

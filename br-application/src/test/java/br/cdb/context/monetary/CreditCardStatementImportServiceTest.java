@@ -11,7 +11,6 @@ import br.cdb.context.monetary._1_application.usecase.AccountUseCase;
 import br.cdb.context.monetary._1_application.usecase.CostCenterUseCase;
 import br.cdb.context.monetary._1_application.usecase.CreditCardUseCase;
 import br.cdb.context.monetary._1_application.usecase.TransactionUseCase;
-import br.cdb.feature.finance.accounts.statement.Issuer;
 import br.cdb.feature.finance.accounts.statement.MonetaryDocumentEntry;
 import br.cdb.feature.finance.accounts.statement.provider.BTGInvoiceParser;
 import br.cdb.feature.finance.accounts.statement.provider.BTGStatementParser;
@@ -173,7 +172,7 @@ class CreditCardStatementImportServiceTest {
 
         var preview = invoicePreview(useCase.preview(new byte[1], null, null));
 
-        assertEquals(Issuer.BTG, preview.issuer());
+        assertEquals("BTG Pactual", preview.issuer());
         assertEquals(java.util.List.of("0020"), preview.last4s());
         assertEquals(1, preview.statement().size());
 

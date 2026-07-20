@@ -1,10 +1,10 @@
 package br.cdb.feature.finance.accounts.statement.provider;
 
-import br.cdb.feature.finance.accounts.statement.Issuer;
 import br.cdb.feature.finance.accounts.statement.MonetaryDocument;
 import br.cdb.feature.finance.accounts.statement.MonetaryDocumentEntry;
 import br.cdb.feature.finance.accounts.statement.StatementParser;
 import br.cdb.feature.finance.accounts.transactions.importer.Amounts;
+import br.commons.Logger;
 import br.commons.tools.Strings;
 import lombok.val;
 import org.jspecify.annotations.NullMarked;
@@ -56,6 +56,7 @@ public class BTGStatementParser implements StatementParser {
 
     @Override
     public MonetaryDocument parse(String text) {
+        Logger.debug("Parsing Statement");
         val lines = new ArrayList<MonetaryDocumentEntry>();
 
         LocalDate recordDate = null;
@@ -86,7 +87,7 @@ public class BTGStatementParser implements StatementParser {
             }
         }
 
-        return new MonetaryDocument.Statement(Issuer.BTG, List.copyOf(lines));
+        return new MonetaryDocument.Statement("BTG Pactual", List.copyOf(lines));
     }
 
     private static void finalize(LocalDate date, String record, List<MonetaryDocumentEntry> out) {
