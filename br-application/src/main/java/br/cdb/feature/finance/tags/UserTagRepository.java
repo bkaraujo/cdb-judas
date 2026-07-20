@@ -8,7 +8,7 @@ import java.util.UUID;
 
 @NullMarked
 public interface UserTagRepository {
-    List<UserTag> findAllByUser(UUID userId);
+    List<UserTag> findAllByPerson(UUID personId);
     Optional<UserTag> findById(UUID id);
     UserTag save(UserTag tag);
     void deleteById(UUID id);

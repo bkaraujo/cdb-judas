@@ -14,16 +14,16 @@ public class UserTransactionTagService {
 
     private final UserTransactionTagRepository repo;
 
-    public List<UUID> findTransactionIdsByTag(UUID userId, UUID tagId) {
-        return repo.findTransactionIdsByTag(userId, tagId);
+    public List<UUID> findTransactionIdsByTag(UUID personId, UUID tagId) {
+        return repo.findTransactionIdsByTag(personId, tagId);
     }
 
-    public void reassignTag(UUID oldTagId, UUID newTagId, UUID userId) {
-        repo.reassignTag(oldTagId, newTagId, userId);
+    public void reassignTag(UUID oldTagId, UUID newTagId, UUID personId) {
+        repo.reassignTag(oldTagId, newTagId, personId);
     }
 
-    public void deleteByTag(UUID userId, UUID tagId) {
-        repo.deleteByTag(userId, tagId);
+    public void deleteByTag(UUID personId, UUID tagId) {
+        repo.deleteByTag(personId, tagId);
     }
 
     public void deleteByTransaction(UUID transactionId) {

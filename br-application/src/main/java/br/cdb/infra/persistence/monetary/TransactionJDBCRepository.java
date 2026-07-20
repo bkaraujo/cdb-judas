@@ -19,7 +19,7 @@ import java.util.*;
  * Adaptador JDBC (H2) da porta {@link TransactionRepository}; tabela {@code MON_TRANSACTION}.
  * Enums como string, datas como {@code DATE}, timestamps como {@code TIMESTAMP};
  * {@code paymentDate}/{@code groupId}/{@code notes} são opcionais.
- * Categoria e tipo (income/expense) saíram para a camada feature (USER_TRANSACTION).
+ * Categoria e tipo (income/expense) saíram para a camada feature (PERSON_TRANSACTION).
  */
 @NullMarked
 public final class TransactionJDBCRepository extends JDBCRepository<Transaction> implements TransactionRepository {

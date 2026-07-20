@@ -10,9 +10,9 @@ import org.jspecify.annotations.NullMarked;
 public interface PreferencesRepository {
 
     /** Preferências do usuário; sem registros, retorna {@link Preferences#defaults()}. */
-    Preferences findByUserId(String userId);
+    Preferences findByPersonId(String personId);
 
     /** Persiste (upsert) as preferências do usuário e as devolve. */
-    Preferences save(String userId, Preferences prefs);
+    Preferences save(String personId, Preferences prefs);
 
 }

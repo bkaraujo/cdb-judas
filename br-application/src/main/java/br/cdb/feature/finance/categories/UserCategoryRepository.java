@@ -9,9 +9,9 @@ import java.util.UUID;
 
 @NullMarked
 public interface UserCategoryRepository {
-    List<UserCategory> findAllByUser(UUID userId);
+    List<UserCategory> findAllByPerson(UUID personId);
 
-    List<UserCategory> findByNature(UUID userId, Transaction.Type nature);
+    List<UserCategory> findByNature(UUID personId, Transaction.Type nature);
     Optional<UserCategory> findById(UUID id);
     UserCategory save(UserCategory category);
     void deleteById(UUID id);

@@ -8,5 +8,5 @@ import java.util.UUID;
 @NullMarked
 public interface UserProvisioningStep {
 
-    void provision(UUID userId);
+    void provision(UUID personId);
 }

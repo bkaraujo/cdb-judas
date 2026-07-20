@@ -37,11 +37,18 @@ public class LoginResource {
             return Response.status(Response.Status.UNAUTHORIZED).build();
         }
 
+        val personId = user.personId();
+        if (personId == null) {
+            Logger.debug("LOGIN => user '%s' has no linked person", request.username());
+            return Response.status(Response.Status.UNAUTHORIZED).build();
+        }
+
+        // Token continua atado ao userId (login/credencial); a rota do cliente usa o personId.
         val token = tokenStore.issue(user.id());
-        Logger.debug("LOGIN => '%s' (%s) issued token", request.username(), user.id());
+        Logger.debug("LOGIN => '%s' (person %s) issued token", request.username(), personId);
         return Response.ok()
                 .header(TOKEN_HEADER, token)
-                .header(USER_ID_HEADER, user.id())
+                .header(USER_ID_HEADER, personId)
                 .build();
     }
 }

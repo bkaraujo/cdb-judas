@@ -74,20 +74,21 @@ public class AuthenticationFilter implements ContainerRequestFilter {
 
     private void authenticateStream(String userId, ContainerRequestContext request) {
         val user = userRepository.get().findById(userId).orElse(null);
-        if (user == null) {
+        if (user == null || user.personId() == null) {
             Logger.debug("AUTHN %s %s => token references unknown user '%s'", request.getMethod(), RequestUtils.path(request), userId);
             return;
         }
-        currentUser.set(new AuthenticatedUser(userId, user.username()));
+        // Identidade exposta às features é a PESSOA — todas as tabelas de dados fazem chave com ela.
+        currentUser.set(new AuthenticatedUser(user.personId(), user.username()));
     }
 
     private void authenticate(String userId, ContainerRequestContext request) {
         val user = userRepository.get().findById(userId).orElse(null);
-        if (user == null) {
+        if (user == null || user.personId() == null) {
             Logger.debug("AUTHN %s %s => token references unknown user '%s'", request.getMethod(), RequestUtils.path(request), userId);
             return;
         }
-        currentUser.set(new AuthenticatedUser(userId, user.username()));
+        currentUser.set(new AuthenticatedUser(user.personId(), user.username()));
         MDC.push("X-REQUEST-USER", user.username());
     }
 }

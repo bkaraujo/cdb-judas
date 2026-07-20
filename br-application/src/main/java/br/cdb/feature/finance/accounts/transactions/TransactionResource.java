@@ -92,8 +92,8 @@ public class TransactionResource {
 
     // ── Helpers ────────────────────────────────────────────────────
 
-    private List<TransactionResponse> query(UUID userId, UserUseCase.TransactionFilter filter) {
-        return switch (userUseCase.transactions(userId, filter)) {
+    private List<TransactionResponse> query(UUID personId, UserUseCase.TransactionFilter filter) {
+        return switch (userUseCase.transactions(personId, filter)) {
             case Result.Success(var views) -> views.stream().map(TransactionResource::toDto).toList();
             case Result.Failure(var error) -> throw new BusinessException(error);
         };

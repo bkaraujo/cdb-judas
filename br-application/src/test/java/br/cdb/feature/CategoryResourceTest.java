@@ -56,7 +56,7 @@ public class CategoryResourceTest extends BaseHttpTest {
 
     private String categoryOf(String transactionId) {
         return dataSource.query(
-                "SELECT COD_CATEGORY FROM USER_TRANSACTION WHERE COD_TRANSACTION = ?",
+                "SELECT COD_CATEGORY FROM PERSON_TRANSACTION WHERE COD_TRANSACTION = ?",
                 JDBCParameter.of(transactionId),
                 rs -> rs.next().get() ? rs.getString("COD_CATEGORY").get() : null
         );
@@ -350,7 +350,7 @@ public class CategoryResourceTest extends BaseHttpTest {
                 .extract().jsonPath().getString("id");
 
         dataSource.execute(
-                "INSERT INTO USER_TRANSACTION (COD_USER, COD_ACCOUNT, COD_TRANSACTION, COD_CATEGORY, TMS_CREATE_AT, TMS_UPDATED_AT) "
+                "INSERT INTO PERSON_TRANSACTION (COD_PERSON, COD_ACCOUNT, COD_TRANSACTION, COD_CATEGORY, TMS_CREATE_AT, TMS_UPDATED_AT) "
                         + "VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)",
                 JDBCParameter.of(TEST_USER_ID, accountA, outboundId, subId)
         );

@@ -16,7 +16,7 @@ import java.util.*;
 /**
  * Adaptador JDBC (H2) da porta {@link AccountRepository}. Mapeia {@link Account} para
  * {@code MON_ACCOUNT} (metadados globais: nome, tipo, ativo, limite de crédito/cheque especial e
- * ciclo de fatura). Saldo e cor são geridos pela feature em {@code USER_ACCOUNT}.
+ * ciclo de fatura). Saldo e cor são geridos pela feature em {@code PERSON_ACCOUNT}.
  */
 @NullMarked
 public final class AccountJDBCRepository extends JDBCRepository<Account> implements AccountRepository {

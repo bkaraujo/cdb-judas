@@ -32,8 +32,8 @@ public class SseService implements SSE {
     @Override
     public void subscribe(SseEventSink sink, Sse requestSse) {
         this.sse = requestSse;
-        val userId = CurrentUser.getId();
-        val channel = channels.computeIfAbsent(userId, ignored -> newChannel(userId, requestSse));
+        val personId = CurrentUser.getId();
+        val channel = channels.computeIfAbsent(personId, ignored -> newChannel(personId, requestSse));
         channel.connections().incrementAndGet();
         channel.broadcaster().register(sink);
 
@@ -48,14 +48,14 @@ public class SseService implements SSE {
         channel.broadcaster().broadcast(event(currentSse, type, payload));
     }
 
-    private Channel newChannel(String userId, Sse requestSse) {
+    private Channel newChannel(String personId, Sse requestSse) {
         val broadcaster = requestSse.newBroadcaster();
         val connections = new AtomicInteger(0);
         // Só decrementa no close (não no error) para nunca remover o canal cedo demais
         // enquanto outra aba do mesmo usuário ainda pode estar conectada.
         broadcaster.onClose(ignored -> {
             if (connections.decrementAndGet() <= 0) {
-                channels.remove(userId);
+                channels.remove(personId);
             }
         });
         return new Channel(broadcaster, connections);

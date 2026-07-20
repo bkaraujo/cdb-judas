@@ -15,20 +15,20 @@ public class UserTransactionService {
 
     private final UserTransactionRepository repo;
 
-    public UserTransaction save(UUID transactionId, UUID accountId, UUID userId, @Nullable UUID categoryId) {
-        return repo.save(new UserTransaction(transactionId, userId, accountId, categoryId, null, null));
+    public UserTransaction save(UUID transactionId, UUID accountId, UUID personId, @Nullable UUID categoryId) {
+        return repo.save(new UserTransaction(transactionId, personId, accountId, categoryId, null, null));
     }
 
-    public Optional<UserTransaction> find(UUID transactionId, UUID accountId, UUID userId) {
-        return repo.findByTransactionAccountAndUser(transactionId, accountId, userId);
+    public Optional<UserTransaction> find(UUID transactionId, UUID accountId, UUID personId) {
+        return repo.findByTransactionAccountAndPerson(transactionId, accountId, personId);
     }
 
-    public List<UserTransaction> findAllByUser(UUID userId) {
-        return repo.findAllByUser(userId);
+    public List<UserTransaction> findAllByPerson(UUID personId) {
+        return repo.findAllByPerson(personId);
     }
 
-    public Map<UUID, UserTransaction> indexByTransaction(UUID userId) {
-        return findAllByUser(userId).stream()
+    public Map<UUID, UserTransaction> indexByTransaction(UUID personId) {
+        return findAllByPerson(personId).stream()
                 .collect(Collectors.toMap(UserTransaction::transactionId, ut -> ut));
     }
 
@@ -36,23 +36,23 @@ public class UserTransactionService {
         repo.deleteByTransaction(transactionId);
     }
 
-    public void deleteByTransactionAccountAndUser(UUID transactionId, UUID accountId, UUID userId) {
-        repo.deleteByTransactionAccountAndUser(transactionId, accountId, userId);
+    public void deleteByTransactionAccountAndPerson(UUID transactionId, UUID accountId, UUID personId) {
+        repo.deleteByTransactionAccountAndPerson(transactionId, accountId, personId);
     }
 
-    public void reassignCategory(UUID oldCategoryId, UUID newCategoryId, UUID userId) {
-        repo.reassignCategory(oldCategoryId, newCategoryId, userId);
+    public void reassignCategory(UUID oldCategoryId, UUID newCategoryId, UUID personId) {
+        repo.reassignCategory(oldCategoryId, newCategoryId, personId);
     }
 
-    public void reassignAccount(UUID oldAccountId, UUID newAccountId, UUID userId) {
-        repo.reassignAccount(oldAccountId, newAccountId, userId);
+    public void reassignAccount(UUID oldAccountId, UUID newAccountId, UUID personId) {
+        repo.reassignAccount(oldAccountId, newAccountId, personId);
     }
 
-    public void deleteByAccountAndUser(UUID accountId, UUID userId) {
-        repo.deleteByAccountAndUser(accountId, userId);
+    public void deleteByAccountAndPerson(UUID accountId, UUID personId) {
+        repo.deleteByAccountAndPerson(accountId, personId);
     }
 
-    public List<UUID> findTransactionIdsByCategories(UUID userId, Collection<UUID> categoryIds) {
-        return repo.findTransactionIdsByCategories(userId, categoryIds);
+    public List<UUID> findTransactionIdsByCategories(UUID personId, Collection<UUID> categoryIds) {
+        return repo.findTransactionIdsByCategories(personId, categoryIds);
     }
 }

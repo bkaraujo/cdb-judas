@@ -16,7 +16,7 @@ import java.util.List;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-/** Cobre centro de custo. Categorias e tags são camada feature (USER_CATEGORY / USER_TAG), não este contexto. */
+/** Cobre centro de custo. Categorias e tags são camada feature (PERSON_CATEGORY / PERSON_TAG), não este contexto. */
 class CostCenterUseCaseTest extends AbstractUseCaseTest {
 
     private CostCenterUseCase useCase = MonetaryUseCases.ucCostCenter();

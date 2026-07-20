@@ -22,11 +22,11 @@ public class ClosingJDBCRepository implements ClosingRepository {
 
     @Override
     public Optional<YearMonth> find() {
-        val userId = CurrentUser.getId();
+        val personId = CurrentUser.getId();
         val results = dataSource.query(
-                "SELECT TXT_VALUE FROM USER_PREFERENCES WHERE COD_USER = ? AND TXT_KEY = ?",
+                "SELECT TXT_VALUE FROM PERSON_PREFERENCES WHERE COD_PERSON = ? AND TXT_KEY = ?",
                 JDBCParameter.of (
-                        userId,
+                        personId,
                         KEY
                 ),
                 rs -> {
@@ -44,25 +44,25 @@ public class ClosingJDBCRepository implements ClosingRepository {
 
     @Override
     public void save(YearMonth ym) {
-        val userId = CurrentUser.getId();
+        val personId = CurrentUser.getId();
         // Check + write na mesma transação: evita janela de corrida entre SELECT e INSERT/UPDATE
-        // quando vários writers concorrem na mesma chave (COD_USER, TXT_KEY) em ambiente multi-tenant.
+        // quando vários writers concorrem na mesma chave (COD_PERSON, TXT_KEY) em ambiente multi-tenant.
         dataSource.transaction(tx -> {
             val exists = tx.query(
-                    "SELECT TXT_VALUE FROM USER_PREFERENCES WHERE COD_USER = ? AND TXT_KEY = ?",
-                    JDBCParameter.of(userId, KEY),
+                    "SELECT TXT_VALUE FROM PERSON_PREFERENCES WHERE COD_PERSON = ? AND TXT_KEY = ?",
+                    JDBCParameter.of(personId, KEY),
                     rs -> rs.next().get()
             ).get();
 
             if (exists) {
                 tx.execute(
-                        "UPDATE USER_PREFERENCES SET TXT_VALUE = ? WHERE COD_USER = ? AND TXT_KEY = ?",
-                        JDBCParameter.of(ym.toString(), userId, KEY)
+                        "UPDATE PERSON_PREFERENCES SET TXT_VALUE = ? WHERE COD_PERSON = ? AND TXT_KEY = ?",
+                        JDBCParameter.of(ym.toString(), personId, KEY)
                 ).get();
             } else {
                 tx.execute(
-                        "INSERT INTO USER_PREFERENCES (COD_USER, TXT_KEY, TXT_VALUE) VALUES (?, ?, ?)",
-                        JDBCParameter.of(userId, KEY, ym.toString())
+                        "INSERT INTO PERSON_PREFERENCES (COD_PERSON, TXT_KEY, TXT_VALUE) VALUES (?, ?, ?)",
+                        JDBCParameter.of(personId, KEY, ym.toString())
                 ).get();
             }
             return Result.success(true);
@@ -71,11 +71,11 @@ public class ClosingJDBCRepository implements ClosingRepository {
 
     @Override
     public void clear() {
-        val userId = CurrentUser.getId();
+        val personId = CurrentUser.getId();
         dataSource.execute(
-                "DELETE FROM USER_PREFERENCES WHERE COD_USER = ? AND TXT_KEY = ?",
+                "DELETE FROM PERSON_PREFERENCES WHERE COD_PERSON = ? AND TXT_KEY = ?",
                 JDBCParameter.of (
-                        userId,
+                        personId,
                         KEY
                 )
         );

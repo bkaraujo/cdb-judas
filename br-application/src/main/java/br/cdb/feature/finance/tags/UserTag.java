@@ -9,7 +9,7 @@ import java.util.UUID;
 @NullMarked
 public record UserTag(
         UUID id,
-        UUID userId,
+        UUID personId,
         String name,
         String color,
         @Nullable LocalDateTime createdAt

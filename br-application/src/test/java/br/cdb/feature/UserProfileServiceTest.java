@@ -30,6 +30,8 @@ class UserProfileServiceTest {
             return byId.values().stream().filter(u -> u.username().equals(username)).findFirst();
         }
         @Override public Optional<User> findById(String id) { return Optional.ofNullable(byId.get(id)); }
+        // Neste teste unitário o id do usuário faz o papel do personId (1:1).
+        @Override public Optional<User> findByPersonId(String personId) { return Optional.ofNullable(byId.get(personId)); }
         @Override public User save(User user) { byId.put(user.id(), user); return user; }
     }
 
@@ -37,7 +39,7 @@ class UserProfileServiceTest {
     static final class InMemoryPreferences implements PreferencesRepository {
         private final Map<String, Preferences> byUser = new LinkedHashMap<>();
 
-        @Override public Preferences findByUserId(String userId) {
+        @Override public Preferences findByPersonId(String userId) {
             return byUser.getOrDefault(userId, Preferences.defaults());
         }
         @Override public Preferences save(String userId, Preferences prefs) {

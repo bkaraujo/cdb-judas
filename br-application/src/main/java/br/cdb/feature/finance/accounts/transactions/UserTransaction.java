@@ -9,7 +9,7 @@ import java.util.UUID;
 @NullMarked
 public record UserTransaction(
         UUID transactionId,
-        UUID userId,
+        UUID personId,
         UUID accountId,
         @Nullable UUID categoryId,
         @Nullable LocalDateTime createdAt,

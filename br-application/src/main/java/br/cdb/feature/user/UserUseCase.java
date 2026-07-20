@@ -106,13 +106,13 @@ public class UserUseCase {
     // ── Accounts ───────────────────────────────────────────────────
 
     public Result<List<AccountView>, BusinessError> accounts() {
-        val userId = CurrentUser.getId();
+        val personId = CurrentUser.getId();
 
         val views = new ArrayList<AccountView>();
-        for (val overlay : userAccountService.findByUser(userId)) {
+        for (val overlay : userAccountService.findByPerson(personId)) {
             val account = ucAccount.findAccount(overlay.accountId());
             if (account.isFailure()) {
-                Logger.warn("overlay %s aponta para conta inexistente %s", overlay.userId(), overlay.accountId());
+                Logger.warn("overlay %s aponta para conta inexistente %s", overlay.personId(), overlay.accountId());
                 continue;
             }
 
@@ -147,9 +147,9 @@ public class UserUseCase {
     }
 
     public Result<AccountView, BusinessError> createAccount(AccountCommand.Create cmd, String color) {
-        val userId = CurrentUser.getId();
+        val personId = CurrentUser.getId();
         return ucAccount.upsert(cmd).map(account -> {
-            val overlay = new UserAccount(userId, account.id(), color);
+            val overlay = new UserAccount(personId, account.id(), color);
             userAccountService.save(overlay);
             accountStreamPublisher.upsert(account.id());
             return new AccountView(account, overlay, List.of(), List.of());
@@ -158,9 +158,9 @@ public class UserUseCase {
 
     public Result<AccountView, BusinessError> updateAccount(AccountCommand.Update cmd, String color) {
         return guards.ownsAccount(cmd.id()).flatMap(ignored -> {
-            val userId = CurrentUser.getId();
+            val personId = CurrentUser.getId();
             return ucAccount.upsert(cmd).map(account -> {
-                val overlay = new UserAccount(userId, account.id(), color);
+                val overlay = new UserAccount(personId, account.id(), color);
                 userAccountService.save(overlay);
                 accountStreamPublisher.upsert(account.id());
                 return new AccountView(account, overlay, cardsOf(account.id()), List.of());
@@ -169,13 +169,13 @@ public class UserUseCase {
     }
 
     /**
-     * USER_ACCOUNT/USER_TRANSACTION referenciam MON_ACCOUNT (FK) — o overlay precisa sumir/ser
+     * PERSON_ACCOUNT/PERSON_TRANSACTION referenciam MON_ACCOUNT (FK) — o overlay precisa sumir/ser
      * re-keyed <em>antes</em> do contexto apagar a conta. MOVE é validado aqui primeiro (fronteira
      * da feature) para nunca reatribuir para um alvo inválido; Block/Purge não têm alvo a validar e
      * contam com o contexto como backstop (race → 409/400 simples, sem corrupção de dados).
      */
     public Result<DeletionOutcome, BusinessError> deleteAccount(
-            UUID userId, UUID id, @Nullable DeletionStrategy strategy, @Nullable UUID targetId) {
+            UUID personId, UUID id, @Nullable DeletionStrategy strategy, @Nullable UUID targetId) {
         val guard = strategy == DeletionStrategy.MOVE
                 ? guards.ownsAccounts(id, Objects.requireNonNull(targetId))
                 : guards.ownsAccount(id);
@@ -190,9 +190,9 @@ public class UserUseCase {
             val target = Objects.requireNonNull(targetId);
             val targetCheck = validateAccountMoveTarget(id, target);
             if (targetCheck instanceof Result.Failure<Void, BusinessError>(var error)) return Result.failure(error);
-            userTransactionService.reassignAccount(id, target, userId);
+            userTransactionService.reassignAccount(id, target, personId);
         } else {
-            userTransactionService.deleteByAccountAndUser(id, userId);
+            userTransactionService.deleteByAccountAndPerson(id, personId);
         }
         userAccountService.delete(CurrentUser.getId(), id);
 
@@ -234,9 +234,9 @@ public class UserUseCase {
      *  no frontend). Contas sem snapshot no período (ex.: antes da primeira movimentação) são
      *  omitidas — o chamador decide o fallback (ex.: saldo atual da conta). */
     public Result<List<Balance>, BusinessError> balances(YearMonth period) {
-        val userId = CurrentUser.getId();
+        val personId = CurrentUser.getId();
         val result = new ArrayList<Balance>();
-        for (val overlay : userAccountService.findByUser(userId)) {
+        for (val overlay : userAccountService.findByPerson(personId)) {
             if (ucAccount.getMonthlyBalance(overlay.accountId(), period) instanceof Result.Success(var balance)) {
                 result.add(balance);
             }
@@ -285,7 +285,7 @@ public class UserUseCase {
 
     // ── Transactions ───────────────────────────────────────────────
 
-    public Result<List<TransactionView>, BusinessError> transactions(UUID userId, TransactionFilter filter) {
+    public Result<List<TransactionView>, BusinessError> transactions(UUID personId, TransactionFilter filter) {
         val accountId = filter.accountId();
         val guard = accountId == null ? Result.<BusinessError>success() : guards.ownsAccount(accountId);
 
@@ -297,7 +297,7 @@ public class UserUseCase {
             val limit = filter.limit();
 
             return ucTransaction.transactions().map(all -> {
-                val overlays = userTransactionService.indexByTransaction(userId);
+                val overlays = userTransactionService.indexByTransaction(personId);
                 val filtered = all.stream()
                         .filter(t -> accountId == null || accountId.equals(t.accountId()))
                         .filter(t -> dateFrom == null || !t.date().isBefore(dateFrom))
@@ -313,7 +313,7 @@ public class UserUseCase {
         });
     }
 
-    public Result<TransactionView, BusinessError> createTransaction(UUID userId, TransactionCommand.Create cmd, @Nullable UUID categoryId) {
+    public Result<TransactionView, BusinessError> createTransaction(UUID personId, TransactionCommand.Create cmd, @Nullable UUID categoryId) {
         if (guards.ownsAccountAndCard(cmd.accountId(), cmd.cardId()) instanceof Result.Failure<Void, BusinessError>(var error)) {
             return Result.failure(error);
         }
@@ -321,15 +321,15 @@ public class UserUseCase {
             return Result.failure(error);
         }
         return ucTransaction.upsert(cmd).map(t -> {
-            // Cria o USER_TRANSACTION da primeira parcela e depois o das irmãs do grupo
-            val overlay = userTransactionService.save(t.id(), t.accountId(), userId, categoryId);
-            saveUserTransactionForGroup(t, userId, categoryId);
+            // Cria o PERSON_TRANSACTION da primeira parcela e depois o das irmãs do grupo
+            val overlay = userTransactionService.save(t.id(), t.accountId(), personId, categoryId);
+            saveUserTransactionForGroup(t, personId, categoryId);
             accountStreamPublisher.upsert(t.accountId());
             return new TransactionView(t, overlay);
         });
     }
 
-    public Result<TransactionView, BusinessError> updateTransaction(UUID userId, TransactionCommand.Update cmd, @Nullable UUID categoryId) {
+    public Result<TransactionView, BusinessError> updateTransaction(UUID personId, TransactionCommand.Update cmd, @Nullable UUID categoryId) {
         if (guards.ownsAccountAndCard(cmd.accountId(), cmd.cardId()) instanceof Result.Failure<Void, BusinessError>(var error)) {
             return Result.failure(error);
         }
@@ -348,16 +348,16 @@ public class UserUseCase {
 
         val previousAccountId = previous;
         return ucTransaction.upsert(cmd).map(t -> {
-            // A PK do USER_TRANSACTION inclui a conta: se a atualização moveu a transação de conta,
+            // A PK do PERSON_TRANSACTION inclui a conta: se a atualização moveu a transação de conta,
             // a linha antiga da chave composta ficaria órfã (o save abaixo faria INSERT, não UPDATE).
             if (previousAccountId != null && !previousAccountId.equals(t.accountId())) {
-                userTransactionService.deleteByTransactionAccountAndUser(t.id(), previousAccountId, userId);
+                userTransactionService.deleteByTransactionAccountAndPerson(t.id(), previousAccountId, personId);
             }
-            val existingOverlay = userTransactionService.find(t.id(), t.accountId(), userId);
-            val overlay = userTransactionService.save(t.id(), t.accountId(), userId, categoryId);
+            val existingOverlay = userTransactionService.find(t.id(), t.accountId(), personId);
+            val overlay = userTransactionService.save(t.id(), t.accountId(), personId, categoryId);
             // Se for grupo de parcelas: atualiza a categoria de todos os membros
             if (t.groupId() != null && existingOverlay.isEmpty()) {
-                saveUserTransactionForGroup(t, userId, categoryId);
+                saveUserTransactionForGroup(t, personId, categoryId);
             }
             publishAccountUpdate(t.accountId(), previousAccountId);
             return new TransactionView(t, overlay);
@@ -365,11 +365,11 @@ public class UserUseCase {
     }
 
     public Result<TransactionView, BusinessError> updateTransactionStatus(
-            UUID userId, UUID txId, Transaction.Status status, @Nullable LocalDate paymentDate) {
+            UUID personId, UUID txId, Transaction.Status status, @Nullable LocalDate paymentDate) {
         return ucTransaction.transaction(txId)
                 .flatMap(existing -> guards.ownsAccount(existing.accountId()))
                 .flatMap(ignored -> ucTransaction.updateTransactionStatus(txId, status, paymentDate).map(t -> {
-                    val overlay = userTransactionService.find(t.id(), t.accountId(), userId).orElse(null);
+                    val overlay = userTransactionService.find(t.id(), t.accountId(), personId).orElse(null);
                     accountStreamPublisher.upsert(t.accountId());
                     return new TransactionView(t, overlay);
                 }));
@@ -420,13 +420,13 @@ public class UserUseCase {
         }
     }
 
-    private void saveUserTransactionForGroup(Transaction first, UUID userId, @Nullable UUID categoryId) {
+    private void saveUserTransactionForGroup(Transaction first, UUID personId, @Nullable UUID categoryId) {
         val groupId = first.groupId();
         if (groupId == null) return;
         allTransactions().stream()
                 .filter(t -> groupId.equals(t.groupId()))
                 .filter(t -> !t.id().equals(first.id()))
-                .forEach(t -> userTransactionService.save(t.id(), t.accountId(), userId, categoryId));
+                .forEach(t -> userTransactionService.save(t.id(), t.accountId(), personId, categoryId));
     }
 
     // ── Statement import ───────────────────────────────────────────
@@ -488,69 +488,69 @@ public class UserUseCase {
 
     // ── Categories ─────────────────────────────────────────────────
 
-    public List<UserCategory> categories(UUID userId) {
-        return userCategoryService.findAll(userId);
+    public List<UserCategory> categories(UUID personId) {
+        return userCategoryService.findAll(personId);
     }
 
-    public Result<UserCategory, BusinessError> createCategory(UUID userId, String name, Transaction.Type nature, @Nullable UUID parentId) {
+    public Result<UserCategory, BusinessError> createCategory(UUID personId, String name, Transaction.Type nature, @Nullable UUID parentId) {
         if (parentId != null
                 && userCategoryService.validateParent(parentId, nature) instanceof Result.Failure<Void, BusinessError>(var error)) {
             return Result.failure(error);
         }
-        return userCategoryService.validateUniqueName(userId, nature.name(), name, parentId, null)
-                .map(ignored -> userCategoryService.create(userId, name, nature, parentId));
+        return userCategoryService.validateUniqueName(personId, nature.name(), name, parentId, null)
+                .map(ignored -> userCategoryService.create(personId, name, nature, parentId));
     }
 
-    public Result<UserCategory, BusinessError> updateCategory(UUID userId, UUID id, String name, @Nullable UUID parentId, @Nullable Boolean active) {
+    public Result<UserCategory, BusinessError> updateCategory(UUID personId, UUID id, String name, @Nullable UUID parentId, @Nullable Boolean active) {
         return userCategoryService.findById(id).flatMap(existing -> {
             if (existing.isSystem()) {
                 return Result.failure(new BusinessError.BusinessRule("Categoria de sistema não pode ser modificada"));
             }
-            return userCategoryService.validateUniqueName(userId, existing.nature().name(), name, parentId, id)
+            return userCategoryService.validateUniqueName(personId, existing.nature().name(), name, parentId, id)
                     .map(ignored -> userCategoryService.update(id, name, parentId, active));
         });
     }
 
     public Result<DeletionOutcome, BusinessError> deleteCategory(
-            UUID userId, UUID id, @Nullable DeletionStrategy strategy, @Nullable UUID targetId) {
-        return userCategoryService.subtreeIds(id, userId).flatMap(subtree -> {
+            UUID personId, UUID id, @Nullable DeletionStrategy strategy, @Nullable UUID targetId) {
+        return userCategoryService.subtreeIds(id, personId).flatMap(subtree -> {
             if (strategy == null) {
-                val count = userTransactionService.findTransactionIdsByCategories(userId, subtree).size();
+                val count = userTransactionService.findTransactionIdsByCategories(personId, subtree).size();
                 if (count > 0) return Result.success(new DeletionOutcome.Linked(count));
-                userCategoryService.deletePlain(subtree, userId);
+                userCategoryService.deletePlain(subtree, personId);
                 return Result.success(new DeletionOutcome.Completed());
             }
 
             val result = strategy == DeletionStrategy.MOVE
-                    ? moveCategorySubtree(id, Objects.requireNonNull(targetId), userId)
-                    : deleteCategoryWithTransactions(subtree, userId);
+                    ? moveCategorySubtree(id, Objects.requireNonNull(targetId), personId)
+                    : deleteCategoryWithTransactions(subtree, personId);
             return result.map(ignored -> new DeletionOutcome.Completed());
         });
     }
 
     /** Reatribui toda a subárvore para {@code targetId} (já validado pelo service) e apaga a subárvore. */
-    private Result<Void, BusinessError> moveCategorySubtree(UUID id, UUID targetId, UUID userId) {
-        return userCategoryService.validateMoveTarget(id, targetId, userId).map(subtree -> {
-            subtree.forEach(nodeId -> userTransactionService.reassignCategory(nodeId, targetId, userId));
-            userCategoryService.deletePlain(subtree, userId);
+    private Result<Void, BusinessError> moveCategorySubtree(UUID id, UUID targetId, UUID personId) {
+        return userCategoryService.validateMoveTarget(id, targetId, personId).map(subtree -> {
+            subtree.forEach(nodeId -> userTransactionService.reassignCategory(nodeId, targetId, personId));
+            userCategoryService.deletePlain(subtree, personId);
             return null;
         });
     }
 
     /** Apaga as transações vinculadas à subárvore inteira e depois a subárvore. */
-    private Result<Void, BusinessError> deleteCategoryWithTransactions(List<UUID> subtreeIds, UUID userId) {
-        val txIds = userTransactionService.findTransactionIdsByCategories(userId, subtreeIds);
-        return deleteLinkedTransactions(txIds, () -> userCategoryService.deletePlain(subtreeIds, userId));
+    private Result<Void, BusinessError> deleteCategoryWithTransactions(List<UUID> subtreeIds, UUID personId) {
+        val txIds = userTransactionService.findTransactionIdsByCategories(personId, subtreeIds);
+        return deleteLinkedTransactions(txIds, () -> userCategoryService.deletePlain(subtreeIds, personId));
     }
 
     // ── Tags ───────────────────────────────────────────────────────
 
-    public List<UserTag> tags(UUID userId) {
-        return userTagService.findAll(userId);
+    public List<UserTag> tags(UUID personId) {
+        return userTagService.findAll(personId);
     }
 
-    public UserTag createTag(UUID userId, String name, String color) {
-        return userTagService.create(userId, name, color);
+    public UserTag createTag(UUID personId, String name, String color) {
+        return userTagService.create(personId, name, color);
     }
 
     public Result<UserTag, BusinessError> updateTag(UUID id, String name, String color) {
@@ -558,25 +558,25 @@ public class UserUseCase {
     }
 
     public Result<DeletionOutcome, BusinessError> deleteTag(
-            UUID userId, UUID id, @Nullable DeletionStrategy strategy, @Nullable UUID targetId) {
+            UUID personId, UUID id, @Nullable DeletionStrategy strategy, @Nullable UUID targetId) {
         if (strategy == null) {
-            val count = userTagService.linkedTransactionIds(userId, id).size();
+            val count = userTagService.linkedTransactionIds(personId, id).size();
             if (count > 0) return Result.success(new DeletionOutcome.Linked(count));
             return userTagService.deleteById(id).map(ignored -> new DeletionOutcome.Completed());
         }
 
         val result = switch (strategy) {
-            case MOVE -> userTagService.deleteMoving(id, Objects.requireNonNull(targetId), userId);
-            case DELETE -> deleteTagWithTransactions(id, userId);
-            case DETACH -> userTagService.deleteDetached(id, userId);
+            case MOVE -> userTagService.deleteMoving(id, Objects.requireNonNull(targetId), personId);
+            case DELETE -> deleteTagWithTransactions(id, personId);
+            case DETACH -> userTagService.deleteDetached(id, personId);
         };
         return result.map(ignored -> new DeletionOutcome.Completed());
     }
 
     /** Apaga as transações vinculadas à tag e depois a tag em si. */
-    private Result<Void, BusinessError> deleteTagWithTransactions(UUID id, UUID userId) {
+    private Result<Void, BusinessError> deleteTagWithTransactions(UUID id, UUID personId) {
         return userTagService.findById(id).flatMap(existing -> {
-            val txIds = userTagService.linkedTransactionIds(userId, id);
+            val txIds = userTagService.linkedTransactionIds(personId, id);
             return deleteLinkedTransactions(txIds, () -> userTagService.deleteById(id));
         });
     }

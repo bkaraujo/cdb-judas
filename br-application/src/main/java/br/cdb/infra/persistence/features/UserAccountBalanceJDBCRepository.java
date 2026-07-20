@@ -16,14 +16,14 @@ import java.time.YearMonth;
 import java.util.*;
 
 /**
- * Adaptador JDBC (H2) da porta {@link BalanceRepository}: tabela {@code USER_ACCOUNT_BALANCE}
+ * Adaptador JDBC (H2) da porta {@link BalanceRepository}: tabela {@code PERSON_ACCOUNT_BALANCE}
  * (períodos mensais por utilizador, período como YYYYMM inteiro).
  */
 @NullMarked
 public final class UserAccountBalanceJDBCRepository extends JDBCRepository<Balance> implements BalanceRepository {
 
     public UserAccountBalanceJDBCRepository() {
-        super("USER_ACCOUNT_BALANCE");
+        super("PERSON_ACCOUNT_BALANCE");
     }
 
     @Override
@@ -48,7 +48,7 @@ public final class UserAccountBalanceJDBCRepository extends JDBCRepository<Balan
     public Balance save(Balance entity) {
         val accountId = entity.account().id().toString();
         val numPeriod = toNumPeriod(entity.period());
-        val codUser = findUserIdForAccount(entity.account().id());
+        val codPerson = findPersonIdForAccount(entity.account().id());
 
         datasource.transaction(tx -> {
             val exists = tx.query(
@@ -64,8 +64,8 @@ public final class UserAccountBalanceJDBCRepository extends JDBCRepository<Balan
                 ).get();
             } else {
                 tx.execute(
-                        "INSERT INTO " + table() + " (ID, COD_USER, COD_ACCOUNT, NUM_PERIOD, DEC_BALANCE) VALUES (?, ?, ?, ?, ?)",
-                        JDBCParameter.of(UUID.randomUUID().toString(), codUser, accountId, numPeriod, entity.value())
+                        "INSERT INTO " + table() + " (ID, COD_PERSON, COD_ACCOUNT, NUM_PERIOD, DEC_BALANCE) VALUES (?, ?, ?, ?, ?)",
+                        JDBCParameter.of(UUID.randomUUID().toString(), codPerson, accountId, numPeriod, entity.value())
                 ).get();
             }
 
@@ -97,7 +97,7 @@ public final class UserAccountBalanceJDBCRepository extends JDBCRepository<Balan
     @Override
     protected Map<String, @Nullable Object> values(Balance entity) {
         val values = new LinkedHashMap<String, @Nullable Object>();
-        values.put("COD_USER", findUserIdForAccount(entity.account().id()));
+        values.put("COD_PERSON", findPersonIdForAccount(entity.account().id()));
         values.put("COD_ACCOUNT", entity.account().id().toString());
         values.put("NUM_PERIOD", toNumPeriod(entity.period()));
         values.put("DEC_BALANCE", entity.value());
@@ -117,13 +117,13 @@ public final class UserAccountBalanceJDBCRepository extends JDBCRepository<Balan
         );
     }
 
-    private String findUserIdForAccount(UUID accountId) {
+    private String findPersonIdForAccount(UUID accountId) {
         val results = datasource.query(
-                "SELECT COD_USER FROM USER_ACCOUNT WHERE COD_ACCOUNT = ? LIMIT 1",
+                "SELECT COD_PERSON FROM PERSON_ACCOUNT WHERE COD_ACCOUNT = ? LIMIT 1",
                 JDBCParameter.of(accountId.toString()),
                 rs -> {
                     val list = new ArrayList<String>();
-                    while (rs.next().get()) list.add(rs.getString("COD_USER").get());
+                    while (rs.next().get()) list.add(rs.getString("COD_PERSON").get());
                     return list;
                 }
         );

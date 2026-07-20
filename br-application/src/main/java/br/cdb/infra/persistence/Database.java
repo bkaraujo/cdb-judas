@@ -16,19 +16,21 @@ import java.util.List;
  * sem {@code DEFAULT} (a aplicação sempre fornece os valores). Cartão é entidade do contexto
  * monetário: {@code MON_CARD} (identificado só pelo last4, vinculado a uma conta real).
  * Limite de crédito/cheque especial e ciclo de fatura (fechamento/vencimento) são colunas da
- * própria {@code MON_ACCOUNT}, compartilhadas por todos os cartões dela. {@code USER_ACCOUNT}
- * carrega só a cor por utilizador — estado ativo e saldo já vêm do contexto monetário (o saldo
- * inicial histórico, quando existia, virou uma transação normal na migração).</p>
+ * própria {@code MON_ACCOUNT}, compartilhadas por todos os cartões dela. {@code PERSON_ACCOUNT}
+ * carrega só a cor por pessoa — estado ativo e saldo já vêm do contexto monetário (o saldo
+ * inicial histórico, quando existia, virou uma transação normal na migração). As tabelas de dados
+ * fazem chave com {@code PEP_PERSON} ({@code COD_PERSON}); {@code SEC_USER}/{@code USER_CREDENTIAL}
+ * servem só ao login (identificam a pessoa).</p>
  *
  * <p>Lookup tables: {@code MON_ACCOUNT_TYPE} (IDs UUID estáveis — ver {@link AccountTypeMapper}),
  * {@code TRANSACTION_NATURE} e {@code MON_STATUS} (IDs VARCHAR(20) com o nome do enum). As FKs
  * conformam a todas as relações dos diagramas Mermaid: além das lookups, as tabelas de dados
  * referenciam-se entre si, inclusive entre contextos (ex.: {@code SEC_USER→PEP_PERSON},
- * {@code USER_TRANSACTION→MON_TRANSACTION}). Por isso a ordem de criação em {@link #model()} e a
+ * {@code PERSON_TRANSACTION→MON_TRANSACTION}). Por isso a ordem de criação em {@link #model()} e a
  * de limpeza em {@link #reset()} respeitam a dependência pai→filho. As FKs dos overlays de feature
- * para {@code MON_TRANSACTION} ({@code USER_TRANSACTION}/{@code USER_TRANSACTION_TAG}) usam
+ * para {@code MON_TRANSACTION} ({@code PERSON_TRANSACTION}/{@code PERSON_TRANSACTION_TAG}) usam
  * {@code ON DELETE CASCADE}: o contexto monetário é dono da transação e a apaga primeiro; os
- * overlays somem em cascata (a limpeza reativa na feature vira idempotente). {@code USER_CATEGORY.COD_PARENT}
+ * overlays somem em cascata (a limpeza reativa na feature vira idempotente). {@code PERSON_CATEGORY.COD_PARENT}
  * também usa {@code ON DELETE CASCADE} (apagar uma macro-categoria remove a subárvore).</p>
  *
  * <p>{@link #reset()} dá os comandos de limpeza para isolar testes (apaga só dados, preserva
@@ -157,25 +159,25 @@ public abstract class Database {
                 )
                 """,
                 """
-                CREATE TABLE USER_PREFERENCES (
-                    COD_USER CHAR(36) NOT NULL REFERENCES SEC_USER(ID),
+                CREATE TABLE PERSON_PREFERENCES (
+                    COD_PERSON CHAR(36) NOT NULL REFERENCES PEP_PERSON(ID),
                     TXT_KEY VARCHAR(50) NOT NULL,
                     TXT_VALUE VARCHAR(255),
-                    PRIMARY KEY (COD_USER, TXT_KEY)
+                    PRIMARY KEY (COD_PERSON, TXT_KEY)
                 )
                 """,
                 """
-                CREATE TABLE USER_ACCOUNT (
-                    COD_USER CHAR(36) NOT NULL REFERENCES SEC_USER(ID),
+                CREATE TABLE PERSON_ACCOUNT (
+                    COD_PERSON CHAR(36) NOT NULL REFERENCES PEP_PERSON(ID),
                     COD_ACCOUNT CHAR(36) NOT NULL REFERENCES MON_ACCOUNT(ID),
                     TXT_COLOR VARCHAR(20) NOT NULL,
-                    PRIMARY KEY (COD_USER, COD_ACCOUNT)
+                    PRIMARY KEY (COD_PERSON, COD_ACCOUNT)
                 )
                 """,
                 """
-                CREATE TABLE USER_ACCOUNT_BALANCE (
+                CREATE TABLE PERSON_ACCOUNT_BALANCE (
                     ID CHAR(36) PRIMARY KEY,
-                    COD_USER CHAR(36) NOT NULL REFERENCES SEC_USER(ID),
+                    COD_PERSON CHAR(36) NOT NULL REFERENCES PEP_PERSON(ID),
                     COD_ACCOUNT CHAR(36) NOT NULL REFERENCES MON_ACCOUNT(ID),
                     NUM_PERIOD INT NOT NULL,
                     DEC_BALANCE DECIMAL(19, 2) NOT NULL
@@ -190,10 +192,10 @@ public abstract class Database {
                 "INSERT INTO TRANSACTION_NATURE (ID, TXT_DESCRIPTION) VALUES ('EXPENSE', 'Despesa')",
                 "INSERT INTO TRANSACTION_NATURE (ID, TXT_DESCRIPTION) VALUES ('INCOME', 'Receita')",
                 """
-                CREATE TABLE USER_CATEGORY (
+                CREATE TABLE PERSON_CATEGORY (
                     ID CHAR(36) PRIMARY KEY,
-                    COD_USER CHAR(36) NOT NULL REFERENCES SEC_USER(ID),
-                    COD_PARENT CHAR(36) REFERENCES USER_CATEGORY(ID) ON DELETE CASCADE,
+                    COD_PERSON CHAR(36) NOT NULL REFERENCES PEP_PERSON(ID),
+                    COD_PARENT CHAR(36) REFERENCES PERSON_CATEGORY(ID) ON DELETE CASCADE,
                     COD_NATURE VARCHAR(20) NOT NULL REFERENCES TRANSACTION_NATURE(ID),
                     TXT_NAME VARCHAR(80) NOT NULL,
                     FLG_SYSTEM CHAR(1) NOT NULL,
@@ -203,31 +205,31 @@ public abstract class Database {
                 )
                 """,
                 """
-                CREATE TABLE USER_TAG (
+                CREATE TABLE PERSON_TAG (
                     ID CHAR(36) PRIMARY KEY,
-                    COD_USER CHAR(36) NOT NULL REFERENCES SEC_USER(ID),
+                    COD_PERSON CHAR(36) NOT NULL REFERENCES PEP_PERSON(ID),
                     TXT_DESCRIPTION VARCHAR(255) NOT NULL,
                     TXT_COLOR VARCHAR(20) NOT NULL,
                     TMS_CREATE_AT TIMESTAMP NOT NULL
                 )
                 """,
                 """
-                CREATE TABLE USER_TRANSACTION (
-                    COD_USER CHAR(36) NOT NULL REFERENCES SEC_USER(ID),
+                CREATE TABLE PERSON_TRANSACTION (
+                    COD_PERSON CHAR(36) NOT NULL REFERENCES PEP_PERSON(ID),
                     COD_ACCOUNT CHAR(36) NOT NULL REFERENCES MON_ACCOUNT(ID),
                     COD_TRANSACTION CHAR(36) NOT NULL REFERENCES MON_TRANSACTION(ID) ON DELETE CASCADE,
-                    COD_CATEGORY CHAR(36) NOT NULL REFERENCES USER_CATEGORY(ID),
+                    COD_CATEGORY CHAR(36) NOT NULL REFERENCES PERSON_CATEGORY(ID),
                     TMS_CREATE_AT TIMESTAMP NOT NULL,
                     TMS_UPDATED_AT TIMESTAMP NOT NULL,
-                    PRIMARY KEY (COD_USER, COD_ACCOUNT, COD_TRANSACTION)
+                    PRIMARY KEY (COD_PERSON, COD_ACCOUNT, COD_TRANSACTION)
                 )
                 """,
                 """
-                CREATE TABLE USER_TRANSACTION_TAG (
+                CREATE TABLE PERSON_TRANSACTION_TAG (
                     COD_TRANSACTION CHAR(36) NOT NULL REFERENCES MON_TRANSACTION(ID) ON DELETE CASCADE,
-                    COD_USER CHAR(36) NOT NULL REFERENCES SEC_USER(ID),
-                    COD_TAG CHAR(36) NOT NULL REFERENCES USER_TAG(ID),
-                    PRIMARY KEY (COD_TRANSACTION, COD_USER, COD_TAG)
+                    COD_PERSON CHAR(36) NOT NULL REFERENCES PEP_PERSON(ID),
+                    COD_TAG CHAR(36) NOT NULL REFERENCES PERSON_TAG(ID),
+                    PRIMARY KEY (COD_TRANSACTION, COD_PERSON, COD_TAG)
                 )
                 """
         );
@@ -253,14 +255,14 @@ public abstract class Database {
      */
     public static List<String> reset() {
         return List.of(
-                "DELETE FROM USER_TRANSACTION_TAG",
-                "DELETE FROM USER_TRANSACTION",
-                "DELETE FROM USER_ACCOUNT_BALANCE",
-                "DELETE FROM USER_ACCOUNT",
-                "DELETE FROM USER_CATEGORY WHERE COD_PARENT IS NOT NULL",
-                "DELETE FROM USER_CATEGORY",
-                "DELETE FROM USER_TAG",
-                "DELETE FROM USER_PREFERENCES",
+                "DELETE FROM PERSON_TRANSACTION_TAG",
+                "DELETE FROM PERSON_TRANSACTION",
+                "DELETE FROM PERSON_ACCOUNT_BALANCE",
+                "DELETE FROM PERSON_ACCOUNT",
+                "DELETE FROM PERSON_CATEGORY WHERE COD_PARENT IS NOT NULL",
+                "DELETE FROM PERSON_CATEGORY",
+                "DELETE FROM PERSON_TAG",
+                "DELETE FROM PERSON_PREFERENCES",
                 "DELETE FROM MON_TRANSACTION",
                 "DELETE FROM MON_CARD",
                 "DELETE FROM MON_ACCOUNT"

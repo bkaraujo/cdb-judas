@@ -64,7 +64,7 @@ public class AccountResourceTest extends BaseHttpTest {
 
     private long balanceRowCount(String accountId) {
         return dataSource.query(
-                "SELECT COUNT(*) FROM USER_ACCOUNT_BALANCE WHERE COD_ACCOUNT = ?",
+                "SELECT COUNT(*) FROM PERSON_ACCOUNT_BALANCE WHERE COD_ACCOUNT = ?",
                 JDBCParameter.of(accountId),
                 rs -> { rs.next().get(); return rs.getLong(1).get(); }
         );
@@ -72,7 +72,7 @@ public class AccountResourceTest extends BaseHttpTest {
 
     private long overlayRowCount(String accountId) {
         return dataSource.query(
-                "SELECT COUNT(*) FROM USER_TRANSACTION WHERE COD_ACCOUNT = ?",
+                "SELECT COUNT(*) FROM PERSON_TRANSACTION WHERE COD_ACCOUNT = ?",
                 JDBCParameter.of(accountId),
                 rs -> { rs.next().get(); return rs.getLong(1).get(); }
         );
@@ -391,7 +391,7 @@ public class AccountResourceTest extends BaseHttpTest {
                 .then().statusCode(204);
 
         val row = dataSource.query(
-                "SELECT COD_ACCOUNT, COD_CATEGORY FROM USER_TRANSACTION WHERE COD_TRANSACTION = ?",
+                "SELECT COD_ACCOUNT, COD_CATEGORY FROM PERSON_TRANSACTION WHERE COD_TRANSACTION = ?",
                 JDBCParameter.of(txId),
                 rs -> {
                     rs.next().get();
@@ -487,7 +487,7 @@ public class AccountResourceTest extends BaseHttpTest {
                 .then().statusCode(201)
                 .extract().jsonPath().getString("id");
         dataSource.execute(
-                "INSERT INTO USER_TRANSACTION_TAG (COD_TRANSACTION, COD_USER, COD_TAG) VALUES (?, ?, ?)",
+                "INSERT INTO PERSON_TRANSACTION_TAG (COD_TRANSACTION, COD_PERSON, COD_TAG) VALUES (?, ?, ?)",
                 JDBCParameter.of(regularTxId, TEST_USER_ID, tagId)
         );
 
@@ -510,7 +510,7 @@ public class AccountResourceTest extends BaseHttpTest {
         assertEquals(0, overlayRowCount(accountA), "overlay da conta A limpo");
 
         val tagLinkCount = dataSource.query(
-                "SELECT COUNT(*) FROM USER_TRANSACTION_TAG WHERE COD_TRANSACTION = ?",
+                "SELECT COUNT(*) FROM PERSON_TRANSACTION_TAG WHERE COD_TRANSACTION = ?",
                 JDBCParameter.of(regularTxId),
                 rs -> { rs.next().get(); return rs.getLong(1).get(); }
         );

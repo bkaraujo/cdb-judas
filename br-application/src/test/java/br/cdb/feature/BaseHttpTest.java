@@ -7,7 +7,6 @@ import br.cdb.context.monetary._1_application.usecase.CostCenterUseCase;
 import br.cdb.context.monetary._1_application.usecase.CreditCardUseCase;
 import br.cdb.context.monetary._1_application.usecase.TransactionUseCase;
 import br.cdb.core.JsonStorageProperties;
-import br.cdb.core.web.security.User;
 import br.cdb.core.web.security.UserRepository;
 import br.cdb.core.web.security.core.AccessTokenStore;
 import br.cdb.feature.auth.LoginResource;
@@ -18,8 +17,11 @@ import br.cdb.infra.persistence.monetary.CostCenterJDBCRepository;
 import br.cdb.infra.persistence.monetary.CreditCardJDBCRepository;
 import br.cdb.infra.persistence.monetary.TransactionJDBCRepository;
 import br.commons.Registry;
+import br.commons.Result;
+import br.commons.chrono.Time;
 import br.commons.framework.persistence.Storage;
 import br.commons.framework.persistence.jdbc.DataSource;
+import br.commons.framework.persistence.jdbc.primitives.JDBCParameter;
 import br.commons.framework.persistence.json.Repository;
 import io.quarkus.elytron.security.common.BcryptUtil;
 import io.quarkus.test.junit.QuarkusTest;
@@ -34,7 +36,9 @@ import org.junit.jupiter.api.BeforeEach;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.sql.Timestamp;
 import java.util.Comparator;
+import java.util.UUID;
 
 @QuarkusTest
 public abstract class BaseHttpTest {
@@ -83,7 +87,40 @@ public abstract class BaseHttpTest {
         // grafo do contexto em cima dos fakes do último teste puro executado.
         resetMonetaryRegistry();
 
-        userRepository.save(new User(TEST_USER_ID, TEST_USERNAME, null, BcryptUtil.bcryptHash("test")));
+        seedUser(TEST_USER_ID, TEST_USERNAME, "test");
+    }
+
+    /**
+     * Semeia login + pessoa de forma determinística e idempotente: o id da PESSOA é igual ao id do
+     * usuário, então a mesma constante ({@link #TEST_USER_ID}) serve simultaneamente de identidade
+     * de login (token) e de dono das rotas/overlays ({@code /api/{personId}/…}). Insere direto (em
+     * vez de {@code userRepository.save}, que cunha um personId aleatório). {@code SEC_USER}/
+     * {@code PEP_PERSON} sobrevivem ao {@link Database#reset()} — daí o guarda de existência.
+     */
+    protected void seedUser(String id, String username, String rawPassword) {
+        dataSource.transaction(tx -> {
+            val exists = tx.query(
+                    "SELECT 1 FROM SEC_USER WHERE ID = ?",
+                    JDBCParameter.of(id),
+                    rs -> rs.next().get()
+            ).get();
+            if (!exists) {
+                val now = Timestamp.valueOf(Time.now());
+                tx.execute(
+                        "INSERT INTO PEP_PERSON (ID, TXT_NAME, TXT_LOCALE, TXT_LANGUAGE, TMS_CREATE_AT, TMS_UPDATED_AT) VALUES (?, ?, ?, ?, ?, ?)",
+                        JDBCParameter.of(id, username, "pt-BR", "pt-BR", now, now)
+                ).get();
+                tx.execute(
+                        "INSERT INTO SEC_USER (ID, COD_PERSON, TXT_USERNAME, FLG_ACTIVE, TMS_CREATE_AT, TMS_UPDATED_AT) VALUES (?, ?, ?, ?, ?, ?)",
+                        JDBCParameter.of(id, id, username, "Y", now, now)
+                ).get();
+                tx.execute(
+                        "INSERT INTO USER_CREDENTIAL (ID, COD_USER, TXT_PASSWORD, TMS_CREATE_AT) VALUES (?, ?, ?, ?)",
+                        JDBCParameter.of(UUID.randomUUID().toString(), id, BcryptUtil.bcryptHash(rawPassword), now)
+                ).get();
+            }
+            return Result.success(true);
+        });
     }
 
     private static void resetMonetaryRegistry() {

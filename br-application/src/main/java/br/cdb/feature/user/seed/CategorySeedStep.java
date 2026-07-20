@@ -20,8 +20,8 @@ public class CategorySeedStep implements UserProvisioningStep {
     private final UserCategoryRepository repository;
 
     @Override
-    public void provision(UUID userId) {
-        seed(userId, Transaction.Type.INCOME,
+    public void provision(UUID personId) {
+        seed(personId, Transaction.Type.INCOME,
                 Map.of(
                         "0. CLT", List.of("Salário", "Benefício", "13º Salário", "Férias", "Restituição", "PLR"),
                         "1. CNPJ", List.of("Pró labore"),
@@ -29,7 +29,7 @@ public class CategorySeedStep implements UserProvisioningStep {
                         "9. Outros", List.of("Restituição", "Freelance", "Vendas", "IRPF", "FGTS")
                 ));
 
-        seed(userId, Transaction.Type.EXPENSE,
+        seed(personId, Transaction.Type.EXPENSE,
                 Map.of(
                         "1. Moradia", List.of("Aluguél / Prestação", "Condomínio", "Impostos/Tarifas", "Conta de energia", "Conta de água", "Conta de gás", "Telefone fixo", "Internet", "Supermercado", "Feira", "Padaria", "Empregados", "Lavanderia", "Decoração", "Utensilios", "Restaurantes", "Assinaturas", "Manutenção", "Outros"),
                         "2. Transporte", List.of("Prestação", "Impostos/Tarifas", "Seguro", "Combustível", "Estacionamento", "Multas", "Transporte Público", "Aplicativo", "Aluguél", "Pedágio", "Manutenção", "Outros"),
@@ -43,8 +43,8 @@ public class CategorySeedStep implements UserProvisioningStep {
     }
 
     @Transactional
-    void seed(UUID userId, Transaction.Type nature, Map<String, List<String>> categories) {
-        val existing = repository.findByNature(userId, nature);
+    void seed(UUID personId, Transaction.Type nature, Map<String, List<String>> categories) {
+        val existing = repository.findByNature(personId, nature);
 
         // 1. Mapeamento O(1) na memória para evitar loops aninhados (Stream/Filter)
         val rootsByName = new HashMap<String, UserCategory>();
@@ -70,7 +70,7 @@ public class CategorySeedStep implements UserProvisioningStep {
 
             if (parentCategory == null) {
                 parentId = UUID.randomUUID();
-                parentCategory = new UserCategory(parentId, userId, nature, parentName, null, false);
+                parentCategory = new UserCategory(parentId, personId, nature, parentName, null, false);
                 repository.save(parentCategory);
             } else {
                 parentId = parentCategory.id();
@@ -81,7 +81,7 @@ public class CategorySeedStep implements UserProvisioningStep {
                 if (!children.contains(name)) {
                     repository.save(new UserCategory(
                             UUID.randomUUID(),
-                            userId,             // COD_USER
+                            personId,             // COD_PERSON
                             nature,             // COD_NATURE
                             name,               // TXT_NAME
                             parentId,           // COD_PARENT

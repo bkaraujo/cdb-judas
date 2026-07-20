@@ -14,12 +14,12 @@ import org.jspecify.annotations.Nullable;
 import java.sql.Timestamp;
 import java.util.*;
 
-/** Adaptador JDBC (H2) da porta {@link UserCategoryRepository}; tabela {@code USER_CATEGORY}. */
+/** Adaptador JDBC (H2) da porta {@link UserCategoryRepository}; tabela {@code PERSON_CATEGORY}. */
 @NullMarked
 public final class UserCategoryJDBCRepository extends JDBCRepository<UserCategory> implements UserCategoryRepository {
 
     public UserCategoryJDBCRepository() {
-        super("USER_CATEGORY");
+        super("PERSON_CATEGORY");
     }
 
     @Override
@@ -28,19 +28,19 @@ public final class UserCategoryJDBCRepository extends JDBCRepository<UserCategor
     }
 
     @Override
-    public List<UserCategory> findAllByUser(UUID userId) {
+    public List<UserCategory> findAllByPerson(UUID personId) {
         return datasource.query(
-                "SELECT " + columnList() + " FROM " + table() + " WHERE COD_USER = ?",
-                JDBCParameter.of(userId.toString()),
+                "SELECT " + columnList() + " FROM " + table() + " WHERE COD_PERSON = ?",
+                JDBCParameter.of(personId.toString()),
                 this::mapList
         );
     }
 
     @Override
-    public List<UserCategory> findByNature(UUID userId, Transaction.Type nature) {
+    public List<UserCategory> findByNature(UUID personId, Transaction.Type nature) {
         return datasource.query(
-                "SELECT " + columnList() + " FROM " + table() + " WHERE COD_USER = ? AND COD_NATURE = ?",
-                JDBCParameter.of(userId.toString(), nature.name()),
+                "SELECT " + columnList() + " FROM " + table() + " WHERE COD_PERSON = ? AND COD_NATURE = ?",
+                JDBCParameter.of(personId.toString(), nature.name()),
                 this::mapList
         );
     }
@@ -62,7 +62,7 @@ public final class UserCategoryJDBCRepository extends JDBCRepository<UserCategor
 
         val values = new LinkedHashMap<String, @Nullable Object>();
         values.put("ID", entity.id().toString());
-        values.put("COD_USER", entity.userId().toString());
+        values.put("COD_PERSON", entity.personId().toString());
         values.put("COD_NATURE", entity.nature().name());
         values.put("TXT_NAME", entity.name());
         values.put("COD_PARENT", parentStr);
@@ -76,7 +76,7 @@ public final class UserCategoryJDBCRepository extends JDBCRepository<UserCategor
     @Override
     protected UserCategory map(JDBCResultSet rs) {
         val id = UUID.fromString(rs.getString("ID").get());
-        val userId = UUID.fromString(rs.getString("COD_USER").get());
+        val personId = UUID.fromString(rs.getString("COD_PERSON").get());
         val nature = Transaction.Type.valueOf(rs.getString("COD_NATURE").get());
         val name = rs.getString("TXT_NAME").get();
         val isSystem = "Y".equals(rs.getString("FLG_SYSTEM").get());
@@ -88,6 +88,6 @@ public final class UserCategoryJDBCRepository extends JDBCRepository<UserCategor
         val createdAt = rs.getTimestamp("TMS_CREATE_AT").get().toLocalDateTime();
         val updatedAt = rs.getTimestamp("TMS_UPDATED_AT").get().toLocalDateTime();
 
-        return new UserCategory(id, userId, nature, name, parentId, isSystem, active, createdAt, updatedAt);
+        return new UserCategory(id, personId, nature, name, parentId, isSystem, active, createdAt, updatedAt);
     }
 }

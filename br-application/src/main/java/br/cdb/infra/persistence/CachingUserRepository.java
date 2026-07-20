@@ -67,14 +67,25 @@ public final class CachingUserRepository extends AbstractCachingRepository imple
     }
 
     @Override
+    public Optional<User> findByPersonId(String personId) {
+        // Baixa frequência (só /api/me): sem índice dedicado por pessoa — delega e indexa por id/username.
+        val result = delegate.findByPersonId(personId);
+        result.ifPresent(this::index);
+        return result;
+    }
+
+    @Override
     public User save(User user) {
         lock.writeLock().lock();
         try {
             val prevById = byId.get(user.id());
             val prevUsername = usernameIndex.get(user.username());
-            index(user);
             try {
-                return delegate.save(user);
+                // Indexa o resultado do delegate (que carrega o personId persistido), não a entrada
+                // — os construtores de criação passam personId nulo e cachear isso vazaria null.
+                val saved = delegate.save(user);
+                index(saved);
+                return saved;
             } catch (RuntimeException ex) {
                 if (prevById == null) byId.remove(user.id()); else byId.put(user.id(), prevById);
                 if (prevUsername == null) usernameIndex.remove(user.username()); else usernameIndex.put(user.username(), prevUsername);

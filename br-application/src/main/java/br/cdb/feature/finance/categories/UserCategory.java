@@ -10,7 +10,7 @@ import java.util.UUID;
 @NullMarked
 public record UserCategory(
         UUID id,
-        UUID userId,
+        UUID personId,
         Transaction.Type nature,
         String name,
         @Nullable UUID parentId,
@@ -19,11 +19,11 @@ public record UserCategory(
         @Nullable LocalDateTime createdAt,
         @Nullable LocalDateTime updatedAt
 ) {
-    public UserCategory(UUID id, UUID userId, Transaction.Type nature, String name, @Nullable UUID parentId) {
-        this(id, userId, nature, name, parentId, false, true, null, null);
+    public UserCategory(UUID id, UUID personId, Transaction.Type nature, String name, @Nullable UUID parentId) {
+        this(id, personId, nature, name, parentId, false, true, null, null);
     }
 
-    public UserCategory(UUID id, UUID userId, Transaction.Type nature, String name, @Nullable UUID parentId, boolean isSystem) {
-        this(id, userId, nature, name, parentId, isSystem, true, null, null);
+    public UserCategory(UUID id, UUID personId, Transaction.Type nature, String name, @Nullable UUID parentId, boolean isSystem) {
+        this(id, personId, nature, name, parentId, isSystem, true, null, null);
     }
 }

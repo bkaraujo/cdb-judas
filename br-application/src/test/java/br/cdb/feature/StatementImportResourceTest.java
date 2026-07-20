@@ -28,7 +28,7 @@ public class StatementImportResourceTest extends BaseHttpTest {
                 .multiPart("file", "fatura.pdf", pdf, "application/pdf")
                 .when().post("/api/" + TEST_USER_ID + "/accounts/transactions/import/preview")
                 .then().statusCode(200)
-                .body("issuer", is("BTG"));
+                .body("issuer", is("BTG Pactual"));
     }
 
     @Test
@@ -46,7 +46,7 @@ public class StatementImportResourceTest extends BaseHttpTest {
                 .multiPart("file", "fatura.pdf", pdf, "application/pdf")
                 .when().post("/api/" + TEST_USER_ID + "/accounts/transactions/import/preview")
                 .then().statusCode(200)
-                .body("issuer", is("BTG"))
+                .body("issuer", is("BTG Pactual"))
                 .body("last4s[0]", is("0020"))
                 .body("rows.size()", is(10))
                 .body("rows[0].description", is("Amazonmktplc Megabytem"))

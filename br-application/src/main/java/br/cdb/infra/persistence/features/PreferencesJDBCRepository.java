@@ -14,7 +14,7 @@ import org.jspecify.annotations.Nullable;
 import java.util.HashMap;
 
 /**
- * Adaptador JDBC (H2) da porta {@link PreferencesRepository}: tabela {@code USER_PREFERENCES}
+ * Adaptador JDBC (H2) da porta {@link PreferencesRepository}: tabela {@code PERSON_PREFERENCES}
  * (preferências k/v por usuário). Registros ausentes/parciais caem para
  * {@link Preferences#defaults()} na leitura.
  */
@@ -24,10 +24,10 @@ public final class PreferencesJDBCRepository implements PreferencesRepository {
     private final DataSource dataSource = Registry.get(DataSource.class);
 
     @Override
-    public Preferences findByUserId(String userId) {
+    public Preferences findByPersonId(String personId) {
         val map = dataSource.query(
-                "SELECT TXT_KEY, TXT_VALUE FROM USER_PREFERENCES WHERE COD_USER = ?",
-                JDBCParameter.of(userId),
+                "SELECT TXT_KEY, TXT_VALUE FROM PERSON_PREFERENCES WHERE COD_PERSON = ?",
+                JDBCParameter.of(personId),
                 rs -> {
                     val m = new HashMap<String, String>();
                     while (rs.next().get()) {
@@ -48,32 +48,32 @@ public final class PreferencesJDBCRepository implements PreferencesRepository {
     }
 
     @Override
-    public Preferences save(String userId, Preferences prefs) {
+    public Preferences save(String personId, Preferences prefs) {
         return dataSource.transaction(tx -> {
-            upsertPref(tx, userId, "theme", prefs.theme());
-            upsertPref(tx, userId, "language", prefs.language());
-            upsertPref(tx, userId, "locale", prefs.locale());
-            upsertPref(tx, userId, "sidebarCollapsed", String.valueOf(prefs.sidebarCollapsed()));
+            upsertPref(tx, personId, "theme", prefs.theme());
+            upsertPref(tx, personId, "language", prefs.language());
+            upsertPref(tx, personId, "locale", prefs.locale());
+            upsertPref(tx, personId, "sidebarCollapsed", String.valueOf(prefs.sidebarCollapsed()));
             return Result.success(prefs);
         });
     }
 
-    private void upsertPref(JDBCTransaction tx, String userId, String key, @Nullable String value) {
+    private void upsertPref(JDBCTransaction tx, String personId, String key, @Nullable String value) {
         val exists = tx.query(
-                "SELECT TXT_VALUE FROM USER_PREFERENCES WHERE COD_USER = ? AND TXT_KEY = ?",
-                JDBCParameter.of(userId, key),
+                "SELECT TXT_VALUE FROM PERSON_PREFERENCES WHERE COD_PERSON = ? AND TXT_KEY = ?",
+                JDBCParameter.of(personId, key),
                 rs -> rs.next().get()
         ).get();
 
         if (exists) {
             tx.execute(
-                    "UPDATE USER_PREFERENCES SET TXT_VALUE = ? WHERE COD_USER = ? AND TXT_KEY = ?",
-                    JDBCParameter.of(value, userId, key)
+                    "UPDATE PERSON_PREFERENCES SET TXT_VALUE = ? WHERE COD_PERSON = ? AND TXT_KEY = ?",
+                    JDBCParameter.of(value, personId, key)
             ).get();
         } else {
             tx.execute(
-                    "INSERT INTO USER_PREFERENCES (COD_USER, TXT_KEY, TXT_VALUE) VALUES (?, ?, ?)",
-                    JDBCParameter.of(userId, key, value)
+                    "INSERT INTO PERSON_PREFERENCES (COD_PERSON, TXT_KEY, TXT_VALUE) VALUES (?, ?, ?)",
+                    JDBCParameter.of(personId, key, value)
             ).get();
         }
     }

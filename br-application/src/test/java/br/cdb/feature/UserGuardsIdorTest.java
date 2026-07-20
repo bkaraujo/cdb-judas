@@ -1,8 +1,6 @@
 package br.cdb.feature;
 
-import br.cdb.core.web.security.User;
 import br.cdb.feature.auth.LoginResource;
-import io.quarkus.elytron.security.common.BcryptUtil;
 import io.quarkus.test.junit.QuarkusTest;
 import io.restassured.RestAssured;
 import io.restassured.http.ContentType;
@@ -28,7 +26,7 @@ class UserGuardsIdorTest extends BaseHttpTest {
 
     @BeforeEach
     void seedOtherUser() {
-        userRepository.save(new User(OTHER_USER_ID, "other-user", null, BcryptUtil.bcryptHash("test")));
+        seedUser(OTHER_USER_ID, "other-user", "test");
     }
 
     private RequestSpecification asOtherUser() {

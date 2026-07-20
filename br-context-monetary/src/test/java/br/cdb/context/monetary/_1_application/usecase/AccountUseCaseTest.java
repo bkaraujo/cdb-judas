@@ -24,7 +24,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * Cobre as operações de conta do contexto monetary. As regras de cartão (conta vinculada, limites)
- * são uma preocupação da feature ({@code USER_ACCOUNT}) e estão cobertas em {@code AccountResourceTest}
+ * são uma preocupação da feature ({@code PERSON_ACCOUNT}) e estão cobertas em {@code AccountResourceTest}
  * (br-application).
  */
 class AccountUseCaseTest extends AbstractUseCaseTest {

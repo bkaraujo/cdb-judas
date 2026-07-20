@@ -55,11 +55,11 @@ public class AccountStreamPublisher {
     }
 
     private void dispatchUpsert(Account account) {
-        val userId = CurrentUser.getId();
-        val ua = userAccountService.find(userId, account.id());
+        val personId = CurrentUser.getId();
+        val ua = userAccountService.find(personId, account.id());
         val cards = ucCreditCard.list(account.id()).getOrElse(List.of());
         val dto = AccountResponse.from(account, ua, cards, allTransactions());
-        sse.dispatch(userId, SSE.Event.UPSERT, Map.of("type", TYPE, "payload", dto));
+        sse.dispatch(personId, SSE.Event.UPSERT, Map.of("type", TYPE, "payload", dto));
     }
 
     private List<Transaction> allTransactions() {

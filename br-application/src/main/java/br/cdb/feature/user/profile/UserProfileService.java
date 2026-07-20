@@ -26,28 +26,28 @@ public class UserProfileService {
     private final UserRepository repository;
     private final PreferencesRepository preferences;
 
-    public Result<Profile, BusinessError> getProfile(String userId) {
-        val user = repository.findById(userId).orElse(null);
+    public Result<Profile, BusinessError> getProfile(String personId) {
+        val user = repository.findByPersonId(personId).orElse(null);
         if (user == null) return Result.failure(new BusinessError.NotFound("Usuário não encontrado"));
-        return Result.success(new Profile(user, preferences.findByUserId(userId)));
+        return Result.success(new Profile(user, preferences.findByPersonId(personId)));
     }
 
     /** Aplica um patch parcial sobre as preferências (campo nulo mantém o valor atual). */
-    public Result<Profile, BusinessError> updatePreferences(String userId, PreferencesPatch patch) {
-        val user = repository.findById(userId).orElse(null);
+    public Result<Profile, BusinessError> updatePreferences(String personId, PreferencesPatch patch) {
+        val user = repository.findByPersonId(personId).orElse(null);
         if (user == null) return Result.failure(new BusinessError.NotFound("Usuário não encontrado"));
-        val merged = preferences.findByUserId(userId).merge(patch);
-        return Result.success(new Profile(user, preferences.save(userId, merged)));
+        val merged = preferences.findByPersonId(personId).merge(patch);
+        return Result.success(new Profile(user, preferences.save(personId, merged)));
     }
 
     /** Atualiza o nome de exibição. Aplica trim; nome em branco vira nulo (exibição cai para username). */
-    public Result<Profile, BusinessError> updateName(String userId, @Nullable String name) {
-        val user = repository.findById(userId).orElse(null);
+    public Result<Profile, BusinessError> updateName(String personId, @Nullable String name) {
+        val user = repository.findByPersonId(personId).orElse(null);
         if (user == null) return Result.failure(new BusinessError.NotFound("Usuário não encontrado"));
 
         val trimmed = (name == null || name.isBlank()) ? null : name.trim();
         val saved = repository.save(new User(user.id(), user.username(), trimmed, user.password(), user.active(), user.createdAt(), user.updatedAt()));
 
-        return Result.success(new Profile(saved, preferences.findByUserId(userId)));
+        return Result.success(new Profile(saved, preferences.findByPersonId(personId)));
     }
 }

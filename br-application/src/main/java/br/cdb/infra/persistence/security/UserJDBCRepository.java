@@ -32,7 +32,7 @@ public final class UserJDBCRepository implements UserRepository {
     @Override
     public Optional<User> findByUsername(String username) {
         return dataSource.query(
-                "SELECT U.ID, U.TXT_USERNAME, U.FLG_ACTIVE, U.TMS_CREATE_AT, U.TMS_UPDATED_AT, P.TXT_NAME"
+                "SELECT U.ID, U.TXT_USERNAME, U.FLG_ACTIVE, U.TMS_CREATE_AT, U.TMS_UPDATED_AT, U.COD_PERSON, P.TXT_NAME"
                         + " FROM SEC_USER U JOIN PEP_PERSON P ON P.ID = U.COD_PERSON"
                         + " WHERE U.TXT_USERNAME = ?",
                 JDBCParameter.of(username),
@@ -43,10 +43,21 @@ public final class UserJDBCRepository implements UserRepository {
     @Override
     public Optional<User> findById(String id) {
         return dataSource.query(
-                "SELECT U.ID, U.TXT_USERNAME, U.FLG_ACTIVE, U.TMS_CREATE_AT, U.TMS_UPDATED_AT, P.TXT_NAME"
+                "SELECT U.ID, U.TXT_USERNAME, U.FLG_ACTIVE, U.TMS_CREATE_AT, U.TMS_UPDATED_AT, U.COD_PERSON, P.TXT_NAME"
                         + " FROM SEC_USER U JOIN PEP_PERSON P ON P.ID = U.COD_PERSON"
                         + " WHERE U.ID = ?",
                 JDBCParameter.of(id),
+                this::toUsers
+        ).stream().findFirst();
+    }
+
+    @Override
+    public Optional<User> findByPersonId(String personId) {
+        return dataSource.query(
+                "SELECT U.ID, U.TXT_USERNAME, U.FLG_ACTIVE, U.TMS_CREATE_AT, U.TMS_UPDATED_AT, U.COD_PERSON, P.TXT_NAME"
+                        + " FROM SEC_USER U JOIN PEP_PERSON P ON P.ID = U.COD_PERSON"
+                        + " WHERE U.COD_PERSON = ?",
+                JDBCParameter.of(personId),
                 this::toUsers
         ).stream().findFirst();
     }
@@ -122,7 +133,11 @@ public final class UserJDBCRepository implements UserRepository {
                     )
             ).get();
 
-            return Result.success(user);
+            // Devolve o agregado com o personId persistido (o de entrada pode vir nulo dos
+            // construtores de criação) — o cache do decorador indexa este resultado.
+            return Result.success(new User(
+                    user.id(), user.username(), user.name(), user.password(),
+                    user.active(), user.createdAt(), user.updatedAt(), personId));
         });
     }
 
@@ -156,8 +171,9 @@ public final class UserJDBCRepository implements UserRepository {
         val active = "Y".equals(rs.getString("FLG_ACTIVE").get());
         val createdAt = rs.getTimestamp("TMS_CREATE_AT").get().toLocalDateTime();
         val updatedAt = rs.getTimestamp("TMS_UPDATED_AT").get().toLocalDateTime();
+        val personId = rs.getString("COD_PERSON").get();
         val password = findLatestPassword(id);
-        return new User(id, username, name, password, active, createdAt, updatedAt);
+        return new User(id, username, name, password, active, createdAt, updatedAt, personId);
     }
 
     private String findLatestPassword(String userId) {

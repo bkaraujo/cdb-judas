@@ -34,7 +34,7 @@ import java.util.stream.Collectors;
 
 /**
  * Orchestrates credit-card statement import against the monetary context use cases.
- * Category assignment is done by the feature layer on top of USER_TRANSACTION (not here).
+ * Category assignment is done by the feature layer on top of PERSON_TRANSACTION (not here).
  */
 @NullMarked
 public class StatementImportService {

@@ -22,8 +22,8 @@ import java.util.stream.Collectors;
 
 /**
  * Guardas de propriedade conta/cartão — fronteira do {@link UserUseCase} contra IDOR. {@code MON_ACCOUNT}/
- * {@code MON_CARD} não têm coluna de usuário; a propriedade mora só no overlay {@code USER_ACCOUNT}. Memoiza
- * (preguiçosamente, no máximo 1 {@code findByUser} + 1 scan de cartões) por requisição — o snapshot é tirado
+ * {@code MON_CARD} não têm coluna de usuário; a propriedade mora só no overlay {@code PERSON_ACCOUNT}. Memoiza
+ * (preguiçosamente, no máximo 1 {@code findByPerson} + 1 scan de cartões) por requisição — o snapshot é tirado
  * na primeira consulta, então um guard chamado <em>depois</em> de uma mutação na mesma requisição leria estado
  * pré-mutação. Hoje todo guard roda na entrada, antes de qualquer escrita, então é sempre correto.
  */
@@ -83,7 +83,7 @@ public class UserGuards {
     private Set<UUID> ownedAccounts() {
         var cached = ownedAccounts;
         if (cached == null) {
-            cached = userAccountService.findByUser(CurrentUser.getId()).stream()
+            cached = userAccountService.findByPerson(CurrentUser.getId()).stream()
                     .map(UserAccount::accountId)
                     .collect(Collectors.toUnmodifiableSet());
             ownedAccounts = cached;

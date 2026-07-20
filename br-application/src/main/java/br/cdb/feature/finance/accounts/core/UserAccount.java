@@ -10,7 +10,7 @@ import java.util.UUID;
  */
 @NullMarked
 public record UserAccount(
-        String userId,
+        String personId,
         UUID accountId,
         String color
 ) {}
