@@ -1,6 +1,8 @@
-package br.cdb.feature.finance.tags;
+package br.cdb.feature.f008._1_application;
 
 import br.cdb.feature.f000._0_domain.SSE;
+import br.cdb.feature.f008._0_domain.UserTag;
+import br.cdb.feature.f008._0_domain.UserTagRepository;
 import br.commons.Result;
 import br.commons.business.BusinessError;
 import jakarta.inject.Singleton;

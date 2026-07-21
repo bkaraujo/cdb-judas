@@ -32,9 +32,7 @@ import br.cdb.feature.finance.categories.UserCategoryService;
 import br.cdb.feature.f000._0_domain.DeletionOutcome;
 import br.cdb.feature.f000._0_domain.DeletionStrategy;
 import br.cdb.feature.f000._1_application.Deletions;
-import br.cdb.feature.finance.tags.UserTag;
-import br.cdb.feature.finance.tags.UserTagService;
-import br.cdb.feature.finance.tags.UserTransactionTagService;
+import br.cdb.feature.f008._1_application.UserTransactionTagService;
 import br.commons.Logger;
 import br.commons.Result;
 import br.commons.business.BusinessError;
@@ -69,7 +67,6 @@ public class UserUseCase {
     private final UserTransactionService userTransactionService;
     private final UserTransactionTagService tagLinkService;
     private final UserCategoryService userCategoryService;
-    private final UserTagService userTagService;
     private final ClosingService closingService;
     private final DashboardService dashboardService;
     private final StatementImportService statementImportService;
@@ -525,47 +522,10 @@ public class UserUseCase {
         return deleteLinkedTransactions(txIds, () -> userCategoryService.deletePlain(subtreeIds, personId));
     }
 
-    // ── Tags ───────────────────────────────────────────────────────
-
-    public List<UserTag> tags(UUID personId) {
-        return userTagService.findAll(personId);
-    }
-
-    public UserTag createTag(UUID personId, String name, String color) {
-        return userTagService.create(personId, name, color);
-    }
-
-    public Result<UserTag, BusinessError> updateTag(UUID id, String name, String color) {
-        return userTagService.update(id, name, color);
-    }
-
-    public Result<DeletionOutcome, BusinessError> deleteTag(
-            UUID personId, UUID id, @Nullable DeletionStrategy strategy, @Nullable UUID targetId) {
-        if (strategy == null) {
-            val count = userTagService.linkedTransactionIds(personId, id).size();
-            if (count > 0) return Result.success(new DeletionOutcome.Linked(count));
-            return userTagService.deleteById(id).map(ignored -> new DeletionOutcome.Completed());
-        }
-
-        val result = switch (strategy) {
-            case MOVE -> userTagService.deleteMoving(id, Objects.requireNonNull(targetId), personId);
-            case DELETE -> deleteTagWithTransactions(id, personId);
-            case DETACH -> userTagService.deleteDetached(id, personId);
-        };
-        return result.map(ignored -> new DeletionOutcome.Completed());
-    }
-
-    /** Apaga as transações vinculadas à tag e depois a tag em si. */
-    private Result<Void, BusinessError> deleteTagWithTransactions(UUID id, UUID personId) {
-        return userTagService.findById(id).flatMap(existing -> {
-            val txIds = userTagService.linkedTransactionIds(personId, id);
-            return deleteLinkedTransactions(txIds, () -> userTagService.deleteById(id));
-        });
-    }
-
     /** Apaga as transações (via facade) + overlay/vínculo de tag, executa {@code afterCleanup} (ex.: apagar
-     *  categoria/tag agora desvinculada) e por fim publica o SSE de conta para cada conta afetada — resolvidas
-     *  antes do delete, quando as transações ainda existem. */
+     *  categoria agora desvinculada) e por fim publica o SSE de conta para cada conta afetada — resolvidas
+     *  antes do delete, quando as transações ainda existem. Duplicado em {@code TagUseCase} (f008): mesma
+     *  forma, dono diferente. */
     private Result<Void, BusinessError> deleteLinkedTransactions(List<UUID> txIds, Runnable afterCleanup) {
         val affectedAccountIds = accountIdsOfTransactions(txIds);
 

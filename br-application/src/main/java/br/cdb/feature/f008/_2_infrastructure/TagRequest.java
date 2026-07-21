@@ -1,4 +1,4 @@
-package br.cdb.feature.finance.tags;
+package br.cdb.feature.f008._2_infrastructure;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;

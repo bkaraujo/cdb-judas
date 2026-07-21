@@ -1,4 +1,4 @@
-package br.cdb.feature.finance.tags;
+package br.cdb.feature.f008._0_domain;
 
 import org.jspecify.annotations.NullMarked;
 

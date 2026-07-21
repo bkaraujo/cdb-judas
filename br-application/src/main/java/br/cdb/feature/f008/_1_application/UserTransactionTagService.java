@@ -1,5 +1,6 @@
-package br.cdb.feature.finance.tags;
+package br.cdb.feature.f008._1_application;
 
+import br.cdb.feature.f008._0_domain.UserTransactionTagRepository;
 import jakarta.inject.Singleton;
 import lombok.RequiredArgsConstructor;
 import org.jspecify.annotations.NullMarked;

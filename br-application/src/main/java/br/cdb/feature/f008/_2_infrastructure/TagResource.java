@@ -1,8 +1,9 @@
-package br.cdb.feature.finance.tags;
+package br.cdb.feature.f008._2_infrastructure;
 
 import br.cdb.feature.f000._0_domain.DeletionStrategy;
 import br.cdb.feature.f000._1_application.Deletions;
-import br.cdb.feature.user.UserUseCase;
+import br.cdb.feature.f008._0_domain.UserTag;
+import br.cdb.feature.f008._1_application.TagUseCase;
 import br.commons.Result;
 import br.commons.business.BusinessException;
 import jakarta.validation.Valid;
@@ -27,22 +28,22 @@ public class TagResource {
     private static final Set<DeletionStrategy> ALLOWED_STRATEGIES =
             Set.of(DeletionStrategy.MOVE, DeletionStrategy.DELETE, DeletionStrategy.DETACH);
 
-    private final UserUseCase userUseCase;
+    private final TagUseCase tagUseCase;
 
     @GET
     public List<UserTag> listAll(@PathParam("uuid") UUID uuid) {
-        return userUseCase.tags(uuid);
+        return tagUseCase.tags(uuid);
     }
 
     @POST
     public RestResponse<UserTag> create(@PathParam("uuid") UUID uuid, @Valid TagRequest req) {
-        return RestResponse.status(RestResponse.Status.CREATED, userUseCase.createTag(uuid, req.name(), req.color()));
+        return RestResponse.status(RestResponse.Status.CREATED, tagUseCase.createTag(uuid, req.name(), req.color()));
     }
 
     @PATCH
     @Path("/{id}")
     public UserTag update(@PathParam("uuid") UUID uuid, @PathParam("id") UUID id, @Valid TagRequest req) {
-        return switch (userUseCase.updateTag(id, req.name(), req.color())) {
+        return switch (tagUseCase.updateTag(id, req.name(), req.color())) {
             case Result.Success(var t) -> t;
             case Result.Failure(var error) -> throw new BusinessException(error);
         };
@@ -57,7 +58,7 @@ public class TagResource {
             @QueryParam("targetId") @Nullable UUID targetId
     ) {
         return Deletions.execute(strategy, targetId, ALLOWED_STRATEGIES,
-                parsed -> userUseCase.deleteTag(uuid, id, parsed, targetId),
+                parsed -> tagUseCase.deleteTag(uuid, id, parsed, targetId),
                 "a esta tag.");
     }
 }

@@ -1,7 +1,7 @@
-package br.cdb.infra.persistence.features;
+package br.cdb.feature.f008._2_infrastructure;
 
-import br.cdb.feature.finance.tags.UserTag;
-import br.cdb.feature.finance.tags.UserTagRepository;
+import br.cdb.feature.f008._0_domain.UserTag;
+import br.cdb.feature.f008._0_domain.UserTagRepository;
 import br.commons.chrono.Time;
 import br.commons.framework.persistence.jdbc.JDBCRepository;
 import br.commons.framework.persistence.jdbc.primitives.JDBCParameter;
