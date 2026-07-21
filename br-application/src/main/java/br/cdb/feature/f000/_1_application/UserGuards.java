@@ -5,7 +5,6 @@ import br.cdb.context.monetary._0_domain.model.CreditCard;
 import br.cdb.core.web.Request;
 import br.cdb.feature.f002._0_domain.UserAccount;
 import br.cdb.feature.f002._1_application.UserAccountService;
-import br.cdb.feature.user.UserUseCase;
 import br.commons.Result;
 import br.commons.business.BusinessError;
 import jakarta.enterprise.context.RequestScoped;
@@ -21,7 +20,8 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 /**
- * Guardas de propriedade conta/cartão — fronteira do {@link UserUseCase} contra IDOR. {@code MON_ACCOUNT}/
+ * Guardas de propriedade conta/cartão — fronteira contra IDOR, consumida pelo use case de cada
+ * fatia. {@code MON_ACCOUNT}/
  * {@code MON_CARD} não têm coluna de usuário; a propriedade mora só no overlay {@code PERSON_ACCOUNT}. Memoiza
  * (preguiçosamente, no máximo 1 {@code findByPerson} + 1 scan de cartões) por requisição — o snapshot é tirado
  * na primeira consulta, então um guard chamado <em>depois</em> de uma mutação na mesma requisição leria estado
