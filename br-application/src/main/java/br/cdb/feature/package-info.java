@@ -1,37 +1,39 @@
 /**
  * Raiz da camada de features da aplicação.
  *
- * <p>As features representam as capacidades funcionais entregues pelo backend ao cliente HTTP.
- * Cada subpacote agrupa um conjunto coeso de endpoints REST e seus artefatos de suporte
- * (DTOs, módulos de configuração, listeners de domínio).
+ * <p>Cada feature é uma fatia numerada {@code fNNN} (f000–f010), hexágono auto-contido:
+ * {@code _0_domain} (modelos/overlays + portas {@code *Repository} + eventos de domínio),
+ * {@code _1_application} ({@code *Service}/{@code *UseCase} + commands + {@code @MessageListener}
+ * best-effort), {@code _2_infrastructure} ({@code *Resource}, DTOs HTTP, {@code *JDBCRepository},
+ * {@code FNNNModule} CDI). Cross-feature é só via evento ({@code br.commons.MessageBus}) ou, onde a
+ * migração de eventos ainda não terminou, chamada direta documentada como transitória — nunca
+ * import de {@code _1_application}/{@code _2_infrastructure} de fatia irmã (ver ArchitectureTest,
+ * regra {@code application_must_not_access_infrastructure}). Histórico completo da migração
+ * fatias-planas→fNNN em {@code .claude/refactor.md}.
  *
  * <h2>Decomposição de alto nível</h2>
  * <pre>
  * feature
- * ├── auth       POST /login — fatia-base sem namespace de usuário; as demais podem depender
- * │              dela, nunca o contrário (ver ArchitectureTest)
- * ├── dashboard  GET  /api/{uuid}/dashboard/result
- * ├── finance    — fatias financeiras escopadas por usuário (ver {@link br.cdb.feature.finance})
- * │   ├── accounts     CRUD /api/{uuid}/accounts  + sub-recursos
- * │   │   ├── balance      GET  …/value?period=|year=
- * │   │   ├── cards        CRUD …/{accId}/cards
- * │   │   ├── closing      GET/POST/DELETE …/closing
- * │   │   ├── statement    parsing de extrato/fatura PDF (suporte, sem rota)
- * │   │   └── transactions CRUD …/{accId}/transactions
- * │   │       ├── transfer  POST …/transactions/transfer
- * │   │       └── importer  POST …/transactions/import/preview|confirm
- * │   ├── categories   CRUD /api/{uuid}/categories
- * │   ├── tags         CRUD /api/{uuid}/tags
+ * ├── f000  fatia-base — todas as demais podem depender dela, ela de nenhuma
+ * │   ├── stream/SSE   GET  /api/{uuid}/stream (Server-Sent Events)
+ * │   ├── deletion     contrato de exclusão compartilhado (accounts/cards/categories/tags)
+ * │   ├── auth         POST /login — token opaco rotativo
+ * │   ├── UserGuards   guarda de propriedade/anti-IDOR
  * │   ├── costcenter   GET  /api/cost-center — sem namespace de usuário
- * │   └── deletion     contrato de exclusão compartilhado (accounts/cards/categories/tags)
- * ├── stream     GET  /api/{uuid}/stream  (Server-Sent Events)
- * ├── version    GET  /api/version — sem namespace de usuário
- * └── user       — fatia do agregado {@code User}; pacote raiz tem o {@code UserUseCase}
- *                (único use case da fatia, orquestra as demais features acima)
- *     ├── profile    GET/PATCH /api/me — self-service
- *     │   ├── api         DTOs HTTP (request/response)
- *     │   └── preference  {@code Preferences}/{@code PreferencesRepository}
- *     └── seed       provisionamento inicial (usuário + categorias default)
+ * │   ├── version      GET  /api/version — sem namespace de usuário
+ * │   └── closing      GET/POST/DELETE /api/{uuid}/accounts/closing
+ * ├── f001  self-service — GET/PATCH /api/me (nome + preferências write-through)
+ * ├── f002  accounts — CRUD /api/{uuid}/accounts (+ cards e balance fundidos: sem overlay próprio)
+ * │   ├── cards     CRUD …/{accId}/cards
+ * │   └── balance   GET  …/balance?period=|year=
+ * ├── f005  transactions + transfer — CRUD …/{accId}/transactions, POST …/transactions/transfer;
+ * │         publica {@code TransactionsDeleted} após excluir transações
+ * ├── f006  importação de extrato/fatura — POST …/transactions/import/preview|confirm
+ * │         (parsers BTG/Santander, casamento de cartão, sugestão de categoria)
+ * ├── f007  categories — CRUD /api/{uuid}/categories
+ * ├── f008  tags — CRUD /api/{uuid}/tags; reage a {@code TransactionsDeleted} (f005)
+ * ├── f009  dashboard — GET /api/{uuid}/dashboard/result
+ * └── f010  seed — provisionamento inicial (usuário + categorias default), não-HTTP
  * </pre>
  */
 @NullMarked
