@@ -1,7 +1,7 @@
-package br.cdb.infra.persistence.features;
+package br.cdb.feature.f000._2_infrastructure;
 
 import br.cdb.core.web.Request;
-import br.cdb.feature.finance.accounts.closing.ClosingRepository;
+import br.cdb.feature.f000._0_domain.ClosingRepository;
 import br.commons.Registry;
 import br.commons.Result;
 import br.commons.framework.persistence.jdbc.DataSource;

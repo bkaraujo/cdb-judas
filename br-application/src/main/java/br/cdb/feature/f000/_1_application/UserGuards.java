@@ -1,4 +1,4 @@
-package br.cdb.feature;
+package br.cdb.feature.f000._1_application;
 
 import br.cdb.context.monetary.MonetaryUseCases;
 import br.cdb.context.monetary._0_domain.model.CreditCard;

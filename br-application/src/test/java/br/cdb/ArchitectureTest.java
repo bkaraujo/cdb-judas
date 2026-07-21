@@ -74,12 +74,6 @@ class ArchitectureTest {
                             "..feature.user.stream..", "..feature.user.deletion.."))
                     .because("a composição entre fatias mora no UserUseCase; stream (transporte SSE) e deletion (vocabulário) são compartilhados");
 
-    @ArchTest
-    static final ArchRule auth_feature_must_not_access_user_features =
-            noClasses().that().resideInAPackage("..feature.auth..")
-                    .should().accessClassesThat().resideInAPackage("..feature.user..")
-                    .because("auth é a fatia-base (login/token); user.* depende dela, nunca o contrário");
-
     private static DescribedPredicate<JavaClass> contextClassNotExposedViaFacade() {
         return resideInAPackage("..context..")
                 .and(not(resideInAPackage("..context..shared..")))

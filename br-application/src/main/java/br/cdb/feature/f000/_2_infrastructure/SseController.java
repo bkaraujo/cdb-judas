@@ -1,5 +1,6 @@
-package br.cdb.feature.stream;
+package br.cdb.feature.f000._2_infrastructure;
 
+import br.cdb.feature.f000._0_domain.SSE;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.Produces;

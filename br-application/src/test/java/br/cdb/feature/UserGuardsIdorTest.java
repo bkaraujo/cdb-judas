@@ -1,6 +1,6 @@
 package br.cdb.feature;
 
-import br.cdb.feature.auth.LoginResource;
+import br.cdb.feature.f000._2_infrastructure.LoginResource;
 import io.quarkus.test.junit.QuarkusTest;
 import io.restassured.RestAssured;
 import io.restassured.http.ContentType;

@@ -1,4 +1,4 @@
-package br.cdb.feature.finance.accounts.closing;
+package br.cdb.feature.f000._2_infrastructure;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;

@@ -1,4 +1,4 @@
-package br.cdb.feature.finance.accounts.closing;
+package br.cdb.feature.f000._0_domain;
 
 import org.jspecify.annotations.NullMarked;
 

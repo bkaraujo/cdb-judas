@@ -1,14 +1,10 @@
 package br.cdb.feature;
 
 import br.cdb.feature.f001._0_domain.PreferencesRepository;
-import br.cdb.feature.finance.accounts.closing.ClosingRepository;
-import br.cdb.feature.finance.accounts.closing.ClosingService;
 import br.cdb.feature.finance.accounts.transactions.UserTransactionRepository;
 import br.cdb.feature.finance.categories.UserCategoryRepository;
 import br.cdb.feature.finance.tags.UserTagRepository;
 import br.cdb.feature.finance.tags.UserTransactionTagRepository;
-import br.cdb.feature.stream.SSE;
-import br.cdb.feature.stream.SseService;
 import br.cdb.infra.persistence.features.*;
 import br.commons.Registry;
 import br.commons.framework.persistence.jdbc.DataSource;
@@ -26,24 +22,6 @@ import org.jspecify.annotations.NullMarked;
 @NullMarked
 @Singleton
 public class FeatureModule {
-
-    @Produces
-    @Singleton
-    public SSE sse() {
-        return new SseService();
-    }
-
-    @Produces
-    @Singleton
-    ClosingService closingService(ClosingRepository closingRepository) {
-        return new ClosingService(closingRepository);
-    }
-
-    @Produces
-    @Singleton
-    public ClosingRepository closingRepository(DataSource dataSource) {
-        return Registry.tryGet(ClosingRepository.class, ClosingJDBCRepository::new);
-    }
 
     @Produces
     @Singleton

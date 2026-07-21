@@ -1,4 +1,4 @@
-package br.cdb.feature.finance.costcenter;
+package br.cdb.feature.f000._2_infrastructure;
 
 import br.cdb.context.monetary._0_domain.model.CostCenter;
 import jakarta.ws.rs.GET;

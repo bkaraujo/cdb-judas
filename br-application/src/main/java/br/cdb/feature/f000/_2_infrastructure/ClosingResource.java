@@ -1,6 +1,6 @@
-package br.cdb.feature.finance.accounts.closing;
+package br.cdb.feature.f000._2_infrastructure;
 
-import br.cdb.feature.user.UserUseCase;
+import br.cdb.feature.f000._1_application.ClosingService;
 import br.commons.Logger;
 import jakarta.validation.Valid;
 import jakarta.ws.rs.*;
@@ -17,11 +17,11 @@ import java.time.YearMonth;
 @RequiredArgsConstructor
 public class ClosingResource {
 
-    private final UserUseCase userUseCase;
+    private final ClosingService closingService;
 
     @GET
     public ClosingResponse get() {
-        return userUseCase.closing()
+        return closingService.find()
                 .map(ym -> new ClosingResponse(ym.toString()))
                 .orElse(new ClosingResponse(null));
     }
@@ -29,13 +29,13 @@ public class ClosingResource {
     @POST
     public ClosingResponse set(@Valid ClosingRequest req) {
         Logger.debug("ClosingRequest: %s", req);
-        val ym = userUseCase.saveClosing(YearMonth.parse(req.period()));
+        val ym = closingService.save(YearMonth.parse(req.period()));
         return new ClosingResponse(ym.toString());
     }
 
     @DELETE
     public void clear() {
         Logger.debug("Clearing closing");
-        userUseCase.clearClosing();
+        closingService.clear();
     }
 }

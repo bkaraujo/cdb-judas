@@ -1,7 +1,7 @@
 package br.cdb.feature.finance.categories;
 
 import br.cdb.context.monetary._0_domain.model.Transaction;
-import br.cdb.feature.stream.SSE;
+import br.cdb.feature.f000._0_domain.SSE;
 import br.commons.Result;
 import br.commons.business.BusinessError;
 import jakarta.inject.Singleton;

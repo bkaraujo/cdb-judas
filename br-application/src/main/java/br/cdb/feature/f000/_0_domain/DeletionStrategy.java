@@ -1,4 +1,4 @@
-package br.cdb.feature.finance.deletion;
+package br.cdb.feature.f000._0_domain;
 
 /** Como tratar as transações vinculadas quando a exclusão simples é recusada (409). */
 public enum DeletionStrategy {

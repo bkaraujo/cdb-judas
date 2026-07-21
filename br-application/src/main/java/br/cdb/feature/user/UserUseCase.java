@@ -13,9 +13,9 @@ import br.cdb.context.monetary._1_application.usecase.AccountUseCase;
 import br.cdb.context.monetary._1_application.usecase.CreditCardUseCase;
 import br.cdb.context.monetary._1_application.usecase.TransactionUseCase;
 import br.cdb.core.web.Request;
-import br.cdb.feature.UserGuards;
+import br.cdb.feature.f000._1_application.UserGuards;
 import br.cdb.feature.dashboard.DashboardService;
-import br.cdb.feature.finance.accounts.closing.ClosingService;
+import br.cdb.feature.f000._1_application.ClosingService;
 import br.cdb.feature.finance.accounts.core.AccountStreamPublisher;
 import br.cdb.feature.finance.accounts.core.UserAccount;
 import br.cdb.feature.finance.accounts.core.UserAccountService;
@@ -29,9 +29,9 @@ import br.cdb.feature.finance.accounts.transactions.importer.confirm.InvoiceConf
 import br.cdb.feature.finance.accounts.transactions.importer.preview.ImportPreviewOutcome;
 import br.cdb.feature.finance.categories.UserCategory;
 import br.cdb.feature.finance.categories.UserCategoryService;
-import br.cdb.feature.finance.deletion.DeletionOutcome;
-import br.cdb.feature.finance.deletion.DeletionStrategy;
-import br.cdb.feature.finance.deletion.Deletions;
+import br.cdb.feature.f000._0_domain.DeletionOutcome;
+import br.cdb.feature.f000._0_domain.DeletionStrategy;
+import br.cdb.feature.f000._1_application.Deletions;
 import br.cdb.feature.finance.tags.UserTag;
 import br.cdb.feature.finance.tags.UserTagService;
 import br.cdb.feature.finance.tags.UserTransactionTagService;
@@ -466,20 +466,6 @@ public class UserUseCase {
                 .filter(Objects::nonNull)
                 .distinct()
                 .toList();
-    }
-
-    // ── Closing ────────────────────────────────────────────────────
-
-    public Optional<YearMonth> closing() {
-        return closingService.find();
-    }
-
-    public YearMonth saveClosing(YearMonth period) {
-        return closingService.save(period);
-    }
-
-    public void clearClosing() {
-        closingService.clear();
     }
 
     // ── Categories ─────────────────────────────────────────────────

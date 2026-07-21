@@ -1,6 +1,7 @@
-package br.cdb.feature.stream;
+package br.cdb.feature.f000._2_infrastructure;
 
 import br.cdb.core.web.Request;
+import br.cdb.feature.f000._0_domain.SSE;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.sse.OutboundSseEvent;
 import jakarta.ws.rs.sse.Sse;

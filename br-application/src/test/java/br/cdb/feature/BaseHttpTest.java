@@ -9,7 +9,7 @@ import br.cdb.context.monetary._1_application.usecase.TransactionUseCase;
 import br.cdb.core.JsonStorageProperties;
 import br.cdb.core.security.AccessTokenStore;
 import br.cdb.core.security.UserRepository;
-import br.cdb.feature.auth.LoginResource;
+import br.cdb.feature.f000._2_infrastructure.LoginResource;
 import br.cdb.infra.persistence.Database;
 import br.cdb.infra.persistence.features.UserAccountBalanceJDBCRepository;
 import br.cdb.infra.persistence.monetary.AccountJDBCRepository;

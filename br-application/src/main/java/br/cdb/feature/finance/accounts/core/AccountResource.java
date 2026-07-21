@@ -1,8 +1,8 @@
 package br.cdb.feature.finance.accounts.core;
 
 import br.cdb.context.monetary._1_application.command.AccountCommand;
-import br.cdb.feature.finance.deletion.DeletionStrategy;
-import br.cdb.feature.finance.deletion.Deletions;
+import br.cdb.feature.f000._0_domain.DeletionStrategy;
+import br.cdb.feature.f000._1_application.Deletions;
 import br.cdb.feature.user.UserUseCase;
 import br.commons.Result;
 import br.commons.business.BusinessException;

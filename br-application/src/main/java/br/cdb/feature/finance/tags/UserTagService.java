@@ -1,6 +1,6 @@
 package br.cdb.feature.finance.tags;
 
-import br.cdb.feature.stream.SSE;
+import br.cdb.feature.f000._0_domain.SSE;
 import br.commons.Result;
 import br.commons.business.BusinessError;
 import jakarta.inject.Singleton;

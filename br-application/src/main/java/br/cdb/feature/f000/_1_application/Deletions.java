@@ -1,7 +1,9 @@
-package br.cdb.feature.finance.deletion;
+package br.cdb.feature.f000._1_application;
 
 import br.cdb.context.monetary._1_application.command.TransactionPolicy;
 import br.cdb.core.web.error.ProblemDetail;
+import br.cdb.feature.f000._0_domain.DeletionOutcome;
+import br.cdb.feature.f000._0_domain.DeletionStrategy;
 import br.commons.Result;
 import br.commons.business.BusinessError;
 import br.commons.business.BusinessException;

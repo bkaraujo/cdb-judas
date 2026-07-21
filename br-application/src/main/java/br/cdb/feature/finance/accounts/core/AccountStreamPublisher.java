@@ -7,7 +7,7 @@ import br.cdb.context.monetary._1_application.usecase.AccountUseCase;
 import br.cdb.context.monetary._1_application.usecase.CreditCardUseCase;
 import br.cdb.context.monetary._1_application.usecase.TransactionUseCase;
 import br.cdb.core.web.Request;
-import br.cdb.feature.stream.SSE;
+import br.cdb.feature.f000._0_domain.SSE;
 import br.commons.Result;
 import jakarta.inject.Singleton;
 import lombok.RequiredArgsConstructor;

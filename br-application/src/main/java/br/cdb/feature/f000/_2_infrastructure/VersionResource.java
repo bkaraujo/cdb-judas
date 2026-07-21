@@ -1,4 +1,4 @@
-package br.cdb.feature.version;
+package br.cdb.feature.f000._2_infrastructure;
 
 import jakarta.inject.Inject;
 import jakarta.ws.rs.GET;

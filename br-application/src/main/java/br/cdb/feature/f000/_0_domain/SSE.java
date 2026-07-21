@@ -1,4 +1,4 @@
-package br.cdb.feature.stream;
+package br.cdb.feature.f000._0_domain;
 
 import jakarta.ws.rs.sse.Sse;
 import jakarta.ws.rs.sse.SseEventSink;
