@@ -1,4 +1,4 @@
-package br.cdb.infra.persistence.features;
+package br.cdb.feature.f001._2_infrastructure;
 
 import br.cdb.feature.f001._0_domain.Preferences;
 import br.cdb.feature.f001._0_domain.PreferencesRepository;

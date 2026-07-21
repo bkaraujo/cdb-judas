@@ -1,6 +1,5 @@
 package br.cdb.feature;
 
-import br.cdb.feature.f001._0_domain.PreferencesRepository;
 import br.cdb.feature.finance.accounts.transactions.UserTransactionRepository;
 import br.cdb.feature.finance.categories.UserCategoryRepository;
 import br.cdb.feature.finance.tags.UserTagRepository;
@@ -33,12 +32,6 @@ public class FeatureModule {
     @Singleton
     public UserTransactionTagRepository userTransactionTagRepository(DataSource dataSource) {
         return Registry.tryGet(UserTransactionTagRepository.class, UserTransactionTagJDBCRepository::new);
-    }
-
-    @Produces
-    @Singleton
-    public PreferencesRepository preferencesRepository(DataSource dataSource) {
-        return Registry.tryGet(PreferencesRepository.class, PreferencesJDBCRepository::new);
     }
 
     @Produces
