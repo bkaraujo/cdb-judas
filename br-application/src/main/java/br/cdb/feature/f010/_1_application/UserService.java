@@ -1,8 +1,8 @@
-package br.cdb.feature.user;
+package br.cdb.feature.f010._1_application;
 
 import br.cdb.core.security.User;
 import br.cdb.core.security.UserRepository;
-import br.cdb.feature.user.seed.UserProvisioningStep;
+import br.cdb.feature.f010._0_domain.UserProvisioningStep;
 import br.commons.Logger;
 import io.quarkus.elytron.security.common.BcryptUtil;
 import jakarta.enterprise.inject.Instance;

@@ -1,4 +1,4 @@
-package br.cdb.feature.user.seed;
+package br.cdb.feature.f010._0_domain;
 
 import org.jspecify.annotations.NullMarked;
 

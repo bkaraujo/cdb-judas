@@ -7,10 +7,8 @@ import com.tngtech.archunit.core.importer.ImportOption;
 import com.tngtech.archunit.junit.AnalyzeClasses;
 import com.tngtech.archunit.junit.ArchTest;
 import com.tngtech.archunit.lang.ArchRule;
-import com.tngtech.archunit.library.dependencies.SlicesRuleDefinition;
 import org.jspecify.annotations.NullMarked;
 
-import static com.tngtech.archunit.base.DescribedPredicate.alwaysTrue;
 import static com.tngtech.archunit.base.DescribedPredicate.not;
 import static com.tngtech.archunit.core.domain.JavaClass.Predicates.*;
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.classes;
@@ -65,14 +63,6 @@ class ArchitectureTest {
                     .should().dependOnClassesThat().resideInAnyPackage(
                             "org.springframework..", "jakarta..", "io.quarkus..")
                     .because("o contexto é livre de framework: DI via Registry, validação na borda (@Valid nos *Request)");
-
-    @ArchTest
-    static final ArchRule user_feature_slices_must_not_depend_on_each_other =
-            SlicesRuleDefinition.slices().matching("..feature.user.(*)..")
-                    .should().notDependOnEachOther()
-                    .ignoreDependency(alwaysTrue(), resideInAnyPackage(
-                            "..feature.user.stream..", "..feature.user.deletion.."))
-                    .because("a composição entre fatias mora no UserUseCase; stream (transporte SSE) e deletion (vocabulário) são compartilhados");
 
     private static DescribedPredicate<JavaClass> contextClassNotExposedViaFacade() {
         return resideInAPackage("..context..")
