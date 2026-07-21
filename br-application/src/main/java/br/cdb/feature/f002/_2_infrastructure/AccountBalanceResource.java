@@ -1,6 +1,6 @@
-package br.cdb.feature.finance.accounts.balance;
+package br.cdb.feature.f002._2_infrastructure;
 
-import br.cdb.feature.user.UserUseCase;
+import br.cdb.feature.f002._1_application.AccountUseCase;
 import br.commons.Result;
 import br.commons.business.BusinessError;
 import br.commons.business.BusinessException;
@@ -22,7 +22,7 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class AccountBalanceResource {
 
-    private final UserUseCase userUseCase;
+    private final AccountUseCase accountUseCase;
 
     /** Saldo do período de todas as contas do usuário numa só resposta — evita N chamadas
      *  por conta no frontend (usado pela tela de Extrato de Contas). */
@@ -33,7 +33,7 @@ public class AccountBalanceResource {
             throw new BusinessException(new BusinessError.Validation("'period' must be provided"));
         }
         val ym = YearMonth.parse(period, DateTimeFormatter.ofPattern("yyyyMM"));
-        return switch (userUseCase.balances(ym)) {
+        return switch (accountUseCase.balances(ym)) {
             case Result.Success(var balances) -> balances.stream().map(BalanceResponse::of).toList();
             case Result.Failure(var error) -> throw new BusinessException(error);
         };
@@ -48,13 +48,13 @@ public class AccountBalanceResource {
     ) {
         if (period != null) {
             val ym = YearMonth.parse(period, DateTimeFormatter.ofPattern("yyyyMM"));
-            return switch (userUseCase.monthlyBalance(id, ym)) {
+            return switch (accountUseCase.monthlyBalance(id, ym)) {
                 case Result.Success(var b) -> BalanceResponse.of(b);
                 case Result.Failure(var error) -> throw new BusinessException(error);
             };
         }
         if (year != null) {
-            return switch (userUseCase.yearBalances(id, year)) {
+            return switch (accountUseCase.yearBalances(id, year)) {
                 case Result.Success(var balances) -> balances.stream().map(BalanceResponse::of).toList();
                 case Result.Failure(var error) -> throw new BusinessException(error);
             };

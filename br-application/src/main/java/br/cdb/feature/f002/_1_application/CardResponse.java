@@ -1,4 +1,4 @@
-package br.cdb.feature.finance.accounts.cards;
+package br.cdb.feature.f002._1_application;
 
 import br.cdb.context.monetary._0_domain.model.CreditCard;
 import org.jspecify.annotations.NullMarked;

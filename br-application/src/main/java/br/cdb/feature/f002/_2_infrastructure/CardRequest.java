@@ -1,4 +1,4 @@
-package br.cdb.feature.finance.accounts.cards;
+package br.cdb.feature.f002._2_infrastructure;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;

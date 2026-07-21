@@ -1,4 +1,4 @@
-package br.cdb.feature.finance.accounts.balance;
+package br.cdb.feature.f002._2_infrastructure;
 
 import br.cdb.context.monetary._0_domain.model.Balance;
 import org.jspecify.annotations.NullMarked;

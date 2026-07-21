@@ -1,6 +1,7 @@
-package br.cdb.feature.finance.accounts.core;
+package br.cdb.feature.f002._1_application;
 
-import br.cdb.infra.persistence.features.UserAccountJDBCRepository;
+import br.cdb.feature.f002._0_domain.UserAccount;
+import br.cdb.feature.f002._0_domain.UserAccountRepository;
 import jakarta.inject.Singleton;
 import lombok.RequiredArgsConstructor;
 import org.jspecify.annotations.NullMarked;
@@ -15,7 +16,7 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class UserAccountService {
 
-    private final UserAccountJDBCRepository repository;
+    private final UserAccountRepository repository;
 
     @Nullable
     public UserAccount find(String personId, UUID accountId) {

@@ -1,4 +1,4 @@
-package br.cdb.feature.finance.accounts.core;
+package br.cdb.feature.f002._0_domain;
 
 import org.jspecify.annotations.NullMarked;
 

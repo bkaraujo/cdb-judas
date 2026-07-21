@@ -1,6 +1,7 @@
-package br.cdb.infra.persistence.features;
+package br.cdb.feature.f002._2_infrastructure;
 
-import br.cdb.feature.finance.accounts.core.UserAccount;
+import br.cdb.feature.f002._0_domain.UserAccount;
+import br.cdb.feature.f002._0_domain.UserAccountRepository;
 import br.commons.framework.persistence.jdbc.JDBCRepository;
 import br.commons.framework.persistence.jdbc.primitives.JDBCParameter;
 import br.commons.framework.persistence.jdbc.primitives.JDBCResultSet;
@@ -11,20 +12,22 @@ import org.jspecify.annotations.Nullable;
 import java.util.*;
 
 /**
- * Adaptador JDBC (H2) para {@code PERSON_ACCOUNT} (overlay por utilizador: só a cor).
- * PK composta {@code (COD_PERSON, COD_ACCOUNT)}.
+ * Adaptador JDBC (H2) da porta {@link UserAccountRepository}; tabela {@code PERSON_ACCOUNT}
+ * (overlay por utilizador: só a cor). PK composta {@code (COD_PERSON, COD_ACCOUNT)}.
  */
 @NullMarked
-public final class UserAccountJDBCRepository extends JDBCRepository<UserAccount> {
+public final class UserAccountJDBCRepository extends JDBCRepository<UserAccount> implements UserAccountRepository {
 
     public UserAccountJDBCRepository() {
         super("PERSON_ACCOUNT");
     }
 
+    @Override
     public Optional<UserAccount> find(String personId, UUID accountId) {
         return findById(personId, accountId.toString());
     }
 
+    @Override
     public List<UserAccount> findByPerson(String personId) {
         return datasource.query(
                 "SELECT " + columnList() + " FROM " + table() + " WHERE COD_PERSON = ?",
@@ -33,6 +36,7 @@ public final class UserAccountJDBCRepository extends JDBCRepository<UserAccount>
         );
     }
 
+    @Override
     public void delete(String personId, UUID accountId) {
         deleteById(personId, accountId.toString());
     }

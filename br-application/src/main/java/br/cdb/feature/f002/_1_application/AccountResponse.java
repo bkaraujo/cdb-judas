@@ -1,9 +1,9 @@
-package br.cdb.feature.finance.accounts.core;
+package br.cdb.feature.f002._1_application;
 
 import br.cdb.context.monetary._0_domain.model.Account;
 import br.cdb.context.monetary._0_domain.model.CreditCard;
 import br.cdb.context.monetary._0_domain.model.Transaction;
-import br.cdb.feature.finance.accounts.cards.CardResponse;
+import br.cdb.feature.f002._0_domain.UserAccount;
 import br.commons.tools.Strings;
 import lombok.val;
 import org.jspecify.annotations.NullMarked;

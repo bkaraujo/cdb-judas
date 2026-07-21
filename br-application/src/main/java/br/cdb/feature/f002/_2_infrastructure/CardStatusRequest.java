@@ -1,4 +1,4 @@
-package br.cdb.feature.finance.accounts.cards;
+package br.cdb.feature.f002._2_infrastructure;
 
 import org.jspecify.annotations.NullMarked;
 

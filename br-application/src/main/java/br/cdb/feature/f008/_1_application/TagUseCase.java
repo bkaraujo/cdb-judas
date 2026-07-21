@@ -6,7 +6,7 @@ import br.cdb.feature.f000._0_domain.DeletionOutcome;
 import br.cdb.feature.f000._0_domain.DeletionStrategy;
 import br.cdb.feature.f005._0_domain.event.TransactionsDeleted;
 import br.cdb.feature.f008._0_domain.UserTag;
-import br.cdb.feature.finance.accounts.core.AccountStreamPublisher;
+import br.cdb.feature.f002._1_application.AccountStreamPublisher;
 import br.commons.MessageBus;
 import br.commons.Result;
 import br.commons.business.BusinessError;

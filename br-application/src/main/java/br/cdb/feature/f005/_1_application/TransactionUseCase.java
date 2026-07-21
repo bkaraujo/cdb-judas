@@ -9,7 +9,7 @@ import br.cdb.feature.f000._1_application.ClosingService;
 import br.cdb.feature.f000._1_application.UserGuards;
 import br.cdb.feature.f005._0_domain.UserTransaction;
 import br.cdb.feature.f005._0_domain.event.TransactionsDeleted;
-import br.cdb.feature.finance.accounts.core.AccountStreamPublisher;
+import br.cdb.feature.f002._1_application.AccountStreamPublisher;
 import br.commons.MessageBus;
 import br.commons.Result;
 import br.commons.business.BusinessError;

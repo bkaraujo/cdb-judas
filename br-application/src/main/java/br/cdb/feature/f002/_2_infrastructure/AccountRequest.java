@@ -1,4 +1,4 @@
-package br.cdb.feature.finance.accounts.core;
+package br.cdb.feature.f002._2_infrastructure;
 
 import br.commons.validation.TwoDecimalPlaces;
 import jakarta.validation.constraints.*;

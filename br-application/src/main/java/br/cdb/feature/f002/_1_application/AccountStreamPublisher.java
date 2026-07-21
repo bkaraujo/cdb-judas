@@ -1,9 +1,8 @@
-package br.cdb.feature.finance.accounts.core;
+package br.cdb.feature.f002._1_application;
 
 import br.cdb.context.monetary.MonetaryUseCases;
 import br.cdb.context.monetary._0_domain.model.Account;
 import br.cdb.context.monetary._0_domain.model.Transaction;
-import br.cdb.context.monetary._1_application.usecase.AccountUseCase;
 import br.cdb.context.monetary._1_application.usecase.CreditCardUseCase;
 import br.cdb.context.monetary._1_application.usecase.TransactionUseCase;
 import br.cdb.core.web.Request;
@@ -30,7 +29,8 @@ public class AccountStreamPublisher {
 
     private static final String TYPE = "ACCOUNT";
 
-    private final AccountUseCase ucAccount = MonetaryUseCases.ucAccount();
+    private final br.cdb.context.monetary._1_application.usecase.AccountUseCase ucAccount =
+            MonetaryUseCases.ucAccount();
     private final CreditCardUseCase ucCreditCard = MonetaryUseCases.ucCreditCard();
     private final TransactionUseCase ucTransaction = MonetaryUseCases.ucTransaction();
 
