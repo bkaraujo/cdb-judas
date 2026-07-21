@@ -28,10 +28,16 @@ import java.util.List;
  * referenciam-se entre si, inclusive entre contextos (ex.: {@code SEC_USER→PEP_PERSON},
  * {@code PERSON_TRANSACTION→MON_TRANSACTION}). Por isso a ordem de criação em {@link #model()} e a
  * de limpeza em {@link #reset()} respeitam a dependência pai→filho. As FKs dos overlays de feature
- * para {@code MON_TRANSACTION} ({@code PERSON_TRANSACTION}/{@code PERSON_TRANSACTION_TAG}) usam
- * {@code ON DELETE CASCADE}: o contexto monetário é dono da transação e a apaga primeiro; os
- * overlays somem em cascata (a limpeza reativa na feature vira idempotente). {@code PERSON_CATEGORY.COD_PARENT}
- * também usa {@code ON DELETE CASCADE} (apagar uma macro-categoria remove a subárvore).</p>
+ * usam {@code ON DELETE CASCADE} para {@code MON_ACCOUNT} ({@code PERSON_ACCOUNT.COD_ACCOUNT},
+ * {@code PERSON_TRANSACTION.COD_ACCOUNT}) e para {@code MON_TRANSACTION}
+ * ({@code PERSON_TRANSACTION.COD_TRANSACTION}, {@code PERSON_TRANSACTION_TAG.COD_TRANSACTION}): o
+ * contexto monetário é dono da conta/transação e as apaga primeiro; os overlays de feature somem em
+ * cascata (a limpeza reativa na feature — {@code TransactionOverlayListener}/{@code
+ * TagTransactionListener}, reagindo a {@code TransactionsDeleted} — vira redundante/idempotente,
+ * ver {@code .claude/refactor.md}). {@code PERSON_CATEGORY.COD_PARENT} também usa
+ * {@code ON DELETE CASCADE} (apagar uma macro-categoria remove a subárvore). A migração one-shot
+ * {@code AccountCascadeMigration} recria as duas constraints de {@code MON_ACCOUNT} num DB de dev
+ * já existente (criado antes desta mudança).</p>
  *
  * <p>{@link #reset()} dá os comandos de limpeza para isolar testes (apaga só dados, preserva
  * lookups).</p>
@@ -169,7 +175,7 @@ public abstract class Database {
                 """
                 CREATE TABLE PERSON_ACCOUNT (
                     COD_PERSON CHAR(36) NOT NULL REFERENCES PEP_PERSON(ID),
-                    COD_ACCOUNT CHAR(36) NOT NULL REFERENCES MON_ACCOUNT(ID),
+                    COD_ACCOUNT CHAR(36) NOT NULL REFERENCES MON_ACCOUNT(ID) ON DELETE CASCADE,
                     TXT_COLOR VARCHAR(20) NOT NULL,
                     PRIMARY KEY (COD_PERSON, COD_ACCOUNT)
                 )
@@ -216,7 +222,7 @@ public abstract class Database {
                 """
                 CREATE TABLE PERSON_TRANSACTION (
                     COD_PERSON CHAR(36) NOT NULL REFERENCES PEP_PERSON(ID),
-                    COD_ACCOUNT CHAR(36) NOT NULL REFERENCES MON_ACCOUNT(ID),
+                    COD_ACCOUNT CHAR(36) NOT NULL REFERENCES MON_ACCOUNT(ID) ON DELETE CASCADE,
                     COD_TRANSACTION CHAR(36) NOT NULL REFERENCES MON_TRANSACTION(ID) ON DELETE CASCADE,
                     COD_CATEGORY CHAR(36) NOT NULL REFERENCES PERSON_CATEGORY(ID),
                     TMS_CREATE_AT TIMESTAMP NOT NULL,

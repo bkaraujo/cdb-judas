@@ -8,6 +8,7 @@ import br.cdb.core.security.UserRepository;
 import br.cdb.infra.persistence.CachingPersonRepository;
 import br.cdb.infra.persistence.CachingUserRepository;
 import br.cdb.infra.persistence.Database;
+import br.cdb.infra.persistence.core.AccountCascadeMigration;
 import br.cdb.infra.persistence.core.AccountLimitMigration;
 import br.cdb.infra.persistence.core.DuplicateCategoryMigration;
 import br.cdb.infra.persistence.core.FeatureSchemaMigration;
@@ -69,6 +70,7 @@ public class ContextBridge {
             AccountLimitMigration.apply(datasource);
             FeatureSchemaMigration.apply(datasource);
             DuplicateCategoryMigration.apply(datasource);
+            AccountCascadeMigration.apply(datasource);
 
             switch (datasource.begin()) {
                 case Result.Failure(var error) -> throw new IllegalStateException(error);
