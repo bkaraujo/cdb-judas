@@ -1,42 +1,50 @@
 classDiagram
 %% CDB Finance — Backend: como VSA + Hexagonal se materializam em classes.
-%% Fatia vertical exemplar: transactions (feature) sobre o contexto monetary.
-%% Toda fatia repete este formato; troque "Transaction" pelo agregado da fatia.
+%% Fatia vertical exemplar: f005 (transactions/transfer) sobre o contexto monetary.
+%% Toda fatia fNNN repete este formato (_2_infrastructure/_1_application/_0_domain);
+%% troque "Transaction"/f005 pelo agregado/numero da fatia.
     direction LR
 
     class TransactionResource {
-        <<Feature Resource CDI>>
+        <<f005 _2_infrastructure Resource CDI>>
         so traducao de formato
         +create(userId, TransactionRequest) Response
         +patchStatus(userId, PatchStatusRequest) Response
     }
     class TransactionRequest {
-        <<Feature DTO record>>
+        <<f005 _2_infrastructure DTO record>>
     }
-    class UserUseCase {
-        <<Feature UseCase CDI - unico da fatia user>>
-        orquestra contexto + servicos de feature
+    class FeatureTransactionUseCase {
+        <<f005 _1_application UseCase CDI>>
+        nome real: TransactionUseCase (colide com o do contexto -\nreferenciado por FQN, sem import, no proprio codigo)
+        orquestra contexto + servicos da propria fatia
         +createTransaction(userId, Command, categoryId) Result
+        +deleteTransaction(txId, scope) Result
     }
     class ClosingService {
-        <<Feature Policy>>
+        <<f000 _1_application Policy - fatia-base>>
         +validateDate(userId, date) Result
     }
     class UserTransactionService {
-        <<Feature Service>>
+        <<f005 _1_application Service>>
         dados overlay da propria fatia
+    }
+    class TransactionsDeleted {
+        <<f005 _0_domain event>>
+        publicado apos delete; f008 reage best-effort
     }
     class ContextBridge {
         <<CDI core - costura CDI/Registry>>
         registra portas no Registry no StartupEvent
     }
-    class MonetaryContext {
+    class MonetaryUseCases {
         <<Facade do contexto>>
         +ucTransaction()$ TransactionUseCase
         +ucAccount()$ AccountUseCase
     }
-    class TransactionUseCase {
-        <<UseCase aplicacao>>
+    class ContextTransactionUseCase {
+        <<context _1_application UseCase>>
+        nome real: TransactionUseCase (br.cdb.context.monetary...)
         +execute(Command) Result
     }
     class TransactionService {
@@ -51,7 +59,7 @@ classDiagram
         +save(MonetaryTransaction) Result
     }
     class TransactionJDBCRepository {
-        <<Adaptador infra JDBC-H2>>
+        <<Adaptador infra JDBC-H2 - contexto>>
     }
     class Registry {
         <<Service Locator commons>>
@@ -65,19 +73,20 @@ classDiagram
     }
 
     TransactionResource ..> TransactionRequest : recebe DTO
-    TransactionResource ..> UserUseCase : delega TODA a orquestracao
+    TransactionResource ..> FeatureTransactionUseCase : delega TODA a orquestracao
     TransactionResource ..> Result : traduz em HTTP na borda
-    UserUseCase ..> ClosingService : politica validada na FRONTEIRA da feature
-    UserUseCase ..> UserTransactionService : logica local da fatia
-    UserUseCase ..> MonetaryContext : use case do contexto via acessor estatico
-    MonetaryContext ..> TransactionUseCase : resolve no Registry - tryGet
-    TransactionUseCase ..> TransactionService : orquestra
-    TransactionUseCase ..> Result : retorna
+    FeatureTransactionUseCase ..> ClosingService : politica validada na FRONTEIRA da feature - base f000
+    FeatureTransactionUseCase ..> UserTransactionService : logica local da fatia
+    FeatureTransactionUseCase ..> TransactionsDeleted : publica no MessageBus pos-delete
+    FeatureTransactionUseCase ..> MonetaryUseCases : use case do contexto via acessor estatico
+    MonetaryUseCases ..> ContextTransactionUseCase : resolve no Registry - tryGet
+    ContextTransactionUseCase ..> TransactionService : orquestra
+    ContextTransactionUseCase ..> Result : retorna
     TransactionService ..> TransactionRepository : usa a PORTA
     TransactionService ..> MonetaryTransaction : opera o modelo
     TransactionRepository <|.. TransactionJDBCRepository : adaptador implementa
     ContextBridge ..> Registry : liga porta ao adaptador no startup
 
-    note for TransactionResource "VSA: o Resource so traduz formato.\nOrquestracao mora no UserUseCase.\nProibido acessar repositorio de contexto."
-    note for MonetaryContext "Hexagonal: contexto livre de framework.\nDI via Registry, nunca CDI/Spring.\nFacade expoe os use cases (estatico)."
+    note for TransactionResource "VSA: o Resource so traduz formato.\nOrquestracao mora no UseCase da propria fatia\n(fNNN/_1_application), nunca num god-object central."
+    note for MonetaryUseCases "Hexagonal: contexto livre de framework.\nDI via Registry, nunca CDI/Spring.\nFacade expoe os use cases (estatico)."
     note for Result "Railway: sem excecao para fluxo de negocio.\nErro de dominio e objeto de valor."

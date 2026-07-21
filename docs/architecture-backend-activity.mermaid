@@ -7,19 +7,19 @@ flowchart TD
     AUTH -- sim --> MDC["Log de requisição + MDC<br>com x-request-id"]
     MDC --> OWN{"OwnershipFilter:<br>{uuid} = usuário autenticado?"}
     OWN -- não --> R403(["403 — anti-IDOR"])
-    OWN -- sim --> RES["Resource desserializa DTO<br>e traduz para Command (só formato)"]
-    RES --> FUC["UserUseCase — único use case da fatia<br>orquestra contexto + serviços de feature"]
-    FUC --> POL{"Política de usuário ok?<br>ex.: ClosingService.validateDate<br>fronteira da feature"}
+    OWN -- sim --> RES["Resource (fNNN/_2_infrastructure) desserializa DTO<br>e traduz para Command (só formato)"]
+    RES --> FUC["*UseCase (fNNN/_1_application) — único use case da fatia<br>orquestra contexto + serviços da própria fatia"]
+    FUC --> POL{"Política de usuário ok?<br>ex.: ClosingService.validateDate<br>fatia-base f000"}
     POL -- Failure --> ERR["Resource traduz DomainError<br>em status HTTP 4xx"]
-    POL -- Success --> FAC["Use case do contexto<br>via MonetaryContext.uc*() (Registry)"]
+    POL -- Success --> FAC["Use case do contexto<br>via MonetaryUseCases.uc*() (Registry)"]
     FAC --> UC["UseCase recebe Command<br>e orquestra Services"]
     UC --> SRV["Service valida domínio<br>parâmetros simples"]
     SRV --> PORT["Porta Repository<br>interface do _0_domain"]
     PORT --> JDBC["Adaptador *JDBCRepository<br>executa no H2"]
     JDBC --> RW{"Result"}
     RW -- Failure --> ERR
-    RW -- Success --> OK["UserUseCase aplica overlays da feature;<br>Resource mapeia Success<br>para 200/201 + corpo de resposta"]
-    OK --> SSE["UserUseCase dispara SSE pós-mutação<br>quando a feature exige"]
+    RW -- Success --> OK["*UseCase aplica overlay da própria fatia;<br>Resource mapeia Success<br>para 200/201 + corpo de resposta"]
+    OK --> SSE["*UseCase dispara SSE pós-mutação<br>(fatia-base f000) quando a feature exige;<br>cross-feature (ex.: TransactionsDeleted)<br>vai por MessageBus, best-effort"]
     SSE --> TOK["Novo X-Access-Token no header<br>token rotativo, só resposta não-SSE bem-sucedida"]
     TOK --> OUT(["Resposta"])
     ERR --> OUT

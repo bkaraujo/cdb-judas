@@ -2,11 +2,18 @@ flowchart LR
 %% CDB Finance — Backend: diagrama de pacotes (placement de classes).
 %% Cada caixa diz o que MORA no pacote; setas = dependências permitidas.
 %% ArchUnit proíbe: feature→contexto fora da Facade/use cases; Resource→Repository;
-%% contexto→framework; _1_application→infra; core→feature; fatia↔fatia dentro de
-%% feature.user (composição só via UserUseCase); feature.system→feature.user.
+%% contexto→framework; _1_application→_2_infrastructure (vale por contexto E por fNNN);
+%% core→feature. fatia fNNN↔fNNN (exceto via f000) é hoje só transitório — sem regra
+%% ArchUnit ainda, pendente da migração ON DELETE CASCADE (ver .claude/refactor.md).
 
-    subgraph feature["br.cdb.feature.*"]
-        FEAT["*Resource (borda HTTP — só tradução de formato)<br>UserUseCase (único use case da fatia user — orquestra tudo)<br>*Request / *Response (DTOs da API)<br>services e repositórios locais da fatia<br>políticas de usuário (ex.: ClosingService)<br>user.* = /api/{uuid}/… · system.* = sem uuid"]
+    subgraph feature["br.cdb.feature.fNNN  (f001, f002, f005–f010)"]
+        F2["_2_infrastructure<br>*Resource (borda HTTP — só tradução de formato)<br>*Request / *Response (DTOs da API)<br>*JDBCRepository (adaptador da porta _0)<br>FNNNModule (CDI)"]
+        F1["_1_application<br>*Service · *UseCase (orquestra tudo)<br>commands · @MessageListener (best-effort)"]
+        F0["_0_domain<br>modelos/overlays · *Repository (PORTAS)<br>eventos de domínio da feature"]
+    end
+
+    subgraph base["br.cdb.feature.f000  (fatia-base)"]
+        BASE["stream/SSE · deletion · auth · UserGuards<br>costcenter · version · closing<br>toda fNNN pode depender dela; ela de nenhuma"]
     end
 
     subgraph core["br.cdb.core"]
@@ -14,13 +21,13 @@ flowchart LR
     end
 
     subgraph context["br.cdb.context.*  — monetary · people · shared"]
-        FAC["Facade (MonetaryContext = acessores estáticos p/ use cases, PeopleContext)<br>PeopleBootstrap (composition root de people; monetary se auto-monta)"]
+        FAC["Facade (MonetaryUseCases = acessores estáticos p/ use cases, PeopleContext)<br>PeopleBootstrap (composition root de people; monetary se auto-monta)"]
         APP["_1_application<br>usecases · services · commands · listeners"]
         DOM["_0_domain<br>models (records) · events<br>repository = PORTAS (interfaces)"]
     end
 
     subgraph infra["br.cdb.infra"]
-        INF["*JDBCRepository (adaptadores das portas)<br>mappers de persistência · adaptador MessageBus"]
+        INF["*JDBCRepository das PORTAS DE CONTEXTO<br>(adaptadores de feature ficam em fNNN/_2, não aqui)<br>migrações one-shot · adaptador MessageBus"]
     end
 
     subgraph commons["br.commons"]
@@ -29,8 +36,13 @@ flowchart LR
 
     DB[("H2 — dev: file ./database · teste: in-memory<br>schema canônico: docs/db-*.mermaid")]
 
-    FEAT -->|"só via Facade / use cases"| FAC
-    FEAT --> CORE
+    F2 --> F1
+    F1 --> F0
+    F2 -.->|"implementa a porta _0"| F0
+    F1 -->|"só via Facade / use cases"| FAC
+    F1 --> BASE
+    F2 --> BASE
+    F2 --> CORE
     FAC --> APP
     APP --> DOM
     INF -.->|"implementa as portas"| DOM
@@ -38,3 +50,4 @@ flowchart LR
     context --> COM
     INF --> COM
     CORE --> COM
+    feature --> COM

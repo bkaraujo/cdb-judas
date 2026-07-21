@@ -1,6 +1,6 @@
 # CDB Finance — Guia Central
 
-Gestor de finanças pessoais. Backend **Java 25 + Quarkus** (JVM mode); frontend **SPA Vanilla JS/CSS + jQuery 4** (servido pelo próprio backend). Arquitetura híbrida: **Vertical Slice** nas features de entrega HTTP (`br.cdb.feature.*`) sobre **Hexagonal** nos contextos de negócio (`br.cdb.context.*`) — features falam com contextos **apenas via os use cases expostos pela Facade** (`MonetaryContext.uc*()`); os `*Resource` que atuam sobre dados do usuário delegam a orquestração ao **`UserUseCase`** (`br.cdb.feature.user`, único use case da fatia) e fazem só tradução de formato. Persistência: **JDBC/H2** (dev: file `./database`; teste: in-memory) + JSON para `Closing` e o catálogo de centros de custo. Rotas de dados escopadas por `/api/{uuid}/…` com guarda de propriedade (anti-IDOR).
+Gestor de finanças pessoais. Backend **Java 25 + Quarkus** (JVM mode); frontend **SPA Vanilla JS/CSS + jQuery 4** (servido pelo próprio backend). Arquitetura híbrida: **Vertical Slice** nas features de entrega HTTP sobre **Hexagonal** nos contextos de negócio (`br.cdb.context.*`) — features falam com contextos **apenas via os use cases expostos pela Facade** (`MonetaryUseCases.uc*()`). Cada feature é uma fatia numerada `br.cdb.feature.fNNN` (f000–f010), **hexágono auto-contido** (`_0_domain`/`_1_application`/`_2_infrastructure`: modelos+portas / use case+serviços+eventos / Resource+DTOs+adapter+módulo CDI próprios); os `*Resource` injetam só o use case da própria fatia (nunca um god-object central) e fazem só tradução de formato. Cross-feature é via eventos de domínio best-effort (`br.commons.MessageBus`), nunca import direto de serviço/use case de fatia irmã — ver `.claude/refactor.md` para o histórico da migração fatias-planas→fNNN. Persistência: **JDBC/H2** (dev: file `./database`; teste: in-memory) + JSON para `Closing` e o catálogo de centros de custo. Rotas de dados escopadas por `/api/{uuid}/…` com guarda de propriedade (anti-IDOR, `UserGuards` em `f000`).
 
 > Este é o índice central. As diretrizes detalhadas vivem nos `CLAUDE.md` de cada módulo (`br-parent/`, `br-commons/src/main/java/`, `br-context-people/src/main/java/`, `br-context-monetary/src/main/java/`, `br-application/src/main/java/`, `web/`) e em `docs/`.
 > **Schema do banco: os diagramas `docs/*.mermaid` são a fonte da verdade** — o código (DDL em `Database`) conforma ao diagrama, nunca o inverso.
@@ -17,25 +17,16 @@ Gestor de finanças pessoais. Backend **Java 25 + Quarkus** (JVM mode); frontend
 - **`people`** (módulo `br-context-people`) — identidade mínima. Facade `PeopleContext`; modelo `Person` (id/name/locale/language). **Não** inclui `User` (login) nem `Preferences` — esses são agregados de `br-application` (`br.cdb.core.web.security.User` e `br.cdb.feature.user.profile.preference.Preferences`), não deste contexto. Hoje `PeopleContext` está montado mas não é consumido por nenhuma feature — ver `br-context-people/src/main/java/CLAUDE.md`.
 - **Núcleo comum entre contextos**: não existe um contexto `shared` — o pacote `context..shared..` é apenas reservado nas regras ArchUnit, sem implementação. O vocabulário compartilhado hoje (erro/evento de domínio) é `br.commons.business.{BusinessError,BusinessEvent,BusinessException}`, em `br-commons`.
 
-### Features de entrega — `br.cdb.feature.*` (achatadas direto sob `feature.*`, sem prefixo `user.`/`system.`)
-- **`dashboard`** — agrega resultado mensal por categoria (receitas/despesas/líquido). `/api/{uuid}/…`.
-- **`finance.accounts`** — CRUD de contas e cartões, com sub-áreas (`/api/{uuid}/…`):
-  - **saldo** — consulta por período (`?period=yyyyMM` / `?year=yyyy`);
-  - **closing** — período de fechamento (a validação de data é **fronteira da feature**, não do contexto);
-  - **statement** — histórico mensal por conta;
-  - **importação** — leitura de PDF (preview→confirm), parsers **BTG** e **Santander** (cartão + conta), expansão de parcelas, sugestão de categoria, casamento de cartão;
-  - **transactions** — créditos, débitos, transferências, parcelas; filtros, patch de status, delete unitário/em grupo.
-- **`finance.categories`** / **`finance.tags`** — classificação macro/micro; mudanças propagadas via **SSE**. `/api/{uuid}/…`.
-- **`finance.costcenter`** — catálogo somente-leitura (`GET /api/cost-center`, sem `{uuid}`).
-- **`finance.deletion`** — vocabulário de exclusão compartilhado entre as fatias de `finance.*`.
-- **`stream`** — canal SSE (`/api/{uuid}/stream`).
-- **`version`** — versão da aplicação (sem `{uuid}`).
-- **`auth`** — login e emissão de token (`POST /login`, token opaco rotativo; sem `{uuid}`) — única fatia-base, as demais podem depender dela mas nunca o contrário.
-
-### Fatia do agregado `User` — `br.cdb.feature.user.*`
-Pacote raiz com **`UserUseCase`** (único use case da fatia: todo `*Resource` que atua sobre dados do usuário injeta só ele; orquestra use cases de contexto + serviços de feature + SSE), `UserService`, `UserGuards` (guarda de propriedade/anti-IDOR). Subpacotes:
-- **`profile`** — self-service `/api/me` (nome + preferências write-through); `profile.api` tem os DTOs HTTP, `profile.preference` tem `Preferences`/`PreferencesRepository` — aninhados sob `profile` para contar como uma única fatia perante o ArchUnit.
-- **`seed`** — provisionamento inicial (usuário + categorias default).
+### Features de entrega — `br.cdb.feature.fNNN` (hexágono próprio cada; ver `.claude/refactor.md`)
+- **`f000`** — fatia-base (todas as demais podem depender dela; ela não depende de nenhuma feature): `stream`/SSE (`SSE`, `SseService`, `SseController` — `/api/{uuid}/stream`), `deletion` (vocabulário `DeletionStrategy`/`DeletionOutcome`/`Deletions`, contrato uniforme de exclusão), `auth` (`LoginResource` — `POST /login`, token opaco rotativo), `UserGuards` (guarda de propriedade/anti-IDOR), `costcenter` (`GET /api/cost-center`, catálogo fixo, sem `{uuid}`), `version` (`GET /api/version`), `closing` (`ClosingService`/`ClosingRepository`/`ClosingResource` — `/api/{uuid}/accounts/closing`; gate de política síncrono consumido por transactions/transfer).
+- **`f001`** — self-service `/api/me` (nome + preferências write-through); `Profile`/`Preferences`/`PreferencesRepository`.
+- **`f002`** — contas, com **cards** e **balance** fundidos aqui (fatias somente-leitura/passthrough do contexto, sem modelo/repositório próprio — não justificavam hexágono à parte): CRUD de conta, CRUD de cartão, saldo por período (`?period=yyyyMM`/`?year=yyyy`). Dono do SSE de conta (`AccountStreamPublisher`).
+- **`f005`** — lançamentos e transferências: créditos, débitos, parcelas, filtros, patch de status, delete unitário/em grupo/transferência. Publica `TransactionsDeleted` (evento) após excluir transações — reagido best-effort por `f008` (tags) e pelo próprio `f005` (limpeza do overlay).
+- **`f006`** — importação de extrato/fatura (preview→confirm), parsers **BTG** e **Santander** (cartão + conta), expansão de parcelas, sugestão de categoria, casamento de cartão.
+- **`f007`** — categorias (macro/micro); mudanças propagadas via SSE.
+- **`f008`** — tags (classificação livre/transversal); mudanças propagadas via SSE; reage a `TransactionsDeleted` (`f005`) para purgar vínculos.
+- **`f009`** — dashboard: resultado mensal agregado (receitas/despesas/líquido), sem overlay próprio.
+- **`f010`** — provisionamento inicial (não-HTTP): usuário + categorias default no startup.
 
 ### Plataforma — `br.cdb.core` (módulo `br-application`)
 Autenticação/autorização (token opaco rotativo, `OwnershipFilter`), observabilidade (log de requisição + MDC), persistência JSON, config HTTP/OpenAPI, `ContextBridge` (costura CDI↔`Registry`).
