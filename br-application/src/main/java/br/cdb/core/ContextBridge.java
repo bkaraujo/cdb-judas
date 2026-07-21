@@ -4,7 +4,7 @@ import br.cdb.context.monetary._0_domain.repository.*;
 import br.cdb.context.people.PeopleBootstrap;
 import br.cdb.context.people.PeopleContext;
 import br.cdb.context.people._0_domain.repository.PersonRepository;
-import br.cdb.core.web.security.UserRepository;
+import br.cdb.core.security.UserRepository;
 import br.cdb.infra.persistence.CachingPersonRepository;
 import br.cdb.infra.persistence.CachingUserRepository;
 import br.cdb.infra.persistence.Database;

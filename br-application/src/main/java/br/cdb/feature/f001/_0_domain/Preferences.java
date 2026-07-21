@@ -1,6 +1,6 @@
-package br.cdb.feature.user.profile.preference;
+package br.cdb.feature.f001._0_domain;
 
-import br.cdb.feature.user.profile.api.PreferencesPatch;
+import br.cdb.feature.f001._1_application.PreferencesPatch;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 

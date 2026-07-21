@@ -66,7 +66,7 @@ class InstallmentExpanderTest {
             assertEquals(Transaction.Type.EXPENSE, d.type());
         }
         Set<UUID> groupIds = drafts.stream().map(TransactionDraft::groupId).collect(Collectors.toSet());
-        assertEquals(1, groupIds.size(), "all installments share one group id");
+        assertEquals(1, groupIds.size(), "all installments share one group personId");
     }
 
     @Test
@@ -96,7 +96,7 @@ class InstallmentExpanderTest {
 
         UUID id2 = onlyGroupId(drafts2);
         UUID id3 = onlyGroupId(drafts3);
-        assertEquals(id2, id3, "the group id must be stable as n advances to n+1 across months");
+        assertEquals(id2, id3, "the group personId must be stable as n advances to n+1 across months");
     }
 
     private static UUID onlyGroupId(List<TransactionDraft> drafts) {

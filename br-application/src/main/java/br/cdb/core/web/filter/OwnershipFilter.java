@@ -1,10 +1,9 @@
-package br.cdb.core.web.security.interceptor;
+package br.cdb.core.web.filter;
 
-import br.cdb.core.web.RequestUtils;
-import br.cdb.core.web.security.CurrentUserContext;
+import br.cdb.core.web.Request;
+import br.cdb.core.web.security.AuthenticatedUser;
 import br.commons.Logger;
 import jakarta.annotation.Priority;
-import jakarta.inject.Inject;
 import jakarta.ws.rs.Priorities;
 import jakarta.ws.rs.container.ContainerRequestContext;
 import jakarta.ws.rs.container.ContainerRequestFilter;
@@ -25,15 +24,12 @@ public class OwnershipFilter implements ContainerRequestFilter {
 
     private static final String API_PREFIX = "/api/";
 
-    @Inject
-    CurrentUserContext currentUser;
-
     @Override
     public void filter(ContainerRequestContext request) {
-        val path = RequestUtils.path(request);
+        val path = Request.path(request);
         if (!path.startsWith(API_PREFIX) || isExcluded(path)) return;
 
-        val user = currentUser.user();
+        val user = Request.get(Request.X_REQUEST_USER, AuthenticatedUser.class);
         if (user == null) {
             Logger.debug("OWNERSHIP %s %s => 401 (não autenticado)", request.getMethod(), path);
             request.abortWith(Response.status(Response.Status.UNAUTHORIZED).build());
@@ -41,9 +37,9 @@ public class OwnershipFilter implements ContainerRequestFilter {
         }
 
         val routeUserId = firstSegment(path);
-        if (!user.id().equals(routeUserId)) {
+        if (!user.personId().equals(routeUserId)) {
             Logger.debug("OWNERSHIP %s %s => 403 (rota '%s' != usuário '%s')",
-                    request.getMethod(), path, routeUserId, user.id());
+                    request.getMethod(), path, routeUserId, user.personId());
             request.abortWith(Response.status(Response.Status.FORBIDDEN).build());
         }
     }

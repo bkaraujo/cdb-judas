@@ -1,6 +1,6 @@
 package br.cdb.core.web.error;
 
-import br.cdb.core.web.RequestUtils;
+import br.cdb.core.web.Request;
 import jakarta.validation.ConstraintViolationException;
 import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.Response;
@@ -24,7 +24,7 @@ public class ConstraintViolationExceptionMapper implements ExceptionMapper<Const
         val detail = ex.getConstraintViolations().stream()
                 .map(v -> v.getPropertyPath() + ": " + v.getMessage())
                 .collect(Collectors.joining("; "));
-        val pd = ProblemDetail.unprocessableContent(RequestUtils.path(uriInfo), detail);
+        val pd = ProblemDetail.unprocessableContent(Request.path(uriInfo), detail);
         return Response.status(pd.status()).entity(pd).build();
     }
 }

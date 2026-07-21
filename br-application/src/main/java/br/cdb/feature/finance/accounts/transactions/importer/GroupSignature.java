@@ -12,7 +12,7 @@ import java.util.UUID;
 /**
  * Deterministic identity for imported charges so re-imports recognize the same purchase.
  *
- * <p>The parcelado group id hashes {@code accountId}, the ORIGINAL purchase date, the installment
+ * <p>The parcelado group personId hashes {@code accountId}, the ORIGINAL purchase date, the installment
  * total and the normalized description — deliberately EXCLUDING the amount: Santander spreads
  * rounding cents across installments (e.g. 231,81 one month, 231,79 the next), so the amount is not
  * stable across statements. The à-vista key composes the same fields plus the amount, since a single

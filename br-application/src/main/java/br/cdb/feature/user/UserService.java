@@ -1,7 +1,7 @@
 package br.cdb.feature.user;
 
-import br.cdb.core.web.security.User;
-import br.cdb.core.web.security.UserRepository;
+import br.cdb.core.security.User;
+import br.cdb.core.security.UserRepository;
 import br.cdb.feature.user.seed.UserProvisioningStep;
 import br.commons.Logger;
 import io.quarkus.elytron.security.common.BcryptUtil;
@@ -37,7 +37,7 @@ public class UserService {
                     name,
                     BcryptUtil.bcryptHash(new String(password))
             ));
-            Logger.info("usuário '%s' criado com id %s", username, id);
+            Logger.info("usuário '%s' criado com personId %s", username, id);
             // Re-lê para obter o personId cunhado pelo repositório ao persistir.
             user = userRepository.findByUsername(username).orElseThrow();
         }

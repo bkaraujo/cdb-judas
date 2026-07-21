@@ -4,10 +4,10 @@
  * <p>Rotas ({@code /api/{uuid}/categories}):
  * <pre>
  * GET    /categories       — lista todas as categorias
- * GET    /categories/{id}  — detalhe de uma categoria
+ * GET    /categories/{personId}  — detalhe de uma categoria
  * POST   /categories       — cria categoria
- * PATCH  /categories/{id}  — atualiza categoria
- * DELETE /categories/{id}  — remove categoria
+ * PATCH  /categories/{personId}  — atualiza categoria
+ * DELETE /categories/{personId}  — remove categoria
  * </pre>
  *
  * <p>Categorias são usadas para classificar transações e gerar agregações no dashboard.

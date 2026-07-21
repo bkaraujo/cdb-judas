@@ -27,8 +27,9 @@ class ArchitectureTest {
     static final ArchRule resources_must_not_access_repositories =
             noClasses().that().haveSimpleNameEndingWith("Resource")
                     .and().haveSimpleNameNotEndingWith("LoginResource")
+                    .and().haveSimpleNameNotEndingWith("SelfResource")
                     .should().accessClassesThat().haveSimpleNameEndingWith("Repository")
-                    .because("LoginResource é a exceção deliberada: autenticação acessa UserRepository direto (equivalente ao UserDetailsService do Spring), sem Facade de contexto para isso");
+                    .because("LoginResource e SelfResource são exceções deliberadas: acessam UserRepository direto (equivalente ao UserDetailsService do Spring) para autenticação/username de login, sem Facade de contexto para isso");
 
     @ArchTest
     static final ArchRule all_classes_must_be_null_marked =

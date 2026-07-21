@@ -7,8 +7,8 @@ import br.cdb.context.monetary._1_application.usecase.CostCenterUseCase;
 import br.cdb.context.monetary._1_application.usecase.CreditCardUseCase;
 import br.cdb.context.monetary._1_application.usecase.TransactionUseCase;
 import br.cdb.core.JsonStorageProperties;
-import br.cdb.core.web.security.UserRepository;
-import br.cdb.core.web.security.core.AccessTokenStore;
+import br.cdb.core.security.AccessTokenStore;
+import br.cdb.core.security.UserRepository;
 import br.cdb.feature.auth.LoginResource;
 import br.cdb.infra.persistence.Database;
 import br.cdb.infra.persistence.features.UserAccountBalanceJDBCRepository;
@@ -91,7 +91,7 @@ public abstract class BaseHttpTest {
     }
 
     /**
-     * Semeia login + pessoa de forma determinística e idempotente: o id da PESSOA é igual ao id do
+     * Semeia login + pessoa de forma determinística e idempotente: o personId da PESSOA é igual ao personId do
      * usuário, então a mesma constante ({@link #TEST_USER_ID}) serve simultaneamente de identidade
      * de login (token) e de dono das rotas/overlays ({@code /api/{personId}/…}). Insere direto (em
      * vez de {@code userRepository.save}, que cunha um personId aleatório). {@code SEC_USER}/

@@ -54,13 +54,13 @@ final class InMemoryRepositories {
         public CostCenter save(CostCenter e) { data.put(e.id(), e); return e; }
     }
 
-    /** Balance tem chave de negócio (accountId, period) — sem id próprio, não cabe em BaseRepo. */
+    /** Balance tem chave de negócio (accountId, period) — sem personId próprio, não cabe em BaseRepo. */
     static class Balances implements BalanceRepository {
         private final List<Balance> data = new ArrayList<>();
 
         public List<Balance> findAll() { return new ArrayList<>(data); }
 
-        /** Sem id próprio: nada aqui indexa por UUID solto — ver {@link #delete}. */
+        /** Sem personId próprio: nada aqui indexa por UUID solto — ver {@link #delete}. */
         public Optional<Balance> findById(UUID id) { return Optional.empty(); }
 
         public Balance save(Balance e) {
@@ -69,7 +69,7 @@ final class InMemoryRepositories {
             return e;
         }
 
-        public void deleteById(UUID id) { /* sem id próprio; ver delete(accountId, period) */ }
+        public void deleteById(UUID id) { /* sem personId próprio; ver delete(accountId, period) */ }
 
         public void delete(UUID accountId, YearMonth period) {
             data.removeIf(b -> b.account().id().equals(accountId) && b.period().equals(period));

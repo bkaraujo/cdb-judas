@@ -2,7 +2,7 @@ package br.cdb.feature;
 
 import br.cdb.context.monetary.MonetaryUseCases;
 import br.cdb.context.monetary._0_domain.model.CreditCard;
-import br.cdb.core.web.security.CurrentUser;
+import br.cdb.core.web.Request;
 import br.cdb.feature.finance.accounts.core.UserAccount;
 import br.cdb.feature.finance.accounts.core.UserAccountService;
 import br.cdb.feature.user.UserUseCase;
@@ -83,7 +83,7 @@ public class UserGuards {
     private Set<UUID> ownedAccounts() {
         var cached = ownedAccounts;
         if (cached == null) {
-            cached = userAccountService.findByPerson(CurrentUser.getId()).stream()
+            cached = userAccountService.findByPerson(Request.personId()).stream()
                     .map(UserAccount::accountId)
                     .collect(Collectors.toUnmodifiableSet());
             ownedAccounts = cached;

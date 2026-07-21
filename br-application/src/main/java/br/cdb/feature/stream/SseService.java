@@ -1,6 +1,6 @@
 package br.cdb.feature.stream;
 
-import br.cdb.core.web.security.CurrentUser;
+import br.cdb.core.web.Request;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.sse.OutboundSseEvent;
 import jakarta.ws.rs.sse.Sse;
@@ -32,7 +32,7 @@ public class SseService implements SSE {
     @Override
     public void subscribe(SseEventSink sink, Sse requestSse) {
         this.sse = requestSse;
-        val personId = CurrentUser.getId();
+        val personId = Request.personId();
         val channel = channels.computeIfAbsent(personId, ignored -> newChannel(personId, requestSse));
         channel.connections().incrementAndGet();
         channel.broadcaster().register(sink);

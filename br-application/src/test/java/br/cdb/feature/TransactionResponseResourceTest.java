@@ -87,7 +87,7 @@ public class TransactionResponseResourceTest extends BaseHttpTest {
         UUID accountId = createAccount("#000000");
         UUID categoryId = createLeafCategory();
 
-        // Criar com o id da conta vindo do caminho (sem accountId no corpo).
+        // Criar com o personId da conta vindo do caminho (sem accountId no corpo).
         String createJson = """
             {
               "description": "Pagamento Aluguel",

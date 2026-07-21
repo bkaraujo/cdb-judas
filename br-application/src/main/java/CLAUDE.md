@@ -70,7 +70,7 @@ Contrato completo, checklist por classe e integração com ArchUnit em **`@docs/
 
 * **Testes Unitários:** Desenvolva testes de unidade sob `src/test/java` com JUnit 5 para garantir o comportamento correto das lógicas de serviços, use cases, parsers e validadores.
 * **Testes de Arquitetura (ArchUnit):** O arquivo `br.cdb.ArchitectureTest` automatiza a validação das regras arquiteturais no pipeline. As regras principais validadas são:
-  1. `resources_must_not_access_repositories`: Controladores HTTP (`Resource`) não podem injetar/acessar repositórios diretamente (exceção nomeada: `LoginResource`, que acessa `UserRepository` direto para autenticação).
+  1. `resources_must_not_access_repositories`: Controladores HTTP (`Resource`) não podem injetar/acessar repositórios diretamente (exceções nomeadas: `LoginResource`, que acessa `UserRepository` direto para autenticação, e `SelfResource`, que o acessa direto para resolver o `username` de login).
   2. `all_classes_must_be_null_marked`: Garante a anotação `@NullMarked` obrigatória.
   3. `core_must_not_access_feature`: O núcleo comum não pode depender de fatias de features de entrega.
   4. `application_must_not_access_infrastructure`: Classes de aplicação (`_1_application`) não podem depender diretamente da infraestrutura (`_2_infrastructure`) — regra hoje **vazia/sem alvo**: nenhum contexto tem mais um pacote `_2_infrastructure` (os adaptadores `*JDBCRepository` moraram lá antes de serem extraídos para `br-application`/`br.cdb.infra.persistence`); mantida por segurança caso a camada volte a existir dentro de um contexto.

@@ -1,6 +1,6 @@
 package br.cdb.core.web.filter;
 
-import br.cdb.core.web.RequestUtils;
+import br.cdb.core.web.Request;
 import br.commons.Logger;
 import jakarta.annotation.Priority;
 import jakarta.ws.rs.container.ContainerRequestContext;
@@ -17,7 +17,7 @@ public class RequestLoggingFilter implements ContainerRequestFilter {
 
     @Override
     public void filter(ContainerRequestContext request) {
-        val path = RequestUtils.path(request);
+        val path = Request.path(request);
         if (path.contains("favicon")) return;
 
         Logger.trace("%s %s%s", request.getMethod(), path, Logger.lazy(() -> {

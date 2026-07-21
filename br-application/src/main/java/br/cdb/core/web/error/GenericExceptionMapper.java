@@ -1,6 +1,6 @@
 package br.cdb.core.web.error;
 
-import br.cdb.core.web.RequestUtils;
+import br.cdb.core.web.Request;
 import br.commons.Logger;
 import br.commons.tools.Strings;
 import jakarta.ws.rs.WebApplicationException;
@@ -29,7 +29,7 @@ public class GenericExceptionMapper implements ExceptionMapper<Exception> {
             return wae.getResponse();
         }
 
-        val instance = RequestUtils.path(uriInfo);
+        val instance = Request.path(uriInfo);
 
         if (isBrokenPipe(ex)) {
             Logger.debug("Client disconnected: %s", instance);

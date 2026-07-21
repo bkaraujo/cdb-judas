@@ -4,10 +4,10 @@
  * <p>Rotas ({@code /api/{uuid}/tags}):
  * <pre>
  * GET    /tags       — lista todas as tags
- * GET    /tags/{id}  — detalhe de uma tag
+ * GET    /tags/{personId}  — detalhe de uma tag
  * POST   /tags       — cria tag
- * PATCH  /tags/{id}  — atualiza tag
- * DELETE /tags/{id}  — remove tag
+ * PATCH  /tags/{personId}  — atualiza tag
+ * DELETE /tags/{personId}  — remove tag
  * </pre>
  *
  * <p>Tags complementam as categorias como forma de marcação livre e transversal.

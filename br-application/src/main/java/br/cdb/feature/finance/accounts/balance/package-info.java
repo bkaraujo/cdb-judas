@@ -2,7 +2,7 @@
  * Consulta de saldo de conta por período.
  *
  * <p>Rota:
- * <pre>GET /api/{uuid}/accounts/{id}/value?period={yyyyMM}|year={yyyy}</pre>
+ * <pre>GET /api/{uuid}/accounts/{personId}/value?period={yyyyMM}|year={yyyy}</pre>
  *
  * <p>Dois modos de consulta:
  * <ul>

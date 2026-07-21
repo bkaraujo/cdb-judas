@@ -1,4 +1,4 @@
-package br.cdb.feature.user.profile.api;
+package br.cdb.feature.f001._2_infrastructure;
 
 import jakarta.validation.constraints.Size;
 import org.jspecify.annotations.NullMarked;

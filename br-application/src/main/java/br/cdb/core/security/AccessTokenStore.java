@@ -1,4 +1,4 @@
-package br.cdb.core.web.security.core;
+package br.cdb.core.security;
 
 import jakarta.inject.Singleton;
 import lombok.val;

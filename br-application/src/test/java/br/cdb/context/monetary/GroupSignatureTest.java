@@ -23,7 +23,7 @@ class GroupSignatureTest {
         var idA = signature.groupId(accountId, date, 10, "DECATHLON");
         var idB = signature.groupId(accountId, date, 10, "DECATHLON");
 
-        assertEquals(idA, idB, "group id must be identical when only the amount would differ");
+        assertEquals(idA, idB, "group personId must be identical when only the amount would differ");
     }
 
     @Test

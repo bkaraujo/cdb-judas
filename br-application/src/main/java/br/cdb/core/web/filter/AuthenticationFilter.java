@@ -1,10 +1,9 @@
 package br.cdb.core.web.filter;
 
-import br.cdb.core.web.RequestUtils;
+import br.cdb.core.security.AccessTokenStore;
+import br.cdb.core.security.UserRepository;
+import br.cdb.core.web.Request;
 import br.cdb.core.web.security.AuthenticatedUser;
-import br.cdb.core.web.security.CurrentUserContext;
-import br.cdb.core.web.security.UserRepository;
-import br.cdb.core.web.security.core.AccessTokenStore;
 import br.cdb.feature.auth.LoginResource;
 import br.commons.Logger;
 import br.commons.framework.logger.MDC;
@@ -22,7 +21,7 @@ import static br.cdb.feature.auth.LoginResource.TOKEN_HEADER;
 
 /**
  * Valida o token de acesso (header {@value LoginResource#TOKEN_HEADER}),
- * popula o {@link CurrentUserContext} e — fora do stream — rotaciona o token, guardando o próximo em
+ * popula o {@link Request#user()} e — fora do stream — rotaciona o token, guardando o próximo em
  * {@link #NEXT_TOKEN_PROPERTY} para o {@link AuthTokenResponseFilter} emitir na resposta.
  */
 @Provider
@@ -45,17 +44,14 @@ public class AuthenticationFilter implements ContainerRequestFilter {
     @Inject
     Instance<UserRepository> userRepository;
 
-    @Inject
-    CurrentUserContext currentUser;
-
     @Override
     public void filter(ContainerRequestContext request) {
-        if (RequestUtils.isStatic(request)) return;
+        if (Request.isStatic(request)) return;
 
         val token = request.getHeaderString(TOKEN_HEADER);
         if (token == null) return;
 
-        if (RequestUtils.isStream(request)) {
+        if (Request.isStream(request)) {
             // Worker thread devolvido ao pool assim que o subscribe registra o listener — a conexão
             // fica aberta indefinidamente e o ContainerResponseFilter que limparia o MDC só roda no
             // fechamento do stream. Não empurra X-REQUEST-USER pra não vazar pra próxima requisição
@@ -67,7 +63,7 @@ public class AuthenticationFilter implements ContainerRequestFilter {
                 authenticate(result.get().userId(), request);
                 request.setProperty(NEXT_TOKEN_PROPERTY, result.get().nextToken());
             } else {
-                Logger.debug("AUTHN %s %s => invalid or expired token", request.getMethod(), RequestUtils.path(request));
+                Logger.debug("AUTHN %s %s => invalid or expired token", request.getMethod(), Request.path(request));
             }
         }
     }
@@ -75,20 +71,21 @@ public class AuthenticationFilter implements ContainerRequestFilter {
     private void authenticateStream(String userId, ContainerRequestContext request) {
         val user = userRepository.get().findById(userId).orElse(null);
         if (user == null || user.personId() == null) {
-            Logger.debug("AUTHN %s %s => token references unknown user '%s'", request.getMethod(), RequestUtils.path(request), userId);
+            Logger.debug("AUTHN %s %s => token references unknown user '%s'", request.getMethod(), Request.path(request), userId);
             return;
         }
         // Identidade exposta às features é a PESSOA — todas as tabelas de dados fazem chave com ela.
-        currentUser.set(new AuthenticatedUser(user.personId(), user.username()));
+        Request.put(Request.X_REQUEST_USER, new AuthenticatedUser(user.personId(), user.username()));
     }
 
     private void authenticate(String userId, ContainerRequestContext request) {
         val user = userRepository.get().findById(userId).orElse(null);
         if (user == null || user.personId() == null) {
-            Logger.debug("AUTHN %s %s => token references unknown user '%s'", request.getMethod(), RequestUtils.path(request), userId);
+            Logger.debug("AUTHN %s %s => token references unknown user '%s'", request.getMethod(), Request.path(request), userId);
             return;
         }
-        currentUser.set(new AuthenticatedUser(user.personId(), user.username()));
-        MDC.push("X-REQUEST-USER", user.username());
+
+        Request.put(Request.X_REQUEST_USER, new AuthenticatedUser(user.personId(), user.username()));
+        MDC.push(Request.X_REQUEST_USER, user.username());
     }
 }

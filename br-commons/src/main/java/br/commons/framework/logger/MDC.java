@@ -17,6 +17,10 @@ public final class MDC {
         context.get().put(key, value);
     }
 
+    public static String get(String key) {
+        return context.get().get(key);
+    }
+
     public static void pop(String key) {
         val map = context.get();
         map.remove(key);

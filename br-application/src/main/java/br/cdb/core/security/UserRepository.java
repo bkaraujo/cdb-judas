@@ -1,4 +1,4 @@
-package br.cdb.core.web.security;
+package br.cdb.core.security;
 
 import org.jspecify.annotations.NullMarked;
 

@@ -1,7 +1,7 @@
 package br.cdb.feature.auth;
 
-import br.cdb.core.web.security.UserRepository;
-import br.cdb.core.web.security.core.AccessTokenStore;
+import br.cdb.core.security.AccessTokenStore;
+import br.cdb.core.security.UserRepository;
 import br.commons.Logger;
 import io.quarkus.elytron.security.common.BcryptUtil;
 import jakarta.inject.Inject;

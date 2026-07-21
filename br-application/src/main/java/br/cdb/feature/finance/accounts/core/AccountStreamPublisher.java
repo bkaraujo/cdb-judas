@@ -6,7 +6,7 @@ import br.cdb.context.monetary._0_domain.model.Transaction;
 import br.cdb.context.monetary._1_application.usecase.AccountUseCase;
 import br.cdb.context.monetary._1_application.usecase.CreditCardUseCase;
 import br.cdb.context.monetary._1_application.usecase.TransactionUseCase;
-import br.cdb.core.web.security.CurrentUser;
+import br.cdb.core.web.Request;
 import br.cdb.feature.stream.SSE;
 import br.commons.Result;
 import jakarta.inject.Singleton;
@@ -50,12 +50,12 @@ public class AccountStreamPublisher {
     @SuppressWarnings("EmptyCatch")
     public void delete(UUID accountId) {
         try {
-            sse.dispatch(CurrentUser.getId(), SSE.Event.DELETE, Map.of("type", TYPE, "id", accountId.toString()));
+            sse.dispatch(Request.personId(), SSE.Event.DELETE, Map.of("type", TYPE, "id", accountId.toString()));
         } catch (Exception ignored) {}
     }
 
     private void dispatchUpsert(Account account) {
-        val personId = CurrentUser.getId();
+        val personId = Request.personId();
         val ua = userAccountService.find(personId, account.id());
         val cards = ucCreditCard.list(account.id()).getOrElse(List.of());
         val dto = AccountResponse.from(account, ua, cards, allTransactions());

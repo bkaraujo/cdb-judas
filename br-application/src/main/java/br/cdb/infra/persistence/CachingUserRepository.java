@@ -1,7 +1,7 @@
 package br.cdb.infra.persistence;
 
-import br.cdb.core.web.security.User;
-import br.cdb.core.web.security.UserRepository;
+import br.cdb.core.security.User;
+import br.cdb.core.security.UserRepository;
 import lombok.val;
 import org.jspecify.annotations.NullMarked;
 
@@ -10,7 +10,7 @@ import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * Decorador write-ahead de {@link UserRepository}: cache lazy por id e username,
+ * Decorador write-ahead de {@link UserRepository}: cache lazy por personId e username,
  * double-check sob writeLock no miss, lock compartilhado com {@link CachingPersonRepository}.
  */
 @NullMarked
@@ -68,7 +68,7 @@ public final class CachingUserRepository extends AbstractCachingRepository imple
 
     @Override
     public Optional<User> findByPersonId(String personId) {
-        // Baixa frequência (só /api/me): sem índice dedicado por pessoa — delega e indexa por id/username.
+        // Baixa frequência (só /api/me): sem índice dedicado por pessoa — delega e indexa por personId/username.
         val result = delegate.findByPersonId(personId);
         result.ifPresent(this::index);
         return result;

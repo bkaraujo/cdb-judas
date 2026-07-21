@@ -1,7 +1,6 @@
-package br.cdb.feature.user.profile.api;
+package br.cdb.feature.f001._2_infrastructure;
 
-import br.cdb.feature.user.profile.Profile;
-import br.cdb.feature.user.profile.preference.Preferences;
+import br.cdb.feature.f001._0_domain.Preferences;
 import lombok.val;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
@@ -17,8 +16,8 @@ public record SelfResponse(
         @Nullable String name,
         Preferences preferences
 ) {
-    public static SelfResponse from(Profile profile) {
-        val user = profile.user();
-        return new SelfResponse(user.id(), user.username(), user.name(), profile.preferences());
+    public static SelfResponse from(SelfView self) {
+        val person = self.profile().person();
+        return new SelfResponse(person.id().toString(), self.username(), person.name(), self.profile().preferences());
     }
 }

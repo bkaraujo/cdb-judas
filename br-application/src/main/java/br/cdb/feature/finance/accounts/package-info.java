@@ -4,10 +4,10 @@
  * <p>Rotas principais ({@code /api/{uuid}/accounts}):
  * <pre>
  * GET    /accounts          — lista todas as contas (com limites e cartões embutidos)
- * GET    /accounts/{id}     — detalhe de uma conta
+ * GET    /accounts/{personId}     — detalhe de uma conta
  * POST   /accounts          — cria conta (aceita limite de crédito/cheque especial e ciclo de fatura)
- * PATCH  /accounts/{id}     — atualiza conta
- * DELETE /accounts/{id}     — remove conta
+ * PATCH  /accounts/{personId}     — atualiza conta
+ * DELETE /accounts/{personId}     — remove conta
  * </pre>
  *
  * <p>Sub-recursos organizados em subpacotes:

@@ -6,7 +6,7 @@
  *
  * <p>{@link Deletions} concentra o parsing da estratégia e a
  * construção do 409 rico, evitando duplicação entre os 4 recursos que implementam o contrato
- * (accounts, accounts/{id}/cards, categories, tags).
+ * (accounts, accounts/{personId}/cards, categories, tags).
  */
 @NullMarked
 package br.cdb.feature.finance.deletion;

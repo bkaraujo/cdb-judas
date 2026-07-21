@@ -12,7 +12,7 @@ import br.cdb.context.monetary._1_application.command.TransactionScope;
 import br.cdb.context.monetary._1_application.usecase.AccountUseCase;
 import br.cdb.context.monetary._1_application.usecase.CreditCardUseCase;
 import br.cdb.context.monetary._1_application.usecase.TransactionUseCase;
-import br.cdb.core.web.security.CurrentUser;
+import br.cdb.core.web.Request;
 import br.cdb.feature.UserGuards;
 import br.cdb.feature.dashboard.DashboardService;
 import br.cdb.feature.finance.accounts.closing.ClosingService;
@@ -35,9 +35,6 @@ import br.cdb.feature.finance.deletion.Deletions;
 import br.cdb.feature.finance.tags.UserTag;
 import br.cdb.feature.finance.tags.UserTagService;
 import br.cdb.feature.finance.tags.UserTransactionTagService;
-import br.cdb.feature.user.profile.Profile;
-import br.cdb.feature.user.profile.UserProfileService;
-import br.cdb.feature.user.profile.api.PreferencesPatch;
 import br.commons.Logger;
 import br.commons.Result;
 import br.commons.business.BusinessError;
@@ -75,7 +72,6 @@ public class UserUseCase {
     private final UserTagService userTagService;
     private final ClosingService closingService;
     private final DashboardService dashboardService;
-    private final UserProfileService profileService;
     private final StatementImportService statementImportService;
     private final AccountStreamPublisher accountStreamPublisher;
 
@@ -99,14 +95,14 @@ public class UserUseCase {
                                     @Nullable LocalDate dateFrom, @Nullable LocalDate dateTo,
                                     @Nullable String status, @Nullable String type) {}
 
-    /** Preview + nomes de conta por id (rotulam as opções de cartão na resposta). */
+    /** Preview + nomes de conta por personId (rotulam as opções de cartão na resposta). */
     @NullMarked
     public record ImportPreviewView(ImportPreviewOutcome outcome, Map<UUID, String> accountNamesById) {}
 
     // ── Accounts ───────────────────────────────────────────────────
 
     public Result<List<AccountView>, BusinessError> accounts() {
-        val personId = CurrentUser.getId();
+        val personId = Request.personId();
 
         val views = new ArrayList<AccountView>();
         for (val overlay : userAccountService.findByPerson(personId)) {
@@ -129,7 +125,7 @@ public class UserUseCase {
 
     public Result<AccountView, BusinessError> account(UUID accountId) {
         return guards.ownsAccount(accountId).flatMap(ignored -> {
-            val overlay = userAccountService.find(CurrentUser.getId(), accountId);
+            val overlay = userAccountService.find(Request.personId(), accountId);
 
             val account = ucAccount.findAccount(accountId);
             if (account.isFailure()) {
@@ -147,7 +143,7 @@ public class UserUseCase {
     }
 
     public Result<AccountView, BusinessError> createAccount(AccountCommand.Create cmd, String color) {
-        val personId = CurrentUser.getId();
+        val personId = Request.personId();
         return ucAccount.upsert(cmd).map(account -> {
             val overlay = new UserAccount(personId, account.id(), color);
             userAccountService.save(overlay);
@@ -158,7 +154,7 @@ public class UserUseCase {
 
     public Result<AccountView, BusinessError> updateAccount(AccountCommand.Update cmd, String color) {
         return guards.ownsAccount(cmd.id()).flatMap(ignored -> {
-            val personId = CurrentUser.getId();
+            val personId = Request.personId();
             return ucAccount.upsert(cmd).map(account -> {
                 val overlay = new UserAccount(personId, account.id(), color);
                 userAccountService.save(overlay);
@@ -194,7 +190,7 @@ public class UserUseCase {
         } else {
             userTransactionService.deleteByAccountAndPerson(id, personId);
         }
-        userAccountService.delete(CurrentUser.getId(), id);
+        userAccountService.delete(Request.personId(), id);
 
         return ucAccount.delete(new AccountCommand.Delete(id, Deletions.toPolicy(strategy, targetId))).map(ids -> {
             if (strategy != DeletionStrategy.MOVE) {
@@ -234,7 +230,7 @@ public class UserUseCase {
      *  no frontend). Contas sem snapshot no período (ex.: antes da primeira movimentação) são
      *  omitidas — o chamador decide o fallback (ex.: saldo atual da conta). */
     public Result<List<Balance>, BusinessError> balances(YearMonth period) {
-        val personId = CurrentUser.getId();
+        val personId = Request.personId();
         val result = new ArrayList<Balance>();
         for (val overlay : userAccountService.findByPerson(personId)) {
             if (ucAccount.getMonthlyBalance(overlay.accountId(), period) instanceof Result.Success(var balance)) {
@@ -612,26 +608,6 @@ public class UserUseCase {
 
     public Result<DashboardService.MonthlyResult, BusinessError> monthlyResult(int month, int year) {
         return dashboardService.getMonthlyResult(month, year);
-    }
-
-    // ── Profile (self) ─────────────────────────────────────────────
-
-    public Result<Profile, BusinessError> profile() {
-        return profileService.getProfile(CurrentUser.getId());
-    }
-
-    /** PATCH parcial: aplica nome e/ou preferências de forma independente (merge). */
-    public Result<Profile, BusinessError> updateProfile(@Nullable String name, @Nullable PreferencesPatch preferences) {
-        val id = CurrentUser.getId();
-
-        var result = name != null
-                ? profileService.updateName(id, name)
-                : profileService.getProfile(id);
-
-        if (preferences != null) {
-            result = result.flatMap(ignored -> profileService.updatePreferences(id, preferences));
-        }
-        return result;
     }
 
     // ── Helpers ────────────────────────────────────────────────────

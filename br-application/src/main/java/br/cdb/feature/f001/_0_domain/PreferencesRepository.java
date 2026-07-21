@@ -1,4 +1,4 @@
-package br.cdb.feature.user.profile.preference;
+package br.cdb.feature.f001._0_domain;
 
 import org.jspecify.annotations.NullMarked;
 

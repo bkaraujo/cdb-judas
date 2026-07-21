@@ -94,7 +94,7 @@ public class UserCategoryService {
                 });
     }
 
-    /** Ids da categoria + toda a subárvore (pré-ordem). Falha se {@code id} não existe ou é de sistema. */
+    /** Ids da categoria + toda a subárvore (pré-ordem). Falha se {@code personId} não existe ou é de sistema. */
     public Result<List<UUID>, BusinessError> subtreeIds(UUID id, UUID personId) {
         val all = repo.findAllByPerson(personId);
         val root = all.stream().filter(c -> c.id().equals(id)).findFirst();

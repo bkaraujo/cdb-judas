@@ -1,7 +1,7 @@
 package br.cdb.infra.persistence.security;
 
-import br.cdb.core.web.security.User;
-import br.cdb.core.web.security.UserRepository;
+import br.cdb.core.security.User;
+import br.cdb.core.security.UserRepository;
 import br.commons.Registry;
 import br.commons.Result;
 import br.commons.chrono.Time;
@@ -67,11 +67,15 @@ public final class UserJDBCRepository implements UserRepository {
         return dataSource.transaction(tx -> {
             val now = Timestamp.valueOf(Time.now());
             val existingPersonId = findPersonId(tx, user.id());
-            val rawName = user.name();
-            val personName = rawName != null ? rawName : user.username();
 
             String personId;
             if (existingPersonId == null) {
+                // Cunha a pessoa vinculada ao login (FK obrigatória): nome inicial cai pro
+                // username quando ausente. Depois de criada, o nome de exibição é propriedade
+                // exclusiva do contexto people (fatia profile via PeopleContext.renamePerson) —
+                // este adaptador nunca mais escreve em PEP_PERSON.TXT_NAME.
+                val rawName = user.name();
+                val personName = rawName != null ? rawName : user.username();
                 personId = UUID.randomUUID().toString();
                 tx.execute(
                         "INSERT INTO PEP_PERSON (ID, TXT_NAME, TXT_LOCALE, TXT_LANGUAGE, TMS_CREATE_AT, TMS_UPDATED_AT)"
@@ -87,14 +91,6 @@ public final class UserJDBCRepository implements UserRepository {
                 ).get();
             } else {
                 personId = existingPersonId;
-                tx.execute(
-                        "UPDATE PEP_PERSON SET TXT_NAME = ?, TMS_UPDATED_AT = ? WHERE ID = ?",
-                        JDBCParameter.of(
-                                personName,
-                                now,
-                                personId
-                        )
-                ).get();
             }
 
             if (existingPersonId == null) {

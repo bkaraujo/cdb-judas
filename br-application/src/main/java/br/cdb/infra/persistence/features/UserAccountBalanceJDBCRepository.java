@@ -41,7 +41,7 @@ public final class UserAccountBalanceJDBCRepository extends JDBCRepository<Balan
     }
 
     /**
-     * Upsert por (COD_ACCOUNT, NUM_PERIOD): {@link Balance} não carrega {@code id} — a PK
+     * Upsert por (COD_ACCOUNT, NUM_PERIOD): {@link Balance} não carrega {@code personId} — a PK
      * física ({@code ID}) é gerada aqui só no INSERT; a existência é checada pela chave de negócio.
      */
     @Override
