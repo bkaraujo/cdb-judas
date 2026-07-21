@@ -1,6 +1,6 @@
-package br.cdb.feature.dashboard;
+package br.cdb.feature.f009._2_infrastructure;
 
-import br.cdb.feature.user.UserUseCase;
+import br.cdb.feature.f009._1_application.DashboardService;
 import br.commons.Result;
 import br.commons.business.BusinessException;
 import jakarta.ws.rs.GET;
@@ -17,14 +17,14 @@ import org.jspecify.annotations.NullMarked;
 @RequiredArgsConstructor
 public class DashboardResource {
 
-    private final UserUseCase userUseCase;
+    private final DashboardService dashboardService;
 
     @GET
     @Path("/result")
     public DashboardService.MonthlyResult getMonthlyResult(
             @QueryParam("month") int month,
             @QueryParam("year") int year) {
-        return switch (userUseCase.monthlyResult(month, year)) {
+        return switch (dashboardService.getMonthlyResult(month, year)) {
             case Result.Success(var data) -> data;
             case Result.Failure(var error) -> throw new BusinessException(error);
         };

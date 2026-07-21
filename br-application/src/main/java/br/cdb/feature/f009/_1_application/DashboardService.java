@@ -1,4 +1,4 @@
-package br.cdb.feature.dashboard;
+package br.cdb.feature.f009._1_application;
 
 import br.cdb.context.monetary.MonetaryUseCases;
 import br.cdb.context.monetary._1_application.usecase.TransactionUseCase;
