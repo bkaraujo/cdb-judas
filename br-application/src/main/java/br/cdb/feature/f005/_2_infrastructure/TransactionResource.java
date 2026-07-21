@@ -1,7 +1,6 @@
-package br.cdb.feature.finance.accounts.transactions;
+package br.cdb.feature.f005._2_infrastructure;
 
-import br.cdb.feature.finance.accounts.transactions.core.TransactionMapper;
-import br.cdb.feature.user.UserUseCase;
+import br.cdb.feature.f005._1_application.TransactionUseCase;
 import br.commons.Result;
 import br.commons.business.BusinessException;
 import jakarta.validation.Valid;
@@ -22,7 +21,7 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class TransactionResource {
 
-    private final UserUseCase userUseCase;
+    private final TransactionUseCase transactionUseCase;
 
     // ── Cross-account collection ───────────────────────────────────
 
@@ -36,7 +35,7 @@ public class TransactionResource {
             @QueryParam("status") @Nullable String status,
             @QueryParam("type") @Nullable String type
     ) {
-        return query(uuid, new UserUseCase.TransactionFilter(null, limit, dateFrom, dateTo, status, type));
+        return query(uuid, new TransactionUseCase.TransactionFilter(null, limit, dateFrom, dateTo, status, type));
     }
 
     // ── Per-account collection + items ─────────────────────────────
@@ -52,13 +51,13 @@ public class TransactionResource {
             @QueryParam("status") @Nullable String status,
             @QueryParam("type") @Nullable String type
     ) {
-        return query(uuid, new UserUseCase.TransactionFilter(accId, limit, dateFrom, dateTo, status, type));
+        return query(uuid, new TransactionUseCase.TransactionFilter(accId, limit, dateFrom, dateTo, status, type));
     }
 
     @POST
     @Path("/{accId}/transactions")
     public RestResponse<TransactionResponse> create(@PathParam("uuid") UUID uuid, @PathParam("accId") UUID accId, @Valid TransactionRequest req) {
-        return switch (userUseCase.createTransaction(uuid, TransactionMapper.toCreateCommand(accId, req), req.categoryId())) {
+        return switch (transactionUseCase.createTransaction(uuid, TransactionMapper.toCreateCommand(accId, req), req.categoryId())) {
             case Result.Success(var view) -> RestResponse.status(RestResponse.Status.CREATED, toDto(view));
             case Result.Failure(var error) -> throw new BusinessException(error);
         };
@@ -67,7 +66,7 @@ public class TransactionResource {
     @PATCH
     @Path("/{accId}/transactions/{txId}")
     public TransactionResponse update(@PathParam("uuid") UUID uuid, @PathParam("accId") UUID accId, @PathParam("txId") UUID txId, @Valid TransactionRequest req) {
-        return switch (userUseCase.updateTransaction(uuid, TransactionMapper.toUpdateCommand(txId, accId, req), req.categoryId())) {
+        return switch (transactionUseCase.updateTransaction(uuid, TransactionMapper.toUpdateCommand(txId, accId, req), req.categoryId())) {
             case Result.Success(var view) -> toDto(view);
             case Result.Failure(var error) -> throw new BusinessException(error);
         };
@@ -76,7 +75,7 @@ public class TransactionResource {
     @PATCH
     @Path("/{accId}/transactions/{txId}/status")
     public TransactionResponse patchStatus(@PathParam("uuid") UUID uuid, @PathParam("txId") UUID txId, @Valid PatchStatusRequest req) {
-        return switch (userUseCase.updateTransactionStatus(uuid, txId, req.status(), req.paymentDate())) {
+        return switch (transactionUseCase.updateTransactionStatus(uuid, txId, req.status(), req.paymentDate())) {
             case Result.Success(var view) -> toDto(view);
             case Result.Failure(var error) -> throw new BusinessException(error);
         };
@@ -85,21 +84,21 @@ public class TransactionResource {
     @DELETE
     @Path("/{accId}/transactions/{txId}")
     public void delete(@PathParam("txId") UUID txId, @QueryParam("mode") @Nullable String mode) {
-        if (userUseCase.deleteTransaction(txId, TransactionMapper.toScope(mode)) instanceof Result.Failure(var error)) {
+        if (transactionUseCase.deleteTransaction(txId, TransactionMapper.toScope(mode)) instanceof Result.Failure(var error)) {
             throw new BusinessException(error);
         }
     }
 
     // ── Helpers ────────────────────────────────────────────────────
 
-    private List<TransactionResponse> query(UUID personId, UserUseCase.TransactionFilter filter) {
-        return switch (userUseCase.transactions(personId, filter)) {
+    private List<TransactionResponse> query(UUID personId, TransactionUseCase.TransactionFilter filter) {
+        return switch (transactionUseCase.transactions(personId, filter)) {
             case Result.Success(var views) -> views.stream().map(TransactionResource::toDto).toList();
             case Result.Failure(var error) -> throw new BusinessException(error);
         };
     }
 
-    private static TransactionResponse toDto(UserUseCase.TransactionView view) {
+    private static TransactionResponse toDto(TransactionUseCase.TransactionView view) {
         return TransactionMapper.toDto(view.transaction(), view.overlay());
     }
 }

@@ -2,13 +2,13 @@ package br.cdb.feature.f007._1_application;
 
 import br.cdb.context.monetary.MonetaryUseCases;
 import br.cdb.context.monetary._0_domain.model.Transaction;
-import br.cdb.context.monetary._1_application.usecase.TransactionUseCase;
 import br.cdb.feature.f000._0_domain.DeletionOutcome;
 import br.cdb.feature.f000._0_domain.DeletionStrategy;
+import br.cdb.feature.f005._0_domain.event.TransactionsDeleted;
+import br.cdb.feature.f005._1_application.UserTransactionService;
 import br.cdb.feature.f007._0_domain.UserCategory;
-import br.cdb.feature.f008._1_application.UserTransactionTagService;
 import br.cdb.feature.finance.accounts.core.AccountStreamPublisher;
-import br.cdb.feature.finance.accounts.transactions.UserTransactionService;
+import br.commons.MessageBus;
 import br.commons.Result;
 import br.commons.business.BusinessError;
 import jakarta.inject.Singleton;
@@ -24,19 +24,21 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 /**
- * Use case da fatia {@code f007} (categories). {@code deleteCategory(DELETE)} ainda depende
- * diretamente de {@link UserTransactionService}/{@link AccountStreamPublisher} — mesma situação
- * transitória de {@code TagUseCase} (f008), até f005/f002 migrarem (.claude/refactor.md).
+ * Use case da fatia {@code f007} (categories). {@code deleteCategory(DELETE)} ainda chama
+ * {@link AccountStreamPublisher} direto (SSE de conta, hoje dono de f002 — transitório até essa
+ * fatia migrar); a limpeza do overlay de transações apagadas em cascata publica
+ * {@link TransactionsDeleted} em vez de chamar {@code UserTransactionService}/
+ * {@code UserTransactionTagService} diretamente (best-effort, reagido por f005/f008).
  */
 @NullMarked
 @Singleton
 @RequiredArgsConstructor
 public class CategoryUseCase {
 
-    private final TransactionUseCase ucTransaction = MonetaryUseCases.ucTransaction();
+    private final br.cdb.context.monetary._1_application.usecase.TransactionUseCase ucTransaction =
+            MonetaryUseCases.ucTransaction();
 
     private final UserCategoryService userCategoryService;
-    private final UserTransactionTagService tagLinkService;
     private final UserTransactionService userTransactionService;
     private final AccountStreamPublisher accountStreamPublisher;
 
@@ -95,19 +97,17 @@ public class CategoryUseCase {
         return deleteLinkedTransactions(txIds, () -> userCategoryService.deletePlain(subtreeIds, personId));
     }
 
-    /** Apaga as transações (via facade) + overlay/vínculo de tag, executa {@code afterCleanup} e por
-     *  fim publica o SSE de conta para cada conta afetada. Duplicado em {@code TagUseCase} (f008):
-     *  mesma forma, dono diferente, sem base comum legítima entre fatias. */
+    /** Apaga as transações (via facade), publica {@link TransactionsDeleted} (overlay/vínculo de tag
+     *  reagem best-effort), executa {@code afterCleanup} e por fim publica o SSE de conta para cada
+     *  conta afetada. Duplicado em {@code TagUseCase} (f008): mesma forma, dono diferente, sem base
+     *  comum legítima entre fatias. */
     private Result<Void, BusinessError> deleteLinkedTransactions(List<UUID> txIds, Runnable afterCleanup) {
         val affectedAccountIds = accountIdsOfTransactions(txIds);
 
         if (ucTransaction.deleteTransactions(txIds) instanceof Result.Failure<Void, BusinessError>(var error)) {
             return Result.failure(error);
         }
-        txIds.forEach(txId -> {
-            userTransactionService.deleteByTransaction(txId);
-            tagLinkService.deleteByTransaction(txId);
-        });
+        MessageBus.submit(new TransactionsDeleted(txIds));
 
         afterCleanup.run();
         affectedAccountIds.forEach(accountStreamPublisher::upsert);

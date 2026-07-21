@@ -1,5 +1,7 @@
-package br.cdb.feature.finance.accounts.transactions;
+package br.cdb.feature.f005._1_application;
 
+import br.cdb.feature.f005._0_domain.UserTransaction;
+import br.cdb.feature.f005._0_domain.UserTransactionRepository;
 import jakarta.inject.Singleton;
 import lombok.RequiredArgsConstructor;
 import org.jspecify.annotations.NullMarked;

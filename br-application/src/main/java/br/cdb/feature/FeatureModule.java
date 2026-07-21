@@ -1,6 +1,5 @@
 package br.cdb.feature;
 
-import br.cdb.feature.finance.accounts.transactions.UserTransactionRepository;
 import br.cdb.infra.persistence.features.*;
 import br.commons.Registry;
 import br.commons.framework.persistence.jdbc.DataSource;
@@ -18,12 +17,6 @@ import org.jspecify.annotations.NullMarked;
 @NullMarked
 @Singleton
 public class FeatureModule {
-
-    @Produces
-    @Singleton
-    public UserTransactionRepository userTransactionRepository(DataSource dataSource) {
-        return Registry.tryGet(UserTransactionRepository.class, UserTransactionJDBCRepository::new);
-    }
 
     @Produces
     @Singleton

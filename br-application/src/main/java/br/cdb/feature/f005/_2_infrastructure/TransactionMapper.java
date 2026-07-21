@@ -1,11 +1,11 @@
-package br.cdb.feature.finance.accounts.transactions.core;
+package br.cdb.feature.f005._2_infrastructure;
 
 import br.cdb.context.monetary._0_domain.model.Transaction;
 import br.cdb.context.monetary._1_application.command.TransactionCommand;
 import br.cdb.context.monetary._1_application.command.TransactionScope;
-import br.cdb.feature.finance.accounts.transactions.TransactionRequest;
-import br.cdb.feature.finance.accounts.transactions.TransactionResponse;
-import br.cdb.feature.finance.accounts.transactions.UserTransaction;
+import br.cdb.feature.f005._2_infrastructure.TransactionRequest;
+import br.cdb.feature.f005._2_infrastructure.TransactionResponse;
+import br.cdb.feature.f005._0_domain.UserTransaction;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 

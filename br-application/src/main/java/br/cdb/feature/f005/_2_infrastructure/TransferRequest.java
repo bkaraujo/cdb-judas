@@ -1,4 +1,4 @@
-package br.cdb.feature.finance.accounts.transactions.transfer;
+package br.cdb.feature.f005._2_infrastructure;
 
 import br.commons.validation.TwoDecimalPlaces;
 import jakarta.validation.constraints.NotNull;

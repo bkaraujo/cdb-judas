@@ -1,8 +1,6 @@
-package br.cdb.feature.finance.accounts.transactions.transfer;
+package br.cdb.feature.f005._2_infrastructure;
 
-import br.cdb.feature.finance.accounts.transactions.TransactionResponse;
-import br.cdb.feature.finance.accounts.transactions.core.TransactionMapper;
-import br.cdb.feature.user.UserUseCase;
+import br.cdb.feature.f005._1_application.TransactionUseCase;
 import br.commons.Result;
 import br.commons.business.BusinessException;
 import jakarta.validation.Valid;
@@ -20,12 +18,12 @@ import org.jspecify.annotations.NullMarked;
 @RequiredArgsConstructor
 public class TransferResource {
 
-    private final UserUseCase userUseCase;
+    private final TransactionUseCase transactionUseCase;
 
     @POST
     @Path("/transactions/transfer")
     public RestResponse<TransactionResponse> transfer(@Valid TransferRequest req) {
-        return switch (userUseCase.transfer(req.fromAccountId(), req.toAccountId(), req.date(), req.amount())) {
+        return switch (transactionUseCase.transfer(req.fromAccountId(), req.toAccountId(), req.date(), req.amount())) {
             case Result.Success(var view) ->
                     RestResponse.status(RestResponse.Status.CREATED, TransactionMapper.toDto(view.transaction(), view.overlay()));
             case Result.Failure(var error) -> throw new BusinessException(error);

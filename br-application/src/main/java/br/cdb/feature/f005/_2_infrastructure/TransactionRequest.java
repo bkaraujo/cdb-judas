@@ -1,4 +1,4 @@
-package br.cdb.feature.finance.accounts.transactions;
+package br.cdb.feature.f005._2_infrastructure;
 
 import br.cdb.context.monetary._0_domain.model.Transaction;
 import br.commons.validation.TwoDecimalPlaces;
