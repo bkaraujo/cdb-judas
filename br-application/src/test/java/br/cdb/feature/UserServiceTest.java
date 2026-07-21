@@ -1,6 +1,6 @@
 package br.cdb.feature;
 
-import br.cdb.feature.finance.categories.UserCategoryService;
+import br.cdb.feature.f007._1_application.UserCategoryService;
 import br.cdb.feature.user.UserService;
 import io.quarkus.test.junit.QuarkusTest;
 import jakarta.inject.Inject;

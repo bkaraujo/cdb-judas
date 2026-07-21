@@ -1,8 +1,8 @@
-package br.cdb.infra.persistence.features;
+package br.cdb.feature.f007._2_infrastructure;
 
 import br.cdb.context.monetary._0_domain.model.Transaction;
-import br.cdb.feature.finance.categories.UserCategory;
-import br.cdb.feature.finance.categories.UserCategoryRepository;
+import br.cdb.feature.f007._0_domain.UserCategory;
+import br.cdb.feature.f007._0_domain.UserCategoryRepository;
 import br.commons.chrono.Time;
 import br.commons.framework.persistence.jdbc.JDBCRepository;
 import br.commons.framework.persistence.jdbc.primitives.JDBCParameter;

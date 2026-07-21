@@ -1,4 +1,4 @@
-package br.cdb.feature.finance.categories;
+package br.cdb.feature.f007._2_infrastructure;
 
 import jakarta.validation.constraints.NotBlank;
 import org.jspecify.annotations.NullMarked;

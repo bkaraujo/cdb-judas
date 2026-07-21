@@ -1,9 +1,10 @@
-package br.cdb.feature.finance.categories;
+package br.cdb.feature.f007._2_infrastructure;
 
 import br.cdb.context.monetary._0_domain.model.Transaction;
 import br.cdb.feature.f000._0_domain.DeletionStrategy;
 import br.cdb.feature.f000._1_application.Deletions;
-import br.cdb.feature.user.UserUseCase;
+import br.cdb.feature.f007._1_application.CategoryResponse;
+import br.cdb.feature.f007._1_application.CategoryUseCase;
 import br.commons.Result;
 import br.commons.business.BusinessException;
 import br.commons.tools.Strings;
@@ -29,17 +30,17 @@ public class CategoryResource {
 
     private static final Set<DeletionStrategy> ALLOWED_STRATEGIES = Set.of(DeletionStrategy.MOVE, DeletionStrategy.DELETE);
 
-    private final UserUseCase userUseCase;
+    private final CategoryUseCase categoryUseCase;
 
     @GET
     public List<CategoryResponse> listAll(@PathParam("uuid") UUID uuid) {
-        return userUseCase.categories(uuid).stream().map(CategoryResponse::from).toList();
+        return categoryUseCase.categories(uuid).stream().map(CategoryResponse::from).toList();
     }
 
     @POST
     public RestResponse<CategoryResponse> create(@PathParam("uuid") UUID uuid, @Valid CreateRequest req) {
         val nature = Transaction.Type.valueOf(Strings.upper(req.nature()));
-        return switch (userUseCase.createCategory(uuid, req.name(), nature, req.parentId())) {
+        return switch (categoryUseCase.createCategory(uuid, req.name(), nature, req.parentId())) {
             case Result.Success(var category) -> RestResponse.status(RestResponse.Status.CREATED, CategoryResponse.from(category));
             case Result.Failure(var error) -> throw new BusinessException(error);
         };
@@ -48,7 +49,7 @@ public class CategoryResource {
     @PATCH
     @Path("/{id}")
     public CategoryResponse update(@PathParam("uuid") UUID uuid, @PathParam("id") UUID id, @Valid UpdateRequest req) {
-        return switch (userUseCase.updateCategory(uuid, id, req.name(), req.parentId(), req.active())) {
+        return switch (categoryUseCase.updateCategory(uuid, id, req.name(), req.parentId(), req.active())) {
             case Result.Success(var category) -> CategoryResponse.from(category);
             case Result.Failure(var error) -> throw new BusinessException(error);
         };
@@ -63,7 +64,7 @@ public class CategoryResource {
             @QueryParam("targetId") @Nullable UUID targetId
     ) {
         return Deletions.execute(strategy, targetId, ALLOWED_STRATEGIES,
-                parsed -> userUseCase.deleteCategory(uuid, id, parsed, targetId),
+                parsed -> categoryUseCase.deleteCategory(uuid, id, parsed, targetId),
                 "a esta categoria.");
     }
 }

@@ -1,5 +1,6 @@
-package br.cdb.feature.finance.categories;
+package br.cdb.feature.f007._1_application;
 
+import br.cdb.feature.f007._0_domain.UserCategory;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 

@@ -1,4 +1,4 @@
-package br.cdb.feature.finance.categories;
+package br.cdb.feature.f007._0_domain;
 
 import br.cdb.context.monetary._0_domain.model.Transaction;
 import org.jspecify.annotations.NullMarked;

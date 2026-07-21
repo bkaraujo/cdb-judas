@@ -1,8 +1,8 @@
 package br.cdb.feature.user.seed;
 
 import br.cdb.context.monetary._0_domain.model.Transaction;
-import br.cdb.feature.finance.categories.UserCategory;
-import br.cdb.feature.finance.categories.UserCategoryRepository;
+import br.cdb.feature.f007._0_domain.UserCategory;
+import br.cdb.feature.f007._0_domain.UserCategoryRepository;
 import jakarta.inject.Singleton;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
