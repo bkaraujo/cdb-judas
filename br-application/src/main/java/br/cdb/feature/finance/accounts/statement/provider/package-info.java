@@ -18,5 +18,5 @@
 @NullMarked
 package br.cdb.feature.finance.accounts.statement.provider;
 
-import br.cdb.feature.finance.accounts.statement.StatementParser;
+import br.cdb.feature.f006._0_domain.StatementParser;
 import org.jspecify.annotations.NullMarked;

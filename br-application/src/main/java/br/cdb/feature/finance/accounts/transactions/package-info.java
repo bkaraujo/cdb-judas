@@ -1,9 +1,7 @@
 /**
- * CRUD de lançamentos e transferências migrou para {@code br.cdb.feature.f005} (reestruturação
- * fNNN, .claude/refactor.md). O que resta aqui é o que ainda vira {@code f006}: o motor de
- * importação de extrato ({@code importer/}, parsers BTG/Santander, casamento de cartão, sugestão
- * de categoria) e {@code core.ChargeKind} (classificação de linha de fatura, usado só pelos
- * parsers).
+ * Vazio: CRUD de lançamentos/transferências foi para {@code f005}, motor de importação e
+ * {@code core.ChargeKind} foram para {@code f006} (reestruturação fNNN, .claude/refactor.md).
+ * Sinalizado para remoção.
  */
 @NullMarked
 package br.cdb.feature.finance.accounts.transactions;

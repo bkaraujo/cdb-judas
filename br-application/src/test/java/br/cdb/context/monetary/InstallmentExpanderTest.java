@@ -1,11 +1,11 @@
 package br.cdb.context.monetary;
 
 import br.cdb.context.monetary._0_domain.model.Transaction;
-import br.cdb.feature.finance.accounts.statement.MonetaryDocumentEntry;
-import br.cdb.feature.finance.accounts.transactions.core.ChargeKind;
-import br.cdb.feature.finance.accounts.transactions.importer.GroupSignature;
-import br.cdb.feature.finance.accounts.transactions.importer.InstallmentExpander;
-import br.cdb.feature.finance.accounts.transactions.importer.TransactionDraft;
+import br.cdb.feature.f006._0_domain.MonetaryDocumentEntry;
+import br.cdb.feature.f006._0_domain.ChargeKind;
+import br.cdb.feature.f006._1_application.GroupSignature;
+import br.cdb.feature.f006._1_application.InstallmentExpander;
+import br.cdb.feature.f006._0_domain.TransactionDraft;
 import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;

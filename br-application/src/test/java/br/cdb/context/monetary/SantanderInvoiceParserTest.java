@@ -1,9 +1,9 @@
 package br.cdb.context.monetary;
 
-import br.cdb.feature.finance.accounts.statement.MonetaryDocument;
-import br.cdb.feature.finance.accounts.statement.MonetaryDocumentEntry;
-import br.cdb.feature.finance.accounts.statement.provider.SantanderInvoiceParser;
-import br.cdb.feature.finance.accounts.transactions.core.ChargeKind;
+import br.cdb.feature.f006._0_domain.MonetaryDocument;
+import br.cdb.feature.f006._0_domain.MonetaryDocumentEntry;
+import br.cdb.feature.f006._2_infrastructure.provider.SantanderInvoiceParser;
+import br.cdb.feature.f006._0_domain.ChargeKind;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;

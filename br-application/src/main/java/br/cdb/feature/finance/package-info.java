@@ -1,14 +1,8 @@
 /**
- * Fatias financeiras escopadas por usuário, agrupadas sob um namespace comum.
- *
- * <p>Subpacotes:
- * <ul>
- *   <li>{@link br.cdb.feature.finance.accounts}   — contas, cartões e lançamentos (+ sub-recursos)</li>
- *   <li>{@link br.cdb.feature.finance.categories} — classificação macro de transações</li>
- *   <li>{@link br.cdb.feature.finance.tags}       — classificação livre/transversal de transações</li>
- *   <li>{@link br.cdb.feature.finance.costcenter} — catálogo somente-leitura, sem namespace de usuário</li>
- *   <li>{@link br.cdb.feature.finance.deletion}   — contrato de exclusão compartilhado entre accounts/cards/categories/tags</li>
- * </ul>
+ * Esvaziado pela reestruturação fNNN (.claude/refactor.md): accounts/cards/balance → f002,
+ * transactions/transfer → f005, importação de extrato → f006, categories → f007, tags → f008,
+ * costcenter/deletion/closing → f000. Só resta {@code tags.Tag} (record morto, nunca referenciado —
+ * não migrado de propósito) e os {@code package-info.java} órfãos, sinalizados para remoção.
  */
 @NullMarked
 package br.cdb.feature.finance;
