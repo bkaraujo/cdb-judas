@@ -12,11 +12,11 @@ import br.cdb.context.monetary._1_application.usecase.TransactionUseCase;
 import br.cdb.core.web.Request;
 import br.cdb.feature.f000._0_domain.DeletionOutcome;
 import br.cdb.feature.f000._0_domain.DeletionStrategy;
+import br.cdb.feature.f000._0_domain.event.TransactionsDeleted;
 import br.cdb.feature.f000._1_application.Deletions;
 import br.cdb.feature.f000._1_application.UserGuards;
+import br.cdb.feature.f002._0_domain.TransactionAccountOverlay;
 import br.cdb.feature.f002._0_domain.UserAccount;
-import br.cdb.feature.f005._0_domain.event.TransactionsDeleted;
-import br.cdb.feature.f005._1_application.UserTransactionService;
 import br.commons.Logger;
 import br.commons.MessageBus;
 import br.commons.Result;
@@ -39,8 +39,8 @@ import java.util.UUID;
  * contexto monetário; referenciado por FQN completo (campo {@code ucAccount}) para evitar
  * colisão de import.
  *
- * <p>{@code deleteAccount} ainda chama {@link UserTransactionService#reassignAccount}/
- * {@link UserTransactionService#deleteByAccountAndPerson} diretamente <em>antes</em> do delete no
+ * <p>{@code deleteAccount} ainda chama {@link TransactionAccountOverlay#reassignAccount}/
+ * {@link TransactionAccountOverlay#deleteByAccountAndPerson} diretamente <em>antes</em> do delete no
  * contexto — {@code PERSON_TRANSACTION} referencia {@code MON_ACCOUNT} via FK, então o overlay
  * precisa sumir/ser re-keyed antes que o contexto possa apagar a conta (sem {@code ON DELETE
  * CASCADE} ainda, essa chamada não pode virar reação a evento pós-delete). Já a limpeza de
@@ -59,7 +59,7 @@ public class AccountUseCase {
 
     private final UserGuards guards;
     private final UserAccountService userAccountService;
-    private final UserTransactionService userTransactionService;
+    private final TransactionAccountOverlay transactionOverlay;
     private final AccountStreamPublisher accountStreamPublisher;
 
     /** Conta do contexto + overlay do usuário + cartões; {@code transactions} é a lista completa
@@ -159,9 +159,9 @@ public class AccountUseCase {
             val target = Objects.requireNonNull(targetId);
             val targetCheck = validateAccountMoveTarget(id, target);
             if (targetCheck instanceof Result.Failure<Void, BusinessError>(var error)) return Result.failure(error);
-            userTransactionService.reassignAccount(id, target, personId);
+            transactionOverlay.reassignAccount(id, target, personId);
         } else {
-            userTransactionService.deleteByAccountAndPerson(id, personId);
+            transactionOverlay.deleteByAccountAndPerson(id, personId);
         }
         userAccountService.delete(Request.personId(), id);
 

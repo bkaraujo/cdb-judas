@@ -6,11 +6,18 @@ import com.tngtech.archunit.core.domain.JavaClass;
 import com.tngtech.archunit.core.importer.ImportOption;
 import com.tngtech.archunit.junit.AnalyzeClasses;
 import com.tngtech.archunit.junit.ArchTest;
+import com.tngtech.archunit.lang.ArchCondition;
 import com.tngtech.archunit.lang.ArchRule;
+import com.tngtech.archunit.lang.ConditionEvents;
+import com.tngtech.archunit.lang.SimpleConditionEvent;
+import lombok.val;
 import org.jspecify.annotations.NullMarked;
 
+import java.util.regex.Pattern;
+
 import static com.tngtech.archunit.base.DescribedPredicate.not;
-import static com.tngtech.archunit.core.domain.JavaClass.Predicates.*;
+import static com.tngtech.archunit.core.domain.JavaClass.Predicates.implement;
+import static com.tngtech.archunit.core.domain.JavaClass.Predicates.resideInAPackage;
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.classes;
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noClasses;
 
@@ -63,6 +70,48 @@ class ArchitectureTest {
                     .should().dependOnClassesThat().resideInAnyPackage(
                             "org.springframework..", "jakarta..", "io.quarkus..")
                     .because("o contexto é livre de framework: DI via Registry, validação na borda (@Valid nos *Request)");
+
+    /**
+     * O número da fatia expressa ordem de criação: uma feature {@code fNNN} só pode consumir recursos
+     * de fatias que já existiam antes dela — {@code fMMM} com {@code MMM < NNN}. {@code f000} é a base
+     * (não depende de feature nenhuma). Ex.: {@code f005} pode consumir {@code f002}/{@code f003}/
+     * {@code f004}, mas nunca {@code f006}. A inversão de dependência resolve os casos em que uma fatia
+     * anterior precisa de serviço de uma posterior: a anterior define a porta ({@code _0_domain}) e a
+     * posterior a implementa (ver {@code AccountOwnership}/{@code TransactionAccountOverlay}/
+     * {@code TransactionCategoryOverlay}).
+     */
+    @ArchTest
+    static final ArchRule feature_slices_depend_only_on_earlier_ones =
+            classes().that().resideInAPackage("..feature..")
+                    .should(dependOnlyOnEarlierFeatureSlices())
+                    .because("fNNN só consome fMMM com MMM < NNN (f000 é base); dependência 'para cima' inverte-se via porta na fatia anterior — ver CLAUDE.md");
+
+    private static final Pattern FEATURE_NUMBER = Pattern.compile("\\.feature\\.f(\\d+)(\\.|$)");
+
+    private static int featureNumber(JavaClass clazz) {
+        val matcher = FEATURE_NUMBER.matcher("." + clazz.getPackageName() + ".");
+        return matcher.find() ? Integer.parseInt(matcher.group(1)) : -1;
+    }
+
+    private static ArchCondition<JavaClass> dependOnlyOnEarlierFeatureSlices() {
+        return new ArchCondition<>("depender apenas de fatias fNNN anteriores (número menor; f000 é base)") {
+            @Override
+            public void check(JavaClass origin, ConditionEvents events) {
+                val from = featureNumber(origin);
+                if (from < 0) {
+                    return; // classe fora de uma fatia fNNN (ex.: package-info da raiz feature)
+                }
+                for (val dependency : origin.getDirectDependenciesFromSelf()) {
+                    val to = featureNumber(dependency.getTargetClass());
+                    if (to > from) {
+                        events.add(SimpleConditionEvent.violated(dependency,
+                                "f%03d depende de f%03d (fatia posterior): %s"
+                                        .formatted(from, to, dependency.getDescription())));
+                    }
+                }
+            }
+        };
+    }
 
     private static DescribedPredicate<JavaClass> contextClassNotExposedViaFacade() {
         return resideInAPackage("..context..")

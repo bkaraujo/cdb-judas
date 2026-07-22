@@ -1,6 +1,6 @@
 package br.cdb.feature.f005._1_application;
 
-import br.cdb.feature.f005._0_domain.event.TransactionsDeleted;
+import br.cdb.feature.f000._0_domain.event.TransactionsDeleted;
 import br.commons.MessageBus;
 import br.commons.framework.message.MessageListener;
 import br.commons.framework.message.MessageResult;

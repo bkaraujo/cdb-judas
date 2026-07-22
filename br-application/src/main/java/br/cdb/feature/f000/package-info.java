@@ -4,10 +4,12 @@
  *
  * <p>Consolida:
  * <ul>
- *   <li><b>stream/SSE</b> — {@code SSE}/{@code SseService}/{@code SseController}
+ *   <li><b>stream/SSE</b> — {@code SSE}/{@code SseService}/{@code SseResource}
  *       ({@code GET /api/{uuid}/stream}); features despacham eventos diretamente pós-mutação</li>
  *   <li><b>deletion</b> — vocabulário {@code DeletionStrategy}/{@code DeletionOutcome}/{@code Deletions},
- *       contrato uniforme de exclusão (accounts, cards, categories, tags)</li>
+ *       contrato uniforme de exclusão (accounts, cards, categories, tags); evento cross-feature
+ *       {@code TransactionsDeleted} ({@code _0_domain.event}), publicado por quem apaga transações
+ *       (f005 ou cascata de conta/categoria/tag) e reagido best-effort por f005/f003</li>
  *   <li><b>auth</b> — {@code LoginResource} ({@code POST /login}, emissão de token)</li>
  *   <li><b>guards</b> — {@code UserGuards}, checagem de propriedade/anti-IDOR</li>
  *   <li><b>costcenter</b> — {@code CostCenterResource} ({@code GET /api/cost-center}, catálogo fixo)</li>

@@ -1,9 +1,9 @@
 package br.cdb.feature.f006._2_infrastructure.provider;
 
+import br.cdb.feature.f006._0_domain.Amounts;
 import br.cdb.feature.f006._0_domain.MonetaryDocument;
 import br.cdb.feature.f006._0_domain.MonetaryDocumentEntry;
 import br.cdb.feature.f006._0_domain.StatementParser;
-import br.cdb.feature.f006._0_domain.Amounts;
 import br.commons.Logger;
 import br.commons.chrono.Dates;
 import br.commons.tools.Strings;

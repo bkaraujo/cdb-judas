@@ -1,6 +1,5 @@
 package br.cdb.feature.f006._0_domain;
 
-import br.cdb.feature.f006._0_domain.ChargeKind;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 

@@ -1,0 +1,100 @@
+package br.cdb.feature.f003._1_application;
+
+import br.cdb.feature.f000._0_domain.SSE;
+import br.cdb.feature.f003._0_domain.UserTag;
+import br.cdb.feature.f003._0_domain.UserTagRepository;
+import br.commons.Result;
+import br.commons.business.BusinessError;
+import jakarta.inject.Singleton;
+import lombok.RequiredArgsConstructor;
+import lombok.val;
+import org.jspecify.annotations.NullMarked;
+
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+
+@NullMarked
+@Singleton
+@RequiredArgsConstructor
+public class UserTagService {
+
+    private static final String TYPE = "TAG";
+
+    private final UserTagRepository repo;
+    private final UserTransactionTagService tagLinkService;
+    private final SSE sse;
+
+    public List<UserTag> findAll(UUID personId) {
+        return repo.findAllByPerson(personId);
+    }
+
+    public Result<UserTag, BusinessError> findById(UUID id) {
+        return repo.findById(id)
+                .<Result<UserTag, BusinessError>>map(Result::success)
+                .orElseGet(() -> Result.failure(new BusinessError.NotFound("Tag not found: " + id)));
+    }
+
+    public UserTag create(UUID personId, String name, String color) {
+        val saved = repo.save(new UserTag(UUID.randomUUID(), personId, name, color, null));
+        upsert(saved);
+        return saved;
+    }
+
+    public Result<UserTag, BusinessError> update(UUID id, String name, String color) {
+        return findById(id).map(existing -> {
+            val saved = repo.save(new UserTag(id, existing.personId(), name, color, existing.createdAt()));
+            upsert(saved);
+            return saved;
+        });
+    }
+
+    public List<UUID> linkedTransactionIds(UUID personId, UUID tagId) {
+        return tagLinkService.findTransactionIdsByTag(personId, tagId);
+    }
+
+    /** Sem estratégia e sem vínculos: exclusão simples. */
+    public Result<Void, BusinessError> deleteById(UUID id) {
+        return findById(id).map(existing -> {
+            repo.deleteById(id);
+            delete(existing.personId(), id);
+            return null;
+        });
+    }
+
+    public Result<Void, BusinessError> deleteMoving(UUID id, UUID targetId, UUID personId) {
+        return findById(id).flatMap(ignoredSource -> findById(targetId).flatMap(target -> {
+            if (target.id().equals(id)) {
+                return Result.<Void>failure(new BusinessError.BusinessRule("Tag de destino deve ser diferente da origem"));
+            }
+            tagLinkService.reassignTag(id, targetId, personId);
+            repo.deleteById(id);
+            delete(personId, id);
+            return Result.success();
+        }));
+    }
+
+    /** Desvincula (apaga só a associação) e exclui a tag; transações permanecem intactas. */
+    public Result<Void, BusinessError> deleteDetached(UUID id, UUID personId) {
+        return findById(id).map(existing -> {
+            tagLinkService.deleteByTag(personId, id);
+            repo.deleteById(id);
+            delete(personId, id);
+            return null;
+        });
+    }
+
+    @SuppressWarnings("EmptyCatch")
+    private void upsert(UserTag tag) {
+        try {
+            sse.dispatch(tag.personId().toString(), SSE.Event.UPSERT, Map.of("type", TYPE, "payload", tag));
+        } catch (Exception ignored) {}
+    }
+
+    @SuppressWarnings("EmptyCatch")
+    private void delete(UUID personId, UUID tagId) {
+        try {
+            sse.dispatch(personId.toString(), SSE.Event.DELETE, Map.of("type", TYPE, "id", tagId.toString()));
+        } catch (Exception ignored) {}
+    }
+}

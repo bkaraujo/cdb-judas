@@ -26,12 +26,12 @@
  * ├── f002  accounts — CRUD /api/{uuid}/accounts (+ cards e balance fundidos: sem overlay próprio)
  * │   ├── cards     CRUD …/{accId}/cards
  * │   └── balance   GET  …/balance?period=|year=
+ * ├── f003  tags — CRUD /api/{uuid}/tags; reage a {@code TransactionsDeleted} (evento da base f000)
+ * ├── f004  categories — CRUD /api/{uuid}/categories
  * ├── f005  transactions + transfer — CRUD …/{accId}/transactions, POST …/transactions/transfer;
  * │         publica {@code TransactionsDeleted} após excluir transações
  * ├── f006  importação de extrato/fatura — POST …/transactions/import/preview|confirm
  * │         (parsers BTG/Santander, casamento de cartão, sugestão de categoria)
- * ├── f007  categories — CRUD /api/{uuid}/categories
- * ├── f008  tags — CRUD /api/{uuid}/tags; reage a {@code TransactionsDeleted} (f005)
  * ├── f009  dashboard — GET /api/{uuid}/dashboard/result
  * └── f010  seed — provisionamento inicial (usuário + categorias default), não-HTTP
  * </pre>

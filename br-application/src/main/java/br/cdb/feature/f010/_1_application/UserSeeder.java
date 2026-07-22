@@ -1,6 +1,5 @@
 package br.cdb.feature.f010._1_application;
 
-import br.cdb.feature.f010._1_application.UserService;
 import io.quarkus.runtime.StartupEvent;
 import jakarta.enterprise.event.Observes;
 import jakarta.inject.Singleton;

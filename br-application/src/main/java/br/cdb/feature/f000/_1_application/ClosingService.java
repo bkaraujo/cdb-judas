@@ -15,25 +15,25 @@ import java.util.Optional;
 @RequiredArgsConstructor
 public class ClosingService {
 
-    private final ClosingRepository closingRepository;
+    private final ClosingRepository repository;
 
     public Optional<YearMonth> find() {
-        return closingRepository.find();
+        return repository.find();
     }
 
     public YearMonth save(YearMonth ym) {
-        closingRepository.save(ym);
+        repository.save(ym);
         return ym;
     }
 
     public void clear() {
-        closingRepository.clear();
+        repository.clear();
     }
 
     public Result<Void, BusinessError> validateDate(LocalDate date) {
-        val closingOpt = closingRepository.find();
-        if (closingOpt.isPresent() && !YearMonth.from(date).isAfter(closingOpt.get())) {
-            return Result.failure(new BusinessError.BusinessRule("Período fechado. Lançamentos até " + closingOpt.get() + " não podem ser alterados."));
+        val optional = repository.find();
+        if (optional.isPresent() && !YearMonth.from(date).isAfter(optional.get())) {
+            return Result.failure(new BusinessError.BusinessRule("Período fechado. Lançamentos até " + optional.get() + " não podem ser alterados."));
         }
         return Result.success();
     }

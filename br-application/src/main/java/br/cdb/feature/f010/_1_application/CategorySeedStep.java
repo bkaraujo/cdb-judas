@@ -1,9 +1,9 @@
 package br.cdb.feature.f010._1_application;
 
 import br.cdb.context.monetary._0_domain.model.Transaction;
+import br.cdb.feature.f004._0_domain.UserCategory;
+import br.cdb.feature.f004._0_domain.UserCategoryRepository;
 import br.cdb.feature.f010._0_domain.UserProvisioningStep;
-import br.cdb.feature.f007._0_domain.UserCategory;
-import br.cdb.feature.f007._0_domain.UserCategoryRepository;
 import jakarta.inject.Singleton;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;

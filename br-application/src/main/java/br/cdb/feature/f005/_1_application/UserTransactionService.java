@@ -1,5 +1,7 @@
 package br.cdb.feature.f005._1_application;
 
+import br.cdb.feature.f002._0_domain.TransactionAccountOverlay;
+import br.cdb.feature.f004._0_domain.TransactionCategoryOverlay;
 import br.cdb.feature.f005._0_domain.UserTransaction;
 import br.cdb.feature.f005._0_domain.UserTransactionRepository;
 import jakarta.inject.Singleton;
@@ -10,10 +12,16 @@ import org.jspecify.annotations.Nullable;
 import java.util.*;
 import java.util.stream.Collectors;
 
+/**
+ * Serviço do overlay de transações ({@code PERSON_TRANSACTION}). Implementa as portas de manutenção
+ * de overlay exigidas pelas fatias anteriores {@link TransactionAccountOverlay} (f002) e
+ * {@link TransactionCategoryOverlay} (f004): f005 depende delas (fatia posterior conhece as
+ * anteriores), respeitando a ordem de fatias sem que f002/f004 dependam de f005.
+ */
 @NullMarked
 @Singleton
 @RequiredArgsConstructor
-public class UserTransactionService {
+public class UserTransactionService implements TransactionAccountOverlay, TransactionCategoryOverlay {
 
     private final UserTransactionRepository repo;
 

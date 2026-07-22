@@ -1,7 +1,6 @@
 package br.cdb.feature.f006._0_domain;
 
 import br.cdb.context.monetary._0_domain.model.Transaction;
-import br.cdb.feature.f006._0_domain.ChargeKind;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 

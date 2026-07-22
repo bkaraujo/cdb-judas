@@ -1,9 +1,9 @@
 package br.cdb.context.monetary;
 
+import br.cdb.feature.f006._0_domain.ChargeKind;
 import br.cdb.feature.f006._0_domain.MonetaryDocument;
 import br.cdb.feature.f006._0_domain.MonetaryDocumentEntry;
 import br.cdb.feature.f006._2_infrastructure.provider.BTGInvoiceParser;
-import br.cdb.feature.f006._0_domain.ChargeKind;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;

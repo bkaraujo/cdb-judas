@@ -3,8 +3,7 @@ package br.cdb.feature.f000._1_application;
 import br.cdb.context.monetary.MonetaryUseCases;
 import br.cdb.context.monetary._0_domain.model.CreditCard;
 import br.cdb.core.web.Request;
-import br.cdb.feature.f002._0_domain.UserAccount;
-import br.cdb.feature.f002._1_application.UserAccountService;
+import br.cdb.feature.f000._0_domain.AccountOwnership;
 import br.commons.Result;
 import br.commons.business.BusinessError;
 import jakarta.enterprise.context.RequestScoped;
@@ -32,7 +31,7 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class UserGuards {
 
-    private final UserAccountService userAccountService;
+    private final AccountOwnership accountOwnership;
 
     private @Nullable Set<UUID> ownedAccounts;
     private @Nullable Map<UUID, UUID> accountByCard;
@@ -83,9 +82,7 @@ public class UserGuards {
     private Set<UUID> ownedAccounts() {
         var cached = ownedAccounts;
         if (cached == null) {
-            cached = userAccountService.findByPerson(Request.personId()).stream()
-                    .map(UserAccount::accountId)
-                    .collect(Collectors.toUnmodifiableSet());
+            cached = accountOwnership.ownedAccountIds(Request.personId());
             ownedAccounts = cached;
         }
         return cached;
