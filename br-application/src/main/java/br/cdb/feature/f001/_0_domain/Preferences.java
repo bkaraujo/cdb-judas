@@ -1,5 +1,6 @@
 package br.cdb.feature.f001._0_domain;
 
+import br.cdb.feature.f000._1_application.UserGuards;
 import br.cdb.feature.f001._1_application.PreferencesPatch;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
@@ -19,18 +20,15 @@ public record Preferences(
         boolean sidebarCollapsed
 ) {
 
-    private static final String DEFAULT_LANGUAGE = "pt-BR";
-    private static final String DEFAULT_LOCALE = "pt-BR";
-
     public Preferences(@Nullable String theme, @Nullable String language, @Nullable String locale, boolean sidebarCollapsed) {
         this.theme = theme;
-        this.language = (language == null || language.isBlank()) ? DEFAULT_LANGUAGE : language;
-        this.locale = (locale == null || locale.isBlank()) ? DEFAULT_LOCALE : locale;
+        this.language = (language == null || language.isBlank()) ? UserGuards.DEFAULT_LANGUAGE : language;
+        this.locale = (locale == null || locale.isBlank()) ? UserGuards.DEFAULT_LOCALE : locale;
         this.sidebarCollapsed = sidebarCollapsed;
     }
 
     public static Preferences defaults() {
-        return new Preferences(null, DEFAULT_LANGUAGE, DEFAULT_LOCALE, false);
+        return new Preferences(null, UserGuards.DEFAULT_LANGUAGE, UserGuards.DEFAULT_LOCALE, false);
     }
 
     /**

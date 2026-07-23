@@ -16,8 +16,8 @@ public class PersonUseCase {
             Registry.tryGet(PersonService.class, () -> new PersonService(Registry.get(PersonRepository.class)));
 
     /** Cria uma nova pessoa (dono de recursos). O login apenas a referencia depois. */
-    public Result<Person, BusinessError> register(String name) {
-        return Result.success(service.save(new Person(UUID.randomUUID(), name, "pt-BR", "pt-BR")));
+    public Result<Person, BusinessError> register(String name, String locale, String language) {
+        return Result.success(service.save(new Person(UUID.randomUUID(), name, locale, language)));
     }
 
     public Result<Person, BusinessError> findById(String id) {

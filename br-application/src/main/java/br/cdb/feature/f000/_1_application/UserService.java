@@ -33,7 +33,7 @@ public class UserService {
         }
 
         // 1 - Cria a Person (dono dos recursos; toda a funcionalidade referencia a Person)
-        return personUseCase.register(name).map(person -> {
+        return personUseCase.register(name, UserGuards.DEFAULT_LOCALE, UserGuards.DEFAULT_LANGUAGE).map(person -> {
             // 2 - Cria o User (login) vinculado à Person
             val user = userRepository.save(new User(
                     UUID.randomUUID().toString(),

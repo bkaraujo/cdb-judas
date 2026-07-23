@@ -31,6 +31,9 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class UserGuards {
 
+    public static final String DEFAULT_LANGUAGE = "pt-BR";
+    public static final String DEFAULT_LOCALE = "pt-BR";
+
     private final AccountOwnership accountOwnership;
 
     private @Nullable Set<UUID> ownedAccounts;
