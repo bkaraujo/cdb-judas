@@ -15,6 +15,7 @@
 }
 
 [data-theme="dark"] {
+  color-scheme: dark;
   --bg-base:    #282A36;
   --bg-surface: #21222C;
   --bg-card:    #343746;
@@ -44,6 +45,7 @@
 }
 
 [data-theme="light"] {
+  color-scheme: light;
   --bg-base:    #F0F4FF;
   --bg-surface: #FFFFFF;
   --bg-card:    #FFFFFF;
@@ -287,9 +289,11 @@ button { font-family: var(--font); cursor: pointer; border: none; outline: none;
 .period-nav-month, .period-nav-year {
   width: auto; padding: 4px 6px;
   font-size: 13px; font-weight: 600;
-  background: transparent; border: 1px solid transparent;
+  color: var(--text-primary);
+  background: var(--bg-card); border: 1px solid transparent;
   border-radius: var(--radius-sm);
 }
+.period-nav-month option { background: var(--bg-card); color: var(--text-primary); }
 .period-nav-month { min-width: 110px; }
 .period-nav-year { width: 56px; text-align: center; }
 .period-nav-month:hover, .period-nav-year:hover { border-color: var(--border); }
