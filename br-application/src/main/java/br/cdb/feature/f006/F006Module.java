@@ -6,8 +6,13 @@ import br.cdb.feature.f006._2_infrastructure.provider.BTGInvoiceParser;
 import br.cdb.feature.f006._2_infrastructure.provider.BTGStatementParser;
 import br.cdb.feature.f006._2_infrastructure.provider.SantanderInvoiceParser;
 import br.cdb.feature.f006._2_infrastructure.provider.SantanderStatementParser;
+import br.commons.Logger;
 import br.commons.pdf.PdfBoxTextExtractor;
 import br.commons.pdf.PdfTextExtractor;
+import io.quarkus.runtime.StartupEvent;
+import jakarta.annotation.Priority;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.event.Observes;
 import jakarta.enterprise.inject.Produces;
 import jakarta.inject.Singleton;
 import org.jspecify.annotations.NullMarked;
@@ -20,7 +25,7 @@ import java.util.List;
  * expostos por {@code MonetaryUseCases}.
  */
 @NullMarked
-@Singleton
+@ApplicationScoped
 public class F006Module {
 
     private static final int MAX_STATEMENT_PAGES = 50;
@@ -48,5 +53,9 @@ public class F006Module {
                         new SantanderInvoiceParser()
                 ),
                 MAX_STATEMENT_FILE_BYTES);
+    }
+
+    void onStart(@Observes @Priority(6) StartupEvent ev) {
+        Logger.debug("Iniciando módulo..");
     }
 }

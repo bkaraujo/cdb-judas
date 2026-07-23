@@ -2,8 +2,14 @@ package br.cdb.feature.f001;
 
 import br.cdb.feature.f001._0_domain.PreferencesRepository;
 import br.cdb.feature.f001._2_infrastructure.persistence.PreferencesJDBCRepository;
+import br.commons.Logger;
+import br.commons.MessageBus;
 import br.commons.Registry;
 import br.commons.framework.persistence.jdbc.DataSource;
+import io.quarkus.runtime.StartupEvent;
+import jakarta.annotation.Priority;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.event.Observes;
 import jakarta.enterprise.inject.Produces;
 import jakarta.inject.Singleton;
 import org.jspecify.annotations.NullMarked;
@@ -14,12 +20,16 @@ import org.jspecify.annotations.NullMarked;
  * JDBC — a dependência real fica escondida dentro do {@link Registry}.
  */
 @NullMarked
-@Singleton
+@ApplicationScoped
 public class F001Module {
 
     @Produces
     @Singleton
     public PreferencesRepository preferencesRepository(DataSource dataSource) {
         return Registry.tryGet(PreferencesRepository.class, PreferencesJDBCRepository::new);
+    }
+
+    void onStart(@Observes @Priority(1) StartupEvent ev) {
+        Logger.debug("Iniciando módulo..");
     }
 }

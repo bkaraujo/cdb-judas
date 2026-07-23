@@ -5,8 +5,13 @@ import br.cdb.feature.f000._0_domain.SSE;
 import br.cdb.feature.f000._1_application.ClosingService;
 import br.cdb.feature.f000._2_infrastructure.persistence.ClosingJDBCRepository;
 import br.cdb.feature.f000._2_infrastructure.service.SseService;
+import br.commons.Logger;
 import br.commons.Registry;
 import br.commons.framework.persistence.jdbc.DataSource;
+import io.quarkus.runtime.StartupEvent;
+import jakarta.annotation.Priority;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.event.Observes;
 import jakarta.enterprise.inject.Produces;
 import jakarta.inject.Singleton;
 import org.jspecify.annotations.NullMarked;
@@ -17,7 +22,7 @@ import org.jspecify.annotations.NullMarked;
  * fica escondida dentro do {@link Registry} (mesmo padrão de {@code br.cdb.core.ContextBridge}).
  */
 @NullMarked
-@Singleton
+@ApplicationScoped
 public class F000Module {
 
     @Produces
@@ -34,7 +39,11 @@ public class F000Module {
 
     @Produces
     @Singleton
-    public ClosingRepository closingRepository(DataSource dataSource) {
+    public ClosingRepository closingRepository() {
         return Registry.tryGet(ClosingRepository.class, ClosingJDBCRepository::new);
+    }
+
+    void onStart(@Observes @Priority(0) StartupEvent ev) {
+        Logger.debug("Iniciando módulo..");
     }
 }
