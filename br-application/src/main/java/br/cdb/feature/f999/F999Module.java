@@ -1,8 +1,9 @@
-package br.cdb.feature.f010;
+package br.cdb.feature.f999;
 
 import br.cdb.feature.f000._1_application.UserService;
 import br.commons.Logger;
 import br.commons.Result;
+import br.commons.tools.Strings;
 import io.quarkus.runtime.StartupEvent;
 import jakarta.annotation.Priority;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -14,14 +15,17 @@ import org.jspecify.annotations.NullMarked;
 @NullMarked
 @ApplicationScoped
 @RequiredArgsConstructor
-public class F010Module {
+public class F999Module {
 
-    private final UserService userService;
+    private final UserService service;
 
-    void onStart(@Observes @Priority(10) StartupEvent ev) {
+    void onStart(@Observes @Priority(999) StartupEvent ev) {
         Logger.debug("Iniciando módulo..");
-        val result = userService.createUser("admin", "", "admin".toCharArray());
-        switch (result) {
+
+        val userName = "admin";
+        val userPassword = userName.toCharArray();
+
+        switch (service.createUser(userName, Strings.EMPTY, userPassword)) {
             case Result.Failure (var error) -> Logger.warn(error.toString());
             case Result.Success (var _) ->  Logger.info("Usuário criado com sucesso");
         };

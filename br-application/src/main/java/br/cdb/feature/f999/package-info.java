@@ -4,6 +4,6 @@
  * {@code UserProvisioningStep}) semeia o catálogo default de categorias para a pessoa recém-criada.
  */
 @NullMarked
-package br.cdb.feature.f010;
+package br.cdb.feature.f999;
 
 import org.jspecify.annotations.NullMarked;

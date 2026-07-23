@@ -26,7 +26,7 @@ Gestor de finanças pessoais. Backend **Java 25 + Quarkus** (JVM mode); frontend
 - **`f004`** — categorias (macro/micro); mudanças propagadas via SSE.
 - **`f003`** — tags (classificação livre/transversal); mudanças propagadas via SSE; reage a `TransactionsDeleted` (`f005`) para purgar vínculos.
 - **`f009`** — dashboard: resultado mensal agregado (receitas/despesas/líquido), sem overlay próprio.
-- **`f010`** — provisionamento inicial (não-HTTP): usuário + categorias default no startup.
+- **`f999`** — provisionamento inicial (não-HTTP): usuário + categorias default no startup.
 
 ### Plataforma — `br.cdb.core` (módulo `br-application`)
 Autenticação/autorização (token opaco rotativo, `OwnershipFilter`), observabilidade (log de requisição + MDC), persistência JSON, config HTTP/OpenAPI, `ContextBridge` (costura CDI↔`Registry`).

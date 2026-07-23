@@ -40,10 +40,14 @@ public abstract class Registry {
         });
     }
 
-    public static <T> void set(Class<T> type, T instance) {
-        Threads.locked(lock, () -> {
-            Logger.verbose("Registering %s", type);
-            registry.put(type, instance);
+    public static <T> T create(Class<T> type) {
+        return Threads.locked(lock,  () -> {
+            val instance = registry.get(type);
+            if (instance == null) {
+                throw new IllegalStateException("No instance of %s registered".formatted(type));
+            }
+
+            return type.cast(instance);
         });
     }
 
@@ -55,7 +59,7 @@ public abstract class Registry {
     }
 
     public static <T> void set(Class<T> type) {
-        Threads.locked(lock, () -> set(type, Meta.instance(type)));
+        Threads.locked(lock, () -> set(type, () -> Meta.instance(type)));
     }
 
     public static void remove(Class<?> type) {

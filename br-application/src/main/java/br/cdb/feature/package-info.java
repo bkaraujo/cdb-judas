@@ -33,6 +33,7 @@
  * ├── f006  importação de extrato/fatura — POST …/transactions/import/preview|confirm
  * │         (parsers BTG/Santander, casamento de cartão, sugestão de categoria)
  * ├── f009  dashboard — GET /api/{uuid}/dashboard/result
+ * ├── f999  Initialization routines
  * </pre>
  */
 @NullMarked
