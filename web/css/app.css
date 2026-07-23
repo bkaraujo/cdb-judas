@@ -284,9 +284,17 @@ button { font-family: var(--font); cursor: pointer; border: none; outline: none;
   border-radius: var(--radius-sm); padding: 6px 12px;
 }
 .period-nav .icon-btn { width: 24px; height: 24px; }
-.period-nav-label {
+.period-nav-month, .period-nav-year {
+  width: auto; padding: 4px 6px;
   font-size: 13px; font-weight: 600;
-  width: 150px; text-align: center;
+  background: transparent; border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+}
+.period-nav-month { min-width: 110px; }
+.period-nav-year { width: 56px; text-align: center; }
+.period-nav-month:hover, .period-nav-year:hover { border-color: var(--border); }
+.period-nav-month:focus, .period-nav-year:focus {
+  border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-light);
 }
 
 /* ───── Sidebar ───── */

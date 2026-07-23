@@ -119,9 +119,11 @@
 
     const $actions = $header.find('[data-region=head-actions]');
     const $periodNav = window.periodNav({
-      label: window.monthLabel(state.month, state.year),
+      month: state.month,
+      year: state.year,
       onPrev: function () { window.shiftMonth(state, -1, true); render(); },
       onNext: function () { window.shiftMonth(state, +1, true); render(); },
+      onChange: function (m, y) { state.month = m; state.year = y; render(); },
     });
     $actions.append($periodNav);
     $actions.append(window.btn({

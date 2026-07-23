@@ -75,20 +75,62 @@
     '</div>';
   }
 
-  /* ---- Period nav ---- */
+  /* ---- Period nav ----
+   * `<`  [month dropdown]  [year field]  `>`
+   * opts.month is 1-based (1-12); opts.year a full year. onPrev/onNext step by
+   * a month (unchanged); onChange(month, year) fires on direct edit of the
+   * dropdown or the 4-digit year field (month reported 1-based). Callers
+   * re-render after every callback, so the widgets reflect fresh state on the
+   * next build — no live setter needed. */
+  function monthNames() {
+    const fmt = new Intl.DateTimeFormat('pt-BR', { month: 'long' });
+    const out = [];
+    for (let m = 0; m < 12; m++) {
+      const s = fmt.format(new Date(2000, m, 1));
+      out.push(s.charAt(0).toUpperCase() + s.slice(1));
+    }
+    return out;
+  }
+
   function periodNav(opts) {
     opts = opts || {};
+    const month = opts.month || 1;
+    const year  = opts.year  || new Date().getFullYear();
+
+    let optionsHtml = '';
+    monthNames().forEach(function (name, i) {
+      const m = i + 1;
+      optionsHtml += '<option value="' + m + '"' + (m === month ? ' selected' : '') + '>' + esc(name) + '</option>';
+    });
+
     const $el = $(
       '<div class="period-nav">' +
         '<button class="icon-btn" data-act="prev">' + window.icon('chevronLeft', 14) + '</button>' +
-        '<span class="period-nav-label"></span>' +
+        '<select class="period-nav-month">' + optionsHtml + '</select>' +
+        '<input class="period-nav-year" type="text" inputmode="numeric" maxlength="4" value="' + year + '">' +
         '<button class="icon-btn" data-act="next">' + window.icon('chevronRight', 14) + '</button>' +
       '</div>'
     );
-    $el.find('.period-nav-label').text(opts.label || '');
+
     if (opts.onPrev) $el.find('[data-act=prev]').on('click', opts.onPrev);
     if (opts.onNext) $el.find('[data-act=next]').on('click', opts.onNext);
-    $el.setLabel = function (lbl) { $el.find('.period-nav-label').text(lbl || ''); };
+
+    const $month = $el.find('.period-nav-month');
+    const $year  = $el.find('.period-nav-year');
+
+    function fire() {
+      if (!opts.onChange) return;
+      opts.onChange(parseInt($month.val(), 10), parseInt($year.val(), 10));
+    }
+
+    $month.on('change', fire);
+    $year.on('input', function () { $year.val($year.val().replace(/\D/g, '').slice(0, 4)); });
+    $year.on('change', function () {
+      if (/^\d{4}$/.test($year.val())) fire();
+      else $year.val(year);                 // restore last valid year on junk input
+    });
+    $year.on('keydown', function (e) { if (e.key === 'Enter') $year.trigger('change'); });
+
     return $el;
   }
 

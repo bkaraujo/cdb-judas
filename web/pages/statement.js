@@ -95,9 +95,11 @@
       '</div>'
     );
     const $periodNav = window.periodNav({
-      label: window.monthLabel(state.month, state.year),
+      month: state.month,
+      year: state.year,
       onPrev: function () { window.shiftMonth(state, -1, true); loadSummary().then(loadStatement); },
       onNext: function () { window.shiftMonth(state, +1, true); loadSummary().then(loadStatement); },
+      onChange: function (m, y) { state.month = m; state.year = y; loadSummary().then(loadStatement); },
     });
     $header.find('[data-region=head-actions]').append($periodNav);
     $page.append($header);

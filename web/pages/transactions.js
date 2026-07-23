@@ -139,9 +139,11 @@
 
     // period nav
     const $periodNav = window.periodNav({
-      label: window.monthLabel(state.month + 1, state.year),
+      month: state.month + 1,
+      year: state.year,
       onPrev: function () { window.shiftMonth(state, -1, false); loadTransactions(); },
       onNext: function () { window.shiftMonth(state, +1, false); loadTransactions(); },
+      onChange: function (m, y) { state.month = m - 1; state.year = y; loadTransactions(); },
     });
     $headRight.append($periodNav);
 
