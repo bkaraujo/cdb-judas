@@ -1,6 +1,7 @@
 package br.cdb.feature.f006._2_infrastructure.web;
 
 import br.cdb.context.monetary._0_domain.model.CreditCard;
+import br.cdb.core.web.Request;
 import br.cdb.core.web.error.ProblemDetail;
 import br.cdb.feature.f006._0_domain.ImportError;
 import br.cdb.feature.f006._1_application.StatementImportUseCase;
@@ -80,26 +81,27 @@ public class StatementImportResource {
     @Path("/confirm")
     @Consumes(MediaType.APPLICATION_JSON)
     public Response confirm(@Valid StatementConfirmRequest req) {
+        val personId = UUID.fromString(Request.personId());
         return switch (req.type()) {
-            case CREDIT_CARD_INVOICE -> confirmInvoice(req);
-            case BANK_STATEMENT -> confirmBankStatement(req);
+            case CREDIT_CARD_INVOICE -> confirmInvoice(personId, req);
+            case BANK_STATEMENT -> confirmBankStatement(personId, req);
         };
     }
 
-    private Response confirmInvoice(StatementConfirmRequest req) {
+    private Response confirmInvoice(UUID personId, StatementConfirmRequest req) {
         if (req.rows().stream().anyMatch(row -> row.cardId() == null)) {
             return problem422("CARD_REQUIRED", "Cada lançamento precisa de um cartão de destino.");
         }
         val rows = req.rows().stream().map(StatementImportResource::toInvoiceRow).toList();
 
-        return switch (statementImportUseCase.confirmInvoiceImport(new InvoiceConfirmCommand(rows))) {
+        return switch (statementImportUseCase.confirmInvoiceImport(personId, new InvoiceConfirmCommand(rows))) {
             case Result.Success(var res) ->
                     Response.ok(new ImportConfirmResponse(res.created(), res.reconciled(), res.skipped())).build();
             case Result.Failure(var error) -> problem422("CARD_NOT_FOUND", messageOf(error));
         };
     }
 
-    private Response confirmBankStatement(StatementConfirmRequest req) {
+    private Response confirmBankStatement(UUID personId, StatementConfirmRequest req) {
         if (req.accountId() == null) {
             return problem422("ACCOUNT_REQUIRED", "O campo accountId é obrigatório para extratos bancários.");
         }
@@ -107,7 +109,7 @@ public class StatementImportResource {
                 .map(r -> new BankStatementConfirmCommand.Row(r.description(), r.amount(), r.date(), r.transactionType(), r.categoryId()))
                 .toList();
 
-        return switch (statementImportUseCase.confirmStatementImport(new BankStatementConfirmCommand(req.accountId(), rows))) {
+        return switch (statementImportUseCase.confirmStatementImport(personId, new BankStatementConfirmCommand(req.accountId(), rows))) {
             case Result.Success(var res) ->
                     Response.ok(new ImportConfirmResponse(res.created(), res.reconciled(), res.skipped())).build();
             case Result.Failure(var error) -> problem422("ACCOUNT_NOT_FOUND", messageOf(error));

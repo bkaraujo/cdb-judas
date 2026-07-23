@@ -11,6 +11,7 @@ import br.cdb.context.monetary._1_application.usecase.AccountUseCase;
 import br.cdb.context.monetary._1_application.usecase.CostCenterUseCase;
 import br.cdb.context.monetary._1_application.usecase.CreditCardUseCase;
 import br.cdb.context.monetary._1_application.usecase.TransactionUseCase;
+import br.cdb.feature.f005._1_application.UserTransactionService;
 import br.cdb.feature.f006._0_domain.*;
 import br.cdb.feature.f006._1_application.GroupSignature;
 import br.cdb.feature.f006._1_application.StatementImportService;
@@ -45,6 +46,9 @@ class CreditCardStatementImportServiceTest {
     private static final long MAX_BYTES = 4096;
 
     private static final Clock CLOCK = Clock.fixed(Instant.parse("2025-07-15T12:00:00Z"), ZoneOffset.UTC);
+    private static final UUID PERSON = UUID.randomUUID();
+
+    private InMemoryUserTransactions overlays = new InMemoryUserTransactions();
 
     private static ImportPreview invoicePreview(Result<ImportPreviewOutcome, ImportError> result) {
         var outcome = assertInstanceOf(Result.Success.class, result).value();
@@ -77,12 +81,13 @@ class CreditCardStatementImportServiceTest {
             cardRepo.save(c);
         }
         resetMonetaryRegistry(accounts, transactions, cardRepo);
+        this.overlays = new InMemoryUserTransactions();
         final CreditCardProvider provider = () -> creditCards;
         return new StatementImportService(
                 provider, extractor,
                 List.of(new BTGStatementParser(), new SantanderStatementParser(),
                         new BTGInvoiceParser(), new SantanderInvoiceParser()),
-                MAX_BYTES, CLOCK);
+                MAX_BYTES, new UserTransactionService(overlays), CLOCK);
     }
 
     /**
@@ -428,7 +433,7 @@ class CreditCardStatementImportServiceTest {
                 null, null, categoryId, cardB.id());
 
         var cmd = new InvoiceConfirmCommand(List.of(rowA, rowB));
-        var result = (ImportResult) assertInstanceOf(Result.Success.class, useCase.confirm(cmd)).value();
+        var result = (ImportResult) assertInstanceOf(Result.Success.class, useCase.confirm(PERSON,cmd)).value();
 
         assertEquals(2, result.created());
         var saved = transactions.findAll();
@@ -436,6 +441,10 @@ class CreditCardStatementImportServiceTest {
         var b = saved.stream().filter(t -> t.description().equals("Compra B")).findFirst().orElseThrow();
         assertEquals(accountA.id(), a.accountId());
         assertEquals(accountB.id(), b.accountId());
+
+        var savedOverlays = overlays.all();
+        assertEquals(2, savedOverlays.size(), "cada linha importada gera overlay PERSON_TRANSACTION (1:1)");
+        assertTrue(savedOverlays.stream().allMatch(o -> PERSON.equals(o.personId()) && categoryId.equals(o.categoryId())));
     }
 
     @Test
@@ -465,7 +474,7 @@ class CreditCardStatementImportServiceTest {
         assertTrue(transactions.findAll().isEmpty());
 
         var cmd = new InvoiceConfirmCommand(List.of(avistaConfirmed, avistaScheduled, parc1, parc2));
-        var result = (ImportResult) assertInstanceOf(Result.Success.class, useCase.confirm(cmd)).value();
+        var result = (ImportResult) assertInstanceOf(Result.Success.class, useCase.confirm(PERSON,cmd)).value();
 
         assertEquals(4, result.created());
         assertEquals(0, result.skipped());
@@ -523,7 +532,7 @@ class CreditCardStatementImportServiceTest {
 
         int before = counter.get();
         var result = (ImportResult) assertInstanceOf(Result.Success.class,
-                useCase.confirm(new InvoiceConfirmCommand(List.of(row1, row2)))).value();
+                useCase.confirm(PERSON,new InvoiceConfirmCommand(List.of(row1, row2)))).value();
 
         assertEquals(2, result.created());
         assertEquals(2, counter.get() - before);
@@ -551,12 +560,12 @@ class CreditCardStatementImportServiceTest {
                 4, 4, categoryId, card.id());
         var cmd = new InvoiceConfirmCommand(List.of(avista, parc1, parc2));
 
-        var first = (ImportResult) assertInstanceOf(Result.Success.class, useCase.confirm(cmd)).value();
+        var first = (ImportResult) assertInstanceOf(Result.Success.class, useCase.confirm(PERSON,cmd)).value();
         assertEquals(3, first.created());
         assertEquals(0, first.skipped());
         assertEquals(3, transactions.findAll().size());
 
-        var second = (ImportResult) assertInstanceOf(Result.Success.class, useCase.confirm(cmd)).value();
+        var second = (ImportResult) assertInstanceOf(Result.Success.class, useCase.confirm(PERSON,cmd)).value();
         assertEquals(0, second.created());
         assertEquals(cmd.rows().size(), second.skipped());
         assertEquals(3, transactions.findAll().size());
@@ -581,7 +590,7 @@ class CreditCardStatementImportServiceTest {
                 "Mercado Livre", new BigDecimal("90.00"), LocalDate.of(2025, 7, 4), LocalDate.of(2025, 7, 4),
                 null, null, UUID.randomUUID(), card.id());
         var result = (ImportResult) assertInstanceOf(Result.Success.class,
-                useCase.confirm(new InvoiceConfirmCommand(List.of(row)))).value();
+                useCase.confirm(PERSON,new InvoiceConfirmCommand(List.of(row)))).value();
 
         assertEquals(0, result.created());
         assertEquals(1, result.skipped());
@@ -595,7 +604,7 @@ class CreditCardStatementImportServiceTest {
                 "Compra", new BigDecimal("10.00"), LocalDate.of(2025, 7, 1), LocalDate.of(2025, 7, 1),
                 null, null, UUID.randomUUID(), UUID.randomUUID());
         var cmd = new InvoiceConfirmCommand(List.of(row));
-        var error = assertInstanceOf(Result.Failure.class, useCase.confirm(cmd)).error();
+        var error = assertInstanceOf(Result.Failure.class, useCase.confirm(PERSON,cmd)).error();
         assertInstanceOf(BusinessError.NotFound.class, error);
     }
 
@@ -627,7 +636,7 @@ class CreditCardStatementImportServiceTest {
                 null, null, categoryId, card.id());
 
         var result = (ImportResult) assertInstanceOf(Result.Success.class,
-                useCase.confirm(new InvoiceConfirmCommand(List.of(ok1, boom, ok2)))).value();
+                useCase.confirm(PERSON,new InvoiceConfirmCommand(List.of(ok1, boom, ok2)))).value();
 
         assertEquals(2, result.created());
         var saved = transactions.findAll();

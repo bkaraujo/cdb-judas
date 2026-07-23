@@ -9,6 +9,7 @@ import br.cdb.context.monetary._1_application.usecase.AccountUseCase;
 import br.cdb.context.monetary._1_application.usecase.CostCenterUseCase;
 import br.cdb.context.monetary._1_application.usecase.CreditCardUseCase;
 import br.cdb.context.monetary._1_application.usecase.TransactionUseCase;
+import br.cdb.feature.f005._1_application.UserTransactionService;
 import br.cdb.feature.f006._0_domain.ImportError;
 import br.cdb.feature.f006._0_domain.ImportResult;
 import br.cdb.feature.f006._1_application.StatementImportService;
@@ -40,6 +41,9 @@ class StatementImportServiceTest {
 
     private static final long MAX_BYTES = 4096;
     private static final Clock CLOCK = Clock.fixed(Instant.parse("2025-07-15T12:00:00Z"), ZoneOffset.UTC);
+    private static final UUID PERSON = UUID.randomUUID();
+
+    private InMemoryUserTransactions overlays = new InMemoryUserTransactions();
 
     private static final String EXTRATO = String.join("\n",
             "Extrato de conta corrente",
@@ -77,10 +81,12 @@ class StatementImportServiceTest {
         var transactions = new InMemoryRepositories.Transactions();
         var useCase = useCaseWith(accounts, transactions);
 
+        var catOdonto = UUID.randomUUID();
+        var catPix = UUID.randomUUID();
         var cmd = new BankStatementConfirmCommand(account.id(), List.of(
-                new BankStatementConfirmCommand.Row("Odontoprev", new BigDecimal("-161.43"), LocalDate.of(2025, 3, 5), Transaction.Type.EXPENSE, UUID.randomUUID()),
-                new BankStatementConfirmCommand.Row("Caixa Economica", new BigDecimal("3000.00"), LocalDate.of(2025, 3, 6), Transaction.Type.INCOME, UUID.randomUUID())));
-        var result = (ImportResult) assertInstanceOf(Result.Success.class, useCase.confirmStatement(cmd)).value();
+                new BankStatementConfirmCommand.Row("Odontoprev", new BigDecimal("-161.43"), LocalDate.of(2025, 3, 5), Transaction.Type.EXPENSE, catOdonto),
+                new BankStatementConfirmCommand.Row("Caixa Economica", new BigDecimal("3000.00"), LocalDate.of(2025, 3, 6), Transaction.Type.INCOME, catPix)));
+        var result = (ImportResult) assertInstanceOf(Result.Success.class, useCase.confirmStatement(PERSON, cmd)).value();
 
         assertEquals(2, result.created());
         assertEquals(0, result.reconciled());
@@ -97,6 +103,12 @@ class StatementImportServiceTest {
         var pix = saved.stream().filter(t -> t.description().equals("Caixa Economica")).findFirst().orElseThrow();
         assertEquals(Transaction.Type.INCOME, pix.type());
         assertEquals(1, pix.amount().signum(), "imported income must be stored positive");
+
+        // 1:1 com MON_TRANSACTION: cada linha importada cria overlay PERSON_TRANSACTION com a categoria da linha.
+        assertEquals(2, overlays.all().size(), "cada transação importada gera overlay PERSON_TRANSACTION");
+        assertTrue(overlays.all().stream().allMatch(o -> PERSON.equals(o.personId())));
+        assertEquals(catOdonto, overlays.findByTransactionAccountAndPerson(odonto.id(), account.id(), PERSON).orElseThrow().categoryId());
+        assertEquals(catPix, overlays.findByTransactionAccountAndPerson(pix.id(), account.id(), PERSON).orElseThrow().categoryId());
     }
 
     @Test
@@ -113,7 +125,7 @@ class StatementImportServiceTest {
 
         var cmd = new BankStatementConfirmCommand(account.id(), List.of(
                 new BankStatementConfirmCommand.Row("Odontoprev", new BigDecimal("-161.43"), LocalDate.of(2025, 3, 5), Transaction.Type.EXPENSE, UUID.randomUUID())));
-        var result = (ImportResult) assertInstanceOf(Result.Success.class, useCase.confirmStatement(cmd)).value();
+        var result = (ImportResult) assertInstanceOf(Result.Success.class, useCase.confirmStatement(PERSON, cmd)).value();
 
         assertEquals(0, result.created());
         assertEquals(1, result.reconciled());
@@ -136,7 +148,7 @@ class StatementImportServiceTest {
 
         var cmd = new BankStatementConfirmCommand(account.id(), List.of(
                 new BankStatementConfirmCommand.Row("Odontoprev", new BigDecimal("-161.43"), LocalDate.of(2025, 3, 5), Transaction.Type.EXPENSE, UUID.randomUUID())));
-        var result = (ImportResult) assertInstanceOf(Result.Success.class, useCase.confirmStatement(cmd)).value();
+        var result = (ImportResult) assertInstanceOf(Result.Success.class, useCase.confirmStatement(PERSON, cmd)).value();
 
         assertEquals(1, result.created());
         assertEquals(0, result.reconciled());
@@ -158,7 +170,7 @@ class StatementImportServiceTest {
 
         var cmd = new BankStatementConfirmCommand(account.id(), List.of(
                 new BankStatementConfirmCommand.Row("Odontoprev", new BigDecimal("-161.43"), LocalDate.of(2025, 3, 5), Transaction.Type.EXPENSE, UUID.randomUUID())));
-        var result = (ImportResult) assertInstanceOf(Result.Success.class, useCase.confirmStatement(cmd)).value();
+        var result = (ImportResult) assertInstanceOf(Result.Success.class, useCase.confirmStatement(PERSON, cmd)).value();
 
         assertEquals(0, result.created());
         assertEquals(0, result.reconciled());
@@ -176,11 +188,12 @@ class StatementImportServiceTest {
     private StatementImportService useCaseWith(InMemoryRepositories.Accounts accounts, InMemoryRepositories.Transactions transactions) {
         final PdfTextExtractor extractor = (bytes, password) -> Result.success(EXTRATO);
         resetMonetaryRegistry(accounts, transactions);
+        this.overlays = new InMemoryUserTransactions();
         return new StatementImportService(
                 List::of, extractor, // empty card provider (bank-statement path)
                 List.of(new BTGStatementParser(), new SantanderStatementParser(),
                         new BTGInvoiceParser(), new SantanderInvoiceParser()),
-                MAX_BYTES, CLOCK);
+                MAX_BYTES, new UserTransactionService(overlays), CLOCK);
     }
 
     /**

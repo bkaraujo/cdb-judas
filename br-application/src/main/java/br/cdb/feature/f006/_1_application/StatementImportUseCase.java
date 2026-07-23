@@ -56,18 +56,18 @@ public class StatementImportUseCase {
                 .map(outcome -> new ImportPreviewView(outcome, accountNamesById()));
     }
 
-    public Result<ImportResult, BusinessError> confirmInvoiceImport(InvoiceConfirmCommand cmd) {
+    public Result<ImportResult, BusinessError> confirmInvoiceImport(UUID personId, InvoiceConfirmCommand cmd) {
         for (val row : cmd.rows()) {
             if (guards.ownsCard(row.cardId()) instanceof Result.Failure<Void, BusinessError>(var error)) {
                 return Result.failure(error);
             }
         }
-        return statementImportService.confirm(cmd)
+        return statementImportService.confirm(personId, cmd)
                 .ifSuccess(ignored -> affectedAccountIds(cmd.rows()).forEach(accountStreamPublisher::upsert));
     }
 
-    public Result<ImportResult, BusinessError> confirmStatementImport(BankStatementConfirmCommand cmd) {
-        return guards.ownsAccount(cmd.accountId()).flatMap(ignored -> statementImportService.confirmStatement(cmd))
+    public Result<ImportResult, BusinessError> confirmStatementImport(UUID personId, BankStatementConfirmCommand cmd) {
+        return guards.ownsAccount(cmd.accountId()).flatMap(ignored -> statementImportService.confirmStatement(personId, cmd))
                 .ifSuccess(ignored -> accountStreamPublisher.upsert(cmd.accountId()));
     }
 

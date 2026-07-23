@@ -7,6 +7,7 @@ import br.cdb.context.monetary._1_application.command.TransactionScope;
 import br.cdb.feature.f000._1_application.ClosingService;
 import br.cdb.feature.f000._1_application.UserGuards;
 import br.cdb.feature.f002._1_application.AccountStreamPublisher;
+import br.cdb.feature.f004._1_application.UserCategoryService;
 import br.cdb.feature.f005._0_domain.UserTransaction;
 import br.cdb.feature.f000._0_domain.event.TransactionsDeleted;
 import br.commons.MessageBus;
@@ -43,6 +44,7 @@ public class TransactionUseCase {
 
     private final UserGuards guards;
     private final UserTransactionService userTransactionService;
+    private final UserCategoryService userCategoryService;
     private final ClosingService closingService;
     private final AccountStreamPublisher accountStreamPublisher;
 
@@ -164,17 +166,23 @@ public class TransactionUseCase {
         });
     }
 
-    public Result<TransactionView, BusinessError> transfer(UUID fromAccountId, UUID toAccountId, LocalDate date, BigDecimal amount) {
+    public Result<TransactionView, BusinessError> transfer(UUID personId, UUID fromAccountId, UUID toAccountId, LocalDate date, BigDecimal amount) {
         if (guards.ownsAccounts(fromAccountId, toAccountId) instanceof Result.Failure<Void, BusinessError>(var error)) {
             return Result.failure(error);
         }
         if (closingService.validateDate(date) instanceof Result.Failure<Void, BusinessError>(var error)) {
             return Result.failure(error);
         }
+        // PERSON_TRANSACTION.COD_CATEGORY é NOT NULL: transferência não tem categoria própria, então
+        // recebe a categoria "Sem categoria" da pessoa (mesmo fallback do import), garantindo o 1:1
+        // com MON_TRANSACTION nas duas pernas do grupo (saveUserTransactionForGroup cobre a perna irmã).
+        val categoryId = userCategoryService.findOrCreateUncategorizedCategory(personId).id();
         return ucTransaction.createTransfer(fromAccountId, toAccountId, date, amount).map(t -> {
+            val overlay = userTransactionService.save(t.id(), t.accountId(), personId, categoryId);
+            saveUserTransactionForGroup(t, personId, categoryId);
             accountStreamPublisher.upsert(fromAccountId);
             accountStreamPublisher.upsert(toAccountId);
-            return new TransactionView(t, null);
+            return new TransactionView(t, overlay);
         });
     }
 

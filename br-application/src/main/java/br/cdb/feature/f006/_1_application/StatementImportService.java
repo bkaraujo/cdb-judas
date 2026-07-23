@@ -7,6 +7,7 @@ import br.cdb.context.monetary._0_domain.model.CreditCard;
 import br.cdb.context.monetary._0_domain.model.Transaction;
 import br.cdb.context.monetary._1_application.usecase.AccountUseCase;
 import br.cdb.context.monetary._1_application.usecase.TransactionUseCase;
+import br.cdb.feature.f005._1_application.UserTransactionService;
 import br.cdb.feature.f006._0_domain.*;
 import br.cdb.feature.f006._1_application.confirm.BankStatementConfirmCommand;
 import br.cdb.feature.f006._1_application.confirm.InvoiceConfirmCommand;
@@ -32,7 +33,8 @@ import java.util.stream.Collectors;
 
 /**
  * Orchestrates credit-card statement import against the monetary context use cases.
- * Category assignment is done by the feature layer on top of PERSON_TRANSACTION (not here).
+ * Every persisted transaction also gets its {@code PERSON_TRANSACTION} overlay here (with the row's
+ * guessed/chosen {@code categoryId}), keeping the 1:1 invariant with {@code MON_TRANSACTION}.
  */
 @NullMarked
 public class StatementImportService {
@@ -49,19 +51,21 @@ public class StatementImportService {
     private final InstallmentExpander expander;
     private final GroupSignature groupSignature = new GroupSignature();
     private final CategoryGuesser categoryGuesser = new CategoryGuesser();
+    private final UserTransactionService userTransactionService;
     private final Clock clock;
     private final long maxFileBytes;
 
-    public StatementImportService(CreditCardProvider creditCardProvider, PdfTextExtractor extractor, List<StatementParser> parsers, long bytes) {
-        this(creditCardProvider, extractor, parsers, bytes, Clock.system(ZoneId.systemDefault()));
+    public StatementImportService(CreditCardProvider creditCardProvider, PdfTextExtractor extractor, List<StatementParser> parsers, long bytes, UserTransactionService userTransactionService) {
+        this(creditCardProvider, extractor, parsers, bytes, userTransactionService, Clock.system(ZoneId.systemDefault()));
     }
 
-    public StatementImportService(CreditCardProvider creditCardProvider, PdfTextExtractor extractor, List<StatementParser> parsers, long bytes, Clock clock) {
+    public StatementImportService(CreditCardProvider creditCardProvider, PdfTextExtractor extractor, List<StatementParser> parsers, long bytes, UserTransactionService userTransactionService, Clock clock) {
         this.creditCardProvider = creditCardProvider;
         this.extractor = extractor;
         this.expander = new InstallmentExpander(groupSignature);
         this.parsers = parsers;
         this.maxFileBytes = bytes;
+        this.userTransactionService = userTransactionService;
         this.clock = clock;
     }
 
@@ -97,7 +101,7 @@ public class StatementImportService {
         };
     }
 
-    public Result<ImportResult, BusinessError> confirm(InvoiceConfirmCommand cmd) {
+    public Result<ImportResult, BusinessError> confirm(UUID personId, InvoiceConfirmCommand cmd) {
         return resolveAccountsByCard(cmd).map(accountByCard -> {
             val today = LocalDate.now(clock);
             val seen = Collections.unmodifiableList(ucTransaction.transactions().getOrElse(List.of()));
@@ -107,8 +111,8 @@ public class StatementImportService {
                     .collect(Collectors.toSet());
 
             val saved = new ArrayList<Transaction>();
-            val installments = persistInstallments(partitionInstallments(cmd, accountByCard), accountByCard, today, existingGroups, saved);
-            val avista = persistAvista(cmd, accountByCard, today, seen, saved);
+            val installments = persistInstallments(personId, partitionInstallments(cmd, accountByCard), accountByCard, today, existingGroups, saved);
+            val avista = persistAvista(personId, cmd, accountByCard, today, seen, saved);
 
             return new ImportResult(installments.created() + avista.created(), 0, installments.skipped() + avista.skipped());
         });
@@ -140,7 +144,7 @@ public class StatementImportService {
         return installmentByGroup;
     }
 
-    private Counts persistInstallments(Map<UUID, List<InvoiceConfirmCommand.Row>> installmentByGroup,
+    private Counts persistInstallments(UUID personId, Map<UUID, List<InvoiceConfirmCommand.Row>> installmentByGroup,
                                        Map<UUID, UUID> accountByCard, LocalDate today,
                                        Set<UUID> existingGroups, List<Transaction> saved) {
         val seenGroups = new HashSet<UUID>();
@@ -154,7 +158,7 @@ public class StatementImportService {
                 continue;
             }
             for (val row : group) {
-                val tx = persist(row, accountOf(accountByCard, row), today, groupId, row.installmentNumber(), row.installmentTotal());
+                val tx = persist(personId, row, accountOf(accountByCard, row), today, groupId, row.installmentNumber(), row.installmentTotal());
                 if (tx != null) {
                     saved.add(tx);
                     created++;
@@ -165,7 +169,7 @@ public class StatementImportService {
         return new Counts(created, skipped);
     }
 
-    private Counts persistAvista(InvoiceConfirmCommand cmd, Map<UUID, UUID> accountByCard, LocalDate today,
+    private Counts persistAvista(UUID personId, InvoiceConfirmCommand cmd, Map<UUID, UUID> accountByCard, LocalDate today,
                                  List<Transaction> seen, List<Transaction> saved) {
         int created = 0;
         int skipped = 0;
@@ -178,7 +182,7 @@ public class StatementImportService {
                 skipped++;
                 continue;
             }
-            val tx = persist(row, accountId, today, null, null, null);
+            val tx = persist(personId, row, accountId, today, null, null, null);
             if (tx != null) {
                 saved.add(tx);
                 created++;
@@ -196,7 +200,7 @@ public class StatementImportService {
 
     // ── Bank-statement path ────────────────────────────────────────
 
-    public Result<ImportResult, BusinessError> confirmStatement(BankStatementConfirmCommand cmd) {
+    public Result<ImportResult, BusinessError> confirmStatement(UUID personId, BankStatementConfirmCommand cmd) {
         return ucAccount.findAccount(cmd.accountId()).map(account -> {
             val accountId = account.id();
             val today = LocalDate.now(clock);
@@ -226,7 +230,7 @@ public class StatementImportService {
                         }
                     }
                     case NEW -> {
-                        if (persistStatementRow(row, accountId, today)) {
+                        if (persistStatementRow(personId, row, accountId, today)) {
                             created++;
                         }
                     }
@@ -237,7 +241,7 @@ public class StatementImportService {
         });
     }
 
-    private boolean persistStatementRow(BankStatementConfirmCommand.Row row, UUID accountId, LocalDate today) {
+    private boolean persistStatementRow(UUID personId, BankStatementConfirmCommand.Row row, UUID accountId, LocalDate today) {
         val status = YearMonth.from(row.date()).isAfter(YearMonth.from(today)) ? Transaction.Status.SCHEDULED : Transaction.Status.CONFIRMED;
         val type = row.type() != null ? row.type() : (row.amount().signum() < 0 ? Transaction.Type.EXPENSE : Transaction.Type.INCOME);
         val tx = new Transaction(
@@ -246,7 +250,10 @@ public class StatementImportService {
                 null, 1, 1, null, null);
         try {
             return switch (ucTransaction.create(tx)) {
-                case Result.Success(var ignored) -> true;
+                case Result.Success(var saved) -> {
+                    userTransactionService.save(saved.id(), saved.accountId(), personId, row.categoryId());
+                    yield true;
+                }
                 case Result.Failure(var error) -> {
                     Logger.warn("Failed to persist statement row '%s': %s", row.description(), String.valueOf(error));
                     yield false;
@@ -320,7 +327,7 @@ public class StatementImportService {
     }
 
     @Nullable
-    private Transaction persist(InvoiceConfirmCommand.Row row, UUID accountId, LocalDate today,
+    private Transaction persist(UUID personId, InvoiceConfirmCommand.Row row, UUID accountId, LocalDate today,
                                 @Nullable UUID groupId, @Nullable Integer installmentNumber,
                                 @Nullable Integer totalInstallments
     ) {
@@ -332,7 +339,10 @@ public class StatementImportService {
                 totalInstallments == null ? 1 : totalInstallments, null, row.cardId());
         try {
             return switch (ucTransaction.create(tx)) {
-                case Result.Success(var saved) -> saved;
+                case Result.Success(var saved) -> {
+                    userTransactionService.save(saved.id(), saved.accountId(), personId, row.categoryId());
+                    yield saved;
+                }
                 case Result.Failure(var error) -> {
                     Logger.warn("Failed to persist imported row '%s': %s", row.description(), String.valueOf(error));
                     yield null;
