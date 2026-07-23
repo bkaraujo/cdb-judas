@@ -124,11 +124,11 @@ public abstract class BaseHttpTest {
     }
 
     private static void resetMonetaryRegistry() {
-        Registry.set(AccountRepository.class, new AccountJDBCRepository());
-        Registry.set(BalanceRepository.class, new UserAccountBalanceJDBCRepository());
-        Registry.set(CostCenterRepository.class, new CostCenterJDBCRepository());
-        Registry.set(TransactionRepository.class, new TransactionJDBCRepository());
-        Registry.set(CreditCardRepository.class, new CreditCardJDBCRepository());
+        Registry.set(AccountRepository.class, AccountJDBCRepository::new);
+        Registry.set(BalanceRepository.class, UserAccountBalanceJDBCRepository::new);
+        Registry.set(CostCenterRepository.class, CostCenterJDBCRepository::new);
+        Registry.set(TransactionRepository.class, TransactionJDBCRepository::new);
+        Registry.set(CreditCardRepository.class, CreditCardJDBCRepository::new);
 
         Registry.remove(AccountService.class);
         Registry.remove(BalanceService.class);

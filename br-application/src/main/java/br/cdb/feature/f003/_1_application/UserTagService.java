@@ -62,26 +62,16 @@ public class UserTagService {
         });
     }
 
-    public Result<Void, BusinessError> deleteMoving(UUID id, UUID targetId, UUID personId) {
+    /** Re-key dos vínculos para {@code targetId} (MOVE) — imperativo, feito antes da remoção da tag
+     *  de origem, que fica a cargo de {@code TagDeletedListener} (reage a {@code TagDeleted}). */
+    public Result<Void, BusinessError> reassignMoving(UUID id, UUID targetId, UUID personId) {
         return findById(id).flatMap(ignoredSource -> findById(targetId).flatMap(target -> {
             if (target.id().equals(id)) {
                 return Result.<Void>failure(new BusinessError.BusinessRule("Tag de destino deve ser diferente da origem"));
             }
             tagLinkService.reassignTag(id, targetId, personId);
-            repo.deleteById(id);
-            delete(personId, id);
             return Result.success();
         }));
-    }
-
-    /** Desvincula (apaga só a associação) e exclui a tag; transações permanecem intactas. */
-    public Result<Void, BusinessError> deleteDetached(UUID id, UUID personId) {
-        return findById(id).map(existing -> {
-            tagLinkService.deleteByTag(personId, id);
-            repo.deleteById(id);
-            delete(personId, id);
-            return null;
-        });
     }
 
     @SuppressWarnings("EmptyCatch")

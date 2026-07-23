@@ -4,6 +4,7 @@ import br.cdb.context.monetary.MonetaryUseCases;
 import br.cdb.context.monetary._0_domain.model.Transaction;
 import br.cdb.feature.f000._0_domain.DeletionOutcome;
 import br.cdb.feature.f000._0_domain.DeletionStrategy;
+import br.cdb.feature.f000._0_domain.event.CategoryDeleted;
 import br.cdb.feature.f000._0_domain.event.TransactionsDeleted;
 import br.cdb.feature.f002._1_application.AccountStreamPublisher;
 import br.cdb.feature.f004._0_domain.TransactionCategoryOverlay;
@@ -26,9 +27,11 @@ import java.util.stream.Collectors;
 /**
  * Use case da fatia {@code f004} (categories). {@code deleteCategory(DELETE)} ainda chama
  * {@link AccountStreamPublisher} direto (SSE de conta, hoje dono de f002 — transitório até essa
- * fatia migrar); a limpeza do overlay de transações apagadas em cascata publica
- * {@link TransactionsDeleted} em vez de chamar {@code UserTransactionService}/
- * {@code UserTransactionTagService} diretamente (best-effort, reagido por f005/f008).
+ * fatia migrar). A remoção das linhas {@code PERSON_CATEGORY} da subárvore publica
+ * {@link CategoryDeleted} (reagido por {@code CategoryDeletedListener}, aqui mesmo); a limpeza do
+ * overlay de transações apagadas em cascata publica {@link TransactionsDeleted} em vez de chamar
+ * {@code UserTransactionService}/{@code UserTransactionTagService} diretamente (best-effort,
+ * reagido por f005/f003).
  */
 @NullMarked
 @Singleton
@@ -71,7 +74,7 @@ public class CategoryUseCase {
             if (strategy == null) {
                 val count = transactionOverlay.findTransactionIdsByCategories(personId, subtree).size();
                 if (count > 0) return Result.success(new DeletionOutcome.Linked(count));
-                userCategoryService.deletePlain(subtree, personId);
+                MessageBus.submit(new CategoryDeleted(subtree, personId));
                 return Result.success(new DeletionOutcome.Completed());
             }
 
@@ -86,7 +89,7 @@ public class CategoryUseCase {
     private Result<Void, BusinessError> moveCategorySubtree(UUID id, UUID targetId, UUID personId) {
         return userCategoryService.validateMoveTarget(id, targetId, personId).map(subtree -> {
             subtree.forEach(nodeId -> transactionOverlay.reassignCategory(nodeId, targetId, personId));
-            userCategoryService.deletePlain(subtree, personId);
+            MessageBus.submit(new CategoryDeleted(subtree, personId));
             return null;
         });
     }
@@ -94,7 +97,7 @@ public class CategoryUseCase {
     /** Apaga as transações vinculadas à subárvore inteira e depois a subárvore. */
     private Result<Void, BusinessError> deleteCategoryWithTransactions(List<UUID> subtreeIds, UUID personId) {
         val txIds = transactionOverlay.findTransactionIdsByCategories(personId, subtreeIds);
-        return deleteLinkedTransactions(txIds, () -> userCategoryService.deletePlain(subtreeIds, personId));
+        return deleteLinkedTransactions(txIds, () -> MessageBus.submit(new CategoryDeleted(subtreeIds, personId)));
     }
 
     // CPD-OFF

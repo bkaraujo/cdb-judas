@@ -106,11 +106,11 @@ class CreditCardStatementImportServiceTest {
         Registry.remove(CostCenterUseCase.class);
         Registry.remove(CreditCardUseCase.class);
 
-        Registry.set(AccountRepository.class, accounts);
-        Registry.set(BalanceRepository.class, new InMemoryRepositories.Balances());
-        Registry.set(TransactionRepository.class, transactions);
-        Registry.set(CostCenterRepository.class, new InMemoryRepositories.CostCenters());
-        Registry.set(CreditCardRepository.class, cardRepo);
+        Registry.set(AccountRepository.class, () -> accounts);
+        Registry.set(BalanceRepository.class, InMemoryRepositories.Balances::new);
+        Registry.set(TransactionRepository.class, () -> transactions);
+        Registry.set(CostCenterRepository.class, InMemoryRepositories.CostCenters::new);
+        Registry.set(CreditCardRepository.class, () -> cardRepo);
     }
 
     /** Cartão do contexto: identificado só pelo last4, sempre vinculado a uma conta real existente. */

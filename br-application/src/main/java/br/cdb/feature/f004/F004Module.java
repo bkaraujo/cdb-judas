@@ -8,6 +8,7 @@ import br.cdb.feature.f004._2_infrastructure.persistence.UserCategoryJDBCReposit
 import br.commons.Logger;
 import br.commons.MessageBus;
 import br.commons.Registry;
+import br.commons.framework.message.MessageListener;
 import br.commons.framework.message.MessageResult;
 import br.commons.framework.persistence.jdbc.DataSource;
 import io.quarkus.runtime.StartupEvent;
@@ -40,6 +41,7 @@ public class F004Module {
     void onStart(@Observes @Priority(4) StartupEvent ev) {
         Logger.debug("Iniciando módulo..");
         MessageBus.subscribe(new Object(){
+            @MessageListener
             public MessageResult on(UserEvents.Created event) {
                 val personId = UUID.fromString(event.id());
 

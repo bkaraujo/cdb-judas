@@ -6,6 +6,7 @@ import br.cdb.feature.f000._0_domain.DeletionOutcome;
 import br.cdb.feature.f000._0_domain.DeletionStrategy;
 import br.cdb.feature.f002._1_application.AccountStreamPublisher;
 import br.cdb.feature.f003._0_domain.UserTag;
+import br.cdb.feature.f000._0_domain.event.TagDeleted;
 import br.cdb.feature.f000._0_domain.event.TransactionsDeleted;
 import br.commons.MessageBus;
 import br.commons.Result;
@@ -23,11 +24,14 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 /**
- * Use case da fatia {@code f008} (tags). {@code deleteTag(DELETE)} ainda chama
+ * Use case da fatia {@code f003} (tags). {@code deleteTag(DELETE)} ainda chama
  * {@link AccountStreamPublisher} direto (SSE de conta, hoje dono de f002 — transitório até essa
- * fatia migrar); a limpeza de overlay/vínculo das transações apagadas não é mais chamada direta —
- * publica {@link TransactionsDeleted} e deixa {@code TransactionOverlayListener} (f005) e
- * {@code TagTransactionListener} (aqui mesmo) reagirem, best-effort.
+ * fatia migrar). MOVE reatribui os vínculos imperativamente ({@code UserTagService.reassignMoving},
+ * re-key) e então publica {@link TagDeleted}; as demais estratégias publicam direto — em todo caso
+ * quem remove a linha {@code PERSON_TAG} e o vínculo remanescente é {@code TagDeletedListener}
+ * (aqui mesmo), best-effort. A limpeza de overlay/vínculo das transações apagadas (DELETE) publica
+ * {@link TransactionsDeleted}, reagida por {@code TransactionOverlayListener} (f005) e
+ * {@code TagTransactionListener} (aqui mesmo).
  */
 @NullMarked
 @Singleton
@@ -57,22 +61,40 @@ public class TagUseCase {
         if (strategy == null) {
             val count = userTagService.linkedTransactionIds(personId, id).size();
             if (count > 0) return Result.success(new DeletionOutcome.Linked(count));
-            return userTagService.deleteById(id).map(ignored -> new DeletionOutcome.Completed());
+            return userTagService.findById(id).map(ignored -> {
+                MessageBus.submit(new TagDeleted(id, personId));
+                return new DeletionOutcome.Completed();
+            });
         }
 
         val result = switch (strategy) {
-            case MOVE -> userTagService.deleteMoving(id, Objects.requireNonNull(targetId), personId);
+            case MOVE -> moveTag(id, Objects.requireNonNull(targetId), personId);
             case DELETE -> deleteTagWithTransactions(id, personId);
-            case DETACH -> userTagService.deleteDetached(id, personId);
+            case DETACH -> detachTag(id, personId);
         };
         return result.map(ignored -> new DeletionOutcome.Completed());
     }
 
-    /** Apaga as transações vinculadas à tag e depois a tag em si. */
+    /** Reatribui os vínculos (imperativo) e só então publica {@link TagDeleted} — os vínculos já
+     *  movidos tornam a purga do listener um no-op. */
+    private Result<Void, BusinessError> moveTag(UUID id, UUID targetId, UUID personId) {
+        return userTagService.reassignMoving(id, targetId, personId)
+                .ifSuccess(ignored -> MessageBus.submit(new TagDeleted(id, personId)));
+    }
+
+    /** Sem re-key a fazer: publicar {@link TagDeleted} já é suficiente (o listener desvincula e apaga a tag). */
+    private Result<Void, BusinessError> detachTag(UUID id, UUID personId) {
+        return userTagService.findById(id).map(ignored -> {
+            MessageBus.submit(new TagDeleted(id, personId));
+            return null;
+        });
+    }
+
+    /** Apaga as transações vinculadas à tag e depois publica {@link TagDeleted}. */
     private Result<Void, BusinessError> deleteTagWithTransactions(UUID id, UUID personId) {
         return userTagService.findById(id).flatMap(existing -> {
             val txIds = userTagService.linkedTransactionIds(personId, id);
-            return deleteLinkedTransactions(txIds, () -> userTagService.deleteById(id));
+            return deleteLinkedTransactions(txIds, () -> MessageBus.submit(new TagDeleted(id, personId)));
         });
     }
 

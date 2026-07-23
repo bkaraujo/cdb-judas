@@ -53,7 +53,7 @@ class F001ProfileServiceTest {
         people = new InMemoryPeople();
         prefs = new InMemoryPreferences();
         Registry.remove(PersonService.class);
-        Registry.set(PersonRepository.class, people);
+        Registry.set(PersonRepository.class, () -> people);
         useCase = new ProfileService(prefs);
     }
 

@@ -14,6 +14,6 @@ public final class PeopleBootstrap {
 
     public static void register() {
         val service = new PersonService(Registry.get(PersonRepository.class));
-        Registry.set(PeopleContext.class, new PeopleContext(service));
+        Registry.set(PeopleContext.class, () -> new PeopleContext(service));
     }
 }

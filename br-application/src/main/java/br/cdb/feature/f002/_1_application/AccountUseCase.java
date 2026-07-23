@@ -12,6 +12,7 @@ import br.cdb.context.monetary._1_application.usecase.TransactionUseCase;
 import br.cdb.core.web.Request;
 import br.cdb.feature.f000._0_domain.DeletionOutcome;
 import br.cdb.feature.f000._0_domain.DeletionStrategy;
+import br.cdb.feature.f000._0_domain.event.AccountDeleted;
 import br.cdb.feature.f000._0_domain.event.TransactionsDeleted;
 import br.cdb.feature.f000._1_application.Deletions;
 import br.cdb.feature.f000._1_application.UserGuards;
@@ -39,13 +40,10 @@ import java.util.UUID;
  * contexto monetário; referenciado por FQN completo (campo {@code ucAccount}) para evitar
  * colisão de import.
  *
- * <p>{@code deleteAccount} ainda chama {@link TransactionAccountOverlay#reassignAccount}/
- * {@link TransactionAccountOverlay#deleteByAccountAndPerson} diretamente <em>antes</em> do delete no
- * contexto — {@code PERSON_TRANSACTION} referencia {@code MON_ACCOUNT} via FK, então o overlay
- * precisa sumir/ser re-keyed antes que o contexto possa apagar a conta (sem {@code ON DELETE
- * CASCADE} ainda, essa chamada não pode virar reação a evento pós-delete). Já a limpeza de
- * vínculo de tag <em>depois</em> do delete (transações puramente apagadas, sem FK pendente)
- * publica {@link TransactionsDeleted} — mesmo padrão de {@code TagUseCase}/{@code CategoryUseCase}.
+ * <p>{@code deleteAccount} chama {@link TransactionAccountOverlay#reassignAccount} imperativamente
+ * só no MOVE (re-key, não limpeza pós-delete). O overlay {@code PERSON_ACCOUNT} e o das transações
+ * apagadas (não-MOVE) somem via evento pós-delete ({@link AccountDeleted}/{@link
+ * TransactionsDeleted}) — sem FK entre tabelas de dados, o contexto pode apagar a raiz primeiro.
  */
 @NullMarked
 @Singleton
@@ -138,10 +136,11 @@ public class AccountUseCase {
     }
 
     /**
-     * PERSON_ACCOUNT/PERSON_TRANSACTION referenciam MON_ACCOUNT (FK) — o overlay precisa sumir/ser
-     * re-keyed <em>antes</em> do contexto apagar a conta. MOVE é validado aqui primeiro (fronteira
-     * da feature) para nunca reatribuir para um alvo inválido; Block/Purge não têm alvo a validar e
-     * contam com o contexto como backstop (race → 409/400 simples, sem corrupção de dados).
+     * MOVE reatribui o overlay das transações antes do delete (re-key, não limpeza pós-delete) e é
+     * validado aqui primeiro (fronteira da feature) para nunca reatribuir para um alvo inválido.
+     * Sem FK forçando ordem: o contexto apaga a raiz e só então publica-se {@link AccountDeleted}
+     * (todas as estratégias) — {@code AccountDeletedListener} (f002) purga {@code PERSON_ACCOUNT} —
+     * e, fora do MOVE, {@link TransactionsDeleted} (overlay/tag das transações apagadas).
      */
     public Result<DeletionOutcome, BusinessError> deleteAccount(
             UUID personId, UUID id, @Nullable DeletionStrategy strategy, @Nullable UUID targetId) {
@@ -160,12 +159,10 @@ public class AccountUseCase {
             val targetCheck = validateAccountMoveTarget(id, target);
             if (targetCheck instanceof Result.Failure<Void, BusinessError>(var error)) return Result.failure(error);
             transactionOverlay.reassignAccount(id, target, personId);
-        } else {
-            transactionOverlay.deleteByAccountAndPerson(id, personId);
         }
-        userAccountService.delete(Request.personId(), id);
 
         return ucAccount.delete(new AccountCommand.Delete(id, Deletions.toPolicy(strategy, targetId))).map(ids -> {
+            MessageBus.submit(new AccountDeleted(id, personId));
             if (strategy != DeletionStrategy.MOVE) {
                 MessageBus.submit(new TransactionsDeleted(ids));
             }

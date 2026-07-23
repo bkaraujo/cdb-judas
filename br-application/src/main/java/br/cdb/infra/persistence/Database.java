@@ -23,21 +23,17 @@ import java.util.List;
  * servem só ao login (identificam a pessoa).</p>
  *
  * <p>Lookup tables: {@code MON_ACCOUNT_TYPE} (IDs UUID estáveis — ver {@link AccountTypeMapper}),
- * {@code TRANSACTION_NATURE} e {@code MON_STATUS} (IDs VARCHAR(20) com o nome do enum). As FKs
- * conformam a todas as relações dos diagramas Mermaid: além das lookups, as tabelas de dados
- * referenciam-se entre si, inclusive entre contextos (ex.: {@code SEC_USER→PEP_PERSON},
- * {@code PERSON_TRANSACTION→MON_TRANSACTION}). Por isso a ordem de criação em {@link #model()} e a
- * de limpeza em {@link #reset()} respeitam a dependência pai→filho. As FKs dos overlays de feature
- * usam {@code ON DELETE CASCADE} para {@code MON_ACCOUNT} ({@code PERSON_ACCOUNT.COD_ACCOUNT},
- * {@code PERSON_TRANSACTION.COD_ACCOUNT}) e para {@code MON_TRANSACTION}
- * ({@code PERSON_TRANSACTION.COD_TRANSACTION}, {@code PERSON_TRANSACTION_TAG.COD_TRANSACTION}): o
- * contexto monetário é dono da conta/transação e as apaga primeiro; os overlays de feature somem em
- * cascata (a limpeza reativa na feature — {@code TransactionOverlayListener}/{@code
- * TagTransactionListener}, reagindo a {@code TransactionsDeleted} — vira redundante/idempotente,
- * ver {@code .claude/refactor.md}). {@code PERSON_CATEGORY.COD_PARENT} também usa
- * {@code ON DELETE CASCADE} (apagar uma macro-categoria remove a subárvore). A migração one-shot
- * {@code AccountCascadeMigration} recria as duas constraints de {@code MON_ACCOUNT} num DB de dev
- * já existente (criado antes desta mudança).</p>
+ * {@code TRANSACTION_NATURE} e {@code MON_STATUS} (IDs VARCHAR(20) com o nome do enum). As FKs do
+ * schema existem <strong>só</strong> para essas tabelas de lookup (validade de enum). Entre tabelas
+ * de dados — inclusive entre contextos (ex.: {@code SEC_USER→PEP_PERSON},
+ * {@code PERSON_TRANSACTION→MON_TRANSACTION}) e a self-ref de {@code PERSON_CATEGORY.COD_PARENT} —
+ * não há FK: a integridade referencial é garantida pela aplicação via eventos de domínio (exclusão
+ * apaga a raiz e publica um {@code *Deleted}; o listener da fatia dona do dependente reage,
+ * best-effort — ver {@code TransactionOverlayListener}/{@code TagTransactionListener}/
+ * {@code AccountDeletedListener}/{@code CategoryDeletedListener}/{@code TagDeletedListener}). Isso
+ * permite apagar o pai antes dos dependentes sem {@code RESTRICT} bloqueando nem {@code CASCADE}
+ * preemptando o listener. A ordem de criação em {@link #model()} e a de limpeza em {@link #reset()}
+ * ainda respeita pai→filho por organização, não por exigência de FK.</p>
  *
  * <p>{@link #reset()} dá os comandos de limpeza para isolar testes (apaga só dados, preserva
  * lookups).</p>
@@ -94,7 +90,7 @@ public abstract class Database {
                 """
                 CREATE TABLE MON_CARD (
                     ID CHAR(36) PRIMARY KEY,
-                    COD_ACCOUNT CHAR(36) NOT NULL REFERENCES MON_ACCOUNT(ID),
+                    COD_ACCOUNT CHAR(36) NOT NULL,
                     TXT_LAST4 CHAR(4) NOT NULL,
                     FLG_ACTIVE CHAR(1) NOT NULL,
                     TMS_CREATE_AT TIMESTAMP NOT NULL,
@@ -108,8 +104,8 @@ public abstract class Database {
                     NUM_SIGNAL INT NOT NULL,
                     DEC_AMOUNT DECIMAL(19, 2) NOT NULL,
                     TMS_PURCHASE TIMESTAMP NOT NULL,
-                    COD_ACCOUNT CHAR(36) NOT NULL REFERENCES MON_ACCOUNT(ID),
-                    COD_CARD CHAR(36) REFERENCES MON_CARD(ID),
+                    COD_ACCOUNT CHAR(36) NOT NULL,
+                    COD_CARD CHAR(36),
                     COD_STATUS VARCHAR(20) NOT NULL REFERENCES MON_STATUS(ID),
                     COD_COST_CENTER CHAR(36) NOT NULL REFERENCES MON_COST_CENTER(ID),
                     DAT_PAYMENT DATE,
@@ -144,7 +140,7 @@ public abstract class Database {
                 """
                 CREATE TABLE SEC_USER (
                     ID CHAR(36) PRIMARY KEY,
-                    COD_PERSON CHAR(36) NOT NULL REFERENCES PEP_PERSON(ID),
+                    COD_PERSON CHAR(36) NOT NULL,
                     TXT_USERNAME VARCHAR(120) NOT NULL,
                     FLG_ACTIVE CHAR(1) NOT NULL,
                     TMS_CREATE_AT TIMESTAMP NOT NULL,
@@ -159,14 +155,14 @@ public abstract class Database {
                 """
                 CREATE TABLE USER_CREDENTIAL (
                     ID CHAR(36) PRIMARY KEY,
-                    COD_USER CHAR(36) NOT NULL REFERENCES SEC_USER(ID),
+                    COD_USER CHAR(36) NOT NULL,
                     TXT_PASSWORD VARCHAR(255) NOT NULL,
                     TMS_CREATE_AT TIMESTAMP NOT NULL
                 )
                 """,
                 """
                 CREATE TABLE PERSON_PREFERENCES (
-                    COD_PERSON CHAR(36) NOT NULL REFERENCES PEP_PERSON(ID),
+                    COD_PERSON CHAR(36) NOT NULL,
                     TXT_KEY VARCHAR(50) NOT NULL,
                     TXT_VALUE VARCHAR(255),
                     PRIMARY KEY (COD_PERSON, TXT_KEY)
@@ -174,8 +170,8 @@ public abstract class Database {
                 """,
                 """
                 CREATE TABLE PERSON_ACCOUNT (
-                    COD_PERSON CHAR(36) NOT NULL REFERENCES PEP_PERSON(ID),
-                    COD_ACCOUNT CHAR(36) NOT NULL REFERENCES MON_ACCOUNT(ID) ON DELETE CASCADE,
+                    COD_PERSON CHAR(36) NOT NULL,
+                    COD_ACCOUNT CHAR(36) NOT NULL,
                     TXT_COLOR VARCHAR(20) NOT NULL,
                     PRIMARY KEY (COD_PERSON, COD_ACCOUNT)
                 )
@@ -183,8 +179,8 @@ public abstract class Database {
                 """
                 CREATE TABLE PERSON_ACCOUNT_BALANCE (
                     ID CHAR(36) PRIMARY KEY,
-                    COD_PERSON CHAR(36) NOT NULL REFERENCES PEP_PERSON(ID),
-                    COD_ACCOUNT CHAR(36) NOT NULL REFERENCES MON_ACCOUNT(ID),
+                    COD_PERSON CHAR(36) NOT NULL,
+                    COD_ACCOUNT CHAR(36) NOT NULL,
                     NUM_PERIOD INT NOT NULL,
                     DEC_BALANCE DECIMAL(19, 2) NOT NULL
                 )
@@ -200,8 +196,8 @@ public abstract class Database {
                 """
                 CREATE TABLE PERSON_CATEGORY (
                     ID CHAR(36) PRIMARY KEY,
-                    COD_PERSON CHAR(36) NOT NULL REFERENCES PEP_PERSON(ID),
-                    COD_PARENT CHAR(36) REFERENCES PERSON_CATEGORY(ID) ON DELETE CASCADE,
+                    COD_PERSON CHAR(36) NOT NULL,
+                    COD_PARENT CHAR(36),
                     COD_NATURE VARCHAR(20) NOT NULL REFERENCES TRANSACTION_NATURE(ID),
                     TXT_NAME VARCHAR(80) NOT NULL,
                     FLG_SYSTEM CHAR(1) NOT NULL,
@@ -213,7 +209,7 @@ public abstract class Database {
                 """
                 CREATE TABLE PERSON_TAG (
                     ID CHAR(36) PRIMARY KEY,
-                    COD_PERSON CHAR(36) NOT NULL REFERENCES PEP_PERSON(ID),
+                    COD_PERSON CHAR(36) NOT NULL,
                     TXT_DESCRIPTION VARCHAR(255) NOT NULL,
                     TXT_COLOR VARCHAR(20) NOT NULL,
                     TMS_CREATE_AT TIMESTAMP NOT NULL
@@ -221,10 +217,10 @@ public abstract class Database {
                 """,
                 """
                 CREATE TABLE PERSON_TRANSACTION (
-                    COD_PERSON CHAR(36) NOT NULL REFERENCES PEP_PERSON(ID),
-                    COD_ACCOUNT CHAR(36) NOT NULL REFERENCES MON_ACCOUNT(ID) ON DELETE CASCADE,
-                    COD_TRANSACTION CHAR(36) NOT NULL REFERENCES MON_TRANSACTION(ID) ON DELETE CASCADE,
-                    COD_CATEGORY CHAR(36) NOT NULL REFERENCES PERSON_CATEGORY(ID),
+                    COD_PERSON CHAR(36) NOT NULL,
+                    COD_ACCOUNT CHAR(36) NOT NULL,
+                    COD_TRANSACTION CHAR(36) NOT NULL,
+                    COD_CATEGORY CHAR(36) NOT NULL,
                     TMS_CREATE_AT TIMESTAMP NOT NULL,
                     TMS_UPDATED_AT TIMESTAMP NOT NULL,
                     PRIMARY KEY (COD_PERSON, COD_ACCOUNT, COD_TRANSACTION)
@@ -232,9 +228,9 @@ public abstract class Database {
                 """,
                 """
                 CREATE TABLE PERSON_TRANSACTION_TAG (
-                    COD_TRANSACTION CHAR(36) NOT NULL REFERENCES MON_TRANSACTION(ID) ON DELETE CASCADE,
-                    COD_PERSON CHAR(36) NOT NULL REFERENCES PEP_PERSON(ID),
-                    COD_TAG CHAR(36) NOT NULL REFERENCES PERSON_TAG(ID),
+                    COD_TRANSACTION CHAR(36) NOT NULL,
+                    COD_PERSON CHAR(36) NOT NULL,
+                    COD_TAG CHAR(36) NOT NULL,
                     PRIMARY KEY (COD_TRANSACTION, COD_PERSON, COD_TAG)
                 )
                 """
@@ -254,10 +250,8 @@ public abstract class Database {
     }
 
     /**
-     * Comandos de limpeza de dados (isolamento entre testes). Ordem importa: cada tabela é apagada
-     * antes das que ela referencia via FK (filho→pai). {@code USER_CATEGORY} tem auto-referência
-     * ({@code COD_PARENT}), então as filhas são removidas antes das raízes em dois passos — sem
-     * recorrer a dialeto ({@code SET REFERENTIAL_INTEGRITY}), mantendo o DDL portável.
+     * Comandos de limpeza de dados (isolamento entre testes). Sem FK entre tabelas de dados, a ordem
+     * não é mais exigida pelo banco — mantida pai→filho por organização.
      */
     public static List<String> reset() {
         return List.of(
@@ -265,7 +259,6 @@ public abstract class Database {
                 "DELETE FROM PERSON_TRANSACTION",
                 "DELETE FROM PERSON_ACCOUNT_BALANCE",
                 "DELETE FROM PERSON_ACCOUNT",
-                "DELETE FROM PERSON_CATEGORY WHERE COD_PARENT IS NOT NULL",
                 "DELETE FROM PERSON_CATEGORY",
                 "DELETE FROM PERSON_TAG",
                 "DELETE FROM PERSON_PREFERENCES",

@@ -66,7 +66,6 @@ public class ContextBridge {
             AccountLimitMigration.apply(datasource);
             FeatureSchemaMigration.apply(datasource);
             DuplicateCategoryMigration.apply(datasource);
-            AccountCascadeMigration.apply(datasource);
 
             switch (datasource.begin()) {
                 case Result.Failure(var error) -> throw new IllegalStateException(error);

@@ -203,11 +203,11 @@ class StatementImportServiceTest {
         Registry.remove(CostCenterUseCase.class);
         Registry.remove(CreditCardUseCase.class);
 
-        Registry.set(AccountRepository.class, accounts);
-        Registry.set(BalanceRepository.class, new InMemoryRepositories.Balances());
-        Registry.set(TransactionRepository.class, transactions);
-        Registry.set(CostCenterRepository.class, new InMemoryRepositories.CostCenters());
-        Registry.set(CreditCardRepository.class, new InMemoryRepositories.Cards());
+        Registry.set(AccountRepository.class, () -> accounts);
+        Registry.set(BalanceRepository.class, InMemoryRepositories.Balances::new);
+        Registry.set(TransactionRepository.class, () -> transactions);
+        Registry.set(CostCenterRepository.class, InMemoryRepositories.CostCenters::new);
+        Registry.set(CreditCardRepository.class, InMemoryRepositories.Cards::new);
     }
 
     private static Account checking(String name) {
