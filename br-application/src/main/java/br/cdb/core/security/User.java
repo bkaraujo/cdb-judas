@@ -12,8 +12,10 @@ import java.time.LocalDateTime;
  * usuário são uma feature e vivem fora deste agregado ({@code feature.user.profile.Preferences}).
  *
  * <p>{@code personId} liga o login à {@code PEP_PERSON} — é a chave que todas as tabelas de dados
- * usam. É populado só na leitura ({@code findById}/{@code findByUsername}); nos construtores de
- * criação fica {@code null} (o repositório cunha a pessoa ao persistir).</p>
+ * usam. A pessoa é criada a montante pelo contexto people ({@code UserService} →
+ * {@code PersonUseCase.register}), antes do login; o {@code personId} é obrigatório na criação e o
+ * adaptador de persistência do login nunca escreve em {@code PEP_PERSON}. Os construtores curtos
+ * (sem {@code personId}) servem só à leitura/testes.</p>
  */
 @NullMarked
 public record User(

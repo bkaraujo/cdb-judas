@@ -1,5 +1,6 @@
 package br.cdb.feature.f000._1_application;
 
+import br.cdb.context.people._1_application.usecase.PersonUseCase;
 import br.cdb.core.security.User;
 import br.cdb.core.security.UserRepository;
 import br.cdb.feature.f000._0_domain.event.UserEvents;
@@ -10,6 +11,7 @@ import br.commons.business.BusinessError;
 import io.quarkus.elytron.security.common.BcryptUtil;
 import jakarta.inject.Singleton;
 import lombok.RequiredArgsConstructor;
+import lombok.val;
 import org.jspecify.annotations.NullMarked;
 
 import java.util.UUID;
@@ -19,25 +21,32 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class UserService {
 
+    // Contexto people não é bean CDI — resolve-se pelo Registry (mesmo padrão de f001 ProfileService).
+    private final PersonUseCase personUseCase = new PersonUseCase();
     private final UserRepository userRepository;
 
     public Result<User, BusinessError> createUser(String username, String name, char[] password) {
         Logger.debug("Criando usuário %s", username);
 
-        var user = userRepository.findByUsername(username).orElse(null);
-        if (user != null) {
+        if (userRepository.findByUsername(username).isPresent()) {
             return Result.failure(new BusinessError.Validation("Usuário [%s] já existe".formatted(username)));
         }
 
-        user = userRepository.save(new User(
-                UUID.randomUUID().toString(),
-                username,
-                name,
-                BcryptUtil.bcryptHash(new String(password))
-        ));
+        // 1 - Cria a Person (dono dos recursos; toda a funcionalidade referencia a Person)
+        return personUseCase.register(name).map(person -> {
+            // 2 - Cria o User (login) vinculado à Person
+            val user = userRepository.save(new User(
+                    UUID.randomUUID().toString(),
+                    username,
+                    name,
+                    BcryptUtil.bcryptHash(new String(password)),
+                    true, null, null,
+                    person.id().toString()
+            ));
 
-        MessageBus.submit(new UserEvents.Created(user.id(), user.username()));
-        return Result.success(user);
+            MessageBus.submit(new UserEvents.Created(user.id(), person.id().toString(), user.username()));
+            return user;
+        });
     }
 
 }

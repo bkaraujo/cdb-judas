@@ -1,8 +1,8 @@
 package br.cdb.feature.f000._0_domain.event;
 
-import br.cdb.core.security.User;
 import br.commons.business.BusinessEvent;
 import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
 
 @NullMarked
 public interface UserEvents extends BusinessEvent {
@@ -10,6 +10,7 @@ public interface UserEvents extends BusinessEvent {
     @NullMarked
     record Created(
             String id,
+            String personId,
             String username
     ) implements UserEvents {}
 

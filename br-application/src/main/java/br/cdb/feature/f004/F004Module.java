@@ -40,10 +40,12 @@ public class F004Module {
 
     void onStart(@Observes @Priority(4) StartupEvent ev) {
         Logger.debug("Iniciando módulo..");
+
         MessageBus.subscribe(new Object(){
             @MessageListener
             public MessageResult on(UserEvents.Created event) {
-                val personId = UUID.fromString(event.id());
+                Logger.debug("Cadastrando categorias para usuário %s", event.id());
+                val personId = UUID.fromString(event.personId());
 
                 seed(personId, Transaction.Type.INCOME,
                         Map.of(

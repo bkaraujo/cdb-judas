@@ -7,6 +7,7 @@ import io.quarkus.test.junit.QuarkusTest;
 import jakarta.inject.Inject;
 import org.junit.jupiter.api.Test;
 
+import java.util.Objects;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -25,16 +26,17 @@ class F010UserServiceTest extends BaseHttpTest {
     @Test
     void reinvocarCreateUserNaoDuplicaCategoriasPadrao() {
         String username = "restart-user";
-        UUID userId = switch (userService.createUser(username, "", "x".toCharArray())) {
-            case Result.Success(var user) -> UUID.fromString(user.id());
+        // Categorias são chaveadas pela Person (COD_PERSON), não pelo login — busca por personId.
+        UUID personId = switch (userService.createUser(username, "", "x".toCharArray())) {
+            case Result.Success(var user) -> UUID.fromString(Objects.requireNonNull(user.personId()));
             case Result.Failure(var error) -> throw new IllegalStateException(error.toString());
         };
 
-        int afterFirst = userCategoryService.findAll(userId).size();
+        int afterFirst = userCategoryService.findAll(personId).size();
         assertTrue(afterFirst > 0);
 
         userService.createUser(username, "", "x".toCharArray()); // simulates a restart
-        assertEquals(afterFirst, userCategoryService.findAll(userId).size(),
+        assertEquals(afterFirst, userCategoryService.findAll(personId).size(),
                 "reseeding must not duplicate categories");
     }
 }

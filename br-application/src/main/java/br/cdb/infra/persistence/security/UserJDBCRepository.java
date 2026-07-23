@@ -23,6 +23,11 @@ import java.util.UUID;
  * Adaptador JDBC (H2) da porta {@link UserRepository}: tabela {@code SEC_USER} (identidade) e
  * {@code USER_CREDENTIAL} (histórico de senhas), ligadas a {@code PEP_PERSON} via
  * {@code COD_PERSON}. Preferências são uma feature à parte ({@code PreferencesJDBCRepository}).
+ *
+ * <p>A {@code PEP_PERSON} é criada a montante pelo contexto people ({@code UserService} →
+ * {@code PersonUseCase.register}); o login apenas a referencia — este adaptador nunca escreve
+ * em {@code PEP_PERSON}. Ao criar um login novo, {@link #save(User)} exige {@code user.personId()}
+ * não-nulo; numa atualização o vínculo já persistido é reaproveitado.</p>
  */
 @NullMarked
 public final class UserJDBCRepository implements UserRepository {
@@ -68,29 +73,12 @@ public final class UserJDBCRepository implements UserRepository {
             val now = Timestamp.valueOf(Time.now());
             val existingPersonId = findPersonId(tx, user.id());
 
-            String personId;
-            if (existingPersonId == null) {
-                // Cunha a pessoa vinculada ao login (FK obrigatória): nome inicial cai pro
-                // username quando ausente. Depois de criada, o nome de exibição é propriedade
-                // exclusiva do contexto people (fatia profile via PeopleContext.renamePerson) —
-                // este adaptador nunca mais escreve em PEP_PERSON.TXT_NAME.
-                val rawName = user.name();
-                val personName = rawName != null ? rawName : user.username();
-                personId = UUID.randomUUID().toString();
-                tx.execute(
-                        "INSERT INTO PEP_PERSON (ID, TXT_NAME, TXT_LOCALE, TXT_LANGUAGE, TMS_CREATE_AT, TMS_UPDATED_AT)"
-                                + " VALUES (?, ?, ?, ?, ?, ?)",
-                        JDBCParameter.of(
-                                personId,
-                                personName,
-                                "pt-BR",
-                                "pt-BR",
-                                now,
-                                now
-                        )
-                ).get();
-            } else {
-                personId = existingPersonId;
+            // A Person é criada a montante (contexto people); numa atualização o vínculo já existe
+            // e é reaproveitado. Só a criação de um login novo exige o personId explícito.
+            val personId = user.personId() != null ? user.personId() : existingPersonId;
+            if (personId == null) {
+                throw new IllegalStateException(
+                        "User.personId é obrigatório para criar o login (a Person deve ser criada antes)");
             }
 
             if (existingPersonId == null) {
@@ -129,8 +117,8 @@ public final class UserJDBCRepository implements UserRepository {
                     )
             ).get();
 
-            // Devolve o agregado com o personId persistido (o de entrada pode vir nulo dos
-            // construtores de criação) — o cache do decorador indexa este resultado.
+            // Devolve o agregado com o personId (criado a montante pelo contexto people) — o
+            // cache do decorador indexa este resultado.
             return Result.success(new User(
                     user.id(), user.username(), user.name(), user.password(),
                     user.active(), user.createdAt(), user.updatedAt(), personId));
