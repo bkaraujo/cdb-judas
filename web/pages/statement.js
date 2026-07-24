@@ -12,12 +12,12 @@
   let state = null;
 
   function resetState() {
-    const now = new Date();
+    const p = window.App.PeriodService.get(); // { month: 1-12, year }
     state = {
       $root: null,
       accountId: null,
-      month: now.getMonth() + 1, // 1-12 (backend usa 1-based)
-      year: now.getFullYear(),
+      month: p.month, // 1-12 (backend usa 1-based)
+      year: p.year,
       items: [],
       summary: {}, // panorama por conta no período (accountId -> resumo)
       txIndex: [], // lançamentos do mês (todas as contas) — para editar/excluir e detectar transferências
@@ -125,7 +125,7 @@
       year: state.year,
       onPrev: function () { window.shiftMonth(state, -1, true); reloadPeriod(); },
       onNext: function () { window.shiftMonth(state, +1, true); reloadPeriod(); },
-      onChange: function (m, y) { state.month = m; state.year = y; reloadPeriod(); },
+      onChange: function (m, y) { window.App.PeriodService.set(m, y); state.month = m; state.year = y; reloadPeriod(); },
     });
     $header.find('[data-region=head-actions]').append($periodNav);
     $page.append($header);

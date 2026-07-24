@@ -148,6 +148,10 @@
     m = ((m % 12) + 12) % 12;
     state.month = m + base;
     state.year = y;
+    // Persist the navigated period so it survives screen switches (1-12).
+    if (window.App && window.App.PeriodService) {
+      window.App.PeriodService.set(oneBased ? state.month : state.month + 1, state.year);
+    }
   }
 
   // Expose as convenience globals (pages call window.* like window.btn/window.esc).

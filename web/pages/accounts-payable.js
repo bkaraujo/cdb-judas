@@ -10,15 +10,15 @@
   let state = null;
 
   function resetState() {
-    const now = new Date();
+    const p = window.App.PeriodService.get(); // { month: 1-12, year }
     state = {
       $root: null,
       loading: true,
       payable: [],
       receivable: [],
       tab: 'payable',       // 'payable' | 'receivable'
-      month: now.getMonth(),
-      year: now.getFullYear(),
+      month: p.month - 1,
+      year: p.year,
     };
   }
 
@@ -78,7 +78,7 @@
       year: state.year,
       onPrev: function () { window.shiftMonth(state, -1, false); render(); },
       onNext: function () { window.shiftMonth(state, +1, false); render(); },
-      onChange: function (m, y) { state.month = m - 1; state.year = y; render(); },
+      onChange: function (m, y) { window.App.PeriodService.set(m, y); state.month = m - 1; state.year = y; render(); },
     });
     $headRight.append($periodNav);
 

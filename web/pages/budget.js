@@ -20,16 +20,14 @@
   let state = null;
 
   function resetState() {
+    const p = window.App.PeriodService.get(); // { month: 1-12, year }
     state = {
       $root: null,
       loading: true,
       items: [],
-      month: 0,      // 0-based
-      year: 0,
+      month: p.month - 1,      // 0-based
+      year: p.year,
     };
-    const now = new Date();
-    state.month = now.getMonth();
-    state.year = now.getFullYear();
   }
 
 
@@ -105,7 +103,7 @@
       year: state.year,
       onPrev: function () { shiftMonth(-1); loadBudget(); },
       onNext: function () { shiftMonth(+1); loadBudget(); },
-      onChange: function (m, y) { state.month = m - 1; state.year = y; loadBudget(); },
+      onChange: function (m, y) { window.App.PeriodService.set(m, y); state.month = m - 1; state.year = y; loadBudget(); },
     });
     $actions.append($pnav);
     $actions.append(window.btn({

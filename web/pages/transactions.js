@@ -23,13 +23,13 @@
   let state = null;
 
   function resetState() {
-    const now = new Date();
+    const p = window.App.PeriodService.get(); // { month: 1-12, year }
     state = {
       $root: null,
       loading: true,
       transactions: [],
-      month: now.getMonth(),       // 0-11
-      year: now.getFullYear(),
+      month: p.month - 1,       // 0-11
+      year: p.year,
       search: '',
       filterType: 'all',           // 'all'|'income'|'expense'|'transfer'
       filterAccount: '',
@@ -133,7 +133,7 @@
       year: state.year,
       onPrev: function () { window.shiftMonth(state, -1, false); loadTransactions(); },
       onNext: function () { window.shiftMonth(state, +1, false); loadTransactions(); },
-      onChange: function (m, y) { state.month = m - 1; state.year = y; loadTransactions(); },
+      onChange: function (m, y) { window.App.PeriodService.set(m, y); state.month = m - 1; state.year = y; loadTransactions(); },
     });
     $headRight.append($periodNav);
 

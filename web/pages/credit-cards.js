@@ -23,12 +23,12 @@
   let state = null;
 
   function resetState() {
-    const now = new Date();
+    const p = window.App.PeriodService.get(); // { month: 1-12, year }
     state = {
       $root: null,
       groups: [], // [{ account, cards: [...] }]
-      month: now.getMonth() + 1, // 1..12
-      year: now.getFullYear(),
+      month: p.month, // 1..12
+      year: p.year,
       allTx: [],
       txLoading: true,
     };
@@ -123,7 +123,7 @@
       year: state.year,
       onPrev: function () { window.shiftMonth(state, -1, true); render(); },
       onNext: function () { window.shiftMonth(state, +1, true); render(); },
-      onChange: function (m, y) { state.month = m; state.year = y; render(); },
+      onChange: function (m, y) { window.App.PeriodService.set(m, y); state.month = m; state.year = y; render(); },
     });
     $actions.append($periodNav);
     $actions.append(window.btn({

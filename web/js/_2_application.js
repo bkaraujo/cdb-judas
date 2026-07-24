@@ -5,6 +5,7 @@
   const files = [
     'event-bus.js',
     'cache-store.js',
+    'period-service.js',
     'preferences-service.js',
     'system-service.js',
     'self-service.js',
