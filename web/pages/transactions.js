@@ -1,4 +1,6 @@
-/* pages/transactions.js — Lançamentos (list + filtros + CRUD modal + status). */
+/* pages/transactions.js — Lançamentos (list + filtros + CRUD modal + status).
+ * Card da lista no leiaute de linha do Extrato de Contas: data | conta (coluna fixa) |
+ * categoria (coluna fixa) | descrição | badge de status | valor | ações. */
 (function () {
   window.Pages = window.Pages || {};
 
@@ -36,7 +38,6 @@
       filterCategory: '',
       filterStatus: '',
       showFilters: false,
-      openMenuId: null,            // currently-open row dropdown
     };
   }
 
@@ -54,9 +55,6 @@
     return window.monthBounds(state.month, state.year).from;
   }
 
-  // Row actions (create/edit modal, delete, mark-paid) live in the shared
-  // pages/transactions/actions.js; state-dependent bits (period tx list for transfer
-  // detection, default date, reload) are passed through.
   function openFormModal(existing) {
     window.transactionActions.openFormModal({
       existing: existing || null,
@@ -203,6 +201,16 @@
     // ── Table / list ──
     $page.append(renderList());
 
+    // Footer: how many transactions are on display.
+    if (!state.loading) {
+      const txCount = filteredTxs().length;
+      $page.append(
+        '<div style="text-align:right;padding:12px 4px 0;font-size:12px;color:var(--text-muted);">' +
+          esc(txCount + (txCount === 1 ? ' transação exibida' : ' transações exibidas')) +
+        '</div>'
+      );
+    }
+
     $root.empty().append($page);
   }
 
@@ -284,6 +292,7 @@
     );
   }
 
+  // Statement-style card: data | conta (coluna fixa) | categoria (coluna fixa) | descrição | badge | valor | ações.
   function renderList() {
     const list = filteredTxs();
 
@@ -307,15 +316,24 @@
     const accMap = {};
     accs.forEach(function (a) { accMap[String(a.id)] = a; });
 
+    // Fixed category column: width of the widest possible category label so
+    // every description starts at the same x, regardless of each row's category.
+    const catLens = window.flatCategories().map(function (c) { return c.label.length; });
+    const catColCh = (catLens.length ? Math.max.apply(null, catLens) : 12) + 1;
+
+    // Fixed account column, same idea (widest account name).
+    const accLens = accs.map(function (a) { return (a.name || '').length; });
+    const accColCh = (accLens.length ? Math.max.apply(null, accLens) : 10) + 1;
+
     // Sort by date desc.
     const sorted = list.slice().sort(function (a, b) {
       return String(b.date).localeCompare(String(a.date));
     });
 
-    sorted.forEach(function (tx, idx) {
-      const isLast = idx === sorted.length - 1;
+    sorted.forEach(function (tx, i) {
+      const isLast = i === sorted.length - 1;
       const cat = catMap[tx.categoryId];
-      const catLbl = cat ? categoryLabel(cat) : '—';
+      const catLbl = cat ? categoryLabel(cat) : '';
       const acc = accMap[String(tx.accountId)];
       const accName = acc ? acc.name : '—';
       const amt = Number(tx.amount) || 0;
@@ -325,62 +343,60 @@
         'var(--expense)';
       const stKey = tx.status || 'confirmed';
 
-      const iconName = tx.type === 'income' ? 'arrowUp'
-                   : tx.type === 'transfer' ? 'activity'
-                   : 'arrowDown';
+      const rowStyle =
+        'display:flex;align-items:center;gap:16px;padding:11px 20px;' +
+        (isLast ? '' : 'border-bottom:1px solid var(--border-light);') +
+        'transition:background var(--transition);';
 
-      const $row = $(
-        '<div class="card-row" data-row="tx" data-id="' + esc(tx.id) + '" ' +
-          'style="padding: 8px 16px;' + (isLast ? 'border-bottom:none;' : '') + '">' +
-          '<div class="card-row-main">' +
-            '<div style="width:30px;height:30px;border-radius:8px;flex-shrink:0;display:flex;align-items:center;justify-content:center;' +
-              'background:' + (tx.type === 'income' ? 'var(--income-light)' : tx.type === 'transfer' ? 'var(--accent-light)' : 'var(--expense-light)') + ';' +
-              'color:' + amtColor + ';">' +
-              window.icon(iconName, 14) +
-            '</div>' +
-            '<div style="min-width:0;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:13px;">' +
-              '<span style="color:var(--text-muted);">' + esc(fmtDate(tx.date)) + '</span>' +
-              '<span style="color:var(--text-muted);"> • </span>' +
-              '<span style="font-weight:600;text-transform:uppercase;">' + esc(tx.description || '—') + '</span>' +
-              '<span style="color:var(--text-muted);"> • ' + esc(accName) + ' • ' + esc(catLbl) + '</span>' +
-            '</div>' +
-            '<span class="badge badge-' + esc(STATUS_BADGE[stKey] || 'muted') + '" ' +
-              'style="flex-shrink:0;">' + esc(STATUS_LABEL[stKey] || stKey) + '</span>' +
-            '<div style="min-width:120px;text-align:right;font-weight:700;font-size:14px;color:' + amtColor + ';flex-shrink:0;">' +
-              esc(fmt(amt)) +
-            '</div>' +
-          '</div>' +
-          '<div class="card-row-actions" data-region="row-actions"></div>' +
-        '</div>'
-      );
+      const descStyle =
+        'flex:1;font-size:13px;font-weight:500;color:var(--text-primary);' +
+        'overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-transform:uppercase;';
 
-      const $acts = $row.find('[data-region=row-actions]');
-      // Quick mark-as-paid for non-confirmed.
-      if (stKey !== 'confirmed') {
-        $acts.append(
-          '<button type="button" class="icon-btn" title="Confirmar" ' +
+      const catStyle =
+        'flex:0 0 ' + catColCh + 'ch;width:' + catColCh + 'ch;' +
+        'font-size:12px;color:var(--text-muted);' +
+        'overflow:hidden;text-overflow:ellipsis;white-space:nowrap;';
+
+      const accStyle =
+        'flex:0 0 ' + accColCh + 'ch;width:' + accColCh + 'ch;' +
+        'font-size:12px;color:var(--text-muted);text-align:left;' +
+        'overflow:hidden;text-overflow:ellipsis;white-space:nowrap;';
+
+      // Row actions; mark-paid only for non-confirmed rows.
+      const markPaidHtml = stKey !== 'confirmed'
+        ? '<button type="button" class="icon-btn" title="Confirmar" ' +
             'data-act="mark-paid" data-id="' + esc(tx.id) + '" ' +
             'style="width:28px;height:28px;color:var(--income);">' +
             window.icon('check', 14) +
           '</button>'
-        );
-      }
-      $acts.append(
+        : '';
+      const actionsHtml =
+        markPaidHtml +
         '<button type="button" class="icon-btn" title="Editar" ' +
-          'data-act="edit" data-id="' + esc(tx.id) + '" ' +
-          'style="width:28px;height:28px;">' +
+          'data-act="edit" data-id="' + esc(tx.id) + '" style="width:28px;height:28px;">' +
           window.icon('edit', 14) +
-        '</button>'
-      );
-      $acts.append(
+        '</button>' +
         '<button type="button" class="icon-btn" title="Excluir" ' +
-          'data-act="trash" data-id="' + esc(tx.id) + '" ' +
-          'style="width:28px;height:28px;color:var(--expense);">' +
+          'data-act="trash" data-id="' + esc(tx.id) + '" style="width:28px;height:28px;color:var(--expense);">' +
           window.icon('trash', 14) +
-        '</button>'
-      );
+        '</button>';
 
-      $card.append($row);
+      $card.append(
+        '<div class="stm-row" data-row="tx" data-id="' + esc(tx.id) + '" style="' + rowStyle + '">' +
+          '<span style="font-size:12px;color:var(--text-muted);min-width:56px;">' +
+            esc(fmtDate(tx.date)) +
+          '</span>' +
+          '<span style="' + accStyle + '">' + esc(accName) + '</span>' +
+          '<span style="' + catStyle + '">' + esc(catLbl) + '</span>' +
+          '<span style="' + descStyle + '">' + esc(tx.description || '—') + '</span>' +
+          '<span class="badge badge-' + esc(STATUS_BADGE[stKey] || 'muted') + '" ' +
+          'style="flex-shrink:0;">' + esc(STATUS_LABEL[stKey] || stKey) + '</span>' +
+          '<span style="font-size:13px;font-weight:700;color:' + amtColor + ';min-width:100px;text-align:right;">' +
+            esc(fmt(amt)) +
+          '</span>' +
+          '<div style="display:flex;align-items:center;justify-content:flex-end;gap:2px;width:40px;flex-shrink:0;">' + actionsHtml + '</div>' +
+        '</div>'
+      );
     });
 
     return $card;
@@ -408,7 +424,6 @@
 
     $root.on('input.tx', '[data-act=search]', function () {
       state.search = $(this).val() || '';
-      // Re-render only the list+summary area would be ideal; full render is fine for now.
       // Preserve focus by refocusing the search input after render.
       const caretPos = this.selectionStart;
       render();
