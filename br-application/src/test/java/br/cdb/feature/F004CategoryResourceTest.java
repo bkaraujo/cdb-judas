@@ -349,10 +349,12 @@ public class F004CategoryResourceTest extends BaseHttpTest {
                 .then().statusCode(201)
                 .extract().jsonPath().getString("id");
 
+        // A transferência já grava o overlay das duas pernas; aqui só reaponta a perna de saída
+        // para a subcategoria customizada, para exercitar a expansão do par na exclusão da categoria.
         dataSource.execute(
-                "INSERT INTO PERSON_TRANSACTION (COD_PERSON, COD_ACCOUNT, COD_TRANSACTION, COD_CATEGORY, TMS_CREATE_AT, TMS_UPDATED_AT) "
-                        + "VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)",
-                JDBCParameter.of(TEST_USER_ID, accountA, outboundId, subId)
+                "UPDATE PERSON_TRANSACTION SET COD_CATEGORY = ?, TMS_UPDATED_AT = CURRENT_TIMESTAMP "
+                        + "WHERE COD_PERSON = ? AND COD_ACCOUNT = ? AND COD_TRANSACTION = ?",
+                JDBCParameter.of(subId, TEST_USER_ID, accountA, outboundId)
         );
 
         asTestUser()

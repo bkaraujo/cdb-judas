@@ -20,6 +20,9 @@ import java.util.*;
 public class UserCategoryService {
 
     private static final String TYPE = "CATEGORY";
+    /** Macro e subcategoria de sistema que classificam as duas pernas de uma transferência. */
+    private static final String TRANSFER_MACRO = "9. Outros";
+    private static final String TRANSFER_CATEGORY = "Transferência";
 
     private final UserCategoryRepository repo;
     private final SSE sse;
@@ -91,6 +94,32 @@ public class UserCategoryService {
                 .findFirst()
                 .orElseGet(() -> {
                     val created = repo.save(new UserCategory(UUID.randomUUID(), personId, Transaction.Type.EXPENSE, "Sem categoria", null, true));
+                    upsert(created);
+                    return created;
+                });
+    }
+
+    /**
+     * Categoria de sistema "9. Outros / Transferência" da natureza pedida (uma para EXPENSE, outra para
+     * INCOME), usada por cada perna de uma transferência. Cria a macro "9. Outros" e a subcategoria
+     * "Transferência" (marcada como sistema, não excluível) se ainda não existirem.
+     */
+    public UserCategory findOrCreateTransferCategory(UUID personId, Transaction.Type nature) {
+        val all = repo.findAllByPerson(personId);
+        return all.stream()
+                .filter(c -> TRANSFER_CATEGORY.equalsIgnoreCase(c.name()) && c.nature() == nature && c.parentId() != null)
+                .filter(c -> all.stream().anyMatch(p -> p.id().equals(c.parentId()) && TRANSFER_MACRO.equalsIgnoreCase(p.name())))
+                .findFirst()
+                .orElseGet(() -> {
+                    val macro = all.stream()
+                            .filter(c -> TRANSFER_MACRO.equalsIgnoreCase(c.name()) && c.nature() == nature && c.parentId() == null)
+                            .findFirst()
+                            .orElseGet(() -> {
+                                val m = repo.save(new UserCategory(UUID.randomUUID(), personId, nature, TRANSFER_MACRO, null));
+                                upsert(m);
+                                return m;
+                            });
+                    val created = repo.save(new UserCategory(UUID.randomUUID(), personId, nature, TRANSFER_CATEGORY, macro.id(), true));
                     upsert(created);
                     return created;
                 });

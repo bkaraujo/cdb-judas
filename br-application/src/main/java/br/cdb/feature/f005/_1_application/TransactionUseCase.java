@@ -173,13 +173,14 @@ public class TransactionUseCase {
         if (closingService.validateDate(date) instanceof Result.Failure<Void, BusinessError>(var error)) {
             return Result.failure(error);
         }
-        // PERSON_TRANSACTION.COD_CATEGORY é NOT NULL: transferência não tem categoria própria, então
-        // recebe a categoria "Sem categoria" da pessoa (mesmo fallback do import), garantindo o 1:1
-        // com MON_TRANSACTION nas duas pernas do grupo (saveUserTransactionForGroup cobre a perna irmã).
-        val categoryId = userCategoryService.findOrCreateUncategorizedCategory(personId).id();
+        // PERSON_TRANSACTION.COD_CATEGORY é NOT NULL. Cada perna recebe a categoria de sistema
+        // "9. Outros / Transferência" da sua natureza: a saída (EXPENSE) a de despesa, a entrada
+        // (INCOME) a de receita. Cobre as duas pernas do grupo, mantendo o 1:1 com MON_TRANSACTION.
+        val expenseCategoryId = userCategoryService.findOrCreateTransferCategory(personId, Transaction.Type.EXPENSE).id();
+        val incomeCategoryId = userCategoryService.findOrCreateTransferCategory(personId, Transaction.Type.INCOME).id();
         return ucTransaction.createTransfer(fromAccountId, toAccountId, date, amount).map(t -> {
-            val overlay = userTransactionService.save(t.id(), t.accountId(), personId, categoryId);
-            saveUserTransactionForGroup(t, personId, categoryId);
+            val overlay = userTransactionService.save(t.id(), t.accountId(), personId, transferCategoryFor(t, expenseCategoryId, incomeCategoryId));
+            saveTransferGroupCategories(t, personId, expenseCategoryId, incomeCategoryId);
             accountStreamPublisher.upsert(fromAccountId);
             accountStreamPublisher.upsert(toAccountId);
             return new TransactionView(t, overlay);
@@ -201,5 +202,20 @@ public class TransactionUseCase {
                 .filter(t -> groupId.equals(t.groupId()))
                 .filter(t -> !t.id().equals(first.id()))
                 .forEach(t -> userTransactionService.save(t.id(), t.accountId(), personId, categoryId));
+    }
+
+    private static UUID transferCategoryFor(Transaction leg, UUID expenseCategoryId, UUID incomeCategoryId) {
+        return leg.type() == Transaction.Type.EXPENSE ? expenseCategoryId : incomeCategoryId;
+    }
+
+    /** Aplica a categoria de transferência da natureza de cada perna às demais pernas do grupo. */
+    private void saveTransferGroupCategories(Transaction first, UUID personId, UUID expenseCategoryId, UUID incomeCategoryId) {
+        val groupId = first.groupId();
+        if (groupId == null) return;
+        ucTransaction.transactions().getOrElse(List.of()).stream()
+                .filter(t -> groupId.equals(t.groupId()))
+                .filter(t -> !t.id().equals(first.id()))
+                .forEach(t -> userTransactionService.save(t.id(), t.accountId(), personId,
+                        transferCategoryFor(t, expenseCategoryId, incomeCategoryId)));
     }
 }

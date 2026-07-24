@@ -52,7 +52,7 @@ public class F004Module {
                                 "0. CLT", List.of("Salário", "Benefício", "13º Salário", "Férias", "Restituição", "PLR"),
                                 "1. CNPJ", List.of("Pró labore"),
                                 "2. Investimento", List.of("Dividendos", "Juros sobre capital", "Resgate"),
-                                "9. Outros", List.of("Restituição", "Freelance", "Vendas", "IRPF", "FGTS")
+                                "9. Outros", List.of("Restituição", "Freelance", "Vendas", "IRPF", "FGTS", "Transferência")
                         ));
 
                 seed(personId, Transaction.Type.EXPENSE,
@@ -64,7 +64,7 @@ public class F004Module {
                                 "5. Lazer", List.of("Cinema/Teatro/Concerto", "Cafés/Bares/Restaurantes", "Atrações Turísticas", "Livraria, jornais e revistas", "Games", "Midias e acessórios", "Passagens", "Hospedagens"),
                                 "6. Despesas Pessoais", List.of("Higiene Pessoal", "Estética/Beleza", "Vestuário", "Mesadas", "Utensílios", "Presentes", "Assinaturas", "Art. Infantis", "Art. desportívos", "Telefonia", "Outros"),
                                 "7. Investimento", List.of("Renda Fixa", "Renda Variável", "Crypto"),
-                                "9. Outros", List.of("Tarifas Bancárias", "Impostos", "Pensões", "Doações e dízimos", "Empréstimos", "Eventos", "Outros")
+                                "9. Outros", List.of("Tarifas Bancárias", "Impostos", "Pensões", "Doações e dízimos", "Empréstimos", "Eventos", "Outros", "Transferência")
                         ));
 
                 return MessageResult.AVAILABLE;
@@ -111,11 +111,11 @@ public class F004Module {
                         if (!children.contains(name)) {
                             repository.save(new UserCategory(
                                     UUID.randomUUID(),
-                                    personId,             // COD_PERSON
-                                    nature,             // COD_NATURE
-                                    name,               // TXT_NAME
-                                    parentId,           // COD_PARENT
-                                    false               // FLG_SYSTEM (N)
+                                    personId,                               // COD_PERSON
+                                    nature,                                 // COD_NATURE
+                                    name,                                   // TXT_NAME
+                                    parentId,                               // COD_PARENT
+                                    "Transferência".equalsIgnoreCase(name)  // FLG_SYSTEM: Transferência é categoria de sistema (não excluível)
                             ));
                         }
                     }
