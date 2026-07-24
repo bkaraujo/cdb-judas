@@ -20,6 +20,7 @@
       year: now.getFullYear(),
       items: [],
       summary: {}, // panorama por conta no período (accountId -> resumo)
+      txIndex: [], // lançamentos do mês (todas as contas) — para editar/excluir e detectar transferências
       loading: false,
     };
   }
@@ -37,6 +38,15 @@
     return window.byId(checkingAccounts(), state.accountId);
   }
 
+  function currentPeriod() {
+    return window.Domain.Period.create(state.month, state.year);
+  }
+
+  // Full transaction (all fields) behind a statement row, looked up in the month index.
+  function findFullTx(id) {
+    return window.byId(state.txIndex, id);
+  }
+
   // ── Fetch ─────────────────────────────────────────────────
   function loadStatement() {
     if (!state.accountId) {
@@ -52,7 +62,7 @@
     const openingBalance = sum ? sum.openingBalance : (account ? (+account.balance || 0) : 0);
     return window.App.StatementService.load(
         state.accountId,
-        window.Domain.Period.create(state.month, state.year),
+        currentPeriod(),
         openingBalance
       )
       .then(function (list) {
@@ -70,7 +80,7 @@
 
   // Panorama do mês por conta (saldo inicial/final + totais) para a coluna da esquerda.
   function loadSummary() {
-    return window.App.StatementService.summary(window.Domain.Period.create(state.month, state.year))
+    return window.App.StatementService.summary(currentPeriod())
       .then(function (list) {
         const map = {};
         (Array.isArray(list) ? list : []).forEach(function (s) { map[String(s.accountId)] = s; });
@@ -78,6 +88,22 @@
         render();
       })
       .catch(function () { /* panorama é complementar; silencioso */ });
+  }
+
+  // Índice do mês (todas as contas): usado para resolver o lançamento completo por trás de
+  // uma linha do extrato (editar/excluir) e para detectar transferências — o par de uma
+  // transferência vive em outra conta, invisível na visão de conta única, mas presente aqui.
+  function loadMonthIndex() {
+    const b = window.Domain.Period.bounds(currentPeriod());
+    return window.App.TransactionService.list('dateFrom=' + b.from + '&dateTo=' + b.to)
+      .then(function (list) { state.txIndex = Array.isArray(list) ? list : []; })
+      .catch(function () { state.txIndex = []; });
+  }
+
+  // Recargas escopadas ao período (montagem + navegação de mês): panorama + índice; o extrato
+  // detalhado (escopado à conta selecionada) roda em seguida.
+  function reloadPeriod() {
+    return Promise.all([loadSummary(), loadMonthIndex()]).then(loadStatement);
   }
 
   // ── Render ────────────────────────────────────────────────
@@ -97,9 +123,9 @@
     const $periodNav = window.periodNav({
       month: state.month,
       year: state.year,
-      onPrev: function () { window.shiftMonth(state, -1, true); loadSummary().then(loadStatement); },
-      onNext: function () { window.shiftMonth(state, +1, true); loadSummary().then(loadStatement); },
-      onChange: function (m, y) { state.month = m; state.year = y; loadSummary().then(loadStatement); },
+      onPrev: function () { window.shiftMonth(state, -1, true); reloadPeriod(); },
+      onNext: function () { window.shiftMonth(state, +1, true); reloadPeriod(); },
+      onChange: function (m, y) { state.month = m; state.year = y; reloadPeriod(); },
     });
     $header.find('[data-region=head-actions]').append($periodNav);
     $page.append($header);
@@ -200,8 +226,20 @@
             '</span>'
           : '';
 
+        // Row actions (edit/delete) resolve the full transaction from the month index by id;
+        // the "Saldo anterior" header row has none (empty cell keeps columns aligned).
+        const actionsHtml = isBalance ? '' :
+          '<button type="button" class="icon-btn" title="Editar" ' +
+            'data-act="edit" data-id="' + esc(tx.id) + '" style="width:28px;height:28px;">' +
+            window.icon('edit', 14) +
+          '</button>' +
+          '<button type="button" class="icon-btn" title="Excluir" ' +
+            'data-act="trash" data-id="' + esc(tx.id) + '" style="width:28px;height:28px;color:var(--expense);">' +
+            window.icon('trash', 14) +
+          '</button>';
+
         $card.append(
-          '<div style="' + rowStyle + '">' +
+          '<div class="stm-row" data-id="' + esc(tx.id || '') + '" style="' + rowStyle + '">' +
             '<span style="font-size:12px;color:var(--text-muted);min-width:56px;">' +
               esc(fmtDate(tx.date)) +
             '</span>' +
@@ -212,6 +250,7 @@
               esc(fmt(runningBal)) +
             '</span>' +
             '<div style="width:8px;height:8px;border-radius:50%;flex-shrink:0;background:' + dotColor + ';"></div>' +
+            '<div class="stm-row-actions">' + actionsHtml + '</div>' +
           '</div>'
         );
       });
@@ -219,6 +258,18 @@
 
     $grid.append($card);
     $page.append($grid);
+
+    // Footer: how many transactions are on display (excludes the "Saldo anterior" header row).
+    if (state.accountId && !state.loading) {
+      const txCount = state.items.filter(function (it) {
+        return !window.Domain.StatementItem.isBalanceHeader(it);
+      }).length;
+      $page.append(
+        '<div style="text-align:right;padding:12px 4px 0;font-size:12px;color:var(--text-muted);">' +
+          esc(txCount + (txCount === 1 ? ' transação exibida' : ' transações exibidas')) +
+        '</div>'
+      );
+    }
 
     $root.empty().append($page);
   }
@@ -231,6 +282,26 @@
         state.accountId = id;
         loadStatement();
       }
+    });
+
+    // Row actions delegate to the shared transaction actions; the full transaction (all
+    // fields the modals need) comes from the month index, keyed by the row's tx id.
+    $root.on('click.stm', '[data-act=edit]', function (e) {
+      e.stopPropagation();
+      const tx = findFullTx($(this).attr('data-id'));
+      if (!tx) { window.toast('Lançamento indisponível — recarregue o período', 'error'); return; }
+      window.transactionActions.openFormModal({
+        existing: tx,
+        list: state.txIndex,
+        defaultDate: window.Domain.Period.bounds(currentPeriod()).from,
+        onSaved: reloadPeriod,
+      });
+    });
+    $root.on('click.stm', '[data-act=trash]', function (e) {
+      e.stopPropagation();
+      const tx = findFullTx($(this).attr('data-id'));
+      if (!tx) { window.toast('Lançamento indisponível — recarregue o período', 'error'); return; }
+      window.transactionActions.openDeleteModal(tx, { list: state.txIndex, onDone: reloadPeriod });
     });
   }
 
@@ -247,9 +318,7 @@
         state.accountId = String(accs[0].id);
       }
       render();
-      loadSummary().then(function () {
-        if (state.accountId) loadStatement();
-      });
+      reloadPeriod();
     },
     unmount: function () {
       if (state && state.$root) {

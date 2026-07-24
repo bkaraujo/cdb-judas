@@ -447,6 +447,15 @@ button { font-family: var(--font); cursor: pointer; border: none; outline: none;
 .card-row .row-title { font-size: 13px; font-weight: 600; }
 .card-row .row-sub   { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
 
+/* ───── Statement (Extrato) row actions — reveal on row hover ───── */
+.stm-row-actions {
+  display: flex; align-items: center; justify-content: flex-end; gap: 2px;
+  width: 60px; flex-shrink: 0;
+  opacity: 0; pointer-events: none;
+  transition: opacity var(--transition);
+}
+.stm-row:hover .stm-row-actions { opacity: 1; pointer-events: auto; }
+
 /* ───── Chips ───── */
 .chip-group { display: flex; flex-wrap: wrap; gap: 8px; }
 .chip {

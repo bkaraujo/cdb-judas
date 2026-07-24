@@ -16,6 +16,7 @@
     'dashboard.js',
     'transactions/import-statement.js',
     'transactions/create-edit.js',
+    'transactions/actions.js',
     'transactions.js',
     'accounts-payable.js',
     'statement.js',

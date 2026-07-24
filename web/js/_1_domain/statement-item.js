@@ -21,6 +21,7 @@
   function buildRows(opening, txs, openingDate) {
     const open = +opening || 0;
     const rows = [{
+      id: null,
       date: openingDate || null,
       description: 'Saldo anterior',
       amount: 0,
@@ -34,6 +35,7 @@
       .forEach(function (t) {
         running += (+t.amount || 0);
         rows.push({
+          id: t.id,
           date: t.date,
           description: t.description,
           amount: +t.amount || 0,

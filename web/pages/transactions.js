@@ -44,17 +44,6 @@
 
   function findTx(id) { return window.byId(state.transactions, id); }
 
-  // A transfer is stored as two legs (one income + one expense) sharing a groupId, unlike
-  // installments whose legs share a single type. Both legs carry the same date, so they sit in
-  // the same month view together — detection works off the loaded list.
-  function isTransferTx(tx) {
-    if (!tx || !tx.groupId) return false;
-    const group = state.transactions.filter(function (t) { return String(t.groupId) === String(tx.groupId); });
-    const hasIncome = group.some(function (t) { return t.type === 'income'; });
-    const hasExpense = group.some(function (t) { return t.type === 'expense'; });
-    return hasIncome && hasExpense;
-  }
-
   // Default date for a new transaction: today when the displayed month is the
   // current month, otherwise the first day of the month being displayed.
   function defaultNewDate() {
@@ -65,12 +54,13 @@
     return window.monthBounds(state.month, state.year).from;
   }
 
-  // Create/edit modal lives in pages/transactions/create-edit.js; state-dependent
-  // bits (transfer detection, default date, reload) are passed through.
+  // Row actions (create/edit modal, delete, mark-paid) live in the shared
+  // pages/transactions/actions.js; state-dependent bits (period tx list for transfer
+  // detection, default date, reload) are passed through.
   function openFormModal(existing) {
-    window.transactionFormModal({
+    window.transactionActions.openFormModal({
       existing: existing || null,
-      isTransfer: isTransferTx(existing),
+      list: state.transactions,
       defaultDate: defaultNewDate(),
       onSaved: function () { return loadTransactions(); },
     });
@@ -396,92 +386,6 @@
     return $card;
   }
 
-  // ── Delete (with scope for grouped/recurring) ─────────────
-  function openDeleteModal(tx) {
-    const isTransfer = isTransferTx(tx);
-    // Transfer legs carry a groupId but are not installments — never offer the parcelas scope for them.
-    const isGrouped = !!tx.groupId && !isTransfer;
-
-    if (!isGrouped) {
-      // Simple confirm. A transfer always removes both legs server-side.
-      const msg = isTransfer
-        ? 'Excluir esta transferência? As duas pernas (saída e entrada) serão removidas. Esta ação não pode ser desfeita.'
-        : 'Excluir <strong>' + esc(tx.description || 'lançamento') + '</strong>? Esta ação não pode ser desfeita.';
-      window.confirmModal({
-        title: isTransfer ? 'Excluir Transferência' : 'Excluir Lançamento',
-        body: window.modalText(msg),
-        onConfirm: function (m, reEnable) {
-          window.App.TransactionService.remove(tx.accountId, tx.id).then(function () {
-            m.close();
-            window.toast('Lançamento excluído', 'success');
-            return loadTransactions();
-          }).catch(function (err) {
-            reEnable();
-            window.toast((err && err.message) || 'Falha ao excluir', 'error');
-          });
-        },
-      });
-      return;
-    }
-
-    // Grouped: scope choice.
-    let bodyHtml =
-      '<p style="font-size:13px;color:var(--text-secondary);line-height:1.5;">' +
-        'Este lançamento faz parte de um grupo de parcelas. ' +
-        'Como deseja excluí-lo?' +
-      '</p>';
-    const $only = window.btn({
-      variant: 'secondary', size: 'md', label: 'Apenas este',
-      attrs: 'data-act="del-single" type="button"'
-    });
-    const $future = window.btn({
-      variant: 'secondary', size: 'md', label: 'Este e seguintes',
-      attrs: 'data-act="del-future" type="button"'
-    });
-    const $all = window.btn({
-      variant: 'danger', size: 'md', icon: 'trash', label: 'Todos',
-      attrs: 'data-act="del-all" type="button"'
-    });
-    const $cancel2 = window.btn({
-      variant: 'ghost', size: 'md', label: 'Cancelar',
-      attrs: 'data-modal-close="1" type="button"'
-    });
-    const $footer2 = window.modalFooter([$cancel2, $only, $future, $all], { align: 'end' });
-
-    const m2 = window.modal({
-      title: 'Excluir Lançamento Recorrente',
-      body: bodyHtml,
-      footer: $footer2,
-    });
-    m2.open();
-
-    function doRemove(mode) {
-      const $btns = m2.$el.find('button').prop('disabled', true);
-      window.App.TransactionService.remove(tx.accountId, tx.id, mode).then(function () {
-        m2.close();
-        window.toast('Lançamento(s) excluído(s)', 'success');
-        return loadTransactions();
-      }).catch(function (err) {
-        $btns.prop('disabled', false);
-        window.toast((err && err.message) || 'Falha ao excluir', 'error');
-      });
-    }
-    m2.$el.on('click', '[data-act=del-single]', function () { doRemove('SINGLE'); });
-    m2.$el.on('click', '[data-act=del-future]', function () { doRemove('FUTURE'); });
-    m2.$el.on('click', '[data-act=del-all]',    function () { doRemove('ALL'); });
-  }
-
-  // ── Quick mark as paid ────────────────────────────────────
-  function markPaid(tx) {
-    const today = new Date().toISOString().slice(0, 10);
-    window.App.TransactionService.patchStatus(tx.accountId, tx.id, 'confirmed', today).then(function () {
-      window.toast('Lançamento confirmado', 'success');
-      return loadTransactions();
-    }).catch(function (err) {
-      window.toast((err && err.message) || 'Falha ao confirmar', 'error');
-    });
-  }
-
   // ── Event delegation ──────────────────────────────────────
   function bindRoot($root) {
     $root.on('click.tx', '[data-act=new]', function () { openFormModal(null); });
@@ -540,12 +444,12 @@
     $root.on('click.tx', '[data-act=trash]', function (e) {
       e.stopPropagation();
       const tx = findTx($(this).attr('data-id'));
-      if (tx) openDeleteModal(tx);
+      if (tx) window.transactionActions.openDeleteModal(tx, { list: state.transactions, onDone: loadTransactions });
     });
     $root.on('click.tx', '[data-act=mark-paid]', function (e) {
       e.stopPropagation();
       const tx = findTx($(this).attr('data-id'));
-      if (tx) markPaid(tx);
+      if (tx) window.transactionActions.markPaid(tx, { onDone: loadTransactions });
     });
   }
 
