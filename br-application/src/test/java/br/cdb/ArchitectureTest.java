@@ -69,7 +69,7 @@ class ArchitectureTest {
             noClasses().that().resideInAPackage("..context..")
                     .should().dependOnClassesThat().resideInAnyPackage(
                             "org.springframework..", "jakarta..", "io.quarkus..")
-                    .because("o contexto é livre de framework: DI via Registry, validação na borda (@Valid nos *Request)");
+                    .because("o contexto é livre de framework: DI via Registry, validação na borda (@Valid nos *HTTPRequest)");
 
     /**
      * O número da fatia expressa ordem de criação: uma feature {@code fNNN} só pode consumir recursos

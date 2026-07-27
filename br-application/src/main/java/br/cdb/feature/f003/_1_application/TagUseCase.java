@@ -2,7 +2,7 @@ package br.cdb.feature.f003._1_application;
 
 import br.cdb.context.monetary.MonetaryUseCases;
 import br.cdb.context.monetary._0_domain.model.Transaction;
-import br.cdb.core.web.Request;
+import br.cdb.core.web.HTTPRequest;
 import br.cdb.feature.f000._0_domain.DeletionOutcome;
 import br.cdb.feature.f000._0_domain.DeletionStrategy;
 import br.cdb.feature.f000._0_domain.event.TagDeleted;
@@ -113,7 +113,7 @@ public class TagUseCase {
         MessageBus.submit(new TransactionsDeleted(txIds));
 
         afterCleanup.run();
-        affectedAccountIds.forEach(id -> MessageBus.submit(new AccountEvents.Refresh(id, Request.personId())));
+        affectedAccountIds.forEach(id -> MessageBus.submit(new AccountEvents.Refresh(id, HTTPRequest.personId())));
         return Result.success();
     }
 

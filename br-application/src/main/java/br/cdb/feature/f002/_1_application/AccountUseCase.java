@@ -9,7 +9,7 @@ import br.cdb.context.monetary._1_application.command.AccountCommand;
 import br.cdb.context.monetary._1_application.command.CreditCardCommand;
 import br.cdb.context.monetary._1_application.usecase.CreditCardUseCase;
 import br.cdb.context.monetary._1_application.usecase.TransactionUseCase;
-import br.cdb.core.web.Request;
+import br.cdb.core.web.HTTPRequest;
 import br.cdb.feature.f000._0_domain.DeletionOutcome;
 import br.cdb.feature.f000._0_domain.DeletionStrategy;
 import br.cdb.feature.f000._0_domain.event.AccountDeleted;
@@ -73,7 +73,7 @@ public class AccountUseCase {
     // ── Accounts ───────────────────────────────────────────────────
 
     public Result<List<AccountView>, BusinessError> accounts() {
-        val personId = Request.personId();
+        val personId = HTTPRequest.personId();
 
         val views = new ArrayList<AccountView>();
         for (val overlay : userAccountService.findByPerson(personId)) {
@@ -96,7 +96,7 @@ public class AccountUseCase {
 
     public Result<AccountView, BusinessError> account(UUID accountId) {
         return guards.ownsAccount(accountId).flatMap(ignored -> {
-            val overlay = userAccountService.find(Request.personId(), accountId);
+            val overlay = userAccountService.find(HTTPRequest.personId(), accountId);
 
             val account = ucAccount.findAccount(accountId);
             if (account.isFailure()) {
@@ -114,7 +114,7 @@ public class AccountUseCase {
     }
 
     public Result<AccountView, BusinessError> createAccount(AccountCommand.Create cmd, String color) {
-        val personId = Request.personId();
+        val personId = HTTPRequest.personId();
         return ucAccount.upsert(cmd).map(account -> {
             val overlay = new UserAccount(personId, account.id(), color);
             userAccountService.save(overlay);
@@ -125,7 +125,7 @@ public class AccountUseCase {
 
     public Result<AccountView, BusinessError> updateAccount(AccountCommand.Update cmd, String color) {
         return guards.ownsAccount(cmd.id()).flatMap(ignored -> {
-            val personId = Request.personId();
+            val personId = HTTPRequest.personId();
             return ucAccount.upsert(cmd).map(account -> {
                 val overlay = new UserAccount(personId, account.id(), color);
                 userAccountService.save(overlay);
@@ -201,7 +201,7 @@ public class AccountUseCase {
      *  no frontend). Contas sem snapshot no período (ex.: antes da primeira movimentação) são
      *  omitidas — o chamador decide o fallback (ex.: saldo atual da conta). */
     public Result<List<Balance>, BusinessError> balances(YearMonth period) {
-        val personId = Request.personId();
+        val personId = HTTPRequest.personId();
         val result = new ArrayList<Balance>();
         for (val overlay : userAccountService.findByPerson(personId)) {
             if (ucAccount.getMonthlyBalance(overlay.accountId(), period) instanceof Result.Success(var balance)) {
@@ -219,7 +219,7 @@ public class AccountUseCase {
 
     public Result<CreditCard, BusinessError> createCard(CreditCardCommand.Create cmd) {
         return guards.ownsAccount(cmd.accountId()).flatMap(ignored -> ucCreditCard.upsert(cmd))
-                .ifSuccess(ignored -> MessageBus.submit(new AccountEvents.Refresh(cmd.accountId(), Request.personId())));
+                .ifSuccess(ignored -> MessageBus.submit(new AccountEvents.Refresh(cmd.accountId(), HTTPRequest.personId())));
     }
 
     public Result<DeletionOutcome, BusinessError> deleteCard(
@@ -235,7 +235,7 @@ public class AccountUseCase {
                 if (strategy != DeletionStrategy.MOVE) {
                     MessageBus.submit(new TransactionsDeleted(ids));
                 }
-                MessageBus.submit(new AccountEvents.Refresh(accountId, Request.personId()));
+                MessageBus.submit(new AccountEvents.Refresh(accountId, HTTPRequest.personId()));
                 return new DeletionOutcome.Completed();
             });
         });
@@ -244,7 +244,7 @@ public class AccountUseCase {
     public Result<CreditCard, BusinessError> setCardActive(UUID accountId, UUID cardId, boolean active) {
         return guards.ownsCard(accountId, cardId)
                 .flatMap(ignored -> ucCreditCard.upsert(new CreditCardCommand.Update(cardId, active)))
-                .ifSuccess(ignored -> MessageBus.submit(new AccountEvents.Refresh(accountId, Request.personId())));
+                .ifSuccess(ignored -> MessageBus.submit(new AccountEvents.Refresh(accountId, HTTPRequest.personId())));
     }
 
     // ── Helpers ────────────────────────────────────────────────────

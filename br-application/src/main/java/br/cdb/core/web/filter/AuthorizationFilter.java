@@ -1,6 +1,6 @@
 package br.cdb.core.web.filter;
 
-import br.cdb.core.web.Request;
+import br.cdb.core.web.HTTPRequest;
 import br.commons.Logger;
 import jakarta.annotation.Priority;
 import jakarta.ws.rs.HttpMethod;
@@ -20,10 +20,10 @@ public class AuthorizationFilter implements ContainerRequestFilter {
 
     @Override
     public void filter(ContainerRequestContext request) {
-        if (Request.isStatic(request) || HttpMethod.OPTIONS.equals(request.getMethod())) return;
+        if (HTTPRequest.isStatic(request) || HttpMethod.OPTIONS.equals(request.getMethod())) return;
 
-        if (Request.user() == null) {
-            Logger.debug("AUTHZ %s %s => denied (not authenticated)", request.getMethod(), Request.path(request));
+        if (HTTPRequest.user() == null) {
+            Logger.debug("AUTHZ %s %s => denied (not authenticated)", request.getMethod(), HTTPRequest.path(request));
             request.abortWith(Response.status(Response.Status.UNAUTHORIZED).build());
         }
     }

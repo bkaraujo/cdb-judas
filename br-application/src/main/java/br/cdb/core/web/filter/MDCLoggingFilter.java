@@ -1,6 +1,6 @@
 package br.cdb.core.web.filter;
 
-import br.cdb.core.web.Request;
+import br.cdb.core.web.HTTPRequest;
 import br.commons.framework.logger.MDC;
 import jakarta.annotation.Priority;
 import jakarta.ws.rs.container.ContainerRequestContext;
@@ -25,21 +25,21 @@ public class MDCLoggingFilter implements ContainerRequestFilter, ContainerRespon
     public void filter(ContainerRequestContext request) {
         // isStatic() é o gate de autorização (isApi negado) — /login fica de fora dele de propósito
         // (rota pública, fora de /api/*), mas ainda é um endpoint real e merece correlação de log.
-        if (Request.isStatic(request) && !isLogin(request)) return;
+        if (HTTPRequest.isStatic(request) && !isLogin(request)) return;
 
-        var xRequestId = request.getHeaderString(Request.X_REQUEST_ID);
+        var xRequestId = request.getHeaderString(HTTPRequest.X_REQUEST_ID);
         if (xRequestId == null) { xRequestId = UUID.randomUUID().toString(); }
 
-        MDC.push(Request.X_REQUEST_ID, xRequestId);
+        MDC.push(HTTPRequest.X_REQUEST_ID, xRequestId);
     }
 
     @Override
     public void filter(ContainerRequestContext request, ContainerResponseContext response) {
-        MDC.pop(Request.X_REQUEST_USER);
-        MDC.pop(Request.X_REQUEST_ID);
+        MDC.pop(HTTPRequest.X_REQUEST_USER);
+        MDC.pop(HTTPRequest.X_REQUEST_ID);
     }
 
     private static boolean isLogin(ContainerRequestContext request) {
-        return "/login".equals(Request.path(request));
+        return "/login".equals(HTTPRequest.path(request));
     }
 }

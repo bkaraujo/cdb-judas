@@ -1,6 +1,6 @@
 package br.cdb.feature.f000._2_infrastructure.service;
 
-import br.cdb.core.web.Request;
+import br.cdb.core.web.HTTPRequest;
 import br.cdb.feature.f000._0_domain.SSE;
 import br.commons.Logger;
 import jakarta.ws.rs.core.MediaType;
@@ -34,7 +34,7 @@ public class SseService implements SSE {
     @Override
     public void subscribe(SseEventSink sink, Sse requestSse) {
         this.sse = requestSse;
-        val personId = Request.personId();
+        val personId = HTTPRequest.personId();
         val channel = channels.computeIfAbsent(personId, ignored -> newChannel(personId, requestSse));
         channel.connections().incrementAndGet();
         channel.broadcaster().register(sink);
@@ -56,7 +56,7 @@ public class SseService implements SSE {
     private Channel newChannel(String personId, Sse requestSse) {
         val broadcaster = requestSse.newBroadcaster();
         val connections = new AtomicInteger(0);
-        
+
         // Só decrementa no close (não no error) para nunca remover o canal cedo demais
         // enquanto outra aba do mesmo usuário ainda pode estar conectada.
         broadcaster.onClose(ignored -> {

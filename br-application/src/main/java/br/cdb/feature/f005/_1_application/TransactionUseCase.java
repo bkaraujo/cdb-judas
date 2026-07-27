@@ -4,7 +4,7 @@ import br.cdb.context.monetary.MonetaryUseCases;
 import br.cdb.context.monetary._0_domain.model.Transaction;
 import br.cdb.context.monetary._1_application.command.TransactionCommand;
 import br.cdb.context.monetary._1_application.command.TransactionScope;
-import br.cdb.core.web.Request;
+import br.cdb.core.web.HTTPRequest;
 import br.cdb.feature.f000._0_domain.event.TransactionsDeleted;
 import br.cdb.feature.f000._1_application.ClosingService;
 import br.cdb.feature.f000._1_application.UserGuards;
@@ -161,7 +161,7 @@ public class TransactionUseCase {
         val affected = accountId;
         return ucTransaction.delete(new TransactionCommand.Delete(txId, scope)).map(ids -> {
             MessageBus.submit(new TransactionsDeleted(ids));
-            if (affected != null) MessageBus.submit(new AccountEvents.Refresh(affected, Request.personId()));
+            if (affected != null) MessageBus.submit(new AccountEvents.Refresh(affected, HTTPRequest.personId()));
             return null;
         });
     }

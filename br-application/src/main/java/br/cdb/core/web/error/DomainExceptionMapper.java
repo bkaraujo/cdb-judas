@@ -1,6 +1,6 @@
 package br.cdb.core.web.error;
 
-import br.cdb.core.web.Request;
+import br.cdb.core.web.HTTPRequest;
 import br.commons.business.BusinessError;
 import br.commons.business.BusinessException;
 import jakarta.ws.rs.core.Context;
@@ -20,7 +20,7 @@ public class DomainExceptionMapper implements ExceptionMapper<BusinessException>
 
     @Override
     public Response toResponse(BusinessException ex) {
-        val instance = Request.path(uriInfo);
+        val instance = HTTPRequest.path(uriInfo);
         val pd = switch (ex.getError()) {
             case BusinessError.NotFound ignored -> ProblemDetail.of(Response.Status.NOT_FOUND, instance, ex.getMessage());
             case BusinessError.Conflict ignored -> ProblemDetail.of(Response.Status.CONFLICT, instance, ex.getMessage());

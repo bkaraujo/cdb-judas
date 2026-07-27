@@ -2,7 +2,7 @@ package br.cdb.feature.f000._1_application;
 
 import br.cdb.context.monetary.MonetaryUseCases;
 import br.cdb.context.monetary._0_domain.model.CreditCard;
-import br.cdb.core.web.Request;
+import br.cdb.core.web.HTTPRequest;
 import br.cdb.feature.f000._0_domain.AccountOwnership;
 import br.commons.Result;
 import br.commons.business.BusinessError;
@@ -85,7 +85,7 @@ public class UserGuards {
     private Set<UUID> ownedAccounts() {
         var cached = ownedAccounts;
         if (cached == null) {
-            cached = accountOwnership.ownedAccountIds(Request.personId());
+            cached = accountOwnership.ownedAccountIds(HTTPRequest.personId());
             ownedAccounts = cached;
         }
         return cached;

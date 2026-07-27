@@ -1,6 +1,6 @@
 package br.cdb.core.web.filter;
 
-import br.cdb.core.web.Request;
+import br.cdb.core.web.HTTPRequest;
 import br.cdb.core.web.security.AuthenticatedUser;
 import br.commons.Logger;
 import jakarta.annotation.Priority;
@@ -26,10 +26,10 @@ public class OwnershipFilter implements ContainerRequestFilter {
 
     @Override
     public void filter(ContainerRequestContext request) {
-        val path = Request.path(request);
+        val path = HTTPRequest.path(request);
         if (!path.startsWith(API_PREFIX) || isExcluded(path)) return;
 
-        val user = Request.get(Request.X_REQUEST_USER, AuthenticatedUser.class);
+        val user = HTTPRequest.get(HTTPRequest.X_REQUEST_USER, AuthenticatedUser.class);
         if (user == null) {
             Logger.debug("OWNERSHIP %s %s => 401 (não autenticado)", request.getMethod(), path);
             request.abortWith(Response.status(Response.Status.UNAUTHORIZED).build());

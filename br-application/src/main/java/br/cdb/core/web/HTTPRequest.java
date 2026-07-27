@@ -16,12 +16,12 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 @NullMarked
-public abstract class Request {
+public abstract class HTTPRequest {
 
     public static final String X_REQUEST_ID = "X-REQUEST-ID";
     public static final String X_REQUEST_USER = "X-REQUEST-USER";
 
-    private Request() {}
+    private HTTPRequest() {}
 
     private static final Map<String, Map<String, @Nullable Object>> objects = new ConcurrentHashMap<>();
 

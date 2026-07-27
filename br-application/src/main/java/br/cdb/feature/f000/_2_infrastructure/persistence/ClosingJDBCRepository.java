@@ -1,6 +1,6 @@
 package br.cdb.feature.f000._2_infrastructure.persistence;
 
-import br.cdb.core.web.Request;
+import br.cdb.core.web.HTTPRequest;
 import br.cdb.feature.f000._0_domain.ClosingRepository;
 import br.commons.Registry;
 import br.commons.Result;
@@ -22,7 +22,7 @@ public class ClosingJDBCRepository implements ClosingRepository {
 
     @Override
     public Optional<YearMonth> find() {
-        val personId = Request.personId();
+        val personId = HTTPRequest.personId();
         val results = dataSource.query(
                 "SELECT TXT_VALUE FROM PERSON_PREFERENCES WHERE COD_PERSON = ? AND TXT_KEY = ?",
                 JDBCParameter.of (
@@ -44,7 +44,7 @@ public class ClosingJDBCRepository implements ClosingRepository {
 
     @Override
     public void save(YearMonth ym) {
-        val personId = Request.personId();
+        val personId = HTTPRequest.personId();
         // Check + write na mesma transação: evita janela de corrida entre SELECT e INSERT/UPDATE
         // quando vários writers concorrem na mesma chave (COD_PERSON, TXT_KEY) em ambiente multi-tenant.
         dataSource.transaction(tx -> {
@@ -71,7 +71,7 @@ public class ClosingJDBCRepository implements ClosingRepository {
 
     @Override
     public void clear() {
-        val personId = Request.personId();
+        val personId = HTTPRequest.personId();
         dataSource.execute(
                 "DELETE FROM PERSON_PREFERENCES WHERE COD_PERSON = ? AND TXT_KEY = ?",
                 JDBCParameter.of (

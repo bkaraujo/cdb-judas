@@ -1,7 +1,7 @@
 package br.cdb.feature.f001._2_infrastructure.web;
 
 import br.cdb.core.security.UserRepository;
-import br.cdb.core.web.Request;
+import br.cdb.core.web.HTTPRequest;
 import br.cdb.feature.f001._0_domain.Profile;
 import br.cdb.feature.f001._1_application.PreferencesPatch;
 import br.cdb.feature.f001._1_application.ProfileService;
@@ -36,7 +36,7 @@ public class SelfResource {
 
     @GET
     public SelfResponse getMe() {
-        val personId = Request.personId();
+        val personId = HTTPRequest.personId();
         return switch (self(personId, profileService.getProfile(personId))) {
             case Result.Success(var self) -> SelfResponse.from(self);
             case Result.Failure(var error) -> throw new BusinessException(error);
@@ -47,7 +47,7 @@ public class SelfResource {
     @PATCH
     @Consumes(MediaType.APPLICATION_JSON)
     public SelfResponse update(@Valid UpdateMeRequest req) {
-        val personId = Request.personId();
+        val personId = HTTPRequest.personId();
 
         var result = req.name() != null
                 ? profileService.updateName(personId, req.name())
