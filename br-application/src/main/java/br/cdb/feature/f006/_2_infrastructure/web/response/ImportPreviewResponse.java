@@ -33,6 +33,7 @@ public record ImportPreviewResponse(
             BigDecimal amount,
             @Nullable Integer installmentNumber,
             @Nullable Integer installmentTotal,
+            @Nullable UUID groupId,
             Transaction.Status status,
             boolean duplicate,
             @Nullable UUID categoryId,

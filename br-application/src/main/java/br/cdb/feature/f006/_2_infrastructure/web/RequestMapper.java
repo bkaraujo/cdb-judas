@@ -62,6 +62,7 @@ public abstract class RequestMapper {
                 draft.amount(),
                 draft.installmentNumber(),
                 draft.installmentTotal(),
+                draft.groupId(),
                 draft.status(),
                 row.duplicate(),
                 row.categoryId(),

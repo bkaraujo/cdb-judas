@@ -110,18 +110,20 @@
       return byNature.length ? byNature : flatCategories(null, true, keepId);
     }
 
-    function categorySelectHtml(selectedId, idx) {
+    function categorySelectHtml(selectedId, idx, groupId, locked) {
+      const groupAttr = ' data-group-id="' + esc(groupId || '') + '"';
       const cats = importCategories(selectedId);
       if (!cats.length) {
-        return '<select data-row-category data-idx="' + idx + '" disabled>' +
+        return '<select data-row-category data-idx="' + idx + '"' + groupAttr + ' disabled>' +
           '<option value="">Sem categorias</option></select>';
       }
       const options = cats.map(function (c) {
         const sel = String(c.id) === String(selectedId) ? ' selected' : '';
         return '<option value="' + esc(c.id) + '"' + sel + '>' + esc(c.label) + '</option>';
       }).join('');
-      return '<select data-row-category data-idx="' + idx + '" ' +
-        'style="width:auto;font-size:12px;padding:4px 6px;">' + options + '</select>';
+      const lockedAttrs = locked ? ' disabled title="Segue a categoria da 1ª parcela do grupo"' : '';
+      return '<select data-row-category data-idx="' + idx + '"' + groupAttr + lockedAttrs + ' ' +
+        'style="width:auto;font-size:12px;padding:4px 6px;' + (locked ? 'opacity:0.6;' : '') + '">' + options + '</select>';
     }
 
     function cardOptionShort(card) {
@@ -151,6 +153,8 @@
         ? ' <span style="color:var(--text-muted);font-size:11px;font-style:italic;">já importado</span>'
         : '';
       const checked = row.checked !== undefined ? (row.checked ? 'checked' : '') : (dup ? '' : 'checked');
+      const groupLocked = !!(row.groupId && row.installmentNumber != null && row.installmentNumber !== 1);
+      const descLockedAttrs = groupLocked ? ' readonly title="Segue a descrição da 1ª parcela do grupo"' : '';
       return (
         '<tr style="border-top:1px solid var(--border);' + (dup ? 'opacity:0.6;' : '') + '">' +
           '<td style="padding:8px 10px;text-align:center;">' +
@@ -158,11 +162,11 @@
               'style="width:16px;height:16px;cursor:pointer;" />' +
           '</td>' +
           '<td style="padding:8px 10px;width:90px;white-space:nowrap;color:var(--text-secondary);">' + esc(fmtIsoDate(row.date)) + '</td>' +
-          '<td style="padding:8px 10px;">' + categorySelectHtml(row.categoryId, idx) + '</td>' +
+          '<td style="padding:8px 10px;">' + categorySelectHtml(row.categoryId, idx, row.groupId, groupLocked) + '</td>' +
           '<td style="padding:8px 10px;text-align:center;color:var(--text-secondary);">' + parcela + '</td>' +
           '<td style="padding:8px 10px;">' +
-            '<input type="text" data-row-description data-idx="' + idx + '" value="' + esc(row.description) + '" ' +
-              'style="width:100%;font-size:12px;padding:4px 6px;border:1px solid transparent;background:transparent;color:inherit;outline:none;text-transform:uppercase;" ' +
+            '<input type="text" data-row-description data-idx="' + idx + '" data-group-id="' + esc(row.groupId || '') + '" value="' + esc(row.description) + '"' + descLockedAttrs + ' ' +
+              'style="width:100%;font-size:12px;padding:4px 6px;border:1px solid transparent;background:transparent;color:inherit;outline:none;text-transform:uppercase;' + (groupLocked ? 'opacity:0.6;' : '') + '" ' +
               'onfocus="this.style.border=\'1px solid var(--border)\';this.style.background=\'var(--bg-card)\'" ' +
               'onblur="this.style.border=\'1px solid transparent\';this.style.background=\'transparent\'" />' +
             dupTag +
@@ -182,6 +186,7 @@
                   : issuer;
       const last4s = (preview && preview.last4s) || [];
       const rows = (preview && preview.rows) || [];
+      alignGroupFields(rows);
 
       const candidateCards = (preview && preview.candidateCards) || [];
       cardCandidates = candidateCards;
@@ -515,6 +520,49 @@
           window.toast((err && err.message) || 'Falha ao confirmar a importação', 'error');
         });
     }
+
+    // Parcelamento: as demais parcelas do grupo seguem a categoria/descrição da 1ª (campos travados);
+    // aqui alinhamos os valores sugeridos pelo backend antes de qualquer edição do usuário.
+    function alignGroupFields(rows) {
+      const masterByGroup = {};
+      rows.forEach(function (r) {
+        if (r.groupId && r.installmentNumber === 1) masterByGroup[r.groupId] = { categoryId: r.categoryId, description: r.description };
+      });
+      rows.forEach(function (r) {
+        const master = r.groupId && r.installmentNumber !== 1 ? masterByGroup[r.groupId] : null;
+        if (!master) return;
+        r.categoryId = master.categoryId;
+        r.description = master.description;
+      });
+    }
+
+    // Parcelamento: editar descrição/categoria da 1ª parcela do grupo replica para as demais.
+    function propagateGroupEdit(idx, field, value) {
+      if (!previewData || !previewData.rows) return;
+      const row = previewData.rows[idx];
+      if (!row || !row.groupId || row.installmentNumber !== 1) return;
+      previewData.rows.forEach(function (r, i) {
+        if (i === idx || r.groupId !== row.groupId) return;
+        r[field] = value;
+        if (field === 'description') {
+          m.$el.find('[data-row-description][data-idx="' + i + '"]').val(value);
+        } else if (field === 'categoryId') {
+          m.$el.find('[data-row-category][data-idx="' + i + '"]').val(value);
+        }
+      });
+    }
+
+    m.$el.on('input', '[data-row-description]', function () {
+      const idx = Number($(this).attr('data-idx'));
+      if (previewData && previewData.rows && previewData.rows[idx]) previewData.rows[idx].description = this.value;
+      propagateGroupEdit(idx, 'description', this.value);
+    });
+
+    m.$el.on('change', '[data-row-category]', function () {
+      const idx = Number($(this).attr('data-idx'));
+      if (previewData && previewData.rows && previewData.rows[idx]) previewData.rows[idx].categoryId = this.value;
+      propagateGroupEdit(idx, 'categoryId', this.value);
+    });
 
     m.$el.on('click', '[data-act=toggle-password]', function () { revealPassword(''); });
 
