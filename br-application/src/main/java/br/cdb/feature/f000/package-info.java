@@ -5,7 +5,8 @@
  * <p>Consolida:
  * <ul>
  *   <li><b>stream/SSE</b> — {@code SSE}/{@code SseService}/{@code SseResource}
- *       ({@code GET /api/{uuid}/stream}); features despacham eventos diretamente pós-mutação</li>
+ *       ({@code GET /api/{uuid}/stream}); as fatias publicam eventos de domínio pós-mutação e nunca
+ *       chamam {@code SSE.dispatch} direto — {@code f999} é o único dono do dispatch</li>
  *   <li><b>deletion</b> — vocabulário {@code DeletionStrategy}/{@code DeletionOutcome}/{@code Deletions},
  *       contrato uniforme de exclusão (accounts, cards, categories, tags); evento cross-feature
  *       {@code TransactionsDeleted} ({@code _0_domain.event}), publicado por quem apaga transações

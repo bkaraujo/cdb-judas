@@ -20,13 +20,13 @@ Gestor de finanças pessoais. Backend **Java 25 + Quarkus** (JVM mode); frontend
 ### Features de entrega — `br.cdb.feature.fNNN` (hexágono próprio cada; ver `.claude/refactor.md`)
 - **`f000`** — fatia-base (todas as demais podem depender dela; ela não depende de nenhuma feature): `stream`/SSE (`SSE`, `SseService`, `SseResource` — `/api/{uuid}/stream`), `deletion` (vocabulário `DeletionStrategy`/`DeletionOutcome`/`Deletions`, contrato uniforme de exclusão), `auth` (`LoginResource` — `POST /login`, token opaco rotativo), `UserGuards` (guarda de propriedade/anti-IDOR), `costcenter` (`GET /api/cost-center`, catálogo fixo, sem `{uuid}`), `version` (`GET /api/version`), `closing` (`ClosingService`/`ClosingRepository`/`ClosingResource` — `/api/{uuid}/accounts/closing`; gate de política síncrono consumido por transactions/transfer).
 - **`f001`** — self-service `/api/me` (nome + preferências write-through); `Profile`/`Preferences`/`PreferencesRepository`.
-- **`f002`** — contas, com **cards** e **balance** fundidos aqui (fatias somente-leitura/passthrough do contexto, sem modelo/repositório próprio — não justificavam hexágono à parte): CRUD de conta, CRUD de cartão, saldo por período (`?period=yyyyMM`/`?year=yyyy`). Dono do SSE de conta (`AccountStreamPublisher`).
+- **`f002`** — contas, com **cards** e **balance** fundidos aqui (fatias somente-leitura/passthrough do contexto, sem modelo/repositório próprio — não justificavam hexágono à parte): CRUD de conta, CRUD de cartão, saldo por período (`?period=yyyyMM`/`?year=yyyy`). Publica `AccountEvents` (SSE) — dispatch é responsabilidade única de `f999`.
 - **`f005`** — lançamentos e transferências: créditos, débitos, parcelas, filtros, patch de status, delete unitário/em grupo/transferência. Publica `TransactionsDeleted` (evento) após excluir transações — reagido best-effort por `f003` (tags) e pelo próprio `f005` (limpeza do overlay).
 - **`f006`** — importação de extrato/fatura (preview→confirm), parsers **BTG** e **Santander** (cartão + conta), expansão de parcelas, sugestão de categoria, casamento de cartão.
 - **`f004`** — categorias (macro/micro); mudanças propagadas via SSE.
 - **`f003`** — tags (classificação livre/transversal); mudanças propagadas via SSE; reage a `TransactionsDeleted` (`f005`) para purgar vínculos.
 - **`f009`** — dashboard: resultado mensal agregado (receitas/despesas/líquido), sem overlay próprio.
-- **`f999`** — provisionamento inicial (não-HTTP): usuário + categorias default no startup.
+- **`f999`** — provisionamento inicial (não-HTTP): usuário + categorias default no startup. Também é o **único dono do dispatch SSE** (última fatia — pode depender de todas): reage a `AccountEvents`/`TagEvents`/`CategoryEvents` publicados por f002/f003/f004/f005/f006 e chama `SSE.dispatch`.
 
 ### Plataforma — `br.cdb.core` (módulo `br-application`)
 Autenticação/autorização (token opaco rotativo, `OwnershipFilter`), observabilidade (log de requisição + MDC), persistência JSON, config HTTP/OpenAPI, `ContextBridge` (costura CDI↔`Registry`).

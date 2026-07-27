@@ -6,12 +6,13 @@ import br.cdb.context.monetary._0_domain.model.CreditCard;
 import br.cdb.context.monetary._1_application.usecase.AccountUseCase;
 import br.cdb.context.monetary._1_application.usecase.CreditCardUseCase;
 import br.cdb.feature.f000._1_application.UserGuards;
-import br.cdb.feature.f002._1_application.AccountStreamPublisher;
+import br.cdb.feature.f002._0_domain.event.AccountEvents;
 import br.cdb.feature.f006._0_domain.ImportError;
 import br.cdb.feature.f006._0_domain.ImportResult;
 import br.cdb.feature.f006._1_application.confirm.BankStatementConfirmCommand;
 import br.cdb.feature.f006._1_application.confirm.InvoiceConfirmCommand;
 import br.cdb.feature.f006._1_application.preview.ImportPreviewOutcome;
+import br.commons.MessageBus;
 import br.commons.Result;
 import br.commons.business.BusinessError;
 import jakarta.inject.Singleton;
@@ -27,9 +28,8 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 /**
- * Use case da fatia {@code f006} (importação de extrato/fatura). {@code accountStreamPublisher}
- * (SSE) continua chamada direta — transitório, mesma situação de outras fatias já migradas
- * (.claude/refactor.md).
+ * Use case da fatia {@code f006} (importação de extrato/fatura). SSE de conta publica
+ * {@link AccountEvents.Refresh} — dispatch é responsabilidade única de {@code f999}.
  */
 @NullMarked
 @Singleton
@@ -41,7 +41,6 @@ public class StatementImportUseCase {
 
     private final UserGuards guards;
     private final StatementImportService statementImportService;
-    private final AccountStreamPublisher accountStreamPublisher;
 
     /** Preview + nomes de conta por personId (rotulam as opções de cartão na resposta). */
     @NullMarked
@@ -63,12 +62,13 @@ public class StatementImportUseCase {
             }
         }
         return statementImportService.confirm(personId, cmd)
-                .ifSuccess(ignored -> affectedAccountIds(cmd.rows()).forEach(accountStreamPublisher::upsert));
+                .ifSuccess(ignored -> affectedAccountIds(cmd.rows())
+                        .forEach(accountId -> MessageBus.submit(new AccountEvents.Refresh(accountId, personId.toString()))));
     }
 
     public Result<ImportResult, BusinessError> confirmStatementImport(UUID personId, BankStatementConfirmCommand cmd) {
         return guards.ownsAccount(cmd.accountId()).flatMap(ignored -> statementImportService.confirmStatement(personId, cmd))
-                .ifSuccess(ignored -> accountStreamPublisher.upsert(cmd.accountId()));
+                .ifSuccess(ignored -> MessageBus.submit(new AccountEvents.Refresh(cmd.accountId(), personId.toString())));
     }
 
     /** Nome da conta a que cada cartão pertence, para rotular as opções de cartão do preview. */

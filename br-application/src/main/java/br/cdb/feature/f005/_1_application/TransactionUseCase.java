@@ -4,12 +4,13 @@ import br.cdb.context.monetary.MonetaryUseCases;
 import br.cdb.context.monetary._0_domain.model.Transaction;
 import br.cdb.context.monetary._1_application.command.TransactionCommand;
 import br.cdb.context.monetary._1_application.command.TransactionScope;
+import br.cdb.core.web.Request;
+import br.cdb.feature.f000._0_domain.event.TransactionsDeleted;
 import br.cdb.feature.f000._1_application.ClosingService;
 import br.cdb.feature.f000._1_application.UserGuards;
-import br.cdb.feature.f002._1_application.AccountStreamPublisher;
+import br.cdb.feature.f002._0_domain.event.AccountEvents;
 import br.cdb.feature.f004._1_application.UserCategoryService;
 import br.cdb.feature.f005._0_domain.UserTransaction;
-import br.cdb.feature.f000._0_domain.event.TransactionsDeleted;
 import br.commons.MessageBus;
 import br.commons.Result;
 import br.commons.business.BusinessError;
@@ -31,8 +32,8 @@ import java.util.UUID;
  *
  * <p>{@code deleteTransaction} não limpa o overlay/vínculo de tag diretamente: publica
  * {@link TransactionsDeleted} e deixa {@code TransactionOverlayListener} (aqui) e
- * {@code TagTransactionListener} (f008) reagirem, best-effort. {@code accountStreamPublisher}
- * (SSE) continua chamada direta — transitório até f002 migrar (.claude/refactor.md).
+ * {@code TagTransactionListener} (f008) reagirem, best-effort. SSE de conta publica
+ * {@link AccountEvents.Refresh} — dispatch é responsabilidade única de {@code f999}.
  */
 @NullMarked
 @Singleton
@@ -46,7 +47,6 @@ public class TransactionUseCase {
     private final UserTransactionService userTransactionService;
     private final UserCategoryService userCategoryService;
     private final ClosingService closingService;
-    private final AccountStreamPublisher accountStreamPublisher;
 
     @NullMarked
     public record TransactionView(Transaction transaction, @Nullable UserTransaction overlay) {}
@@ -95,7 +95,7 @@ public class TransactionUseCase {
             // Cria o PERSON_TRANSACTION da primeira parcela e depois o das irmãs do grupo
             val overlay = userTransactionService.save(t.id(), t.accountId(), personId, categoryId);
             saveUserTransactionForGroup(t, personId, categoryId);
-            accountStreamPublisher.upsert(t.accountId());
+            MessageBus.submit(new AccountEvents.Refresh(t.accountId(), personId.toString()));
             return new TransactionView(t, overlay);
         });
     }
@@ -130,7 +130,7 @@ public class TransactionUseCase {
             if (t.groupId() != null && existingOverlay.isEmpty()) {
                 saveUserTransactionForGroup(t, personId, categoryId);
             }
-            publishAccountUpdate(t.accountId(), previousAccountId);
+            publishAccountUpdate(personId, t.accountId(), previousAccountId);
             return new TransactionView(t, overlay);
         });
     }
@@ -141,7 +141,7 @@ public class TransactionUseCase {
                 .flatMap(existing -> guards.ownsAccount(existing.accountId()))
                 .flatMap(ignored -> ucTransaction.updateTransactionStatus(txId, status, paymentDate).map(t -> {
                     val overlay = userTransactionService.find(t.id(), t.accountId(), personId).orElse(null);
-                    accountStreamPublisher.upsert(t.accountId());
+                    MessageBus.submit(new AccountEvents.Refresh(t.accountId(), personId.toString()));
                     return new TransactionView(t, overlay);
                 }));
     }
@@ -161,7 +161,7 @@ public class TransactionUseCase {
         val affected = accountId;
         return ucTransaction.delete(new TransactionCommand.Delete(txId, scope)).map(ids -> {
             MessageBus.submit(new TransactionsDeleted(ids));
-            if (affected != null) accountStreamPublisher.upsert(affected);
+            if (affected != null) MessageBus.submit(new AccountEvents.Refresh(affected, Request.personId()));
             return null;
         });
     }
@@ -181,17 +181,17 @@ public class TransactionUseCase {
         return ucTransaction.createTransfer(fromAccountId, toAccountId, date, amount).map(t -> {
             val overlay = userTransactionService.save(t.id(), t.accountId(), personId, transferCategoryFor(t, expenseCategoryId, incomeCategoryId));
             saveTransferGroupCategories(t, personId, expenseCategoryId, incomeCategoryId);
-            accountStreamPublisher.upsert(fromAccountId);
-            accountStreamPublisher.upsert(toAccountId);
+            MessageBus.submit(new AccountEvents.Refresh(fromAccountId, personId.toString()));
+            MessageBus.submit(new AccountEvents.Refresh(toAccountId, personId.toString()));
             return new TransactionView(t, overlay);
         });
     }
 
     /** Publica a conta atual e, se a transação mudou de conta, também a conta anterior. */
-    private void publishAccountUpdate(UUID accountId, @Nullable UUID previousAccountId) {
-        accountStreamPublisher.upsert(accountId);
+    private void publishAccountUpdate(UUID personId, UUID accountId, @Nullable UUID previousAccountId) {
+        MessageBus.submit(new AccountEvents.Refresh(accountId, personId.toString()));
         if (previousAccountId != null && !previousAccountId.equals(accountId)) {
-            accountStreamPublisher.upsert(previousAccountId);
+            MessageBus.submit(new AccountEvents.Refresh(previousAccountId, personId.toString()));
         }
     }
 

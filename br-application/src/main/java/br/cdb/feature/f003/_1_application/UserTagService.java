@@ -1,8 +1,9 @@
 package br.cdb.feature.f003._1_application;
 
-import br.cdb.feature.f000._0_domain.SSE;
 import br.cdb.feature.f003._0_domain.UserTag;
 import br.cdb.feature.f003._0_domain.UserTagRepository;
+import br.cdb.feature.f003._0_domain.event.TagEvents;
+import br.commons.MessageBus;
 import br.commons.Result;
 import br.commons.business.BusinessError;
 import jakarta.inject.Singleton;
@@ -11,7 +12,6 @@ import lombok.val;
 import org.jspecify.annotations.NullMarked;
 
 import java.util.List;
-import java.util.Map;
 import java.util.UUID;
 
 @NullMarked
@@ -19,11 +19,8 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class UserTagService {
 
-    private static final String TYPE = "TAG";
-
     private final UserTagRepository repo;
     private final UserTransactionTagService tagLinkService;
-    private final SSE sse;
 
     public List<UserTag> findAll(UUID personId) {
         return repo.findAllByPerson(personId);
@@ -37,14 +34,14 @@ public class UserTagService {
 
     public UserTag create(UUID personId, String name, String color) {
         val saved = repo.save(new UserTag(UUID.randomUUID(), personId, name, color, null));
-        upsert(saved);
+        MessageBus.submit(new TagEvents.Created(saved));
         return saved;
     }
 
     public Result<UserTag, BusinessError> update(UUID id, String name, String color) {
         return findById(id).map(existing -> {
             val saved = repo.save(new UserTag(id, existing.personId(), name, color, existing.createdAt()));
-            upsert(saved);
+            MessageBus.submit(new TagEvents.Updated(saved));
             return saved;
         });
     }
@@ -57,7 +54,7 @@ public class UserTagService {
     public Result<Void, BusinessError> deleteById(UUID id) {
         return findById(id).map(existing -> {
             repo.deleteById(id);
-            delete(existing.personId(), id);
+            MessageBus.submit(new TagEvents.Deleted(id, existing.personId()));
             return null;
         });
     }
@@ -72,19 +69,5 @@ public class UserTagService {
             tagLinkService.reassignTag(id, targetId, personId);
             return Result.success();
         }));
-    }
-
-    @SuppressWarnings("EmptyCatch")
-    private void upsert(UserTag tag) {
-        try {
-            sse.dispatch(tag.personId().toString(), SSE.Event.UPSERT, Map.of("type", TYPE, "payload", tag));
-        } catch (Exception ignored) {}
-    }
-
-    @SuppressWarnings("EmptyCatch")
-    private void delete(UUID personId, UUID tagId) {
-        try {
-            sse.dispatch(personId.toString(), SSE.Event.DELETE, Map.of("type", TYPE, "id", tagId.toString()));
-        } catch (Exception ignored) {}
     }
 }

@@ -2,6 +2,7 @@ package br.cdb.feature.f000._2_infrastructure.service;
 
 import br.cdb.core.web.Request;
 import br.cdb.feature.f000._0_domain.SSE;
+import br.commons.Logger;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.sse.OutboundSseEvent;
 import jakarta.ws.rs.sse.Sse;
@@ -38,6 +39,7 @@ public class SseService implements SSE {
         channel.connections().incrementAndGet();
         channel.broadcaster().register(sink);
 
+        Logger.verbose("Dispatch %s Connected", SSE.Event.INITIALIZE);
         sink.send(event(requestSse, SSE.Event.INITIALIZE, "Connected"));
     }
 
@@ -46,12 +48,15 @@ public class SseService implements SSE {
         val currentSse = sse;
         val channel = channels.get(username);
         if (currentSse == null || channel == null) return;
+
+        Logger.verbose("Dispatch %s %s", type, payload);
         channel.broadcaster().broadcast(event(currentSse, type, payload));
     }
 
     private Channel newChannel(String personId, Sse requestSse) {
         val broadcaster = requestSse.newBroadcaster();
         val connections = new AtomicInteger(0);
+        
         // Só decrementa no close (não no error) para nunca remover o canal cedo demais
         // enquanto outra aba do mesmo usuário ainda pode estar conectada.
         broadcaster.onClose(ignored -> {
@@ -59,6 +64,7 @@ public class SseService implements SSE {
                 channels.remove(personId);
             }
         });
+
         return new Channel(broadcaster, connections);
     }
 

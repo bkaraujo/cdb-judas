@@ -3,7 +3,6 @@ package br.cdb.feature.f001;
 import br.cdb.feature.f001._0_domain.PreferencesRepository;
 import br.cdb.feature.f001._2_infrastructure.persistence.PreferencesJDBCRepository;
 import br.commons.Logger;
-import br.commons.MessageBus;
 import br.commons.Registry;
 import br.commons.framework.persistence.jdbc.DataSource;
 import io.quarkus.runtime.StartupEvent;

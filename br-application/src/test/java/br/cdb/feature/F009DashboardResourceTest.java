@@ -14,7 +14,7 @@ public class F009DashboardResourceTest extends BaseHttpTest {
         asTestUser()
                 .queryParam("month", "3")
                 .queryParam("year", "2024")
-                .when().get("/api/" + TEST_USER_ID + "/dashboard/result")
+                .when().get("/api/" + TEST_USER_ID + "/dashboard")
                 .then().statusCode(200)
                 .body("incomes", notNullValue())
                 .body("expenses", notNullValue())

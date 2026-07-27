@@ -18,6 +18,7 @@ import br.cdb.feature.f000._1_application.Deletions;
 import br.cdb.feature.f000._1_application.UserGuards;
 import br.cdb.feature.f002._0_domain.TransactionAccountOverlay;
 import br.cdb.feature.f002._0_domain.UserAccount;
+import br.cdb.feature.f002._0_domain.event.AccountEvents;
 import br.commons.Logger;
 import br.commons.MessageBus;
 import br.commons.Result;
@@ -58,7 +59,6 @@ public class AccountUseCase {
     private final UserGuards guards;
     private final UserAccountService userAccountService;
     private final TransactionAccountOverlay transactionOverlay;
-    private final AccountStreamPublisher accountStreamPublisher;
 
     /** Conta do contexto + overlay do usuário + cartões; {@code transactions} é a lista completa
      *  (o saldo corrente do DTO é derivado dela). */
@@ -118,7 +118,7 @@ public class AccountUseCase {
         return ucAccount.upsert(cmd).map(account -> {
             val overlay = new UserAccount(personId, account.id(), color);
             userAccountService.save(overlay);
-            accountStreamPublisher.upsert(account.id());
+            MessageBus.submit(new AccountEvents.Created(overlay));
             return new AccountView(account, overlay, List.of(), List.of());
         });
     }
@@ -129,7 +129,7 @@ public class AccountUseCase {
             return ucAccount.upsert(cmd).map(account -> {
                 val overlay = new UserAccount(personId, account.id(), color);
                 userAccountService.save(overlay);
-                accountStreamPublisher.upsert(account.id());
+                MessageBus.submit(new AccountEvents.Updated(overlay));
                 return new AccountView(account, overlay, cardsOf(account.id()), List.of());
             });
         });
@@ -166,9 +166,10 @@ public class AccountUseCase {
             if (strategy != DeletionStrategy.MOVE) {
                 MessageBus.submit(new TransactionsDeleted(ids));
             }
-            accountStreamPublisher.delete(id);
+
+            MessageBus.submit(new AccountEvents.Deleted(id, personId.toString()));
             if (strategy == DeletionStrategy.MOVE) {
-                accountStreamPublisher.upsert(Objects.requireNonNull(targetId));
+                MessageBus.submit(new AccountEvents.Refresh(Objects.requireNonNull(targetId), personId.toString()));
             }
             return new DeletionOutcome.Completed();
         });
@@ -218,7 +219,7 @@ public class AccountUseCase {
 
     public Result<CreditCard, BusinessError> createCard(CreditCardCommand.Create cmd) {
         return guards.ownsAccount(cmd.accountId()).flatMap(ignored -> ucCreditCard.upsert(cmd))
-                .ifSuccess(ignored -> accountStreamPublisher.upsert(cmd.accountId()));
+                .ifSuccess(ignored -> MessageBus.submit(new AccountEvents.Refresh(cmd.accountId(), Request.personId())));
     }
 
     public Result<DeletionOutcome, BusinessError> deleteCard(
@@ -234,7 +235,7 @@ public class AccountUseCase {
                 if (strategy != DeletionStrategy.MOVE) {
                     MessageBus.submit(new TransactionsDeleted(ids));
                 }
-                accountStreamPublisher.upsert(accountId);
+                MessageBus.submit(new AccountEvents.Refresh(accountId, Request.personId()));
                 return new DeletionOutcome.Completed();
             });
         });
@@ -243,7 +244,7 @@ public class AccountUseCase {
     public Result<CreditCard, BusinessError> setCardActive(UUID accountId, UUID cardId, boolean active) {
         return guards.ownsCard(accountId, cardId)
                 .flatMap(ignored -> ucCreditCard.upsert(new CreditCardCommand.Update(cardId, active)))
-                .ifSuccess(ignored -> accountStreamPublisher.upsert(accountId));
+                .ifSuccess(ignored -> MessageBus.submit(new AccountEvents.Refresh(accountId, Request.personId())));
     }
 
     // ── Helpers ────────────────────────────────────────────────────

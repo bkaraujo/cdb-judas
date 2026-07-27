@@ -4,11 +4,7 @@ import br.cdb.feature.f005._0_domain.UserTransaction;
 import br.cdb.feature.f005._0_domain.UserTransactionRepository;
 import org.jspecify.annotations.NullMarked;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
 
 /** Fake in-memory de {@code PERSON_TRANSACTION} para os testes de import (contexto sem CDI/JDBC). */
 @NullMarked

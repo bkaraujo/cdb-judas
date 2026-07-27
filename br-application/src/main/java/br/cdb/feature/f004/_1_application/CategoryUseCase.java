@@ -2,11 +2,12 @@ package br.cdb.feature.f004._1_application;
 
 import br.cdb.context.monetary.MonetaryUseCases;
 import br.cdb.context.monetary._0_domain.model.Transaction;
+import br.cdb.core.web.Request;
 import br.cdb.feature.f000._0_domain.DeletionOutcome;
 import br.cdb.feature.f000._0_domain.DeletionStrategy;
 import br.cdb.feature.f000._0_domain.event.CategoryDeleted;
 import br.cdb.feature.f000._0_domain.event.TransactionsDeleted;
-import br.cdb.feature.f002._1_application.AccountStreamPublisher;
+import br.cdb.feature.f002._0_domain.event.AccountEvents;
 import br.cdb.feature.f004._0_domain.TransactionCategoryOverlay;
 import br.cdb.feature.f004._0_domain.UserCategory;
 import br.commons.MessageBus;
@@ -25,9 +26,9 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 /**
- * Use case da fatia {@code f004} (categories). {@code deleteCategory(DELETE)} ainda chama
- * {@link AccountStreamPublisher} direto (SSE de conta, hoje dono de f002 — transitório até essa
- * fatia migrar). A remoção das linhas {@code PERSON_CATEGORY} da subárvore publica
+ * Use case da fatia {@code f004} (categories). {@code deleteCategory(DELETE)} publica
+ * {@link AccountEvents.Refresh} (SSE de conta — dispatch é responsabilidade única de {@code f999}).
+ * A remoção das linhas {@code PERSON_CATEGORY} da subárvore publica
  * {@link CategoryDeleted} (reagido por {@code CategoryDeletedListener}, aqui mesmo); a limpeza do
  * overlay de transações apagadas em cascata publica {@link TransactionsDeleted} em vez de chamar
  * {@code UserTransactionService}/{@code UserTransactionTagService} diretamente (best-effort,
@@ -43,7 +44,6 @@ public class CategoryUseCase {
 
     private final UserCategoryService userCategoryService;
     private final TransactionCategoryOverlay transactionOverlay;
-    private final AccountStreamPublisher accountStreamPublisher;
 
     public List<UserCategory> categories(UUID personId) {
         return userCategoryService.findAll(personId);
@@ -114,7 +114,7 @@ public class CategoryUseCase {
         MessageBus.submit(new TransactionsDeleted(txIds));
 
         afterCleanup.run();
-        affectedAccountIds.forEach(accountStreamPublisher::upsert);
+        affectedAccountIds.forEach(id -> MessageBus.submit(new AccountEvents.Refresh(id, Request.personId())));
         return Result.success();
     }
 
