@@ -141,7 +141,9 @@
   }
 
   function renderList(items) {
-    const $card = $('<div class="card card-list"></div>');
+    const $card = $(
+      '<div class="card card-list" style="overflow-y:auto;max-height:calc(100vh - 320px);min-height:200px;"></div>'
+    );
 
     if (state.loading) {
       $card.append(window.emptyState({ icon: 'calendar', title: 'Carregando…' }));

@@ -198,7 +198,7 @@
       $page.append(renderAdvancedFilters());
     }
 
-    // ── Table / list ──
+    // ── Table / list — scrolls its own content inside the card. ──
     $page.append(renderList());
 
     // Footer: how many transactions are on display.
@@ -296,7 +296,9 @@
   function renderList() {
     const list = filteredTxs();
 
-    const $card = $('<div class="card" style="padding:0;overflow:hidden;"></div>');
+    const $card = $(
+      '<div class="card" style="padding:0;overflow-y:auto;max-height:calc(100vh - 300px);min-height:200px;"></div>'
+    );
 
     if (state.loading) {
       $card.append(window.emptyState({ icon: 'list', title: 'Carregando…' }));
@@ -383,6 +385,9 @@
 
       $card.append(
         '<div class="stm-row" data-row="tx" data-id="' + esc(tx.id) + '" style="' + rowStyle + '">' +
+          '<span style="font-size:12px;color:var(--text-muted);min-width:24px;text-align:left;">' +
+            esc(i + 1) +
+          '</span>' +
           '<span style="font-size:12px;color:var(--text-muted);min-width:56px;">' +
             esc(fmtDate(tx.date)) +
           '</span>' +

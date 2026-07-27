@@ -113,7 +113,7 @@
 
     const $page = $('<div class="fade-in"></div>');
 
-    // Header
+    // Header — sticky at top so it stays visible while the card content scrolls.
     const $header = $(
       '<div class="page-header">' +
         '<h1>Extrato de Contas</h1>' +
@@ -128,13 +128,22 @@
       onChange: function (m, y) { window.App.PeriodService.set(m, y); state.month = m; state.year = y; reloadPeriod(); },
     });
     $header.find('[data-region=head-actions]').append($periodNav);
-    $page.append($header);
 
-    // Grid 280px / 1fr
-    const $grid = $('<div style="display:grid;grid-template-columns:280px 1fr;gap:16px;"></div>');
+    const $sticky = $(
+      '<div style="position:sticky;top:0;z-index:5;background:var(--bg-base);"></div>'
+    );
+    $sticky.append($header);
+    $page.append($sticky);
 
-    // Left column: accounts list
-    const $left = $('<div style="display:flex;flex-direction:column;gap:12px;"></div>');
+    // Grid 280px / 1fr — bounded height so the right card scrolls its own content
+    // instead of the whole page.
+    const $grid = $(
+      '<div style="display:grid;grid-template-columns:280px 1fr;gap:16px;' +
+        'height:calc(100vh - 160px);min-height:280px;"></div>'
+    );
+
+    // Left column: accounts list (own scrollbar so it doesn't stretch the grid row)
+    const $left = $('<div style="display:flex;flex-direction:column;gap:12px;overflow-y:auto;"></div>');
     const accs = checkingAccounts();
     if (accs.length === 0) {
       $left.append(
@@ -168,8 +177,8 @@
     }
     $grid.append($left);
 
-    // Right column: statement card
-    const $card = $('<div class="card" style="padding:0;overflow:hidden;"></div>');
+    // Right column: statement card — scrolls its own content, header/left column stay put.
+    const $card = $('<div class="card" style="padding:0;overflow-y:auto;"></div>');
 
     if (!state.accountId) {
       $card.append(window.emptyState({
