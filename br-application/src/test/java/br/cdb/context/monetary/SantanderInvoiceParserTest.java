@@ -11,6 +11,7 @@ import java.io.InputStream;
 import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
 import java.time.MonthDay;
+import java.time.YearMonth;
 import java.util.List;
 import java.util.Objects;
 
@@ -96,6 +97,12 @@ class SantanderInvoiceParserTest {
                 l.description().equals("037 - DF TAGUATINGA CT")
                         && Integer.valueOf(3).equals(l.installmentNumber())
                         && l.amount().compareTo(new BigDecimal("231.79")) == 0));
+    }
+
+    @Test
+    void parsesInvoicePeriodFromVencimentoDate() throws IOException {
+        assertEquals(YearMonth.of(2026, 4), ((MonetaryDocument.Invoice) parser.parse(fixture("fatura-santander-abril.txt"))).period());
+        assertEquals(YearMonth.of(2026, 5), ((MonetaryDocument.Invoice) parser.parse(fixture("fatura-santander-maio.txt"))).period());
     }
 
     private static List<String> last4s(List<MonetaryDocumentEntry> lines) {

@@ -8,6 +8,7 @@ import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 
 import java.time.MonthDay;
+import java.time.YearMonth;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Pattern;
@@ -35,6 +36,7 @@ public class BTGInvoiceParser implements StatementParser {
     private static final Pattern CARD_HEADER = Pattern.compile("Final (\\d{4}) Total do cart[ãa]o");
     private static final Pattern SUBTOTAL = Pattern.compile("^-?\\s*(?:R\\$|US\\$)\\s*[\\d.]+,\\d{2}\\s*$");
     private static final Pattern TXN = Pattern.compile("^\\s*(R\\$|US\\$)\\s*([\\d.]+,\\d{2})(.+?)(?:\\((\\d+)/(\\d+)\\))?(\\d{2}) ([A-Za-z]{3})$");
+    private static final Pattern FATURA_PERIOD = Pattern.compile("(?i)fatura de (\\p{L}+) de (\\d{4})");
 
     private static final String KEEP_HEADER = "Total de compras e despesas";
     private static final String CREDIT_HEADER = "Total de créditos recebidos";
@@ -80,7 +82,21 @@ public class BTGInvoiceParser implements StatementParser {
             }
         }
 
-        return new MonetaryDocument.Invoice("BTG Pactual", List.copyOf(lines));
+        return new MonetaryDocument.Invoice("BTG Pactual", period(text), List.copyOf(lines));
+    }
+
+    /**
+     * The invoice's own printed period ("fatura de Fevereiro de 2025"); {@code null} if absent, in
+     * which case the caller anchors on the upload date instead.
+     */
+    private static @Nullable YearMonth period(String text) {
+        val m = FATURA_PERIOD.matcher(text);
+        if (!m.find()) {
+            Logger.warn("BTG invoice period header not found, caller will anchor on the upload date");
+            return null;
+        }
+        val monthValue = month(m.group(1));
+        return monthValue == 0 ? null : YearMonth.of(Integer.parseInt(m.group(2)), monthValue);
     }
 
     /** {@code true}/{@code false} se a linha alterna a seção de interesse; {@code null} caso contrário. */

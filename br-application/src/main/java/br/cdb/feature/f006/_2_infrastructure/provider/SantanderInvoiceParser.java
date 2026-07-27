@@ -8,6 +8,7 @@ import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 
 import java.time.MonthDay;
+import java.time.YearMonth;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Pattern;
@@ -33,6 +34,7 @@ public class SantanderInvoiceParser implements StatementParser {
     private static final Pattern TXN = Pattern.compile(
             "^\\s*(?:\\d\\s+)?(\\d{2})/(\\d{2})\\s+(.+?)(?:\\s+(\\d{2})/(\\d{2}))?\\s+(-?[\\d.]+,\\d{2})(?:\\s+-?[\\d.]+,\\d{2})?\\s*$");
     private static final Pattern IOF_LINE = Pattern.compile("^(IOF\\b.*?)\\s+(-?[\\d.]+,\\d{2})$");
+    private static final Pattern VENCIMENTO = Pattern.compile("Vencimento\\s*\\R+\\s*\\d{2}/(\\d{2})/(\\d{4})");
     private static final String CNPJ_DIGITS = "90400888000142";
 
     @Override
@@ -70,7 +72,20 @@ public class SantanderInvoiceParser implements StatementParser {
             lastDate = emitLine(line, trimmed, last4, lastDate, lines);
         }
 
-        return new MonetaryDocument.Invoice("Santander", List.copyOf(lines));
+        return new MonetaryDocument.Invoice("Santander", period(text), List.copyOf(lines));
+    }
+
+    /**
+     * The invoice's own printed period, taken from the "Vencimento" due-date (same month as the
+     * fatura); {@code null} if absent, in which case the caller anchors on the upload date instead.
+     */
+    private static @Nullable YearMonth period(String text) {
+        val m = VENCIMENTO.matcher(text);
+        if (!m.find()) {
+            Logger.warn("Santander invoice period (Vencimento) not found, caller will anchor on the upload date");
+            return null;
+        }
+        return YearMonth.of(Integer.parseInt(m.group(2)), Integer.parseInt(m.group(1)));
     }
 
     /** {@code true}/{@code false} se a linha alterna a seção de interesse; {@code null} caso contrário. */

@@ -11,6 +11,7 @@ import org.junit.jupiter.api.Test;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.MonthDay;
+import java.time.YearMonth;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
@@ -35,7 +36,7 @@ class InstallmentExpanderTest {
     void avistaExpandsToSingleDraftWithoutInstallmentFields() {
         var today = LocalDate.of(2025, 7, 15);
         // "09 Mar" with anchor 2025-07 → diff 3-7=-4 (not < -6) → year 2025 → 2025-03-09.
-        var drafts = expander.expand(avista(MonthDay.of(3, 9), new BigDecimal("60.00"), "Microsoft"), accountId, today);
+        var drafts = expander.expand(avista(MonthDay.of(3, 9), new BigDecimal("60.00"), "Microsoft"), accountId, YearMonth.from(today), today);
 
         assertEquals(1, drafts.size());
         TransactionDraft d = drafts.getFirst();
@@ -53,7 +54,7 @@ class InstallmentExpanderTest {
         var today = LocalDate.of(2025, 7, 15);
         // "15 Jul", 9/10 → anchor 2025-07 - 8 = 2024-11; diff 7-11=-4 → year 2024 → original 2024-07-15.
         var drafts = expander.expand(
-                parcelado(MonthDay.of(7, 15), new BigDecimal("72.99"), "Amazonmktplc Megabytem", 9, 10), accountId, today);
+                parcelado(MonthDay.of(7, 15), new BigDecimal("72.99"), "Amazonmktplc Megabytem", 9, 10), accountId, YearMonth.from(today), today);
 
         assertEquals(10, drafts.size());
         var originalDate = LocalDate.of(2024, 7, 15);
@@ -74,7 +75,7 @@ class InstallmentExpanderTest {
         var today = LocalDate.of(2025, 7, 15);
         // 1/4 of "15 Jun": original 2025-06-15; installments Jun/Jul/Aug/Sep 2025.
         var drafts = expander.expand(
-                parcelado(MonthDay.of(6, 15), new BigDecimal("100.00"), "Curso", 1, 4), accountId, today);
+                parcelado(MonthDay.of(6, 15), new BigDecimal("100.00"), "Curso", 1, 4), accountId, YearMonth.from(today), today);
 
         assertEquals(4, drafts.size());
         assertEquals(Transaction.Status.CONFIRMED, drafts.get(0).status(), "Jun 2025 < today month → confirmed");
@@ -91,12 +92,23 @@ class InstallmentExpanderTest {
         var line3of3 = parcelado(printed, new BigDecimal("231.79"), "DECATHLON", 3, 3); // rounding drift
 
         // 2/3 seen in July's statement; 3/3 seen one month later in August's statement.
-        var drafts2 = expander.expand(line2of3, accountId, LocalDate.of(2025, 7, 20));
-        var drafts3 = expander.expand(line3of3, accountId, LocalDate.of(2025, 8, 20));
+        var drafts2 = expander.expand(line2of3, accountId, YearMonth.of(2025, 7), LocalDate.of(2025, 7, 20));
+        var drafts3 = expander.expand(line3of3, accountId, YearMonth.of(2025, 8), LocalDate.of(2025, 8, 20));
 
         UUID id2 = onlyGroupId(drafts2);
         UUID id3 = onlyGroupId(drafts3);
         assertEquals(id2, id3, "the group personId must be stable as n advances to n+1 across months");
+    }
+
+    @Test
+    void statementPeriodAnchorsYearEvenWhenImportedMuchLater() {
+        // Regression for: importing a 2025 fatura in 2026 stamped transactions with 2026 instead of 2025.
+        var statementPeriod = YearMonth.of(2025, 2);
+        var today = LocalDate.of(2026, 7, 20);
+        var drafts = expander.expand(avista(MonthDay.of(2, 7), new BigDecimal("199.90"), "Amazon"), accountId, statementPeriod, today);
+
+        assertEquals(1, drafts.size());
+        assertEquals(LocalDate.of(2025, 2, 7), drafts.getFirst().date());
     }
 
     private static UUID onlyGroupId(List<TransactionDraft> drafts) {

@@ -18,7 +18,8 @@ import java.util.UUID;
  * Expands a year-less statement line into absolute-dated drafts.
  *
  * <p>Banks print day/month only, so the original absolute date is inferred from the statement period
- * (the upload month) and the installment offset: installment {@code n} bills ≈ the statement month,
+ * (the invoice's own printed month/year, parsed by the caller) and the installment offset: installment
+ * {@code n} bills ≈ the statement month,
  * so the original purchase ≈ {@code statementMonth − (n−1)}. That anchor picks the YEAR for the
  * printed month/day. À-vista lines produce one draft; parcelado {@code n/N} lines produce {@code N}
  * drafts (the full schedule), all sharing the same {@code groupId}. Status is by date: this month or
@@ -30,8 +31,7 @@ public class InstallmentExpander {
 
     private final GroupSignature groupSignature;
 
-    public List<TransactionDraft> expand(MonetaryDocumentEntry line, UUID accountId, LocalDate today) {
-        val statementPeriod = YearMonth.from(today);
+    public List<TransactionDraft> expand(MonetaryDocumentEntry line, UUID accountId, YearMonth statementPeriod, LocalDate today) {
         val n = line.isInstallment() ? line.installmentNumber() : 1;
         val anchor = line.isInstallment() ? statementPeriod.minusMonths(n - 1L) : statementPeriod;
         val originalDate = resolveOriginalDate(MonthDay.from(line.date()), anchor);

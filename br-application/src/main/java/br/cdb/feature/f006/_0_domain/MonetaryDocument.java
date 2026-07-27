@@ -1,7 +1,9 @@
 package br.cdb.feature.f006._0_domain;
 
 import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
 
+import java.time.YearMonth;
 import java.util.List;
 
 /**
@@ -16,8 +18,9 @@ public sealed interface MonetaryDocument {
 
     String issuer();
 
+    /** {@code period} is the invoice's own printed month/year; {@code null} if the parser couldn't find it. */
     @NullMarked
-    record Invoice(String issuer, List<MonetaryDocumentEntry> statement) implements MonetaryDocument {}
+    record Invoice(String issuer, @Nullable YearMonth period, List<MonetaryDocumentEntry> statement) implements MonetaryDocument {}
 
     @NullMarked
     record Statement(String issuer, List<MonetaryDocumentEntry> statement) implements MonetaryDocument {}

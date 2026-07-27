@@ -11,6 +11,7 @@ import java.io.InputStream;
 import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
 import java.time.MonthDay;
+import java.time.YearMonth;
 import java.util.List;
 import java.util.Objects;
 
@@ -90,6 +91,12 @@ class BTGInvoiceParserTest {
         assertFalse(st.stream().anyMatch(l -> l.description().contains("Amazon Web Services")));
         // The "Total de créditos recebidos" card (Final 5115) is entirely dropped.
         assertFalse(st.stream().anyMatch(l -> l.last4().equals("5115")));
+    }
+
+    @Test
+    void parsesInvoicePeriodFromFaturaHeader() throws IOException {
+        assertEquals(YearMonth.of(2026, 4), ((MonetaryDocument.Invoice) parser.parse(fixture("fatura-btg-abril.txt"))).period());
+        assertEquals(YearMonth.of(2026, 5), ((MonetaryDocument.Invoice) parser.parse(fixture("fatura-btg-maio.txt"))).period());
     }
 
     private static List<String> last4s(List<MonetaryDocumentEntry> lines) {

@@ -63,7 +63,7 @@ public class InvoiceImportProcessor {
         this.clock = clock;
     }
 
-    public Result<ImportPreviewOutcome, ImportError> preview(String issuer, List<MonetaryDocumentEntry> statement) {
+    public Result<ImportPreviewOutcome, ImportError> preview(String issuer, @Nullable YearMonth period, List<MonetaryDocumentEntry> statement) {
         val last4s = statement.stream().map(MonetaryDocumentEntry::last4)
                 .filter(Objects::nonNull).collect(Collectors.toSet());
 
@@ -74,6 +74,7 @@ public class InvoiceImportProcessor {
         val cardByLast4 = cardMatcher.matchByLast4(last4s, cards);
 
         val today = LocalDate.now(clock);
+        val statementPeriod = period != null ? period : YearMonth.from(today);
         val history = ucTransaction.transactions().getOrElse(List.of());
 
         val rows = new ArrayList<PreviewRow>();
@@ -81,7 +82,7 @@ public class InvoiceImportProcessor {
             val suggestedCard = line.last4() != null ? cardByLast4.get(line.last4()) : null;
             val accountId = resolveAccountId(suggestedCard);
             val suggestedCardId = suggestedCard != null ? suggestedCard.id() : null;
-            for (val draft : expander.expand(line, accountId, today)) {
+            for (val draft : expander.expand(line, accountId, statementPeriod, today)) {
                 val dup = suggestedCard != null && isDuplicate(draft, history);
                 Logger.verbose("Attaching %s", draft);
                 rows.add(new PreviewRow(draft, dup, null, suggestedCardId));
