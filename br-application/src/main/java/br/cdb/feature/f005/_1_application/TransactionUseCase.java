@@ -126,11 +126,14 @@ public class TransactionUseCase {
             }
             val existingOverlay = userTransactionService.find(t.id(), t.accountId(), personId);
             val overlay = userTransactionService.save(t.id(), t.accountId(), personId, categoryId);
-            // Se for grupo de parcelas: atualiza a categoria de todos os membros
-            if (t.groupId() != null && existingOverlay.isEmpty()) {
+            val transferSiblings = transferSiblingsOf(t);
+            // Se for grupo de parcelas (nunca transferência — pernas de transferência carregam
+            // categoria por natureza da própria perna, nunca a da perna editada; ver
+            // saveTransferGroupCategories/transfer()): atualiza a categoria de todos os membros.
+            if (t.groupId() != null && existingOverlay.isEmpty() && transferSiblings.isEmpty()) {
                 saveUserTransactionForGroup(t, personId, categoryId);
             }
-            publishAccountUpdate(personId, t.accountId(), previousAccountId);
+            publishAccountUpdate(personId, t.accountId(), previousAccountId, transferSiblings);
             return new TransactionView(t, overlay);
         });
     }
@@ -187,12 +190,42 @@ public class TransactionUseCase {
         });
     }
 
-    /** Publica a conta atual e, se a transação mudou de conta, também a conta anterior. */
-    private void publishAccountUpdate(UUID personId, UUID accountId, @Nullable UUID previousAccountId) {
+    /**
+     * Publica a conta atual, a conta anterior (se mudou) e — quando a transação editada é perna de
+     * transferência — a(s) conta(s) da(s) perna(s) irmã(s): {@code updateTransfer} (contexto
+     * monetário) espelha data/valor/status na perna oposta, uma mutação real fora da conta da perna
+     * editada.
+     */
+    private void publishAccountUpdate(UUID personId, UUID accountId, @Nullable UUID previousAccountId,
+                                       List<Transaction> transferSiblings) {
         MessageBus.submit(new AccountEvents.Refresh(accountId, personId.toString()));
         if (previousAccountId != null && !previousAccountId.equals(accountId)) {
             MessageBus.submit(new AccountEvents.Refresh(previousAccountId, personId.toString()));
         }
+        for (val sib : transferSiblings) {
+            MessageBus.submit(new AccountEvents.Refresh(sib.accountId(), personId.toString()));
+        }
+    }
+
+    /**
+     * Pernas irmãs de transferência de {@code t} (mesmo groupId, com uma perna INCOME e uma EXPENSE
+     * no grupo) — lista vazia se {@code t} não tem groupId ou se o grupo não é uma transferência
+     * (ex.: grupo de parcelas, tipo único). Mesma heurística de tipos mistos de
+     * {@code TransactionService.findTransferSiblings} (contexto monetário) e {@code isTransfer()}
+     * (web/pages/transactions/actions.js), duplicada aqui de propósito: f005 não tem hoje um jeito
+     * de perguntar "é transferência" ao contexto sem crescer a superfície pública da Facade por
+     * causa de um único chamador.
+     */
+    private List<Transaction> transferSiblingsOf(Transaction t) {
+        val groupId = t.groupId();
+        if (groupId == null) return List.of();
+        val group = ucTransaction.transactions().getOrElse(List.of()).stream()
+                .filter(x -> groupId.equals(x.groupId()))
+                .toList();
+        val hasIncome = group.stream().anyMatch(x -> x.type() == Transaction.Type.INCOME);
+        val hasExpense = group.stream().anyMatch(x -> x.type() == Transaction.Type.EXPENSE);
+        if (!hasIncome || !hasExpense) return List.of();
+        return group.stream().filter(x -> !x.id().equals(t.id())).toList();
     }
 
     private void saveUserTransactionForGroup(Transaction first, UUID personId, @Nullable UUID categoryId) {

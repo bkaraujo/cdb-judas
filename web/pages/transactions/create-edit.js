@@ -67,6 +67,14 @@
       return null;
     }
 
+    // Perna de transferência: "Conta" é renomeada para orientar qual lado ela representa —
+    // EXPENSE = saída (Origem), INCOME = entrada (Destino). Só depende da natureza da própria
+    // perna, não da conta irmã.
+    function accountFieldLabel() {
+      if (!isTransferEdit) return 'Conta';
+      return initial.type === 'expense' ? 'Conta de Origem' : 'Conta de Destino';
+    }
+
     function buildCatOptions(type, selectedId) {
       const nat = natureForType(type);
       const cats = flatCategories(nat, true, selectedId);
@@ -106,7 +114,7 @@
       const options = cardOptionsHtml(accountId, selectedCardId);
       return '<div class="form-group" data-region="card-field" style="display:' + (options ? 'block' : 'none') + ';">' +
         '<label class="form-label" for="' + ids.card + '">Cartão</label>' +
-        '<select id="' + ids.card + '" name="cardId">' + options + '</select>' +
+        '<select id="' + ids.card + '" name="cardId"' + (isTransferEdit ? ' disabled' : '') + '>' + options + '</select>' +
       '</div>';
     }
 
@@ -133,13 +141,15 @@
       return '<option value="' + esc(p[0]) + '"' + sel + '>' + esc(p[1]) + '</option>';
     }).join('');
 
-    function typeBtnHtml(val, label, color, active) {
+    function typeBtnHtml(val, label, color, active, disabled) {
       return '<button type="button" data-act="set-form-type" data-type="' + esc(val) + '" ' +
+        (disabled ? 'disabled title="Tipo não pode ser alterado ao editar uma perna de transferência" ' : '') +
         'style="flex:1;padding:8px;border-radius:var(--radius-sm);font-size:13px;font-weight:600;' +
         'border:1px solid ' + (active ? 'var(--' + color + ')' : 'var(--border)') + ';' +
         'background:' + (active ? 'var(--' + color + '-light)' : 'transparent') + ';' +
         'color:' + (active ? 'var(--' + color + ')' : 'var(--text-secondary)') + ';' +
-        'cursor:pointer;transition:all var(--transition);">' +
+        'opacity:' + (disabled ? '0.55' : '1') + ';' +
+        'cursor:' + (disabled ? 'not-allowed' : 'pointer') + ';transition:all var(--transition);">' +
         esc(label) +
       '</button>';
     }
@@ -170,6 +180,7 @@
         '<div class="form-group full">' +
           '<label class="form-label" for="' + ids.desc + '">Descrição</label>' +
           '<input id="' + ids.desc + '" name="description" type="text" required ' +
+            (isTransferEdit ? 'disabled ' : '') +
             'style="text-transform:uppercase;" ' +
             'placeholder="Ex: Mercado, Salário..." value="' + esc(initial.description) + '" />' +
         '</div>' +
@@ -178,13 +189,15 @@
           '<input id="' + ids.date + '" name="date" type="date" required value="' + esc(initial.date) + '" />' +
         '</div>' +
         '<div class="form-group">' +
-          '<label class="form-label" for="' + ids.account + '">Conta</label>' +
+          '<label class="form-label" for="' + ids.account + '">' + esc(accountFieldLabel()) + '</label>' +
           '<select id="' + ids.account + '" name="accountId">' + accOpts + '</select>' +
         '</div>' +
         cardFieldHtml(initial.accountId, initial.cardId) +
         '<div class="form-group">' +
           '<label class="form-label" for="' + ids.costCenter + '">Centro de Custo</label>' +
-          '<select id="' + ids.costCenter + '" name="costCenterId">' + buildCostCenterOpts(initial.costCenterId) + '</select>' +
+          '<select id="' + ids.costCenter + '" name="costCenterId"' + (isTransferEdit ? ' disabled' : '') + '>' +
+            buildCostCenterOpts(initial.costCenterId) +
+          '</select>' +
         '</div>' +
         '<div class="form-group">' +
           '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">' +
@@ -209,9 +222,10 @@
           '<select id="' + ids.status + '" name="status">' + statusOpts + '</select>' +
         '</div>' +
         '<div class="form-group full">' +
-          '<label style="display:inline-flex;align-items:center;gap:8px;cursor:pointer;' +
+          '<label style="display:inline-flex;align-items:center;gap:8px;' + (isTransferEdit ? 'cursor:not-allowed;opacity:0.55;' : 'cursor:pointer;') +
             'font-size:13px;font-weight:500;color:var(--text-secondary);">' +
             '<input type="checkbox" name="estorno"' + (initial.isEstorno ? ' checked' : '') +
+              (isTransferEdit ? ' disabled' : '') +
               ' style="width:16px;height:16px;accent-color:var(--accent);" />' +
             'Estorno (inverter sinal)' +
           '</label>' +
@@ -219,6 +233,7 @@
         '<div class="form-group full">' +
           '<label class="form-label" for="' + ids.notes + '">Anotações <span style="font-weight:400;color:var(--text-muted);">(opcional)</span></label>' +
           '<textarea id="' + ids.notes + '" name="notes" maxlength="250" rows="3" ' +
+            (isTransferEdit ? 'disabled ' : '') +
             'placeholder="Até 250 caracteres..." style="resize:vertical;min-height:60px;">' + esc(initial.notes) + '</textarea>' +
           '<p style="font-size:11px;color:var(--text-muted);margin-top:4px;text-align:right;" data-region="notes-counter">' +
             esc(initial.notes.length + '/250') +
@@ -231,17 +246,19 @@
       '<form data-form="tx" autocomplete="off">' +
         (isTransferEdit
           ? '<div style="display:flex;gap:8px;align-items:flex-start;padding:10px 12px;margin-bottom:14px;' +
-              'border:1px solid var(--warning);border-radius:var(--radius-sm);background:var(--warning-light, transparent);">' +
-              '<span style="color:var(--warning);flex-shrink:0;display:flex;">' + window.icon('alertCircle', 16) + '</span>' +
+              'border:1px solid var(--info);border-radius:var(--radius-sm);background:var(--info-light, transparent);">' +
+              '<span style="color:var(--info);flex-shrink:0;display:flex;">' + window.icon('alertCircle', 16) + '</span>' +
               '<span style="font-size:12px;color:var(--text-secondary);line-height:1.4;">' +
-                'Editar uma transferência desfaz o par: a perna oposta será removida e este lançamento passa a ser avulso.' +
+                'Esta transação faz parte de uma transferência. Você pode ajustar conta, data, valor, ' +
+                'status e categoria desta perna — a perna oposta é sincronizada automaticamente. Tipo e ' +
+                'os demais campos não podem ser alterados por aqui.' +
               '</span>' +
             '</div>'
           : '') +
         '<div data-region="type-row" style="display:flex;gap:8px;margin-bottom:16px;">' +
-          typeBtnHtml('expense',  '↓ Despesa',       'expense',  initial.type === 'expense') +
-          typeBtnHtml('income',   '↑ Receita',       'income',   initial.type === 'income') +
-          typeBtnHtml('transfer', '⇄ Transferência', 'accent',   initial.type === 'transfer') +
+          typeBtnHtml('expense',  '↓ Despesa',       'expense',  initial.type === 'expense', isTransferEdit) +
+          typeBtnHtml('income',   '↑ Receita',       'income',   initial.type === 'income',  isTransferEdit) +
+          typeBtnHtml('transfer', '⇄ Transferência', 'accent',   initial.type === 'transfer', isTransferEdit) +
         '</div>' +
         '<input type="hidden" name="type" value="' + esc(initial.type) + '" />' +
         '<div class="form-grid" data-region="grid">' +
@@ -286,6 +303,7 @@
     // Type buttons sync hidden input + rebuild grid layout for the chosen type.
     m.$body.on('click', '[data-act=set-form-type]', function (e) {
       e.preventDefault();
+      if (isTransferEdit) return; // tipo é imutável ao editar uma perna de transferência (par se desfaria)
       const t = $(this).attr('data-type');
       // Snapshot current values to preserve across rebuild.
       initial.description = $form.find('input[name=description]').val() || initial.description;
@@ -311,9 +329,9 @@
       // Repaint type row.
       const $row = m.$body.find('[data-region=type-row]');
       $row.empty();
-      $row.append(typeBtnHtml('expense',  '↓ Despesa',       'expense',  t === 'expense'));
-      $row.append(typeBtnHtml('income',   '↑ Receita',       'income',   t === 'income'));
-      $row.append(typeBtnHtml('transfer', '⇄ Transferência', 'accent',   t === 'transfer'));
+      $row.append(typeBtnHtml('expense',  '↓ Despesa',       'expense',  t === 'expense', isTransferEdit));
+      $row.append(typeBtnHtml('income',   '↑ Receita',       'income',   t === 'income',  isTransferEdit));
+      $row.append(typeBtnHtml('transfer', '⇄ Transferência', 'accent',   t === 'transfer', isTransferEdit));
       // Rebuild grid.
       m.$body.find('[data-region=grid]').html(buildGridHtml(t));
       bindAmountMask();
