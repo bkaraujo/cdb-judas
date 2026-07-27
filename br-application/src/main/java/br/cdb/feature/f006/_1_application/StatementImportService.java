@@ -1,16 +1,12 @@
 package br.cdb.feature.f006._1_application;
 
 import br.cdb.feature.f005._1_application.UserTransactionService;
-import br.cdb.feature.f006._0_domain.CreditCardProvider;
-import br.cdb.feature.f006._0_domain.ImportError;
-import br.cdb.feature.f006._0_domain.ImportResult;
-import br.cdb.feature.f006._0_domain.MonetaryDocument;
-import br.cdb.feature.f006._0_domain.StatementParser;
-import br.cdb.feature.f006._1_application.confirm.StatementConfirmCommand;
+import br.cdb.feature.f006._0_domain.*;
 import br.cdb.feature.f006._1_application.confirm.InvoiceConfirmCommand;
-import br.cdb.feature.f006._1_application.preview.StatementImportProcessor;
+import br.cdb.feature.f006._1_application.confirm.StatementConfirmCommand;
 import br.cdb.feature.f006._1_application.preview.ImportPreviewOutcome;
 import br.cdb.feature.f006._1_application.preview.InvoiceImportProcessor;
+import br.cdb.feature.f006._1_application.preview.StatementImportProcessor;
 import br.commons.Logger;
 import br.commons.Result;
 import br.commons.business.BusinessError;
