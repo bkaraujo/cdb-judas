@@ -26,7 +26,7 @@ import java.util.UUID;
 @Path("/api/{uuid}/accounts/{accountId}/cards")
 @Produces(MediaType.APPLICATION_JSON)
 @RequiredArgsConstructor
-public class CardResource {
+public class AccountCardResource {
 
     private static final Set<DeletionStrategy> ALLOWED_STRATEGIES = Set.of(DeletionStrategy.MOVE, DeletionStrategy.DELETE);
 

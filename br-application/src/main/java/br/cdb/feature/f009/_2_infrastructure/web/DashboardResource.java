@@ -20,10 +20,10 @@ public class DashboardResource {
     private final DashboardService dashboardService;
 
     @GET
-    @Path("/result")
     public DashboardService.MonthlyResult getMonthlyResult(
             @QueryParam("month") int month,
-            @QueryParam("year") int year) {
+            @QueryParam("year") int year
+    ) {
         return switch (dashboardService.getMonthlyResult(month, year)) {
             case Result.Success(var data) -> data;
             case Result.Failure(var error) -> throw new BusinessException(error);

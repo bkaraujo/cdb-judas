@@ -3,7 +3,7 @@
   function create(http) {
     return {
       getMonthlyResult: function (month, year) {
-        return http.get('/dashboard/result?month=' + month + '&year=' + year);
+        return http.get('/dashboard?month=' + month + '&year=' + year);
       },
       getRecentTransactions: function (limit) {
         return http.get('/accounts/transactions?limit=' + (limit || 5) + '&sort=date,desc');

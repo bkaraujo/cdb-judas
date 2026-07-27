@@ -11,29 +11,53 @@
  * regra {@code application_must_not_access_infrastructure}). Histórico completo da migração
  * fatias-planas→fNNN em {@code .claude/refactor.md}.
  *
- * <h2>Decomposição de alto nível</h2>
+ * <h2>URLs exportadas por feature</h2>
  * <pre>
  * feature
  * ├── f000  fatia-base — todas as demais podem depender dela, ela de nenhuma
- * │   ├── stream/SSE   GET  /api/{uuid}/stream (Server-Sent Events)
- * │   ├── deletion     contrato de exclusão compartilhado (accounts/cards/categories/tags)
- * │   ├── auth         POST /login — token opaco rotativo
- * │   ├── UserGuards   guarda de propriedade/anti-IDOR
- * │   ├── costcenter   GET  /api/cost-center — sem namespace de usuário
- * │   ├── version      GET  /api/version — sem namespace de usuário
- * │   └── closing      GET/POST/DELETE /api/{uuid}/accounts/closing
- * ├── f001  self-service — GET/PATCH /api/me (nome + preferências write-through)
- * ├── f002  accounts — CRUD /api/{uuid}/accounts (+ cards e balance fundidos: sem overlay próprio)
- * │   ├── cards     CRUD …/{accId}/cards
- * │   └── balance   GET  …/balance?period=|year=
- * ├── f003  tags — CRUD /api/{uuid}/tags; reage a {@code TransactionsDeleted} (evento da base f000)
- * ├── f004  categories — CRUD /api/{uuid}/categories
- * ├── f005  transactions + transfer — CRUD …/{accId}/transactions, POST …/transactions/transfer;
- * │         publica {@code TransactionsDeleted} após excluir transações
- * ├── f006  importação de extrato/fatura — POST …/transactions/import/preview|confirm
- * │         (parsers BTG/Santander, casamento de cartão, sugestão de categoria)
- * ├── f009  dashboard — GET /api/{uuid}/dashboard/result
- * ├── f999  Initialization routines
+ * │   ├── ClosingResource      GET/POST/DELETE /api/{uuid}/accounts/closing
+ * │   ├── CostCenterResource   GET  /api/cost-center                          (sem namespace de usuário)
+ * │   ├── LoginResource        POST /login
+ * │   ├── SseResource          GET  /api/{uuid}/stream                        (Server-Sent Events)
+ * │   └── VersionResource      GET  /api/version                              (sem namespace de usuário)
+ * ├── f001  self-service
+ * │   └── SelfResource         GET/PATCH /api/me                              (nome + preferências write-through)
+ * ├── f002  accounts (+ cards e balance fundidos: sem overlay próprio)
+ * │   ├── AccountResource        GET    /api/{uuid}/accounts
+ * │   │                          GET    /api/{uuid}/accounts/{id}
+ * │   │                          POST   /api/{uuid}/accounts
+ * │   │                          PATCH  /api/{uuid}/accounts/{id}
+ * │   │                          DELETE /api/{uuid}/accounts/{id}?strategy=&amp;targetId=
+ * │   ├── AccountBalanceResource GET    /api/{uuid}/accounts/balance?period=yyyyMM
+ * │   │                          GET    /api/{uuid}/accounts/{id}/balance?period=yyyyMM|year=yyyy
+ * │   └── AccountCardResource    GET    /api/{uuid}/accounts/{accountId}/cards
+ * │                              POST   /api/{uuid}/accounts/{accountId}/cards
+ * │                              PATCH  /api/{uuid}/accounts/{accountId}/cards/{cardId}
+ * │                              DELETE /api/{uuid}/accounts/{accountId}/cards/{cardId}?strategy=&amp;targetId=
+ * ├── f003  tags
+ * │   └── TagResource          GET    /api/{uuid}/tags
+ * │                            POST   /api/{uuid}/tags
+ * │                            PATCH  /api/{uuid}/tags/{id}
+ * │                            DELETE /api/{uuid}/tags/{id}?strategy=&amp;targetId=  (reage a {@code TransactionsDeleted}, evento de f000/f005)
+ * ├── f004  categories
+ * │   └── CategoryResource     GET    /api/{uuid}/categories
+ * │                            POST   /api/{uuid}/categories
+ * │                            PATCH  /api/{uuid}/categories/{id}
+ * │                            DELETE /api/{uuid}/categories/{id}?strategy=&amp;targetId=
+ * ├── f005  transactions + transfer
+ * │   ├── TransferResource     POST   /api/{uuid}/accounts/transactions/transfer
+ * │   └── TransactionResource  GET    /api/{uuid}/accounts/transactions?limit=&amp;dateFrom=&amp;dateTo=&amp;status=&amp;type=       (cross-account)
+ * │                            GET    /api/{uuid}/accounts/{accId}/transactions?limit=&amp;dateFrom=&amp;dateTo=&amp;status=&amp;type=
+ * │                            POST   /api/{uuid}/accounts/{accId}/transactions
+ * │                            PATCH  /api/{uuid}/accounts/{accId}/transactions/{txId}
+ * │                            PATCH  /api/{uuid}/accounts/{accId}/transactions/{txId}/status
+ * │                            DELETE /api/{uuid}/accounts/{accId}/transactions/{txId}?mode=          (publica {@code TransactionsDeleted})
+ * ├── f006  importação de extrato/fatura
+ * │   └── StatementImportResource POST /api/{uuid}/accounts/transactions/import/preview  (multipart: file/password/accountId)
+ * │                                POST /api/{uuid}/accounts/transactions/import/confirm  (parsers BTG/Santander, casamento de cartão, sugestão de categoria)
+ * ├── f009  dashboard
+ * │   └── DashboardResource    GET /api/{uuid}/dashboard?month=&amp;year=
+ * ├── f999  Initialization routines                                                       (sem HTTP)
  * </pre>
  */
 @NullMarked
