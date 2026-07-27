@@ -4,7 +4,7 @@ import br.cdb.core.web.HTTPRequest;
 import br.cdb.core.web.HTTPResponse;
 import br.cdb.feature.f006._0_domain.ImportError;
 import br.cdb.feature.f006._1_application.StatementImportUseCase;
-import br.cdb.feature.f006._1_application.confirm.BankStatementConfirmCommand;
+import br.cdb.feature.f006._1_application.confirm.StatementConfirmCommand;
 import br.cdb.feature.f006._1_application.confirm.InvoiceConfirmCommand;
 import br.cdb.feature.f006._2_infrastructure.web.request.StatementConfirmRequest;
 import br.cdb.feature.f006._2_infrastructure.web.response.ImportConfirmResponse;
@@ -96,10 +96,10 @@ public class StatementImportResource {
             return HTTPResponse.unprocessable("ACCOUNT_REQUIRED", "O campo accountId é obrigatório para extratos bancários.");
         }
         val rows = req.rows().stream()
-                .map(r -> new BankStatementConfirmCommand.Row(r.description(), r.amount(), r.date(), r.transactionType(), r.categoryId()))
+                .map(r -> new StatementConfirmCommand.Row(r.description(), r.amount(), r.date(), r.transactionType(), r.categoryId()))
                 .toList();
 
-        return switch (statementImportUseCase.confirmStatementImport(personId, new BankStatementConfirmCommand(req.accountId(), rows))) {
+        return switch (statementImportUseCase.confirmStatementImport(personId, new StatementConfirmCommand(req.accountId(), rows))) {
             case Result.Success(var res) ->
                     Response.ok(new ImportConfirmResponse(res.created(), res.reconciled(), res.skipped())).build();
             case Result.Failure(var error) -> HTTPResponse.unprocessable("ACCOUNT_NOT_FOUND", messageOf(error));

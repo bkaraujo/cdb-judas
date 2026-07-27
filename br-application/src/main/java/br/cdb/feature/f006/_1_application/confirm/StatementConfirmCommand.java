@@ -14,7 +14,7 @@ import java.util.UUID;
  * unambiguously determines the direction (positive = income, negative = expense).
  */
 @NullMarked
-public record BankStatementConfirmCommand(UUID accountId, List<Row> rows) {
+public record StatementConfirmCommand(UUID accountId, List<Row> rows) {
 
     @NullMarked
     public record Row(

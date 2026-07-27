@@ -9,8 +9,8 @@ import br.cdb.feature.f000._1_application.UserGuards;
 import br.cdb.feature.f002._0_domain.event.AccountEvents;
 import br.cdb.feature.f006._0_domain.ImportError;
 import br.cdb.feature.f006._0_domain.ImportResult;
-import br.cdb.feature.f006._1_application.confirm.BankStatementConfirmCommand;
 import br.cdb.feature.f006._1_application.confirm.InvoiceConfirmCommand;
+import br.cdb.feature.f006._1_application.confirm.StatementConfirmCommand;
 import br.cdb.feature.f006._1_application.preview.ImportPreviewOutcome;
 import br.commons.MessageBus;
 import br.commons.Result;
@@ -40,7 +40,7 @@ public class StatementImportUseCase {
     private final CreditCardUseCase ucCreditCard = MonetaryUseCases.ucCreditCard();
 
     private final UserGuards guards;
-    private final StatementImportService statementImportService;
+    private final StatementImportService service;
 
     /** Preview + nomes de conta por personId (rotulam as opções de cartão na resposta). */
     @NullMarked
@@ -51,7 +51,7 @@ public class StatementImportUseCase {
             return new Result.Failure<>(new ImportError.AccountNotFound());
         }
 
-        return statementImportService.preview(fileBytes, password, accountId)
+        return service.preview(fileBytes, password, accountId)
                 .map(outcome -> new ImportPreviewView(outcome, accountNamesById()));
     }
 
@@ -61,13 +61,13 @@ public class StatementImportUseCase {
                 return Result.failure(error);
             }
         }
-        return statementImportService.confirm(personId, cmd)
+        return service.confirm(personId, cmd)
                 .ifSuccess(ignored -> affectedAccountIds(cmd.rows())
                         .forEach(accountId -> MessageBus.submit(new AccountEvents.Refresh(accountId, personId.toString()))));
     }
 
-    public Result<ImportResult, BusinessError> confirmStatementImport(UUID personId, BankStatementConfirmCommand cmd) {
-        return guards.ownsAccount(cmd.accountId()).flatMap(ignored -> statementImportService.confirmStatement(personId, cmd))
+    public Result<ImportResult, BusinessError> confirmStatementImport(UUID personId, StatementConfirmCommand cmd) {
+        return guards.ownsAccount(cmd.accountId()).flatMap(ignored -> service.confirm(personId, cmd))
                 .ifSuccess(ignored -> MessageBus.submit(new AccountEvents.Refresh(cmd.accountId(), personId.toString())));
     }
 

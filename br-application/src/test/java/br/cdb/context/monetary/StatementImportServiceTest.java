@@ -13,7 +13,7 @@ import br.cdb.feature.f005._1_application.UserTransactionService;
 import br.cdb.feature.f006._0_domain.ImportError;
 import br.cdb.feature.f006._0_domain.ImportResult;
 import br.cdb.feature.f006._1_application.StatementImportService;
-import br.cdb.feature.f006._1_application.confirm.BankStatementConfirmCommand;
+import br.cdb.feature.f006._1_application.confirm.StatementConfirmCommand;
 import br.cdb.feature.f006._1_application.preview.BankStatementPreview;
 import br.cdb.feature.f006._1_application.preview.ImportPreviewOutcome;
 import br.cdb.feature.f006._2_infrastructure.provider.BTGInvoiceParser;
@@ -83,10 +83,10 @@ class StatementImportServiceTest {
 
         var catOdonto = UUID.randomUUID();
         var catPix = UUID.randomUUID();
-        var cmd = new BankStatementConfirmCommand(account.id(), List.of(
-                new BankStatementConfirmCommand.Row("Odontoprev", new BigDecimal("-161.43"), LocalDate.of(2025, 3, 5), Transaction.Type.EXPENSE, catOdonto),
-                new BankStatementConfirmCommand.Row("Caixa Economica", new BigDecimal("3000.00"), LocalDate.of(2025, 3, 6), Transaction.Type.INCOME, catPix)));
-        var result = (ImportResult) assertInstanceOf(Result.Success.class, useCase.confirmStatement(PERSON, cmd)).value();
+        var cmd = new StatementConfirmCommand(account.id(), List.of(
+                new StatementConfirmCommand.Row("Odontoprev", new BigDecimal("-161.43"), LocalDate.of(2025, 3, 5), Transaction.Type.EXPENSE, catOdonto),
+                new StatementConfirmCommand.Row("Caixa Economica", new BigDecimal("3000.00"), LocalDate.of(2025, 3, 6), Transaction.Type.INCOME, catPix)));
+        var result = (ImportResult) assertInstanceOf(Result.Success.class, useCase.confirm(PERSON, cmd)).value();
 
         assertEquals(2, result.created());
         assertEquals(0, result.reconciled());
@@ -123,9 +123,9 @@ class StatementImportServiceTest {
         transactions.save(manual);
         var useCase = useCaseWith(accounts, transactions);
 
-        var cmd = new BankStatementConfirmCommand(account.id(), List.of(
-                new BankStatementConfirmCommand.Row("Odontoprev", new BigDecimal("-161.43"), LocalDate.of(2025, 3, 5), Transaction.Type.EXPENSE, UUID.randomUUID())));
-        var result = (ImportResult) assertInstanceOf(Result.Success.class, useCase.confirmStatement(PERSON, cmd)).value();
+        var cmd = new StatementConfirmCommand(account.id(), List.of(
+                new StatementConfirmCommand.Row("Odontoprev", new BigDecimal("-161.43"), LocalDate.of(2025, 3, 5), Transaction.Type.EXPENSE, UUID.randomUUID())));
+        var result = (ImportResult) assertInstanceOf(Result.Success.class, useCase.confirm(PERSON, cmd)).value();
 
         assertEquals(0, result.created());
         assertEquals(1, result.reconciled());
@@ -146,9 +146,9 @@ class StatementImportServiceTest {
         transactions.save(manual);
         var useCase = useCaseWith(accounts, transactions);
 
-        var cmd = new BankStatementConfirmCommand(account.id(), List.of(
-                new BankStatementConfirmCommand.Row("Odontoprev", new BigDecimal("-161.43"), LocalDate.of(2025, 3, 5), Transaction.Type.EXPENSE, UUID.randomUUID())));
-        var result = (ImportResult) assertInstanceOf(Result.Success.class, useCase.confirmStatement(PERSON, cmd)).value();
+        var cmd = new StatementConfirmCommand(account.id(), List.of(
+                new StatementConfirmCommand.Row("Odontoprev", new BigDecimal("-161.43"), LocalDate.of(2025, 3, 5), Transaction.Type.EXPENSE, UUID.randomUUID())));
+        var result = (ImportResult) assertInstanceOf(Result.Success.class, useCase.confirm(PERSON, cmd)).value();
 
         assertEquals(1, result.created());
         assertEquals(0, result.reconciled());
@@ -168,9 +168,9 @@ class StatementImportServiceTest {
         transactions.save(existing);
         var useCase = useCaseWith(accounts, transactions);
 
-        var cmd = new BankStatementConfirmCommand(account.id(), List.of(
-                new BankStatementConfirmCommand.Row("Odontoprev", new BigDecimal("-161.43"), LocalDate.of(2025, 3, 5), Transaction.Type.EXPENSE, UUID.randomUUID())));
-        var result = (ImportResult) assertInstanceOf(Result.Success.class, useCase.confirmStatement(PERSON, cmd)).value();
+        var cmd = new StatementConfirmCommand(account.id(), List.of(
+                new StatementConfirmCommand.Row("Odontoprev", new BigDecimal("-161.43"), LocalDate.of(2025, 3, 5), Transaction.Type.EXPENSE, UUID.randomUUID())));
+        var result = (ImportResult) assertInstanceOf(Result.Success.class, useCase.confirm(PERSON, cmd)).value();
 
         assertEquals(0, result.created());
         assertEquals(0, result.reconciled());
