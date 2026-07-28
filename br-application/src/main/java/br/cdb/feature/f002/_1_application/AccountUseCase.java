@@ -6,7 +6,6 @@ import br.cdb.context.monetary._0_domain.model.Balance;
 import br.cdb.context.monetary._0_domain.model.CreditCard;
 import br.cdb.context.monetary._0_domain.model.Transaction;
 import br.cdb.context.monetary._1_application.command.AccountCommand;
-import br.cdb.context.monetary._1_application.command.CreditCardCommand;
 import br.cdb.context.monetary._1_application.usecase.CreditCardUseCase;
 import br.cdb.context.monetary._1_application.usecase.TransactionUseCase;
 import br.cdb.core.web.HTTPRequest;
@@ -36,8 +35,10 @@ import java.util.Objects;
 import java.util.UUID;
 
 /**
- * Use case da fatia {@code f002} (accounts, com cards e balance — fatias finas demais para
- * hexágono próprio, fundidas aqui per .claude/refactor.md). Nome coincide com o use case do
+ * Use case da fatia {@code f002} (accounts, com balance — fatia fina demais para hexágono próprio,
+ * fundida aqui per .claude/refactor.md). Cartão tem fatia própria (f003): esta classe só lê
+ * {@code CreditCard} do contexto para popular {@link AccountView#cards()} (projeção
+ * somente-leitura); mutação de cartão é {@code f003.CardUseCase}. Nome coincide com o use case do
  * contexto monetário; referenciado por FQN completo (campo {@code ucAccount}) para evitar
  * colisão de import.
  *
@@ -209,42 +210,6 @@ public class AccountUseCase {
             }
         }
         return Result.success(result);
-    }
-
-    // ── Credit cards ───────────────────────────────────────────────
-
-    public Result<List<CreditCard>, BusinessError> cards(UUID accountId) {
-        return guards.ownsAccount(accountId).flatMap(ignored -> ucCreditCard.list(accountId));
-    }
-
-    public Result<CreditCard, BusinessError> createCard(CreditCardCommand.Create cmd) {
-        return guards.ownsAccount(cmd.accountId()).flatMap(ignored -> ucCreditCard.upsert(cmd))
-                .ifSuccess(ignored -> MessageBus.submit(new AccountStreamEvents.Refresh(cmd.accountId(), HTTPRequest.personId())));
-    }
-
-    public Result<DeletionOutcome, BusinessError> deleteCard(
-            UUID accountId, UUID cardId, @Nullable DeletionStrategy strategy, @Nullable UUID targetId) {
-        return guards.ownsCard(accountId, cardId).flatMap(ignored -> {
-            if (strategy == null) {
-                val count = (int) allTransactions().stream().filter(t -> cardId.equals(t.cardId())).count();
-                if (count > 0) return Result.success(new DeletionOutcome.Linked(count));
-            }
-
-            return ucCreditCard.delete(new CreditCardCommand.Delete(cardId, Deletions.toPolicy(strategy, targetId))).map(ids -> {
-                // MOVE mantém o cartão de destino na mesma conta: sem re-key de overlay a fazer.
-                if (strategy != DeletionStrategy.MOVE) {
-                    MessageBus.submit(new TransactionsDeleted(ids));
-                }
-                MessageBus.submit(new AccountStreamEvents.Refresh(accountId, HTTPRequest.personId()));
-                return new DeletionOutcome.Completed();
-            });
-        });
-    }
-
-    public Result<CreditCard, BusinessError> setCardActive(UUID accountId, UUID cardId, boolean active) {
-        return guards.ownsCard(accountId, cardId)
-                .flatMap(ignored -> ucCreditCard.upsert(new CreditCardCommand.Update(cardId, active)))
-                .ifSuccess(ignored -> MessageBus.submit(new AccountStreamEvents.Refresh(accountId, HTTPRequest.personId())));
     }
 
     // ── Helpers ────────────────────────────────────────────────────

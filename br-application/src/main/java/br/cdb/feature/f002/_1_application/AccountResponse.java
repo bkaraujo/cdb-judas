@@ -25,8 +25,18 @@ public record AccountResponse(
         @Nullable Integer closingDay,
         @Nullable Integer dueDay,
         BigDecimal currentBalance,
-        List<CardResponse> cards
+        List<Card> cards
 ) {
+    /** Projeção somente-leitura de {@code CreditCard} (contexto monetário), com o mesmo shape
+     *  JSON de {@code f003.CardResponse} — f002 não pode depender de f003 (fatia irmã), então
+     *  declara sua própria; f003 é dono das mutações de cartão. */
+    @NullMarked
+    public record Card(UUID id, String last4, UUID accountId, boolean active) {
+        public static Card from(CreditCard creditCard) {
+            return new Card(creditCard.id(), creditCard.last4(), creditCard.accountId(), creditCard.active());
+        }
+    }
+
     /** Saldo atual = soma de todas as transações da conta (sem conceito de saldo de abertura). */
     public static AccountResponse from(Account monetary, @Nullable UserAccount ua,
                                        List<CreditCard> creditCards, List<Transaction> transactions) {
@@ -35,7 +45,7 @@ public record AccountResponse(
             if (monetary.id().equals(t.accountId())) sum = sum.add(BigDecimal.valueOf(t.signal()).multiply(t.amount()));
         }
         val type = Strings.upper(monetary.type().name());
-        val cardDtos = creditCards.stream().map(CardResponse::from).toList();
+        val cardDtos = creditCards.stream().map(Card::from).toList();
         val color = ua != null ? ua.color() : "#000000";
         return new AccountResponse(monetary.id(), monetary.name(), type, color, monetary.active(),
                 monetary.creditLimit(), monetary.overdraftLimit(), monetary.closingDay(), monetary.dueDay(),

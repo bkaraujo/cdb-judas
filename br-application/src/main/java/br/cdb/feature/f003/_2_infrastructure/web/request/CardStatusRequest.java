@@ -1,4 +1,4 @@
-package br.cdb.feature.f002._2_infrastructure.web.request;
+package br.cdb.feature.f003._2_infrastructure.web.request;
 
 import org.jspecify.annotations.NullMarked;
 
