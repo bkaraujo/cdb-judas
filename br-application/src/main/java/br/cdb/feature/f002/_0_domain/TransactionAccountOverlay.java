@@ -9,8 +9,9 @@ import java.util.UUID;
  * PERSON_TRANSACTION}) para manter a integridade referencial ao apagar/reatribuir uma conta —
  * {@code PERSON_TRANSACTION.COD_ACCOUNT} referencia {@code MON_ACCOUNT}, então o overlay precisa
  * ser re-keyed (MOVE) ou apagado <em>antes</em> do contexto remover a conta, de forma síncrona (não
- * dá para virar reação a evento pós-delete). Implementada pela fatia dona do overlay (f005) —
- * inversão de dependência: f005 depende de f002, nunca o contrário.
+ * dá para virar reação a evento pós-delete). Implementada por um adapter em
+ * {@code f999._2_infrastructure.adapter}, que delega à fatia dona do overlay (f005) — nem f002 nem
+ * f005 dependem uma da outra.
  */
 @NullMarked
 public interface TransactionAccountOverlay {

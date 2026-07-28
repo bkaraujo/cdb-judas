@@ -7,7 +7,7 @@ import br.cdb.feature.f000._0_domain.DeletionOutcome;
 import br.cdb.feature.f000._0_domain.DeletionStrategy;
 import br.cdb.feature.f000._0_domain.event.TagDeleted;
 import br.cdb.feature.f000._0_domain.event.TransactionsDeleted;
-import br.cdb.feature.f002._0_domain.event.AccountEvents;
+import br.cdb.feature.f000._0_domain.event.AccountStreamEvents;
 import br.cdb.feature.f003._0_domain.UserTag;
 import br.commons.MessageBus;
 import br.commons.Result;
@@ -26,7 +26,7 @@ import java.util.stream.Collectors;
 
 /**
  * Use case da fatia {@code f003} (tags). {@code deleteTag(DELETE)} publica
- * {@link AccountEvents.Refresh} (SSE de conta — dispatch é responsabilidade única de {@code f999}).
+ * {@link AccountStreamEvents.Refresh} (SSE de conta — dispatch é responsabilidade única de {@code f999}).
  * MOVE reatribui os vínculos imperativamente ({@code UserTagService.reassignMoving},
  * re-key) e então publica {@link TagDeleted}; as demais estratégias publicam direto — em todo caso
  * quem remove a linha {@code PERSON_TAG} e o vínculo remanescente é {@code TagDeletedListener}
@@ -113,7 +113,7 @@ public class TagUseCase {
         MessageBus.submit(new TransactionsDeleted(txIds));
 
         afterCleanup.run();
-        affectedAccountIds.forEach(id -> MessageBus.submit(new AccountEvents.Refresh(id, HTTPRequest.personId())));
+        affectedAccountIds.forEach(id -> MessageBus.submit(new AccountStreamEvents.Refresh(id, HTTPRequest.personId())));
         return Result.success();
     }
 

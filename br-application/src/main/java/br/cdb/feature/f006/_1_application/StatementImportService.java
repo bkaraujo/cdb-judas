@@ -1,6 +1,5 @@
 package br.cdb.feature.f006._1_application;
 
-import br.cdb.feature.f005._1_application.UserTransactionService;
 import br.cdb.feature.f006._0_domain.*;
 import br.cdb.feature.f006._1_application.confirm.InvoiceConfirmCommand;
 import br.cdb.feature.f006._1_application.confirm.StatementConfirmCommand;
@@ -36,16 +35,16 @@ public class StatementImportService {
     private final InvoiceImportProcessor invoiceProcessor;
     private final StatementImportProcessor statementProcessor;
 
-    public StatementImportService(CreditCardProvider creditCardProvider, PdfTextExtractor extractor, List<StatementParser> parsers, long bytes, UserTransactionService userTransactionService) {
-        this(creditCardProvider, extractor, parsers, bytes, userTransactionService, Clock.system(ZoneId.systemDefault()));
+    public StatementImportService(CreditCardProvider creditCardProvider, PdfTextExtractor extractor, List<StatementParser> parsers, long bytes, TransactionOverlaySink transactionOverlaySink) {
+        this(creditCardProvider, extractor, parsers, bytes, transactionOverlaySink, Clock.system(ZoneId.systemDefault()));
     }
 
-    public StatementImportService(CreditCardProvider creditCardProvider, PdfTextExtractor extractor, List<StatementParser> parsers, long bytes, UserTransactionService userTransactionService, Clock clock) {
+    public StatementImportService(CreditCardProvider creditCardProvider, PdfTextExtractor extractor, List<StatementParser> parsers, long bytes, TransactionOverlaySink transactionOverlaySink, Clock clock) {
         this.extractor = extractor;
         this.parsers = parsers;
         this.maxFileBytes = bytes;
-        this.invoiceProcessor = new InvoiceImportProcessor(creditCardProvider, userTransactionService, clock);
-        this.statementProcessor = new StatementImportProcessor(userTransactionService, clock);
+        this.invoiceProcessor = new InvoiceImportProcessor(creditCardProvider, transactionOverlaySink, clock);
+        this.statementProcessor = new StatementImportProcessor(transactionOverlaySink, clock);
     }
 
     public Result<ImportPreviewOutcome, ImportError> preview(byte[] fileBytes, @Nullable String password, @Nullable UUID accountId) {

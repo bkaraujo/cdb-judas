@@ -12,11 +12,12 @@ import jakarta.ws.rs.core.Response;
 import lombok.val;
 import org.jspecify.annotations.NullMarked;
 
+import static br.cdb.core.web.HTTPRequest.TOKEN_HEADER;
+
 @Path("/login")
 @NullMarked
 public class LoginResource {
 
-    public static final String TOKEN_HEADER = "X-Access-Token";
     public static final String USER_ID_HEADER = "X-User-Id";
 
     @Inject

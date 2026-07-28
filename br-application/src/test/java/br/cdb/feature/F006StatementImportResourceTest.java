@@ -1,7 +1,7 @@
 package br.cdb.feature;
 
 import br.cdb.PdfFixtures;
-import br.cdb.feature.f000._2_infrastructure.web.LoginResource;
+import br.cdb.core.web.HTTPRequest;
 import io.quarkus.test.junit.QuarkusTest;
 import io.restassured.RestAssured;
 import io.restassured.specification.RequestSpecification;
@@ -17,7 +17,7 @@ public class F006StatementImportResourceTest extends BaseHttpTest {
 
     /** Sem o {@code contentType(JSON)} padrão de {@link #asTestUser()}: o multipart define o seu próprio. */
     private RequestSpecification asMultipartUser() {
-        return RestAssured.given().header(LoginResource.TOKEN_HEADER, tokenStore.issue(TEST_USER_ID));
+        return RestAssured.given().header(HTTPRequest.TOKEN_HEADER, tokenStore.issue(TEST_USER_ID));
     }
 
     @Test

@@ -6,7 +6,7 @@ import br.cdb.context.monetary._0_domain.model.CreditCard;
 import br.cdb.context.monetary._1_application.usecase.AccountUseCase;
 import br.cdb.context.monetary._1_application.usecase.CreditCardUseCase;
 import br.cdb.feature.f000._1_application.UserGuards;
-import br.cdb.feature.f002._0_domain.event.AccountEvents;
+import br.cdb.feature.f000._0_domain.event.AccountStreamEvents;
 import br.cdb.feature.f006._0_domain.ImportError;
 import br.cdb.feature.f006._0_domain.ImportResult;
 import br.cdb.feature.f006._1_application.confirm.InvoiceConfirmCommand;
@@ -29,7 +29,7 @@ import java.util.stream.Collectors;
 
 /**
  * Use case da fatia {@code f006} (importação de extrato/fatura). SSE de conta publica
- * {@link AccountEvents.Refresh} — dispatch é responsabilidade única de {@code f999}.
+ * {@link AccountStreamEvents.Refresh} — dispatch é responsabilidade única de {@code f999}.
  */
 @NullMarked
 @Singleton
@@ -63,12 +63,12 @@ public class StatementImportUseCase {
         }
         return service.confirm(personId, cmd)
                 .ifSuccess(ignored -> affectedAccountIds(cmd.rows())
-                        .forEach(accountId -> MessageBus.submit(new AccountEvents.Refresh(accountId, personId.toString()))));
+                        .forEach(accountId -> MessageBus.submit(new AccountStreamEvents.Refresh(accountId, personId.toString()))));
     }
 
     public Result<ImportResult, BusinessError> confirmStatementImport(UUID personId, StatementConfirmCommand cmd) {
         return guards.ownsAccount(cmd.accountId()).flatMap(ignored -> service.confirm(personId, cmd))
-                .ifSuccess(ignored -> MessageBus.submit(new AccountEvents.Refresh(cmd.accountId(), personId.toString())));
+                .ifSuccess(ignored -> MessageBus.submit(new AccountStreamEvents.Refresh(cmd.accountId(), personId.toString())));
     }
 
     /** Nome da conta a que cada cartão pertence, para rotular as opções de cartão do preview. */

@@ -1,7 +1,7 @@
 package br.cdb.feature;
 
+import br.cdb.core.web.HTTPRequest;
 import br.cdb.feature.f000._1_application.UserGuards;
-import br.cdb.feature.f000._2_infrastructure.web.LoginResource;
 import io.quarkus.test.junit.QuarkusTest;
 import io.restassured.RestAssured;
 import io.restassured.http.ContentType;
@@ -32,7 +32,7 @@ class F000UserGuardsIdorTest extends BaseHttpTest {
 
     private RequestSpecification asOtherUser() {
         return RestAssured.given()
-                .header(LoginResource.TOKEN_HEADER, tokenStore.issue(OTHER_USER_ID))
+                .header(HTTPRequest.TOKEN_HEADER, tokenStore.issue(OTHER_USER_ID))
                 .contentType(ContentType.JSON);
     }
 

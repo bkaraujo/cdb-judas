@@ -9,7 +9,7 @@ import br.cdb.context.monetary._1_application.usecase.TransactionUseCase;
 import br.cdb.core.JsonStorageProperties;
 import br.cdb.core.security.AccessTokenStore;
 import br.cdb.core.security.UserRepository;
-import br.cdb.feature.f000._2_infrastructure.web.LoginResource;
+import br.cdb.core.web.HTTPRequest;
 import br.cdb.infra.persistence.Database;
 import br.cdb.infra.persistence.features.UserAccountBalanceJDBCRepository;
 import br.cdb.infra.persistence.monetary.AccountJDBCRepository;
@@ -152,7 +152,7 @@ public abstract class BaseHttpTest {
      */
     protected RequestSpecification asTestUser() {
         return RestAssured.given()
-                .header(LoginResource.TOKEN_HEADER, tokenStore.issue(TEST_USER_ID))
+                .header(HTTPRequest.TOKEN_HEADER, tokenStore.issue(TEST_USER_ID))
                 .contentType(ContentType.JSON);
     }
 

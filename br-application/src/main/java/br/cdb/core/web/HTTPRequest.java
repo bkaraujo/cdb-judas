@@ -20,6 +20,12 @@ public abstract class HTTPRequest {
 
     public static final String X_REQUEST_ID = "X-REQUEST-ID";
     public static final String X_REQUEST_USER = "X-REQUEST-USER";
+    /** Header do token opaco rotativo — mora aqui (não em {@code LoginResource}) para que os
+     *  filtros de {@code core.web.filter} o referenciem sem depender de {@code feature.f000}, nem
+     *  mesmo silenciosamente (constante {@code String} é inlined em tempo de compilação, então um
+     *  import estático dela em {@code core} não deixa nenhuma referência de classe no bytecode —
+     *  a regra ArchUnit {@code core_must_not_access_feature} não via essa dependência). */
+    public static final String TOKEN_HEADER = "X-Access-Token";
 
     private HTTPRequest() {}
 

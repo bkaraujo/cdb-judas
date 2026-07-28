@@ -8,8 +8,8 @@ import br.cdb.core.web.HTTPRequest;
 import br.cdb.feature.f000._0_domain.event.TransactionsDeleted;
 import br.cdb.feature.f000._1_application.ClosingService;
 import br.cdb.feature.f000._1_application.UserGuards;
-import br.cdb.feature.f002._0_domain.event.AccountEvents;
-import br.cdb.feature.f004._1_application.UserCategoryService;
+import br.cdb.feature.f000._0_domain.event.AccountStreamEvents;
+import br.cdb.feature.f005._0_domain.TransferCategories;
 import br.cdb.feature.f005._0_domain.UserTransaction;
 import br.commons.MessageBus;
 import br.commons.Result;
@@ -33,7 +33,7 @@ import java.util.UUID;
  * <p>{@code deleteTransaction} não limpa o overlay/vínculo de tag diretamente: publica
  * {@link TransactionsDeleted} e deixa {@code TransactionOverlayListener} (aqui) e
  * {@code TagTransactionListener} (f008) reagirem, best-effort. SSE de conta publica
- * {@link AccountEvents.Refresh} — dispatch é responsabilidade única de {@code f999}.
+ * {@link AccountStreamEvents.Refresh} — dispatch é responsabilidade única de {@code f999}.
  */
 @NullMarked
 @Singleton
@@ -45,7 +45,7 @@ public class TransactionUseCase {
 
     private final UserGuards guards;
     private final UserTransactionService userTransactionService;
-    private final UserCategoryService userCategoryService;
+    private final TransferCategories transferCategories;
     private final ClosingService closingService;
 
     @NullMarked
@@ -95,7 +95,7 @@ public class TransactionUseCase {
             // Cria o PERSON_TRANSACTION da primeira parcela e depois o das irmãs do grupo
             val overlay = userTransactionService.save(t.id(), t.accountId(), personId, categoryId);
             saveUserTransactionForGroup(t, personId, categoryId);
-            MessageBus.submit(new AccountEvents.Refresh(t.accountId(), personId.toString()));
+            MessageBus.submit(new AccountStreamEvents.Refresh(t.accountId(), personId.toString()));
             return new TransactionView(t, overlay);
         });
     }
@@ -144,7 +144,7 @@ public class TransactionUseCase {
                 .flatMap(existing -> guards.ownsAccount(existing.accountId()))
                 .flatMap(ignored -> ucTransaction.updateTransactionStatus(txId, status, paymentDate).map(t -> {
                     val overlay = userTransactionService.find(t.id(), t.accountId(), personId).orElse(null);
-                    MessageBus.submit(new AccountEvents.Refresh(t.accountId(), personId.toString()));
+                    MessageBus.submit(new AccountStreamEvents.Refresh(t.accountId(), personId.toString()));
                     return new TransactionView(t, overlay);
                 }));
     }
@@ -164,7 +164,7 @@ public class TransactionUseCase {
         val affected = accountId;
         return ucTransaction.delete(new TransactionCommand.Delete(txId, scope)).map(ids -> {
             MessageBus.submit(new TransactionsDeleted(ids));
-            if (affected != null) MessageBus.submit(new AccountEvents.Refresh(affected, HTTPRequest.personId()));
+            if (affected != null) MessageBus.submit(new AccountStreamEvents.Refresh(affected, HTTPRequest.personId()));
             return null;
         });
     }
@@ -179,13 +179,13 @@ public class TransactionUseCase {
         // PERSON_TRANSACTION.COD_CATEGORY é NOT NULL. Cada perna recebe a categoria de sistema
         // "9. Outros / Transferência" da sua natureza: a saída (EXPENSE) a de despesa, a entrada
         // (INCOME) a de receita. Cobre as duas pernas do grupo, mantendo o 1:1 com MON_TRANSACTION.
-        val expenseCategoryId = userCategoryService.findOrCreateTransferCategory(personId, Transaction.Type.EXPENSE).id();
-        val incomeCategoryId = userCategoryService.findOrCreateTransferCategory(personId, Transaction.Type.INCOME).id();
+        val expenseCategoryId = transferCategories.transferCategoryId(personId, Transaction.Type.EXPENSE);
+        val incomeCategoryId = transferCategories.transferCategoryId(personId, Transaction.Type.INCOME);
         return ucTransaction.createTransfer(fromAccountId, toAccountId, date, amount).map(t -> {
             val overlay = userTransactionService.save(t.id(), t.accountId(), personId, transferCategoryFor(t, expenseCategoryId, incomeCategoryId));
             saveTransferGroupCategories(t, personId, expenseCategoryId, incomeCategoryId);
-            MessageBus.submit(new AccountEvents.Refresh(fromAccountId, personId.toString()));
-            MessageBus.submit(new AccountEvents.Refresh(toAccountId, personId.toString()));
+            MessageBus.submit(new AccountStreamEvents.Refresh(fromAccountId, personId.toString()));
+            MessageBus.submit(new AccountStreamEvents.Refresh(toAccountId, personId.toString()));
             return new TransactionView(t, overlay);
         });
     }
@@ -198,12 +198,12 @@ public class TransactionUseCase {
      */
     private void publishAccountUpdate(UUID personId, UUID accountId, @Nullable UUID previousAccountId,
                                        List<Transaction> transferSiblings) {
-        MessageBus.submit(new AccountEvents.Refresh(accountId, personId.toString()));
+        MessageBus.submit(new AccountStreamEvents.Refresh(accountId, personId.toString()));
         if (previousAccountId != null && !previousAccountId.equals(accountId)) {
-            MessageBus.submit(new AccountEvents.Refresh(previousAccountId, personId.toString()));
+            MessageBus.submit(new AccountStreamEvents.Refresh(previousAccountId, personId.toString()));
         }
         for (val sib : transferSiblings) {
-            MessageBus.submit(new AccountEvents.Refresh(sib.accountId(), personId.toString()));
+            MessageBus.submit(new AccountStreamEvents.Refresh(sib.accountId(), personId.toString()));
         }
     }
 

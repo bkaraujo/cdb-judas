@@ -86,6 +86,21 @@ class ArchitectureTest {
                     .should(dependOnlyOnEarlierFeatureSlices())
                     .because("fNNN só consome fMMM com MMM < NNN (f000 é base); dependência 'para cima' inverte-se via porta na fatia anterior — ver CLAUDE.md");
 
+    /**
+     * Fatia de negócio não pode depender de fatia de negócio irmã, nem "para baixo" (regra 7 já
+     * cobre "para cima"). Duas exceções, ambas por papel arquitetural, não por número específico:
+     * alvo {@code f000} (kernel compartilhado) sempre permitido; origem {@code f999} (composition
+     * root — único lugar que liga porta a provedor via adapter) sempre permitida como origem. Toda
+     * outra dependência cross-slice resolve-se por evento em {@code f000._0_domain.event}, por porta
+     * declarada pelo consumidor em seu próprio {@code _0_domain}, ou por adapter em
+     * {@code f999._2_infrastructure.adapter} — ver CLAUDE.md.
+     */
+    @ArchTest
+    static final ArchRule feature_slices_must_not_depend_on_sibling_slices =
+            classes().that().resideInAPackage("..feature..")
+                    .should(notDependOnSiblingFeatureSlices())
+                    .because("fatia de negócio não importa fatia de negócio irmã; use evento (f000), porta no _0_domain do consumidor, ou adapter em f999 — ver CLAUDE.md");
+
     private static final Pattern FEATURE_NUMBER = Pattern.compile("\\.feature\\.f(\\d+)(\\.|$)");
 
     private static int featureNumber(JavaClass clazz) {
@@ -108,6 +123,30 @@ class ArchitectureTest {
                                 "f%03d depende de f%03d (fatia posterior): %s"
                                         .formatted(from, to, dependency.getDescription())));
                     }
+                }
+            }
+        };
+    }
+
+    private static ArchCondition<JavaClass> notDependOnSiblingFeatureSlices() {
+        return new ArchCondition<>("não depender de fatia fNNN irmã (nem f000 nem f999 na origem)") {
+            @Override
+            public void check(JavaClass origin, ConditionEvents events) {
+                val from = featureNumber(origin);
+                if (from < 0) {
+                    return; // classe fora de uma fatia fNNN (ex.: package-info da raiz feature)
+                }
+                if (from == 999) {
+                    return; // f999 é o composition root: pode importar todas
+                }
+                for (val dependency : origin.getDirectDependenciesFromSelf()) {
+                    val to = featureNumber(dependency.getTargetClass());
+                    if (to < 0 || to == 0 || to == from) {
+                        continue; // fora de fNNN, alvo f000 (kernel) ou mesma fatia: permitido
+                    }
+                    events.add(SimpleConditionEvent.violated(dependency,
+                            "f%03d depende de f%03d (fatia irmã): %s"
+                                    .formatted(from, to, dependency.getDescription())));
                 }
             }
         };

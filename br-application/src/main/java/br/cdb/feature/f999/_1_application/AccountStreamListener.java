@@ -5,7 +5,7 @@ import br.cdb.context.monetary._1_application.usecase.AccountUseCase;
 import br.cdb.context.monetary._1_application.usecase.CreditCardUseCase;
 import br.cdb.context.monetary._1_application.usecase.TransactionUseCase;
 import br.cdb.feature.f000._0_domain.SSE;
-import br.cdb.feature.f002._0_domain.event.AccountEvents;
+import br.cdb.feature.f000._0_domain.event.AccountStreamEvents;
 import br.cdb.feature.f002._1_application.AccountResponse;
 import br.cdb.feature.f002._1_application.UserAccountService;
 import br.commons.MessageBus;
@@ -24,7 +24,7 @@ import java.util.Map;
 import java.util.UUID;
 
 /**
- * Único dono do dispatch SSE de conta — reage ao vocabulário {@link AccountEvents}, publicado
+ * Único dono do dispatch SSE de conta — reage ao vocabulário {@link AccountStreamEvents}, publicado
  * pelas fatias (f002/f003/f004/f005/f006) só depois da mutação já persistida (contexto + overlay).
  * {@code personId} vem sempre do evento, nunca de {@code HTTPRequest.personId()} — best-effort, nunca
  * propaga falha para quem publicou.
@@ -48,25 +48,25 @@ public class AccountStreamListener {
     }
 
     @MessageListener
-    public MessageResult onCreated(AccountEvents.Created event) {
-        dispatchUpsert(event.account().accountId(), event.account().personId());
-        return MessageResult.CONSUMED;
-    }
-
-    @MessageListener
-    public MessageResult onUpdated(AccountEvents.Updated event) {
-        dispatchUpsert(event.account().accountId(), event.account().personId());
-        return MessageResult.CONSUMED;
-    }
-
-    @MessageListener
-    public MessageResult onRefresh(AccountEvents.Refresh event) {
+    public MessageResult onCreated(AccountStreamEvents.Created event) {
         dispatchUpsert(event.accountId(), event.personId());
         return MessageResult.CONSUMED;
     }
 
     @MessageListener
-    public MessageResult onDeleted(AccountEvents.Deleted event) {
+    public MessageResult onUpdated(AccountStreamEvents.Updated event) {
+        dispatchUpsert(event.accountId(), event.personId());
+        return MessageResult.CONSUMED;
+    }
+
+    @MessageListener
+    public MessageResult onRefresh(AccountStreamEvents.Refresh event) {
+        dispatchUpsert(event.accountId(), event.personId());
+        return MessageResult.CONSUMED;
+    }
+
+    @MessageListener
+    public MessageResult onDeleted(AccountStreamEvents.Deleted event) {
         dispatchDelete(event.accountId(), event.personId());
         return MessageResult.CONSUMED;
     }

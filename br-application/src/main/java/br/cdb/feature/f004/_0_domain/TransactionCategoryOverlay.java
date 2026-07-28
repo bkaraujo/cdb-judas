@@ -10,8 +10,8 @@ import java.util.UUID;
  * Porta que a fatia de categorias ({@code f004}) exige do overlay de transações ({@code
  * PERSON_TRANSACTION}) para apagar/reatribuir uma subárvore de categorias — precisa contar/localizar
  * as transações vinculadas (retorno síncrono) e re-keyar a categoria no overlay antes de apagar a
- * subárvore. Implementada pela fatia dona do overlay (f005) — inversão de dependência: f005 depende
- * de f004, nunca o contrário.
+ * subárvore. Implementada por um adapter em {@code f999._2_infrastructure.adapter}, que delega à
+ * fatia dona do overlay (f005) — nem f004 nem f005 dependem uma da outra.
  */
 @NullMarked
 public interface TransactionCategoryOverlay {

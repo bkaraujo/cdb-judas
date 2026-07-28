@@ -13,12 +13,12 @@ import br.cdb.core.web.HTTPRequest;
 import br.cdb.feature.f000._0_domain.DeletionOutcome;
 import br.cdb.feature.f000._0_domain.DeletionStrategy;
 import br.cdb.feature.f000._0_domain.event.AccountDeleted;
+import br.cdb.feature.f000._0_domain.event.AccountStreamEvents;
 import br.cdb.feature.f000._0_domain.event.TransactionsDeleted;
 import br.cdb.feature.f000._1_application.Deletions;
 import br.cdb.feature.f000._1_application.UserGuards;
 import br.cdb.feature.f002._0_domain.TransactionAccountOverlay;
 import br.cdb.feature.f002._0_domain.UserAccount;
-import br.cdb.feature.f002._0_domain.event.AccountEvents;
 import br.commons.Logger;
 import br.commons.MessageBus;
 import br.commons.Result;
@@ -118,7 +118,7 @@ public class AccountUseCase {
         return ucAccount.upsert(cmd).map(account -> {
             val overlay = new UserAccount(personId, account.id(), color);
             userAccountService.save(overlay);
-            MessageBus.submit(new AccountEvents.Created(overlay));
+            MessageBus.submit(new AccountStreamEvents.Created(overlay.accountId(), overlay.personId()));
             return new AccountView(account, overlay, List.of(), List.of());
         });
     }
@@ -129,7 +129,7 @@ public class AccountUseCase {
             return ucAccount.upsert(cmd).map(account -> {
                 val overlay = new UserAccount(personId, account.id(), color);
                 userAccountService.save(overlay);
-                MessageBus.submit(new AccountEvents.Updated(overlay));
+                MessageBus.submit(new AccountStreamEvents.Updated(overlay.accountId(), overlay.personId()));
                 return new AccountView(account, overlay, cardsOf(account.id()), List.of());
             });
         });
@@ -167,9 +167,9 @@ public class AccountUseCase {
                 MessageBus.submit(new TransactionsDeleted(ids));
             }
 
-            MessageBus.submit(new AccountEvents.Deleted(id, personId.toString()));
+            MessageBus.submit(new AccountStreamEvents.Deleted(id, personId.toString()));
             if (strategy == DeletionStrategy.MOVE) {
-                MessageBus.submit(new AccountEvents.Refresh(Objects.requireNonNull(targetId), personId.toString()));
+                MessageBus.submit(new AccountStreamEvents.Refresh(Objects.requireNonNull(targetId), personId.toString()));
             }
             return new DeletionOutcome.Completed();
         });
@@ -219,7 +219,7 @@ public class AccountUseCase {
 
     public Result<CreditCard, BusinessError> createCard(CreditCardCommand.Create cmd) {
         return guards.ownsAccount(cmd.accountId()).flatMap(ignored -> ucCreditCard.upsert(cmd))
-                .ifSuccess(ignored -> MessageBus.submit(new AccountEvents.Refresh(cmd.accountId(), HTTPRequest.personId())));
+                .ifSuccess(ignored -> MessageBus.submit(new AccountStreamEvents.Refresh(cmd.accountId(), HTTPRequest.personId())));
     }
 
     public Result<DeletionOutcome, BusinessError> deleteCard(
@@ -235,7 +235,7 @@ public class AccountUseCase {
                 if (strategy != DeletionStrategy.MOVE) {
                     MessageBus.submit(new TransactionsDeleted(ids));
                 }
-                MessageBus.submit(new AccountEvents.Refresh(accountId, HTTPRequest.personId()));
+                MessageBus.submit(new AccountStreamEvents.Refresh(accountId, HTTPRequest.personId()));
                 return new DeletionOutcome.Completed();
             });
         });
@@ -244,7 +244,7 @@ public class AccountUseCase {
     public Result<CreditCard, BusinessError> setCardActive(UUID accountId, UUID cardId, boolean active) {
         return guards.ownsCard(accountId, cardId)
                 .flatMap(ignored -> ucCreditCard.upsert(new CreditCardCommand.Update(cardId, active)))
-                .ifSuccess(ignored -> MessageBus.submit(new AccountEvents.Refresh(accountId, HTTPRequest.personId())));
+                .ifSuccess(ignored -> MessageBus.submit(new AccountStreamEvents.Refresh(accountId, HTTPRequest.personId())));
     }
 
     // ── Helpers ────────────────────────────────────────────────────

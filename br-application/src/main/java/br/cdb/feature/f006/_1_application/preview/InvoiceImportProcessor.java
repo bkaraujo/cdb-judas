@@ -5,7 +5,6 @@ import br.cdb.context.monetary._0_domain.model.CostCenter;
 import br.cdb.context.monetary._0_domain.model.CreditCard;
 import br.cdb.context.monetary._0_domain.model.Transaction;
 import br.cdb.context.monetary._1_application.usecase.TransactionUseCase;
-import br.cdb.feature.f005._1_application.UserTransactionService;
 import br.cdb.feature.f006._0_domain.*;
 import br.cdb.feature.f006._1_application.CardMatcher;
 import br.cdb.feature.f006._1_application.GroupSignature;
@@ -40,13 +39,13 @@ public class InvoiceImportProcessor {
     private final CardMatcher cardMatcher = new CardMatcher();
     private final GroupSignature groupSignature = new GroupSignature();
     private final InstallmentExpander expander;
-    private final UserTransactionService userTransactionService;
+    private final TransactionOverlaySink transactionOverlaySink;
     private final Clock clock;
 
-    public InvoiceImportProcessor(CreditCardProvider creditCardProvider, UserTransactionService userTransactionService, Clock clock) {
+    public InvoiceImportProcessor(CreditCardProvider creditCardProvider, TransactionOverlaySink transactionOverlaySink, Clock clock) {
         this.creditCardProvider = creditCardProvider;
         this.expander = new InstallmentExpander(groupSignature);
-        this.userTransactionService = userTransactionService;
+        this.transactionOverlaySink = transactionOverlaySink;
         this.clock = clock;
     }
 
@@ -201,7 +200,7 @@ public class InvoiceImportProcessor {
         try {
             return switch (ucTransaction.create(tx)) {
                 case Result.Success(var saved) -> {
-                    userTransactionService.save(saved.id(), saved.accountId(), personId, row.categoryId());
+                    transactionOverlaySink.save(saved.id(), saved.accountId(), personId, row.categoryId());
                     yield saved;
                 }
                 case Result.Failure(var error) -> {

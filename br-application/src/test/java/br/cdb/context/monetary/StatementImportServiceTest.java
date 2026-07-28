@@ -193,7 +193,7 @@ class StatementImportServiceTest {
                 List::of, extractor, // empty card provider (bank-statement path)
                 List.of(new BTGStatementParser(), new SantanderStatementParser(),
                         new BTGInvoiceParser(), new SantanderInvoiceParser()),
-                MAX_BYTES, new UserTransactionService(overlays), CLOCK);
+                MAX_BYTES, new UserTransactionService(overlays)::save, CLOCK);
     }
 
     /**

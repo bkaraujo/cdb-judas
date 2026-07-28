@@ -7,8 +7,8 @@ import jakarta.ws.rs.ext.Provider;
 import lombok.val;
 import org.jspecify.annotations.NullMarked;
 
+import static br.cdb.core.web.HTTPRequest.TOKEN_HEADER;
 import static br.cdb.core.web.filter.AuthenticationFilter.NEXT_TOKEN_PROPERTY;
-import static br.cdb.feature.f000._2_infrastructure.web.LoginResource.TOKEN_HEADER;
 
 /** Emite o header do token rotacionado, guardado pelo {@link AuthenticationFilter} no request. */
 @Provider

@@ -7,7 +7,7 @@ import br.cdb.feature.f000._0_domain.DeletionOutcome;
 import br.cdb.feature.f000._0_domain.DeletionStrategy;
 import br.cdb.feature.f000._0_domain.event.CategoryDeleted;
 import br.cdb.feature.f000._0_domain.event.TransactionsDeleted;
-import br.cdb.feature.f002._0_domain.event.AccountEvents;
+import br.cdb.feature.f000._0_domain.event.AccountStreamEvents;
 import br.cdb.feature.f004._0_domain.TransactionCategoryOverlay;
 import br.cdb.feature.f004._0_domain.UserCategory;
 import br.commons.MessageBus;
@@ -27,7 +27,7 @@ import java.util.stream.Collectors;
 
 /**
  * Use case da fatia {@code f004} (categories). {@code deleteCategory(DELETE)} publica
- * {@link AccountEvents.Refresh} (SSE de conta — dispatch é responsabilidade única de {@code f999}).
+ * {@link AccountStreamEvents.Refresh} (SSE de conta — dispatch é responsabilidade única de {@code f999}).
  * A remoção das linhas {@code PERSON_CATEGORY} da subárvore publica
  * {@link CategoryDeleted} (reagido por {@code CategoryDeletedListener}, aqui mesmo); a limpeza do
  * overlay de transações apagadas em cascata publica {@link TransactionsDeleted} em vez de chamar
@@ -114,7 +114,7 @@ public class CategoryUseCase {
         MessageBus.submit(new TransactionsDeleted(txIds));
 
         afterCleanup.run();
-        affectedAccountIds.forEach(id -> MessageBus.submit(new AccountEvents.Refresh(id, HTTPRequest.personId())));
+        affectedAccountIds.forEach(id -> MessageBus.submit(new AccountStreamEvents.Refresh(id, HTTPRequest.personId())));
         return Result.success();
     }
 

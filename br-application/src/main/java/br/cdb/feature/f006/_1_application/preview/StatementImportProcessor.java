@@ -6,11 +6,11 @@ import br.cdb.context.monetary._0_domain.model.CostCenter;
 import br.cdb.context.monetary._0_domain.model.Transaction;
 import br.cdb.context.monetary._1_application.usecase.AccountUseCase;
 import br.cdb.context.monetary._1_application.usecase.TransactionUseCase;
-import br.cdb.feature.f005._1_application.UserTransactionService;
 import br.cdb.feature.f006._0_domain.ImportError;
 import br.cdb.feature.f006._0_domain.ImportResult;
 import br.cdb.feature.f006._0_domain.MonetaryDocumentEntry;
 import br.cdb.feature.f006._0_domain.RowState;
+import br.cdb.feature.f006._0_domain.TransactionOverlaySink;
 import br.cdb.feature.f006._1_application.CategoryGuesser;
 import br.cdb.feature.f006._1_application.GroupSignature;
 import br.cdb.feature.f006._1_application.confirm.StatementConfirmCommand;
@@ -45,11 +45,11 @@ public class StatementImportProcessor {
     private final TransactionUseCase ucTransaction = MonetaryUseCases.ucTransaction();
 
     private final CategoryGuesser categoryGuesser = new CategoryGuesser();
-    private final UserTransactionService userTransactionService;
+    private final TransactionOverlaySink transactionOverlaySink;
     private final Clock clock;
 
-    public StatementImportProcessor(UserTransactionService userTransactionService, Clock clock) {
-        this.userTransactionService = userTransactionService;
+    public StatementImportProcessor(TransactionOverlaySink transactionOverlaySink, Clock clock) {
+        this.transactionOverlaySink = transactionOverlaySink;
         this.clock = clock;
     }
 
@@ -127,7 +127,7 @@ public class StatementImportProcessor {
         try {
             return switch (ucTransaction.create(tx)) {
                 case Result.Success(var saved) -> {
-                    userTransactionService.save(saved.id(), saved.accountId(), personId, row.categoryId());
+                    transactionOverlaySink.save(saved.id(), saved.accountId(), personId, row.categoryId());
                     yield true;
                 }
                 case Result.Failure(var error) -> {

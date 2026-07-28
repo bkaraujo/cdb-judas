@@ -1,6 +1,6 @@
 package br.cdb.feature;
 
-import br.cdb.feature.f002._0_domain.event.AccountEvents;
+import br.cdb.feature.f000._0_domain.event.AccountStreamEvents;
 import br.commons.MessageBus;
 import br.commons.framework.persistence.jdbc.primitives.JDBCParameter;
 import io.quarkus.test.junit.QuarkusTest;
@@ -384,7 +384,7 @@ public class F005TransactionResponseResourceTest extends BaseHttpTest {
         List<UUID> refreshedAccountIds = new CopyOnWriteArrayList<>();
         MessageBus.subscribe(new Object() {
             @br.commons.framework.message.MessageListener
-            public br.commons.framework.message.MessageResult on(AccountEvents.Refresh event) {
+            public br.commons.framework.message.MessageResult on(AccountStreamEvents.Refresh event) {
                 refreshedAccountIds.add(event.accountId());
                 return br.commons.framework.message.MessageResult.AVAILABLE;
             }
