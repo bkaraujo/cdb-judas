@@ -49,10 +49,8 @@ public class DashboardService {
                         val wEndBeforeCheck = wStart.plusDays(6);
                         val wEnd = wEndBeforeCheck.isAfter(end) ? end : wEndBeforeCheck;
 
-                        val finalWStart = wStart;
-                        val finalWEnd = wEnd;
                         val wConfirmed = confirmedThisMonth.stream()
-                                .filter(t -> !t.date().isBefore(finalWStart) && !t.date().isAfter(finalWEnd))
+                                .filter(t -> !t.date().isBefore(wStart) && !t.date().isAfter(wEnd))
                                 .toList();
 
                         val wRec = wConfirmed.stream()

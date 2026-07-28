@@ -84,9 +84,9 @@ public class TagUseCase {
 
     /** Sem re-key a fazer: publicar {@link TagDeleted} já é suficiente (o listener desvincula e apaga a tag). */
     private Result<Void, BusinessError> detachTag(UUID id, UUID personId) {
-        return userTagService.findById(id).map(ignored -> {
+        return userTagService.findById(id).flatMap(ignored -> {
             MessageBus.submit(new TagDeleted(id, personId));
-            return null;
+            return Result.success();
         });
     }
 

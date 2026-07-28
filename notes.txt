@@ -1,0 +1,12 @@
+F002 excluí ov conta, dispara evento        -> F003 excluí ov cartões, dispara evento
+                                            -> F006 excluí ov transação, dispara evento
+
+F003 excluí ov cartão, dispara evento       -> F006 excluí ov da transação, dispara evento
+
+F004 excluí ov tag, dispara evento          -> F006 desvincula da ov transação
+
+F005 excluí ov categoria, dispara evento    -> F006 desvincula da ov transação
+
+F006 excluí ov transações, dispara evento
+
+F999 A cada 5 min, excluí elementos órfãos do monetary

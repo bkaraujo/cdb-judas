@@ -52,10 +52,10 @@ public class UserTagService {
 
     /** Sem estratégia e sem vínculos: exclusão simples. */
     public Result<Void, BusinessError> deleteById(UUID id) {
-        return findById(id).map(existing -> {
+        return findById(id).flatMap(existing -> {
             repo.deleteById(id);
             MessageBus.submit(new TagEvents.Deleted(id, existing.personId()));
-            return null;
+            return Result.success();
         });
     }
 

@@ -87,10 +87,10 @@ public class CategoryUseCase {
 
     /** Reatribui toda a subárvore para {@code targetId} (já validado pelo service) e apaga a subárvore. */
     private Result<Void, BusinessError> moveCategorySubtree(UUID id, UUID targetId, UUID personId) {
-        return userCategoryService.validateMoveTarget(id, targetId, personId).map(subtree -> {
+        return userCategoryService.validateMoveTarget(id, targetId, personId).flatMap(subtree -> {
             subtree.forEach(nodeId -> transactionOverlay.reassignCategory(nodeId, targetId, personId));
             MessageBus.submit(new CategoryDeleted(subtree, personId));
-            return null;
+            return Result.success();
         });
     }
 

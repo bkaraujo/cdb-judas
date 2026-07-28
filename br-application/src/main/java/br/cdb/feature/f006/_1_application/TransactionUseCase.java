@@ -162,10 +162,10 @@ public class TransactionUseCase {
         }
 
         val affected = accountId;
-        return ucTransaction.delete(new TransactionCommand.Delete(txId, scope)).map(ids -> {
+        return ucTransaction.delete(new TransactionCommand.Delete(txId, scope)).flatMap(ids -> {
             MessageBus.submit(new TransactionsDeleted(ids));
             if (affected != null) MessageBus.submit(new AccountStreamEvents.Refresh(affected, HTTPRequest.personId()));
-            return null;
+            return Result.success();
         });
     }
 
