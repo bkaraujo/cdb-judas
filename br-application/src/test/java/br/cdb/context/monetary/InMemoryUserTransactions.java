@@ -1,7 +1,7 @@
 package br.cdb.context.monetary;
 
-import br.cdb.feature.f005._0_domain.UserTransaction;
-import br.cdb.feature.f005._0_domain.UserTransactionRepository;
+import br.cdb.feature.f006._0_domain.UserTransaction;
+import br.cdb.feature.f006._0_domain.UserTransactionRepository;
 import org.jspecify.annotations.NullMarked;
 
 import java.util.*;

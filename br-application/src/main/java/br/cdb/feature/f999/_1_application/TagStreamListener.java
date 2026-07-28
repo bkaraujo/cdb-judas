@@ -1,8 +1,8 @@
 package br.cdb.feature.f999._1_application;
 
 import br.cdb.feature.f000._0_domain.SSE;
-import br.cdb.feature.f003._0_domain.UserTag;
-import br.cdb.feature.f003._0_domain.event.TagEvents;
+import br.cdb.feature.f004._0_domain.UserTag;
+import br.cdb.feature.f004._0_domain.event.TagEvents;
 import br.commons.MessageBus;
 import br.commons.framework.message.MessageListener;
 import br.commons.framework.message.MessageResult;

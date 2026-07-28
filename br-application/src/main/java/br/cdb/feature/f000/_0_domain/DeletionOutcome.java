@@ -5,7 +5,7 @@ import org.jspecify.annotations.NullMarked;
 
 /**
  * Resultado de uma exclusão orquestrada pelo {@code *UseCase} da fatia dona do recurso
- * ({@code f002.AccountUseCase}, {@code f003.TagUseCase}, {@code f004.CategoryUseCase}):
+ * ({@code f002.AccountUseCase}, {@code f004.TagUseCase}, {@code f005.CategoryUseCase}):
  * ou completou, ou foi bloqueada
  * por transações vinculadas (exclusão simples, sem estratégia) — nesse caso o Resource traduz para
  * o 409 rico de {@link Deletions#linkedConflict(String, int, String)}.

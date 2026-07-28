@@ -1,7 +1,7 @@
 package br.cdb.feature.f999._2_infrastructure.adapter;
 
-import br.cdb.feature.f004._0_domain.TransactionCategoryOverlay;
-import br.cdb.feature.f005._1_application.UserTransactionService;
+import br.cdb.feature.f005._0_domain.TransactionCategoryOverlay;
+import br.cdb.feature.f006._1_application.UserTransactionService;
 import jakarta.inject.Singleton;
 import lombok.RequiredArgsConstructor;
 import org.jspecify.annotations.NullMarked;
@@ -11,7 +11,7 @@ import java.util.List;
 import java.util.UUID;
 
 /**
- * Único ponto do código que conhece f004 e f005 ao mesmo tempo — resolvido por CDI sem
+ * Único ponto do código que conhece f005 e f006 ao mesmo tempo — resolvido por CDI sem
  * {@code @Produces}/{@code Registry}, já que {@link TransactionCategoryOverlay} tem só esta
  * implementação no classpath.
  */

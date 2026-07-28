@@ -10,8 +10,8 @@ import java.util.UUID;
  * {@code PERSON_TRANSACTION.COD_ACCOUNT} referencia {@code MON_ACCOUNT}, então o overlay precisa
  * ser re-keyed (MOVE) ou apagado <em>antes</em> do contexto remover a conta, de forma síncrona (não
  * dá para virar reação a evento pós-delete). Implementada por um adapter em
- * {@code f999._2_infrastructure.adapter}, que delega à fatia dona do overlay (f005) — nem f002 nem
- * f005 dependem uma da outra.
+ * {@code f999._2_infrastructure.adapter}, que delega à fatia dona do overlay (f006) — nem f002 nem
+ * f006 dependem uma da outra.
  */
 @NullMarked
 public interface TransactionAccountOverlay {

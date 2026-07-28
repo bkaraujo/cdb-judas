@@ -8,9 +8,9 @@ import java.util.UUID;
 
 /**
  * Vocabulário compartilhado da fatia-base {@code f000}: publicado por quem apagar transações via
- * {@code MonetaryUseCases.ucTransaction()} (o dono da mutação — f005, ou uma exclusão em cascata de
- * conta/categoria/tag). A limpeza do overlay {@code PERSON_TRANSACTION} (f005) e dos vínculos de tag
- * {@code PERSON_TRANSACTION_TAG} (f003) reage a este evento em vez de o publicador chamar cada fatia
+ * {@code MonetaryUseCases.ucTransaction()} (o dono da mutação — f006, ou uma exclusão em cascata de
+ * conta/categoria/tag). A limpeza do overlay {@code PERSON_TRANSACTION} (f006) e dos vínculos de tag
+ * {@code PERSON_TRANSACTION_TAG} (f004) reage a este evento em vez de o publicador chamar cada fatia
  * satélite diretamente. Mora em {@code f000} (não em quem publica) para respeitar a ordem de fatias:
  * qualquer fNNN pode referenciar a base.
  */

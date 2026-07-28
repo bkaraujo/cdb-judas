@@ -74,8 +74,8 @@ class ArchitectureTest {
     /**
      * O número da fatia expressa ordem de criação: uma feature {@code fNNN} só pode consumir recursos
      * de fatias que já existiam antes dela — {@code fMMM} com {@code MMM < NNN}. {@code f000} é a base
-     * (não depende de feature nenhuma). Ex.: {@code f005} pode consumir {@code f002}/{@code f003}/
-     * {@code f004}, mas nunca {@code f006}. A inversão de dependência resolve os casos em que uma fatia
+     * (não depende de feature nenhuma). Ex.: {@code f006} pode consumir {@code f002}/{@code f004}/
+     * {@code f005}, mas nunca {@code f007}. A inversão de dependência resolve os casos em que uma fatia
      * anterior precisa de serviço de uma posterior: a anterior define a porta ({@code _0_domain}) e a
      * posterior a implementa (ver {@code AccountOwnership}/{@code TransactionAccountOverlay}/
      * {@code TransactionCategoryOverlay}).
