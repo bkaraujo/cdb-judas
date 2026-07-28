@@ -22,23 +22,27 @@ Não redeclare essas dependências nos poms filhos.
 * **`quarkus-maven-plugin`** com goals `build`/`generate-code`/`generate-code-tests` está no `<plugins>` real (não `pluginManagement`) — roda em **todo** módulo filho, inclusive os que não são apps Quarkus (`br-commons`, `br-context-*`, packaging `jar` puro).
 * **Enforcer**: Maven ≥ 3.9, Java = `maven.compiler.target`, sem versão duplicada de dependência entre poms.
 
-## ⚠️ `<resources>` do SPA — hoje não copia nada
+## `<resources>` — aqui só `src/main/resources`; o SPA é problema do filho
 
-O bloco:
+Este pom declara **apenas**:
 ```xml
 <resource>
-    <directory>web</directory>
-    <targetPath>META-INF/resources</targetPath>
-    <excludes><exclude>CLAUDE.md</exclude></excludes>
+    <directory>src/main/resources</directory>
+    <filtering>true</filtering>
 </resource>
 ```
-tem a intenção de empacotar o frontend (`web/`, na raiz do repo) no classpath do backend para o Quarkus servir como estático (`META-INF/resources`, convenção servlet) — comentário no próprio pom confirma essa intenção, e `Dockerfile.frontend` assume o mesmo ("Mesma fonte que o backend empacota via `<resource>` do pom"). **Mas** `<directory>web</directory>` é um caminho relativo resolvido contra o `basedir` de **cada módulo filho** — e nenhum módulo (`br-application` incluído) tem um subdiretório `web/` próprio; só a raiz do repo tem. Build verificado (`br-application/target/classes` sem `META-INF/resources`, sem `index.html` em lugar nenhum do `target/`) confirma que **hoje esse bloco não copia arquivo nenhum, em nenhum módulo**.
 
-Provável resíduo de quando `web/` ficava lado a lado de `src/` num layout single-module, antes do split em `br-parent`/`br-commons`/`br-context-*`/`br-application`. Na prática, quem serve o frontend hoje é só o container `frontend` do `docker-compose.yaml` (nginx, `Dockerfile.frontend`, `COPY web/ /usr/share/nginx/html/` a partir da raiz do repo) — o caminho "backend serve o próprio SPA" descrito no `@CLAUDE.md` raiz e no `README.md` **não está em vigor no build atual**. Se for pra valer, o fix é apontar o `<directory>` para `${maven.multiModuleProjectDirectory}/web` (só teria efeito relevante em `br-application`, que é quem tem `META-INF/resources` servido pelo Quarkus).
+A cópia do frontend (`web/` → `META-INF/resources`, convenção servlet que faz o Quarkus servir a SPA como estático) **não mora mais aqui**: vive no `<build><resources>` de `br-application/pom.xml`, ancorada em `${maven.multiModuleProjectDirectory}/web`.
 
-## ⚠️ `docker-compose.yaml` aponta para Dockerfile inexistente
+> Histórico: o bloco já esteve neste pom com `<directory>web</directory>` — caminho relativo resolvido contra o `basedir` de **cada** filho, e nenhum módulo tem `web/` próprio (só a raiz do repo), então não copiava arquivo nenhum. Se reintroduzir um `<resource>` compartilhado aqui, lembre que caminho relativo quebra dessa forma; use `${maven.multiModuleProjectDirectory}`.
 
-`docker-compose.yaml` (raiz) referencia `dockerfile: src/main/docker/Dockerfile.backend` com `context: .` (raiz do repo) — mas não há `src/` na raiz; os Dockerfiles reais estão em `br-application/src/main/docker/{Dockerfile.backend,Dockerfile.frontend}`. Além disso, `Dockerfile.backend` faz `COPY pom.xml .` + `COPY src ./src` + `mvn package` assumindo layout single-module — não copia `br-parent/`, `br-commons/`, `br-context-people/`, `br-context-monetary/`, então o build do reactor multi-módulo falharia mesmo com o caminho corrigido. Nenhum destes dois pontos foi validado fim-a-fim desde o split em módulos; não assuma que `docker-compose up` funciona sem antes corrigir e testar.
+**Cuidado ao mexer:** declarar `<resources>` num filho **substitui** (não soma) o bloco herdado. Por isso `br-application/pom.xml` repete `src/main/resources` junto do bloco do `web/` — remover essa repetição derruba `application.properties` do classpath.
+
+## Empacotamento Docker
+
+`docker-compose.yaml` (raiz) já aponta para os Dockerfiles reais — `br-application/src/main/docker/{Dockerfile.backend,Dockerfile.frontend}` com `context: .` (raiz do repo) — e `Dockerfile.backend` copia o reactor inteiro (`br-parent`, `br-commons`, `br-context-people`, `br-context-monetary`, `br-application`, `web`, `.mvn`) antes do `mvn package`.
+
+⚠️ **Ainda não validado fim-a-fim.** O próprio `Dockerfile.backend` documenta que o `mvn package` dentro do container não resolveu o BOM do Quarkus no ambiente de build usado (mesmas coordenadas que `mvn verify` resolve fora) — indício de restrição de rede do sandbox, não do Dockerfile. Valide num Docker com rede irrestrita antes de depender disto em CI/produção.
 
 ## Módulos (mirror do `<modules>` da raiz)
 

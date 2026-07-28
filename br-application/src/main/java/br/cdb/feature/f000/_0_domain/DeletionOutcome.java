@@ -4,7 +4,9 @@ import br.cdb.feature.f000._1_application.Deletions;
 import org.jspecify.annotations.NullMarked;
 
 /**
- * Resultado de uma exclusão orquestrada pelo {@code UserUseCase}: ou completou, ou foi bloqueada
+ * Resultado de uma exclusão orquestrada pelo {@code *UseCase} da fatia dona do recurso
+ * ({@code f002.AccountUseCase}, {@code f003.TagUseCase}, {@code f004.CategoryUseCase}):
+ * ou completou, ou foi bloqueada
  * por transações vinculadas (exclusão simples, sem estratégia) — nesse caso o Resource traduz para
  * o 409 rico de {@link Deletions#linkedConflict(String, int, String)}.
  */

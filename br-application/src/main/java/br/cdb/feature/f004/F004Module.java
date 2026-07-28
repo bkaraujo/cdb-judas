@@ -8,6 +8,7 @@ import br.cdb.feature.f004._2_infrastructure.persistence.UserCategoryJDBCReposit
 import br.commons.Logger;
 import br.commons.MessageBus;
 import br.commons.Registry;
+import br.commons.Result;
 import br.commons.framework.message.MessageListener;
 import br.commons.framework.message.MessageResult;
 import br.commons.framework.persistence.jdbc.DataSource;
@@ -17,7 +18,6 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.event.Observes;
 import jakarta.enterprise.inject.Produces;
 import jakarta.inject.Singleton;
-import jakarta.transaction.Transactional;
 import lombok.val;
 import org.jspecify.annotations.NullMarked;
 
@@ -70,7 +70,6 @@ public class F004Module {
                 return MessageResult.AVAILABLE;
             }
 
-            @Transactional
             void seed(UUID personId, Transaction.Type nature, Map<String, List<String>> categories) {
                 Logger.trace("Cadastrando categorias %s para usuário %s", nature, personId);
                 val repository = Registry.tryGet(UserCategoryRepository.class, UserCategoryJDBCRepository::new);

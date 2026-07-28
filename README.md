@@ -2,21 +2,23 @@
 
 O **CDB Finance** é uma aplicação completa para gestão financeira pessoal. Desenvolvida com foco em manutenibilidade e escalabilidade, adota uma arquitetura moderna que separa responsabilidades de forma clara e segue boas práticas de desenvolvimento em Java e JavaScript.
 
-> **Versão atual:** backend `0.9.0` · frontend `0.1.0`
+> **Versão:** `1.0.0` — versão única para todos os módulos Maven. O frontend não tem versionamento próprio: `GET /api/version` devolve `quarkus.application.version` (herdado do `<version>` do pom) e a sidebar exibe esse valor.
 
 ## 🚀 Funcionalidades
 
 O sistema cobre as necessidades de acompanhamento e planejamento financeiro:
 
 - **Dashboard:** Agrega o resultado mensal (receitas, despesas e líquido) por categoria.
-- **Contas e Cartões:** Gestão de múltiplas contas bancárias e cartões de crédito, com consulta de saldo por período (mês/ano) e fechamento de competência.
-- **Transações:** Registro de créditos, débitos, transferências e parcelas, com filtros, alteração de status e exclusão unitária ou em grupo.
+- **Contas e Cartões:** Gestão de múltiplas contas bancárias e cartões de crédito (cartão é entidade própria da conta), com consulta de saldo por período (mês/ano) e fechamento de competência.
+- **Transações:** Registro de créditos, débitos, transferências e parcelas, com filtros, alteração de status e exclusão unitária, em grupo ou de transferência inteira.
 - **Importação de Extratos:** Leitura de faturas e extratos em PDF com fluxo *preview → confirmação*. Detecta tipo de documento e emissor, expande parcelas, sugere categorias e casa lançamentos de cartão. Parsers para **BTG** e **Santander** (cartão e conta).
 - **Extratos (Statements):** Histórico mensal por conta, com filtro por status.
-- **Categorização:** Classificação de receitas e despesas por Categorias, Centros de Custo e Tags.
+- **Categorização:** Classificação de receitas e despesas por Categorias (macro/micro), Centros de Custo e Tags.
 - **Perfil e Preferências:** Atualização self-service do próprio usuário (nome, tema, idioma, *locale*, estado da sidebar) via `/api/me`.
 - **Atualização em tempo real:** Push de eventos por **SSE**, mantendo a interface sincronizada sem *polling*.
 - **API documentada:** Especificação OpenAPI com Swagger UI em `/swagger`.
+
+> Algumas telas do frontend (`budget`, `accounts-payable`, `reports`) ainda não têm endpoint correspondente no backend — são protótipos de UI, não funcionalidades entregues.
 
 ## 🎯 Público Alvo
 
@@ -28,45 +30,51 @@ O CDB Finance é destinado a **indivíduos e famílias** que desejam um controle
 
 ## 📐 Escopo e Arquitetura
 
-O projeto abrange frontend e backend, com forte separação arquitetural interna. A arquitetura é **híbrida**: **Vertical Slice** nas features de entrega HTTP (`br.cdb.feature.*`) sobre **Hexagonal** nos contextos de negócio (`br.cdb.context.*`). Features se comunicam com os contextos exclusivamente via **Facade**.
+O projeto abrange frontend e backend, com forte separação arquitetural interna. A arquitetura é **híbrida**: **Vertical Slice** nas features de entrega HTTP (`br.cdb.feature.fNNN`) sobre **Hexagonal** nos contextos de negócio (`br.cdb.context.*`). Features se comunicam com os contextos exclusivamente via **Facade**.
+
+### Módulos Maven
+
+`br-parent` (pom pai: versões, plugins, gate de qualidade) · `br-commons` (framework comum, sem `br.cdb.*`) · `br-context-people` e `br-context-monetary` (contextos hexagonais, dependem só de `br-commons`) · `br-application` (borda HTTP/CDI, fast-jar Quarkus). `web/` é copiado para dentro do jar de `br-application`, mas não é módulo Maven.
 
 ### Backend (Java 25 + Quarkus)
 
-- **Vertical Slice Architecture (VSA):** Cada funcionalidade vive isolada em seu pacote, mantendo o código de negócio coeso e independente.
-- **Arquitetura Hexagonal:** Dentro de cada contexto de negócio, as camadas são concêntricas:
-  - `_0_domain` — modelos, contratos de repositório e portas (sem dependência de framework).
-  - `_1_application` — *commands*, *services* e escutadores de eventos (lógica pura).
-  - `_2_infrastructure` — implementações concretas de persistência.
-  - `UseCase` — orquestração de alto nível, recebe *Commands*.
-- **Contextos:** `monetary` (lógica financeira), `security` (usuário e preferências) e `shared` (núcleo comum).
-- **Núcleo / Plataforma (`br.cdb.core`):** Autenticação e autorização (token opaco rotativo, `OwnershipFilter`), observabilidade (log de requisições + correlação), persistência JSON e configuração HTTP transversal.
+- **Vertical Slice Architecture (VSA):** Cada funcionalidade vive isolada numa fatia numerada `br.cdb.feature.fNNN` (hoje `f000`–`f006`, `f009`, `f999`), que é um hexágono auto-contido — `_0_domain` (modelos/overlays + portas + eventos), `_1_application` (`*Service`/`*UseCase` + commands + listeners), `_2_infrastructure` (`*Resource`, DTOs HTTP, `*JDBCRepository`) e um módulo CDI `FNNNModule` próprio. O número expressa ordem de criação: uma fatia só depende de fatias anteriores (regra ArchUnit); `f000` é a base.
+- **Arquitetura Hexagonal:** Dentro de cada contexto de negócio, livre de framework e com DI por `Registry`:
+  - `_0_domain` — modelos, portas (`*Repository`) e eventos de domínio.
+  - `_1_application` — *commands*, *services*, *use cases* e escutadores de eventos (lógica pura).
+  - Os adaptadores concretos (`*JDBCRepository`) ficam **fora** do contexto, em `br-application` (`br.cdb.infra.persistence`).
+- **Contextos:** `monetary` (lógica financeira; facade `MonetaryUseCases`) e `people` (identidade mínima; facade `PeopleContext`). Não existe contexto `security` nem `shared` — login/preferências são agregados de `br-application`, e o vocabulário comum de erro/evento vive em `br.commons.business`.
+- **Núcleo / Plataforma (`br.cdb.core`):** Autenticação e autorização (token opaco rotativo, `OwnershipFilter`), observabilidade (log de requisições + MDC), erro HTTP (`ProblemDetail`), `ContextBridge` (costura CDI↔`Registry`) e `SpaFallbackRoute` (deep-links da SPA caem em `index.html`).
 - **Padrão Result:** Fluxo de negócio sem exceções (`Result` Success/Failure).
-- **Persistência:** **JDBC/H2** local (dev: arquivo `./database`; testes: in-memory), com JSON remanescente para `Closing` e o catálogo de centros de custo — processamento e privacidade locais, sem servidor de banco externo.
+- **Eventos:** Comunicação cross-feature é best-effort via `br.commons.MessageBus` (nunca import direto entre fatias irmãs). O despacho SSE é responsabilidade exclusiva de `f999`.
+- **Persistência:** **100% JDBC/H2** sobre pool próprio (dev: arquivo `./database`; testes: in-memory) — processamento e privacidade locais, sem servidor de banco externo. O schema vive em `Database` e conforma aos diagramas Mermaid em `docs/`.
 - **Segurança:** Login com emissão de token, rotas de usuário escopadas por `/api/{uuid}/…` e guarda de propriedade que bloqueia acesso indevido (proteção contra IDOR).
-- **Null-Safety & Qualidade:** `NullAway` + `ErrorProne` com anotações JSpecify (`@NullMarked`/`@Nullable`) no ciclo de compilação, falhando o build contra `NullPointerException`.
-- **Testes:** Testes unitários com JUnit 5, testes de arquitetura com ArchUnit (ex.: *Resources* não acessam repositórios; *feature* fala com *context* só via *facade*) e testes de integração HTTP com `@QuarkusTest` + RestAssured.
+- **Null-Safety & Qualidade:** `NullAway` + `ErrorProne` com anotações JSpecify (`@NullMarked`/`@Nullable`) no ciclo de compilação, falhando o build contra `NullPointerException`; PMD/CPD *enforcing* na fase `verify`.
+- **Testes:** Testes unitários com JUnit 5, testes de arquitetura com ArchUnit (ex.: *Resources* não acessam repositórios; *feature* fala com *context* só via *facade*; fatia só depende de fatia anterior) e testes de integração HTTP com `@QuarkusTest` + RestAssured.
 
 ### Frontend (HTML / CSS / JS)
 
-- **Single Page Application (SPA):** Abordagem leve (Vanilla JS/CSS + jQuery 4), sem etapa de build no frontend.
+- **Single Page Application (SPA):** Abordagem leve (Vanilla JS/CSS + jQuery 4), sem etapa de build no frontend. É servida pelo próprio backend — o pom de `br-application` copia `web/` para `META-INF/resources` no classpath.
 - **Arquitetura em Camadas:** O JavaScript replica o modelo de domínio:
   - `_1_domain` — entidades, validações e regras do cliente.
-  - `_2_application` — serviços, orquestração, estado e páginas.
-  - `_3_infrastructure` — integrações com a API REST.
+  - `_2_application` — serviços, orquestração e estado.
+  - `_3_infrastructure` — adaptadores *primary* (`router`, `sidebar`, `theme`) e *secondary* (`http-client`, `*-repository`, `auth-store`, `sse-client`).
 - **Design:** Interface moderna (`app.css`) com Dark Mode nativo (aplicado antes do primeiro *paint*, sem *flash*).
 - **Request Tracing:** Cada requisição envia o cabeçalho `X-Request-Id` para correlação fim-a-fim no log do backend.
+- **Dependência externa:** o jQuery 4 é carregado de CDN (`code.jquery.com`) — a primeira carga exige rede.
 
 ## 🛠️ Tecnologias Utilizadas
 
 | Camada | Stack |
 |--------|-------|
 | **Linguagens** | Java 25 · JavaScript (ES6+) · HTML5 · CSS3 |
-| **Backend** | Quarkus 3.37 (REST, Hibernate Validator, SmallRye OpenAPI/Health, Elytron Security) — modo JVM |
+| **Backend** | Quarkus 3.37.0 (REST, Hibernate Validator, SmallRye OpenAPI/Health, Elytron Security) — modo JVM |
 | **Build** | Maven 3.9+ · Quarkus Maven Plugin |
 | **Frontend** | Vanilla JS/CSS · jQuery 4 |
-| **Utilitários** | Lombok · SLF4J · PDFBox 3.0.5 (leitura de PDF) · Jackson (YAML/JSR-310) · juniversalchardet (detecção de *charset*) |
+| **Banco** | H2 (embarcado, arquivo) via pool JDBC próprio (`br.commons`) |
+| **Utilitários** | Lombok 1.18.42 · SLF4J · PDFBox 3.0.5 (leitura de PDF) · Jackson (YAML/JSR-310) · juniversalchardet (detecção de *charset*) |
 | **API Docs** | SmallRye OpenAPI (Swagger UI) |
-| **Qualidade & Testes** | JUnit 5 · ArchUnit · JaCoCo · NullAway · ErrorProne · JSpecify |
+| **Qualidade & Testes** | JUnit 5 · ArchUnit · JaCoCo · PMD/CPD · NullAway · ErrorProne · JSpecify |
 
 ## 🏃 Como Executar
 
@@ -77,10 +85,14 @@ Há dois caminhos: **Maven** (o backend Quarkus serve o frontend estático) ou *
 ```bash
 git clone <url-do-repositorio>
 cd cdb-judas
-mvn quarkus:dev
+mvn -pl br-application -am quarkus:dev
 ```
 
 Acesse `http://localhost:8080`. O frontend estático é servido pelo próprio backend.
+
+> O `-pl br-application -am` é necessário: o `pom.xml` da raiz é apenas o agregador do reator multi-módulo, e `quarkus:dev` precisa apontar para o módulo de aplicação (`-am` constrói `br-parent`/`br-commons`/`br-context-*` antes).
+
+Build completo com o gate de qualidade: `mvn verify`.
 
 ### Opção 2 — Docker Compose
 
@@ -91,9 +103,11 @@ docker compose up --build
 - **Frontend (nginx):** `http://localhost:8081` — serve o estático e faz proxy reverso para a API.
 - **Backend (Quarkus):** `http://localhost:8080` — acessível diretamente também.
 
+> O build de imagem ainda não foi validado fim-a-fim (ver nota no `br-application/src/main/docker/Dockerfile.backend`); trate o caminho Docker como não verificado.
+
 ### Acesso
 
-A aplicação semeia um usuário inicial no primeiro arranque:
+A aplicação semeia um usuário inicial no primeiro arranque (`f999`, que também dispara a criação das categorias padrão em `f004`):
 
 | Usuário | Senha |
 |---------|-------|
@@ -101,23 +115,27 @@ A aplicação semeia um usuário inicial no primeiro arranque:
 
 - **Swagger UI:** `/swagger` (ex.: `http://localhost:8080/swagger`).
 - **Health:** `/q/health`.
+- **Console do banco (dev):** `./db-console.sh` abre o H2 Console contra `./database`. Pare a aplicação antes — o H2 file-based trava o arquivo.
 
 ## ⚙️ Configuração
 
-Variáveis de ambiente reconhecidas (ver `docker-compose.yaml`):
+| Chave | Variável de ambiente | Descrição | Padrão |
+|-------|----------------------|-----------|--------|
+| `datasource.jdbc.url` | `DATASOURCE_JDBC_URL` | URL JDBC do H2 | `jdbc:h2:file:./database;DB_CLOSE_DELAY=-1` (dev) · `jdbc:h2:mem:cdb` (perfil `%test`) |
+| `datasource.jdbc.username` / `.password` | `DATASOURCE_JDBC_USERNAME` / `_PASSWORD` | Credenciais do banco | `sa` / vazio |
+| `quarkus.http.port` | `QUARKUS_HTTP_PORT` | Porta HTTP | `8080` |
+| — | `APP_LOGLEVEL_ROOT` | Nível do logger da aplicação (`br.commons`). Também aceita `APP_LOGLEVEL_<PACOTE>` para nível por pacote | `INFO` |
+| `storage.json.path` | `STORAGE_JSON_PATH` | **Vestigial.** Diretório do stack JSON, que não persiste mais nenhum agregado (tudo migrou para JDBC); só o bean `Storage` sobrevive, sem consumidores | `/data` (container) |
 
-| Variável | Descrição | Padrão |
-|----------|-----------|--------|
-| `STORAGE_JSON_PATH` | Diretório de persistência dos arquivos JSON | `/data` (container) |
-| `APP_LOGLEVEL_ROOT` | Nível de log do logger da aplicação (`br.commons`) | `INFO` |
-
-No Docker Compose, o diretório `./data` do host é montado em `/data` no container, persistindo os dados entre execuções.
+> ⚠️ **Persistência no Docker:** o `docker-compose.yaml` monta `./data:/data`, mas o banco H2 grava em `./database.mv.db` relativo ao diretório de trabalho do container (`/app`) — **fora do volume**. Para persistir dados entre execuções, aponte `DATASOURCE_JDBC_URL` para `jdbc:h2:file:/data/database;DB_CLOSE_DELAY=-1`.
 
 ## 📚 Documentação
 
-A documentação técnica está em [`docs/`](docs/):
+A documentação técnica está em [`docs/`](docs/) e nos `CLAUDE.md` de cada módulo:
 
 - **[Guia Central](CLAUDE.md)** — decomposição funcional + índice de toda a documentação.
+- **Por módulo:** [`br-parent`](br-parent/CLAUDE.md) · [`br-commons`](br-commons/src/main/java/CLAUDE.md) · [`br-context-people`](br-context-people/src/main/java/CLAUDE.md) · [`br-context-monetary`](br-context-monetary/src/main/java/CLAUDE.md) · [`br-application`](br-application/src/main/java/CLAUDE.md) · [`web`](web/CLAUDE.md)
 - **Backend:** [Arquitetura Hexagonal](docs/backend/hexagonal-architecture.md) · [Padrão Result](docs/backend/result-pattern.md) · [Null-Safety](docs/backend/null-safety.md) · [Lombok](docs/backend/lombok.md) · [Persistência JDBC/H2](docs/backend/persistence-jdbc.md) · [Qualidade & Build](docs/backend/quality-and-build.md)
 - **Frontend:** [API Web](docs/frontend/api-web.md)
-- **Schema do banco:** diagramas Mermaid em [`docs/`](docs/) (`db-ctx-people`, `db-ctx-monetary`, `db-features`) — fonte da verdade.
+- **Arquitetura (diagramas):** `docs/architecture-backend*.mermaid` (pacotes, classes, atividade) e `docs/architecture-frontend*.mermaid`.
+- **Schema do banco:** diagramas Mermaid em [`docs/`](docs/) (`db-ctx-people`, `db-ctx-monetary`, `db-features`) — fonte da verdade; o DDL em `Database` conforma ao diagrama, nunca o inverso.

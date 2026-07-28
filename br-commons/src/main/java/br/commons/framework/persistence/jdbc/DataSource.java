@@ -70,6 +70,9 @@ public class DataSource {
         // quebrava. É aqui que se adquire a conexão e se vincula a transação ao slot da thread.
         val existing = holder.get();
         if (existing != null) {
+            // Propagação REQUIRED: o bloco aninhado participa da transação em curso. O nível é contado
+            // para que só o close() do bloco mais externo devolva a conexão ao pool.
+            existing.enter();
             return Result.success(existing);
         }
 
@@ -118,6 +121,8 @@ public class DataSource {
 
                 try {
                     val result =  work.apply(transaction);
+                    // Só reverte se for o nível mais externo: uma leitura aninhada dentro de uma escrita
+                    // não pode descartar o trabalho em curso (nem marcar rollbackOnly — não é falha).
                     transaction.rollback();
 
                     yield result.get();
@@ -139,9 +144,17 @@ public class DataSource {
                 }
                 try {
                     val result = work.apply(transaction);
-                    if (result.isSuccess()) transaction.commit(); else transaction.rollback();
+                    if (result.isSuccess()) {
+                        transaction.commit();
+                    } else {
+                        // Aninhado: commit()/rollback() são no-op, mas a marca envenena o nível externo,
+                        // que reverterá tudo em vez de commitar trabalho parcial.
+                        transaction.markRollbackOnly();
+                        transaction.rollback();
+                    }
                     yield result.get();
                 } catch (RuntimeException ex) {
+                    transaction.markRollbackOnly();
                     transaction.rollback();
                     Logger.fatal(ex.toString());
                     throw new RuntimeException("Unreachable");
@@ -170,6 +183,11 @@ public class DataSource {
         return mutating(transaction -> transaction.execute(sql, parameters));
     }
 
+    /**
+     * Executa {@code work} numa transação com propagação REQUIRED: se já houver transação em curso
+     * nesta thread, o bloco participa dela (não commita nem devolve a conexão ao pool); caso contrário
+     * abre uma nova e commita no fim, ou reverte se {@code work} devolver {@link Result.Failure}.
+     */
     public <T> T transaction(Function<JDBCTransaction, Result<T, String>> work) {
         return mutating(work);
     }

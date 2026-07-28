@@ -1,7 +1,7 @@
 /**
  * Raiz da camada de features da aplicação.
  *
- * <p>Cada feature é uma fatia numerada {@code fNNN} (f000–f010), hexágono auto-contido:
+ * <p>Cada feature é uma fatia numerada {@code fNNN} (hoje f000–f006, f009, f999), hexágono auto-contido:
  * {@code _0_domain} (modelos/overlays + portas {@code *Repository} + eventos de domínio),
  * {@code _1_application} ({@code *Service}/{@code *UseCase} + commands + {@code @MessageListener}
  * best-effort), {@code _2_infrastructure} ({@code *Resource}, DTOs HTTP, {@code *JDBCRepository},

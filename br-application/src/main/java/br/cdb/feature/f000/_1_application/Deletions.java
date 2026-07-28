@@ -27,7 +27,8 @@ public final class Deletions {
 
     /**
      * Fluxo HTTP completo do contrato uniforme de exclusão: valida {@code ?strategy=}/{@code targetId},
-     * delega ao {@code UserUseCase} via {@code action} e traduz o {@link DeletionOutcome} — 409 rico
+     * delega ao {@code *UseCase} da fatia chamadora via {@code action} e traduz o
+     * {@link DeletionOutcome} — 409 rico
      * quando bloqueada por vínculos ({@code "Existem N transações vinculadas " + linkedSuffix}), 204
      * quando concluída. Falhas de negócio viram {@link BusinessException} (borda traduz para HTTP).
      */

@@ -121,7 +121,7 @@ public final class ConnectionPool {
             pooled.updateLastAccess();
             activeConnections.put(pooled.connection(), pooled);
 
-            Logger.trace("Connection acquired from pool '%s' (active=%d, available=%d)",
+            Logger.debug("Connection acquired from pool '%s' (active=%d, available=%d)",
                     properties.name(), activeConnections.size(), availableConnections.size());
 
             return Result.success(new JDBCConnection(new ConnectionWrapper(pooled.connection(), this)));
@@ -182,7 +182,7 @@ public final class ConnectionPool {
                 closeConnection(pooled); // fila cheia (não devia ocorrer): fecha e decrementa, nunca perde a contagem
             }
 
-            Logger.trace("Connection released to pool '%s' (active=%d, available=%d)",
+            Logger.debug("Connection released to pool '%s' (active=%d, available=%d)",
                     properties.name(), activeConnections.size(), availableConnections.size());
 
         } catch (SQLException e) {

@@ -84,3 +84,18 @@ Quatro tabelas de `docs/db-features.mermaid` que evoluíram juntas: `SEC_USER` g
 - **`USER_TRANSACTION.COD_ACCOUNT`**: retropreenchido via subquery correlacionada em `MON_TRANSACTION` (`WHERE ID = COD_TRANSACTION`) antes da PK trocar.
 
 Teste `FeatureSchemaMigrationTest`, mesmo molde, cobrindo as 4 tabelas + idempotência.
+
+## 6. Transações: propagação REQUIRED
+
+`DataSource.transaction(work)`, `execute(...)` e `query(...)` compartilham o mesmo modelo: a transação é **ambiente**, ligada à thread (`ThreadLocal` por nome, default `"default"`). Threads distintas nunca partilham conexão.
+
+- **`begin()` reentrante participa**: se já há transação em curso na thread, devolve **a mesma** `JDBCTransaction` e incrementa o nível de reentrância. Só o `begin()` mais externo adquire conexão do pool.
+- **Só o nível mais externo decide**: `commit()` / `rollback()` chamados num nível aninhado são no-op. Quando um bloco aninhado falha (`Result.Failure` ou `RuntimeException`), ele marca `rollbackOnly` — e o nível externo reverte tudo em vez de commitar trabalho parcial.
+- **`close()` é balanceado**: cada `begin()` exige um `close()`; só o último devolve a conexão ao pool e libera o slot da thread. Quem chama `begin()` direto (`ContextBridge`, `BaseHttpTest`) tem de fechar.
+- **Leitura aninhada não descarta escrita**: o `rollback()` que `query(...)` faz no fim só vale no nível mais externo.
+
+Consequência de projeto: **eventos de domínio despachados dentro de uma transação participam dela**. O `MessageBus` é síncrono e in-thread, então um `@MessageListener` que escreve no banco (ex.: o seed de categorias de `f004` reagindo a `UserEvents.Created`) commita junto com quem publicou — e uma falha sua reverte o trabalho do publicador. É o que torna real o "uma transação por usuário" de `f999`.
+
+Antes dessa semântica, a primeira operação aninhada — uma leitura, o `save` de um `JDBCRepository`, ou a introspecção de metadata no construtor de um repositório criado *lazy* — fechava a conexão da transação externa e desligava o slot da thread: um bloco `transaction(...)` virava N transações autônomas, e o `commit()` final caía sobre uma conexão já devolvida ao pool. O `ConnectionWrapper` agora lança `SQLException("Connection already returned to pool")` em qualquer uso após o `close()`, em vez de delegar às cegas à conexão física (que pode já estar servindo outra thread).
+
+Cobertura: `DataSourceTransactionPropagationTest` (participação, leitura aninhada, introspecção dentro de transação, `rollbackOnly`) e `DataSourceTransactionConcurrencyTest` (reentrância, isolamento entre threads, ausência de fuga de conexões).

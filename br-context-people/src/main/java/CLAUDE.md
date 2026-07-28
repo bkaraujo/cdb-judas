@@ -12,29 +12,37 @@ br.cdb.context.people
 │   ├── model/Person.java
 │   └── repository/PersonRepository.java   (porta — extends br.commons.framework.persistence.json.Repository<Person, UUID>)
 ├── _1_application
-│   └── service/PersonService.java
-├── PeopleContext.java       (Facade — único ponto de entrada externo)
+│   ├── service/PersonService.java
+│   └── usecase/PersonUseCase.java          (ponto de entrada realmente usado pelas features)
+├── PeopleContext.java       (Facade)
 └── PeopleBootstrap.java     (composition root)
 ```
 
-* **`_0_domain`** — `Person` (id, name, locale, language, createdAt/updatedAt anuláveis). `PersonRepository` estende o CRUD genérico `Repository<T, ID>` de `br-commons` (pacote `persistence.json`, mas o nome é histórico — a interface é agnóstica de tecnologia; ver nota abaixo).
-* **`_1_application`** — `PersonService`: `save`/`findById`, delegação direta ao repositório. Não há `UseCase` neste contexto — a Facade fala direto com o Service porque não existe orquestração multi-serviço aqui.
-* **`PeopleContext`** — `implements br.commons.annotation.Facade`; expõe `registerPerson(Person)` (retorna `Person`, sem `Result`) e `findPerson(UUID)` (retorna `Optional<Person>`). Note que este contexto **não** usa o padrão `Result<T, BusinessError>` — é simples o bastante para não precisar.
+* **`_0_domain`** — `Person` (id, name, locale, language, createdAt/updatedAt anuláveis). `PersonRepository` estende o CRUD genérico `Repository<T, ID>` de `br-commons` (pacote `persistence.json`, mas o nome é histórico — a interface é agnóstica de tecnologia; o adaptador real é JDBC, ver "O que NÃO está aqui").
+* **`_1_application`**
+  * `PersonService`: `save`/`findById`/`rename`, delegação direta ao repositório.
+  * `PersonUseCase`: resolve o `PersonService` pelo `Registry` (`Registry.tryGet`) no próprio campo, então é instanciável com `new` sem nenhum wiring externo. Expõe `register(name, locale, language)`, `findById(UUID|String)` e `rename(person, newName)`, **todos devolvendo `Result<Person, BusinessError>`** (`findById` mapeia ausência para `BusinessError.NotFound`).
+* **`PeopleContext`** — `implements br.commons.annotation.Facade`; expõe `registerPerson(Person)` (retorna `Person` cru), `findPerson(UUID|String)` (`Optional<Person>`) e `renamePerson(person, newName)` (`Result`). Contrato misto — parte com `Result`, parte sem.
 * **`PeopleBootstrap`** — `register()` monta `PersonService` a partir do `PersonRepository` publicado no `Registry` e publica `PeopleContext`. Chamado por `br.cdb.core.ContextBridge.peopleContext(...)` no startup do Quarkus.
 
-## ⚠️ Estado atual: contexto não consumido
+## ⚠️ Estado atual: contexto consumido via `PersonUseCase`, não via Facade
 
-`PeopleContext` é produzido como bean CDI (`ContextBridge.peopleContext`), mas **nenhuma feature em `br-application` o injeta ou chama** — `registerPerson`/`findPerson` não são acionados em runtime hoje. Não confunda `Person` com o agregado de login:
+O contexto **está em uso** — `Person` é hoje o dono dos recursos: todas as tabelas de dados fazem chave com `PEP_PERSON` (`COD_PERSON`), e o `{uuid}` das rotas `/api/{uuid}/…` é o `personId`. Consumidores em `br-application`:
 
-* **`User`** (login/sessão: `id`, `username`, `password`, `active`) vive em `br.cdb.core.web.security.User` (plataforma, `br-application`), gerido por `UserService`/`UserJDBCRepository` — é o agregado realmente ativo no fluxo de autenticação.
-* **`Preferences`** (theme/language/locale/sidebarCollapsed) vive em `br.cdb.feature.user.profile.Preferences` (feature `br-application`), não neste contexto.
+* **`f000.UserService.createUser`** — chama `PersonUseCase.register(...)` **antes** de criar o `User`, e o `personId` resultante vira campo obrigatório do login.
+* **`f001.ProfileService`** — instancia `PersonUseCase` para ler/renomear a pessoa por trás de `GET`/`PATCH /api/me`; `f001._0_domain.Profile` compõe `Person` (deste contexto) + `Preferences` (da feature).
 
-`Person` foi modelado como "dono de recursos" (contas etc., ver javadoc da classe) mas essa ligação ainda não foi implementada em nenhuma feature. Antes de estender este contexto, confirme com o time se a intenção é retomá-lo ou se `User` deve absorver esses campos.
+Mas o acesso **não passa pela Facade**: ambos fazem `new PersonUseCase()` e o use case resolve o `PersonService` no `Registry`. O bean `PeopleContext` produzido por `ContextBridge.peopleContext(...)` **não é injetado por ninguém** — existe só para disparar `PeopleBootstrap.register()`. A regra ArchUnit `feature_must_access_context_only_via_facade_or_domain_model` autoriza Facade **e** `_1_application.usecase`, então isso não quebra o build; é uma divergência de estilo em relação a `monetary` (que é acessado pelos acessores estáticos de `MonetaryUseCases`). Se for unificar o padrão, mexa aqui — não na regra.
+
+Não confunda `Person` com o agregado de login:
+
+* **`User`** (login/sessão: `id`, `username`, `password`, `active`, `personId`) vive em `br.cdb.core.security.User` (plataforma, `br-application`), gerido por `f000.UserService`/`UserJDBCRepository`. `SEC_USER`/`USER_CREDENTIAL` servem só à autenticação — identificam a pessoa.
+* **`Preferences`** (theme/language/locale/sidebarCollapsed) vive em `br.cdb.feature.f001._0_domain.Preferences` (feature `br-application`), não neste contexto.
 
 ## O que NÃO está aqui
 
 * **Adaptador de persistência** — `PersonJDBCRepository` (implementação JDBC da porta, tabela `PEP_PERSON`) vive em `br-application` (`br.cdb.infra.persistence.person`), não neste módulo. O contexto só conhece a porta.
-* **Testes** — este módulo não tem `src/test`. Toda a suíte de backend (unit, ArchUnit, integração HTTP) roda em `br-application/src/test/java` — ver `@br-application/src/main/java/CLAUDE.md`. Hoje não há teste dedicado a `PersonService`/`PeopleContext`.
+* **Testes** — este módulo não tem `src/test`. Toda a suíte de backend (unit, ArchUnit, integração HTTP) roda em `br-application/src/test/java` — ver `@br-application/src/main/java/CLAUDE.md`. Não há teste dedicado a `PersonService`/`PersonUseCase`/`PeopleContext`; a única cobertura indireta é `F001ProfileServiceTest`.
 
 ## Convenções
 

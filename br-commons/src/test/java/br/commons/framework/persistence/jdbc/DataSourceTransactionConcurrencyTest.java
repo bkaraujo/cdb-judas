@@ -44,7 +44,11 @@ class DataSourceTransactionConcurrencyTest {
         };
     }
 
-    /** Na mesma thread, begin() reentra na transação em curso; após close() abre uma nova. */
+    /**
+     * Na mesma thread, begin() reentra na transação em curso; o close() é <b>balanceado</b>
+     * (propagação REQUIRED): só quando o último nível fecha é que a conexão volta ao pool e o
+     * begin() seguinte abre uma transação nova.
+     */
     @Test
     void reentrantBeginContinuesThenFreshAfterClose() {
         var ds = new DataSource(props("txreentrant", 1, 4));
@@ -53,10 +57,16 @@ class DataSourceTransactionConcurrencyTest {
             var continued = unwrap(ds.begin());
             assertSame(first, continued, "begin() na mesma thread tem de continuar a transação em curso");
 
-            first.close();
+            first.close(); // fecha só o nível aninhado
+            assertSame(first, unwrap(ds.begin()),
+                    "close() de um nível aninhado não pode encerrar a transação em curso");
+
+            first.close(); // fecha o nível reaberto acima
+            first.close(); // fecha o nível mais externo → devolve a conexão ao pool
+            assertEquals(0, ds.getActiveConnections(), "o último close tem de devolver a conexão");
 
             var afterClose = unwrap(ds.begin());
-            assertNotSame(first, afterClose, "após close() o begin() tem de abrir uma transação nova");
+            assertNotSame(first, afterClose, "fechados todos os níveis, o begin() tem de abrir uma transação nova");
             afterClose.close();
         } finally {
             ds.close();

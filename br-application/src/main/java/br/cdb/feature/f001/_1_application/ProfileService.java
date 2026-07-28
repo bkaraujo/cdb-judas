@@ -15,8 +15,8 @@ import org.jspecify.annotations.NullMarked;
  * identidade autenticada (o personId é resolvido pela camada web e repassado). A identidade/nome vem
  * do contexto people, via {@link PersonUseCase}; as preferências são uma feature à parte
  * ({@link PreferencesRepository}). Ambas são reunidas em {@link Profile}. Esta fatia não conhece
- * o agregado {@code User} (login) — o {@code username} é resolvido à parte pelo
- * {@code UserUseCase}, na borda.
+ * o agregado {@code User} (login) — o {@code username} é resolvido à parte por
+ * {@code SelfResource} (via {@code UserRepository#findByPersonId}), na borda.
  */
 @Singleton
 @NullMarked

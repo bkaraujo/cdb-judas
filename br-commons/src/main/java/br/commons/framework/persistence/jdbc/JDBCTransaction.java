@@ -18,9 +18,39 @@ public class JDBCTransaction {
 
     private final String name;
 
+    /**
+     * Nível de reentrância (propagação REQUIRED): a instância nasce no nível 1 (o {@code begin()} que a
+     * criou) e cada {@code begin()} reentrante na mesma thread incrementa. Só o nível mais externo
+     * commita/reverte e devolve a conexão ao pool — os aninhados apenas participam.
+     */
+    private int depth = 1;
+
+    /** Marcado por um bloco aninhado que falhou: o nível externo reverte em vez de commitar. */
+    private boolean rollbackOnly;
+
     JDBCTransaction(String name, JDBCConnection connection) {
         this.name = name;
         this.connection = connection;
+    }
+
+    /** Regista mais um nível de reentrância. Chamado por {@link DataSource#begin(String, long)}. */
+    void enter() {
+        depth++;
+        Logger.trace("Transaction depth %d", depth);
+    }
+
+    /** {@code true} quando esta é a transação mais externa (a que commita/reverte de facto). */
+    boolean isOutermost() {
+        return depth == 1;
+    }
+
+    /** Envenena a transação: o nível mais externo reverterá mesmo que o seu próprio trabalho tenha êxito. */
+    void markRollbackOnly() {
+        rollbackOnly = true;
+    }
+
+    boolean isRollbackOnly() {
+        return rollbackOnly;
     }
 
     public <T> Result<T, String> execute(Function<JDBCConnection, Result<T, String>> function) {
@@ -104,6 +134,10 @@ public class JDBCTransaction {
     }
 
     public Result<Boolean, String> commit() {
+        // Bloco aninhado não commita: quem decide é o nível mais externo (propagação REQUIRED).
+        if (!isOutermost()) return Result.success(true);
+        if (rollbackOnly) return rollback();
+
         Logger.trace("Committing transaction");
         return connection.commit().map(c -> {
             connection.close() ;
@@ -112,6 +146,9 @@ public class JDBCTransaction {
     }
 
     public Result<Boolean, String> rollback() {
+        // Bloco aninhado não reverte a conexão: só sinaliza (ver markRollbackOnly) e deixa ao externo.
+        if (!isOutermost()) return Result.success(true);
+
         Logger.trace("Rolling back transaction");
         return connection.rollback().map(c -> {
             connection.close() ;
@@ -119,7 +156,17 @@ public class JDBCTransaction {
         });
     }
 
+    /**
+     * Fecha um nível de reentrância. Só o último ({@code depth} a chegar a zero) devolve a conexão ao
+     * pool e liberta o slot da thread — sem isto, um {@code close()} aninhado (ex.: o {@code finally} de
+     * {@link #execute(Function)}, usado na introspecção dos repositórios) encerrava a transação alheia.
+     */
     public void close() {
+        if (--depth > 0) {
+            Logger.trace("Transaction depth %d", depth);
+            return;
+        }
+
         connection.close()
                 .ifSuccess(c -> unbind())
                 .ifFailure(error -> Logger.error("Error closing JDBC transaction: %s", error));

@@ -38,26 +38,4 @@
         <!-- RestAssured (+ Hamcrest transitivo) — exercitar Resources via HTTP real (@QuarkusTest) -->
         <dependency><groupId>io.rest-assured</groupId><artifactId>rest-assured</artifactId><scope>test</scope></dependency>
     </dependencies>
-
-    <build>
-        <resources>
-            <resource>
-                <directory>src/main/resources</directory>
-                <filtering>true</filtering>
-            </resource>
-            <!-- SPA vanilla (sem etapa de build): copiada verbatim para o classpath. Quarkus serve
-                 conteúdo estático de META-INF/resources automaticamente (convenção servlet).
-                 Ancorado em maven.multiModuleProjectDirectory (raiz do repo) porque web/ vive lá,
-                 não dentro deste módulo — um <directory>web</directory> relativo resolveria contra
-                 o basedir deste pom e não acharia nada. -->
-            <resource>
-                <directory>${maven.multiModuleProjectDirectory}/web</directory>
-                <targetPath>META-INF/resources</targetPath>
-                <filtering>false</filtering>
-                <excludes>
-                    <exclude>CLAUDE.md</exclude>
-                </excludes>
-            </resource>
-        </resources>
-    </build>
 </project>

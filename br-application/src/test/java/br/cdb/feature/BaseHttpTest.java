@@ -77,6 +77,10 @@ public abstract class BaseHttpTest {
         val tx = dataSource.begin().get();
         for (val sql : Database.reset()) tx.execute(sql).get();
         tx.commit().get();
+        // begin/close balanceados: sem o close o slot da thread ficava preso a uma transação já
+        // commitada, e o begin() seguinte (nova transação ou introspecção de repositório) reentrava
+        // numa conexão já devolvida ao pool.
+        tx.close();
 
         // Clear repository caches
         repositories.forEach(Repository::clearCache);
