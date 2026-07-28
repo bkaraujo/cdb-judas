@@ -38,7 +38,7 @@ O projeto abrange frontend e backend, com forte separação arquitetural interna
 
 ### Backend (Java 25 + Quarkus)
 
-- **Vertical Slice Architecture (VSA):** Cada funcionalidade vive isolada numa fatia numerada `br.cdb.feature.fNNN` (hoje `f000`–`f006`, `f009`, `f999`), que é um hexágono auto-contido — `_0_domain` (modelos/overlays + portas + eventos), `_1_application` (`*Service`/`*UseCase` + commands + listeners), `_2_infrastructure` (`*Resource`, DTOs HTTP, `*JDBCRepository`) e um módulo CDI `FNNNModule` próprio. O número expressa ordem de criação: uma fatia só depende de fatias anteriores (regra ArchUnit); `f000` é a base.
+- **Vertical Slice Architecture (VSA):** Cada funcionalidade vive isolada numa fatia numerada `br.cdb.feature.fNNN` (hoje `f000`–`f007`, `f009`, `f999`), que é um hexágono auto-contido — `_0_domain` (modelos/overlays + portas + eventos), `_1_application` (`*Service`/`*UseCase` + commands + listeners), `_2_infrastructure` (`*Resource`, DTOs HTTP, `*JDBCRepository`) e um módulo CDI `FNNNModule` próprio (algumas fatias finas, como `f003`/`f009`, não têm `_0_domain` nem módulo próprio). O número expressa ordem de criação, não mais dependência: fatia de negócio nunca importa fatia irmã (regra ArchUnit `feature_slices_must_not_depend_on_sibling_slices`); `f000` é o kernel compartilhado, `f999` o composition root.
 - **Arquitetura Hexagonal:** Dentro de cada contexto de negócio, livre de framework e com DI por `Registry`:
   - `_0_domain` — modelos, portas (`*Repository`) e eventos de domínio.
   - `_1_application` — *commands*, *services*, *use cases* e escutadores de eventos (lógica pura).
@@ -107,7 +107,7 @@ docker compose up --build
 
 ### Acesso
 
-A aplicação semeia um usuário inicial no primeiro arranque (`f999`, que também dispara a criação das categorias padrão em `f004`):
+A aplicação semeia um usuário inicial no primeiro arranque (`f999`, que também dispara a criação das categorias padrão em `f005`):
 
 | Usuário | Senha |
 |---------|-------|

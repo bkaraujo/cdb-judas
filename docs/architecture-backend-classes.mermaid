@@ -1,21 +1,21 @@
 classDiagram
 %% CDB Finance — Backend: como VSA + Hexagonal se materializam em classes.
-%% Fatia vertical exemplar: f005 (transactions/transfer) sobre o contexto monetary.
+%% Fatia vertical exemplar: f006 (transactions/transfer) sobre o contexto monetary.
 %% Toda fatia fNNN repete este formato (_2_infrastructure/_1_application/_0_domain);
-%% troque "Transaction"/f005 pelo agregado/numero da fatia.
+%% troque "Transaction"/f006 pelo agregado/numero da fatia.
     direction LR
 
     class TransactionResource {
-        <<f005 _2_infrastructure Resource CDI>>
+        <<f006 _2_infrastructure Resource CDI>>
         so traducao de formato
         +create(userId, TransactionRequest) Response
         +patchStatus(userId, PatchStatusRequest) Response
     }
     class TransactionRequest {
-        <<f005 _2_infrastructure DTO record>>
+        <<f006 _2_infrastructure DTO record>>
     }
     class FeatureTransactionUseCase {
-        <<f005 _1_application UseCase CDI>>
+        <<f006 _1_application UseCase CDI>>
         nome real: TransactionUseCase (colide com o do contexto -\nreferenciado por FQN, sem import, no proprio codigo)
         orquestra contexto + servicos da propria fatia
         +createTransaction(userId, Command, categoryId) Result
@@ -26,12 +26,12 @@ classDiagram
         +validateDate(userId, date) Result
     }
     class UserTransactionService {
-        <<f005 _1_application Service>>
+        <<f006 _1_application Service>>
         dados overlay da propria fatia
     }
     class TransactionsDeleted {
-        <<f005 _0_domain event>>
-        publicado apos delete; f008 reage best-effort
+        <<f006 _0_domain event>>
+        publicado apos delete; f004 reage best-effort
     }
     class ContextBridge {
         <<CDI core - costura CDI/Registry>>

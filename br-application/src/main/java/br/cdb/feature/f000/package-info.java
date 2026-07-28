@@ -1,6 +1,7 @@
 /**
  * Fatia-base: transversais que todas as demais features (fNNN) podem consumir e que não
- * dependem de nenhuma feature (ArchUnit {@code base_slice_must_not_depend_on_features}).
+ * dependem de nenhuma feature — alvo sempre permitido na regra ArchUnit
+ * {@code feature_slices_must_not_depend_on_sibling_slices}.
  *
  * <p>Consolida:
  * <ul>

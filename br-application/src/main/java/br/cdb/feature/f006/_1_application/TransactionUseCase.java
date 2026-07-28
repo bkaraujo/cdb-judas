@@ -32,7 +32,7 @@ import java.util.UUID;
  *
  * <p>{@code deleteTransaction} não limpa o overlay/vínculo de tag diretamente: publica
  * {@link TransactionsDeleted} e deixa {@code TransactionOverlayListener} (aqui) e
- * {@code TagTransactionListener} (f008) reagirem, best-effort. SSE de conta publica
+ * {@code TagTransactionListener} (f004) reagirem, best-effort. SSE de conta publica
  * {@link AccountStreamEvents.Refresh} — dispatch é responsabilidade única de {@code f999}.
  */
 @NullMarked

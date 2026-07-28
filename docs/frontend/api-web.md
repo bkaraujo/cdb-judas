@@ -76,7 +76,7 @@ A maioria dos recursos vive sob `/api/{uuid}/...`, onde **`{uuid}` é o `X-User-
 ## 2. Contas (`/api/{uuid}/accounts`)
 
 `type` ∈ `CHECKING` | `INVESTMENT`. Cartão de crédito **não é um tipo de conta** — é uma entidade
-própria (`creditCards[]` abaixo; endpoints em **2.1**) sempre vinculada a uma conta real. O limite de
+própria (`cards[]` abaixo; endpoints em **2.1**) sempre vinculada a uma conta real. O limite de
 crédito/cheque especial e o ciclo de fatura (fechamento/vencimento) são configuração da **conta**,
 compartilhada por todos os cartões nela cadastrados.
 
@@ -97,13 +97,13 @@ compartilhada por todos os cartões nela cadastrados.
     "closingDay": 5,
     "dueDay": 15,
     "currentBalance": 1100.25,
-    "creditCards": [
-      { "id": "uuid-creditCard", "last4": "1234", "accountId": "550e8400-e29b-41d4-a716-446655440000", "active": true }
+    "cards": [
+      { "id": "uuid-card", "last4": "1234", "accountId": "550e8400-e29b-41d4-a716-446655440000", "active": true }
     ]
   }
 ]
 ```
-> `balance` é o saldo de abertura; `currentBalance` = abertura + soma das transações da conta (inclui as postadas via cartão — cartão não tem saldo próprio). `creditLimit`/`overdraftLimit`/`closingDay`/`dueDay` vêm `null` quando a conta não tem limite configurado. `creditCards` pode ser uma lista vazia.
+> `balance` é o saldo de abertura; `currentBalance` = abertura + soma das transações da conta (inclui as postadas via cartão — cartão não tem saldo próprio). `creditLimit`/`overdraftLimit`/`closingDay`/`dueDay` vêm `null` quando a conta não tem limite configurado. `cards` pode ser uma lista vazia.
 
 ### Buscar por ID
 - **Endpoint:** `GET /api/{uuid}/accounts/{id}`
@@ -149,12 +149,12 @@ compartilhada por todos os cartões nela cadastrados.
 - **Response (200 OK — `year`):** lista de objetos acima (um por mês).
 - Sem `period` nem `year` → `422`.
 
-### 2.1 Cartões (`/api/{uuid}/accounts/{accountId}/creditCards`)
+### 2.1 Cartões (`/api/{uuid}/accounts/{accountId}/cards`)
 
 Cartão é identificado **somente pelo last4** (sem nome próprio) e pertence a exatamente uma conta.
 
 #### Listar cartões da conta
-- **Endpoint:** `GET /api/{uuid}/accounts/{accountId}/creditCards`
+- **Endpoint:** `GET /api/{uuid}/accounts/{accountId}/cards`
 - **Response (200 OK):**
 ```json
 [
@@ -163,7 +163,7 @@ Cartão é identificado **somente pelo last4** (sem nome próprio) e pertence a 
 ```
 
 #### Criar cartão
-- **Endpoint:** `POST /api/{uuid}/accounts/{accountId}/creditCards`
+- **Endpoint:** `POST /api/{uuid}/accounts/{accountId}/cards`
 - **Response:** `201 Created` com o `Card` (mesmo formato acima).
 - **Request:**
 ```json
@@ -172,7 +172,7 @@ Cartão é identificado **somente pelo last4** (sem nome próprio) e pertence a 
 > `last4`: exatamente 4 dígitos; único dentro da conta (`409 Conflict` se duplicado).
 
 #### Excluir cartão
-- **Endpoint:** `DELETE /api/{uuid}/accounts/{accountId}/creditCards/{cardId}` → `204 No Content`.
+- **Endpoint:** `DELETE /api/{uuid}/accounts/{accountId}/cards/{cardId}` → `204 No Content`.
 > `404 Not Found` se o cartão não pertence à conta do path.
 
 ---

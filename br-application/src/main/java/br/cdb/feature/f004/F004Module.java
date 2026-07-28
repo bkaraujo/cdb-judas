@@ -16,7 +16,7 @@ import jakarta.inject.Singleton;
 import org.jspecify.annotations.NullMarked;
 
 /**
- * Módulo CDI da fatia {@code f008} (tags). Produtores recebem {@link DataSource} sem usá-lo no corpo
+ * Módulo CDI da fatia {@code f004} (tags). Produtores recebem {@link DataSource} sem usá-lo no corpo
  * só para forçar o CDI a criar o schema antes do adaptador JDBC — a dependência real fica escondida
  * dentro do {@link Registry}.
  */

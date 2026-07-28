@@ -103,7 +103,7 @@ public class CategoryUseCase {
     // CPD-OFF
     /** Apaga as transações (via facade), publica {@link TransactionsDeleted} (overlay/vínculo de tag
      *  reagem best-effort), executa {@code afterCleanup} e por fim publica o SSE de conta para cada
-     *  conta afetada. Duplicado em {@code TagUseCase} (f008): mesma forma, dono diferente, sem base
+     *  conta afetada. Duplicado em {@code TagUseCase} (f004): mesma forma, dono diferente, sem base
      *  comum legítima entre fatias. */
     private Result<Void, BusinessError> deleteLinkedTransactions(List<UUID> txIds, Runnable afterCleanup) {
         val affectedAccountIds = accountIdsOfTransactions(txIds);

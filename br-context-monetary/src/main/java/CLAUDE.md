@@ -36,7 +36,7 @@ br.cdb.context.monetary
 * **`TransactionScope`** (sealed: `Single`/`Future`) — viaja dentro de `TransactionCommand.Update`/`Delete`; substitui o antigo par de Strings mágicas `editMode`/`mode` (`"FUTURE"` vs. qualquer outra coisa). O parse da String de HTTP para `TransactionScope` acontece na borda da feature (`TransactionMapper.toScope`), não aqui.
 * **Cartão (`CreditCard`)** é entidade própria do contexto (`last4`, `accountId`, `active`) desde a migração cartão-como-entidade; limite de crédito/cheque especial e ciclo de fatura continuam sendo colunas de `Account` (compartilhadas por todos os cartões da conta) — ver `@docs/backend/persistence-jdbc.md`.
 * **`Balance`** — projeção de saldo por competência (`?period=yyyyMM`/`?year=yyyy`) exposta por `AccountUseCase` (`getMonthlyBalance`/`getYearBalances`). O record referencia o `Account` inteiro (`account`, não um `accountId` solto) e o valor fica em `value`; a chave de negócio segue sendo o par `(account.id(), period)` — sem `id` próprio; `BalanceRepository.delete(UUID, YearMonth)` (não `deleteById`) é o caminho real de exclusão usado por `BalanceService`.
-* O contexto **não valida política de usuário** (ex.: período de fechamento) — isso é fronteira da feature: `f000.ClosingService.validateDate(...)`, chamado por `br.cdb.feature.f005._1_application.TransactionUseCase` (create/update/delete/transfer) em `br-application`. O contexto aceita qualquer transação bem-formada.
+* O contexto **não valida política de usuário** (ex.: período de fechamento) — isso é fronteira da feature: `f000.ClosingService.validateDate(...)`, chamado por `br.cdb.feature.f006._1_application.TransactionUseCase` (create/update/delete/transfer) em `br-application`. O contexto aceita qualquer transação bem-formada.
 
 ## Testes
 
@@ -51,8 +51,8 @@ br.cdb.context.monetary
 ## O que NÃO está aqui
 
 * **Adaptadores de persistência** — vivem em `br-application`, não neste módulo; o contexto só conhece as portas (`_0_domain.repository`). Em `br.cdb.infra.persistence.monetary`: `AccountJDBCRepository` (+ `AccountTypeMapper`), `CreditCardJDBCRepository`, `CostCenterJDBCRepository`, `TransactionJDBCRepository`. A porta `BalanceRepository` é a exceção — implementada por `br.cdb.infra.persistence.features.UserAccountBalanceJDBCRepository` (tabela `PERSON_ACCOUNT_BALANCE`, do lado de feature).
-* **ArchUnit e integração HTTP** — rodam em `br-application/src/test/java` (`br/cdb/ArchitectureTest.java` e `br/cdb/feature/**`; precisam de CDI/Quarkus ou do classpath completo da borda HTTP) — ver `@br-application/src/main/java/CLAUDE.md`. O que existe em `br-application/src/test/java/br/cdb/context/monetary/` são os testes de **parser/importação** (`f006`) e os fakes in-memory, não testes deste contexto.
-* **Importação de extrato/PDF (parsers BTG/Santander, casamento de cartão, sugestão de categoria)** — é lógica de feature (`br.cdb.feature.f006`), não deste contexto. O contexto **não tem** conceito de importação: a feature monta o `Transaction` (domain model) e chama `TransactionUseCase.create(Transaction)` — CRUD puro (valida cartão + persiste + emite evento).
+* **ArchUnit e integração HTTP** — rodam em `br-application/src/test/java` (`br/cdb/ArchitectureTest.java` e `br/cdb/feature/**`; precisam de CDI/Quarkus ou do classpath completo da borda HTTP) — ver `@br-application/src/main/java/CLAUDE.md`. O que existe em `br-application/src/test/java/br/cdb/context/monetary/` são os testes de **parser/importação** (`f007`) e os fakes in-memory, não testes deste contexto.
+* **Importação de extrato/PDF (parsers BTG/Santander, casamento de cartão, sugestão de categoria)** — é lógica de feature (`br.cdb.feature.f007`), não deste contexto. O contexto **não tem** conceito de importação: a feature monta o `Transaction` (domain model) e chama `TransactionUseCase.create(Transaction)` — CRUD puro (valida cartão + persiste + emite evento).
 
 ## Convenções
 

@@ -5,11 +5,12 @@
  * {@code _0_domain} (modelos/overlays + portas {@code *Repository} + eventos de domínio),
  * {@code _1_application} ({@code *Service}/{@code *UseCase} + commands + {@code @MessageListener}
  * best-effort), {@code _2_infrastructure} ({@code *Resource}, DTOs HTTP, {@code *JDBCRepository},
- * {@code FNNNModule} CDI). Cross-feature é só via evento ({@code br.commons.MessageBus}) ou, onde a
- * migração de eventos ainda não terminou, chamada direta documentada como transitória — nunca
- * import de {@code _1_application}/{@code _2_infrastructure} de fatia irmã (ver ArchitectureTest,
- * regra {@code application_must_not_access_infrastructure}). Histórico completo da migração
- * fatias-planas→fNNN em {@code .claude/refactor.md}.
+ * {@code FNNNModule} CDI). Fatia de negócio nunca importa fatia de negócio irmã (ver ArchitectureTest,
+ * regra {@code feature_slices_must_not_depend_on_sibling_slices}) — cross-feature é sempre evento
+ * ({@code br.commons.MessageBus}, record em {@code f000._0_domain.event}), porta declarada pelo
+ * consumidor no seu {@code _0_domain}, ou adapter em {@code f999._2_infrastructure.adapter} (único
+ * lugar que conhece os dois lados). Histórico completo da migração fatias-planas→fNNN e da
+ * inversão de dependências em {@code .claude/refactor.md}.
  *
  * <h2>URLs exportadas por feature</h2>
  * <pre>
@@ -22,14 +23,17 @@
  * │   └── VersionResource      GET  /api/version                              (sem namespace de usuário)
  * ├── f001  self-service
  * │   └── SelfResource         GET/PATCH /api/me                              (nome + preferências write-through)
- * ├── f002  accounts (+ cards e balance fundidos: sem overlay próprio)
+ * ├── f002  accounts (+ balance fundido: sem overlay próprio; cards[] embutido é projeção
+ * │         somente-leitura de f003 — ver f003.CardUseCase para a mutação)
  * │   ├── AccountResource        GET    /api/{uuid}/accounts
  * │   │                          GET    /api/{uuid}/accounts/{id}
  * │   │                          POST   /api/{uuid}/accounts
  * │   │                          PATCH  /api/{uuid}/accounts/{id}
  * │   │                          DELETE /api/{uuid}/accounts/{id}?strategy=&amp;targetId=
- * │   ├── AccountBalanceResource GET    /api/{uuid}/accounts/balance?period=yyyyMM
- * │   │                          GET    /api/{uuid}/accounts/{id}/balance?period=yyyyMM|year=yyyy
+ * │   └── AccountBalanceResource GET    /api/{uuid}/accounts/balance?period=yyyyMM
+ * │                              GET    /api/{uuid}/accounts/{id}/balance?period=yyyyMM|year=yyyy
+ * ├── f003  cards (extraída de f002 — ver .claude/refactor.md; sem _0_domain/módulo CDI próprio,
+ * │         mesmo precedente de f009)
  * │   └── AccountCardResource    GET    /api/{uuid}/accounts/{accountId}/cards
  * │                              POST   /api/{uuid}/accounts/{accountId}/cards
  * │                              PATCH  /api/{uuid}/accounts/{accountId}/cards/{cardId}

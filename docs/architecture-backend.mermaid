@@ -3,10 +3,11 @@ flowchart LR
 %% Cada caixa diz o que MORA no pacote; setas = dependências permitidas.
 %% ArchUnit proíbe: feature→contexto fora da Facade/use cases; Resource→Repository;
 %% contexto→framework; _1_application→_2_infrastructure (vale por contexto E por fNNN);
-%% core→feature. fatia fNNN↔fNNN (exceto via f000) é hoje só transitório — sem regra
-%% ArchUnit ainda, pendente da migração ON DELETE CASCADE (ver .claude/refactor.md).
+%% core→feature; fatia fNNN↔fNNN irmã, em qualquer direção (regra
+%% feature_slices_must_not_depend_on_sibling_slices). Só duas exceções: alvo f000 (kernel) e
+%% origem f999 (composition root — adapters que ligam porta de uma fatia a provedor de outra).
 
-    subgraph feature["br.cdb.feature.fNNN  (f001, f002, f005–f010)"]
+    subgraph feature["br.cdb.feature.fNNN  (f001–f003, f004–f007, f009)"]
         F2["_2_infrastructure<br>*Resource (borda HTTP — só tradução de formato)<br>*Request / *Response (DTOs da API)<br>*JDBCRepository (adaptador da porta _0)<br>FNNNModule (CDI)"]
         F1["_1_application<br>*Service · *UseCase (orquestra tudo)<br>commands · @MessageListener (best-effort)"]
         F0["_0_domain<br>modelos/overlays · *Repository (PORTAS)<br>eventos de domínio da feature"]
