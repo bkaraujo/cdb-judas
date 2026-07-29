@@ -8,7 +8,7 @@ import br.cdb.feature.f000._0_domain.event.TransactionsDeleted;
 import br.cdb.feature.f000._1_application.ClosingService;
 import br.cdb.feature.f000._1_application.UserGuards;
 import br.cdb.feature.f000._0_domain.event.AccountStreamEvents;
-import br.cdb.feature.f006._0_domain.TransferCategories;
+import br.cdb.feature.f000._1_application.InternalApi;
 import br.cdb.feature.f006._0_domain.UserTransaction;
 import br.commons.MessageBus;
 import br.commons.Registry;
@@ -45,8 +45,13 @@ public class TransactionUseCase {
 
     private final UserGuards guards;
     private final UserTransactionService userTransactionService;
-    private final TransferCategories transferCategories;
+    private final InternalApi internalApi;
     private final ClosingService closingService;
+
+    /** Corpo mínimo do endpoint interno {@code GET /categories/transfer} (f005) — zero tipo
+     *  cross-slice, mesma regra dos antigos ports. */
+    @NullMarked
+    private record TransferCategoryDto(UUID id) {}
 
     @NullMarked
     public record TransactionView(Transaction transaction, @Nullable UserTransaction overlay) {}
@@ -55,6 +60,12 @@ public class TransactionUseCase {
     public record TransactionFilter(@Nullable UUID accountId, @Nullable Integer limit,
                                     @Nullable LocalDate dateFrom, @Nullable LocalDate dateTo,
                                     @Nullable String status, @Nullable String type) {}
+
+    /** IDs das transações da pessoa vinculadas a qualquer categoria de {@code categoryIds} — consumido
+     *  via {@code InternalApi} por {@code CategoryUseCase} (f005) na exclusão de categoria. */
+    public List<UUID> transactionIdsByCategories(UUID personId, List<UUID> categoryIds) {
+        return userTransactionService.findTransactionIdsByCategories(personId, categoryIds);
+    }
 
     public Result<List<TransactionView>, BusinessError> transactions(UUID personId, TransactionFilter filter) {
         val accountId = filter.accountId();
@@ -174,8 +185,8 @@ public class TransactionUseCase {
         // PERSON_TRANSACTION.COD_CATEGORY é NOT NULL. Cada perna recebe a categoria de sistema
         // "9. Outros / Transferência" da sua natureza: a saída (EXPENSE) a de despesa, a entrada
         // (INCOME) a de receita. Cobre as duas pernas do grupo, mantendo o 1:1 com MON_TRANSACTION.
-        val expenseCategoryId = transferCategories.transferCategoryId(personId, Transaction.Type.EXPENSE);
-        val incomeCategoryId = transferCategories.transferCategoryId(personId, Transaction.Type.INCOME);
+        val expenseCategoryId = transferCategoryId(Transaction.Type.EXPENSE);
+        val incomeCategoryId = transferCategoryId(Transaction.Type.INCOME);
         return ucTransaction.createTransfer(fromAccountId, toAccountId, date, amount).map(t -> {
             val overlay = userTransactionService.save(t.id(), t.accountId(), personId, transferCategoryFor(t, expenseCategoryId, incomeCategoryId));
             saveTransferGroupCategories(t, personId, expenseCategoryId, incomeCategoryId);
@@ -233,6 +244,12 @@ public class TransactionUseCase {
         transactionsInGroup(groupId, personId).stream()
                 .filter(t -> !t.id().equals(first.id()))
                 .forEach(t -> userTransactionService.save(t.id(), t.accountId(), personId, categoryId));
+    }
+
+    /** Categoria de sistema de transferência da natureza pedida — leitura cross-slice síncrona via
+     *  {@code InternalApi} (endpoint público de f005). */
+    private UUID transferCategoryId(Transaction.Type nature) {
+        return internalApi.get("/categories/transfer?nature=" + nature.name(), TransferCategoryDto.class).id();
     }
 
     private static UUID transferCategoryFor(Transaction leg, UUID expenseCategoryId, UUID incomeCategoryId) {

@@ -19,6 +19,7 @@ import br.cdb.feature.f002._1_application.usecase.AccountUseCase;
 import br.cdb.feature.f000._1_application.usecase.CostCenterUseCase;
 import br.cdb.feature.f003._1_application.usecase.CreditCardUseCase;
 import br.cdb.feature.f006._1_application.usecase.TransactionUseCase;
+import br.cdb.feature.f006._1_application.TransactionOverlayListener;
 import br.cdb.feature.f006._1_application.UserTransactionService;
 import br.cdb.feature.f007._0_domain.*;
 import br.cdb.feature.f007._1_application.GroupSignature;
@@ -90,12 +91,15 @@ class CreditCardStatementImportServiceTest {
         }
         resetMonetaryRegistry(accounts, transactions, cardRepo);
         this.overlays = new InMemoryUserTransactions();
+        // O save do vínculo agora é reação a TransactionImported (f000, publicado pelos processors) —
+        // sem @QuarkusTest não há StartupEvent pra assinar o listener real, então assina aqui.
+        MessageBus.subscribe(new TransactionOverlayListener(new UserTransactionService(overlays)));
         final CreditCardProvider provider = () -> creditCards;
         return new StatementImportService(
                 provider, extractor,
                 List.of(new BTGStatementParser(), new SantanderStatementParser(),
                         new BTGInvoiceParser(), new SantanderInvoiceParser()),
-                MAX_BYTES, new UserTransactionService(overlays)::save, CLOCK);
+                MAX_BYTES, CLOCK);
     }
 
     /**

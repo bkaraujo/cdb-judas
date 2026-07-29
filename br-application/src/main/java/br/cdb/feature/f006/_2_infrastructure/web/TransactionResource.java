@@ -10,11 +10,13 @@ import jakarta.validation.Valid;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
 import lombok.RequiredArgsConstructor;
+import lombok.val;
 import org.jboss.resteasy.reactive.RestResponse;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 
 import java.time.LocalDate;
+import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
 
@@ -39,6 +41,17 @@ public class TransactionResource {
             @QueryParam("type") @Nullable String type
     ) {
         return query(uuid, new TransactionUseCase.TransactionFilter(null, limit, dateFrom, dateTo, status, type));
+    }
+
+    /** Endpoint interno (consumido via {@code InternalApi} por {@code f005.CategoryUseCase} na
+     *  exclusão de categoria) — público como qualquer outro em {@code /api/{uuid}/…}, guardado pelo
+     *  mesmo {@code OwnershipFilter}, nunca chamado pelo frontend. */
+    @GET
+    @Path("/transactions/by-category")
+    public List<UUID> byCategory(@PathParam("uuid") UUID uuid, @QueryParam("categoryIds") String categoryIds) {
+        val ids = categoryIds.isBlank() ? List.<UUID>of()
+                : Arrays.stream(categoryIds.split(",")).map(UUID::fromString).toList();
+        return transactionUseCase.transactionIdsByCategories(uuid, ids);
     }
 
     // ── Per-account collection + items ─────────────────────────────

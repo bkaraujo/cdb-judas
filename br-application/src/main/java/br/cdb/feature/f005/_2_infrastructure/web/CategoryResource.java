@@ -7,6 +7,7 @@ import br.cdb.feature.f005._1_application.CategoryResponse;
 import br.cdb.feature.f005._1_application.CategoryUseCase;
 import br.cdb.feature.f005._2_infrastructure.web.request.CreateRequest;
 import br.cdb.feature.f005._2_infrastructure.web.request.UpdateRequest;
+import br.cdb.feature.f005._2_infrastructure.web.response.TransferCategoryResponse;
 import br.commons.Result;
 import br.commons.business.BusinessException;
 import br.commons.tools.Strings;
@@ -37,6 +38,16 @@ public class CategoryResource {
     @GET
     public List<CategoryResponse> listAll(@PathParam("uuid") UUID uuid) {
         return categoryUseCase.categories(uuid).stream().map(CategoryResponse::from).toList();
+    }
+
+    /** Endpoint interno (consumido via {@code InternalApi} por {@code f006.TransactionUseCase} ao
+     *  criar transferência) — público como qualquer outro em {@code /api/{uuid}/…}, guardado pelo
+     *  mesmo {@code OwnershipFilter}, nunca chamado pelo frontend. */
+    @GET
+    @Path("/transfer")
+    public TransferCategoryResponse transferCategory(@PathParam("uuid") UUID uuid, @QueryParam("nature") String nature) {
+        val category = categoryUseCase.transferCategory(uuid, Transaction.Type.valueOf(Strings.upper(nature)));
+        return new TransferCategoryResponse(category.id());
     }
 
     @POST

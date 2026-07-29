@@ -12,11 +12,12 @@
  * publicado por f002/f004/f005/f006/f007 após cada mutação já persistida e chamam
  * {@code SSE.dispatch} — nenhuma outra fatia o faz.
  *
- * <p><b>(c) Composition root</b> — {@code _2_infrastructure.adapter} tem os únicos adapters que ligam
- * a porta de uma fatia ao provedor de outra ({@code TransferCategoriesAdapter},
- * {@code TransactionOverlaySinkAdapter}, {@code TransactionAccountOverlayAdapter},
- * {@code TransactionCategoryOverlayAdapter}) — resolvidos por CDI puro, sem {@code @Produces}/
- * {@code Registry}.
+ * <p><b>(c) Composition root</b> — {@code _2_infrastructure.adapter} é onde mora o único adapter que
+ * ligaria a porta de uma fatia ao provedor de outra, resolvido por CDI puro (sem {@code @Produces}/
+ * {@code Registry}), quando esse padrão for necessário de novo. Vazio desde a fase 4 de
+ * {@code .claude/plan.md}: os 4 casos que existiam (transferência de categoria, overlay de
+ * conta/categoria/import) viraram evento (best-effort, cascata de exclusão) ou leitura síncrona via
+ * {@code f000.InternalApi} (HTTP interno contra o endpoint público da fatia dona).
  */
 @NullMarked
 package br.cdb.feature.f999;

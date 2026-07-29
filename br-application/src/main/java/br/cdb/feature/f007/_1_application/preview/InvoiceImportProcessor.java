@@ -1,5 +1,6 @@
 package br.cdb.feature.f007._1_application.preview;
 
+import br.cdb.feature.f000._0_domain.event.TransactionImported;
 import br.cdb.feature.f000._0_domain.model.CostCenter;
 import br.cdb.feature.f003._0_domain.model.CreditCard;
 import br.cdb.feature.f006._0_domain.model.Transaction;
@@ -10,6 +11,7 @@ import br.cdb.feature.f007._1_application.GroupSignature;
 import br.cdb.feature.f007._1_application.InstallmentExpander;
 import br.cdb.feature.f007._1_application.confirm.InvoiceConfirmCommand;
 import br.commons.Logger;
+import br.commons.MessageBus;
 import br.commons.Registry;
 import br.commons.Result;
 import br.commons.business.BusinessError;
@@ -27,8 +29,10 @@ import java.util.stream.Collectors;
 /**
  * Processes {@link br.cdb.feature.f007._0_domain.MonetaryDocument.Invoice} documents (credit-card
  * statements): preview (card match + installment expansion + dedup) and confirm (persistence of
- * kept rows, grouped by installment schedule). Every persisted transaction also gets its
- * {@code PERSON_TRANSACTION} overlay here, keeping the 1:1 invariant with {@code MON_TRANSACTION}.
+ * kept rows, grouped by installment schedule). Every persisted transaction publishes
+ * {@code TransactionImported} (f000) — {@code TransactionOverlayListener} (f006) grava o vínculo
+ * {@code F005_TRANSACTION_CATEGORY}, mantendo o 1:1 com {@code F006_TRANSACTION} sem f007 depender
+ * de f006 diretamente.
  */
 @NullMarked
 public class InvoiceImportProcessor {
@@ -39,13 +43,11 @@ public class InvoiceImportProcessor {
     private final CardMatcher cardMatcher = new CardMatcher();
     private final GroupSignature groupSignature = new GroupSignature();
     private final InstallmentExpander expander;
-    private final TransactionOverlaySink transactionOverlaySink;
     private final Clock clock;
 
-    public InvoiceImportProcessor(CreditCardProvider creditCardProvider, TransactionOverlaySink transactionOverlaySink, Clock clock) {
+    public InvoiceImportProcessor(CreditCardProvider creditCardProvider, Clock clock) {
         this.creditCardProvider = creditCardProvider;
         this.expander = new InstallmentExpander(groupSignature);
-        this.transactionOverlaySink = transactionOverlaySink;
         this.clock = clock;
     }
 
@@ -200,7 +202,7 @@ public class InvoiceImportProcessor {
         try {
             return switch (ucTransaction.create(tx)) {
                 case Result.Success(var saved) -> {
-                    transactionOverlaySink.save(saved.id(), saved.accountId(), personId, row.categoryId());
+                    MessageBus.submit(new TransactionImported(saved.id(), saved.accountId(), personId, row.categoryId()));
                     yield saved;
                 }
                 case Result.Failure(var error) -> {

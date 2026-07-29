@@ -56,14 +56,23 @@ public class AuthenticationFilter implements ContainerRequestFilter {
             // fechamento do stream. Não empurra X-REQUEST-USER pra não vazar pra próxima requisição
             // que reaproveitar a mesma thread (CurrentUserContext já resolve a autorização em si).
             tokenStore.validate(token).ifPresent(userId -> authenticateStream(userId, request));
+            return;
+        }
+
+        val ephemeralPersonId = tokenStore.consumeEphemeral(token);
+        if (ephemeralPersonId.isPresent()) {
+            // Chamada HTTP interna fatia→fatia (InternalApi, f000): já é a PESSOA, sem rotação —
+            // token de uso único, não existe "próximo" pra devolver ao chamador.
+            HTTPRequest.put(HTTPRequest.X_REQUEST_USER, new AuthenticatedUser(ephemeralPersonId.get(), "internal"));
+            return;
+        }
+
+        val result = tokenStore.rotate(token);
+        if (result.isPresent()) {
+            authenticate(result.get().userId(), request);
+            request.setProperty(NEXT_TOKEN_PROPERTY, result.get().nextToken());
         } else {
-            val result = tokenStore.rotate(token);
-            if (result.isPresent()) {
-                authenticate(result.get().userId(), request);
-                request.setProperty(NEXT_TOKEN_PROPERTY, result.get().nextToken());
-            } else {
-                Logger.debug("AUTHN %s %s => invalid or expired token", request.getMethod(), HTTPRequest.path(request));
-            }
+            Logger.debug("AUTHN %s %s => invalid or expired token", request.getMethod(), HTTPRequest.path(request));
         }
     }
 

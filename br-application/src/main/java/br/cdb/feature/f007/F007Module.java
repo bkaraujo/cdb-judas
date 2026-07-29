@@ -1,7 +1,6 @@
 package br.cdb.feature.f007;
 
 import br.cdb.feature.f007._0_domain.CreditCardProvider;
-import br.cdb.feature.f007._0_domain.TransactionOverlaySink;
 import br.cdb.feature.f007._1_application.StatementImportService;
 import br.cdb.feature.f007._2_infrastructure.provider.BTGInvoiceParser;
 import br.cdb.feature.f007._2_infrastructure.provider.BTGStatementParser;
@@ -42,8 +41,7 @@ public class F007Module {
     @Singleton
     StatementImportService statementImportService(
             CreditCardProvider creditCardProvider,
-            PdfTextExtractor extractor,
-            TransactionOverlaySink transactionOverlaySink
+            PdfTextExtractor extractor
     ) {
         return new StatementImportService(
                 creditCardProvider,
@@ -54,8 +52,7 @@ public class F007Module {
                         new SantanderStatementParser(),
                         new SantanderInvoiceParser()
                 ),
-                MAX_STATEMENT_FILE_BYTES,
-                transactionOverlaySink);
+                MAX_STATEMENT_FILE_BYTES);
     }
 
     void onStart(@Observes @Priority(7) StartupEvent ev) {

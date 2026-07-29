@@ -15,7 +15,6 @@ import br.cdb.feature.f000._0_domain.event.AccountStreamEvents;
 import br.cdb.feature.f000._0_domain.event.TransactionsDeleted;
 import br.cdb.feature.f000._1_application.Deletions;
 import br.cdb.feature.f000._1_application.UserGuards;
-import br.cdb.feature.f002._0_domain.TransactionAccountOverlay;
 import br.cdb.feature.f002._0_domain.UserAccount;
 import br.commons.Logger;
 import br.commons.MessageBus;
@@ -42,10 +41,11 @@ import java.util.UUID;
  * contexto monetário; referenciado por FQN completo (campo {@code ucAccount}) para evitar
  * colisão de import.
  *
- * <p>{@code deleteAccount} chama {@link TransactionAccountOverlay#reassignAccount} imperativamente
- * só no MOVE (re-key, não limpeza pós-delete). O overlay {@code PERSON_ACCOUNT} e o das transações
- * apagadas (não-MOVE) somem via evento pós-delete ({@link AccountDeleted}/{@link
- * TransactionsDeleted}) — sem FK entre tabelas de dados, o contexto pode apagar a raiz primeiro.
+ * <p>{@code deleteAccount} não reatribui nada imperativamente no MOVE: reassign de conta em
+ * transação é feito pela própria engine ({@code AccountUseCase.deleteMove}, contexto monetário) ao
+ * mover as transações. O overlay {@code PERSON_ACCOUNT} e o das transações apagadas (não-MOVE) somem
+ * via evento pós-delete ({@link AccountDeleted}/{@link TransactionsDeleted}) — sem FK entre tabelas
+ * de dados, o contexto pode apagar a raiz primeiro.
  */
 @NullMarked
 @Singleton
@@ -59,7 +59,6 @@ public class AccountUseCase {
 
     private final UserGuards guards;
     private final UserAccountService userAccountService;
-    private final TransactionAccountOverlay transactionOverlay;
 
     /** Conta do contexto + overlay do usuário + cartões; {@code transactions} é a lista completa
      *  (o saldo corrente do DTO é derivado dela). */
@@ -138,8 +137,8 @@ public class AccountUseCase {
     }
 
     /**
-     * MOVE reatribui o overlay das transações antes do delete (re-key, não limpeza pós-delete) e é
-     * validado aqui primeiro (fronteira da feature) para nunca reatribuir para um alvo inválido.
+     * MOVE tem o alvo validado aqui primeiro (fronteira da feature) para nunca reatribuir transações
+     * para uma conta inválida — a engine (contexto monetário) faz o re-key de fato ao apagar.
      * Sem FK forçando ordem: o contexto apaga a raiz e só então publica-se {@link AccountDeleted}
      * (todas as estratégias) — {@code AccountDeletedListener} (f002) purga {@code PERSON_ACCOUNT} —
      * e, fora do MOVE, {@link TransactionsDeleted} (overlay/tag das transações apagadas).
@@ -160,7 +159,6 @@ public class AccountUseCase {
             val target = Objects.requireNonNull(targetId);
             val targetCheck = validateAccountMoveTarget(id, target, personId);
             if (targetCheck instanceof Result.Failure<Void, BusinessError>(var error)) return Result.failure(error);
-            transactionOverlay.reassignAccount(id, target, personId);
         }
 
         return ucAccount.delete(new AccountCommand.Delete(id, Deletions.toPolicy(strategy, targetId))).map(ids -> {

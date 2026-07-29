@@ -1,6 +1,5 @@
 package br.commons.framework.message;
 
-import br.commons.Logger;
 import br.commons.tools.Meta;
 import org.jspecify.annotations.NullMarked;
 
@@ -15,9 +14,10 @@ public record MessageProcessor (
     public MessageResult process(Message message) {
         try {
             return (MessageResult) handle.invoke(container, message);
+        } catch (RuntimeException | Error e) {
+            throw e;
         } catch (Throwable throwable) {
-            Logger.fatal("Failed to process %s: %s", Meta.fqn(message), throwable.toString());
-            return MessageResult.CONSUMED;
+            throw new RuntimeException("Failed to process " + Meta.fqn(message) + ": " + throwable, throwable);
         }
     }
 

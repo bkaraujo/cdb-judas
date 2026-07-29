@@ -65,8 +65,11 @@ class ArchitectureTest {
      * de fatias que já existiam antes dela — {@code fMMM} com {@code MMM < NNN}. {@code f000} é a base
      * (não depende de feature nenhuma). Ex.: {@code f006} pode consumir {@code f002}/{@code f004}/
      * {@code f005}, mas nunca {@code f007}. A inversão de dependência resolve os casos em que uma fatia
-     * anterior precisa de serviço de uma posterior: a anterior define a porta ({@code _0_domain}) e a
-     * posterior a implementa (ver {@code TransactionAccountOverlay}/{@code TransactionCategoryOverlay}).
+     * anterior precisa de serviço de uma posterior: a anterior define a porta ({@code _0_domain}) e um
+     * adapter em {@code f999._2_infrastructure.adapter} a implementa, delegando ao provedor real —
+     * mecanismo hoje sem instância ativa no código (os 4 casos que existiam até a fase 3 foram
+     * removidos na fase 4 de {@code .claude/plan.md}, virando evento ou leitura via {@code InternalApi}),
+     * mas disponível para o próximo caso legítimo.
      */
     @ArchTest
     static final ArchRule feature_slices_depend_only_on_earlier_ones =
@@ -83,16 +86,19 @@ class ArchitectureTest {
      * declarada pelo consumidor em seu próprio {@code _0_domain}, ou por adapter em
      * {@code f999._2_infrastructure.adapter} — ver CLAUDE.md.
      *
-     * <p><strong>Exceção temporária (fase 2→4 de {@code .claude/plan.md}):</strong> alvo que é
+     * <p><strong>Exceção temporária (desde a fase 2 de {@code .claude/plan.md}):</strong> alvo que é
      * remanescente dos contextos recém-dissolvidos ({@link #isDissolvedContextRemnant}) também é
      * tolerado, qualquer que seja a origem — os antigos usecases/services/models/repositories de
-     * {@code br-context-monetary}/{@code br-context-people} viraram subpacotes dentro de
-     * {@code fNNN} preservando a organização interna que já tinham como contexto, mas ainda são
-     * chamados cross-slice do jeito antigo (ex.: {@code f004}/{@code f005} chamando
-     * {@code f006.TransactionUseCase} direto, sem porta) até a fase 4 trocar esse acesso por
-     * evento/HTTP interno. Enquanto essa exceção existir, "{@code mvn verify} verde" não significa
-     * mais "zero acoplamento cross-slice" — só "zero acoplamento novo fora do que já veio da
-     * dissolução".</p>
+     * {@code br-context-monetary}/{@code br-context-people} viraram subpacotes dentro de {@code fNNN}
+     * preservando a organização interna que já tinham como contexto, mas ainda são chamados cross-slice
+     * do jeito antigo (ex.: {@code f007} chamando {@code f006.TransactionUseCase} direto, sem porta —
+     * {@code UserGuards}, em {@code f000}, chamando {@code f002.AccountUseCase}/{@code f003.CreditCardUseCase}
+     * do mesmo jeito). A fase 4 fechou os 4 casos que tinham porta+adapter dedicados (viraram evento ou
+     * {@code InternalApi}), mas não teve como alvo — nem promete fechar — este resíduo mais amplo de
+     * acesso direto à engine; a fase 6 fecha o caso de {@code f007} (funde em {@code f006}, deixa de
+     * ser cross-slice) e o de {@code f009} (troca para {@code InternalApi}). Enquanto essa exceção
+     * existir, "{@code mvn verify} verde" não significa "zero acoplamento cross-slice" — só "zero
+     * acoplamento novo fora do que já veio da dissolução".</p>
      */
     @ArchTest
     static final ArchRule feature_slices_must_not_depend_on_sibling_slices =
@@ -162,7 +168,7 @@ class ArchitectureTest {
                         continue;
                     }
                     if (isDissolvedContextRemnant(target)) {
-                        continue; // TEMPORÁRIO fase 2→4 — ver javadoc da regra 6 e de isDissolvedContextRemnant
+                        continue; // exceção temporária desde a fase 2 — ver javadoc da regra 6 e de isDissolvedContextRemnant
                     }
                     events.add(SimpleConditionEvent.violated(dependency,
                             "f%03d depende de f%03d (fatia posterior): %s"
@@ -182,7 +188,7 @@ class ArchitectureTest {
                         continue; // não é classe de fNNN
                     }
                     if (isDissolvedContextRemnant(target)) {
-                        continue; // TEMPORÁRIO fase 2→4 — ver javadoc da regra e de isDissolvedContextRemnant
+                        continue; // exceção temporária desde a fase 2 — ver javadoc da regra e de isDissolvedContextRemnant
                     }
                     events.add(SimpleConditionEvent.violated(dependency,
                             "core depende de feature: " + dependency.getDescription()));
@@ -223,7 +229,7 @@ class ArchitectureTest {
                         continue; // fora de fNNN, alvo f000 (kernel) ou mesma fatia: permitido
                     }
                     if (isDissolvedContextRemnant(target)) {
-                        continue; // TEMPORÁRIO fase 2→4 — ver javadoc da regra e de isDissolvedContextRemnant
+                        continue; // exceção temporária desde a fase 2 — ver javadoc da regra e de isDissolvedContextRemnant
                     }
                     events.add(SimpleConditionEvent.violated(dependency,
                             "f%03d depende de f%03d (fatia irmã): %s"

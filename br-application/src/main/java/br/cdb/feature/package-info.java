@@ -7,10 +7,11 @@
  * best-effort), {@code _2_infrastructure} ({@code *Resource}, DTOs HTTP, {@code *JDBCRepository},
  * {@code FNNNModule} CDI). Fatia de negócio nunca importa fatia de negócio irmã (ver ArchitectureTest,
  * regra {@code feature_slices_must_not_depend_on_sibling_slices}) — cross-feature é sempre evento
- * ({@code br.commons.MessageBus}, record em {@code f000._0_domain.event}), porta declarada pelo
- * consumidor no seu {@code _0_domain}, ou adapter em {@code f999._2_infrastructure.adapter} (único
- * lugar que conhece os dois lados). Histórico completo da migração fatias-planas→fNNN e da
- * inversão de dependências em {@code .claude/refactor.md}.
+ * ({@code br.commons.MessageBus}, record em {@code f000._0_domain.event}, efeito sem retorno),
+ * {@code f000.InternalApi} (HTTP real contra o endpoint público da fatia dona, leitura síncrona com
+ * retorno), ou adapter em {@code f999._2_infrastructure.adapter} implementando porta declarada pelo
+ * consumidor (único lugar que conhece os dois lados — hoje sem instância ativa). Histórico completo
+ * da migração fatias-planas→fNNN e da inversão de dependências em {@code .claude/refactor.md}.
  *
  * <h2>URLs exportadas por feature</h2>
  * <pre>
@@ -48,9 +49,11 @@
  * │                            POST   /api/{uuid}/categories
  * │                            PATCH  /api/{uuid}/categories/{id}
  * │                            DELETE /api/{uuid}/categories/{id}?strategy=&amp;targetId=
+ * │                            GET    /api/{uuid}/categories/transfer?nature=            (interno — InternalApi de f006.TransactionUseCase)
  * ├── f006  transactions + transfer
  * │   ├── TransferResource     POST   /api/{uuid}/accounts/transactions/transfer
  * │   └── TransactionResource  GET    /api/{uuid}/accounts/transactions?limit=&amp;dateFrom=&amp;dateTo=&amp;status=&amp;type=       (cross-account)
+ * │                            GET    /api/{uuid}/accounts/transactions/by-category?categoryIds=     (interno — InternalApi de f005.CategoryUseCase)
  * │                            GET    /api/{uuid}/accounts/{accId}/transactions?limit=&amp;dateFrom=&amp;dateTo=&amp;status=&amp;type=
  * │                            POST   /api/{uuid}/accounts/{accId}/transactions
  * │                            PATCH  /api/{uuid}/accounts/{accId}/transactions/{txId}

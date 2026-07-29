@@ -87,7 +87,7 @@ class MessageBusTest {
     }
 
     @Test
-    void submit_CONSUMED_stopsDispatch() {
+    void submit_neverInterruptsFanOut_regardlessOfReturnValue() {
         AtomicInteger callCount = new AtomicInteger(0);
 
         record UniqueMsg2() implements Message {}
@@ -111,8 +111,23 @@ class MessageBusTest {
         MessageBus.subscribe(second);
         MessageBus.submit(new UniqueMsg2());
 
-        // CONSUMED stops after first handler (order depends on registration order)
-        assertTrue(callCount.get() <= 2);
+        // Every subscriber runs, whatever it returns — no "first handler wins" semantics.
+        assertEquals(2, callCount.get());
+    }
+
+    @Test
+    void submit_listenerException_propagatesToCaller() {
+        record UniqueMsg4() implements Message {}
+
+        var handler = new Object() {
+            @MessageListener
+            public MessageResult on(UniqueMsg4 msg) {
+                throw new IllegalStateException("boom");
+            }
+        };
+
+        MessageBus.subscribe(handler);
+        assertThrows(IllegalStateException.class, () -> MessageBus.submit(new UniqueMsg4()));
     }
 
     @Test

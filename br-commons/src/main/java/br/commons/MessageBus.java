@@ -128,15 +128,21 @@ public abstract class MessageBus {
         }
     }
 
+    /**
+     * Despacha para todo listener inscrito na hierarquia de {@code message}, sempre — o
+     * {@link MessageResult} de retorno não interrompe mais o fan-out (nenhum publicador confia em
+     * "primeiro handler vence"; múltiplos consumidores best-effort do mesmo evento é o caso comum).
+     * Uma exceção de qualquer listener propaga direto daqui (não é engolida): o publicador decide
+     * o que fazer — tipicamente reverter a própria transação, já que o {@code DataSource} usa
+     * propagação REQUIRED por thread.
+     */
     public static <T extends Message> void submit(T message) {
         val messageClass = message.getClass();
         Logger.verbose("Dispatching %s", lazy(() -> Meta.fqn(messageClass)));
         val processorList = dispatchCache.computeIfAbsent(messageClass, MessageBus::buildDispatchList);
 
         for (val processor : processorList) {
-            if (processor.process(message) == MessageResult.AVAILABLE) {
-                break;
-            }
+            processor.process(message);
         }
     }
 

@@ -67,7 +67,7 @@ public class F005Module {
                                 "9. Outros", List.of("Tarifas Bancárias", "Impostos", "Pensões", "Doações, Dízimos", "Empréstimos", "Eventos", "Outros", "Transferência")
                         ));
 
-                return MessageResult.AVAILABLE;
+                return MessageResult.CONSUMED;
             }
 
             void seed(UUID personId, Transaction.Type nature, Map<String, List<String>> categories) {

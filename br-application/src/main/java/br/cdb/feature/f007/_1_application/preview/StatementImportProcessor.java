@@ -1,6 +1,7 @@
 package br.cdb.feature.f007._1_application.preview;
 
 import br.cdb.feature.f002._0_domain.model.Account;
+import br.cdb.feature.f000._0_domain.event.TransactionImported;
 import br.cdb.feature.f000._0_domain.model.CostCenter;
 import br.cdb.feature.f006._0_domain.model.Transaction;
 import br.cdb.feature.f002._1_application.usecase.AccountUseCase;
@@ -9,11 +10,11 @@ import br.cdb.feature.f007._0_domain.ImportError;
 import br.cdb.feature.f007._0_domain.ImportResult;
 import br.cdb.feature.f007._0_domain.MonetaryDocumentEntry;
 import br.cdb.feature.f007._0_domain.RowState;
-import br.cdb.feature.f007._0_domain.TransactionOverlaySink;
 import br.cdb.feature.f007._1_application.CategoryGuesser;
 import br.cdb.feature.f007._1_application.GroupSignature;
 import br.cdb.feature.f007._1_application.confirm.StatementConfirmCommand;
 import br.commons.Logger;
+import br.commons.MessageBus;
 import br.commons.Registry;
 import br.commons.Result;
 import br.commons.business.BusinessError;
@@ -33,8 +34,9 @@ import java.util.*;
  * Processes {@link br.cdb.feature.f007._0_domain.MonetaryDocument.Statement} documents
  * (checking-account extracts): preview (account selection + dedup/reconcile classification) and
  * confirm (persistence of new rows, reconciliation of matched pending/scheduled transactions). Every
- * persisted transaction also gets its {@code PERSON_TRANSACTION} overlay here, keeping the 1:1
- * invariant with {@code MON_TRANSACTION}.
+ * persisted transaction publishes {@code TransactionImported} (f000) — {@code TransactionOverlayListener}
+ * (f006) grava o vínculo {@code F005_TRANSACTION_CATEGORY}, mantendo o 1:1 com {@code F006_TRANSACTION}
+ * sem f007 depender de f006 diretamente.
  */
 @NullMarked
 public class StatementImportProcessor {
@@ -45,11 +47,9 @@ public class StatementImportProcessor {
     private final TransactionUseCase ucTransaction = Registry.tryGet(TransactionUseCase.class);
 
     private final CategoryGuesser categoryGuesser = new CategoryGuesser();
-    private final TransactionOverlaySink transactionOverlaySink;
     private final Clock clock;
 
-    public StatementImportProcessor(TransactionOverlaySink transactionOverlaySink, Clock clock) {
-        this.transactionOverlaySink = transactionOverlaySink;
+    public StatementImportProcessor(Clock clock) {
         this.clock = clock;
     }
 
@@ -128,7 +128,7 @@ public class StatementImportProcessor {
         try {
             return switch (ucTransaction.create(tx)) {
                 case Result.Success(var saved) -> {
-                    transactionOverlaySink.save(saved.id(), saved.accountId(), personId, row.categoryId());
+                    MessageBus.submit(new TransactionImported(saved.id(), saved.accountId(), personId, row.categoryId()));
                     yield true;
                 }
                 case Result.Failure(var error) -> {
