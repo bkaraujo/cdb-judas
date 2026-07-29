@@ -48,12 +48,25 @@ public class TransactionUseCase {
         return Result.success(all);
     }
 
+    /** Guarda implícita: só as transações de {@code personId} — a versão que a leitura externa (listagem) usa. */
+    public Result<List<Transaction>, BusinessError> transactions(String personId) {
+        val all = service.findAllByPerson(personId).stream()
+                .sorted(Comparator.comparing(Transaction::date).reversed())
+                .toList();
+        return Result.success(all);
+    }
+
     public Result<List<Transaction>, BusinessError> pending() {
         return Result.success(service.findPending());
     }
 
     public Result<Transaction, BusinessError> transaction(UUID id) {
         return service.findById(id);
+    }
+
+    /** Guarda implícita: vazio (404) se {@code id} existe mas não pertence a {@code personId}. */
+    public Result<Transaction, BusinessError> transaction(UUID id, String personId) {
+        return service.findByIdAndPerson(id, personId);
     }
 
     public Result<Transaction, BusinessError> upsert(TransactionCommand.Upsert cmd) {

@@ -25,6 +25,16 @@ public class AccountService {
                 .orElseGet(() -> Result.failure(new BusinessError.NotFound("Account not found: " + accountId)));
     }
 
+    public List<Account> findAllByPerson(String personId) {
+        return repository.findAllByPerson(personId);
+    }
+
+    public Result<Account, BusinessError> findByIdAndPerson(UUID accountId, String personId) {
+        return repository.findByIdAndPerson(accountId, personId)
+                .<Result<Account, BusinessError>>map(Result::success)
+                .orElseGet(() -> Result.failure(new BusinessError.NotFound("Account not found: " + accountId)));
+    }
+
     public Account save(Account account) {
         return repository.save(account);
     }

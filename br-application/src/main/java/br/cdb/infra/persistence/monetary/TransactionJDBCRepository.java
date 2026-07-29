@@ -56,6 +56,24 @@ public final class TransactionJDBCRepository extends JDBCRepository<Transaction>
     }
 
     @Override
+    public List<Transaction> findAllByPerson(String personId) {
+        return datasource.query(
+                "SELECT " + columnList() + " FROM " + table() + " WHERE COD_PERSON = ?",
+                JDBCParameter.of(personId),
+                this::mapList
+        );
+    }
+
+    @Override
+    public Optional<Transaction> findByIdAndPerson(UUID id, String personId) {
+        return datasource.query(
+                "SELECT " + columnList() + " FROM " + table() + " WHERE ID = ? AND COD_PERSON = ?",
+                JDBCParameter.of(id.toString(), personId),
+                this::mapList
+        ).stream().findFirst();
+    }
+
+    @Override
     public void clearCache() {
         // Sem cache: a fonte de verdade é o próprio banco.
     }

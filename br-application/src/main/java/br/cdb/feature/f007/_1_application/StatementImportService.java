@@ -47,7 +47,7 @@ public class StatementImportService {
         this.statementProcessor = new StatementImportProcessor(transactionOverlaySink, clock);
     }
 
-    public Result<ImportPreviewOutcome, ImportError> preview(byte[] fileBytes, @Nullable String password, @Nullable UUID accountId) {
+    public Result<ImportPreviewOutcome, ImportError> preview(String personId, byte[] fileBytes, @Nullable String password, @Nullable UUID accountId) {
         if (fileBytes.length > maxFileBytes) {
             return new Result.Failure<>(new ImportError.FileTooLarge(fileBytes.length, maxFileBytes));
         }
@@ -65,8 +65,8 @@ public class StatementImportService {
                 }
 
                 yield switch (capable.getFirst().parse(text)) {
-                    case MonetaryDocument.Invoice(var issuer, var period, var statement) -> invoiceProcessor.preview(issuer, period, statement);
-                    case MonetaryDocument.Statement(var issuer, var statement) -> statementProcessor.preview(issuer, statement, accountId);
+                    case MonetaryDocument.Invoice(var issuer, var period, var statement) -> invoiceProcessor.preview(personId, issuer, period, statement);
+                    case MonetaryDocument.Statement(var issuer, var statement) -> statementProcessor.preview(personId, issuer, statement, accountId);
                 };
             }
 

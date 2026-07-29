@@ -74,11 +74,11 @@ public class AccountStreamListener {
     @SuppressWarnings("EmptyCatch")
     private void dispatchUpsert(UUID accountId, String personId) {
         try {
-            switch (ucAccount.findAccount(accountId)) {
+            switch (ucAccount.findAccount(accountId, personId)) {
                 case Result.Success(var account) -> {
                     val ua = userAccountService.find(personId, accountId);
-                    val cards = ucCreditCard.list(accountId).getOrElse(List.of());
-                    val transactions = ucTransaction.transactions().getOrElse(List.of());
+                    val cards = ucCreditCard.list(accountId, personId).getOrElse(List.of());
+                    val transactions = ucTransaction.transactions(personId).getOrElse(List.of());
                     val dto = AccountResponse.from(account, ua, cards, transactions);
                     sse.dispatch(personId, SSE.Event.UPSERT, Map.of("type", TYPE, "payload", dto));
                 }

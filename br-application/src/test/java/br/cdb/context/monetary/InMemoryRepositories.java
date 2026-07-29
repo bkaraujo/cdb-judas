@@ -32,10 +32,18 @@ final class InMemoryRepositories {
 
     static class Accounts extends BaseRepo<Account, UUID> implements AccountRepository {
         public Account save(Account e) { data.put(e.id(), e); return e; }
+
+        /** Fake não modela COD_PERSON — testes de engine não cobrem guarda implícita (isso é BaseHttpTest). */
+        public List<Account> findAllByPerson(String personId) { return findAll(); }
+        public Optional<Account> findByIdAndPerson(UUID id, String personId) { return findById(id); }
     }
 
     static class Transactions extends BaseRepo<Transaction, UUID> implements TransactionRepository {
         public Transaction save(Transaction e) { data.put(e.id(), e); return e; }
+
+        /** Fake não modela COD_PERSON — testes de engine não cobrem guarda implícita (isso é BaseHttpTest). */
+        public List<Transaction> findAllByPerson(String personId) { return findAll(); }
+        public Optional<Transaction> findByIdAndPerson(UUID id, String personId) { return findById(id); }
 
         public void reassignAccount(UUID from, UUID to) {
             for (var t : List.copyOf(data.values())) {
@@ -92,6 +100,12 @@ final class InMemoryRepositories {
 
     static class Cards extends BaseRepo<CreditCard, UUID> implements CreditCardRepository {
         public CreditCard save(CreditCard e) { data.put(e.id(), e); return e; }
+
+        /** Fake não modela COD_PERSON — testes de engine não cobrem guarda implícita (isso é BaseHttpTest). */
+        public List<CreditCard> findAllByPerson(String personId) { return findAll(); }
+        public List<CreditCard> findByAccountAndPerson(UUID accountId, String personId) {
+            return findAll().stream().filter(c -> accountId.equals(c.accountId())).toList();
+        }
     }
 
     static class Closings implements ClosingRepository {

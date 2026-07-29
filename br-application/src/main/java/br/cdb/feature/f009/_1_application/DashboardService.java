@@ -21,8 +21,8 @@ public class DashboardService {
 
     private final TransactionUseCase ucTransaction = Registry.tryGet(TransactionUseCase.class);
 
-    public Result<MonthlyResult, BusinessError> getMonthlyResult(int month, int year) {
-        return ucTransaction.transactions()
+    public Result<MonthlyResult, BusinessError> getMonthlyResult(String personId, int month, int year) {
+        return ucTransaction.transactions(personId)
                 .map(all -> {
                     val start = LocalDate.of(year, month, 1);
                     val end = start.plusMonths(1).minusDays(1);

@@ -67,7 +67,7 @@ public class TransactionUseCase {
             val type = filter.type();
             val limit = filter.limit();
 
-            return ucTransaction.transactions().map(all -> {
+            return ucTransaction.transactions(personId.toString()).map(all -> {
                 val overlays = userTransactionService.indexByTransaction(personId);
                 val filtered = all.stream()
                         .filter(t -> accountId == null || accountId.equals(t.accountId()))
@@ -121,7 +121,7 @@ public class TransactionUseCase {
         return ucTransaction.upsert(cmd).map(t -> {
             val existingOverlay = userTransactionService.find(t.id(), personId);
             val overlay = userTransactionService.save(t.id(), t.accountId(), personId, categoryId);
-            val transferSiblings = transferSiblingsOf(t);
+            val transferSiblings = transferSiblingsOf(t, personId);
             // Se for grupo de parcelas (nunca transferência — pernas de transferência carregam
             // categoria por natureza da própria perna, nunca a da perna editada; ver
             // saveTransferGroupCategories/transfer()): atualiza a categoria de todos os membros.
@@ -211,23 +211,26 @@ public class TransactionUseCase {
      * de perguntar "é transferência" ao contexto sem crescer a superfície pública da Facade por
      * causa de um único chamador.
      */
-    private List<Transaction> transferSiblingsOf(Transaction t) {
+    private List<Transaction> transferSiblingsOf(Transaction t, UUID personId) {
         val groupId = t.groupId();
         if (groupId == null) return List.of();
-        val group = ucTransaction.transactions().getOrElse(List.of()).stream()
-                .filter(x -> groupId.equals(x.groupId()))
-                .toList();
+        val group = transactionsInGroup(groupId, personId);
         val hasIncome = group.stream().anyMatch(x -> x.type() == Transaction.Type.INCOME);
         val hasExpense = group.stream().anyMatch(x -> x.type() == Transaction.Type.EXPENSE);
         if (!hasIncome || !hasExpense) return List.of();
         return group.stream().filter(x -> !x.id().equals(t.id())).toList();
     }
 
+    private List<Transaction> transactionsInGroup(UUID groupId, UUID personId) {
+        return ucTransaction.transactions(personId.toString()).getOrElse(List.of()).stream()
+                .filter(t -> groupId.equals(t.groupId()))
+                .toList();
+    }
+
     private void saveUserTransactionForGroup(Transaction first, UUID personId, @Nullable UUID categoryId) {
         val groupId = first.groupId();
         if (groupId == null) return;
-        ucTransaction.transactions().getOrElse(List.of()).stream()
-                .filter(t -> groupId.equals(t.groupId()))
+        transactionsInGroup(groupId, personId).stream()
                 .filter(t -> !t.id().equals(first.id()))
                 .forEach(t -> userTransactionService.save(t.id(), t.accountId(), personId, categoryId));
     }
@@ -240,8 +243,7 @@ public class TransactionUseCase {
     private void saveTransferGroupCategories(Transaction first, UUID personId, UUID expenseCategoryId, UUID incomeCategoryId) {
         val groupId = first.groupId();
         if (groupId == null) return;
-        ucTransaction.transactions().getOrElse(List.of()).stream()
-                .filter(t -> groupId.equals(t.groupId()))
+        transactionsInGroup(groupId, personId).stream()
                 .filter(t -> !t.id().equals(first.id()))
                 .forEach(t -> userTransactionService.save(t.id(), t.accountId(), personId,
                         transferCategoryFor(t, expenseCategoryId, incomeCategoryId)));

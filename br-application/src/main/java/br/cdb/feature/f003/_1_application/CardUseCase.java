@@ -42,7 +42,7 @@ public class CardUseCase {
     private final UserGuards guards;
 
     public Result<List<CreditCard>, BusinessError> cards(UUID accountId) {
-        return guards.ownsAccount(accountId).flatMap(ignored -> ucCreditCard.list(accountId));
+        return guards.ownsAccount(accountId).flatMap(ignored -> ucCreditCard.list(accountId, HTTPRequest.personId()));
     }
 
     public Result<CreditCard, BusinessError> createCard(CreditCardCommand.Create cmd) {
@@ -76,6 +76,6 @@ public class CardUseCase {
     }
 
     private List<Transaction> allTransactions() {
-        return ucTransaction.transactions().getOrElse(List.of());
+        return ucTransaction.transactions(HTTPRequest.personId()).getOrElse(List.of());
     }
 }

@@ -31,12 +31,13 @@ public class CreditCardUseCase {
     private final BalanceService balanceService = Registry.tryGet(BalanceService.class);
     private final TransactionService transactionService = Registry.tryGet(TransactionService.class);
 
-    public Result<List<CreditCard>, BusinessError> list() {
-        return Result.success(service.findAll());
+    public Result<List<CreditCard>, BusinessError> list(String personId) {
+        return Result.success(service.findAllByPerson(personId));
     }
 
-    public Result<List<CreditCard>, BusinessError> list(UUID accountId) {
-        return accountService.findById(accountId).map(ignored -> service.findByAccount(accountId));
+    public Result<List<CreditCard>, BusinessError> list(UUID accountId, String personId) {
+        return accountService.findByIdAndPerson(accountId, personId)
+                .map(ignored -> service.findByAccountAndPerson(accountId, personId));
     }
 
     public Result<CreditCard, BusinessError> upsert(CreditCardCommand.Upsert cmd) {

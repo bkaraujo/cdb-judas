@@ -34,12 +34,12 @@ public class AccountUseCase {
     private final CreditCardService creditCardService = Registry.tryGet(CreditCardService.class);
     private final TransactionService transactionService = Registry.tryGet(TransactionService.class);
 
-    public Result<List<Account>, BusinessError> listAccounts() {
-        return Result.success(service.findAll());
+    public Result<List<Account>, BusinessError> listAccounts(String personId) {
+        return Result.success(service.findAllByPerson(personId));
     }
 
-    public Result<Account, BusinessError> findAccount(UUID id) {
-        return service.findById(id);
+    public Result<Account, BusinessError> findAccount(UUID id, String personId) {
+        return service.findByIdAndPerson(id, personId);
     }
 
     public Result<Balance, BusinessError> getMonthlyBalance(UUID accountId, YearMonth period) {

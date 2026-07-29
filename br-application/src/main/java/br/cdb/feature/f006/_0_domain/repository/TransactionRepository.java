@@ -4,6 +4,8 @@ import br.cdb.feature.f006._0_domain.model.Transaction;
 import br.commons.framework.persistence.json.Repository;
 import org.jspecify.annotations.NullMarked;
 
+import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 @NullMarked
@@ -13,4 +15,10 @@ public interface TransactionRepository extends Repository<Transaction, UUID> {
 
     /** Bulk re-key: move every transaction carrying card {@code from} to card {@code to}. */
     void reassignCard(UUID from, UUID to);
+
+    /** Guarda implícita: só as transações de {@code personId} — F006_TRANSACTION.COD_PERSON no WHERE. */
+    List<Transaction> findAllByPerson(String personId);
+
+    /** Guarda implícita: vazio se {@code id} existe mas não pertence a {@code personId} (404 natural). */
+    Optional<Transaction> findByIdAndPerson(UUID id, String personId);
 }

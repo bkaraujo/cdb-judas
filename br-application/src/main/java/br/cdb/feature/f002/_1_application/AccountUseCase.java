@@ -78,7 +78,7 @@ public class AccountUseCase {
 
         val views = new ArrayList<AccountView>();
         for (val overlay : userAccountService.findByPerson(personId)) {
-            val account = ucAccount.findAccount(overlay.accountId());
+            val account = ucAccount.findAccount(overlay.accountId(), personId);
             if (account.isFailure()) {
                 Logger.warn("overlay %s aponta para conta inexistente %s", overlay.personId(), overlay.accountId());
                 continue;
@@ -87,7 +87,7 @@ public class AccountUseCase {
             views.add(new AccountView(
                     account.get(),
                     overlay,
-                    ucCreditCard.list(overlay.accountId()).getOrElse(List.of()),
+                    ucCreditCard.list(overlay.accountId(), personId).getOrElse(List.of()),
                     transactionsOf(overlay.accountId())
             ));
         }
@@ -97,9 +97,10 @@ public class AccountUseCase {
 
     public Result<AccountView, BusinessError> account(UUID accountId) {
         return guards.ownsAccount(accountId).flatMap(ignored -> {
-            val overlay = userAccountService.find(HTTPRequest.personId(), accountId);
+            val personId = HTTPRequest.personId();
+            val overlay = userAccountService.find(personId, accountId);
 
-            val account = ucAccount.findAccount(accountId);
+            val account = ucAccount.findAccount(accountId, personId);
             if (account.isFailure()) {
                 Logger.warn("Conta %s não pertence ao usuário", accountId.toString());
                 return Result.failure(new BusinessError.NotFound(accountId.toString()));
@@ -108,7 +109,7 @@ public class AccountUseCase {
             return Result.success(new AccountView(
                     account.get(),
                     overlay,
-                    ucCreditCard.list(accountId).getOrElse(List.of()),
+                    ucCreditCard.list(accountId, personId).getOrElse(List.of()),
                     transactionsOf(accountId)
             ));
         });
@@ -131,7 +132,7 @@ public class AccountUseCase {
                 val overlay = new UserAccount(personId, account.id(), color);
                 userAccountService.save(overlay);
                 MessageBus.submit(new AccountStreamEvents.Updated(overlay.accountId(), overlay.personId()));
-                return new AccountView(account, overlay, cardsOf(account.id()), List.of());
+                return new AccountView(account, overlay, cardsOf(account.id(), personId), List.of());
             });
         });
     }
@@ -151,13 +152,13 @@ public class AccountUseCase {
         if (guard instanceof Result.Failure<Void, BusinessError>(var error)) return Result.failure(error);
 
         if (strategy == null) {
-            val count = (int) allTransactions().stream().filter(t -> id.equals(t.accountId())).count();
+            val count = (int) allTransactions(personId).stream().filter(t -> id.equals(t.accountId())).count();
             if (count > 0) return Result.success(new DeletionOutcome.Linked(count));
         }
 
         if (strategy == DeletionStrategy.MOVE) {
             val target = Objects.requireNonNull(targetId);
-            val targetCheck = validateAccountMoveTarget(id, target);
+            val targetCheck = validateAccountMoveTarget(id, target, personId);
             if (targetCheck instanceof Result.Failure<Void, BusinessError>(var error)) return Result.failure(error);
             transactionOverlay.reassignAccount(id, target, personId);
         }
@@ -176,8 +177,8 @@ public class AccountUseCase {
         });
     }
 
-    private Result<Void, BusinessError> validateAccountMoveTarget(UUID sourceId, UUID targetId) {
-        return ucAccount.findAccount(targetId).flatMap(target -> {
+    private Result<Void, BusinessError> validateAccountMoveTarget(UUID sourceId, UUID targetId, UUID personId) {
+        return ucAccount.findAccount(targetId, personId.toString()).flatMap(target -> {
             if (target.id().equals(sourceId)) {
                 return Result.failure(new BusinessError.BusinessRule("Target account must be different from source: " + targetId));
             }
@@ -214,15 +215,15 @@ public class AccountUseCase {
 
     // ── Helpers ────────────────────────────────────────────────────
 
-    private List<CreditCard> cardsOf(UUID accountId) {
-        return ucCreditCard.list(accountId).getOrElse(List.of());
+    private List<CreditCard> cardsOf(UUID accountId, String personId) {
+        return ucCreditCard.list(accountId, personId).getOrElse(List.of());
     }
 
     private List<Transaction> transactionsOf(UUID accountId) {
         return ucTransaction.transactions(accountId).getOrElse(List.of());
     }
 
-    private List<Transaction> allTransactions() {
-        return ucTransaction.transactions().getOrElse(List.of());
+    private List<Transaction> allTransactions(UUID personId) {
+        return ucTransaction.transactions(personId.toString()).getOrElse(List.of());
     }
 }

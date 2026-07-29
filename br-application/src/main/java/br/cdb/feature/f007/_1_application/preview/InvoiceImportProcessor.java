@@ -49,7 +49,7 @@ public class InvoiceImportProcessor {
         this.clock = clock;
     }
 
-    public Result<ImportPreviewOutcome, ImportError> preview(String issuer, @Nullable YearMonth period, List<MonetaryDocumentEntry> statement) {
+    public Result<ImportPreviewOutcome, ImportError> preview(String personId, String issuer, @Nullable YearMonth period, List<MonetaryDocumentEntry> statement) {
         val last4s = statement.stream().map(MonetaryDocumentEntry::last4)
                 .filter(Objects::nonNull).collect(Collectors.toSet());
 
@@ -61,7 +61,7 @@ public class InvoiceImportProcessor {
 
         val today = LocalDate.now(clock);
         val statementPeriod = period != null ? period : YearMonth.from(today);
-        val history = ucTransaction.transactions().getOrElse(List.of());
+        val history = ucTransaction.transactions(personId).getOrElse(List.of());
 
         val rows = new ArrayList<PreviewRow>();
         for (val line : statement) {
@@ -83,7 +83,7 @@ public class InvoiceImportProcessor {
     public Result<ImportResult, BusinessError> confirm(UUID personId, InvoiceConfirmCommand cmd) {
         return resolveAccountsByCard(cmd).map(accountByCard -> {
             val today = LocalDate.now(clock);
-            val seen = Collections.unmodifiableList(ucTransaction.transactions().getOrElse(List.of()));
+            val seen = Collections.unmodifiableList(ucTransaction.transactions(personId.toString()).getOrElse(List.of()));
             val existingGroups = seen.stream()
                     .map(Transaction::groupId)
                     .filter(Objects::nonNull)

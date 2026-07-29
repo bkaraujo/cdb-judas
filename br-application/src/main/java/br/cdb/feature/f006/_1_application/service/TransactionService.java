@@ -27,6 +27,16 @@ public class TransactionService {
                 .orElseGet(() -> Result.failure(new BusinessError.NotFound("TransactionResponse not found: " + id)));
     }
 
+    public List<Transaction> findAllByPerson(String personId) {
+        return repository.findAllByPerson(personId);
+    }
+
+    public Result<Transaction, BusinessError> findByIdAndPerson(UUID id, String personId) {
+        return repository.findByIdAndPerson(id, personId)
+                .<Result<Transaction, BusinessError>>map(Result::success)
+                .orElseGet(() -> Result.failure(new BusinessError.NotFound("Transaction not found: " + id)));
+    }
+
     public Transaction save(Transaction transaction) {
         return repository.save(transaction);
     }

@@ -2,6 +2,7 @@ package br.cdb.feature.f007._2_infrastructure;
 
 import br.cdb.feature.f003._0_domain.model.CreditCard;
 import br.cdb.feature.f003._1_application.usecase.CreditCardUseCase;
+import br.cdb.core.web.HTTPRequest;
 import br.cdb.feature.f007._0_domain.CreditCardProvider;
 import br.commons.Registry;
 import jakarta.inject.Singleton;
@@ -24,6 +25,6 @@ public class MonetaryCardProvider implements CreditCardProvider {
 
     @Override
     public List<CreditCard> creditCards() {
-        return ucCreditCard.list().getOrElse(List.of());
+        return ucCreditCard.list(HTTPRequest.personId()).getOrElse(List.of());
     }
 }

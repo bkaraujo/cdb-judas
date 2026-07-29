@@ -1,5 +1,6 @@
 package br.cdb.feature.f009._2_infrastructure.web;
 
+import br.cdb.core.web.HTTPRequest;
 import br.cdb.feature.f009._1_application.DashboardService;
 import br.commons.Result;
 import br.commons.business.BusinessException;
@@ -24,7 +25,7 @@ public class DashboardResource {
             @QueryParam("month") int month,
             @QueryParam("year") int year
     ) {
-        return switch (dashboardService.getMonthlyResult(month, year)) {
+        return switch (dashboardService.getMonthlyResult(HTTPRequest.personId(), month, year)) {
             case Result.Success(var data) -> data;
             case Result.Failure(var error) -> throw new BusinessException(error);
         };

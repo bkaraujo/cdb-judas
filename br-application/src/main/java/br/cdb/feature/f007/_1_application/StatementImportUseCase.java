@@ -4,6 +4,7 @@ import br.cdb.feature.f002._0_domain.model.Account;
 import br.cdb.feature.f003._0_domain.model.CreditCard;
 import br.cdb.feature.f002._1_application.usecase.AccountUseCase;
 import br.cdb.feature.f003._1_application.usecase.CreditCardUseCase;
+import br.cdb.core.web.HTTPRequest;
 import br.cdb.feature.f000._1_application.UserGuards;
 import br.cdb.feature.f000._0_domain.event.AccountStreamEvents;
 import br.cdb.feature.f007._0_domain.ImportError;
@@ -51,7 +52,7 @@ public class StatementImportUseCase {
             return new Result.Failure<>(new ImportError.AccountNotFound());
         }
 
-        return service.preview(fileBytes, password, accountId)
+        return service.preview(HTTPRequest.personId(), fileBytes, password, accountId)
                 .map(outcome -> new ImportPreviewView(outcome, accountNamesById()));
     }
 
@@ -62,7 +63,7 @@ public class StatementImportUseCase {
             }
         }
         return service.confirm(personId, cmd)
-                .ifSuccess(ignored -> affectedAccountIds(cmd.rows())
+                .ifSuccess(ignored -> affectedAccountIds(cmd.rows(), personId.toString())
                         .forEach(accountId -> MessageBus.submit(new AccountStreamEvents.Refresh(accountId, personId.toString()))));
     }
 
@@ -73,13 +74,13 @@ public class StatementImportUseCase {
 
     /** Nome da conta a que cada cartão pertence, para rotular as opções de cartão do preview. */
     private Map<UUID, String> accountNamesById() {
-        return ucAccount.listAccounts().getOrElse(List.of()).stream()
+        return ucAccount.listAccounts(HTTPRequest.personId()).getOrElse(List.of()).stream()
                 .collect(Collectors.toMap(Account::id, Account::name));
     }
 
     /** Contas distintas donas dos cartões das linhas confirmadas. */
-    private List<UUID> affectedAccountIds(List<InvoiceConfirmCommand.Row> rows) {
-        val accountByCard = ucCreditCard.list().getOrElse(List.of()).stream()
+    private List<UUID> affectedAccountIds(List<InvoiceConfirmCommand.Row> rows, String personId) {
+        val accountByCard = ucCreditCard.list(personId).getOrElse(List.of()).stream()
                 .collect(Collectors.toMap(CreditCard::id, CreditCard::accountId));
         return rows.stream()
                 .map(row -> accountByCard.get(row.cardId()))

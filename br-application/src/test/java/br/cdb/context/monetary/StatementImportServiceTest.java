@@ -69,7 +69,7 @@ class StatementImportServiceTest {
         accounts.save(account);
 
         var useCase = useCaseWith(accounts, new InMemoryRepositories.Transactions());
-        var preview = statementPreview(useCase.preview(new byte[1], null, account.id()));
+        var preview = statementPreview(useCase.preview(PERSON.toString(), new byte[1], null, account.id()));
 
         assertEquals(2, preview.rows().size(), "saldo diário and card payment must be dropped");
         var odonto = preview.rows().stream().filter(r -> r.description().contains("Odontoprev")).findFirst().orElseThrow();

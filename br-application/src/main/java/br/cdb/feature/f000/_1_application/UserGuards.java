@@ -1,14 +1,14 @@
 package br.cdb.feature.f000._1_application;
 
+import br.cdb.feature.f002._0_domain.model.Account;
+import br.cdb.feature.f002._1_application.usecase.AccountUseCase;
 import br.cdb.feature.f003._0_domain.model.CreditCard;
 import br.cdb.feature.f003._1_application.usecase.CreditCardUseCase;
 import br.cdb.core.web.HTTPRequest;
-import br.cdb.feature.f000._0_domain.AccountOwnership;
 import br.commons.Registry;
 import br.commons.Result;
 import br.commons.business.BusinessError;
 import jakarta.enterprise.context.RequestScoped;
-import lombok.RequiredArgsConstructor;
 import lombok.val;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
@@ -21,21 +21,20 @@ import java.util.stream.Collectors;
 
 /**
  * Guardas de propriedade conta/cartão — fronteira contra IDOR, consumida pelo use case de cada
- * fatia. {@code MON_ACCOUNT}/
- * {@code MON_CARD} não têm coluna de usuário; a propriedade mora só no overlay {@code PERSON_ACCOUNT}. Memoiza
- * (preguiçosamente, no máximo 1 {@code findByPerson} + 1 scan de cartões) por requisição — o snapshot é tirado
- * na primeira consulta, então um guard chamado <em>depois</em> de uma mutação na mesma requisição leria estado
- * pré-mutação. Hoje todo guard roda na entrada, antes de qualquer escrita, então é sempre correto.
+ * fatia. Desde a fase 3 de {@code .claude/plan.md}, {@code F002_ACCOUNT}/{@code F003_CARD} carregam
+ * {@code COD_PERSON} nativo — o guard só verifica presença numa leitura já filtrada por pessoa, sem
+ * precisar de um índice de posse à parte (o antigo {@code AccountOwnership}, sobre o overlay
+ * {@code PERSON_ACCOUNT}, morreu). Memoiza (preguiçosamente, no máximo 1 {@code listAccounts} + 1
+ * {@code list} de cartões) por requisição — o snapshot é tirado na primeira consulta, então um
+ * guard chamado <em>depois</em> de uma mutação na mesma requisição leria estado pré-mutação. Hoje
+ * todo guard roda na entrada, antes de qualquer escrita, então é sempre correto.
  */
 @NullMarked
 @RequestScoped
-@RequiredArgsConstructor
 public class UserGuards {
 
     public static final String DEFAULT_LANGUAGE = "pt-BR";
     public static final String DEFAULT_LOCALE = "pt-BR";
-
-    private final AccountOwnership accountOwnership;
 
     private @Nullable Set<UUID> ownedAccounts;
     private @Nullable Map<UUID, UUID> accountByCard;
@@ -86,7 +85,10 @@ public class UserGuards {
     private Set<UUID> ownedAccounts() {
         var cached = ownedAccounts;
         if (cached == null) {
-            cached = accountOwnership.ownedAccountIds(HTTPRequest.personId());
+            val personId = HTTPRequest.personId();
+            cached = Registry.tryGet(AccountUseCase.class).listAccounts(personId).getOrElse(List.of()).stream()
+                    .map(Account::id)
+                    .collect(Collectors.toUnmodifiableSet());
             ownedAccounts = cached;
         }
         return cached;
@@ -95,7 +97,8 @@ public class UserGuards {
     private Map<UUID, UUID> accountByCard() {
         var cached = accountByCard;
         if (cached == null) {
-            cached = Registry.tryGet(CreditCardUseCase.class).list().getOrElse(List.of()).stream()
+            val personId = HTTPRequest.personId();
+            cached = Registry.tryGet(CreditCardUseCase.class).list(personId).getOrElse(List.of()).stream()
                     .collect(Collectors.toUnmodifiableMap(CreditCard::id, CreditCard::accountId));
             accountByCard = cached;
         }

@@ -25,6 +25,14 @@ public class CreditCardService {
                 .toList();
     }
 
+    public List<CreditCard> findAllByPerson(String personId) {
+        return repository.findAllByPerson(personId);
+    }
+
+    public List<CreditCard> findByAccountAndPerson(UUID accountId, String personId) {
+        return repository.findByAccountAndPerson(accountId, personId);
+    }
+
     public Result<CreditCard, BusinessError> findById(UUID id) {
         return repository.findById(id)
                 .<Result<CreditCard, BusinessError>>map(Result::success)

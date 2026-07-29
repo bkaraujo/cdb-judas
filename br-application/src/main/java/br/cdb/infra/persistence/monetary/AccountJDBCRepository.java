@@ -4,6 +4,7 @@ import br.cdb.feature.f002._0_domain.model.Account;
 import br.cdb.feature.f002._0_domain.repository.AccountRepository;
 import br.commons.chrono.Time;
 import br.commons.framework.persistence.jdbc.JDBCRepository;
+import br.commons.framework.persistence.jdbc.primitives.JDBCParameter;
 import br.commons.framework.persistence.jdbc.primitives.JDBCResultSet;
 import lombok.val;
 import org.jspecify.annotations.NullMarked;
@@ -34,6 +35,24 @@ public final class AccountJDBCRepository extends JDBCRepository<Account> impleme
     @Override
     public void deleteById(UUID id) {
         deleteById(id.toString());
+    }
+
+    @Override
+    public List<Account> findAllByPerson(String personId) {
+        return datasource.query(
+                "SELECT " + columnList() + " FROM " + table() + " WHERE COD_PERSON = ?",
+                JDBCParameter.of(personId),
+                this::mapList
+        );
+    }
+
+    @Override
+    public Optional<Account> findByIdAndPerson(UUID id, String personId) {
+        return datasource.query(
+                "SELECT " + columnList() + " FROM " + table() + " WHERE ID = ? AND COD_PERSON = ?",
+                JDBCParameter.of(id.toString(), personId),
+                this::mapList
+        ).stream().findFirst();
     }
 
     @Override

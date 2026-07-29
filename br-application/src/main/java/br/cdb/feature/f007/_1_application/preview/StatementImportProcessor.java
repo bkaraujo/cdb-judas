@@ -53,13 +53,13 @@ public class StatementImportProcessor {
         this.clock = clock;
     }
 
-    public Result<ImportPreviewOutcome, ImportError> preview(String issuer, List<MonetaryDocumentEntry> statement, @Nullable UUID accountId) {
-        val candidates = ucAccount.listAccounts().getOrElse(List.of()).stream()
+    public Result<ImportPreviewOutcome, ImportError> preview(String personId, String issuer, List<MonetaryDocumentEntry> statement, @Nullable UUID accountId) {
+        val candidates = ucAccount.listAccounts(personId).getOrElse(List.of()).stream()
                 .filter(Account::active)
                 .toList();
         val selectedAccountId = selectAccount(accountId, candidates, Strings.lower(issuer));
 
-        val history = ucTransaction.transactions().getOrElse(List.of());
+        val history = ucTransaction.transactions(personId).getOrElse(List.of());
         val accountTx = selectedAccountId != null
                 ? history.stream().filter(t -> selectedAccountId.equals(t.accountId())).toList()
                 : Collections.unmodifiableList(new ArrayList<Transaction>());
@@ -77,11 +77,12 @@ public class StatementImportProcessor {
     }
 
     public Result<ImportResult, BusinessError> confirmStatement(UUID personId, StatementConfirmCommand cmd) {
-        return ucAccount.findAccount(cmd.accountId()).map(account -> {
+        val personIdStr = personId.toString();
+        return ucAccount.findAccount(cmd.accountId(), personIdStr).map(account -> {
             val accountId = account.id();
             val today = LocalDate.now(clock);
 
-            val accountTx = ucTransaction.transactions().getOrElse(List.of()).stream()
+            val accountTx = ucTransaction.transactions(personIdStr).getOrElse(List.of()).stream()
                     .filter(t -> accountId.equals(t.accountId()))
                     .toList();
 

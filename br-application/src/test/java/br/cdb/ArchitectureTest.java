@@ -66,8 +66,7 @@ class ArchitectureTest {
      * (não depende de feature nenhuma). Ex.: {@code f006} pode consumir {@code f002}/{@code f004}/
      * {@code f005}, mas nunca {@code f007}. A inversão de dependência resolve os casos em que uma fatia
      * anterior precisa de serviço de uma posterior: a anterior define a porta ({@code _0_domain}) e a
-     * posterior a implementa (ver {@code AccountOwnership}/{@code TransactionAccountOverlay}/
-     * {@code TransactionCategoryOverlay}).
+     * posterior a implementa (ver {@code TransactionAccountOverlay}/{@code TransactionCategoryOverlay}).
      */
     @ArchTest
     static final ArchRule feature_slices_depend_only_on_earlier_ones =
@@ -100,6 +99,27 @@ class ArchitectureTest {
             classes().that().resideInAPackage("..feature..")
                     .should(notDependOnSiblingFeatureSlices())
                     .because("fatia de negócio não importa fatia de negócio irmã; use evento (f000), porta no _0_domain do consumidor, ou adapter em f999 — ver CLAUDE.md");
+
+    /**
+     * Guarda implícita (fase 3 de {@code .claude/plan.md}): {@code F002_ACCOUNT}/{@code F003_CARD}/
+     * {@code F006_TRANSACTION} carregam {@code COD_PERSON} nativo — o repositório precisa declarar
+     * pelo menos um finder que o use ({@code findAllByPerson}/{@code findByIdAndPerson}/
+     * {@code findByAccountAndPerson}, todos com "Person" no nome), não só os herdados de
+     * {@code Repository<T,ID>} ({@code findAll}/{@code findById}, sem pessoa — mantidos para uso
+     * interno do engine, ver {@code AccountService}/{@code CreditCardService}/
+     * {@code TransactionService}). Checagem deliberadamente estreita: confirma que a porta
+     * <em>declara</em> acesso escopado, não que todo chamador o usa — ArchUnit não faz
+     * taint-tracking de qual argumento chega em qual query, então isto não substitui revisão dos
+     * call sites (ver {@code UserGuards}, que lê exclusivamente pelos finders escopados).
+     */
+    @ArchTest
+    static final ArchRule person_scoped_repositories_must_declare_a_person_scoped_finder =
+            classes().that().haveSimpleName("AccountRepository")
+                    .or().haveSimpleName("CreditCardRepository")
+                    .or().haveSimpleName("TransactionRepository")
+                    .and().resideInAPackage("..feature.._0_domain.repository..")
+                    .should(declareAPersonScopedFinder())
+                    .because("guarda implícita: toda tabela de fatia tem COD_PERSON — ver javadoc da regra");
 
     private static final Pattern FEATURE_NUMBER = Pattern.compile("\\.feature\\.f(\\d+)(\\.|$)");
 
@@ -166,6 +186,20 @@ class ArchitectureTest {
                     }
                     events.add(SimpleConditionEvent.violated(dependency,
                             "core depende de feature: " + dependency.getDescription()));
+                }
+            }
+        };
+    }
+
+    private static ArchCondition<JavaClass> declareAPersonScopedFinder() {
+        return new ArchCondition<>("declarar pelo menos um finder escopado por pessoa (nome contendo \"Person\")") {
+            @Override
+            public void check(JavaClass clazz, ConditionEvents events) {
+                val hasPersonScopedFinder = clazz.getMethods().stream()
+                        .anyMatch(m -> m.getName().contains("Person"));
+                if (!hasPersonScopedFinder) {
+                    events.add(SimpleConditionEvent.violated(clazz,
+                            clazz.getFullName() + " não declara nenhum finder escopado por pessoa (nome contendo \"Person\")"));
                 }
             }
         };

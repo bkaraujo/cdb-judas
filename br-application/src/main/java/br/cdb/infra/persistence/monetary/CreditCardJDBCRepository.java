@@ -4,6 +4,7 @@ import br.cdb.feature.f003._0_domain.model.CreditCard;
 import br.cdb.feature.f003._0_domain.repository.CreditCardRepository;
 import br.commons.chrono.Time;
 import br.commons.framework.persistence.jdbc.JDBCRepository;
+import br.commons.framework.persistence.jdbc.primitives.JDBCParameter;
 import br.commons.framework.persistence.jdbc.primitives.JDBCResultSet;
 import lombok.val;
 import org.jspecify.annotations.NullMarked;
@@ -33,6 +34,24 @@ public final class CreditCardJDBCRepository extends JDBCRepository<CreditCard> i
     @Override
     public void deleteById(UUID id) {
         deleteById(id.toString());
+    }
+
+    @Override
+    public List<CreditCard> findAllByPerson(String personId) {
+        return datasource.query(
+                "SELECT " + columnList() + " FROM " + table() + " WHERE COD_PERSON = ?",
+                JDBCParameter.of(personId),
+                this::mapList
+        );
+    }
+
+    @Override
+    public List<CreditCard> findByAccountAndPerson(UUID accountId, String personId) {
+        return datasource.query(
+                "SELECT " + columnList() + " FROM " + table() + " WHERE COD_ACCOUNT = ? AND COD_PERSON = ?",
+                JDBCParameter.of(accountId.toString(), personId),
+                this::mapList
+        );
     }
 
     @Override
