@@ -1,4 +1,4 @@
-package br.cdb.feature.f000._2_infrastructure.web.response;
+package br.cdb.feature.f002._2_infrastructure.web.response;
 
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;

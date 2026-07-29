@@ -1,8 +1,8 @@
-package br.cdb.feature.f000._2_infrastructure.web;
+package br.cdb.feature.f002._2_infrastructure.web;
 
-import br.cdb.feature.f000._1_application.ClosingService;
-import br.cdb.feature.f000._2_infrastructure.web.request.ClosingRequest;
-import br.cdb.feature.f000._2_infrastructure.web.response.ClosingResponse;
+import br.cdb.feature.f002._1_application.ClosingService;
+import br.cdb.feature.f002._2_infrastructure.web.request.ClosingRequest;
+import br.cdb.feature.f002._2_infrastructure.web.response.ClosingResponse;
 import br.commons.Logger;
 import jakarta.validation.Valid;
 import jakarta.ws.rs.*;

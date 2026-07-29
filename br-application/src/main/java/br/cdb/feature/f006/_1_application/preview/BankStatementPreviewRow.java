@@ -1,7 +1,7 @@
 package br.cdb.feature.f006._1_application.preview;
 
-import br.cdb.feature.f006._0_domain.model.Transaction;
 import br.cdb.feature.f006._0_domain.RowState;
+import br.cdb.feature.f006._0_domain.model.Transaction;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 

@@ -1,10 +1,10 @@
 package br.cdb.feature.f002._2_infrastructure.web;
 
-import br.cdb.feature.f002._1_application.command.AccountCommand;
 import br.cdb.feature.f000._0_domain.DeletionStrategy;
 import br.cdb.feature.f000._1_application.Deletions;
 import br.cdb.feature.f002._1_application.AccountResponse;
 import br.cdb.feature.f002._1_application.AccountUseCase;
+import br.cdb.feature.f002._1_application.command.AccountCommand;
 import br.cdb.feature.f002._2_infrastructure.web.request.AccountRequest;
 import br.commons.Result;
 import br.commons.business.BusinessException;

@@ -1,15 +1,15 @@
 package br.cdb.feature.f005._1_application;
 
-import br.cdb.feature.f006._0_domain.model.Transaction;
 import br.cdb.core.web.HTTPRequest;
 import br.cdb.feature.f000._0_domain.DeletionOutcome;
 import br.cdb.feature.f000._0_domain.DeletionStrategy;
+import br.cdb.feature.f000._0_domain.event.AccountStreamEvents;
 import br.cdb.feature.f000._0_domain.event.CategoryDeleted;
 import br.cdb.feature.f000._0_domain.event.CategoryReassigned;
 import br.cdb.feature.f000._0_domain.event.TransactionsDeleted;
-import br.cdb.feature.f000._0_domain.event.AccountStreamEvents;
 import br.cdb.feature.f000._1_application.InternalApi;
 import br.cdb.feature.f005._0_domain.UserCategory;
+import br.cdb.feature.f006._0_domain.model.Transaction;
 import br.commons.MessageBus;
 import br.commons.Registry;
 import br.commons.Result;

@@ -1,10 +1,10 @@
 package br.cdb.feature.f000._1_application;
 
+import br.cdb.core.web.HTTPRequest;
 import br.cdb.feature.f002._0_domain.model.Account;
 import br.cdb.feature.f002._1_application.usecase.AccountUseCase;
 import br.cdb.feature.f003._0_domain.model.CreditCard;
 import br.cdb.feature.f003._1_application.usecase.CreditCardUseCase;
-import br.cdb.core.web.HTTPRequest;
 import br.commons.Registry;
 import br.commons.Result;
 import br.commons.business.BusinessError;

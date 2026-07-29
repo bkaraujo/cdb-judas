@@ -1,12 +1,5 @@
 package br.cdb.feature.f002._1_application;
 
-import br.cdb.feature.f002._0_domain.model.Account;
-import br.cdb.feature.f002._0_domain.model.Balance;
-import br.cdb.feature.f003._0_domain.model.CreditCard;
-import br.cdb.feature.f006._0_domain.model.Transaction;
-import br.cdb.feature.f002._1_application.command.AccountCommand;
-import br.cdb.feature.f003._1_application.usecase.CreditCardUseCase;
-import br.cdb.feature.f006._1_application.usecase.TransactionUseCase;
 import br.cdb.core.web.HTTPRequest;
 import br.cdb.feature.f000._0_domain.DeletionOutcome;
 import br.cdb.feature.f000._0_domain.DeletionStrategy;
@@ -17,7 +10,14 @@ import br.cdb.feature.f000._1_application.Deletions;
 import br.cdb.feature.f000._1_application.UserGuards;
 import br.cdb.feature.f002._0_domain.DeletionQueue;
 import br.cdb.feature.f002._0_domain.UserAccount;
+import br.cdb.feature.f002._0_domain.model.Account;
+import br.cdb.feature.f002._0_domain.model.Balance;
+import br.cdb.feature.f002._1_application.command.AccountCommand;
 import br.cdb.feature.f002._1_application.service.BalanceService;
+import br.cdb.feature.f003._0_domain.model.CreditCard;
+import br.cdb.feature.f003._1_application.usecase.CreditCardUseCase;
+import br.cdb.feature.f006._0_domain.model.Transaction;
+import br.cdb.feature.f006._1_application.usecase.TransactionUseCase;
 import br.commons.Logger;
 import br.commons.MessageBus;
 import br.commons.Registry;

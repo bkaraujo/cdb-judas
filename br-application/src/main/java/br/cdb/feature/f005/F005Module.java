@@ -1,14 +1,13 @@
 package br.cdb.feature.f005;
 
-import br.cdb.feature.f006._0_domain.model.Transaction;
 import br.cdb.feature.f000._0_domain.event.UserEvents;
 import br.cdb.feature.f005._0_domain.UserCategory;
 import br.cdb.feature.f005._0_domain.UserCategoryRepository;
 import br.cdb.feature.f005._2_infrastructure.persistence.UserCategoryJDBCRepository;
+import br.cdb.feature.f006._0_domain.model.Transaction;
 import br.commons.Logger;
 import br.commons.MessageBus;
 import br.commons.Registry;
-import br.commons.Result;
 import br.commons.framework.message.MessageListener;
 import br.commons.framework.message.MessageResult;
 import br.commons.framework.persistence.jdbc.DataSource;

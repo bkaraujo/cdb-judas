@@ -1,8 +1,8 @@
 package br.cdb.feature.f006._1_application;
 
-import br.cdb.feature.f006._0_domain.model.Transaction;
 import br.cdb.feature.f006._0_domain.MonetaryDocumentEntry;
 import br.cdb.feature.f006._0_domain.TransactionDraft;
+import br.cdb.feature.f006._0_domain.model.Transaction;
 import lombok.RequiredArgsConstructor;
 import lombok.val;
 import org.jspecify.annotations.NullMarked;

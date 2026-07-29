@@ -3,7 +3,7 @@ package br.cdb.feature;
 import io.quarkus.test.junit.QuarkusTest;
 import org.junit.jupiter.api.Test;
 
-import static org.hamcrest.Matchers.*;
+import static org.hamcrest.Matchers.is;
 
 @QuarkusTest
 public class F003CardResourceTest extends BaseHttpTest {

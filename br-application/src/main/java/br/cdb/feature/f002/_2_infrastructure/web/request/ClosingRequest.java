@@ -1,4 +1,4 @@
-package br.cdb.feature.f000._2_infrastructure.web.request;
+package br.cdb.feature.f002._2_infrastructure.web.request;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;

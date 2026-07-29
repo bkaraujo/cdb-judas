@@ -1,9 +1,9 @@
 package br.cdb.feature.f006._1_application.usecase;
 
 import br.cdb.context.monetary.AbstractUseCaseTest;
+import br.cdb.feature.f000._0_domain.model.CostCenter;
 import br.cdb.feature.f002._0_domain.model.Account;
 import br.cdb.feature.f002._0_domain.model.Balance;
-import br.cdb.feature.f000._0_domain.model.CostCenter;
 import br.cdb.feature.f003._0_domain.model.CreditCard;
 import br.cdb.feature.f006._0_domain.model.Transaction;
 import br.cdb.feature.f006._1_application.command.TransactionCommand;

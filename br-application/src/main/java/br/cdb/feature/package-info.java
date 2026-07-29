@@ -17,7 +17,6 @@
  * <pre>
  * feature
  * ├── f000  fatia-base — todas as demais podem depender dela, ela de nenhuma
- * │   ├── ClosingResource      GET/POST/DELETE /api/{uuid}/accounts/closing
  * │   ├── CostCenterResource   GET  /api/cost-center                          (sem namespace de usuário)
  * │   ├── LoginResource        POST /login
  * │   ├── SseResource          GET  /api/{uuid}/stream                        (Server-Sent Events)
@@ -26,6 +25,7 @@
  * │   └── SelfResource         GET/PATCH /api/me                              (nome + preferências write-through)
  * ├── f002  accounts (+ balance fundido: sem overlay próprio; cards[] embutido é projeção
  * │         somente-leitura de f003 — ver f003.CardUseCase para a mutação)
+ * │   ├── ClosingResource        GET/POST/DELETE /api/{uuid}/accounts/closing
  * │   ├── AccountResource        GET    /api/{uuid}/accounts
  * │   │                          GET    /api/{uuid}/accounts/{id}
  * │   │                          POST   /api/{uuid}/accounts

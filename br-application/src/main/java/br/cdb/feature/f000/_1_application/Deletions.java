@@ -1,9 +1,9 @@
 package br.cdb.feature.f000._1_application;
 
-import br.cdb.feature.f000._0_domain.TransactionPolicy;
 import br.cdb.core.web.error.ProblemDetail;
 import br.cdb.feature.f000._0_domain.DeletionOutcome;
 import br.cdb.feature.f000._0_domain.DeletionStrategy;
+import br.cdb.feature.f000._0_domain.TransactionPolicy;
 import br.commons.Result;
 import br.commons.business.BusinessError;
 import br.commons.business.BusinessException;

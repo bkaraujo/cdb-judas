@@ -1,18 +1,18 @@
 package br.cdb.feature.f006._1_application.preview;
 
-import br.cdb.feature.f002._0_domain.model.Account;
 import br.cdb.feature.f000._0_domain.event.TransactionImported;
 import br.cdb.feature.f000._0_domain.model.CostCenter;
-import br.cdb.feature.f006._0_domain.model.Transaction;
+import br.cdb.feature.f002._0_domain.model.Account;
 import br.cdb.feature.f002._1_application.usecase.AccountUseCase;
-import br.cdb.feature.f006._1_application.usecase.TransactionUseCase;
 import br.cdb.feature.f006._0_domain.ImportError;
 import br.cdb.feature.f006._0_domain.ImportResult;
 import br.cdb.feature.f006._0_domain.MonetaryDocumentEntry;
 import br.cdb.feature.f006._0_domain.RowState;
+import br.cdb.feature.f006._0_domain.model.Transaction;
 import br.cdb.feature.f006._1_application.CategoryGuesser;
 import br.cdb.feature.f006._1_application.GroupSignature;
 import br.cdb.feature.f006._1_application.confirm.StatementConfirmCommand;
+import br.cdb.feature.f006._1_application.usecase.TransactionUseCase;
 import br.commons.Logger;
 import br.commons.MessageBus;
 import br.commons.Registry;

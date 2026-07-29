@@ -1,6 +1,6 @@
-package br.cdb.feature.f000._1_application;
+package br.cdb.feature.f002._1_application;
 
-import br.cdb.feature.f000._0_domain.ClosingRepository;
+import br.cdb.feature.f002._0_domain.ClosingRepository;
 import br.commons.Result;
 import br.commons.business.BusinessError;
 import lombok.RequiredArgsConstructor;

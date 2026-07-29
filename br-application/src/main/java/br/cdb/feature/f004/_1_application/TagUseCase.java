@@ -1,13 +1,13 @@
 package br.cdb.feature.f004._1_application;
 
-import br.cdb.feature.f006._0_domain.model.Transaction;
 import br.cdb.core.web.HTTPRequest;
 import br.cdb.feature.f000._0_domain.DeletionOutcome;
 import br.cdb.feature.f000._0_domain.DeletionStrategy;
+import br.cdb.feature.f000._0_domain.event.AccountStreamEvents;
 import br.cdb.feature.f000._0_domain.event.TagDeleted;
 import br.cdb.feature.f000._0_domain.event.TransactionsDeleted;
-import br.cdb.feature.f000._0_domain.event.AccountStreamEvents;
 import br.cdb.feature.f004._0_domain.UserTag;
+import br.cdb.feature.f006._0_domain.model.Transaction;
 import br.commons.MessageBus;
 import br.commons.Registry;
 import br.commons.Result;

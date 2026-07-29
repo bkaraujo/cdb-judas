@@ -1,7 +1,7 @@
 package br.cdb.feature.f006._1_application.event;
 
-import br.cdb.feature.f006._0_domain.event.TransactionEvents;
 import br.cdb.feature.f002._1_application.service.BalanceService;
+import br.cdb.feature.f006._0_domain.event.TransactionEvents;
 import br.commons.Registry;
 import br.commons.framework.message.MessageListener;
 import br.commons.framework.message.MessageResult;

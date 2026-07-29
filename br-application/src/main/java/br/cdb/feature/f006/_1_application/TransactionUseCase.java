@@ -1,15 +1,14 @@
 package br.cdb.feature.f006._1_application;
 
+import br.cdb.core.web.HTTPRequest;
+import br.cdb.feature.f000._0_domain.event.AccountStreamEvents;
+import br.cdb.feature.f000._0_domain.event.TransactionsDeleted;
+import br.cdb.feature.f000._1_application.InternalApi;
+import br.cdb.feature.f000._1_application.UserGuards;
+import br.cdb.feature.f006._0_domain.UserTransaction;
 import br.cdb.feature.f006._0_domain.model.Transaction;
 import br.cdb.feature.f006._1_application.command.TransactionCommand;
 import br.cdb.feature.f006._1_application.command.TransactionScope;
-import br.cdb.core.web.HTTPRequest;
-import br.cdb.feature.f000._0_domain.event.TransactionsDeleted;
-import br.cdb.feature.f000._1_application.ClosingService;
-import br.cdb.feature.f000._1_application.UserGuards;
-import br.cdb.feature.f000._0_domain.event.AccountStreamEvents;
-import br.cdb.feature.f000._1_application.InternalApi;
-import br.cdb.feature.f006._0_domain.UserTransaction;
 import br.commons.MessageBus;
 import br.commons.Registry;
 import br.commons.Result;
@@ -22,6 +21,7 @@ import org.jspecify.annotations.Nullable;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.YearMonth;
 import java.util.List;
 import java.util.UUID;
 
@@ -46,12 +46,16 @@ public class TransactionUseCase {
     private final UserGuards guards;
     private final UserTransactionService userTransactionService;
     private final InternalApi internalApi;
-    private final ClosingService closingService;
 
     /** Corpo mínimo do endpoint interno {@code GET /categories/transfer} (f005) — zero tipo
      *  cross-slice, mesma regra dos antigos ports. */
     @NullMarked
     private record TransferCategoryDto(UUID id) {}
+
+    /** Corpo mínimo do endpoint público {@code GET /accounts/closing} (f002) — zero tipo
+     *  cross-slice, mesma regra dos antigos ports. */
+    @NullMarked
+    private record ClosingDto(@Nullable String period) {}
 
     @NullMarked
     public record TransactionView(Transaction transaction, @Nullable UserTransaction overlay) {}
@@ -99,7 +103,7 @@ public class TransactionUseCase {
         if (guards.ownsAccountAndCard(cmd.accountId(), cmd.cardId()) instanceof Result.Failure<Void, BusinessError>(var error)) {
             return Result.failure(error);
         }
-        if (closingService.validateDate(cmd.date()) instanceof Result.Failure<Void, BusinessError>(var error)) {
+        if (validateClosing(cmd.date()) instanceof Result.Failure<Void, BusinessError>(var error)) {
             return Result.failure(error);
         }
         return ucTransaction.upsert(cmd).map(t -> {
@@ -122,8 +126,7 @@ public class TransactionUseCase {
             if (guards.ownsAccount(existing.accountId()) instanceof Result.Failure<Void, BusinessError>(var error)) {
                 return Result.failure(error);
             }
-            val guard = closingService.validateDate(existing.date())
-                    .flatMap(ignored -> closingService.validateDate(cmd.date()));
+            val guard = validateClosing(existing.date(), cmd.date());
             if (guard instanceof Result.Failure<Void, BusinessError>(var error)) return Result.failure(error);
             previous = existing.accountId();
         }
@@ -161,7 +164,7 @@ public class TransactionUseCase {
             if (guards.ownsAccount(existing.accountId()) instanceof Result.Failure<Void, BusinessError>(var error)) {
                 return Result.failure(error);
             }
-            if (closingService.validateDate(existing.date()) instanceof Result.Failure<Void, BusinessError>(var error)) {
+            if (validateClosing(existing.date()) instanceof Result.Failure<Void, BusinessError>(var error)) {
                 return Result.failure(error);
             }
             accountId = existing.accountId();
@@ -179,7 +182,7 @@ public class TransactionUseCase {
         if (guards.ownsAccounts(fromAccountId, toAccountId) instanceof Result.Failure<Void, BusinessError>(var error)) {
             return Result.failure(error);
         }
-        if (closingService.validateDate(date) instanceof Result.Failure<Void, BusinessError>(var error)) {
+        if (validateClosing(date) instanceof Result.Failure<Void, BusinessError>(var error)) {
             return Result.failure(error);
         }
         // PERSON_TRANSACTION.COD_CATEGORY é NOT NULL. Cada perna recebe a categoria de sistema
@@ -250,6 +253,24 @@ public class TransactionUseCase {
      *  {@code InternalApi} (endpoint público de f005). */
     private UUID transferCategoryId(Transaction.Type nature) {
         return internalApi.get("/categories/transfer?nature=" + nature.name(), TransferCategoryDto.class).id();
+    }
+
+    /** Guarda de período fechado — leitura cross-slice síncrona via {@code InternalApi} (endpoint
+     *  público de f002). Busca o fechamento uma vez e valida todas as datas passadas localmente
+     *  (ex.: {@code updateTransaction} troca de conta e checa data antiga + nova), evitando um
+     *  round-trip por data. */
+    private Result<Void, BusinessError> validateClosing(LocalDate... dates) {
+        val period = internalApi.get("/accounts/closing", ClosingDto.class).period();
+        if (period == null) return Result.success();
+
+        val closing = YearMonth.parse(period);
+        for (val date : dates) {
+            if (!YearMonth.from(date).isAfter(closing)) {
+                return Result.failure(new BusinessError.BusinessRule(
+                        "Período fechado. Lançamentos até " + period + " não podem ser alterados."));
+            }
+        }
+        return Result.success();
     }
 
     private static UUID transferCategoryFor(Transaction leg, UUID expenseCategoryId, UUID incomeCategoryId) {

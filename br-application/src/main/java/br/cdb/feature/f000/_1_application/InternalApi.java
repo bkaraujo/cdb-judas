@@ -2,6 +2,7 @@ package br.cdb.feature.f000._1_application;
 
 import br.cdb.core.security.AccessTokenStore;
 import br.cdb.core.web.HTTPRequest;
+import br.commons.tools.Threads;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.inject.Inject;
 import jakarta.inject.Singleton;
@@ -59,7 +60,7 @@ public class InternalApi {
         } catch (IOException e) {
             throw new IllegalStateException("Internal call GET " + path + " failed", e);
         } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
+            Threads.interrupt();
             throw new IllegalStateException("Internal call GET " + path + " interrupted", e);
         }
     }

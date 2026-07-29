@@ -1,7 +1,7 @@
 package br.cdb.feature.f001._0_domain;
 
-import br.cdb.feature.f000._0_domain.model.Person;
 import br.cdb.core.security.User;
+import br.cdb.feature.f000._0_domain.model.Person;
 import org.jspecify.annotations.NullMarked;
 
 /**

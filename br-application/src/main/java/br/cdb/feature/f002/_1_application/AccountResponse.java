@@ -1,9 +1,9 @@
 package br.cdb.feature.f002._1_application;
 
+import br.cdb.feature.f002._0_domain.UserAccount;
 import br.cdb.feature.f002._0_domain.model.Account;
 import br.cdb.feature.f003._0_domain.model.CreditCard;
 import br.cdb.feature.f006._0_domain.model.Transaction;
-import br.cdb.feature.f002._0_domain.UserAccount;
 import br.commons.tools.Strings;
 import lombok.val;
 import org.jspecify.annotations.NullMarked;

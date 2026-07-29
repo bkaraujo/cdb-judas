@@ -1,12 +1,12 @@
 package br.cdb.feature.f999._1_application;
 
-import br.cdb.feature.f002._1_application.usecase.AccountUseCase;
-import br.cdb.feature.f003._1_application.usecase.CreditCardUseCase;
-import br.cdb.feature.f006._1_application.usecase.TransactionUseCase;
 import br.cdb.feature.f000._0_domain.SSE;
 import br.cdb.feature.f000._0_domain.event.AccountStreamEvents;
 import br.cdb.feature.f002._1_application.AccountResponse;
 import br.cdb.feature.f002._1_application.UserAccountService;
+import br.cdb.feature.f002._1_application.usecase.AccountUseCase;
+import br.cdb.feature.f003._1_application.usecase.CreditCardUseCase;
+import br.cdb.feature.f006._1_application.usecase.TransactionUseCase;
 import br.commons.MessageBus;
 import br.commons.Registry;
 import br.commons.Result;
