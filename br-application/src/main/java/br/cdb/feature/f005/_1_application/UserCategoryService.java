@@ -23,14 +23,29 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class UserCategoryService {
 
-    /** Macro e subcategoria de sistema que classificam as duas pernas de uma transferência. */
-    private static final String TRANSFER_MACRO = "9. Outros";
-    private static final String TRANSFER_CATEGORY = "Transferência";
+    /**
+     * Categoria de sistema global "Transferência" (uma por natureza), IDs fixos semeados em
+     * bancos de dev pré-existentes por {@code ContextMergeMigration.seedSystemTransferCategories}
+     * sob a pessoa reservada {@link #SYSTEM_PERSON_ID}; num banco fresh/teste (onde a migração é
+     * no-op) {@link #findOrCreateTransferCategory} semeia sob os mesmos IDs no primeiro uso. Nunca
+     * mais por-pessoa — evita recriar "Transferência" a cada transferência (era o bug: cada chamada
+     * gerava sua própria cópia por não enxergar a global, que pertence a outra pessoa).
+     */
+    private static final UUID SYSTEM_PERSON_ID = UUID.fromString("f9990000-0000-0000-0000-000000000001");
+    private static final UUID TRANSFER_CATEGORY_EXPENSE_ID = UUID.fromString("f9990000-0000-0000-0000-000000000002");
+    private static final UUID TRANSFER_CATEGORY_INCOME_ID = UUID.fromString("f9990000-0000-0000-0000-000000000003");
+    private static final String TRANSFER_CATEGORY_NAME = "Transferência";
 
     private final UserCategoryRepository repo;
 
+    /** Categorias da pessoa + as 2 globais de transferência (pertencem a {@link #SYSTEM_PERSON_ID},
+     *  por isso não vêm de {@code findAllByPerson(personId)} — sem elas a tela de categorias e a
+     *  resolução de nome de qualquer perna de transferência não enxergam a categoria do sistema). */
     public List<UserCategory> findAll(UUID personId) {
-        return repo.findAllByPerson(personId);
+        val categories = new ArrayList<>(repo.findAllByPerson(personId));
+        repo.findById(TRANSFER_CATEGORY_EXPENSE_ID).ifPresent(categories::add);
+        repo.findById(TRANSFER_CATEGORY_INCOME_ID).ifPresent(categories::add);
+        return categories;
     }
 
     public Result<UserCategory, BusinessError> findById(UUID id) {
@@ -102,29 +117,18 @@ public class UserCategoryService {
     }
 
     /**
-     * Categoria de sistema "9. Outros / Transferência" da natureza pedida (uma para EXPENSE, outra para
-     * INCOME), usada por cada perna de uma transferência. Cria a macro "9. Outros" e a subcategoria
-     * "Transferência" (marcada como sistema, não excluível) se ainda não existirem.
+     * Categoria de sistema global "Transferência" da natureza pedida (uma para EXPENSE, outra para
+     * INCOME), compartilhada por todas as pessoas — usada por cada perna de uma transferência.
+     * {@code personId} do chamador não influencia o resultado; a autocura sob {@link #SYSTEM_PERSON_ID}
+     * só é exercitada em banco fresh/teste, onde {@code ContextMergeMigration} não roda.
      */
-    public UserCategory findOrCreateTransferCategory(UUID personId, Transaction.Type nature) {
-        val all = repo.findAllByPerson(personId);
-        return all.stream()
-                .filter(c -> TRANSFER_CATEGORY.equalsIgnoreCase(c.name()) && c.nature() == nature && c.parentId() != null)
-                .filter(c -> all.stream().anyMatch(p -> p.id().equals(c.parentId()) && TRANSFER_MACRO.equalsIgnoreCase(p.name())))
-                .findFirst()
-                .orElseGet(() -> {
-                    val macro = all.stream()
-                            .filter(c -> TRANSFER_MACRO.equalsIgnoreCase(c.name()) && c.nature() == nature && c.parentId() == null)
-                            .findFirst()
-                            .orElseGet(() -> {
-                                val m = repo.save(new UserCategory(UUID.randomUUID(), personId, nature, TRANSFER_MACRO, null));
-                                MessageBus.submit(new CategoryEvents.Created(m));
-                                return m;
-                            });
-                    val created = repo.save(new UserCategory(UUID.randomUUID(), personId, nature, TRANSFER_CATEGORY, macro.id(), true));
-                    MessageBus.submit(new CategoryEvents.Created(created));
-                    return created;
-                });
+    public UserCategory findOrCreateTransferCategory(Transaction.Type nature) {
+        val id = nature == Transaction.Type.EXPENSE ? TRANSFER_CATEGORY_EXPENSE_ID : TRANSFER_CATEGORY_INCOME_ID;
+        return repo.findById(id).orElseGet(() -> {
+            val created = repo.save(new UserCategory(id, SYSTEM_PERSON_ID, nature, TRANSFER_CATEGORY_NAME, null, true));
+            MessageBus.submit(new CategoryEvents.Created(created));
+            return created;
+        });
     }
 
     /** Ids da categoria + toda a subárvore (pré-ordem). Falha se {@code personId} não existe ou é de sistema. */

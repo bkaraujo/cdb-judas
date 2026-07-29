@@ -51,9 +51,11 @@ public class CategoryUseCase {
     }
 
     /** Categoria de sistema de transferência da natureza pedida — endpoint interno consumido via
-     *  {@code InternalApi} por {@code f006.TransactionUseCase} (nunca chamado pelo frontend). */
+     *  {@code InternalApi} por {@code f006.TransactionUseCase} (nunca chamado pelo frontend). Global
+     *  (ver {@link UserCategoryService#findOrCreateTransferCategory}) — {@code personId} não influencia
+     *  o resultado, só chega aqui pela simetria de rota {@code /api/{uuid}/categories/transfer}. */
     public UserCategory transferCategory(UUID personId, Transaction.Type nature) {
-        return userCategoryService.findOrCreateTransferCategory(personId, nature);
+        return userCategoryService.findOrCreateTransferCategory(nature);
     }
 
     public Result<UserCategory, BusinessError> createCategory(UUID personId, String name, Transaction.Type nature, @Nullable UUID parentId) {

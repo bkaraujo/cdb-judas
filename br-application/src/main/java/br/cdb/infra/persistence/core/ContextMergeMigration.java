@@ -178,11 +178,10 @@ public final class ContextMergeMigration {
      * A categoria de transferência deixa de ser por pessoa: cria o {@code F000_PERSON} SYSTEM e uma
      * categoria raiz global por natureza (EXPENSE/INCOME), depois reatribui todo vínculo em
      * {@code F005_TRANSACTION_CATEGORY} que apontava para a antiga categoria "Transferência" por-pessoa
-     * (reconhecida pela mesma forma que {@code UserCategoryService.findOrCreateTransferCategory} usa:
-     * {@code FLG_SYSTEM='Y'}, nome "Transferência", pai raiz "9. Outros") para a global equivalente, e
-     * remove a cópia por-pessoa. Categorias futuras continuam sendo criadas por-pessoa até uma fase
-     * posterior religar {@code findOrCreateTransferCategory} às globais — esta migração só limpa o
-     * histórico existente.
+     * (reconhecida pela forma pré-fix: {@code FLG_SYSTEM='Y'}, nome "Transferência", pai raiz
+     * "9. Outros") para a global equivalente, e remove a cópia por-pessoa. Esta migração só limpa o
+     * histórico existente — {@code UserCategoryService.findOrCreateTransferCategory} já lê/semeia
+     * direto sob estes IDs fixos, sem depender dela para bancos fresh/teste.
      */
     private static void seedSystemTransferCategories(DataSource ds) {
         val now = Timestamp.valueOf(Time.now());
