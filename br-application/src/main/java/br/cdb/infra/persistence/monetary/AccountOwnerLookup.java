@@ -1,5 +1,7 @@
 package br.cdb.infra.persistence.monetary;
 
+import br.cdb.feature.f003._2_infrastructure.persistence.CreditCardJDBCRepository;
+import br.cdb.feature.f006._2_infrastructure.persistence.TransactionJDBCRepository;
 import br.commons.framework.persistence.jdbc.DataSource;
 import br.commons.framework.persistence.jdbc.primitives.JDBCParameter;
 import lombok.val;
@@ -16,12 +18,12 @@ import java.util.UUID;
  * {@code personId} da requisição (os use cases do contexto não o conhecem).
  */
 @NullMarked
-abstract class AccountOwnerLookup {
+public abstract class AccountOwnerLookup {
 
     private AccountOwnerLookup() {}
 
     @Nullable
-    static String find(DataSource datasource, UUID accountId) {
+    public static String find(DataSource datasource, UUID accountId) {
         val results = datasource.query(
                 "SELECT COD_PERSON FROM F002_ACCOUNT WHERE ID = ?",
                 JDBCParameter.of(accountId.toString()),

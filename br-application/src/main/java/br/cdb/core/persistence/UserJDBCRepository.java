@@ -1,7 +1,6 @@
-package br.cdb.infra.persistence.security;
+package br.cdb.core.persistence;
 
 import br.cdb.core.security.User;
-import br.cdb.core.security.UserRepository;
 import br.commons.Registry;
 import br.commons.Result;
 import br.commons.chrono.Time;

@@ -9,7 +9,6 @@ import br.cdb.feature.f000._0_domain.event.TransactionsDeleted;
 import br.cdb.feature.f000._1_application.Deletions;
 import br.cdb.feature.f000._1_application.UserGuards;
 import br.cdb.feature.f002._0_domain.DeletionQueue;
-import br.cdb.feature.f002._0_domain.UserAccount;
 import br.cdb.feature.f002._0_domain.model.Account;
 import br.cdb.feature.f002._0_domain.model.Balance;
 import br.cdb.feature.f002._1_application.command.AccountCommand;
@@ -45,12 +44,14 @@ import java.util.UUID;
  *
  * <p>{@code deleteAccount} não reatribui nada imperativamente no MOVE: reassign de conta em
  * transação é feito pela própria engine ({@code AccountUseCase.deleteMove}, contexto monetário) ao
- * mover as transações. O overlay {@code PERSON_ACCOUNT} e o das transações apagadas (não-MOVE) somem
- * via evento pós-delete ({@link AccountDeleted}/{@link TransactionsDeleted}) — sem FK entre tabelas
- * de dados, o contexto pode apagar a raiz primeiro. Cada evento também vira uma linha em
- * {@code F999_DELETION_QUEUE} (via {@link DeletionQueue}) — rede de segurança pro job de f999
- * reprocessar se o listener best-effort falhar ou o processo cair no meio da cascata. No MOVE, a
- * conta de destino é marcada suja ({@link BalanceService#markDirty}) — o próprio job recomputa.
+ * mover as transações. A conta é uma linha única (dono+cor inclusos) apagada pela própria engine
+ * antes do evento pós-delete ({@link AccountDeleted}/{@link TransactionsDeleted}) ser publicado —
+ * sem FK entre tabelas de dados, o contexto pode apagar a raiz primeiro; o evento só resta pros
+ * listeners de outras fatias (overlay de tags/categoria das transações apagadas). Cada evento
+ * também vira uma linha em {@code F999_DELETION_QUEUE} (via {@link DeletionQueue}) — rede de
+ * segurança pro job de f999 reprocessar se o listener best-effort falhar ou o processo cair no meio
+ * da cascata. No MOVE, a conta de destino é marcada suja ({@link BalanceService#markDirty}) — o
+ * próprio job recomputa.
  */
 @NullMarked
 @Singleton
@@ -63,16 +64,14 @@ public class AccountUseCase {
     private final TransactionUseCase ucTransaction = Registry.tryGet(TransactionUseCase.class);
 
     private final UserGuards guards;
-    private final UserAccountService userAccountService;
     private final DeletionQueue deletionQueue;
     private final BalanceService balanceService = Registry.tryGet(BalanceService.class);
 
-    /** Conta do contexto + overlay do usuário + cartões; {@code transactions} é a lista completa
-     *  (o saldo corrente do DTO é derivado dela). */
+    /** Conta (dono+cor inclusos) + cartões; {@code transactions} é a lista completa (o saldo
+     *  corrente do DTO é derivado dela). */
     @NullMarked
     public record AccountView(
             Account account,
-            @Nullable UserAccount overlay,
             List<CreditCard> cards,
             List<Transaction> transactions
     ) {}
@@ -81,31 +80,18 @@ public class AccountUseCase {
 
     public Result<List<AccountView>, BusinessError> accounts() {
         val personId = HTTPRequest.personId();
-
-        val views = new ArrayList<AccountView>();
-        for (val overlay : userAccountService.findByPerson(personId)) {
-            val account = ucAccount.findAccount(overlay.accountId(), personId);
-            if (account.isFailure()) {
-                Logger.warn("overlay %s aponta para conta inexistente %s", overlay.personId(), overlay.accountId());
-                continue;
-            }
-
-            views.add(new AccountView(
-                    account.get(),
-                    overlay,
-                    ucCreditCard.list(overlay.accountId(), personId).getOrElse(List.of()),
-                    transactionsOf(overlay.accountId())
-            ));
-        }
-
-        return Result.success(views);
+        return ucAccount.listAccounts(personId).map(accounts -> accounts.stream()
+                .map(account -> new AccountView(
+                        account,
+                        ucCreditCard.list(account.id(), personId).getOrElse(List.of()),
+                        transactionsOf(account.id())
+                ))
+                .toList());
     }
 
     public Result<AccountView, BusinessError> account(UUID accountId) {
         return guards.ownsAccount(accountId).flatMap(ignored -> {
             val personId = HTTPRequest.personId();
-            val overlay = userAccountService.find(personId, accountId);
-
             val account = ucAccount.findAccount(accountId, personId);
             if (account.isFailure()) {
                 Logger.warn("Conta %s não pertence ao usuário", accountId.toString());
@@ -114,7 +100,6 @@ public class AccountUseCase {
 
             return Result.success(new AccountView(
                     account.get(),
-                    overlay,
                     ucCreditCard.list(accountId, personId).getOrElse(List.of()),
                     transactionsOf(accountId)
             ));
@@ -123,22 +108,18 @@ public class AccountUseCase {
 
     public Result<AccountView, BusinessError> createAccount(AccountCommand.Create cmd, String color) {
         val personId = HTTPRequest.personId();
-        return ucAccount.upsert(cmd).map(account -> {
-            val overlay = new UserAccount(personId, account.id(), color);
-            userAccountService.save(overlay);
-            MessageBus.submit(new AccountStreamEvents.Created(overlay.accountId(), overlay.personId()));
-            return new AccountView(account, overlay, List.of(), List.of());
+        return ucAccount.upsert(cmd, personId, color).map(account -> {
+            MessageBus.submit(new AccountStreamEvents.Created(account.id(), personId));
+            return new AccountView(account, List.of(), List.of());
         });
     }
 
     public Result<AccountView, BusinessError> updateAccount(AccountCommand.Update cmd, String color) {
         return guards.ownsAccount(cmd.id()).flatMap(ignored -> {
             val personId = HTTPRequest.personId();
-            return ucAccount.upsert(cmd).map(account -> {
-                val overlay = new UserAccount(personId, account.id(), color);
-                userAccountService.save(overlay);
-                MessageBus.submit(new AccountStreamEvents.Updated(overlay.accountId(), overlay.personId()));
-                return new AccountView(account, overlay, cardsOf(account.id(), personId), List.of());
+            return ucAccount.upsert(cmd, personId, color).map(account -> {
+                MessageBus.submit(new AccountStreamEvents.Updated(account.id(), personId));
+                return new AccountView(account, cardsOf(account.id(), personId), List.of());
             });
         });
     }
@@ -146,9 +127,9 @@ public class AccountUseCase {
     /**
      * MOVE tem o alvo validado aqui primeiro (fronteira da feature) para nunca reatribuir transações
      * para uma conta inválida — a engine (contexto monetário) faz o re-key de fato ao apagar.
-     * Sem FK forçando ordem: o contexto apaga a raiz e só então publica-se {@link AccountDeleted}
-     * (todas as estratégias) — {@code AccountDeletedListener} (f002) purga {@code PERSON_ACCOUNT} —
-     * e, fora do MOVE, {@link TransactionsDeleted} (overlay/tag das transações apagadas).
+     * Sem FK forçando ordem: o contexto apaga a raiz (linha única, dono+cor inclusos) e só então
+     * publica-se {@link AccountDeleted} (todas as estratégias) e, fora do MOVE,
+     * {@link TransactionsDeleted} (overlay/tag das transações apagadas).
      */
     public Result<DeletionOutcome, BusinessError> deleteAccount(
             UUID personId, UUID id, @Nullable DeletionStrategy strategy, @Nullable UUID targetId) {
@@ -215,8 +196,8 @@ public class AccountUseCase {
     public Result<List<Balance>, BusinessError> balances(YearMonth period) {
         val personId = HTTPRequest.personId();
         val result = new ArrayList<Balance>();
-        for (val overlay : userAccountService.findByPerson(personId)) {
-            if (ucAccount.getMonthlyBalance(overlay.accountId(), period) instanceof Result.Success(var balance)) {
+        for (val account : ucAccount.listAccounts(personId).getOrElse(List.of())) {
+            if (ucAccount.getMonthlyBalance(account.id(), period) instanceof Result.Success(var balance)) {
                 result.add(balance);
             }
         }

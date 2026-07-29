@@ -13,6 +13,8 @@ public record Account(
         String name,
         Type type,
         boolean active,
+        @Nullable String personId,
+        @Nullable String color,
         @Nullable BigDecimal creditLimit,
         @Nullable BigDecimal overdraftLimit,
         @Nullable Integer closingDay,
@@ -25,7 +27,7 @@ public record Account(
     }
 
     public Account(UUID id, String name, Type type, boolean active) {
-        this(id, name, type, active, null, null, null, null, null, null);
+        this(id, name, type, active, null, null, null, null, null, null, null, null);
     }
 
     public enum Type {

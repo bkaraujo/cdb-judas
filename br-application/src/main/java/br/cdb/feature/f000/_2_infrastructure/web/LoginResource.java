@@ -1,7 +1,7 @@
 package br.cdb.feature.f000._2_infrastructure.web;
 
+import br.cdb.core.persistence.UserRepository;
 import br.cdb.core.security.AccessTokenStore;
-import br.cdb.core.security.UserRepository;
 import br.cdb.feature.f000._2_infrastructure.web.request.LoginRequest;
 import br.commons.Logger;
 import io.quarkus.elytron.security.common.BcryptUtil;

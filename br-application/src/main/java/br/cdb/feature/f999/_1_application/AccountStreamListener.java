@@ -3,7 +3,6 @@ package br.cdb.feature.f999._1_application;
 import br.cdb.feature.f000._0_domain.SSE;
 import br.cdb.feature.f000._0_domain.event.AccountStreamEvents;
 import br.cdb.feature.f002._1_application.AccountResponse;
-import br.cdb.feature.f002._1_application.UserAccountService;
 import br.cdb.feature.f002._1_application.usecase.AccountUseCase;
 import br.cdb.feature.f003._1_application.usecase.CreditCardUseCase;
 import br.cdb.feature.f006._1_application.usecase.TransactionUseCase;
@@ -25,7 +24,7 @@ import java.util.UUID;
 
 /**
  * Único dono do dispatch SSE de conta — reage ao vocabulário {@link AccountStreamEvents}, publicado
- * pelas fatias (f002/f004/f005/f006) só depois da mutação já persistida (contexto + overlay).
+ * pelas fatias (f002/f004/f005/f006) só depois da mutação já persistida.
  * {@code personId} vem sempre do evento, nunca de {@code HTTPRequest.personId()} — best-effort, nunca
  * propaga falha para quem publicou.
  */
@@ -41,7 +40,6 @@ public class AccountStreamListener {
     private final TransactionUseCase ucTransaction = Registry.tryGet(TransactionUseCase.class);
 
     private final SSE sse;
-    private final UserAccountService userAccountService;
 
     void subscribe(@Observes StartupEvent event) {
         MessageBus.subscribe(this);
@@ -76,10 +74,9 @@ public class AccountStreamListener {
         try {
             switch (ucAccount.findAccount(accountId, personId)) {
                 case Result.Success(var account) -> {
-                    val ua = userAccountService.find(personId, accountId);
                     val cards = ucCreditCard.list(accountId, personId).getOrElse(List.of());
                     val transactions = ucTransaction.transactions(personId).getOrElse(List.of());
-                    val dto = AccountResponse.from(account, ua, cards, transactions);
+                    val dto = AccountResponse.from(account, cards, transactions);
                     sse.dispatch(personId, SSE.Event.UPSERT, Map.of("type", TYPE, "payload", dto));
                 }
                 case Result.Failure(var ignored) -> { }

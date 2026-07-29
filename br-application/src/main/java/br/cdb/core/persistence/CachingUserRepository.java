@@ -1,7 +1,7 @@
-package br.cdb.infra.persistence;
+package br.cdb.core.persistence;
 
 import br.cdb.core.security.User;
-import br.cdb.core.security.UserRepository;
+import br.cdb.feature.f000._2_infrastructure.persistence.CachingPersonRepository;
 import lombok.val;
 import org.jspecify.annotations.NullMarked;
 

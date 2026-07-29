@@ -29,6 +29,9 @@ import static org.junit.jupiter.api.Assertions.*;
  */
 class AccountUseCaseTest extends AbstractUseCaseTest {
 
+    private static final String PERSON_ID = UUID.randomUUID().toString();
+    private static final String COLOR = "#000000";
+
     private AccountUseCase useCase;
 
     @BeforeEach
@@ -58,7 +61,7 @@ class AccountUseCaseTest extends AbstractUseCaseTest {
     @Test
     @DisplayName("cria CHECKING normalmente")
     void createsCheckingAccount() {
-        val r = useCase.upsert(checkingCmd());
+        val r = useCase.upsert(checkingCmd(), PERSON_ID, COLOR);
         assertTrue(r.isSuccess());
         assertEquals(1, accountRepository().findAll().size());
     }
@@ -67,7 +70,7 @@ class AccountUseCaseTest extends AbstractUseCaseTest {
     @DisplayName("tipo desconhecido → Validation")
     void rejectsUnknownAccountType() {
         val cmd = new AccountCommand.Create("X", "SAVINGS", true, null, null, null, null);
-        val r = useCase.upsert(cmd);
+        val r = useCase.upsert(cmd, PERSON_ID, COLOR);
         assertTrue(r.isFailure());
         assertInstanceOf(BusinessError.Validation.class, ((Result.Failure<Account, BusinessError>) r).error());
     }
@@ -76,14 +79,14 @@ class AccountUseCaseTest extends AbstractUseCaseTest {
     @DisplayName("limite/ciclo de fatura sobrevivem a create e update, e all-null limpa")
     void limitFieldsRoundTripThroughCreateAndUpdate() {
         val withLimit = new AccountCommand.Create("Banco", "CHECKING", true, new BigDecimal("1000.00"), new BigDecimal("200.00"), 5, 10);
-        val created = ((Result.Success<Account, BusinessError>) useCase.upsert(withLimit)).value();
+        val created = ((Result.Success<Account, BusinessError>) useCase.upsert(withLimit, PERSON_ID, COLOR)).value();
         assertEquals(0, new BigDecimal("1000.00").compareTo(created.creditLimit()));
         assertEquals(0, new BigDecimal("200.00").compareTo(created.overdraftLimit()));
         assertEquals(5, created.closingDay());
         assertEquals(10, created.dueDay());
 
         val cleared = new AccountCommand.Update(created.id(), "Banco", "CHECKING", true, null, null, null, null);
-        val updated = ((Result.Success<Account, BusinessError>) useCase.upsert(cleared)).value();
+        val updated = ((Result.Success<Account, BusinessError>) useCase.upsert(cleared, PERSON_ID, COLOR)).value();
         assertNull(updated.creditLimit());
         assertNull(updated.overdraftLimit());
         assertNull(updated.closingDay());

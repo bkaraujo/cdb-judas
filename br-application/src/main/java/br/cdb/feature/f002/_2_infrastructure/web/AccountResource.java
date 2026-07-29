@@ -79,7 +79,7 @@ public class AccountResource {
     }
 
     private static AccountResponse toDto(AccountUseCase.AccountView view) {
-        return AccountResponse.from(view.account(), view.overlay(), view.cards(), view.transactions());
+        return AccountResponse.from(view.account(), view.cards(), view.transactions());
     }
 
     private static AccountCommand.Create toCreateCommand(AccountRequest req) {

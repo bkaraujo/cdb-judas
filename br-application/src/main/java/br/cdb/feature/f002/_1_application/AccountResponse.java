@@ -1,6 +1,5 @@
 package br.cdb.feature.f002._1_application;
 
-import br.cdb.feature.f002._0_domain.UserAccount;
 import br.cdb.feature.f002._0_domain.model.Account;
 import br.cdb.feature.f003._0_domain.model.CreditCard;
 import br.cdb.feature.f006._0_domain.model.Transaction;
@@ -38,17 +37,16 @@ public record AccountResponse(
     }
 
     /** Saldo atual = soma de todas as transações da conta (sem conceito de saldo de abertura). */
-    public static AccountResponse from(Account monetary, @Nullable UserAccount ua,
-                                       List<CreditCard> creditCards, List<Transaction> transactions) {
+    public static AccountResponse from(Account account, List<CreditCard> creditCards, List<Transaction> transactions) {
         var sum = BigDecimal.ZERO;
         for (val t : transactions) {
-            if (monetary.id().equals(t.accountId())) sum = sum.add(BigDecimal.valueOf(t.signal()).multiply(t.amount()));
+            if (account.id().equals(t.accountId())) sum = sum.add(BigDecimal.valueOf(t.signal()).multiply(t.amount()));
         }
-        val type = Strings.upper(monetary.type().name());
+        val type = Strings.upper(account.type().name());
         val cardDtos = creditCards.stream().map(Card::from).toList();
-        val color = ua != null ? ua.color() : "#000000";
-        return new AccountResponse(monetary.id(), monetary.name(), type, color, monetary.active(),
-                monetary.creditLimit(), monetary.overdraftLimit(), monetary.closingDay(), monetary.dueDay(),
+        val color = account.color() != null ? account.color() : "#000000";
+        return new AccountResponse(account.id(), account.name(), type, color, account.active(),
+                account.creditLimit(), account.overdraftLimit(), account.closingDay(), account.dueDay(),
                 sum, cardDtos);
     }
 }

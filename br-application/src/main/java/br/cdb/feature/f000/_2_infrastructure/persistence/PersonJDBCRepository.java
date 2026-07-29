@@ -1,4 +1,4 @@
-package br.cdb.infra.persistence.person;
+package br.cdb.feature.f000._2_infrastructure.persistence;
 
 import br.cdb.feature.f000._0_domain.model.Person;
 import br.cdb.feature.f000._0_domain.repository.PersonRepository;

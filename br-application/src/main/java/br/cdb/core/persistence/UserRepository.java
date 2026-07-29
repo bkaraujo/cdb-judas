@@ -1,5 +1,6 @@
-package br.cdb.core.security;
+package br.cdb.core.persistence;
 
+import br.cdb.core.security.User;
 import org.jspecify.annotations.NullMarked;
 
 import java.util.Optional;

@@ -1,4 +1,4 @@
-package br.cdb.infra.persistence;
+package br.cdb.core.persistence;
 
 import org.jspecify.annotations.NullMarked;
 

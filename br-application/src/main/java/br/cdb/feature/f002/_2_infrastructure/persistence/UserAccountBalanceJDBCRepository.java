@@ -1,4 +1,4 @@
-package br.cdb.infra.persistence.features;
+package br.cdb.feature.f002._2_infrastructure.persistence;
 
 import br.cdb.feature.f002._0_domain.model.Balance;
 import br.cdb.feature.f002._0_domain.repository.AccountRepository;

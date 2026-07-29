@@ -52,15 +52,15 @@ public class AccountUseCase {
                 .map(ignored -> balanceService.findByAccountAndYear(accountId, year));
     }
 
-    public Result<Account, BusinessError> upsert(AccountCommand.Upsert cmd) {
+    public Result<Account, BusinessError> upsert(AccountCommand.Upsert cmd, String personId, String color) {
         return switch (cmd) {
             case AccountCommand.Create(var name, var type, var active, var creditLimit, var overdraftLimit, var closingDay, var dueDay) ->
-                    parse(UUID.randomUUID(), name, type, active, creditLimit, overdraftLimit, closingDay, dueDay)
+                    parse(UUID.randomUUID(), name, type, active, personId, color, creditLimit, overdraftLimit, closingDay, dueDay)
                             .map(service::save)
                             .ifSuccess(account -> MessageBus.submit(new AccountEvents.Created(account)));
             case AccountCommand.Update(var id, var name, var type, var active, var creditLimit, var overdraftLimit, var closingDay, var dueDay) ->
                     service.findById(id)
-                            .flatMap(existing -> parse(id, name, type, active, creditLimit, overdraftLimit, closingDay, dueDay))
+                            .flatMap(existing -> parse(id, name, type, active, personId, color, creditLimit, overdraftLimit, closingDay, dueDay))
                             .map(service::save)
                             .ifSuccess(account -> MessageBus.submit(new AccountEvents.Updated(account)));
         };
@@ -121,12 +121,13 @@ public class AccountUseCase {
     }
 
     private Result<Account, BusinessError> parse(UUID accountId, String name, String type, boolean active,
+                                                  String personId, String color,
                                                   @Nullable BigDecimal creditLimit, @Nullable BigDecimal overdraftLimit,
                                                   @Nullable Integer closingDay, @Nullable Integer dueDay) {
         val typeName = Strings.upper(type);
         val valid = Arrays.stream(Account.Type.values()).anyMatch(t -> t.name().equals(typeName));
         if (!valid) return Result.failure(new BusinessError.Validation("Unknown account type: " + type));
-        return Result.success(new Account(accountId, name, Account.Type.valueOf(typeName), active,
+        return Result.success(new Account(accountId, name, Account.Type.valueOf(typeName), active, personId, color,
                 creditLimit, overdraftLimit, closingDay, dueDay, null, null));
     }
 }

@@ -17,9 +17,9 @@ import java.util.*;
 
 /**
  * Adaptador JDBC (H2) da porta {@link AccountRepository}. Mapeia {@link Account} para
- * {@code F002_ACCOUNT} (metadados globais: nome, tipo, ativo, limite de crédito/cheque especial e
- * ciclo de fatura). Dono ({@code COD_PERSON}) e cor ({@code TXT_COLOR}) são geridos pela feature
- * ({@code UserAccountJDBCRepository}) sobre a mesma linha — este adaptador nunca os toca.
+ * {@code F002_ACCOUNT} por inteiro — dono ({@code COD_PERSON}) e cor ({@code TXT_COLOR}) incluídos,
+ * mesma linha dos metadados globais (nome, tipo, ativo, limite de crédito/cheque especial e ciclo
+ * de fatura).
  */
 @NullMarked
 public final class AccountJDBCRepository extends JDBCRepository<Account> implements AccountRepository {
@@ -72,8 +72,10 @@ public final class AccountJDBCRepository extends JDBCRepository<Account> impleme
 
         val values = new LinkedHashMap<String, @Nullable Object>();
         values.put("ID", entity.id().toString());
+        values.put("COD_PERSON", entity.personId());
         values.put("TXT_NAME", entity.name());
         values.put("TXT_TYPE", AccountTypeMapper.toId(entity.type()));
+        values.put("TXT_COLOR", entity.color());
         values.put("DEC_CREDIT_LIMIT", entity.creditLimit());
         values.put("DEC_OVERDRAFT_LIMIT", entity.overdraftLimit());
         values.put("NUM_CLOSING_DAY", entity.closingDay());
@@ -91,6 +93,8 @@ public final class AccountJDBCRepository extends JDBCRepository<Account> impleme
         val type = AccountTypeMapper.fromId(rs.getString("TXT_TYPE").get());
         val active = "Y".equals(rs.getString("FLG_ACTIVE").get());
 
+        final @Nullable String personId = rs.getString("COD_PERSON").get();
+        final @Nullable String color = rs.getString("TXT_COLOR").get();
         final @Nullable BigDecimal creditLimit = rs.getBigDecimal("DEC_CREDIT_LIMIT").get();
         final @Nullable BigDecimal overdraftLimit = rs.getBigDecimal("DEC_OVERDRAFT_LIMIT").get();
         final @Nullable Integer closingDay = rs.getObject("NUM_CLOSING_DAY", Integer.class).get();
@@ -99,6 +103,6 @@ public final class AccountJDBCRepository extends JDBCRepository<Account> impleme
         val createdAt = rs.getTimestamp("TMS_CREATE_AT").get().toLocalDateTime();
         val updatedAt = rs.getTimestamp("TMS_UPDATED_AT").get().toLocalDateTime();
 
-        return new Account(id, name, type, active, creditLimit, overdraftLimit, closingDay, dueDay, createdAt, updatedAt);
+        return new Account(id, name, type, active, personId, color, creditLimit, overdraftLimit, closingDay, dueDay, createdAt, updatedAt);
     }
 }
