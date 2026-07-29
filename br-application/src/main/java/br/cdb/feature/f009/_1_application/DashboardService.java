@@ -1,7 +1,6 @@
 package br.cdb.feature.f009._1_application;
 
-import br.cdb.feature.f006._1_application.usecase.TransactionUseCase;
-import br.commons.Registry;
+import br.cdb.feature.f000._1_application.InternalApi;
 import br.commons.Result;
 import br.commons.business.BusinessError;
 import jakarta.inject.Singleton;
@@ -10,6 +9,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.val;
 import org.jspecify.annotations.NullMarked;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
@@ -19,59 +19,58 @@ import java.util.List;
 @RequiredArgsConstructor
 public class DashboardService {
 
-    private final TransactionUseCase ucTransaction = Registry.tryGet(TransactionUseCase.class);
+    private final InternalApi internalApi;
 
-    public Result<MonthlyResult, BusinessError> getMonthlyResult(String personId, int month, int year) {
-        return ucTransaction.transactions(personId)
-                .map(all -> {
-                    val start = LocalDate.of(year, month, 1);
-                    val end = start.plusMonths(1).minusDays(1);
+    /** Corpo mínimo do endpoint público {@code GET /accounts/transactions} (f006) — zero tipo
+     *  cross-slice, mesma regra dos antigos ports. {@code type} vem lowercase ("income"/"expense",
+     *  ver {@code JsonStorageConfig.transactionEnumModule}). */
+    @NullMarked
+    private record TransactionDto(LocalDate date, BigDecimal amount, String type) {}
 
-                    val confirmedThisMonth = all.stream()
-                            .filter(t -> t.status().name().equals("CONFIRMED"))
-                            .filter(t -> !t.date().isBefore(start) && !t.date().isAfter(end))
-                            .toList();
+    public Result<MonthlyResult, BusinessError> getMonthlyResult(int month, int year) {
+        val start = LocalDate.of(year, month, 1);
+        val end = start.plusMonths(1).minusDays(1);
 
-                    val incomes = confirmedThisMonth.stream()
-                            .filter(t -> t.signal() > 0)
-                            .mapToDouble(t -> t.amount().doubleValue())
-                            .sum();
+        // Filtro já aplicado no servidor (status/dateFrom/dateTo são suportados pelo endpoint público
+        // de f006) — evita trazer o histórico inteiro só pra descartar a maior parte aqui.
+        val confirmedThisMonth = List.of(internalApi.get(
+                "/accounts/transactions?status=CONFIRMED&dateFrom=" + start + "&dateTo=" + end,
+                TransactionDto[].class));
 
-                    val expenses = confirmedThisMonth.stream()
-                            .filter(t -> t.signal() < 0)
-                            .mapToDouble(t -> t.amount().doubleValue())
-                            .sum();
+        val incomes = sumWhere(confirmedThisMonth, "income");
+        val expenses = sumWhere(confirmedThisMonth, "expense");
 
-                    List<HistoricalResult> history = new ArrayList<>();
-                    for (int w = 1; w <= 5; w++) {
-                        val wStart = start.plusDays((w - 1) * 7L);
-                        if (wStart.isAfter(end)) break;
-                        val wEndBeforeCheck = wStart.plusDays(6);
-                        val wEnd = wEndBeforeCheck.isAfter(end) ? end : wEndBeforeCheck;
+        List<HistoricalResult> history = new ArrayList<>();
+        for (int w = 1; w <= 5; w++) {
+            val wStart = start.plusDays((w - 1) * 7L);
+            if (wStart.isAfter(end)) break;
+            val wEndBeforeCheck = wStart.plusDays(6);
+            val wEnd = wEndBeforeCheck.isAfter(end) ? end : wEndBeforeCheck;
 
-                        val wConfirmed = confirmedThisMonth.stream()
-                                .filter(t -> !t.date().isBefore(wStart) && !t.date().isAfter(wEnd))
-                                .toList();
+            val wConfirmed = confirmedThisMonth.stream()
+                    .filter(t -> !t.date().isBefore(wStart) && !t.date().isAfter(wEnd))
+                    .toList();
 
-                        val wRec = wConfirmed.stream()
-                                .filter(t -> t.signal() > 0)
-                                .mapToDouble(t -> t.amount().doubleValue()).sum();
+            history.add(new HistoricalResult("S" + w, sumWhere(wConfirmed, "income"), sumWhere(wConfirmed, "expense")));
+            if (wEnd.equals(end)) break;
+        }
 
-                        val wDes = wConfirmed.stream()
-                                .filter(t -> t.signal() < 0)
-                                .mapToDouble(t -> t.amount().doubleValue()).sum();
+        return Result.success(MonthlyResult.builder()
+                .incomes(incomes)
+                .expenses(expenses)
+                .result(incomes - expenses)
+                .history(history)
+                .build());
+    }
 
-                        history.add(new HistoricalResult("S" + w, wRec, wDes));
-                        if (wEnd.equals(end)) break;
-                    }
-
-                    return MonthlyResult.builder()
-                            .incomes(incomes)
-                            .expenses(expenses)
-                            .result(incomes - expenses)
-                            .history(history)
-                            .build();
-                });
+    /** {@code amount} no DTO vem assinado (negativo pra despesa, espelhando o que o cliente
+     *  submeteu) — soma em magnitude, igual ao {@code incomes}/{@code expenses} sempre positivos
+     *  de antes da fase 6. */
+    private static double sumWhere(List<TransactionDto> transactions, String type) {
+        return transactions.stream()
+                .filter(t -> type.equals(t.type()))
+                .mapToDouble(t -> Math.abs(t.amount().doubleValue()))
+                .sum();
     }
 
     @NullMarked
