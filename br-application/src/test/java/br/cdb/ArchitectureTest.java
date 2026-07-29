@@ -64,7 +64,7 @@ class ArchitectureTest {
      * O número da fatia expressa ordem de criação: uma feature {@code fNNN} só pode consumir recursos
      * de fatias que já existiam antes dela — {@code fMMM} com {@code MMM < NNN}. {@code f000} é a base
      * (não depende de feature nenhuma). Ex.: {@code f006} pode consumir {@code f002}/{@code f004}/
-     * {@code f005}, mas nunca {@code f007}. A inversão de dependência resolve os casos em que uma fatia
+     * {@code f005}, mas nunca {@code f009}. A inversão de dependência resolve os casos em que uma fatia
      * anterior precisa de serviço de uma posterior: a anterior define a porta ({@code _0_domain}) e um
      * adapter em {@code f999._2_infrastructure.adapter} a implementa, delegando ao provedor real —
      * mecanismo hoje sem instância ativa no código (os 4 casos que existiam até a fase 3 foram
@@ -91,14 +91,13 @@ class ArchitectureTest {
      * tolerado, qualquer que seja a origem — os antigos usecases/services/models/repositories de
      * {@code br-context-monetary}/{@code br-context-people} viraram subpacotes dentro de {@code fNNN}
      * preservando a organização interna que já tinham como contexto, mas ainda são chamados cross-slice
-     * do jeito antigo (ex.: {@code f007} chamando {@code f006.TransactionUseCase} direto, sem porta —
-     * {@code UserGuards}, em {@code f000}, chamando {@code f002.AccountUseCase}/{@code f003.CreditCardUseCase}
-     * do mesmo jeito). A fase 4 fechou os 4 casos que tinham porta+adapter dedicados (viraram evento ou
-     * {@code InternalApi}), mas não teve como alvo — nem promete fechar — este resíduo mais amplo de
-     * acesso direto à engine; a fase 6 fecha o caso de {@code f007} (funde em {@code f006}, deixa de
-     * ser cross-slice) e o de {@code f009} (troca para {@code InternalApi}). Enquanto essa exceção
-     * existir, "{@code mvn verify} verde" não significa "zero acoplamento cross-slice" — só "zero
-     * acoplamento novo fora do que já veio da dissolução".</p>
+     * do jeito antigo. A fase 4 fechou os 4 casos que tinham porta+adapter dedicados (viraram evento ou
+     * {@code InternalApi}); a fase 6 fechou os dois outros nomeados até aqui — {@code f007} (importação
+     * de extrato/fatura, fundida em {@code f006}, deixou de ser cross-slice) e {@code f009} (dashboard,
+     * trocou para {@code InternalApi}). Resta {@code UserGuards} (em {@code f000}), que ainda chama
+     * {@code f002.AccountUseCase}/{@code f003.CreditCardUseCase} direto — sem fase nomeada pra fechar
+     * esse caso ainda. Enquanto essa exceção existir, "{@code mvn verify} verde" não significa "zero
+     * acoplamento cross-slice" — só "zero acoplamento novo fora do que já veio da dissolução".</p>
      */
     @ArchTest
     static final ArchRule feature_slices_must_not_depend_on_sibling_slices =

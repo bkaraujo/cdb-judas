@@ -25,7 +25,7 @@ public interface AccountStreamEvents extends BusinessEvent {
     @NullMarked
     record Updated(UUID accountId, String personId) implements Upsert {}
 
-    /** "conta mudou, reemita o snapshot" — publicado por f002 (cards)/f004/f005/f006/f007. */
+    /** "conta mudou, reemita o snapshot" — publicado por f002 (cards)/f004/f005/f006. */
     @NullMarked
     record Refresh(UUID accountId, String personId) implements Upsert {}
 

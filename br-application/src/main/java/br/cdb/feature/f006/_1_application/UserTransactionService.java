@@ -14,8 +14,8 @@ import java.util.stream.Collectors;
  * Serviço do vínculo transação↔categoria ({@code F005_TRANSACTION_CATEGORY}). Conta e pessoa da
  * transação já são colunas nativas de {@code F006_TRANSACTION} desde a fusão dos contextos — este
  * serviço só cuida da categoria. {@code accountId} continua no parâmetro de {@link #save} por
- * compatibilidade com o evento {@code TransactionImported} (f000, publicado por f007); não é mais
- * persistido aqui.
+ * compatibilidade com o evento {@code TransactionImported} (f000, publicado pelos processors de
+ * importação de extrato/fatura aqui mesmo em f006); não é mais persistido aqui.
  */
 @NullMarked
 @Singleton

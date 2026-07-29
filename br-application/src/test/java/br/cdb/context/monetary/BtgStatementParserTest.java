@@ -1,8 +1,8 @@
 package br.cdb.context.monetary;
 
-import br.cdb.feature.f007._0_domain.MonetaryDocument;
-import br.cdb.feature.f007._0_domain.MonetaryDocumentEntry;
-import br.cdb.feature.f007._2_infrastructure.provider.BTGStatementParser;
+import br.cdb.feature.f006._0_domain.MonetaryDocument;
+import br.cdb.feature.f006._0_domain.MonetaryDocumentEntry;
+import br.cdb.feature.f006._2_infrastructure.provider.BTGStatementParser;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;

@@ -38,7 +38,9 @@ public class TransactionOverlayListener {
         return MessageResult.CONSUMED;
     }
 
-    /** Grava o vínculo de uma transação importada por f007 — mantém o 1:1 com {@code F006_TRANSACTION}. */
+    /** Grava o vínculo de uma transação importada ({@code InvoiceImportProcessor}/{@code StatementImportProcessor},
+     *  aqui mesmo em f006 desde a fase 6 — evento mantido por simplicidade, não por fronteira de fatia)
+     *  — mantém o 1:1 com {@code F006_TRANSACTION}. */
     @MessageListener
     public MessageResult onTransactionImported(TransactionImported event) {
         userTransactionService.save(event.transactionId(), event.accountId(), event.personId(), event.categoryId());

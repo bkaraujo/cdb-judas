@@ -25,7 +25,7 @@ import java.util.UUID;
 
 /**
  * Único dono do dispatch SSE de conta — reage ao vocabulário {@link AccountStreamEvents}, publicado
- * pelas fatias (f002/f004/f005/f006/f007) só depois da mutação já persistida (contexto + overlay).
+ * pelas fatias (f002/f004/f005/f006) só depois da mutação já persistida (contexto + overlay).
  * {@code personId} vem sempre do evento, nunca de {@code HTTPRequest.personId()} — best-effort, nunca
  * propaga falha para quem publicou.
  */

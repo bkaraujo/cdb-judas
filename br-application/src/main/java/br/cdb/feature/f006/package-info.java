@@ -8,6 +8,13 @@
  * por {@code f004} (tags, purga vínculos); redundante com o {@code ON DELETE CASCADE} de
  * {@code MON_TRANSACTION}, mas cobre exclusões em cascata disparadas por outras fatias (tags/
  * categorias) que chamam o contexto direto sem passar pelo use case desta.
+ *
+ * <p>Fundida aqui na fase 6 de {@code .claude/plan.md}: a antiga fatia {@code f007} (importação de
+ * extrato/fatura, preview→confirm, parsers BTG e Santander) — {@code /api/{uuid}/accounts/transactions
+ * /import/preview} + {@code .../import/confirm}. Consolida o que antes era {@code finance.accounts
+ * .statement} (parsing de PDF) e {@code finance.accounts.transactions.importer} (orquestração,
+ * casamento de cartão, sugestão de categoria, expansão de parcelas) — path preservado, só o pacote
+ * mudou (número da fatia não é mais parte da rota).
  */
 @NullMarked
 package br.cdb.feature.f006;

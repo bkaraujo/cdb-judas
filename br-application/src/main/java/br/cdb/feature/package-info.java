@@ -1,7 +1,7 @@
 /**
  * Raiz da camada de features da aplicação.
  *
- * <p>Cada feature é uma fatia numerada {@code fNNN} (hoje f000–f007, f009, f999), hexágono auto-contido:
+ * <p>Cada feature é uma fatia numerada {@code fNNN} (hoje f000–f006, f009, f999), hexágono auto-contido:
  * {@code _0_domain} (modelos/overlays + portas {@code *Repository} + eventos de domínio),
  * {@code _1_application} ({@code *Service}/{@code *UseCase} + commands + {@code @MessageListener}
  * best-effort), {@code _2_infrastructure} ({@code *Resource}, DTOs HTTP, {@code *JDBCRepository},
@@ -59,8 +59,7 @@
  * │                            PATCH  /api/{uuid}/accounts/{accId}/transactions/{txId}
  * │                            PATCH  /api/{uuid}/accounts/{accId}/transactions/{txId}/status
  * │                            DELETE /api/{uuid}/accounts/{accId}/transactions/{txId}?mode=          (publica {@code TransactionsDeleted})
- * ├── f007  importação de extrato/fatura
- * │   └── StatementImportResource POST /api/{uuid}/accounts/transactions/import/preview  (multipart: file/password/accountId)
+ * │   └── StatementImportResource POST /api/{uuid}/accounts/transactions/import/preview  (multipart: file/password/accountId; f007 fundida aqui na fase 6)
  * │                                POST /api/{uuid}/accounts/transactions/import/confirm  (parsers BTG/Santander, casamento de cartão, sugestão de categoria)
  * ├── f009  dashboard
  * │   └── DashboardResource    GET /api/{uuid}/dashboard?month=&amp;year=
