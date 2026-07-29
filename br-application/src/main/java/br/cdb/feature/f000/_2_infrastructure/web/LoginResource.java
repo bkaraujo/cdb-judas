@@ -46,7 +46,7 @@ public class LoginResource {
         }
 
         // Token continua atado ao userId (login/credencial); a rota do cliente usa o personId.
-        val token = tokenStore.issue(user.id());
+        val token = tokenStore.persistent(user.id());
         Logger.debug("LOGIN => '%s' (person %s) issued token", request.username(), personId);
         return Response.ok()
                 .header(TOKEN_HEADER, token)

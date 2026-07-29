@@ -26,7 +26,7 @@ public class AccessTokenStore {
     private final Map<String, String> userToToken = new HashMap<>();
     private final Map<String, EphemeralToken> ephemeralTokens = new HashMap<>();
 
-    public synchronized String issue(String userId) {
+    public synchronized String persistent(String userId) {
         val old = userToToken.remove(userId);
         if (old != null) tokenToUser.remove(old);
 
@@ -36,8 +36,8 @@ public class AccessTokenStore {
         return token;
     }
 
-    public synchronized Optional<RotationResult> rotate(String incomingToken) {
-        val userId = tokenToUser.remove(incomingToken);
+    public synchronized Optional<RotationResult> rotate(String token) {
+        val userId = tokenToUser.remove(token);
         if (userId == null) return Optional.empty();
 
         val nextToken = generate();
@@ -52,12 +52,12 @@ public class AccessTokenStore {
 
     /**
      * Token de uso único para chamada HTTP interna fatia→fatia ({@code InternalApi}, f000) — nunca
-     * reaproveitar {@link #issue} aqui: aquele mapa é 1 token por usuário, então mintar um durante
+     * reaproveitar {@link #persistent} aqui: aquele mapa é 1 token por usuário, então mintar um durante
      * uma requisição em andamento apagaria o token de sessão recém-rotacionado do navegador antes de
      * ele chegar na resposta. Identificado direto pelo personId (única identidade que as features
      * enxergam, via {@code HTTPRequest.personId()}) — sem volta a userId.
      */
-    public synchronized String issueEphemeral(String personId) {
+    public synchronized String ephemeral(String personId) {
         val token = generate();
         ephemeralTokens.put(token, new EphemeralToken(personId, System.currentTimeMillis() + EPHEMERAL_TTL_MILLIS));
         return token;

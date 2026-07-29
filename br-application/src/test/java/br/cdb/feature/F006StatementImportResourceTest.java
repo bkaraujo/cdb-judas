@@ -17,7 +17,7 @@ public class F006StatementImportResourceTest extends BaseHttpTest {
 
     /** Sem o {@code contentType(JSON)} padrão de {@link #asTestUser()}: o multipart define o seu próprio. */
     private RequestSpecification asMultipartUser() {
-        return RestAssured.given().header(HTTPRequest.TOKEN_HEADER, tokenStore.issue(TEST_USER_ID));
+        return RestAssured.given().header(HTTPRequest.TOKEN_HEADER, tokenStore.persistent(TEST_USER_ID));
     }
 
     @Test

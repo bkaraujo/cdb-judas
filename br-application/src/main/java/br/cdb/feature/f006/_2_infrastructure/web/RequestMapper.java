@@ -69,7 +69,6 @@ public abstract class RequestMapper {
                 row.suggestedCardId());
     }
 
-    /** {@code cardId} is guaranteed non-null by the {@code CARD_REQUIRED} guard in {@link #confirmInvoice}. */
     static InvoiceConfirmCommand.Row toInvoiceRow(StatementConfirmRequest.Row row) {
         return new InvoiceConfirmCommand.Row(
                 row.description(), row.amount(), row.date(), row.originalDate(),

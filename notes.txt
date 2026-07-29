@@ -1,12 +1,16 @@
-F002 excluí ov conta, dispara evento        -> F003 excluí ov cartões, dispara evento
-                                            -> F006 excluí ov transação, dispara evento
+Desejo remover por completo qualquer dependência entre camadas. Uma feature deve apenas importar a descrição de EVENTO
+de uma feature superior e nada mais. Para isso:
 
-F003 excluí ov cartão, dispara evento       -> F006 excluí ov da transação, dispara evento
+F002 excluí overlay conta, dispara evento        -> F003 excluí overlay cartões, dispara evento
+                                                 -> F006 excluí overlay transação, dispara evento
 
-F004 excluí ov tag, dispara evento          -> F006 desvincula da ov transação
+F003 excluí overlay cartão, dispara evento       -> F006 excluí overlay da transação, dispara evento
 
-F005 excluí ov categoria, dispara evento    -> F006 desvincula da ov transação
+F004 excluí overlay tag, dispara evento          -> F006 desvincula da overlay transação
 
-F006 excluí ov transações, dispara evento
+F005 excluí overlay categoria, dispara evento    -> F006 desvincula da overlay transação
 
-F999 A cada 5 min, excluí elementos órfãos do monetary
+F006 excluí overlay transações, dispara evento
+
+F999 -> (1)Recebe o processo de exclusão de todos os overlays e grava no banco de dados.
+     -> (2) A cada 5 min, excluí elementos gravados em (1)

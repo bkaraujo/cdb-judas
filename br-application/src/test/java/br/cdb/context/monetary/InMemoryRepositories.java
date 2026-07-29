@@ -2,11 +2,11 @@ package br.cdb.context.monetary;
 
 import br.cdb.feature.f000._0_domain.model.CostCenter;
 import br.cdb.feature.f000._0_domain.repository.CostCenterRepository;
-import br.cdb.feature.f002._0_domain.ClosingRepository;
 import br.cdb.feature.f002._0_domain.model.Account;
 import br.cdb.feature.f002._0_domain.model.Balance;
 import br.cdb.feature.f002._0_domain.repository.AccountRepository;
 import br.cdb.feature.f002._0_domain.repository.BalanceRepository;
+import br.cdb.feature.f002._0_domain.repository.ClosingRepository;
 import br.cdb.feature.f003._0_domain.model.CreditCard;
 import br.cdb.feature.f003._0_domain.repository.CreditCardRepository;
 import br.cdb.feature.f006._0_domain.model.Transaction;

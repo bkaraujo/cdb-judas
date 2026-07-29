@@ -1,7 +1,7 @@
 package br.cdb.feature.f002._2_infrastructure.persistence;
 
 import br.cdb.core.web.HTTPRequest;
-import br.cdb.feature.f002._0_domain.ClosingRepository;
+import br.cdb.feature.f002._0_domain.repository.ClosingRepository;
 import br.commons.Registry;
 import br.commons.Result;
 import br.commons.framework.persistence.jdbc.DataSource;

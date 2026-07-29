@@ -1,7 +1,7 @@
 package br.cdb.feature.f002;
 
-import br.cdb.feature.f002._0_domain.ClosingRepository;
 import br.cdb.feature.f002._0_domain.UserAccountRepository;
+import br.cdb.feature.f002._0_domain.repository.ClosingRepository;
 import br.cdb.feature.f002._1_application.ClosingService;
 import br.cdb.feature.f002._2_infrastructure.persistence.ClosingJDBCRepository;
 import br.cdb.feature.f002._2_infrastructure.persistence.UserAccountJDBCRepository;

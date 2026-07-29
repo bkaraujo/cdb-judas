@@ -1,7 +1,8 @@
-package br.cdb.infra.persistence.monetary;
+package br.cdb.feature.f002._2_infrastructure.persistence;
 
 import br.cdb.feature.f002._0_domain.model.Account;
 import br.cdb.feature.f002._0_domain.repository.AccountRepository;
+import br.cdb.infra.persistence.monetary.AccountTypeMapper;
 import br.commons.chrono.Time;
 import br.commons.framework.persistence.jdbc.JDBCRepository;
 import br.commons.framework.persistence.jdbc.primitives.JDBCParameter;

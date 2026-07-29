@@ -1,13 +1,9 @@
 package br.cdb.feature.f002._1_application;
 
-import br.cdb.feature.f002._0_domain.ClosingRepository;
-import br.commons.Result;
-import br.commons.business.BusinessError;
+import br.cdb.feature.f002._0_domain.repository.ClosingRepository;
 import lombok.RequiredArgsConstructor;
-import lombok.val;
 import org.jspecify.annotations.NullMarked;
 
-import java.time.LocalDate;
 import java.time.YearMonth;
 import java.util.Optional;
 
@@ -30,11 +26,4 @@ public class ClosingService {
         repository.clear();
     }
 
-    public Result<Void, BusinessError> validateDate(LocalDate date) {
-        val optional = repository.find();
-        if (optional.isPresent() && !YearMonth.from(date).isAfter(optional.get())) {
-            return Result.failure(new BusinessError.BusinessRule("Período fechado. Lançamentos até " + optional.get() + " não podem ser alterados."));
-        }
-        return Result.success();
-    }
 }

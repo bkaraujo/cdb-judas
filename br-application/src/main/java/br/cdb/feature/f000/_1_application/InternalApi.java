@@ -20,7 +20,7 @@ import java.net.http.HttpResponse;
  * Leitura cross-slice síncrona: chama o endpoint público da fatia dona via HTTP real (loopback),
  * nunca um import direto de classe de outra fatia (ver {@code feature_slices_must_not_depend_on_sibling_slices}
  * em {@code ArchitectureTest}). Autentica com um token efêmero de uso único
- * ({@link AccessTokenStore#issueEphemeral}) — nunca o token de sessão do navegador: ele já foi
+ * ({@link AccessTokenStore#ephemeral}) — nunca o token de sessão do navegador: ele já foi
  * rotacionado no início desta mesma requisição, e repassá-lo faria a chamada interna consumir a
  * rotação que a resposta externa ainda precisa devolver. Sem bypass por loopback: a chamada interna
  * passa pelo mesmo {@code AuthenticationFilter}/{@code OwnershipFilter} de qualquer requisição real.
@@ -43,7 +43,7 @@ public class InternalApi {
     /** {@code path} inclui a barra inicial, relativo a {@code /api/{personId}} (ex.: {@code "/categories/transfer?nature=EXPENSE"}). */
     public <T> T get(String path, Class<T> responseType) {
         val personId = HTTPRequest.personId();
-        val token = tokenStore.issueEphemeral(personId);
+        val token = tokenStore.ephemeral(personId);
 
         val request = HttpRequest.newBuilder(URI.create(baseUrl + "/api/" + personId + path))
                 .header(HTTPRequest.TOKEN_HEADER, token)

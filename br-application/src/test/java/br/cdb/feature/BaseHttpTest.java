@@ -12,6 +12,7 @@ import br.cdb.feature.f002._0_domain.repository.BalanceRepository;
 import br.cdb.feature.f002._1_application.service.AccountService;
 import br.cdb.feature.f002._1_application.service.BalanceService;
 import br.cdb.feature.f002._1_application.usecase.AccountUseCase;
+import br.cdb.feature.f002._2_infrastructure.persistence.AccountJDBCRepository;
 import br.cdb.feature.f003._0_domain.repository.CreditCardRepository;
 import br.cdb.feature.f003._1_application.service.CreditCardService;
 import br.cdb.feature.f003._1_application.usecase.CreditCardUseCase;
@@ -20,7 +21,6 @@ import br.cdb.feature.f006._1_application.service.TransactionService;
 import br.cdb.feature.f006._1_application.usecase.TransactionUseCase;
 import br.cdb.infra.persistence.Database;
 import br.cdb.infra.persistence.features.UserAccountBalanceJDBCRepository;
-import br.cdb.infra.persistence.monetary.AccountJDBCRepository;
 import br.cdb.infra.persistence.monetary.CostCenterJDBCRepository;
 import br.cdb.infra.persistence.monetary.CreditCardJDBCRepository;
 import br.cdb.infra.persistence.monetary.TransactionJDBCRepository;
@@ -160,7 +160,7 @@ public abstract class BaseHttpTest {
      */
     protected RequestSpecification asTestUser() {
         return RestAssured.given()
-                .header(HTTPRequest.TOKEN_HEADER, tokenStore.issue(TEST_USER_ID))
+                .header(HTTPRequest.TOKEN_HEADER, tokenStore.persistent(TEST_USER_ID))
                 .contentType(ContentType.JSON);
     }
 
