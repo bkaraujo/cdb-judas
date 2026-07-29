@@ -15,4 +15,12 @@ public interface BalanceRepository extends Repository<Balance, UUID> {
 
     void delete(UUID uuid, YearMonth period);
 
+    /** Marca todo snapshot da conta como sujo — no-op se não existir nenhum ainda (nada a corrigir;
+     *  o próximo {@code save} normal já grava o valor certo). Consumido pela cascata de exclusão de
+     *  conta (f002) como rede de segurança pro job de reconciliação (f999). */
+    void markDirty(UUID accountId);
+
+    /** IDs de conta com pelo menos um snapshot sujo — consumido pelo job de reconciliação (f999). */
+    List<UUID> findDirtyAccountIds();
+
 }

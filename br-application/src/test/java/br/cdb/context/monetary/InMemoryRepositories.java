@@ -73,6 +73,7 @@ final class InMemoryRepositories {
     /** Balance tem chave de negócio (accountId, period) — sem personId próprio, não cabe em BaseRepo. */
     static class Balances implements BalanceRepository {
         private final List<Balance> data = new ArrayList<>();
+        private final Set<UUID> dirtyAccountIds = new HashSet<>();
 
         public List<Balance> findAll() { return new ArrayList<>(data); }
 
@@ -82,20 +83,29 @@ final class InMemoryRepositories {
         public Balance save(Balance e) {
             data.removeIf(b -> b.account().id().equals(e.account().id()) && b.period().equals(e.period()));
             data.add(e);
+            dirtyAccountIds.remove(e.account().id());
             return e;
         }
 
         public void deleteById(UUID id) { /* sem personId próprio; ver delete(accountId, period) */ }
 
+        /** Linha some junto com FLG_DIRTY (mesma semântica do DELETE real: nada sobra pra estar sujo). */
         public void delete(UUID accountId, YearMonth period) {
             data.removeIf(b -> b.account().id().equals(accountId) && b.period().equals(period));
+            if (data.stream().noneMatch(b -> b.account().id().equals(accountId))) {
+                dirtyAccountIds.remove(accountId);
+            }
         }
 
         public List<Balance> findByAccount(UUID accountId) {
             return data.stream().filter(b -> b.account().id().equals(accountId)).toList();
         }
 
-        public void clearCache() { data.clear(); }
+        public void markDirty(UUID accountId) { dirtyAccountIds.add(accountId); }
+
+        public List<UUID> findDirtyAccountIds() { return List.copyOf(dirtyAccountIds); }
+
+        public void clearCache() { data.clear(); dirtyAccountIds.clear(); }
     }
 
     static class Cards extends BaseRepo<CreditCard, UUID> implements CreditCardRepository {

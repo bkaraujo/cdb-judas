@@ -53,6 +53,15 @@ public class BalanceService {
         repository.delete(balance.account().id(), balance.period());
     }
 
+    public void markDirty(UUID accountId) {
+        repository.markDirty(accountId);
+    }
+
+    /** Recomputa toda conta com pelo menos um snapshot sujo — consumido pelo job de reconciliação (f999). */
+    public void recomputeDirty() {
+        repository.findDirtyAccountIds().forEach(this::recalculate);
+    }
+
 
     @NullMarked
     private record MonthBalance(

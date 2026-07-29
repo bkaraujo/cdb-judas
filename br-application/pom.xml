@@ -28,6 +28,8 @@
         <dependency><groupId>io.quarkus</groupId><artifactId>quarkus-smallrye-openapi</artifactId></dependency>
         <dependency><groupId>io.quarkus</groupId><artifactId>quarkus-smallrye-health</artifactId></dependency>
         <dependency><groupId>io.quarkus</groupId><artifactId>quarkus-elytron-security-common</artifactId></dependency>
+        <!-- @Scheduled do job de purga da fila F999_DELETION_QUEUE (fase 5 de .claude/plan.md) -->
+        <dependency><groupId>io.quarkus</groupId><artifactId>quarkus-scheduler</artifactId></dependency>
 
         <!-- Jackson 2 (com.fasterxml): mapper único web+storage. databind vem de quarkus-rest-jackson;
              o dataformat YAML (stack próprio de serialização) é adicionado aqui, versão gerida pelo BOM Quarkus. -->

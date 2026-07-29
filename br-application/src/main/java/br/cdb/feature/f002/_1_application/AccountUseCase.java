@@ -15,7 +15,9 @@ import br.cdb.feature.f000._0_domain.event.AccountStreamEvents;
 import br.cdb.feature.f000._0_domain.event.TransactionsDeleted;
 import br.cdb.feature.f000._1_application.Deletions;
 import br.cdb.feature.f000._1_application.UserGuards;
+import br.cdb.feature.f002._0_domain.DeletionQueue;
 import br.cdb.feature.f002._0_domain.UserAccount;
+import br.cdb.feature.f002._1_application.service.BalanceService;
 import br.commons.Logger;
 import br.commons.MessageBus;
 import br.commons.Registry;
@@ -45,7 +47,10 @@ import java.util.UUID;
  * transação é feito pela própria engine ({@code AccountUseCase.deleteMove}, contexto monetário) ao
  * mover as transações. O overlay {@code PERSON_ACCOUNT} e o das transações apagadas (não-MOVE) somem
  * via evento pós-delete ({@link AccountDeleted}/{@link TransactionsDeleted}) — sem FK entre tabelas
- * de dados, o contexto pode apagar a raiz primeiro.
+ * de dados, o contexto pode apagar a raiz primeiro. Cada evento também vira uma linha em
+ * {@code F999_DELETION_QUEUE} (via {@link DeletionQueue}) — rede de segurança pro job de f999
+ * reprocessar se o listener best-effort falhar ou o processo cair no meio da cascata. No MOVE, a
+ * conta de destino é marcada suja ({@link BalanceService#markDirty}) — o próprio job recomputa.
  */
 @NullMarked
 @Singleton
@@ -59,6 +64,8 @@ public class AccountUseCase {
 
     private final UserGuards guards;
     private final UserAccountService userAccountService;
+    private final DeletionQueue deletionQueue;
+    private final BalanceService balanceService = Registry.tryGet(BalanceService.class);
 
     /** Conta do contexto + overlay do usuário + cartões; {@code transactions} é a lista completa
      *  (o saldo corrente do DTO é derivado dela). */
@@ -163,13 +170,18 @@ public class AccountUseCase {
 
         return ucAccount.delete(new AccountCommand.Delete(id, Deletions.toPolicy(strategy, targetId))).map(ids -> {
             MessageBus.submit(new AccountDeleted(id, personId));
+            deletionQueue.enqueueAccountDeleted(id, personId);
+
             if (strategy != DeletionStrategy.MOVE) {
                 MessageBus.submit(new TransactionsDeleted(ids));
+                ids.forEach(txId -> deletionQueue.enqueueTransactionDeleted(txId, personId));
             }
 
             MessageBus.submit(new AccountStreamEvents.Deleted(id, personId.toString()));
             if (strategy == DeletionStrategy.MOVE) {
-                MessageBus.submit(new AccountStreamEvents.Refresh(Objects.requireNonNull(targetId), personId.toString()));
+                val target = Objects.requireNonNull(targetId);
+                balanceService.markDirty(target);
+                MessageBus.submit(new AccountStreamEvents.Refresh(target, personId.toString()));
             }
             return new DeletionOutcome.Completed();
         });

@@ -18,8 +18,10 @@ import java.util.*;
 /**
  * Adaptador JDBC (H2) da porta {@link BalanceRepository}: tabela {@code F002_BALANCE}
  * (períodos mensais por utilizador, período como YYYYMM inteiro). {@code FLG_DIRTY} é sempre
- * gravado 'N' aqui — o recomputo sob demanda que marcaria 'Y' é tarefa do job de reconciliação
- * (fila {@code F999_DELETION_QUEUE}), ainda não implementado.
+ * gravado 'N' em {@link #save}/{@link #values} — todo recompute passa por lá e já corrige o valor,
+ * então a linha nunca "fica" suja depois de recalculada; {@link #markDirty} é a única escrita que
+ * grava 'Y', consumida pela cascata de exclusão de conta (f002) e varrida pelo job de reconciliação
+ * (fila {@code F999_DELETION_QUEUE}, f999).
  */
 @NullMarked
 public final class UserAccountBalanceJDBCRepository extends JDBCRepository<Balance> implements BalanceRepository {
@@ -94,6 +96,26 @@ public final class UserAccountBalanceJDBCRepository extends JDBCRepository<Balan
     @Override
     public void clearCache() {
         // Sem cache: a fonte de verdade é o próprio banco.
+    }
+
+    @Override
+    public void markDirty(UUID accountId) {
+        datasource.execute(
+                "UPDATE " + table() + " SET FLG_DIRTY = 'Y' WHERE COD_ACCOUNT = ?",
+                JDBCParameter.of(accountId.toString())
+        );
+    }
+
+    @Override
+    public List<UUID> findDirtyAccountIds() {
+        return datasource.query(
+                "SELECT DISTINCT COD_ACCOUNT FROM " + table() + " WHERE FLG_DIRTY = 'Y'",
+                rs -> {
+                    val ids = new ArrayList<UUID>();
+                    while (rs.next().get()) ids.add(UUID.fromString(rs.getString("COD_ACCOUNT").get()));
+                    return ids;
+                }
+        );
     }
 
     @Override
