@@ -1,7 +1,7 @@
 package br.cdb.infra.persistence.monetary;
 
-import br.cdb.context.monetary._0_domain.model.CostCenter;
-import br.cdb.context.monetary._0_domain.repository.CostCenterRepository;
+import br.cdb.feature.f000._0_domain.model.CostCenter;
+import br.cdb.feature.f000._0_domain.repository.CostCenterRepository;
 import br.commons.framework.persistence.jdbc.JDBCRepository;
 import br.commons.framework.persistence.jdbc.primitives.JDBCResultSet;
 import lombok.val;

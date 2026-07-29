@@ -1,6 +1,6 @@
 package br.cdb.core.persistence;
 
-import br.cdb.context.monetary._0_domain.model.Transaction;
+import br.cdb.feature.f006._0_domain.model.Transaction;
 import br.cdb.core.JsonStorageProperties;
 import br.commons.framework.persistence.Storage;
 import br.commons.framework.persistence.json.LocalFileStorage;

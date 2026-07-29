@@ -1,11 +1,10 @@
 package br.cdb.feature.f007._1_application.preview;
 
-import br.cdb.context.monetary.MonetaryUseCases;
-import br.cdb.context.monetary._0_domain.model.Account;
-import br.cdb.context.monetary._0_domain.model.CostCenter;
-import br.cdb.context.monetary._0_domain.model.Transaction;
-import br.cdb.context.monetary._1_application.usecase.AccountUseCase;
-import br.cdb.context.monetary._1_application.usecase.TransactionUseCase;
+import br.cdb.feature.f002._0_domain.model.Account;
+import br.cdb.feature.f000._0_domain.model.CostCenter;
+import br.cdb.feature.f006._0_domain.model.Transaction;
+import br.cdb.feature.f002._1_application.usecase.AccountUseCase;
+import br.cdb.feature.f006._1_application.usecase.TransactionUseCase;
 import br.cdb.feature.f007._0_domain.ImportError;
 import br.cdb.feature.f007._0_domain.ImportResult;
 import br.cdb.feature.f007._0_domain.MonetaryDocumentEntry;
@@ -15,6 +14,7 @@ import br.cdb.feature.f007._1_application.CategoryGuesser;
 import br.cdb.feature.f007._1_application.GroupSignature;
 import br.cdb.feature.f007._1_application.confirm.StatementConfirmCommand;
 import br.commons.Logger;
+import br.commons.Registry;
 import br.commons.Result;
 import br.commons.business.BusinessError;
 import br.commons.tools.Strings;
@@ -41,8 +41,8 @@ public class StatementImportProcessor {
 
     private static final int RECONCILE_WINDOW_DAYS = 3;
 
-    private final AccountUseCase ucAccount = MonetaryUseCases.ucAccount();
-    private final TransactionUseCase ucTransaction = MonetaryUseCases.ucTransaction();
+    private final AccountUseCase ucAccount = Registry.tryGet(AccountUseCase.class);
+    private final TransactionUseCase ucTransaction = Registry.tryGet(TransactionUseCase.class);
 
     private final CategoryGuesser categoryGuesser = new CategoryGuesser();
     private final TransactionOverlaySink transactionOverlaySink;

@@ -1,7 +1,6 @@
 package br.cdb.feature.f005._1_application;
 
-import br.cdb.context.monetary.MonetaryUseCases;
-import br.cdb.context.monetary._0_domain.model.Transaction;
+import br.cdb.feature.f006._0_domain.model.Transaction;
 import br.cdb.core.web.HTTPRequest;
 import br.cdb.feature.f000._0_domain.DeletionOutcome;
 import br.cdb.feature.f000._0_domain.DeletionStrategy;
@@ -11,6 +10,7 @@ import br.cdb.feature.f000._0_domain.event.AccountStreamEvents;
 import br.cdb.feature.f005._0_domain.TransactionCategoryOverlay;
 import br.cdb.feature.f005._0_domain.UserCategory;
 import br.commons.MessageBus;
+import br.commons.Registry;
 import br.commons.Result;
 import br.commons.business.BusinessError;
 import jakarta.inject.Singleton;
@@ -39,8 +39,8 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class CategoryUseCase {
 
-    private final br.cdb.context.monetary._1_application.usecase.TransactionUseCase ucTransaction =
-            MonetaryUseCases.ucTransaction();
+    private final br.cdb.feature.f006._1_application.usecase.TransactionUseCase ucTransaction =
+            Registry.tryGet(br.cdb.feature.f006._1_application.usecase.TransactionUseCase.class);
 
     private final UserCategoryService userCategoryService;
     private final TransactionCategoryOverlay transactionOverlay;

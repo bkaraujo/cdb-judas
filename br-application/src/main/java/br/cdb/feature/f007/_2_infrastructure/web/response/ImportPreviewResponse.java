@@ -1,6 +1,6 @@
 package br.cdb.feature.f007._2_infrastructure.web.response;
 
-import br.cdb.context.monetary._0_domain.model.Transaction;
+import br.cdb.feature.f006._0_domain.model.Transaction;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 

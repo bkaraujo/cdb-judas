@@ -1,13 +1,12 @@
 package br.cdb.feature.f002._1_application;
 
-import br.cdb.context.monetary.MonetaryUseCases;
-import br.cdb.context.monetary._0_domain.model.Account;
-import br.cdb.context.monetary._0_domain.model.Balance;
-import br.cdb.context.monetary._0_domain.model.CreditCard;
-import br.cdb.context.monetary._0_domain.model.Transaction;
-import br.cdb.context.monetary._1_application.command.AccountCommand;
-import br.cdb.context.monetary._1_application.usecase.CreditCardUseCase;
-import br.cdb.context.monetary._1_application.usecase.TransactionUseCase;
+import br.cdb.feature.f002._0_domain.model.Account;
+import br.cdb.feature.f002._0_domain.model.Balance;
+import br.cdb.feature.f003._0_domain.model.CreditCard;
+import br.cdb.feature.f006._0_domain.model.Transaction;
+import br.cdb.feature.f002._1_application.command.AccountCommand;
+import br.cdb.feature.f003._1_application.usecase.CreditCardUseCase;
+import br.cdb.feature.f006._1_application.usecase.TransactionUseCase;
 import br.cdb.core.web.HTTPRequest;
 import br.cdb.feature.f000._0_domain.DeletionOutcome;
 import br.cdb.feature.f000._0_domain.DeletionStrategy;
@@ -20,6 +19,7 @@ import br.cdb.feature.f002._0_domain.TransactionAccountOverlay;
 import br.cdb.feature.f002._0_domain.UserAccount;
 import br.commons.Logger;
 import br.commons.MessageBus;
+import br.commons.Registry;
 import br.commons.Result;
 import br.commons.business.BusinessError;
 import jakarta.inject.Singleton;
@@ -52,10 +52,10 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class AccountUseCase {
 
-    private final br.cdb.context.monetary._1_application.usecase.AccountUseCase ucAccount =
-            MonetaryUseCases.ucAccount();
-    private final CreditCardUseCase ucCreditCard = MonetaryUseCases.ucCreditCard();
-    private final TransactionUseCase ucTransaction = MonetaryUseCases.ucTransaction();
+    private final br.cdb.feature.f002._1_application.usecase.AccountUseCase ucAccount =
+            Registry.tryGet(br.cdb.feature.f002._1_application.usecase.AccountUseCase.class);
+    private final CreditCardUseCase ucCreditCard = Registry.tryGet(CreditCardUseCase.class);
+    private final TransactionUseCase ucTransaction = Registry.tryGet(TransactionUseCase.class);
 
     private final UserGuards guards;
     private final UserAccountService userAccountService;

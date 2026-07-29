@@ -1,8 +1,8 @@
 package br.cdb.infra.persistence.features;
 
-import br.cdb.context.monetary._0_domain.model.Balance;
-import br.cdb.context.monetary._0_domain.repository.AccountRepository;
-import br.cdb.context.monetary._0_domain.repository.BalanceRepository;
+import br.cdb.feature.f002._0_domain.model.Balance;
+import br.cdb.feature.f002._0_domain.repository.AccountRepository;
+import br.cdb.feature.f002._0_domain.repository.BalanceRepository;
 import br.commons.Registry;
 import br.commons.Result;
 import br.commons.framework.persistence.jdbc.JDBCRepository;

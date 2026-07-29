@@ -1,8 +1,8 @@
 package br.cdb.feature.f006._2_infrastructure.web;
 
-import br.cdb.context.monetary._0_domain.model.Transaction;
-import br.cdb.context.monetary._1_application.command.TransactionCommand;
-import br.cdb.context.monetary._1_application.command.TransactionScope;
+import br.cdb.feature.f006._0_domain.model.Transaction;
+import br.cdb.feature.f006._1_application.command.TransactionCommand;
+import br.cdb.feature.f006._1_application.command.TransactionScope;
 import br.cdb.feature.f006._0_domain.UserTransaction;
 import br.cdb.feature.f006._2_infrastructure.web.request.TransactionRequest;
 import br.cdb.feature.f006._2_infrastructure.web.response.TransactionResponse;

@@ -1,11 +1,10 @@
 package br.cdb.feature.f003._1_application;
 
-import br.cdb.context.monetary.MonetaryUseCases;
-import br.cdb.context.monetary._0_domain.model.CreditCard;
-import br.cdb.context.monetary._0_domain.model.Transaction;
-import br.cdb.context.monetary._1_application.command.CreditCardCommand;
-import br.cdb.context.monetary._1_application.usecase.CreditCardUseCase;
-import br.cdb.context.monetary._1_application.usecase.TransactionUseCase;
+import br.cdb.feature.f003._0_domain.model.CreditCard;
+import br.cdb.feature.f006._0_domain.model.Transaction;
+import br.cdb.feature.f003._1_application.command.CreditCardCommand;
+import br.cdb.feature.f003._1_application.usecase.CreditCardUseCase;
+import br.cdb.feature.f006._1_application.usecase.TransactionUseCase;
 import br.cdb.core.web.HTTPRequest;
 import br.cdb.feature.f000._0_domain.DeletionOutcome;
 import br.cdb.feature.f000._0_domain.DeletionStrategy;
@@ -14,6 +13,7 @@ import br.cdb.feature.f000._0_domain.event.TransactionsDeleted;
 import br.cdb.feature.f000._1_application.Deletions;
 import br.cdb.feature.f000._1_application.UserGuards;
 import br.commons.MessageBus;
+import br.commons.Registry;
 import br.commons.Result;
 import br.commons.business.BusinessError;
 import jakarta.inject.Singleton;
@@ -36,8 +36,8 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class CardUseCase {
 
-    private final CreditCardUseCase ucCreditCard = MonetaryUseCases.ucCreditCard();
-    private final TransactionUseCase ucTransaction = MonetaryUseCases.ucTransaction();
+    private final CreditCardUseCase ucCreditCard = Registry.tryGet(CreditCardUseCase.class);
+    private final TransactionUseCase ucTransaction = Registry.tryGet(TransactionUseCase.class);
 
     private final UserGuards guards;
 

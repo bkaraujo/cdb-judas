@@ -1,8 +1,8 @@
 package br.cdb.feature;
 
-import br.cdb.context.people._0_domain.model.Person;
-import br.cdb.context.people._0_domain.repository.PersonRepository;
-import br.cdb.context.people._1_application.service.PersonService;
+import br.cdb.feature.f000._0_domain.model.Person;
+import br.cdb.feature.f000._0_domain.repository.PersonRepository;
+import br.cdb.feature.f000._1_application.service.PersonService;
 import br.cdb.feature.f001._0_domain.Preferences;
 import br.cdb.feature.f001._0_domain.PreferencesRepository;
 import br.cdb.feature.f001._0_domain.Profile;

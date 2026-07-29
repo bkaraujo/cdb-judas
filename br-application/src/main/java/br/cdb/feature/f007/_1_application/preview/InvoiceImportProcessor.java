@@ -1,16 +1,16 @@
 package br.cdb.feature.f007._1_application.preview;
 
-import br.cdb.context.monetary.MonetaryUseCases;
-import br.cdb.context.monetary._0_domain.model.CostCenter;
-import br.cdb.context.monetary._0_domain.model.CreditCard;
-import br.cdb.context.monetary._0_domain.model.Transaction;
-import br.cdb.context.monetary._1_application.usecase.TransactionUseCase;
+import br.cdb.feature.f000._0_domain.model.CostCenter;
+import br.cdb.feature.f003._0_domain.model.CreditCard;
+import br.cdb.feature.f006._0_domain.model.Transaction;
+import br.cdb.feature.f006._1_application.usecase.TransactionUseCase;
 import br.cdb.feature.f007._0_domain.*;
 import br.cdb.feature.f007._1_application.CardMatcher;
 import br.cdb.feature.f007._1_application.GroupSignature;
 import br.cdb.feature.f007._1_application.InstallmentExpander;
 import br.cdb.feature.f007._1_application.confirm.InvoiceConfirmCommand;
 import br.commons.Logger;
+import br.commons.Registry;
 import br.commons.Result;
 import br.commons.business.BusinessError;
 import br.commons.tools.Strings;
@@ -33,7 +33,7 @@ import java.util.stream.Collectors;
 @NullMarked
 public class InvoiceImportProcessor {
 
-    private final TransactionUseCase ucTransaction = MonetaryUseCases.ucTransaction();
+    private final TransactionUseCase ucTransaction = Registry.tryGet(TransactionUseCase.class);
 
     private final CreditCardProvider creditCardProvider;
     private final CardMatcher cardMatcher = new CardMatcher();

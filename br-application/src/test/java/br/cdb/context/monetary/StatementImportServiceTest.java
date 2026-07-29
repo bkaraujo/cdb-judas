@@ -1,14 +1,22 @@
 package br.cdb.context.monetary;
 
-import br.cdb.context.monetary._0_domain.model.Account;
-import br.cdb.context.monetary._0_domain.model.CostCenter;
-import br.cdb.context.monetary._0_domain.model.Transaction;
-import br.cdb.context.monetary._0_domain.repository.*;
-import br.cdb.context.monetary._1_application.service.*;
-import br.cdb.context.monetary._1_application.usecase.AccountUseCase;
-import br.cdb.context.monetary._1_application.usecase.CostCenterUseCase;
-import br.cdb.context.monetary._1_application.usecase.CreditCardUseCase;
-import br.cdb.context.monetary._1_application.usecase.TransactionUseCase;
+import br.cdb.feature.f002._0_domain.model.Account;
+import br.cdb.feature.f000._0_domain.model.CostCenter;
+import br.cdb.feature.f006._0_domain.model.Transaction;
+import br.cdb.feature.f002._0_domain.repository.AccountRepository;
+import br.cdb.feature.f002._0_domain.repository.BalanceRepository;
+import br.cdb.feature.f000._0_domain.repository.CostCenterRepository;
+import br.cdb.feature.f003._0_domain.repository.CreditCardRepository;
+import br.cdb.feature.f006._0_domain.repository.TransactionRepository;
+import br.cdb.feature.f002._1_application.service.AccountService;
+import br.cdb.feature.f002._1_application.service.BalanceService;
+import br.cdb.feature.f000._1_application.service.CostCenterService;
+import br.cdb.feature.f003._1_application.service.CreditCardService;
+import br.cdb.feature.f006._1_application.service.TransactionService;
+import br.cdb.feature.f002._1_application.usecase.AccountUseCase;
+import br.cdb.feature.f000._1_application.usecase.CostCenterUseCase;
+import br.cdb.feature.f003._1_application.usecase.CreditCardUseCase;
+import br.cdb.feature.f006._1_application.usecase.TransactionUseCase;
 import br.cdb.feature.f006._1_application.UserTransactionService;
 import br.cdb.feature.f007._0_domain.ImportError;
 import br.cdb.feature.f007._0_domain.ImportResult;
@@ -200,7 +208,7 @@ class StatementImportServiceTest {
      * Reseta o grafo Registry-wired do contexto (services/use cases se auto-conectam via
      * Registry.tryGet — sem isso, a chamada seguinte reaproveitaria os singletons presos aos fakes
      * do teste anterior) e publica fakes novos antes de construir o {@code StatementImportService},
-     * cujos campos resolvem os use cases via {@code MonetaryUseCases.uc*()} na construção.
+     * cujos campos resolvem os use cases via {@code Registry.tryGet(...)} na construção.
      */
     private static void resetMonetaryRegistry(
             InMemoryRepositories.Accounts accounts,

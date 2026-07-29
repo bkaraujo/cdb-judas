@@ -1,9 +1,10 @@
 package br.cdb.feature.f000._1_application;
 
-import br.cdb.context.monetary.MonetaryUseCases;
-import br.cdb.context.monetary._0_domain.model.CreditCard;
+import br.cdb.feature.f003._0_domain.model.CreditCard;
+import br.cdb.feature.f003._1_application.usecase.CreditCardUseCase;
 import br.cdb.core.web.HTTPRequest;
 import br.cdb.feature.f000._0_domain.AccountOwnership;
+import br.commons.Registry;
 import br.commons.Result;
 import br.commons.business.BusinessError;
 import jakarta.enterprise.context.RequestScoped;
@@ -94,7 +95,7 @@ public class UserGuards {
     private Map<UUID, UUID> accountByCard() {
         var cached = accountByCard;
         if (cached == null) {
-            cached = MonetaryUseCases.ucCreditCard().list().getOrElse(List.of()).stream()
+            cached = Registry.tryGet(CreditCardUseCase.class).list().getOrElse(List.of()).stream()
                     .collect(Collectors.toUnmodifiableMap(CreditCard::id, CreditCard::accountId));
             accountByCard = cached;
         }

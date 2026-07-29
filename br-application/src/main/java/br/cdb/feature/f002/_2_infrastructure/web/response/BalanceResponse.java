@@ -1,6 +1,6 @@
 package br.cdb.feature.f002._2_infrastructure.web.response;
 
-import br.cdb.context.monetary._0_domain.model.Balance;
+import br.cdb.feature.f002._0_domain.model.Balance;
 import org.jspecify.annotations.NullMarked;
 
 import java.math.BigDecimal;

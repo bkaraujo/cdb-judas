@@ -1,11 +1,19 @@
 package br.cdb.feature;
 
-import br.cdb.context.monetary._0_domain.repository.*;
-import br.cdb.context.monetary._1_application.service.*;
-import br.cdb.context.monetary._1_application.usecase.AccountUseCase;
-import br.cdb.context.monetary._1_application.usecase.CostCenterUseCase;
-import br.cdb.context.monetary._1_application.usecase.CreditCardUseCase;
-import br.cdb.context.monetary._1_application.usecase.TransactionUseCase;
+import br.cdb.feature.f002._0_domain.repository.AccountRepository;
+import br.cdb.feature.f002._0_domain.repository.BalanceRepository;
+import br.cdb.feature.f000._0_domain.repository.CostCenterRepository;
+import br.cdb.feature.f003._0_domain.repository.CreditCardRepository;
+import br.cdb.feature.f006._0_domain.repository.TransactionRepository;
+import br.cdb.feature.f002._1_application.service.AccountService;
+import br.cdb.feature.f002._1_application.service.BalanceService;
+import br.cdb.feature.f000._1_application.service.CostCenterService;
+import br.cdb.feature.f003._1_application.service.CreditCardService;
+import br.cdb.feature.f006._1_application.service.TransactionService;
+import br.cdb.feature.f002._1_application.usecase.AccountUseCase;
+import br.cdb.feature.f000._1_application.usecase.CostCenterUseCase;
+import br.cdb.feature.f003._1_application.usecase.CreditCardUseCase;
+import br.cdb.feature.f006._1_application.usecase.TransactionUseCase;
 import br.cdb.core.JsonStorageProperties;
 import br.cdb.core.security.AccessTokenStore;
 import br.cdb.core.security.UserRepository;

@@ -1,7 +1,7 @@
 package br.cdb.infra.persistence;
 
-import br.cdb.context.people._0_domain.model.Person;
-import br.cdb.context.people._0_domain.repository.PersonRepository;
+import br.cdb.feature.f000._0_domain.model.Person;
+import br.cdb.feature.f000._0_domain.repository.PersonRepository;
 import lombok.val;
 import org.jspecify.annotations.NullMarked;
 

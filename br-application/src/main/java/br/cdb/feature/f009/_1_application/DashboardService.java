@@ -1,7 +1,7 @@
 package br.cdb.feature.f009._1_application;
 
-import br.cdb.context.monetary.MonetaryUseCases;
-import br.cdb.context.monetary._1_application.usecase.TransactionUseCase;
+import br.cdb.feature.f006._1_application.usecase.TransactionUseCase;
+import br.commons.Registry;
 import br.commons.Result;
 import br.commons.business.BusinessError;
 import jakarta.inject.Singleton;
@@ -19,7 +19,7 @@ import java.util.List;
 @RequiredArgsConstructor
 public class DashboardService {
 
-    private final TransactionUseCase ucTransaction = MonetaryUseCases.ucTransaction();
+    private final TransactionUseCase ucTransaction = Registry.tryGet(TransactionUseCase.class);
 
     public Result<MonthlyResult, BusinessError> getMonthlyResult(int month, int year) {
         return ucTransaction.transactions()

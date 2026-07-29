@@ -1,7 +1,5 @@
 package br.cdb;
 
-import br.commons.annotation.Facade;
-import com.tngtech.archunit.base.DescribedPredicate;
 import com.tngtech.archunit.core.domain.JavaClass;
 import com.tngtech.archunit.core.importer.ImportOption;
 import com.tngtech.archunit.junit.AnalyzeClasses;
@@ -15,9 +13,6 @@ import org.jspecify.annotations.NullMarked;
 
 import java.util.regex.Pattern;
 
-import static com.tngtech.archunit.base.DescribedPredicate.not;
-import static com.tngtech.archunit.core.domain.JavaClass.Predicates.implement;
-import static com.tngtech.archunit.core.domain.JavaClass.Predicates.resideInAPackage;
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.classes;
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noClasses;
 
@@ -45,11 +40,18 @@ class ArchitectureTest {
                     .should().beAnnotatedWith(NullMarked.class)
                     .because("todo tipo deve declarar explicitamente seu contrato de nullability");
 
+    /**
+     * <strong>Exceção temporária (fase 2→4 de {@code .claude/plan.md}):</strong> alvo remanescente
+     * dos contextos dissolvidos ({@link #isDissolvedContextRemnant}) é tolerado — {@code ContextBridge}
+     * (core) precisa referenciar as portas de repositório ex-contexto (agora {@code fNNN._0_domain.repository})
+     * para publicar os adaptadores JDBC no {@link br.commons.Registry} no startup, papel que já exercia
+     * antes da dissolução sem violar esta regra (as portas não moravam em {@code ..feature..}).
+     */
     @ArchTest
     static final ArchRule core_must_not_access_feature =
             noClasses().that().resideInAPackage("..core..")
                     .and().resideOutsideOfPackage("..feature..")
-                    .should().accessClassesThat().resideInAPackage("..feature..")
+                    .should(notAccessFeatureExceptDissolvedRemnants())
                     .because("o core da aplicação não deve depender de features; cores locais de feature (feature..core) são exceção legítima");
 
     @ArchTest
@@ -57,19 +59,6 @@ class ArchitectureTest {
             noClasses().that().resideInAPackage(".._1_application..")
                     .should().accessClassesThat().resideInAPackage(".._2_infrastructure..")
                     .because("serviços de aplicação devem depender de abstrações de domínio (_0_domain), não de implementações de infraestrutura");
-
-    @ArchTest
-    static final ArchRule feature_must_access_context_only_via_facade_or_domain_model =
-            noClasses().that().resideInAPackage("..feature..")
-                    .should().accessClassesThat(contextClassNotExposedViaFacade())
-                    .because("feature deve acessar context exclusivamente via Facade, use cases (_1_application.usecase, obtidos pela Facade), modelos de domínio (_0_domain.model) ou eventos de domínio (_0_domain.event)");
-
-    @ArchTest
-    static final ArchRule context_must_not_depend_on_framework =
-            noClasses().that().resideInAPackage("..context..")
-                    .should().dependOnClassesThat().resideInAnyPackage(
-                            "org.springframework..", "jakarta..", "io.quarkus..")
-                    .because("o contexto é livre de framework: DI via Registry, validação na borda (@Valid nos *HTTPRequest)");
 
     /**
      * O número da fatia expressa ordem de criação: uma feature {@code fNNN} só pode consumir recursos
@@ -94,6 +83,17 @@ class ArchitectureTest {
      * outra dependência cross-slice resolve-se por evento em {@code f000._0_domain.event}, por porta
      * declarada pelo consumidor em seu próprio {@code _0_domain}, ou por adapter em
      * {@code f999._2_infrastructure.adapter} — ver CLAUDE.md.
+     *
+     * <p><strong>Exceção temporária (fase 2→4 de {@code .claude/plan.md}):</strong> alvo que é
+     * remanescente dos contextos recém-dissolvidos ({@link #isDissolvedContextRemnant}) também é
+     * tolerado, qualquer que seja a origem — os antigos usecases/services/models/repositories de
+     * {@code br-context-monetary}/{@code br-context-people} viraram subpacotes dentro de
+     * {@code fNNN} preservando a organização interna que já tinham como contexto, mas ainda são
+     * chamados cross-slice do jeito antigo (ex.: {@code f004}/{@code f005} chamando
+     * {@code f006.TransactionUseCase} direto, sem porta) até a fase 4 trocar esse acesso por
+     * evento/HTTP interno. Enquanto essa exceção existir, "{@code mvn verify} verde" não significa
+     * mais "zero acoplamento cross-slice" — só "zero acoplamento novo fora do que já veio da
+     * dissolução".</p>
      */
     @ArchTest
     static final ArchRule feature_slices_must_not_depend_on_sibling_slices =
@@ -108,6 +108,25 @@ class ArchitectureTest {
         return matcher.find() ? Integer.parseInt(matcher.group(1)) : -1;
     }
 
+    /**
+     * Marca um alvo como remanescente dos contextos dissolvidos na fase 2 — sempre um dos
+     * subpacotes que só existem porque preservam a organização interna que a classe já tinha em
+     * {@code br-context-monetary}/{@code br-context-people} ({@code _0_domain.model/repository/
+     * event}, {@code _1_application.command/service/usecase/event}). Nenhuma fatia nativa usa esses
+     * nomes de subpacote hoje — não crie um novo com esses nomes fora da dissolução, ou ele também
+     * cairia nesta exceção sem querer.
+     */
+    private static boolean isDissolvedContextRemnant(JavaClass clazz) {
+        val pkg = "." + clazz.getPackageName() + ".";
+        return pkg.contains("._0_domain.model.")
+                || pkg.contains("._0_domain.repository.")
+                || pkg.contains("._0_domain.event.")
+                || pkg.contains("._1_application.command.")
+                || pkg.contains("._1_application.service.")
+                || pkg.contains("._1_application.usecase.")
+                || pkg.contains("._1_application.event.");
+    }
+
     private static ArchCondition<JavaClass> dependOnlyOnEarlierFeatureSlices() {
         return new ArchCondition<>("depender apenas de fatias fNNN anteriores (número menor; f000 é base)") {
             @Override
@@ -117,12 +136,36 @@ class ArchitectureTest {
                     return; // classe fora de uma fatia fNNN (ex.: package-info da raiz feature)
                 }
                 for (val dependency : origin.getDirectDependenciesFromSelf()) {
-                    val to = featureNumber(dependency.getTargetClass());
-                    if (to > from) {
-                        events.add(SimpleConditionEvent.violated(dependency,
-                                "f%03d depende de f%03d (fatia posterior): %s"
-                                        .formatted(from, to, dependency.getDescription())));
+                    val target = dependency.getTargetClass();
+                    val to = featureNumber(target);
+                    if (to <= from) {
+                        continue;
                     }
+                    if (isDissolvedContextRemnant(target)) {
+                        continue; // TEMPORÁRIO fase 2→4 — ver javadoc da regra 6 e de isDissolvedContextRemnant
+                    }
+                    events.add(SimpleConditionEvent.violated(dependency,
+                            "f%03d depende de f%03d (fatia posterior): %s"
+                                    .formatted(from, to, dependency.getDescription())));
+                }
+            }
+        };
+    }
+
+    private static ArchCondition<JavaClass> notAccessFeatureExceptDissolvedRemnants() {
+        return new ArchCondition<>("não acessar pacote ..feature.. (exceto remanescente dos contextos dissolvidos, temporário fase 2→4)") {
+            @Override
+            public void check(JavaClass origin, ConditionEvents events) {
+                for (val dependency : origin.getDirectDependenciesFromSelf()) {
+                    val target = dependency.getTargetClass();
+                    if (featureNumber(target) < 0) {
+                        continue; // não é classe de fNNN
+                    }
+                    if (isDissolvedContextRemnant(target)) {
+                        continue; // TEMPORÁRIO fase 2→4 — ver javadoc da regra e de isDissolvedContextRemnant
+                    }
+                    events.add(SimpleConditionEvent.violated(dependency,
+                            "core depende de feature: " + dependency.getDescription()));
                 }
             }
         };
@@ -140,9 +183,13 @@ class ArchitectureTest {
                     return; // f999 é o composition root: pode importar todas
                 }
                 for (val dependency : origin.getDirectDependenciesFromSelf()) {
-                    val to = featureNumber(dependency.getTargetClass());
+                    val target = dependency.getTargetClass();
+                    val to = featureNumber(target);
                     if (to < 0 || to == 0 || to == from) {
                         continue; // fora de fNNN, alvo f000 (kernel) ou mesma fatia: permitido
+                    }
+                    if (isDissolvedContextRemnant(target)) {
+                        continue; // TEMPORÁRIO fase 2→4 — ver javadoc da regra e de isDissolvedContextRemnant
                     }
                     events.add(SimpleConditionEvent.violated(dependency,
                             "f%03d depende de f%03d (fatia irmã): %s"
@@ -150,17 +197,6 @@ class ArchitectureTest {
                 }
             }
         };
-    }
-
-    private static DescribedPredicate<JavaClass> contextClassNotExposedViaFacade() {
-        return resideInAPackage("..context..")
-                .and(not(resideInAPackage("..context..shared..")))
-                .and(not(resideInAPackage("..context.._0_domain.model..")))
-                .and(not(resideInAPackage("..context.._0_domain.event..")))
-                .and(not(resideInAPackage("..context.._1_application.command..")))
-                .and(not(resideInAPackage("..context.._1_application.event..")))
-                .and(not(resideInAPackage("..context.._1_application.usecase..")))
-                .and(not(implement(Facade.class)));
     }
 
 }

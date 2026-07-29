@@ -1,6 +1,6 @@
 package br.cdb.feature.f006._2_infrastructure.web.request;
 
-import br.cdb.context.monetary._0_domain.model.Transaction;
+import br.cdb.feature.f006._0_domain.model.Transaction;
 import br.commons.validation.TwoDecimalPlaces;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;

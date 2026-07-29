@@ -1,6 +1,6 @@
 package br.cdb.feature.f005._2_infrastructure.web;
 
-import br.cdb.context.monetary._0_domain.model.Transaction;
+import br.cdb.feature.f006._0_domain.model.Transaction;
 import br.cdb.feature.f000._0_domain.DeletionStrategy;
 import br.cdb.feature.f000._1_application.Deletions;
 import br.cdb.feature.f005._1_application.CategoryResponse;

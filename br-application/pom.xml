@@ -16,6 +16,10 @@
 
     <dependencies>
 
+        <!-- Framework comum (Result, Registry, MessageBus, JDBC/YAML, Logger) — antes chegava
+             transitivamente via os módulos de contexto; explícito desde a dissolução (fase 2). -->
+        <dependency><groupId>br.cdb</groupId><artifactId>commons</artifactId><version>${project.version}</version></dependency>
+
         <!-- Quarkus (borda HTTP/DI/segurança) -->
         <dependency><groupId>io.quarkus</groupId><artifactId>quarkus-arc</artifactId></dependency>
         <dependency><groupId>io.quarkus</groupId><artifactId>quarkus-rest</artifactId></dependency>
@@ -31,9 +35,6 @@
 
         <!-- Banco relacional H2 — backend do pool JDBC próprio; versão gerida pelo BOM Quarkus -->
         <dependency><groupId>com.h2database</groupId><artifactId>h2</artifactId><scope>runtime</scope></dependency>
-
-        <dependency><groupId>br.cdb.contexts</groupId><artifactId>context-people</artifactId><version>${project.version}</version></dependency>
-        <dependency><groupId>br.cdb.contexts</groupId><artifactId>context-monetary</artifactId><version>${project.version}</version></dependency>
 
         <!-- RestAssured (+ Hamcrest transitivo) — exercitar Resources via HTTP real (@QuarkusTest) -->
         <dependency><groupId>io.rest-assured</groupId><artifactId>rest-assured</artifactId><scope>test</scope></dependency>

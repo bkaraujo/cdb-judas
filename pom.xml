@@ -13,8 +13,6 @@
     <modules>
         <module>br-parent</module>
         <module>br-commons</module>
-        <module>br-context-people</module>
-        <module>br-context-monetary</module>
         <module>br-application</module>
     </modules>
 </project>

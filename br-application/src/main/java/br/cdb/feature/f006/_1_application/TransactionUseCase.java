@@ -1,9 +1,8 @@
 package br.cdb.feature.f006._1_application;
 
-import br.cdb.context.monetary.MonetaryUseCases;
-import br.cdb.context.monetary._0_domain.model.Transaction;
-import br.cdb.context.monetary._1_application.command.TransactionCommand;
-import br.cdb.context.monetary._1_application.command.TransactionScope;
+import br.cdb.feature.f006._0_domain.model.Transaction;
+import br.cdb.feature.f006._1_application.command.TransactionCommand;
+import br.cdb.feature.f006._1_application.command.TransactionScope;
 import br.cdb.core.web.HTTPRequest;
 import br.cdb.feature.f000._0_domain.event.TransactionsDeleted;
 import br.cdb.feature.f000._1_application.ClosingService;
@@ -12,6 +11,7 @@ import br.cdb.feature.f000._0_domain.event.AccountStreamEvents;
 import br.cdb.feature.f006._0_domain.TransferCategories;
 import br.cdb.feature.f006._0_domain.UserTransaction;
 import br.commons.MessageBus;
+import br.commons.Registry;
 import br.commons.Result;
 import br.commons.business.BusinessError;
 import jakarta.inject.Singleton;
@@ -27,7 +27,7 @@ import java.util.UUID;
 
 /**
  * Use case da fatia {@code f006} (transactions + transfer). Nome coincide com o use case do
- * contexto monetário ({@code br.cdb.context.monetary._1_application.usecase.TransactionUseCase}) —
+ * contexto monetário ({@code br.cdb.feature.f006._1_application.usecase.TransactionUseCase}) —
  * referenciado por FQN completo no campo {@code ucTransaction} para evitar colisão de import.
  *
  * <p>{@code deleteTransaction} não limpa o overlay/vínculo de tag diretamente: publica
@@ -40,8 +40,8 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class TransactionUseCase {
 
-    private final br.cdb.context.monetary._1_application.usecase.TransactionUseCase ucTransaction =
-            MonetaryUseCases.ucTransaction();
+    private final br.cdb.feature.f006._1_application.usecase.TransactionUseCase ucTransaction =
+            Registry.tryGet(br.cdb.feature.f006._1_application.usecase.TransactionUseCase.class);
 
     private final UserGuards guards;
     private final UserTransactionService userTransactionService;

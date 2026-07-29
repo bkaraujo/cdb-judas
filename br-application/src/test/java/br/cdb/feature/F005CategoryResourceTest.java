@@ -1,6 +1,6 @@
 package br.cdb.feature;
 
-import br.cdb.context.monetary._0_domain.model.Transaction.Type;
+import br.cdb.feature.f006._0_domain.model.Transaction.Type;
 import br.cdb.feature.f005._1_application.UserCategoryService;
 import br.commons.framework.persistence.jdbc.primitives.JDBCParameter;
 import io.quarkus.test.junit.QuarkusTest;

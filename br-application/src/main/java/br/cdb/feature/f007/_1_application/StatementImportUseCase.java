@@ -1,10 +1,9 @@
 package br.cdb.feature.f007._1_application;
 
-import br.cdb.context.monetary.MonetaryUseCases;
-import br.cdb.context.monetary._0_domain.model.Account;
-import br.cdb.context.monetary._0_domain.model.CreditCard;
-import br.cdb.context.monetary._1_application.usecase.AccountUseCase;
-import br.cdb.context.monetary._1_application.usecase.CreditCardUseCase;
+import br.cdb.feature.f002._0_domain.model.Account;
+import br.cdb.feature.f003._0_domain.model.CreditCard;
+import br.cdb.feature.f002._1_application.usecase.AccountUseCase;
+import br.cdb.feature.f003._1_application.usecase.CreditCardUseCase;
 import br.cdb.feature.f000._1_application.UserGuards;
 import br.cdb.feature.f000._0_domain.event.AccountStreamEvents;
 import br.cdb.feature.f007._0_domain.ImportError;
@@ -13,6 +12,7 @@ import br.cdb.feature.f007._1_application.confirm.InvoiceConfirmCommand;
 import br.cdb.feature.f007._1_application.confirm.StatementConfirmCommand;
 import br.cdb.feature.f007._1_application.preview.ImportPreviewOutcome;
 import br.commons.MessageBus;
+import br.commons.Registry;
 import br.commons.Result;
 import br.commons.business.BusinessError;
 import jakarta.inject.Singleton;
@@ -36,8 +36,8 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class StatementImportUseCase {
 
-    private final AccountUseCase ucAccount = MonetaryUseCases.ucAccount();
-    private final CreditCardUseCase ucCreditCard = MonetaryUseCases.ucCreditCard();
+    private final AccountUseCase ucAccount = Registry.tryGet(AccountUseCase.class);
+    private final CreditCardUseCase ucCreditCard = Registry.tryGet(CreditCardUseCase.class);
 
     private final UserGuards guards;
     private final StatementImportService service;

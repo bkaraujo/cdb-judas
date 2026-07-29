@@ -1,7 +1,7 @@
 package br.cdb.infra.persistence.person;
 
-import br.cdb.context.people._0_domain.model.Person;
-import br.cdb.context.people._0_domain.repository.PersonRepository;
+import br.cdb.feature.f000._0_domain.model.Person;
+import br.cdb.feature.f000._0_domain.repository.PersonRepository;
 import br.commons.chrono.Time;
 import br.commons.framework.persistence.jdbc.JDBCRepository;
 import br.commons.framework.persistence.jdbc.primitives.JDBCResultSet;

@@ -1,6 +1,6 @@
 package br.cdb.feature.f007._2_infrastructure.web;
 
-import br.cdb.context.monetary._0_domain.model.CreditCard;
+import br.cdb.feature.f003._0_domain.model.CreditCard;
 import br.cdb.feature.f007._1_application.StatementImportUseCase;
 import br.cdb.feature.f007._1_application.confirm.InvoiceConfirmCommand;
 import br.cdb.feature.f007._1_application.preview.BankStatementPreview;

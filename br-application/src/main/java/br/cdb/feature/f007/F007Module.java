@@ -22,8 +22,8 @@ import java.util.List;
 
 /**
  * Wires a fatia {@code f007} (importação de extrato): o extrator de PDF (utilitário técnico), os
- * parsers e o {@link StatementImportService}, que alcança o contexto monetário só pelos use cases
- * expostos por {@code MonetaryUseCases}.
+ * parsers e o {@link StatementImportService}, que alcança as engines Registry-wired
+ * (ex-contexto monetário) de f002/f003/f006 via {@code Registry.tryGet(...)}.
  */
 @NullMarked
 @ApplicationScoped

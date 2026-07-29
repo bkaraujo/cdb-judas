@@ -1,9 +1,9 @@
 package br.cdb.feature.f007._2_infrastructure;
 
-import br.cdb.context.monetary.MonetaryUseCases;
-import br.cdb.context.monetary._0_domain.model.CreditCard;
-import br.cdb.context.monetary._1_application.usecase.CreditCardUseCase;
+import br.cdb.feature.f003._0_domain.model.CreditCard;
+import br.cdb.feature.f003._1_application.usecase.CreditCardUseCase;
 import br.cdb.feature.f007._0_domain.CreditCardProvider;
+import br.commons.Registry;
 import jakarta.inject.Singleton;
 import lombok.RequiredArgsConstructor;
 import org.jspecify.annotations.NullMarked;
@@ -20,7 +20,7 @@ import java.util.List;
 @RequiredArgsConstructor
 public class MonetaryCardProvider implements CreditCardProvider {
 
-    private final CreditCardUseCase ucCreditCard = MonetaryUseCases.ucCreditCard();
+    private final CreditCardUseCase ucCreditCard = Registry.tryGet(CreditCardUseCase.class);
 
     @Override
     public List<CreditCard> creditCards() {

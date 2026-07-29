@@ -1,6 +1,6 @@
 package br.cdb.feature.f005._1_application;
 
-import br.cdb.context.monetary._0_domain.model.Transaction;
+import br.cdb.feature.f006._0_domain.model.Transaction;
 import br.cdb.feature.f005._0_domain.UserCategory;
 import br.cdb.feature.f005._0_domain.UserCategoryRepository;
 import br.cdb.feature.f005._0_domain.event.CategoryEvents;

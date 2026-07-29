@@ -1,6 +1,6 @@
 package br.cdb.feature.f003._1_application;
 
-import br.cdb.context.monetary._0_domain.model.CreditCard;
+import br.cdb.feature.f003._0_domain.model.CreditCard;
 import org.jspecify.annotations.NullMarked;
 
 import java.util.UUID;

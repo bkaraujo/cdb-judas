@@ -1,6 +1,6 @@
 package br.cdb.feature.f000._1_application;
 
-import br.cdb.context.people._1_application.usecase.PersonUseCase;
+import br.cdb.feature.f000._1_application.usecase.PersonUseCase;
 import br.cdb.core.security.User;
 import br.cdb.core.security.UserRepository;
 import br.cdb.feature.f000._0_domain.event.UserEvents;

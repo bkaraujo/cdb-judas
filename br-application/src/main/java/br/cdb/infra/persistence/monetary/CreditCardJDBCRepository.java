@@ -1,7 +1,7 @@
 package br.cdb.infra.persistence.monetary;
 
-import br.cdb.context.monetary._0_domain.model.CreditCard;
-import br.cdb.context.monetary._0_domain.repository.CreditCardRepository;
+import br.cdb.feature.f003._0_domain.model.CreditCard;
+import br.cdb.feature.f003._0_domain.repository.CreditCardRepository;
 import br.commons.chrono.Time;
 import br.commons.framework.persistence.jdbc.JDBCRepository;
 import br.commons.framework.persistence.jdbc.primitives.JDBCResultSet;

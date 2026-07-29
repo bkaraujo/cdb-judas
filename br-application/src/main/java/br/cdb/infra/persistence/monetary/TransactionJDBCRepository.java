@@ -1,7 +1,7 @@
 package br.cdb.infra.persistence.monetary;
 
-import br.cdb.context.monetary._0_domain.model.Transaction;
-import br.cdb.context.monetary._0_domain.repository.TransactionRepository;
+import br.cdb.feature.f006._0_domain.model.Transaction;
+import br.cdb.feature.f006._0_domain.repository.TransactionRepository;
 import br.commons.chrono.Time;
 import br.commons.framework.persistence.jdbc.JDBCRepository;
 import br.commons.framework.persistence.jdbc.primitives.JDBCParameter;

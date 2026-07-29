@@ -1,10 +1,12 @@
 package br.cdb.core;
 
-import br.cdb.context.monetary._0_domain.repository.*;
-import br.cdb.context.people.PeopleBootstrap;
-import br.cdb.context.people.PeopleContext;
-import br.cdb.context.people._0_domain.repository.PersonRepository;
 import br.cdb.core.security.UserRepository;
+import br.cdb.feature.f000._0_domain.repository.CostCenterRepository;
+import br.cdb.feature.f000._0_domain.repository.PersonRepository;
+import br.cdb.feature.f002._0_domain.repository.AccountRepository;
+import br.cdb.feature.f002._0_domain.repository.BalanceRepository;
+import br.cdb.feature.f003._0_domain.repository.CreditCardRepository;
+import br.cdb.feature.f006._0_domain.repository.TransactionRepository;
 import br.cdb.infra.persistence.CachingPersonRepository;
 import br.cdb.infra.persistence.CachingUserRepository;
 import br.cdb.infra.persistence.Database;
@@ -34,14 +36,18 @@ import lombok.val;
 import org.jspecify.annotations.NullMarked;
 
 /**
- * Costura entre a borda Quarkus/CDI (feature) e os contextos ligados por {@link Registry}.
+ * Costura entre a borda Quarkus/CDI e as portas de repositório self-wired via {@link Registry}
+ * (herança do desenho hexagonal dos antigos contextos {@code br-context-monetary}/
+ * {@code br-context-people}, dissolvidos na fase 2 de {@code .claude/plan.md} — as classes
+ * continuam Registry-wired dentro de {@code fNNN._0_domain}/{@code _1_application}, só mudaram
+ * de módulo Maven).
  *
- * <p>As portas de repositório dos contextos são publicadas no {@link Registry} em
+ * <p>As portas de repositório são publicadas no {@link Registry} em
  * {@link #initDataSource(StartupEvent, DataSource)} — depois do {@code DataSource} existir
  * (os adaptadores {@code *JDBCRepository} o resolvem no construtor) e antes de qualquer
- * requisição HTTP construir um use case de contexto via {@code MonetaryUseCases.uc*()}.
- * Só {@link UserRepository}/{@link PersonRepository} continuam expostos também como beans CDI:
- * têm consumidores injetados (login/perfil/seed) e caches que os testes precisam limpar.
+ * requisição HTTP construir um use case Registry-wired. Só {@link UserRepository}/
+ * {@link PersonRepository} continuam expostos também como beans CDI: têm consumidores injetados
+ * (login/perfil/seed) e caches que os testes precisam limpar.
  */
 @NullMarked
 @Singleton
@@ -91,8 +97,8 @@ public class ContextBridge {
 
     /**
      * Força a criação do {@link DataSource} (e do schema) no startup, antes de qualquer query, e
-     * publica os adaptadores JDBC nas portas de repositório dos contextos. A prioridade baixa
-     * garante execução antes de observers de seed (ex.: {@code UserSeeder}).
+     * publica os adaptadores JDBC nas portas de repositório self-wired. A prioridade baixa garante
+     * execução antes de observers de seed (ex.: {@code F999Module}).
      */
     void initDataSource(@Observes @Priority(1) StartupEvent event, DataSource dataSource) {
         Registry.tryGet(AccountRepository.class, AccountJDBCRepository::new);
@@ -114,12 +120,5 @@ public class ContextBridge {
     @Singleton
     public UserRepository userRepository(DataSource dataSource) {
         return Registry.tryGet(UserRepository.class, () -> new CachingUserRepository(new UserJDBCRepository()));
-    }
-
-    @Produces
-    @Singleton
-    public PeopleContext peopleContext(PersonRepository personRepository) {
-        PeopleBootstrap.register();
-        return Registry.get(PeopleContext.class);
     }
 }

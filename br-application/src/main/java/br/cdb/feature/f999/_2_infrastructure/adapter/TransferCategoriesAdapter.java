@@ -1,6 +1,6 @@
 package br.cdb.feature.f999._2_infrastructure.adapter;
 
-import br.cdb.context.monetary._0_domain.model.Transaction;
+import br.cdb.feature.f006._0_domain.model.Transaction;
 import br.cdb.feature.f005._1_application.UserCategoryService;
 import br.cdb.feature.f006._0_domain.TransferCategories;
 import jakarta.inject.Singleton;

@@ -1,6 +1,6 @@
 package br.cdb.infra.persistence.monetary;
 
-import br.cdb.context.monetary._0_domain.model.Account;
+import br.cdb.feature.f002._0_domain.model.Account;
 import lombok.val;
 import org.jspecify.annotations.NullMarked;
 
