@@ -6,7 +6,7 @@ import org.jspecify.annotations.NullMarked;
 
 import java.util.*;
 
-/** Fake in-memory de {@code PERSON_TRANSACTION} para os testes de import (contexto sem CDI/JDBC). */
+/** Fake in-memory de {@code F005_TRANSACTION_CATEGORY} para os testes de import (contexto sem CDI/JDBC). */
 @NullMarked
 class InMemoryUserTransactions implements UserTransactionRepository {
 
@@ -17,10 +17,9 @@ class InMemoryUserTransactions implements UserTransactionRepository {
     }
 
     @Override
-    public Optional<UserTransaction> findByTransactionAccountAndPerson(UUID transactionId, UUID accountId, UUID personId) {
+    public Optional<UserTransaction> findByTransactionAndPerson(UUID transactionId, UUID personId) {
         return store.stream()
                 .filter(u -> u.transactionId().equals(transactionId)
-                        && u.accountId().equals(accountId)
                         && u.personId().equals(personId))
                 .findFirst();
     }
@@ -33,7 +32,6 @@ class InMemoryUserTransactions implements UserTransactionRepository {
     @Override
     public UserTransaction save(UserTransaction userTransaction) {
         store.removeIf(u -> u.transactionId().equals(userTransaction.transactionId())
-                && u.accountId().equals(userTransaction.accountId())
                 && u.personId().equals(userTransaction.personId()));
         store.add(userTransaction);
         return userTransaction;
@@ -45,25 +43,14 @@ class InMemoryUserTransactions implements UserTransactionRepository {
     }
 
     @Override
-    public void deleteByTransactionAccountAndPerson(UUID transactionId, UUID accountId, UUID personId) {
+    public void deleteByTransactionAndPerson(UUID transactionId, UUID personId) {
         store.removeIf(u -> u.transactionId().equals(transactionId)
-                && u.accountId().equals(accountId)
                 && u.personId().equals(personId));
     }
 
     @Override
     public void reassignCategory(UUID oldCategoryId, UUID newCategoryId, UUID personId) {
         // não exercido por estes testes
-    }
-
-    @Override
-    public void reassignAccount(UUID oldAccountId, UUID newAccountId, UUID personId) {
-        // não exercido por estes testes
-    }
-
-    @Override
-    public void deleteByAccountAndPerson(UUID accountId, UUID personId) {
-        store.removeIf(u -> u.accountId().equals(accountId) && u.personId().equals(personId));
     }
 
     @Override

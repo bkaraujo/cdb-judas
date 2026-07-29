@@ -16,16 +16,17 @@ import java.time.LocalDate;
 import java.util.*;
 
 /**
- * Adaptador JDBC (H2) da porta {@link TransactionRepository}; tabela {@code MON_TRANSACTION}.
+ * Adaptador JDBC (H2) da porta {@link TransactionRepository}; tabela {@code F006_TRANSACTION}.
  * Enums como string, datas como {@code DATE}, timestamps como {@code TIMESTAMP};
- * {@code paymentDate}/{@code groupId}/{@code notes} são opcionais.
- * Categoria e tipo (income/expense) saíram para a camada feature (PERSON_TRANSACTION).
+ * {@code paymentDate}/{@code groupId}/{@code notes} são opcionais. Categoria saiu para
+ * {@code F005_TRANSACTION_CATEGORY} (camada feature). {@code COD_PERSON} é derivado da conta
+ * ({@link AccountOwnerLookup}) — o comando de criação não carrega personId.
  */
 @NullMarked
 public final class TransactionJDBCRepository extends JDBCRepository<Transaction> implements TransactionRepository {
 
     public TransactionJDBCRepository() {
-        super("MON_TRANSACTION");
+        super("F006_TRANSACTION");
     }
 
     @Override
@@ -41,7 +42,7 @@ public final class TransactionJDBCRepository extends JDBCRepository<Transaction>
     @Override
     public void reassignAccount(UUID from, UUID to) {
         datasource.execute(
-                "UPDATE MON_TRANSACTION SET COD_ACCOUNT = ? WHERE COD_ACCOUNT = ?",
+                "UPDATE F006_TRANSACTION SET COD_ACCOUNT = ? WHERE COD_ACCOUNT = ?",
                 JDBCParameter.of(to.toString(), from.toString())
         );
     }
@@ -49,7 +50,7 @@ public final class TransactionJDBCRepository extends JDBCRepository<Transaction>
     @Override
     public void reassignCard(UUID from, UUID to) {
         datasource.execute(
-                "UPDATE MON_TRANSACTION SET COD_CARD = ? WHERE COD_CARD = ?",
+                "UPDATE F006_TRANSACTION SET COD_CARD = ? WHERE COD_CARD = ?",
                 JDBCParameter.of(to.toString(), from.toString())
         );
     }
@@ -76,6 +77,7 @@ public final class TransactionJDBCRepository extends JDBCRepository<Transaction>
 
         val values = new LinkedHashMap<String, @Nullable Object>();
         values.put("ID", entity.id().toString());
+        values.put("COD_PERSON", AccountOwnerLookup.find(datasource, entity.accountId()));
         values.put("TXT_DESCRIPTION", entity.description());
         values.put("NUM_SIGNAL", entity.signal());
         values.put("DEC_AMOUNT", entity.amount());

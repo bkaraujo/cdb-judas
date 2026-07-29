@@ -56,7 +56,7 @@ public class F005CategoryResourceTest extends BaseHttpTest {
 
     private String categoryOf(String transactionId) {
         return dataSource.query(
-                "SELECT COD_CATEGORY FROM PERSON_TRANSACTION WHERE COD_TRANSACTION = ?",
+                "SELECT COD_CATEGORY FROM F005_TRANSACTION_CATEGORY WHERE COD_TRANSACTION = ?",
                 JDBCParameter.of(transactionId),
                 rs -> rs.next().get() ? rs.getString("COD_CATEGORY").get() : null
         );
@@ -64,7 +64,7 @@ public class F005CategoryResourceTest extends BaseHttpTest {
 
     private boolean transactionExists(String transactionId) {
         return dataSource.query(
-                "SELECT COUNT(*) FROM MON_TRANSACTION WHERE ID = ?",
+                "SELECT COUNT(*) FROM F006_TRANSACTION WHERE ID = ?",
                 JDBCParameter.of(transactionId),
                 rs -> { rs.next().get(); return rs.getLong(1).get(); }
         ) > 0;
@@ -352,9 +352,8 @@ public class F005CategoryResourceTest extends BaseHttpTest {
         // A transferência já grava o overlay das duas pernas; aqui só reaponta a perna de saída
         // para a subcategoria customizada, para exercitar a expansão do par na exclusão da categoria.
         dataSource.execute(
-                "UPDATE PERSON_TRANSACTION SET COD_CATEGORY = ?, TMS_UPDATED_AT = CURRENT_TIMESTAMP "
-                        + "WHERE COD_PERSON = ? AND COD_ACCOUNT = ? AND COD_TRANSACTION = ?",
-                JDBCParameter.of(subId, TEST_USER_ID, accountA, outboundId)
+                "UPDATE F005_TRANSACTION_CATEGORY SET COD_CATEGORY = ? WHERE COD_PERSON = ? AND COD_TRANSACTION = ?",
+                JDBCParameter.of(subId, TEST_USER_ID, outboundId)
         );
 
         asTestUser()
@@ -366,7 +365,7 @@ public class F005CategoryResourceTest extends BaseHttpTest {
 
         // A perna irmã (conta B) foi expandida e removida também — par de transferência nunca fica órfão.
         val siblingCount = dataSource.query(
-                "SELECT COUNT(*) FROM MON_TRANSACTION WHERE COD_ACCOUNT = ?",
+                "SELECT COUNT(*) FROM F006_TRANSACTION WHERE COD_ACCOUNT = ?",
                 JDBCParameter.of(accountB),
                 rs -> { rs.next().get(); return rs.getLong(1).get(); }
         );

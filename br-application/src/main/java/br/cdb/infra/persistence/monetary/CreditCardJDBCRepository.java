@@ -13,14 +13,16 @@ import java.sql.Timestamp;
 import java.util.*;
 
 /**
- * Adaptador JDBC (H2) da porta {@link CreditCardRepository}; tabela {@code MON_CARD}.
+ * Adaptador JDBC (H2) da porta {@link CreditCardRepository}; tabela {@code F003_CARD}.
  * Cartão é identificado só pelo last4 e vinculado a uma conta real ({@code COD_ACCOUNT}).
+ * {@code COD_PERSON} é derivado da conta ({@link AccountOwnerLookup}) — o comando de criação não
+ * carrega personId (o contexto não o conhece).
  */
 @NullMarked
 public final class CreditCardJDBCRepository extends JDBCRepository<CreditCard> implements CreditCardRepository {
 
     public CreditCardJDBCRepository() {
-        super("MON_CARD");
+        super("F003_CARD");
     }
 
     @Override
@@ -49,6 +51,7 @@ public final class CreditCardJDBCRepository extends JDBCRepository<CreditCard> i
 
         val values = new LinkedHashMap<String, @Nullable Object>();
         values.put("ID", entity.id().toString());
+        values.put("COD_PERSON", AccountOwnerLookup.find(datasource, entity.accountId()));
         values.put("TXT_LAST4", entity.last4());
         values.put("COD_ACCOUNT", entity.accountId().toString());
         values.put("FLG_ACTIVE", entity.active() ? "Y" : "N");

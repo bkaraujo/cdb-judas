@@ -56,7 +56,7 @@ public class F002AccountResourceTest extends BaseHttpTest {
 
     private boolean transactionExists(String transactionId) {
         return dataSource.query(
-                "SELECT COUNT(*) FROM MON_TRANSACTION WHERE ID = ?",
+                "SELECT COUNT(*) FROM F006_TRANSACTION WHERE ID = ?",
                 JDBCParameter.of(transactionId),
                 rs -> { rs.next().get(); return rs.getLong(1).get(); }
         ) > 0;
@@ -64,16 +64,19 @@ public class F002AccountResourceTest extends BaseHttpTest {
 
     private long balanceRowCount(String accountId) {
         return dataSource.query(
-                "SELECT COUNT(*) FROM PERSON_ACCOUNT_BALANCE WHERE COD_ACCOUNT = ?",
+                "SELECT COUNT(*) FROM F002_BALANCE WHERE COD_ACCOUNT = ?",
                 JDBCParameter.of(accountId),
                 rs -> { rs.next().get(); return rs.getLong(1).get(); }
         );
     }
 
-    private long overlayRowCount(String accountId) {
+    /** F005_TRANSACTION_CATEGORY não carrega mais COD_ACCOUNT (nativo de F006_TRANSACTION desde a fusão) — verifica pelos ids de transação em vez da conta. */
+    private long overlayRowCount(String... transactionIds) {
+        if (transactionIds.length == 0) return 0;
+        val placeholders = String.join(", ", java.util.Collections.nCopies(transactionIds.length, "?"));
         return dataSource.query(
-                "SELECT COUNT(*) FROM PERSON_TRANSACTION WHERE COD_ACCOUNT = ?",
-                JDBCParameter.of(accountId),
+                "SELECT COUNT(*) FROM F005_TRANSACTION_CATEGORY WHERE COD_TRANSACTION IN (" + placeholders + ")",
+                JDBCParameter.of((Object[]) transactionIds),
                 rs -> { rs.next().get(); return rs.getLong(1).get(); }
         );
     }
@@ -285,16 +288,18 @@ public class F002AccountResourceTest extends BaseHttpTest {
                 .when().delete("/api/" + TEST_USER_ID + "/accounts/" + sourceId)
                 .then().statusCode(204);
 
-        val row = dataSource.query(
-                "SELECT COD_ACCOUNT, COD_CATEGORY FROM PERSON_TRANSACTION WHERE COD_TRANSACTION = ?",
+        val newAccountId = dataSource.query(
+                "SELECT COD_ACCOUNT FROM F006_TRANSACTION WHERE ID = ?",
                 JDBCParameter.of(txId),
-                rs -> {
-                    rs.next().get();
-                    return new String[]{rs.getString("COD_ACCOUNT").get(), rs.getString("COD_CATEGORY").get()};
-                }
+                rs -> { rs.next().get(); return rs.getString("COD_ACCOUNT").get(); }
         );
-        assertEquals(targetId, row[0], "overlay re-keyed para a conta destino");
-        assertEquals(subId, row[1], "categoria preservada pelo re-key");
+        val categoryId = dataSource.query(
+                "SELECT COD_CATEGORY FROM F005_TRANSACTION_CATEGORY WHERE COD_TRANSACTION = ?",
+                JDBCParameter.of(txId),
+                rs -> { rs.next().get(); return rs.getString("COD_CATEGORY").get(); }
+        );
+        assertEquals(targetId, newAccountId, "conta re-keyed para o destino (contexto monetário)");
+        assertEquals(subId, categoryId, "categoria preservada (overlay não tocado no MOVE)");
 
         asTestUser()
                 .when().get("/api/" + TEST_USER_ID + "/accounts/" + targetId)
@@ -382,7 +387,7 @@ public class F002AccountResourceTest extends BaseHttpTest {
                 .then().statusCode(201)
                 .extract().jsonPath().getString("id");
         dataSource.execute(
-                "INSERT INTO PERSON_TRANSACTION_TAG (COD_TRANSACTION, COD_PERSON, COD_TAG) VALUES (?, ?, ?)",
+                "INSERT INTO F004_TRANSACTION_TAG (COD_TRANSACTION, COD_PERSON, COD_TAG) VALUES (?, ?, ?)",
                 JDBCParameter.of(regularTxId, TEST_USER_ID, tagId)
         );
 
@@ -402,17 +407,17 @@ public class F002AccountResourceTest extends BaseHttpTest {
 
         assertFalse(transactionExists(regularTxId), "transação comum da conta A some");
         assertFalse(transactionExists(outboundId), "perna de transferência da conta A some");
-        assertEquals(0, overlayRowCount(accountA), "overlay da conta A limpo");
+        assertEquals(0, overlayRowCount(regularTxId, outboundId), "overlay da conta A limpo");
 
         val tagLinkCount = dataSource.query(
-                "SELECT COUNT(*) FROM PERSON_TRANSACTION_TAG WHERE COD_TRANSACTION = ?",
+                "SELECT COUNT(*) FROM F004_TRANSACTION_TAG WHERE COD_TRANSACTION = ?",
                 JDBCParameter.of(regularTxId),
                 rs -> { rs.next().get(); return rs.getLong(1).get(); }
         );
         assertEquals(0, tagLinkCount, "vínculo de tag da transação apagada também é limpo");
 
         val accountBTxCount = dataSource.query(
-                "SELECT COUNT(*) FROM MON_TRANSACTION WHERE COD_ACCOUNT = ?",
+                "SELECT COUNT(*) FROM F006_TRANSACTION WHERE COD_ACCOUNT = ?",
                 JDBCParameter.of(accountB),
                 rs -> { rs.next().get(); return rs.getLong(1).get(); }
         );

@@ -24,7 +24,7 @@ public class ClosingJDBCRepository implements ClosingRepository {
     public Optional<YearMonth> find() {
         val personId = HTTPRequest.personId();
         val results = dataSource.query(
-                "SELECT TXT_VALUE FROM PERSON_PREFERENCES WHERE COD_PERSON = ? AND TXT_KEY = ?",
+                "SELECT TXT_VALUE FROM F000_PREFERENCES WHERE COD_PERSON = ? AND TXT_KEY = ?",
                 JDBCParameter.of (
                         personId,
                         KEY
@@ -49,19 +49,19 @@ public class ClosingJDBCRepository implements ClosingRepository {
         // quando vários writers concorrem na mesma chave (COD_PERSON, TXT_KEY) em ambiente multi-tenant.
         dataSource.transaction(tx -> {
             val exists = tx.query(
-                    "SELECT TXT_VALUE FROM PERSON_PREFERENCES WHERE COD_PERSON = ? AND TXT_KEY = ?",
+                    "SELECT TXT_VALUE FROM F000_PREFERENCES WHERE COD_PERSON = ? AND TXT_KEY = ?",
                     JDBCParameter.of(personId, KEY),
                     rs -> rs.next().get()
             ).get();
 
             if (exists) {
                 tx.execute(
-                        "UPDATE PERSON_PREFERENCES SET TXT_VALUE = ? WHERE COD_PERSON = ? AND TXT_KEY = ?",
+                        "UPDATE F000_PREFERENCES SET TXT_VALUE = ? WHERE COD_PERSON = ? AND TXT_KEY = ?",
                         JDBCParameter.of(ym.toString(), personId, KEY)
                 ).get();
             } else {
                 tx.execute(
-                        "INSERT INTO PERSON_PREFERENCES (COD_PERSON, TXT_KEY, TXT_VALUE) VALUES (?, ?, ?)",
+                        "INSERT INTO F000_PREFERENCES (COD_PERSON, TXT_KEY, TXT_VALUE) VALUES (?, ?, ?)",
                         JDBCParameter.of(personId, KEY, ym.toString())
                 ).get();
             }
@@ -73,7 +73,7 @@ public class ClosingJDBCRepository implements ClosingRepository {
     public void clear() {
         val personId = HTTPRequest.personId();
         dataSource.execute(
-                "DELETE FROM PERSON_PREFERENCES WHERE COD_PERSON = ? AND TXT_KEY = ?",
+                "DELETE FROM F000_PREFERENCES WHERE COD_PERSON = ? AND TXT_KEY = ?",
                 JDBCParameter.of (
                         personId,
                         KEY

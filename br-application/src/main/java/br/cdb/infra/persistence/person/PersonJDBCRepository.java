@@ -12,12 +12,12 @@ import org.jspecify.annotations.Nullable;
 import java.sql.Timestamp;
 import java.util.*;
 
-/** Adaptador JDBC (H2) da porta {@link PersonRepository}; tabela {@code PEP_PERSON}. */
+/** Adaptador JDBC (H2) da porta {@link PersonRepository}; tabela {@code F000_PERSON}. */
 @NullMarked
 public final class PersonJDBCRepository extends JDBCRepository<Person> implements PersonRepository {
 
     public PersonJDBCRepository() {
-        super("PEP_PERSON");
+        super("F000_PERSON");
     }
 
     @Override

@@ -14,12 +14,12 @@ import org.jspecify.annotations.Nullable;
 import java.sql.Timestamp;
 import java.util.*;
 
-/** Adaptador JDBC (H2) da porta {@link UserCategoryRepository}; tabela {@code PERSON_CATEGORY}. */
+/** Adaptador JDBC (H2) da porta {@link UserCategoryRepository}; tabela {@code F005_CATEGORY}. */
 @NullMarked
 public final class UserCategoryJDBCRepository extends JDBCRepository<UserCategory> implements UserCategoryRepository {
 
     public UserCategoryJDBCRepository() {
-        super("PERSON_CATEGORY");
+        super("F005_CATEGORY");
     }
 
     @Override

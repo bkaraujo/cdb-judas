@@ -10,12 +10,12 @@ import org.jspecify.annotations.Nullable;
 
 import java.util.*;
 
-/** Adaptador JDBC (H2) da porta {@link CostCenterRepository}; tabela {@code MON_COST_CENTER}. */
+/** Adaptador JDBC (H2) da porta {@link CostCenterRepository}; tabela {@code F000_COST_CENTER}. */
 @NullMarked
 public final class CostCenterJDBCRepository extends JDBCRepository<CostCenter> implements CostCenterRepository {
 
     public CostCenterJDBCRepository() {
-        super("MON_COST_CENTER");
+        super("F000_COST_CENTER");
     }
 
     @Override

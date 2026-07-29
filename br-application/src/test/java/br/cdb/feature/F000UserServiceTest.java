@@ -76,7 +76,7 @@ class F000UserServiceTest extends BaseHttpTest {
     private long countUsers(String username) {
         var seen = new AtomicLong(-1);
         var thread = Thread.ofPlatform().start(() -> seen.set(dataSource.query(
-                "SELECT COUNT(*) FROM SEC_USER WHERE TXT_USERNAME = ?",
+                "SELECT COUNT(*) FROM F000_USER WHERE TXT_USERNAME = ?",
                 JDBCParameter.of(username),
                 rs -> { rs.next().get(); return rs.getLong(1).get(); }
         )));

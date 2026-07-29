@@ -15,14 +15,15 @@ import java.util.*;
 
 /**
  * Adaptador JDBC (H2) da porta {@link AccountRepository}. Mapeia {@link Account} para
- * {@code MON_ACCOUNT} (metadados globais: nome, tipo, ativo, limite de crédito/cheque especial e
- * ciclo de fatura). Saldo e cor são geridos pela feature em {@code PERSON_ACCOUNT}.
+ * {@code F002_ACCOUNT} (metadados globais: nome, tipo, ativo, limite de crédito/cheque especial e
+ * ciclo de fatura). Dono ({@code COD_PERSON}) e cor ({@code TXT_COLOR}) são geridos pela feature
+ * ({@code UserAccountJDBCRepository}) sobre a mesma linha — este adaptador nunca os toca.
  */
 @NullMarked
 public final class AccountJDBCRepository extends JDBCRepository<Account> implements AccountRepository {
 
     public AccountJDBCRepository() {
-        super("MON_ACCOUNT");
+        super("F002_ACCOUNT");
     }
 
     @Override

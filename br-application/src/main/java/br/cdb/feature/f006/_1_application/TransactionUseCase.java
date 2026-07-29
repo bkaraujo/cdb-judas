@@ -119,12 +119,7 @@ public class TransactionUseCase {
 
         val previousAccountId = previous;
         return ucTransaction.upsert(cmd).map(t -> {
-            // A PK do PERSON_TRANSACTION inclui a conta: se a atualização moveu a transação de conta,
-            // a linha antiga da chave composta ficaria órfã (o save abaixo faria INSERT, não UPDATE).
-            if (previousAccountId != null && !previousAccountId.equals(t.accountId())) {
-                userTransactionService.deleteByTransactionAccountAndPerson(t.id(), previousAccountId, personId);
-            }
-            val existingOverlay = userTransactionService.find(t.id(), t.accountId(), personId);
+            val existingOverlay = userTransactionService.find(t.id(), personId);
             val overlay = userTransactionService.save(t.id(), t.accountId(), personId, categoryId);
             val transferSiblings = transferSiblingsOf(t);
             // Se for grupo de parcelas (nunca transferência — pernas de transferência carregam
@@ -143,7 +138,7 @@ public class TransactionUseCase {
         return ucTransaction.transaction(txId)
                 .flatMap(existing -> guards.ownsAccount(existing.accountId()))
                 .flatMap(ignored -> ucTransaction.updateTransactionStatus(txId, status, paymentDate).map(t -> {
-                    val overlay = userTransactionService.find(t.id(), t.accountId(), personId).orElse(null);
+                    val overlay = userTransactionService.find(t.id(), personId).orElse(null);
                     MessageBus.submit(new AccountStreamEvents.Refresh(t.accountId(), personId.toString()));
                     return new TransactionView(t, overlay);
                 }));

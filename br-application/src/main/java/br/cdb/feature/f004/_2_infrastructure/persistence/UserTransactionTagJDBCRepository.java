@@ -13,7 +13,7 @@ import java.util.List;
 import java.util.UUID;
 
 /**
- * Adaptador JDBC (H2) da porta {@link UserTransactionTagRepository}; tabela {@code PERSON_TRANSACTION_TAG}.
+ * Adaptador JDBC (H2) da porta {@link UserTransactionTagRepository}; tabela {@code F004_TRANSACTION_TAG}.
  * Join table pura (PK composta {@code COD_TRANSACTION, COD_PERSON, COD_TAG}), sem entidade de domínio
  * própria — por isso opera direto sobre {@link DataSource} em vez de estender {@code JDBCRepository}.
  */
@@ -25,7 +25,7 @@ public final class UserTransactionTagJDBCRepository implements UserTransactionTa
     @Override
     public List<UUID> findTransactionIdsByTag(UUID personId, UUID tagId) {
         return datasource.query(
-                "SELECT COD_TRANSACTION FROM PERSON_TRANSACTION_TAG WHERE COD_PERSON = ? AND COD_TAG = ?",
+                "SELECT COD_TRANSACTION FROM F004_TRANSACTION_TAG WHERE COD_PERSON = ? AND COD_TAG = ?",
                 JDBCParameter.of(personId.toString(), tagId.toString()),
                 UserTransactionTagJDBCRepository::readTransactionIds
         );
@@ -35,12 +35,12 @@ public final class UserTransactionTagJDBCRepository implements UserTransactionTa
     public void reassignTag(UUID oldTagId, UUID newTagId, UUID personId) {
         // Descarta primeiro o vínculo antigo nas transações que já têm o destino (evita violar a PK).
         datasource.execute(
-                "DELETE FROM PERSON_TRANSACTION_TAG WHERE COD_PERSON = ? AND COD_TAG = ? "
-                        + "AND COD_TRANSACTION IN (SELECT COD_TRANSACTION FROM PERSON_TRANSACTION_TAG WHERE COD_PERSON = ? AND COD_TAG = ?)",
+                "DELETE FROM F004_TRANSACTION_TAG WHERE COD_PERSON = ? AND COD_TAG = ? "
+                        + "AND COD_TRANSACTION IN (SELECT COD_TRANSACTION FROM F004_TRANSACTION_TAG WHERE COD_PERSON = ? AND COD_TAG = ?)",
                 JDBCParameter.of(personId.toString(), oldTagId.toString(), personId.toString(), newTagId.toString())
         );
         datasource.execute(
-                "UPDATE PERSON_TRANSACTION_TAG SET COD_TAG = ? WHERE COD_TAG = ? AND COD_PERSON = ?",
+                "UPDATE F004_TRANSACTION_TAG SET COD_TAG = ? WHERE COD_TAG = ? AND COD_PERSON = ?",
                 JDBCParameter.of(newTagId.toString(), oldTagId.toString(), personId.toString())
         );
     }
@@ -48,7 +48,7 @@ public final class UserTransactionTagJDBCRepository implements UserTransactionTa
     @Override
     public void deleteByTag(UUID personId, UUID tagId) {
         datasource.execute(
-                "DELETE FROM PERSON_TRANSACTION_TAG WHERE COD_PERSON = ? AND COD_TAG = ?",
+                "DELETE FROM F004_TRANSACTION_TAG WHERE COD_PERSON = ? AND COD_TAG = ?",
                 JDBCParameter.of(personId.toString(), tagId.toString())
         );
     }
@@ -56,7 +56,7 @@ public final class UserTransactionTagJDBCRepository implements UserTransactionTa
     @Override
     public void deleteByTransaction(UUID transactionId) {
         datasource.execute(
-                "DELETE FROM PERSON_TRANSACTION_TAG WHERE COD_TRANSACTION = ?",
+                "DELETE FROM F004_TRANSACTION_TAG WHERE COD_TRANSACTION = ?",
                 JDBCParameter.of(transactionId.toString())
         );
     }

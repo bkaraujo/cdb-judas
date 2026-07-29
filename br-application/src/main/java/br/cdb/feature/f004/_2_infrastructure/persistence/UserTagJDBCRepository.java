@@ -13,12 +13,12 @@ import org.jspecify.annotations.Nullable;
 import java.sql.Timestamp;
 import java.util.*;
 
-/** Adaptador JDBC (H2) da porta {@link UserTagRepository}; tabela {@code PERSON_TAG}. */
+/** Adaptador JDBC (H2) da porta {@link UserTagRepository}; tabela {@code F004_TAG}. */
 @NullMarked
 public final class UserTagJDBCRepository extends JDBCRepository<UserTag> implements UserTagRepository {
 
     public UserTagJDBCRepository() {
-        super("PERSON_TAG");
+        super("F004_TAG");
     }
 
     @Override
@@ -40,7 +40,7 @@ public final class UserTagJDBCRepository extends JDBCRepository<UserTag> impleme
         deleteById(id.toString());
     }
 
-    /** {@code PERSON_TAG} não tem TMS_UPDATED_AT; update só altera descrição/cor. */
+    /** {@code F004_TAG} não tem TMS_UPDATED_AT; update só altera descrição/cor. */
     @Override
     protected Set<String> updateImmutableColumns() {
         return Set.of("COD_PERSON", "TMS_CREATE_AT");

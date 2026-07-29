@@ -14,17 +14,21 @@ import java.sql.Timestamp;
 import java.util.*;
 import java.util.stream.Collectors;
 
-/** Adaptador JDBC (H2) da porta {@link UserTransactionRepository}; tabela {@code PERSON_TRANSACTION}. */
+/**
+ * Adaptador JDBC (H2) da porta {@link UserTransactionRepository}; tabela
+ * {@code F005_TRANSACTION_CATEGORY} — vínculo transação↔categoria, PK {@code (COD_TRANSACTION, COD_PERSON)}.
+ * Conta não é mais coluna própria (nativa de {@code F006_TRANSACTION} desde a fusão dos contextos).
+ */
 @NullMarked
 public final class UserTransactionJDBCRepository extends JDBCRepository<UserTransaction> implements UserTransactionRepository {
 
     public UserTransactionJDBCRepository() {
-        super("PERSON_TRANSACTION");
+        super("F005_TRANSACTION_CATEGORY");
     }
 
     @Override
-    public Optional<UserTransaction> findByTransactionAccountAndPerson(UUID transactionId, UUID accountId, UUID personId) {
-        return findById(personId.toString(), accountId.toString(), transactionId.toString());
+    public Optional<UserTransaction> findByTransactionAndPerson(UUID transactionId, UUID personId) {
+        return findById(transactionId.toString(), personId.toString());
     }
 
     @Override
@@ -39,37 +43,21 @@ public final class UserTransactionJDBCRepository extends JDBCRepository<UserTran
     @Override
     public void deleteByTransaction(UUID transactionId) {
         datasource.execute(
-                "DELETE FROM PERSON_TRANSACTION WHERE COD_TRANSACTION = ?",
+                "DELETE FROM F005_TRANSACTION_CATEGORY WHERE COD_TRANSACTION = ?",
                 JDBCParameter.of(transactionId.toString())
         );
     }
 
     @Override
-    public void deleteByTransactionAccountAndPerson(UUID transactionId, UUID accountId, UUID personId) {
-        deleteById(personId.toString(), accountId.toString(), transactionId.toString());
+    public void deleteByTransactionAndPerson(UUID transactionId, UUID personId) {
+        deleteById(transactionId.toString(), personId.toString());
     }
 
     @Override
     public void reassignCategory(UUID oldCategoryId, UUID newCategoryId, UUID personId) {
         datasource.execute(
-                "UPDATE PERSON_TRANSACTION SET COD_CATEGORY = ? WHERE COD_CATEGORY = ? AND COD_PERSON = ?",
+                "UPDATE F005_TRANSACTION_CATEGORY SET COD_CATEGORY = ? WHERE COD_CATEGORY = ? AND COD_PERSON = ?",
                 JDBCParameter.of(newCategoryId.toString(), oldCategoryId.toString(), personId.toString())
-        );
-    }
-
-    @Override
-    public void reassignAccount(UUID oldAccountId, UUID newAccountId, UUID personId) {
-        datasource.execute(
-                "UPDATE PERSON_TRANSACTION SET COD_ACCOUNT = ? WHERE COD_ACCOUNT = ? AND COD_PERSON = ?",
-                JDBCParameter.of(newAccountId.toString(), oldAccountId.toString(), personId.toString())
-        );
-    }
-
-    @Override
-    public void deleteByAccountAndPerson(UUID accountId, UUID personId) {
-        datasource.execute(
-                "DELETE FROM PERSON_TRANSACTION WHERE COD_ACCOUNT = ? AND COD_PERSON = ?",
-                JDBCParameter.of(accountId.toString(), personId.toString())
         );
     }
 
@@ -83,7 +71,7 @@ public final class UserTransactionJDBCRepository extends JDBCRepository<UserTran
         categoryIds.forEach(id -> params.add(id.toString()));
 
         return datasource.query(
-                "SELECT COD_TRANSACTION FROM PERSON_TRANSACTION WHERE COD_PERSON = ? AND COD_CATEGORY IN (" + placeholders + ")",
+                "SELECT COD_TRANSACTION FROM F005_TRANSACTION_CATEGORY WHERE COD_PERSON = ? AND COD_CATEGORY IN (" + placeholders + ")",
                 JDBCParameter.of(params.toArray()),
                 UserTransactionJDBCRepository::readTransactionIds
         );
@@ -96,11 +84,6 @@ public final class UserTransactionJDBCRepository extends JDBCRepository<UserTran
     }
 
     @Override
-    protected Set<String> updateImmutableColumns() {
-        return Set.of("TMS_CREATE_AT");
-    }
-
-    @Override
     protected Map<String, @Nullable Object> values(UserTransaction entity) {
         val categoryStr = entity.categoryId() == null ? null : entity.categoryId().toString();
         val now = Timestamp.valueOf(Time.now());
@@ -108,10 +91,7 @@ public final class UserTransactionJDBCRepository extends JDBCRepository<UserTran
         val values = new LinkedHashMap<String, @Nullable Object>();
         values.put("COD_TRANSACTION", entity.transactionId().toString());
         values.put("COD_PERSON", entity.personId().toString());
-        values.put("COD_ACCOUNT", entity.accountId().toString());
         values.put("COD_CATEGORY", categoryStr);
-        values.put("TMS_CREATE_AT", now);
-        values.put("TMS_UPDATED_AT", now);
         return values;
     }
 
@@ -119,13 +99,10 @@ public final class UserTransactionJDBCRepository extends JDBCRepository<UserTran
     protected UserTransaction map(JDBCResultSet rs) {
         val transactionId = UUID.fromString(rs.getString("COD_TRANSACTION").get());
         val personId = UUID.fromString(rs.getString("COD_PERSON").get());
-        val accountId = UUID.fromString(rs.getString("COD_ACCOUNT").get());
 
         val categoryRaw = rs.getString("COD_CATEGORY").get();
         val categoryId = (categoryRaw == null || categoryRaw.isBlank()) ? null : UUID.fromString(categoryRaw);
 
-        val createdAt = rs.getTimestamp("TMS_CREATE_AT").get().toLocalDateTime();
-        val updatedAt = rs.getTimestamp("TMS_UPDATED_AT").get().toLocalDateTime();
-        return new UserTransaction(transactionId, personId, accountId, categoryId, createdAt, updatedAt);
+        return new UserTransaction(transactionId, personId, categoryId, null, null);
     }
 }

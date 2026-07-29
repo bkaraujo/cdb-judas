@@ -67,14 +67,14 @@ public class F004TagResourceTest extends BaseHttpTest {
 
     private void linkTag(String transactionId, String tagId) {
         dataSource.execute(
-                "INSERT INTO PERSON_TRANSACTION_TAG (COD_TRANSACTION, COD_PERSON, COD_TAG) VALUES (?, ?, ?)",
+                "INSERT INTO F004_TRANSACTION_TAG (COD_TRANSACTION, COD_PERSON, COD_TAG) VALUES (?, ?, ?)",
                 JDBCParameter.of(transactionId, TEST_USER_ID, tagId)
         );
     }
 
     private long linkCount(String tagId) {
         return dataSource.query(
-                "SELECT COUNT(*) FROM PERSON_TRANSACTION_TAG WHERE COD_TAG = ?",
+                "SELECT COUNT(*) FROM F004_TRANSACTION_TAG WHERE COD_TAG = ?",
                 JDBCParameter.of(tagId),
                 rs -> { rs.next().get(); return rs.getLong(1).get(); }
         );
@@ -82,7 +82,7 @@ public class F004TagResourceTest extends BaseHttpTest {
 
     private boolean transactionExists(String transactionId) {
         return dataSource.query(
-                "SELECT COUNT(*) FROM MON_TRANSACTION WHERE ID = ?",
+                "SELECT COUNT(*) FROM F006_TRANSACTION WHERE ID = ?",
                 JDBCParameter.of(transactionId),
                 rs -> { rs.next().get(); return rs.getLong(1).get(); }
         ) > 0;
@@ -192,7 +192,7 @@ public class F004TagResourceTest extends BaseHttpTest {
 
         assertEquals(0, linkCount(origem), "tag de origem sem vínculos remanescentes");
         val destinoLinks = dataSource.query(
-                "SELECT COUNT(*) FROM PERSON_TRANSACTION_TAG WHERE COD_TAG = ? AND COD_TRANSACTION IN (?, ?)",
+                "SELECT COUNT(*) FROM F004_TRANSACTION_TAG WHERE COD_TAG = ? AND COD_TRANSACTION IN (?, ?)",
                 JDBCParameter.of(destino, tx1, tx2),
                 rs -> { rs.next().get(); return rs.getLong(1).get(); }
         );

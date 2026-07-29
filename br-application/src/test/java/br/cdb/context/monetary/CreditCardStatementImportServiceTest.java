@@ -443,7 +443,7 @@ class CreditCardStatementImportServiceTest {
         assertEquals(accountB.id(), b.accountId());
 
         var savedOverlays = overlays.all();
-        assertEquals(2, savedOverlays.size(), "cada linha importada gera overlay PERSON_TRANSACTION (1:1)");
+        assertEquals(2, savedOverlays.size(), "cada linha importada gera vínculo F005_TRANSACTION_CATEGORY (1:1)");
         assertTrue(savedOverlays.stream().allMatch(o -> PERSON.equals(o.personId()) && categoryId.equals(o.categoryId())));
     }
 

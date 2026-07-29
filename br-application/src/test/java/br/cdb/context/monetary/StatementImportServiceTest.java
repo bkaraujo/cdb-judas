@@ -104,11 +104,11 @@ class StatementImportServiceTest {
         assertEquals(Transaction.Type.INCOME, pix.type());
         assertEquals(1, pix.amount().signum(), "imported income must be stored positive");
 
-        // 1:1 com MON_TRANSACTION: cada linha importada cria overlay PERSON_TRANSACTION com a categoria da linha.
-        assertEquals(2, overlays.all().size(), "cada transação importada gera overlay PERSON_TRANSACTION");
+        // 1:1 com F006_TRANSACTION: cada linha importada cria vínculo F005_TRANSACTION_CATEGORY com a categoria da linha.
+        assertEquals(2, overlays.all().size(), "cada transação importada gera vínculo F005_TRANSACTION_CATEGORY");
         assertTrue(overlays.all().stream().allMatch(o -> PERSON.equals(o.personId())));
-        assertEquals(catOdonto, overlays.findByTransactionAccountAndPerson(odonto.id(), account.id(), PERSON).orElseThrow().categoryId());
-        assertEquals(catPix, overlays.findByTransactionAccountAndPerson(pix.id(), account.id(), PERSON).orElseThrow().categoryId());
+        assertEquals(catOdonto, overlays.findByTransactionAndPerson(odonto.id(), PERSON).orElseThrow().categoryId());
+        assertEquals(catPix, overlays.findByTransactionAndPerson(pix.id(), PERSON).orElseThrow().categoryId());
     }
 
     @Test

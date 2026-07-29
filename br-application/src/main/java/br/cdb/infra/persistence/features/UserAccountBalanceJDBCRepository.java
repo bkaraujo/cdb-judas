@@ -16,14 +16,16 @@ import java.time.YearMonth;
 import java.util.*;
 
 /**
- * Adaptador JDBC (H2) da porta {@link BalanceRepository}: tabela {@code PERSON_ACCOUNT_BALANCE}
- * (períodos mensais por utilizador, período como YYYYMM inteiro).
+ * Adaptador JDBC (H2) da porta {@link BalanceRepository}: tabela {@code F002_BALANCE}
+ * (períodos mensais por utilizador, período como YYYYMM inteiro). {@code FLG_DIRTY} é sempre
+ * gravado 'N' aqui — o recomputo sob demanda que marcaria 'Y' é tarefa do job de reconciliação
+ * (fila {@code F999_DELETION_QUEUE}), ainda não implementado.
  */
 @NullMarked
 public final class UserAccountBalanceJDBCRepository extends JDBCRepository<Balance> implements BalanceRepository {
 
     public UserAccountBalanceJDBCRepository() {
-        super("PERSON_ACCOUNT_BALANCE");
+        super("F002_BALANCE");
     }
 
     @Override
@@ -59,12 +61,12 @@ public final class UserAccountBalanceJDBCRepository extends JDBCRepository<Balan
 
             if (exists) {
                 tx.execute(
-                        "UPDATE " + table() + " SET DEC_BALANCE = ? WHERE COD_ACCOUNT = ? AND NUM_PERIOD = ?",
+                        "UPDATE " + table() + " SET DEC_BALANCE = ?, FLG_DIRTY = 'N' WHERE COD_ACCOUNT = ? AND NUM_PERIOD = ?",
                         JDBCParameter.of(entity.value(), accountId, numPeriod)
                 ).get();
             } else {
                 tx.execute(
-                        "INSERT INTO " + table() + " (ID, COD_PERSON, COD_ACCOUNT, NUM_PERIOD, DEC_BALANCE) VALUES (?, ?, ?, ?, ?)",
+                        "INSERT INTO " + table() + " (ID, COD_PERSON, COD_ACCOUNT, NUM_PERIOD, DEC_BALANCE, FLG_DIRTY) VALUES (?, ?, ?, ?, ?, 'N')",
                         JDBCParameter.of(UUID.randomUUID().toString(), codPerson, accountId, numPeriod, entity.value())
                 ).get();
             }
@@ -101,6 +103,7 @@ public final class UserAccountBalanceJDBCRepository extends JDBCRepository<Balan
         values.put("COD_ACCOUNT", entity.account().id().toString());
         values.put("NUM_PERIOD", toNumPeriod(entity.period()));
         values.put("DEC_BALANCE", entity.value());
+        values.put("FLG_DIRTY", "N");
         return values;
     }
 
@@ -119,7 +122,7 @@ public final class UserAccountBalanceJDBCRepository extends JDBCRepository<Balan
 
     private String findPersonIdForAccount(UUID accountId) {
         val results = datasource.query(
-                "SELECT COD_PERSON FROM PERSON_ACCOUNT WHERE COD_ACCOUNT = ? LIMIT 1",
+                "SELECT COD_PERSON FROM F002_ACCOUNT WHERE ID = ? LIMIT 1",
                 JDBCParameter.of(accountId.toString()),
                 rs -> {
                     val list = new ArrayList<String>();

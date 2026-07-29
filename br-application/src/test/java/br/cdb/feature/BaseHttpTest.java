@@ -98,28 +98,28 @@ public abstract class BaseHttpTest {
      * Semeia login + pessoa de forma determinística e idempotente: o personId da PESSOA é igual ao personId do
      * usuário, então a mesma constante ({@link #TEST_USER_ID}) serve simultaneamente de identidade
      * de login (token) e de dono das rotas/overlays ({@code /api/{personId}/…}). Insere direto (em
-     * vez de {@code userRepository.save}, que cunha um personId aleatório). {@code SEC_USER}/
-     * {@code PEP_PERSON} sobrevivem ao {@link Database#reset()} — daí o guarda de existência.
+     * vez de {@code userRepository.save}, que cunha um personId aleatório). {@code F000_USER}/
+     * {@code F000_PERSON} sobrevivem ao {@link Database#reset()} — daí o guarda de existência.
      */
     protected void seedUser(String id, String username, String rawPassword) {
         dataSource.transaction(tx -> {
             val exists = tx.query(
-                    "SELECT 1 FROM SEC_USER WHERE ID = ?",
+                    "SELECT 1 FROM F000_USER WHERE ID = ?",
                     JDBCParameter.of(id),
                     rs -> rs.next().get()
             ).get();
             if (!exists) {
                 val now = Timestamp.valueOf(Time.now());
                 tx.execute(
-                        "INSERT INTO PEP_PERSON (ID, TXT_NAME, TXT_LOCALE, TXT_LANGUAGE, TMS_CREATE_AT, TMS_UPDATED_AT) VALUES (?, ?, ?, ?, ?, ?)",
+                        "INSERT INTO F000_PERSON (ID, TXT_NAME, TXT_LOCALE, TXT_LANGUAGE, TMS_CREATE_AT, TMS_UPDATED_AT) VALUES (?, ?, ?, ?, ?, ?)",
                         JDBCParameter.of(id, username, "pt-BR", "pt-BR", now, now)
                 ).get();
                 tx.execute(
-                        "INSERT INTO SEC_USER (ID, COD_PERSON, TXT_USERNAME, FLG_ACTIVE, TMS_CREATE_AT, TMS_UPDATED_AT) VALUES (?, ?, ?, ?, ?, ?)",
+                        "INSERT INTO F000_USER (ID, COD_PERSON, TXT_USERNAME, FLG_ACTIVE, TMS_CREATE_AT, TMS_UPDATED_AT) VALUES (?, ?, ?, ?, ?, ?)",
                         JDBCParameter.of(id, id, username, "Y", now, now)
                 ).get();
                 tx.execute(
-                        "INSERT INTO USER_CREDENTIAL (ID, COD_USER, TXT_PASSWORD, TMS_CREATE_AT) VALUES (?, ?, ?, ?)",
+                        "INSERT INTO F000_USER_CREDENTIAL (ID, COD_USER, TXT_PASSWORD, TMS_CREATE_AT) VALUES (?, ?, ?, ?)",
                         JDBCParameter.of(UUID.randomUUID().toString(), id, BcryptUtil.bcryptHash(rawPassword), now)
                 ).get();
             }

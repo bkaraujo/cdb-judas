@@ -11,10 +11,10 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 /**
- * Serviço do overlay de transações ({@code PERSON_TRANSACTION}). Os métodos de manutenção exigidos
- * pelas portas {@code TransactionAccountOverlay} (f002) e {@code TransactionCategoryOverlay} (f005)
- * são delegados por adapters em {@code f999._2_infrastructure.adapter} — f006 não implementa as
- * portas diretamente, para não depender de f002/f005 nem eles de f006.
+ * Serviço do vínculo transação↔categoria ({@code F005_TRANSACTION_CATEGORY}). Conta e pessoa da
+ * transação já são colunas nativas de {@code F006_TRANSACTION} desde a fusão dos contextos — este
+ * serviço só cuida da categoria. {@code accountId} continua no parâmetro de {@link #save} por
+ * compatibilidade com a porta {@code TransactionOverlaySink} (f007); não é mais persistido aqui.
  */
 @NullMarked
 @Singleton
@@ -24,11 +24,11 @@ public class UserTransactionService {
     private final UserTransactionRepository repo;
 
     public UserTransaction save(UUID transactionId, UUID accountId, UUID personId, @Nullable UUID categoryId) {
-        return repo.save(new UserTransaction(transactionId, personId, accountId, categoryId, null, null));
+        return repo.save(new UserTransaction(transactionId, personId, categoryId, null, null));
     }
 
-    public Optional<UserTransaction> find(UUID transactionId, UUID accountId, UUID personId) {
-        return repo.findByTransactionAccountAndPerson(transactionId, accountId, personId);
+    public Optional<UserTransaction> find(UUID transactionId, UUID personId) {
+        return repo.findByTransactionAndPerson(transactionId, personId);
     }
 
     public List<UserTransaction> findAllByPerson(UUID personId) {
@@ -44,20 +44,12 @@ public class UserTransactionService {
         repo.deleteByTransaction(transactionId);
     }
 
-    public void deleteByTransactionAccountAndPerson(UUID transactionId, UUID accountId, UUID personId) {
-        repo.deleteByTransactionAccountAndPerson(transactionId, accountId, personId);
+    public void deleteByTransactionAndPerson(UUID transactionId, UUID personId) {
+        repo.deleteByTransactionAndPerson(transactionId, personId);
     }
 
     public void reassignCategory(UUID oldCategoryId, UUID newCategoryId, UUID personId) {
         repo.reassignCategory(oldCategoryId, newCategoryId, personId);
-    }
-
-    public void reassignAccount(UUID oldAccountId, UUID newAccountId, UUID personId) {
-        repo.reassignAccount(oldAccountId, newAccountId, personId);
-    }
-
-    public void deleteByAccountAndPerson(UUID accountId, UUID personId) {
-        repo.deleteByAccountAndPerson(accountId, personId);
     }
 
     public List<UUID> findTransactionIdsByCategories(UUID personId, Collection<UUID> categoryIds) {

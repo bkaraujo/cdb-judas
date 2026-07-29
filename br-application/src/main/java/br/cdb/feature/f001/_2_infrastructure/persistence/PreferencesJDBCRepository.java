@@ -14,7 +14,7 @@ import org.jspecify.annotations.Nullable;
 import java.util.HashMap;
 
 /**
- * Adaptador JDBC (H2) da porta {@link PreferencesRepository}: tabela {@code PERSON_PREFERENCES}
+ * Adaptador JDBC (H2) da porta {@link PreferencesRepository}: tabela {@code F000_PREFERENCES}
  * (preferências k/v por usuário). Registros ausentes/parciais caem para
  * {@link Preferences#defaults()} na leitura.
  */
@@ -26,7 +26,7 @@ public final class PreferencesJDBCRepository implements PreferencesRepository {
     @Override
     public Preferences findByPersonId(String personId) {
         val map = dataSource.query(
-                "SELECT TXT_KEY, TXT_VALUE FROM PERSON_PREFERENCES WHERE COD_PERSON = ?",
+                "SELECT TXT_KEY, TXT_VALUE FROM F000_PREFERENCES WHERE COD_PERSON = ?",
                 JDBCParameter.of(personId),
                 rs -> {
                     val m = new HashMap<String, String>();
@@ -60,19 +60,19 @@ public final class PreferencesJDBCRepository implements PreferencesRepository {
 
     private void upsertPref(JDBCTransaction tx, String personId, String key, @Nullable String value) {
         val exists = tx.query(
-                "SELECT TXT_VALUE FROM PERSON_PREFERENCES WHERE COD_PERSON = ? AND TXT_KEY = ?",
+                "SELECT TXT_VALUE FROM F000_PREFERENCES WHERE COD_PERSON = ? AND TXT_KEY = ?",
                 JDBCParameter.of(personId, key),
                 rs -> rs.next().get()
         ).get();
 
         if (exists) {
             tx.execute(
-                    "UPDATE PERSON_PREFERENCES SET TXT_VALUE = ? WHERE COD_PERSON = ? AND TXT_KEY = ?",
+                    "UPDATE F000_PREFERENCES SET TXT_VALUE = ? WHERE COD_PERSON = ? AND TXT_KEY = ?",
                     JDBCParameter.of(value, personId, key)
             ).get();
         } else {
             tx.execute(
-                    "INSERT INTO PERSON_PREFERENCES (COD_PERSON, TXT_KEY, TXT_VALUE) VALUES (?, ?, ?)",
+                    "INSERT INTO F000_PREFERENCES (COD_PERSON, TXT_KEY, TXT_VALUE) VALUES (?, ?, ?)",
                     JDBCParameter.of(personId, key, value)
             ).get();
         }
