@@ -1,6 +1,6 @@
-package br.cdb.feature.f004._1_application;
+package br.cdb.feature.f004._1_application.service;
 
-import br.cdb.feature.f004._0_domain.UserTransactionTagRepository;
+import br.cdb.feature.f004._0_domain.repository.TransactionTagRepository;
 import jakarta.inject.Singleton;
 import lombok.RequiredArgsConstructor;
 import org.jspecify.annotations.NullMarked;
@@ -11,9 +11,9 @@ import java.util.UUID;
 @NullMarked
 @Singleton
 @RequiredArgsConstructor
-public class UserTransactionTagService {
+public class TransactionTagService {
 
-    private final UserTransactionTagRepository repo;
+    private final TransactionTagRepository repo;
 
     public List<UUID> findTransactionIdsByTag(UUID personId, UUID tagId) {
         return repo.findTransactionIdsByTag(personId, tagId);

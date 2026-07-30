@@ -1,6 +1,6 @@
 package br.cdb.feature.f004._0_domain.event;
 
-import br.cdb.feature.f004._0_domain.UserTag;
+import br.cdb.feature.f004._0_domain.model.Tag;
 import br.commons.business.BusinessEvent;
 import org.jspecify.annotations.NullMarked;
 
@@ -11,10 +11,10 @@ import java.util.UUID;
 public interface TagEvents extends BusinessEvent {
 
     @NullMarked
-    record Created(UserTag tag) implements TagEvents {}
+    record Created(Tag tag) implements TagEvents {}
 
     @NullMarked
-    record Updated(UserTag tag) implements TagEvents {}
+    record Updated(Tag tag) implements TagEvents {}
 
     @NullMarked
     record Deleted(UUID tagId, UUID personId) implements TagEvents {}

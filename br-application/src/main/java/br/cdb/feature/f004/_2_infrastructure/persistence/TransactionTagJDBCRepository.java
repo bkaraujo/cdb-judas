@@ -1,6 +1,6 @@
 package br.cdb.feature.f004._2_infrastructure.persistence;
 
-import br.cdb.feature.f004._0_domain.UserTransactionTagRepository;
+import br.cdb.feature.f004._0_domain.repository.TransactionTagRepository;
 import br.commons.Registry;
 import br.commons.framework.persistence.jdbc.DataSource;
 import br.commons.framework.persistence.jdbc.primitives.JDBCParameter;
@@ -13,12 +13,12 @@ import java.util.List;
 import java.util.UUID;
 
 /**
- * Adaptador JDBC (H2) da porta {@link UserTransactionTagRepository}; tabela {@code F004_TRANSACTION_TAG}.
+ * Adaptador JDBC (H2) da porta {@link TransactionTagRepository}; tabela {@code F004_TRANSACTION_TAG}.
  * Join table pura (PK composta {@code COD_TRANSACTION, COD_PERSON, COD_TAG}), sem entidade de domínio
  * própria — por isso opera direto sobre {@link DataSource} em vez de estender {@code JDBCRepository}.
  */
 @NullMarked
-public final class UserTransactionTagJDBCRepository implements UserTransactionTagRepository {
+public final class TransactionTagJDBCRepository implements TransactionTagRepository {
 
     private final DataSource datasource = Registry.get(DataSource.class);
 
@@ -27,7 +27,7 @@ public final class UserTransactionTagJDBCRepository implements UserTransactionTa
         return datasource.query(
                 "SELECT COD_TRANSACTION FROM F004_TRANSACTION_TAG WHERE COD_PERSON = ? AND COD_TAG = ?",
                 JDBCParameter.of(personId.toString(), tagId.toString()),
-                UserTransactionTagJDBCRepository::readTransactionIds
+                TransactionTagJDBCRepository::readTransactionIds
         );
     }
 

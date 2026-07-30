@@ -1,9 +1,9 @@
 package br.cdb.feature.f004;
 
-import br.cdb.feature.f004._0_domain.UserTagRepository;
-import br.cdb.feature.f004._0_domain.UserTransactionTagRepository;
-import br.cdb.feature.f004._2_infrastructure.persistence.UserTagJDBCRepository;
-import br.cdb.feature.f004._2_infrastructure.persistence.UserTransactionTagJDBCRepository;
+import br.cdb.feature.f004._0_domain.repository.TagRepository;
+import br.cdb.feature.f004._0_domain.repository.TransactionTagRepository;
+import br.cdb.feature.f004._2_infrastructure.persistence.TagJDBCRepository;
+import br.cdb.feature.f004._2_infrastructure.persistence.TransactionTagJDBCRepository;
 import br.commons.Logger;
 import br.commons.Registry;
 import br.commons.framework.persistence.jdbc.DataSource;
@@ -26,14 +26,14 @@ public class F004Module {
 
     @Produces
     @Singleton
-    public UserTagRepository userTagRepository() {
-        return Registry.tryGet(UserTagRepository.class, UserTagJDBCRepository::new);
+    public TagRepository userTagRepository() {
+        return Registry.tryGet(TagRepository.class, TagJDBCRepository::new);
     }
 
     @Produces
     @Singleton
-    public UserTransactionTagRepository userTransactionTagRepository() {
-        return Registry.tryGet(UserTransactionTagRepository.class, UserTransactionTagJDBCRepository::new);
+    public TransactionTagRepository userTransactionTagRepository() {
+        return Registry.tryGet(TransactionTagRepository.class, TransactionTagJDBCRepository::new);
     }
 
     void onStart(@Observes @Priority(4) StartupEvent ev) {

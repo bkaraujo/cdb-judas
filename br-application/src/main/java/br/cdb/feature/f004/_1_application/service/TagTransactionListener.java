@@ -1,4 +1,4 @@
-package br.cdb.feature.f004._1_application;
+package br.cdb.feature.f004._1_application.service;
 
 import br.cdb.feature.f000._0_domain.event.TransactionsDeleted;
 import br.commons.MessageBus;
@@ -20,7 +20,7 @@ import org.jspecify.annotations.NullMarked;
 @RequiredArgsConstructor
 public class TagTransactionListener {
 
-    private final UserTransactionTagService tagLinkService;
+    private final TransactionTagService tagLinkService;
 
     void subscribe(@Observes StartupEvent event) {
         MessageBus.subscribe(this);

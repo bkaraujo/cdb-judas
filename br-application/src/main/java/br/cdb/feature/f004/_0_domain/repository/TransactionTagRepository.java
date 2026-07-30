@@ -1,4 +1,4 @@
-package br.cdb.feature.f004._0_domain;
+package br.cdb.feature.f004._0_domain.repository;
 
 import org.jspecify.annotations.NullMarked;
 
@@ -7,7 +7,7 @@ import java.util.UUID;
 
 /** Porta da tabela de junção {@code PERSON_TRANSACTION_TAG} (transação × tag, N:N). */
 @NullMarked
-public interface UserTransactionTagRepository {
+public interface TransactionTagRepository {
     List<UUID> findTransactionIdsByTag(UUID personId, UUID tagId);
 
     /** Reatribui os vínculos de {@code oldTagId} para {@code newTagId} (dedupe-safe: descarta o

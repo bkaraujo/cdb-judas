@@ -32,7 +32,7 @@ import java.util.stream.Collectors;
  * A remoção das linhas {@code PERSON_CATEGORY} da subárvore publica
  * {@link CategoryDeleted} (reagido por {@code CategoryDeletedListener}, aqui mesmo); a limpeza do
  * overlay de transações apagadas em cascata publica {@link TransactionsDeleted} em vez de chamar
- * {@code UserTransactionService}/{@code UserTransactionTagService} diretamente (best-effort,
+ * {@code UserTransactionService}/{@code TransactionTagService} diretamente (best-effort,
  * reagido por f006/f004).
  */
 @NullMarked

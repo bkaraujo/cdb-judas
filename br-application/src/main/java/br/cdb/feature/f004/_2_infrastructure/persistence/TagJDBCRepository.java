@@ -1,7 +1,7 @@
 package br.cdb.feature.f004._2_infrastructure.persistence;
 
-import br.cdb.feature.f004._0_domain.UserTag;
-import br.cdb.feature.f004._0_domain.UserTagRepository;
+import br.cdb.feature.f004._0_domain.model.Tag;
+import br.cdb.feature.f004._0_domain.repository.TagRepository;
 import br.commons.chrono.Time;
 import br.commons.framework.persistence.jdbc.JDBCRepository;
 import br.commons.framework.persistence.jdbc.primitives.JDBCParameter;
@@ -13,16 +13,16 @@ import org.jspecify.annotations.Nullable;
 import java.sql.Timestamp;
 import java.util.*;
 
-/** Adaptador JDBC (H2) da porta {@link UserTagRepository}; tabela {@code F004_TAG}. */
+/** Adaptador JDBC (H2) da porta {@link TagRepository}; tabela {@code F004_TAG}. */
 @NullMarked
-public final class UserTagJDBCRepository extends JDBCRepository<UserTag> implements UserTagRepository {
+public final class TagJDBCRepository extends JDBCRepository<Tag> implements TagRepository {
 
-    public UserTagJDBCRepository() {
+    public TagJDBCRepository() {
         super("F004_TAG");
     }
 
     @Override
-    public List<UserTag> findAllByPerson(UUID personId) {
+    public List<Tag> findAllByPerson(UUID personId) {
         return datasource.query(
                 "SELECT " + columnList() + " FROM " + table() + " WHERE COD_PERSON = ?",
                 JDBCParameter.of(personId.toString()),
@@ -31,7 +31,7 @@ public final class UserTagJDBCRepository extends JDBCRepository<UserTag> impleme
     }
 
     @Override
-    public Optional<UserTag> findById(UUID id) {
+    public Optional<Tag> findById(UUID id) {
         return findById(id.toString());
     }
 
@@ -47,7 +47,7 @@ public final class UserTagJDBCRepository extends JDBCRepository<UserTag> impleme
     }
 
     @Override
-    protected Map<String, @Nullable Object> values(UserTag entity) {
+    protected Map<String, @Nullable Object> values(Tag entity) {
         val values = new LinkedHashMap<String, @Nullable Object>();
         values.put("ID", entity.id().toString());
         values.put("COD_PERSON", entity.personId().toString());
@@ -58,12 +58,12 @@ public final class UserTagJDBCRepository extends JDBCRepository<UserTag> impleme
     }
 
     @Override
-    protected UserTag map(JDBCResultSet rs) {
+    protected Tag map(JDBCResultSet rs) {
         val id = UUID.fromString(rs.getString("ID").get());
         val personId = UUID.fromString(rs.getString("COD_PERSON").get());
         val name = rs.getString("TXT_DESCRIPTION").get();
         val color = rs.getString("TXT_COLOR").get();
         val createdAt = rs.getTimestamp("TMS_CREATE_AT").get().toLocalDateTime();
-        return new UserTag(id, personId, name, color, createdAt);
+        return new Tag(id, personId, name, color, createdAt);
     }
 }

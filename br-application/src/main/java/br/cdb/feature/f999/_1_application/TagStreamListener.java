@@ -1,8 +1,8 @@
 package br.cdb.feature.f999._1_application;
 
 import br.cdb.feature.f000._0_domain.SSE;
-import br.cdb.feature.f004._0_domain.UserTag;
 import br.cdb.feature.f004._0_domain.event.TagEvents;
+import br.cdb.feature.f004._0_domain.model.Tag;
 import br.commons.MessageBus;
 import br.commons.framework.message.MessageListener;
 import br.commons.framework.message.MessageResult;
@@ -48,7 +48,7 @@ public class TagStreamListener {
     }
 
     @SuppressWarnings("EmptyCatch")
-    private void dispatchUpsert(UserTag tag) {
+    private void dispatchUpsert(Tag tag) {
         try {
             sse.dispatch(tag.personId().toString(), SSE.Event.UPSERT, Map.of("type", TYPE, "payload", tag));
         } catch (Exception ignored) {}

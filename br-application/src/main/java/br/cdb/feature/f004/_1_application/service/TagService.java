@@ -1,8 +1,8 @@
-package br.cdb.feature.f004._1_application;
+package br.cdb.feature.f004._1_application.service;
 
-import br.cdb.feature.f004._0_domain.UserTag;
-import br.cdb.feature.f004._0_domain.UserTagRepository;
 import br.cdb.feature.f004._0_domain.event.TagEvents;
+import br.cdb.feature.f004._0_domain.model.Tag;
+import br.cdb.feature.f004._0_domain.repository.TagRepository;
 import br.commons.MessageBus;
 import br.commons.Result;
 import br.commons.business.BusinessError;
@@ -17,30 +17,30 @@ import java.util.UUID;
 @NullMarked
 @Singleton
 @RequiredArgsConstructor
-public class UserTagService {
+public class TagService {
 
-    private final UserTagRepository repo;
-    private final UserTransactionTagService tagLinkService;
+    private final TagRepository repo;
+    private final TransactionTagService tagLinkService;
 
-    public List<UserTag> findAll(UUID personId) {
+    public List<Tag> findAll(UUID personId) {
         return repo.findAllByPerson(personId);
     }
 
-    public Result<UserTag, BusinessError> findById(UUID id) {
+    public Result<Tag, BusinessError> findById(UUID id) {
         return repo.findById(id)
-                .<Result<UserTag, BusinessError>>map(Result::success)
+                .<Result<Tag, BusinessError>>map(Result::success)
                 .orElseGet(() -> Result.failure(new BusinessError.NotFound("Tag not found: " + id)));
     }
 
-    public UserTag create(UUID personId, String name, String color) {
-        val saved = repo.save(new UserTag(UUID.randomUUID(), personId, name, color, null));
+    public Tag create(UUID personId, String name, String color) {
+        val saved = repo.save(new Tag(UUID.randomUUID(), personId, name, color, null));
         MessageBus.submit(new TagEvents.Created(saved));
         return saved;
     }
 
-    public Result<UserTag, BusinessError> update(UUID id, String name, String color) {
+    public Result<Tag, BusinessError> update(UUID id, String name, String color) {
         return findById(id).map(existing -> {
-            val saved = repo.save(new UserTag(id, existing.personId(), name, color, existing.createdAt()));
+            val saved = repo.save(new Tag(id, existing.personId(), name, color, existing.createdAt()));
             MessageBus.submit(new TagEvents.Updated(saved));
             return saved;
         });

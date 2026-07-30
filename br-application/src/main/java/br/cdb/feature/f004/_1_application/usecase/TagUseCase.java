@@ -1,4 +1,4 @@
-package br.cdb.feature.f004._1_application;
+package br.cdb.feature.f004._1_application.usecase;
 
 import br.cdb.core.web.HTTPRequest;
 import br.cdb.feature.f000._0_domain.DeletionOutcome;
@@ -6,7 +6,8 @@ import br.cdb.feature.f000._0_domain.DeletionStrategy;
 import br.cdb.feature.f000._0_domain.event.AccountStreamEvents;
 import br.cdb.feature.f000._0_domain.event.TagDeleted;
 import br.cdb.feature.f000._0_domain.event.TransactionsDeleted;
-import br.cdb.feature.f004._0_domain.UserTag;
+import br.cdb.feature.f004._0_domain.model.Tag;
+import br.cdb.feature.f004._1_application.service.TagService;
 import br.cdb.feature.f006._0_domain.model.Transaction;
 import br.commons.MessageBus;
 import br.commons.Registry;
@@ -27,7 +28,7 @@ import java.util.stream.Collectors;
 /**
  * Use case da fatia {@code f004} (tags). {@code deleteTag(DELETE)} publica
  * {@link AccountStreamEvents.Refresh} (SSE de conta — dispatch é responsabilidade única de {@code f999}).
- * MOVE reatribui os vínculos imperativamente ({@code UserTagService.reassignMoving},
+ * MOVE reatribui os vínculos imperativamente ({@code TagService.reassignMoving},
  * re-key) e então publica {@link TagDeleted}; as demais estratégias publicam direto — em todo caso
  * quem remove a linha {@code PERSON_TAG} e o vínculo remanescente é {@code TagDeletedListener}
  * (aqui mesmo), best-effort. A limpeza de overlay/vínculo das transações apagadas (DELETE) publica
@@ -42,26 +43,26 @@ public class TagUseCase {
     private final br.cdb.feature.f006._1_application.usecase.TransactionUseCase ucTransaction =
             Registry.tryGet(br.cdb.feature.f006._1_application.usecase.TransactionUseCase.class);
 
-    private final UserTagService userTagService;
+    private final TagService tagService;
 
-    public List<UserTag> tags(UUID personId) {
-        return userTagService.findAll(personId);
+    public List<Tag> tags(UUID personId) {
+        return tagService.findAll(personId);
     }
 
-    public UserTag createTag(UUID personId, String name, String color) {
-        return userTagService.create(personId, name, color);
+    public Tag createTag(UUID personId, String name, String color) {
+        return tagService.create(personId, name, color);
     }
 
-    public Result<UserTag, BusinessError> updateTag(UUID id, String name, String color) {
-        return userTagService.update(id, name, color);
+    public Result<Tag, BusinessError> updateTag(UUID id, String name, String color) {
+        return tagService.update(id, name, color);
     }
 
     public Result<DeletionOutcome, BusinessError> deleteTag(
             UUID personId, UUID id, @Nullable DeletionStrategy strategy, @Nullable UUID targetId) {
         if (strategy == null) {
-            val count = userTagService.linkedTransactionIds(personId, id).size();
+            val count = tagService.linkedTransactionIds(personId, id).size();
             if (count > 0) return Result.success(new DeletionOutcome.Linked(count));
-            return userTagService.findById(id).map(ignored -> {
+            return tagService.findById(id).map(ignored -> {
                 MessageBus.submit(new TagDeleted(id, personId));
                 return new DeletionOutcome.Completed();
             });
@@ -78,13 +79,13 @@ public class TagUseCase {
     /** Reatribui os vínculos (imperativo) e só então publica {@link TagDeleted} — os vínculos já
      *  movidos tornam a purga do listener um no-op. */
     private Result<Void, BusinessError> moveTag(UUID id, UUID targetId, UUID personId) {
-        return userTagService.reassignMoving(id, targetId, personId)
+        return tagService.reassignMoving(id, targetId, personId)
                 .ifSuccess(ignored -> MessageBus.submit(new TagDeleted(id, personId)));
     }
 
     /** Sem re-key a fazer: publicar {@link TagDeleted} já é suficiente (o listener desvincula e apaga a tag). */
     private Result<Void, BusinessError> detachTag(UUID id, UUID personId) {
-        return userTagService.findById(id).flatMap(ignored -> {
+        return tagService.findById(id).flatMap(ignored -> {
             MessageBus.submit(new TagDeleted(id, personId));
             return Result.success();
         });
@@ -92,8 +93,8 @@ public class TagUseCase {
 
     /** Apaga as transações vinculadas à tag e depois publica {@link TagDeleted}. */
     private Result<Void, BusinessError> deleteTagWithTransactions(UUID id, UUID personId) {
-        return userTagService.findById(id).flatMap(existing -> {
-            val txIds = userTagService.linkedTransactionIds(personId, id);
+        return tagService.findById(id).flatMap(existing -> {
+            val txIds = tagService.linkedTransactionIds(personId, id);
             return deleteLinkedTransactions(txIds, () -> MessageBus.submit(new TagDeleted(id, personId)));
         });
     }

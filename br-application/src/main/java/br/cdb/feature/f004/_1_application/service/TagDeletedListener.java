@@ -1,4 +1,4 @@
-package br.cdb.feature.f004._1_application;
+package br.cdb.feature.f004._1_application.service;
 
 import br.cdb.feature.f000._0_domain.event.TagDeleted;
 import br.commons.MessageBus;
@@ -20,8 +20,8 @@ import org.jspecify.annotations.NullMarked;
 @RequiredArgsConstructor
 public class TagDeletedListener {
 
-    private final UserTransactionTagService tagLinkService;
-    private final UserTagService userTagService;
+    private final TransactionTagService tagLinkService;
+    private final TagService tagService;
 
     void subscribe(@Observes StartupEvent event) {
         MessageBus.subscribe(this);
@@ -30,7 +30,7 @@ public class TagDeletedListener {
     @MessageListener
     public MessageResult onTagDeleted(TagDeleted event) {
         tagLinkService.deleteByTag(event.personId(), event.tagId());
-        userTagService.deleteById(event.tagId());
+        tagService.deleteById(event.tagId());
         return MessageResult.CONSUMED;
     }
 }
