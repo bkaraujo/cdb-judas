@@ -5,7 +5,7 @@ import br.cdb.feature.f000._0_domain.event.AccountStreamEvents;
 import br.cdb.feature.f002._1_application.AccountResponse;
 import br.cdb.feature.f002._1_application.usecase.AccountUseCase;
 import br.cdb.feature.f003._1_application.usecase.CreditCardUseCase;
-import br.cdb.feature.f006._1_application.usecase.TransactionUseCase;
+import br.cdb.feature.f006._1_application.usecase.ReadUseCases;
 import br.commons.MessageBus;
 import br.commons.Registry;
 import br.commons.Result;
@@ -37,7 +37,7 @@ public class AccountStreamListener {
 
     private final AccountUseCase ucAccount = Registry.tryGet(AccountUseCase.class);
     private final CreditCardUseCase ucCreditCard = Registry.tryGet(CreditCardUseCase.class);
-    private final TransactionUseCase ucTransaction = Registry.tryGet(TransactionUseCase.class);
+    private final ReadUseCases reads = Registry.tryGet(ReadUseCases.class);
 
     private final SSE sse;
 
@@ -75,7 +75,7 @@ public class AccountStreamListener {
             switch (ucAccount.findAccount(accountId, personId)) {
                 case Result.Success(var account) -> {
                     val cards = ucCreditCard.list(accountId, personId).getOrElse(List.of());
-                    val transactions = ucTransaction.transactions(personId).getOrElse(List.of());
+                    val transactions = reads.transactions(personId).getOrElse(List.of());
                     val dto = AccountResponse.from(account, cards, transactions);
                     sse.dispatch(personId, SSE.Event.UPSERT, Map.of("type", TYPE, "payload", dto));
                 }

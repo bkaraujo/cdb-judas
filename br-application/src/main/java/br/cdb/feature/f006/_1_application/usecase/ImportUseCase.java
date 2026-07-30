@@ -1,4 +1,4 @@
-package br.cdb.feature.f006._1_application;
+package br.cdb.feature.f006._1_application.usecase;
 
 import br.cdb.core.web.HTTPRequest;
 import br.cdb.feature.f000._0_domain.event.AccountStreamEvents;
@@ -12,6 +12,7 @@ import br.cdb.feature.f006._0_domain.ImportResult;
 import br.cdb.feature.f006._1_application.confirm.InvoiceConfirmCommand;
 import br.cdb.feature.f006._1_application.confirm.StatementConfirmCommand;
 import br.cdb.feature.f006._1_application.preview.ImportPreviewOutcome;
+import br.cdb.feature.f006._1_application.service.StatementImportService;
 import br.commons.MessageBus;
 import br.commons.Registry;
 import br.commons.Result;
@@ -36,7 +37,7 @@ import java.util.stream.Collectors;
 @NullMarked
 @Singleton
 @RequiredArgsConstructor
-public class StatementImportUseCase {
+public class ImportUseCase {
 
     private final AccountUseCase ucAccount = Registry.tryGet(AccountUseCase.class);
     private final CreditCardUseCase ucCreditCard = Registry.tryGet(CreditCardUseCase.class);

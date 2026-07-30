@@ -17,13 +17,14 @@ import br.cdb.feature.f006._0_domain.ImportError;
 import br.cdb.feature.f006._0_domain.ImportResult;
 import br.cdb.feature.f006._0_domain.model.Transaction;
 import br.cdb.feature.f006._0_domain.repository.TransactionRepository;
-import br.cdb.feature.f006._1_application.StatementImportService;
+import br.cdb.feature.f006._1_application.service.StatementImportService;
 import br.cdb.feature.f006._1_application.TransactionOverlayListener;
 import br.cdb.feature.f006._1_application.confirm.StatementConfirmCommand;
 import br.cdb.feature.f006._1_application.preview.BankStatementPreview;
 import br.cdb.feature.f006._1_application.preview.ImportPreviewOutcome;
 import br.cdb.feature.f006._1_application.service.TransactionService;
-import br.cdb.feature.f006._1_application.usecase.TransactionUseCase;
+import br.cdb.feature.f006._1_application.usecase.ReadUseCases;
+import br.cdb.feature.f006._1_application.usecase.WriteUseCases;
 import br.cdb.feature.f006._2_infrastructure.provider.BTGInvoiceParser;
 import br.cdb.feature.f006._2_infrastructure.provider.BTGStatementParser;
 import br.cdb.feature.f006._2_infrastructure.provider.SantanderInvoiceParser;
@@ -220,7 +221,8 @@ class StatementImportServiceTest {
         Registry.remove(CreditCardService.class);
         Registry.remove(CostCenterService.class);
         Registry.remove(AccountUseCase.class);
-        Registry.remove(TransactionUseCase.class);
+        Registry.remove(WriteUseCases.class);
+        Registry.remove(ReadUseCases.class);
         Registry.remove(CostCenterUseCase.class);
         Registry.remove(CreditCardUseCase.class);
 

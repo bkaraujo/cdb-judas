@@ -14,13 +14,6 @@ classDiagram
     class TransactionRequest {
         <<f006 _2_infrastructure DTO record>>
     }
-    class FeatureTransactionUseCase {
-        <<f006 _1_application UseCase CDI>>
-        nome real: TransactionUseCase (colide com o do contexto -\nreferenciado por FQN, sem import, no proprio codigo)
-        orquestra contexto + servicos da propria fatia
-        +createTransaction(userId, Command, categoryId) Result
-        +deleteTransaction(txId, scope) Result
-    }
     class ClosingService {
         <<f000 _1_application Policy - fatia-base>>
         +validateDate(userId, date) Result
@@ -37,15 +30,17 @@ classDiagram
         <<CDI core - costura CDI/Registry>>
         registra portas no Registry no StartupEvent
     }
-    class MonetaryUseCases {
-        <<Facade do contexto>>
-        +ucTransaction()$ TransactionUseCase
-        +ucAccount()$ AccountUseCase
+    class ReadUseCases {
+        <<f006 _1_application usecase - Registry>>
+        toda leitura (CQRS); guarda ownsAccount na entrada
+        +transactions(personId, TransactionFilter) Result
+        +transaction(id) Result
     }
-    class ContextTransactionUseCase {
-        <<context _1_application UseCase>>
-        nome real: TransactionUseCase (br.cdb.context.monetary...)
-        +execute(Command) Result
+    class WriteUseCases {
+        <<f006 _1_application usecase - Registry>>
+        toda mutacao (CQRS); entrada aplica politica + SSE
+        +createTransaction(personId, Command, categoryId) Result
+        +upsert(Command) Result
     }
     class TransactionService {
         <<Service aplicacao>>
@@ -73,20 +68,21 @@ classDiagram
     }
 
     TransactionResource ..> TransactionRequest : recebe DTO
-    TransactionResource ..> FeatureTransactionUseCase : delega TODA a orquestracao
+    TransactionResource ..> ReadUseCases : leitura - bean produzido por F006Module
+    TransactionResource ..> WriteUseCases : escrita - bean produzido por F006Module
     TransactionResource ..> Result : traduz em HTTP na borda
-    FeatureTransactionUseCase ..> ClosingService : politica validada na FRONTEIRA da feature - base f000
-    FeatureTransactionUseCase ..> TransactionCategoryLink : resolve categoria via saveCategory/withCategory
-    FeatureTransactionUseCase ..> TransactionsDeleted : publica no MessageBus pos-delete
-    FeatureTransactionUseCase ..> MonetaryUseCases : use case do contexto via acessor estatico
-    MonetaryUseCases ..> ContextTransactionUseCase : resolve no Registry - tryGet
-    ContextTransactionUseCase ..> TransactionService : orquestra
-    ContextTransactionUseCase ..> Result : retorna
+    WriteUseCases ..> ClosingService : politica na ENTRADA da fatia - base f000
+    WriteUseCases ..> TransactionCategoryLink : resolve categoria via saveCategory/withCategory
+    WriteUseCases ..> TransactionsDeleted : publica no MessageBus pos-delete
+    WriteUseCases ..> ReadUseCases : le grupo/fechamento/categoria de transferencia
+    WriteUseCases ..> TransactionService : orquestra
+    ReadUseCases ..> TransactionService : orquestra
+    WriteUseCases ..> Result : retorna
     TransactionService ..> TransactionRepository : usa a PORTA
     TransactionService ..> MonetaryTransaction : opera o modelo
     TransactionRepository <|.. TransactionJDBCRepository : adaptador implementa
     ContextBridge ..> Registry : liga porta ao adaptador no startup
 
-    note for TransactionResource "VSA: o Resource so traduz formato.\nOrquestracao mora no UseCase da propria fatia\n(fNNN/_1_application), nunca num god-object central."
-    note for MonetaryUseCases "Hexagonal: contexto livre de framework.\nDI via Registry, nunca CDI/Spring.\nFacade expoe os use cases (estatico)."
+    note for TransactionResource "VSA: o Resource so traduz formato.\nOrquestracao mora nos use cases da propria fatia\n(fNNN/_1_application), nunca num god-object central."
+    note for WriteUseCases "Hexagonal: engine livre de framework.\nDI via Registry, nunca CDI/Spring.\nPar Read/Write: leitura e mutacao separadas."
     note for Result "Railway: sem excecao para fluxo de negocio.\nErro de dominio e objeto de valor."

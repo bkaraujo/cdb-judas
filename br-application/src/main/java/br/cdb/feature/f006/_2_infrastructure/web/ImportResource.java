@@ -3,7 +3,7 @@ package br.cdb.feature.f006._2_infrastructure.web;
 import br.cdb.core.web.HTTPRequest;
 import br.cdb.core.web.HTTPResponse;
 import br.cdb.feature.f006._0_domain.ImportError;
-import br.cdb.feature.f006._1_application.StatementImportUseCase;
+import br.cdb.feature.f006._1_application.usecase.ImportUseCase;
 import br.cdb.feature.f006._1_application.confirm.InvoiceConfirmCommand;
 import br.cdb.feature.f006._1_application.confirm.StatementConfirmCommand;
 import br.cdb.feature.f006._2_infrastructure.web.request.StatementConfirmRequest;
@@ -31,9 +31,9 @@ import java.util.UUID;
 @NullMarked
 @Path("/api/{uuid}/accounts/transactions/import")
 @RequiredArgsConstructor
-public class StatementImportResource {
+public class ImportResource {
 
-    private final StatementImportUseCase statementImportUseCase;
+    private final ImportUseCase importUseCase;
 
     @POST
     @Path("/preview")
@@ -55,7 +55,7 @@ public class StatementImportResource {
             return HTTPResponse.badRequest("FILE_UNREADABLE", "Não foi possível ler o arquivo enviado.");
         }
 
-        return switch (statementImportUseCase.importPreview(bytes, password, accountId)) {
+        return switch (importUseCase.importPreview(bytes, password, accountId)) {
             case Result.Success(var view) -> Response.ok(RequestMapper.toResponseBody(view)).build();
             case Result.Failure(var error) -> {
                 if (error instanceof ImportError.FileTooLarge) {
@@ -84,7 +84,7 @@ public class StatementImportResource {
         }
         val rows = req.rows().stream().map(RequestMapper::toInvoiceRow).toList();
 
-        return switch (statementImportUseCase.confirmInvoiceImport(personId, new InvoiceConfirmCommand(rows))) {
+        return switch (importUseCase.confirmInvoiceImport(personId, new InvoiceConfirmCommand(rows))) {
             case Result.Success(var res) ->
                     Response.ok(new ImportConfirmResponse(res.created(), res.reconciled(), res.skipped())).build();
             case Result.Failure(var error) -> HTTPResponse.unprocessable("CARD_NOT_FOUND", messageOf(error));
@@ -99,7 +99,7 @@ public class StatementImportResource {
                 .map(r -> new StatementConfirmCommand.Row(r.description(), r.amount(), r.date(), r.transactionType(), r.categoryId()))
                 .toList();
 
-        return switch (statementImportUseCase.confirmStatementImport(personId, new StatementConfirmCommand(req.accountId(), rows))) {
+        return switch (importUseCase.confirmStatementImport(personId, new StatementConfirmCommand(req.accountId(), rows))) {
             case Result.Success(var res) ->
                     Response.ok(new ImportConfirmResponse(res.created(), res.reconciled(), res.skipped())).build();
             case Result.Failure(var error) -> HTTPResponse.unprocessable("ACCOUNT_NOT_FOUND", messageOf(error));

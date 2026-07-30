@@ -21,7 +21,8 @@ import br.cdb.feature.f003._1_application.usecase.CreditCardUseCase;
 import br.cdb.feature.f003._2_infrastructure.persistence.CreditCardJDBCRepository;
 import br.cdb.feature.f006._0_domain.repository.TransactionRepository;
 import br.cdb.feature.f006._1_application.service.TransactionService;
-import br.cdb.feature.f006._1_application.usecase.TransactionUseCase;
+import br.cdb.feature.f006._1_application.usecase.ReadUseCases;
+import br.cdb.feature.f006._1_application.usecase.WriteUseCases;
 import br.cdb.feature.f006._2_infrastructure.persistence.TransactionJDBCRepository;
 import br.cdb.infra.persistence.Database;
 import br.commons.Registry;
@@ -148,7 +149,8 @@ public abstract class BaseHttpTest {
         Registry.remove(CreditCardService.class);
         Registry.remove(CostCenterService.class);
         Registry.remove(AccountUseCase.class);
-        Registry.remove(TransactionUseCase.class);
+        Registry.remove(WriteUseCases.class);
+        Registry.remove(ReadUseCases.class);
         Registry.remove(CostCenterUseCase.class);
         Registry.remove(CreditCardUseCase.class);
     }

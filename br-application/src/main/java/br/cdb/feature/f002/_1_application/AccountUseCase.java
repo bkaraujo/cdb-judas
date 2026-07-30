@@ -16,7 +16,7 @@ import br.cdb.feature.f002._1_application.service.BalanceService;
 import br.cdb.feature.f003._0_domain.model.CreditCard;
 import br.cdb.feature.f003._1_application.usecase.CreditCardUseCase;
 import br.cdb.feature.f006._0_domain.model.Transaction;
-import br.cdb.feature.f006._1_application.usecase.TransactionUseCase;
+import br.cdb.feature.f006._1_application.usecase.ReadUseCases;
 import br.commons.Logger;
 import br.commons.MessageBus;
 import br.commons.Registry;
@@ -61,7 +61,7 @@ public class AccountUseCase {
     private final br.cdb.feature.f002._1_application.usecase.AccountUseCase ucAccount =
             Registry.tryGet(br.cdb.feature.f002._1_application.usecase.AccountUseCase.class);
     private final CreditCardUseCase ucCreditCard = Registry.tryGet(CreditCardUseCase.class);
-    private final TransactionUseCase ucTransaction = Registry.tryGet(TransactionUseCase.class);
+    private final ReadUseCases reads = Registry.tryGet(ReadUseCases.class);
 
     private final UserGuards guards;
     private final DeletionQueue deletionQueue;
@@ -211,10 +211,10 @@ public class AccountUseCase {
     }
 
     private List<Transaction> transactionsOf(UUID accountId) {
-        return ucTransaction.transactions(accountId).getOrElse(List.of());
+        return reads.transactions(accountId).getOrElse(List.of());
     }
 
     private List<Transaction> allTransactions(UUID personId) {
-        return ucTransaction.transactions(personId.toString()).getOrElse(List.of());
+        return reads.transactions(personId.toString()).getOrElse(List.of());
     }
 }

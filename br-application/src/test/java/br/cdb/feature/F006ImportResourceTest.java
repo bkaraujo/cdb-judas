@@ -13,7 +13,7 @@ import java.util.UUID;
 import static org.hamcrest.Matchers.*;
 
 @QuarkusTest
-public class F006StatementImportResourceTest extends BaseHttpTest {
+public class F006ImportResourceTest extends BaseHttpTest {
 
     /** Sem o {@code contentType(JSON)} padrão de {@link #asTestUser()}: o multipart define o seu próprio. */
     private RequestSpecification asMultipartUser() {

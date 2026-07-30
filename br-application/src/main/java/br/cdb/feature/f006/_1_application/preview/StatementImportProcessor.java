@@ -12,7 +12,8 @@ import br.cdb.feature.f006._0_domain.model.Transaction;
 import br.cdb.feature.f006._1_application.CategoryGuesser;
 import br.cdb.feature.f006._1_application.GroupSignature;
 import br.cdb.feature.f006._1_application.confirm.StatementConfirmCommand;
-import br.cdb.feature.f006._1_application.usecase.TransactionUseCase;
+import br.cdb.feature.f006._1_application.usecase.ReadUseCases;
+import br.cdb.feature.f006._1_application.usecase.WriteUseCases;
 import br.commons.Logger;
 import br.commons.MessageBus;
 import br.commons.Registry;
@@ -44,7 +45,8 @@ public class StatementImportProcessor {
     private static final int RECONCILE_WINDOW_DAYS = 3;
 
     private final AccountUseCase ucAccount = Registry.tryGet(AccountUseCase.class);
-    private final TransactionUseCase ucTransaction = Registry.tryGet(TransactionUseCase.class);
+    private final WriteUseCases writes = Registry.tryGet(WriteUseCases.class);
+    private final ReadUseCases reads = Registry.tryGet(ReadUseCases.class);
 
     private final CategoryGuesser categoryGuesser = new CategoryGuesser();
     private final Clock clock;
@@ -59,7 +61,7 @@ public class StatementImportProcessor {
                 .toList();
         val selectedAccountId = selectAccount(accountId, candidates, Strings.lower(issuer));
 
-        val history = ucTransaction.transactions(personId).getOrElse(List.of());
+        val history = reads.transactions(personId).getOrElse(List.of());
         val accountTx = selectedAccountId != null
                 ? history.stream().filter(t -> selectedAccountId.equals(t.accountId())).toList()
                 : Collections.unmodifiableList(new ArrayList<Transaction>());
@@ -82,7 +84,7 @@ public class StatementImportProcessor {
             val accountId = account.id();
             val today = LocalDate.now(clock);
 
-            val accountTx = ucTransaction.transactions(personIdStr).getOrElse(List.of()).stream()
+            val accountTx = reads.transactions(personIdStr).getOrElse(List.of()).stream()
                     .filter(t -> accountId.equals(t.accountId()))
                     .toList();
 
@@ -102,7 +104,7 @@ public class StatementImportProcessor {
                     case RECONCILE -> {
                         val target = cls.target();
                         if (target != null) {
-                            ucTransaction.updateTransactionStatus(target.id(), Transaction.Status.CONFIRMED, row.date());
+                            writes.updateTransactionStatus(target.id(), Transaction.Status.CONFIRMED, row.date());
                             reconciled++;
                         }
                     }
@@ -126,7 +128,7 @@ public class StatementImportProcessor {
                 accountId, status, type, CostCenter.VARIAVEL.id(), null,
                 null, 1, 1, null, null);
         try {
-            return switch (ucTransaction.create(tx)) {
+            return switch (writes.create(tx)) {
                 case Result.Success(var saved) -> {
                     MessageBus.submit(new TransactionImported(saved.id(), saved.accountId(), personId, row.categoryId()));
                     yield true;

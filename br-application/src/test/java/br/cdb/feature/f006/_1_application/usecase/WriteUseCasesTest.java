@@ -24,9 +24,10 @@ import java.util.UUID;
 import static org.junit.jupiter.api.Assertions.*;
 
 /** Cobre lançamentos: criação/parcelamento, edição/exclusão (default/FUTURE), transferências, cardId. */
-class TransactionUseCaseTest extends AbstractUseCaseTest {
+class WriteUseCasesTest extends AbstractUseCaseTest {
 
-    private TransactionUseCase useCase;
+    private WriteUseCases useCase;
+    private ReadUseCases reads;
 
     private final UUID accountId = UUID.randomUUID();
     private final UUID costCenterId = CostCenter.VARIAVEL.id();
@@ -35,7 +36,8 @@ class TransactionUseCaseTest extends AbstractUseCaseTest {
     void setUp() {
         accountRepository().save(new Account(accountId, "Banco", Account.Type.CHECKING, true));
 
-        useCase = new TransactionUseCase();
+        useCase = new WriteUseCases();
+        reads = new ReadUseCases();
     }
 
     private TransactionCommand.Create cmd(LocalDate date, Transaction.Status status, Integer installments) {
@@ -180,7 +182,7 @@ class TransactionUseCaseTest extends AbstractUseCaseTest {
         useCase.upsert(cmd(LocalDate.of(2026, 6, 10), Transaction.Status.CONFIRMED, null));
         useCase.upsert(cmd(LocalDate.of(2026, 4, 10), Transaction.Status.CONFIRMED, null));
         List<Transaction> list = ((Result.Success<List<Transaction>, BusinessError>)
-                useCase.transactions()).value();
+                reads.transactions()).value();
         assertEquals(LocalDate.of(2026, 6, 10), list.get(0).date());
         assertEquals(LocalDate.of(2026, 4, 10), list.get(list.size() - 1).date());
     }
@@ -191,7 +193,7 @@ class TransactionUseCaseTest extends AbstractUseCaseTest {
         useCase.upsert(cmd(LocalDate.of(2026, 5, 10), Transaction.Status.CONFIRMED, null));
         useCase.upsert(cmd(LocalDate.of(2026, 5, 11), Transaction.Status.PENDING, null));
         List<Transaction> pending = ((Result.Success<List<Transaction>, BusinessError>)
-                useCase.pending()).value();
+                reads.pending()).value();
         assertEquals(1, pending.size());
         assertEquals(Transaction.Status.PENDING, pending.get(0).status());
     }

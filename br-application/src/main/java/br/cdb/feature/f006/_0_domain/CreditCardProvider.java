@@ -1,7 +1,7 @@
 package br.cdb.feature.f006._0_domain;
 
 import br.cdb.feature.f003._0_domain.model.CreditCard;
-import br.cdb.feature.f006._1_application.StatementImportService;
+import br.cdb.feature.f006._1_application.service.StatementImportService;
 import org.jspecify.annotations.NullMarked;
 
 import java.util.List;

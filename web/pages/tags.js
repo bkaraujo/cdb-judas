@@ -212,7 +212,8 @@
     const nameHtml = '<strong>#' + esc(target.name) + '</strong>';
     window.confirmModal({
       title: 'Excluir Tag',
-      body: window.modalText('Tem certeza que deseja excluir a tag ' + nameHtml + '? Esta ação não pode ser desfeita.'),
+      body: window.modalText('Tem certeza que deseja excluir a tag ' + nameHtml +
+        '? As transações vinculadas permanecem — apenas perdem a marcação. Esta ação não pode ser desfeita.'),
       onConfirm: function (m, reEnable) {
         window.App.TagService.remove(target.id).then(function () {
           m.close();
@@ -238,10 +239,6 @@
         value: 'MOVE', label: 'Mover para outra tag',
         hint: 'As transações desta tag passam a usar a tag escolhida.',
         choices: otherTags.map(function (t) { return { value: t.id, label: '#' + t.name }; }),
-      },
-      {
-        value: 'DELETE', label: 'Excluir transações', danger: true,
-        hint: 'Apaga a tag e ' + count + ' transaç' + (count === 1 ? 'ão vinculada' : 'ões vinculadas') + '.',
       },
       { value: 'DETACH', label: 'Apenas desvincular', hint: 'Remove só a marcação; as transações permanecem intactas.' },
     ];

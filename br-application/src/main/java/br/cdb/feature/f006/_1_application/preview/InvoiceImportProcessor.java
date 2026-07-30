@@ -9,7 +9,8 @@ import br.cdb.feature.f006._1_application.CardMatcher;
 import br.cdb.feature.f006._1_application.GroupSignature;
 import br.cdb.feature.f006._1_application.InstallmentExpander;
 import br.cdb.feature.f006._1_application.confirm.InvoiceConfirmCommand;
-import br.cdb.feature.f006._1_application.usecase.TransactionUseCase;
+import br.cdb.feature.f006._1_application.usecase.ReadUseCases;
+import br.cdb.feature.f006._1_application.usecase.WriteUseCases;
 import br.commons.Logger;
 import br.commons.MessageBus;
 import br.commons.Registry;
@@ -36,7 +37,8 @@ import java.util.stream.Collectors;
 @NullMarked
 public class InvoiceImportProcessor {
 
-    private final TransactionUseCase ucTransaction = Registry.tryGet(TransactionUseCase.class);
+    private final WriteUseCases writes = Registry.tryGet(WriteUseCases.class);
+    private final ReadUseCases reads = Registry.tryGet(ReadUseCases.class);
 
     private final CreditCardProvider creditCardProvider;
     private final CardMatcher cardMatcher = new CardMatcher();
@@ -62,7 +64,7 @@ public class InvoiceImportProcessor {
 
         val today = LocalDate.now(clock);
         val statementPeriod = period != null ? period : YearMonth.from(today);
-        val history = ucTransaction.transactions(personId).getOrElse(List.of());
+        val history = reads.transactions(personId).getOrElse(List.of());
 
         val rows = new ArrayList<PreviewRow>();
         for (val line : statement) {
@@ -84,7 +86,7 @@ public class InvoiceImportProcessor {
     public Result<ImportResult, BusinessError> confirm(UUID personId, InvoiceConfirmCommand cmd) {
         return resolveAccountsByCard(cmd).map(accountByCard -> {
             val today = LocalDate.now(clock);
-            val seen = Collections.unmodifiableList(ucTransaction.transactions(personId.toString()).getOrElse(List.of()));
+            val seen = Collections.unmodifiableList(reads.transactions(personId.toString()).getOrElse(List.of()));
             val existingGroups = seen.stream()
                     .map(Transaction::groupId)
                     .filter(Objects::nonNull)
@@ -199,7 +201,7 @@ public class InvoiceImportProcessor {
                 groupId, installmentNumber == null ? 1 : installmentNumber,
                 totalInstallments == null ? 1 : totalInstallments, null, row.cardId());
         try {
-            return switch (ucTransaction.create(tx)) {
+            return switch (writes.create(tx)) {
                 case Result.Success(var saved) -> {
                     MessageBus.submit(new TransactionImported(saved.id(), saved.accountId(), personId, row.categoryId()));
                     yield saved;

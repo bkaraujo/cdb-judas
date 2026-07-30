@@ -11,7 +11,7 @@ import br.cdb.feature.f003._0_domain.model.CreditCard;
 import br.cdb.feature.f003._1_application.command.CreditCardCommand;
 import br.cdb.feature.f003._1_application.usecase.CreditCardUseCase;
 import br.cdb.feature.f006._0_domain.model.Transaction;
-import br.cdb.feature.f006._1_application.usecase.TransactionUseCase;
+import br.cdb.feature.f006._1_application.usecase.ReadUseCases;
 import br.commons.MessageBus;
 import br.commons.Registry;
 import br.commons.Result;
@@ -37,7 +37,7 @@ import java.util.UUID;
 public class CardUseCase {
 
     private final CreditCardUseCase ucCreditCard = Registry.tryGet(CreditCardUseCase.class);
-    private final TransactionUseCase ucTransaction = Registry.tryGet(TransactionUseCase.class);
+    private final ReadUseCases reads = Registry.tryGet(ReadUseCases.class);
 
     private final UserGuards guards;
 
@@ -76,6 +76,6 @@ public class CardUseCase {
     }
 
     private List<Transaction> allTransactions() {
-        return ucTransaction.transactions(HTTPRequest.personId()).getOrElse(List.of());
+        return reads.transactions(HTTPRequest.personId()).getOrElse(List.of());
     }
 }

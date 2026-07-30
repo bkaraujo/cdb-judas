@@ -2,7 +2,7 @@ package br.cdb.feature.f006._2_infrastructure.web;
 
 import br.cdb.feature.f003._0_domain.model.CreditCard;
 import br.cdb.feature.f006._0_domain.model.Transaction;
-import br.cdb.feature.f006._1_application.StatementImportUseCase;
+import br.cdb.feature.f006._1_application.usecase.ImportUseCase;
 import br.cdb.feature.f006._1_application.command.TransactionCommand;
 import br.cdb.feature.f006._1_application.command.TransactionScope;
 import br.cdb.feature.f006._1_application.confirm.InvoiceConfirmCommand;
@@ -83,7 +83,7 @@ public abstract class RequestMapper {
         return "FUTURE".equalsIgnoreCase(mode) ? new TransactionScope.Future() : new TransactionScope.Single();
     }
 
-    static Object toResponseBody(StatementImportUseCase.ImportPreviewView view) {
+    static Object toResponseBody(ImportUseCase.ImportPreviewView view) {
         return switch (view.outcome()) {
             case ImportPreviewOutcome.Invoice(var preview) -> RequestMapper.toResponse(preview, view.accountNamesById());
             case ImportPreviewOutcome.Statement(var preview) -> RequestMapper.toStatementResponse(preview);

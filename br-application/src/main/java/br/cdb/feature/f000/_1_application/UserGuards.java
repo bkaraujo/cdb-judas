@@ -75,7 +75,7 @@ public class UserGuards {
     /**
      * Checa posse de conta e (se presente) cartão <em>independentemente</em> — não exige que o
      * cartão esteja nessa conta específica. Um cartão de outra conta do mesmo usuário passa aqui;
-     * o pareamento conta↔cartão já é regra de negócio de {@code TransactionUseCase.validateCard}
+     * o pareamento conta↔cartão já é regra de negócio de {@code WriteUseCases.validateCard}
      * (400 {@code BusinessRule}), que não deve virar 404 de propriedade.
      */
     public Result<Void, BusinessError> ownsAccountAndCard(UUID accountId, @Nullable UUID cardId) {

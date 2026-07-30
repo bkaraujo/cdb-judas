@@ -3,7 +3,7 @@ package br.cdb.feature.f006._1_application;
 import br.cdb.feature.f000._0_domain.event.CategoryReassigned;
 import br.cdb.feature.f000._0_domain.event.TransactionImported;
 import br.cdb.feature.f000._0_domain.event.TransactionsDeleted;
-import br.cdb.feature.f006._1_application.usecase.TransactionUseCase;
+import br.cdb.feature.f006._1_application.usecase.WriteUseCases;
 import br.commons.MessageBus;
 import br.commons.Registry;
 import br.commons.framework.message.MessageListener;
@@ -24,17 +24,17 @@ import org.jspecify.annotations.NullMarked;
 @Singleton
 public class TransactionOverlayListener {
 
-    private final TransactionUseCase ucTransaction = Registry.tryGet(TransactionUseCase.class);
+    private final WriteUseCases writes = Registry.tryGet(WriteUseCases.class);
 
     void subscribe(@Observes StartupEvent event) {
         MessageBus.subscribe(this);
     }
 
     /** Limpa o vínculo das transações apagadas, qualquer que seja o publicador (o próprio
-     *  {@code TransactionUseCase} ou uma exclusão em cascata de outra fatia, ex.: tag/categoria). */
+     *  {@code WriteUseCases#deleteTransaction} ou uma exclusão em cascata de outra fatia, ex.: tag/categoria). */
     @MessageListener
     public MessageResult onTransactionsDeleted(TransactionsDeleted event) {
-        event.transactionIds().forEach(ucTransaction::deleteCategory);
+        event.transactionIds().forEach(writes::deleteCategory);
         return MessageResult.CONSUMED;
     }
 
@@ -43,7 +43,7 @@ public class TransactionOverlayListener {
      *  — mantém o 1:1 com {@code F006_TRANSACTION}. */
     @MessageListener
     public MessageResult onTransactionImported(TransactionImported event) {
-        ucTransaction.saveCategory(event.transactionId(), event.personId(), event.categoryId());
+        writes.saveCategory(event.transactionId(), event.personId(), event.categoryId());
         return MessageResult.CONSUMED;
     }
 
@@ -51,7 +51,7 @@ public class TransactionOverlayListener {
     @MessageListener
     public MessageResult onCategoryReassigned(CategoryReassigned event) {
         event.oldCategoryIds().forEach(oldId ->
-                ucTransaction.reassignCategory(oldId, event.newCategoryId(), event.personId()));
+                writes.reassignCategory(oldId, event.newCategoryId(), event.personId()));
         return MessageResult.CONSUMED;
     }
 }

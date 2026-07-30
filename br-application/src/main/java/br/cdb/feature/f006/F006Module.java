@@ -1,9 +1,13 @@
 package br.cdb.feature.f006;
 
+import br.cdb.feature.f000._1_application.InternalApi;
+import br.cdb.feature.f000._1_application.UserGuards;
 import br.cdb.feature.f004._0_domain.event.TagEvents;
 import br.cdb.feature.f006._0_domain.CreditCardProvider;
 import br.cdb.feature.f006._0_domain.repository.TransactionRepository;
-import br.cdb.feature.f006._1_application.StatementImportService;
+import br.cdb.feature.f006._1_application.service.StatementImportService;
+import br.cdb.feature.f006._1_application.usecase.ReadUseCases;
+import br.cdb.feature.f006._1_application.usecase.WriteUseCases;
 import br.cdb.feature.f006._2_infrastructure.provider.BTGInvoiceParser;
 import br.cdb.feature.f006._2_infrastructure.provider.BTGStatementParser;
 import br.cdb.feature.f006._2_infrastructure.provider.SantanderInvoiceParser;
@@ -39,6 +43,19 @@ public class F006Module {
     private static final int MAX_STATEMENT_PAGES = 50;
     private static final long MAX_STATEMENT_FILE_BYTES = 10L * 1024 * 1024;
 
+    /** Leitura/escrita da fatia (Registry-wired) expostas como bean para os {@code *Resource} injetarem. */
+    @Produces
+    @Singleton
+    ReadUseCases readUseCases() {
+        return Registry.tryGet(ReadUseCases.class);
+    }
+
+    @Produces
+    @Singleton
+    WriteUseCases writeUseCases() {
+        return Registry.tryGet(WriteUseCases.class);
+    }
+
     @Produces
     @Singleton
     PdfTextExtractor pdfTextExtractor() {
@@ -63,8 +80,18 @@ public class F006Module {
                 MAX_STATEMENT_FILE_BYTES);
     }
 
-    void onStart(@Observes @Priority(6) StartupEvent ev) {
+    /**
+     * Costura CDI→Registry da fatia: {@link ReadUseCases}/{@link WriteUseCases} são Registry-wired
+     * (sem {@code @Inject}) mas precisam de dois beans CDI de {@code f000} — {@link UserGuards}
+     * (guarda anti-IDOR, {@code @RequestScoped}) e {@link InternalApi} (leitura cross-slice). O que
+     * entra no Registry é a referência injetada aqui: para {@code UserGuards} isso é o client proxy
+     * do CDI, então cada chamada resolve a instância da requisição corrente.
+     */
+    void onStart(@Observes @Priority(6) StartupEvent ev, UserGuards guards, InternalApi internalApi) {
         Logger.debug("Iniciando módulo..");
+
+        Registry.set(UserGuards.class, () -> guards);
+        Registry.set(InternalApi.class, () -> internalApi);
 
         MessageBus.subscribe(new Object(){
 

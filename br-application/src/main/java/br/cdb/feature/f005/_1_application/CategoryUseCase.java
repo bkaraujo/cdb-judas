@@ -10,6 +10,8 @@ import br.cdb.feature.f000._0_domain.event.TransactionsDeleted;
 import br.cdb.feature.f000._1_application.InternalApi;
 import br.cdb.feature.f005._0_domain.Category;
 import br.cdb.feature.f006._0_domain.model.Transaction;
+import br.cdb.feature.f006._1_application.usecase.ReadUseCases;
+import br.cdb.feature.f006._1_application.usecase.WriteUseCases;
 import br.commons.MessageBus;
 import br.commons.Registry;
 import br.commons.Result;
@@ -40,8 +42,8 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class CategoryUseCase {
 
-    private final br.cdb.feature.f006._1_application.usecase.TransactionUseCase ucTransaction =
-            Registry.tryGet(br.cdb.feature.f006._1_application.usecase.TransactionUseCase.class);
+    private final ReadUseCases reads = Registry.tryGet(ReadUseCases.class);
+    private final WriteUseCases writes = Registry.tryGet(WriteUseCases.class);
 
     private final UserCategoryService userCategoryService;
     private final InternalApi internalApi;
@@ -51,7 +53,7 @@ public class CategoryUseCase {
     }
 
     /** Categoria de sistema de transferência da natureza pedida — endpoint interno consumido via
-     *  {@code InternalApi} por {@code f006.TransactionUseCase} (nunca chamado pelo frontend). Global
+     *  {@code InternalApi} por {@code f006.ReadUseCases} (nunca chamado pelo frontend). Global
      *  (ver {@link UserCategoryService#findOrCreateTransferCategory}) — {@code personId} não influencia
      *  o resultado, só chega aqui pela simetria de rota {@code /api/{uuid}/categories/transfer}. */
     public Category transferCategory(UUID personId, Transaction.Type nature) {
@@ -125,7 +127,7 @@ public class CategoryUseCase {
     private Result<Void, BusinessError> deleteLinkedTransactions(List<UUID> txIds, Runnable afterCleanup) {
         val affectedAccountIds = accountIdsOfTransactions(txIds);
 
-        if (ucTransaction.deleteTransactions(txIds) instanceof Result.Failure<Void, BusinessError>(var error)) {
+        if (writes.deleteTransactions(txIds) instanceof Result.Failure<Void, BusinessError>(var error)) {
             return Result.failure(error);
         }
         MessageBus.submit(new TransactionsDeleted(txIds));
@@ -137,7 +139,7 @@ public class CategoryUseCase {
 
     private Set<UUID> accountIdsOfTransactions(List<UUID> txIds) {
         val txIdSet = Set.copyOf(txIds);
-        return ucTransaction.transactions().getOrElse(List.of()).stream()
+        return reads.transactions().getOrElse(List.of()).stream()
                 .filter(t -> txIdSet.contains(t.id()))
                 .map(Transaction::accountId)
                 .collect(Collectors.toSet());

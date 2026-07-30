@@ -1,4 +1,4 @@
-package br.cdb.feature.f006._1_application;
+package br.cdb.feature.f006._1_application.service;
 
 import br.cdb.feature.f006._0_domain.*;
 import br.cdb.feature.f006._1_application.confirm.InvoiceConfirmCommand;

@@ -13,7 +13,7 @@ import java.util.UUID;
  * {@code F005_TRANSACTION_CATEGORY} (PK {@code (COD_TRANSACTION, COD_PERSON)}), não em
  * {@code F006_TRANSACTION} — {@code TransactionJDBCRepository#save} não o grava junto, a escrita do
  * vínculo é a chamada explícita {@code saveCategory}. Nas leituras da engine vem {@code null}; quem
- * precisa dele preenche com {@link #withCategory(UUID)} (ver {@code f006._1_application.TransactionUseCase}).
+ * precisa dele preenche com {@link #withCategory(UUID)} (ver {@code f006._1_application.usecase.ReadUseCases}).
  */
 @NullMarked
 public record Transaction(

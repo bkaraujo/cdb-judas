@@ -49,7 +49,7 @@
  * │                            POST   /api/{uuid}/categories
  * │                            PATCH  /api/{uuid}/categories/{id}
  * │                            DELETE /api/{uuid}/categories/{id}?strategy=&amp;targetId=
- * │                            GET    /api/{uuid}/categories/transfer?nature=            (interno — InternalApi de f006.TransactionUseCase)
+ * │                            GET    /api/{uuid}/categories/transfer?nature=            (interno — InternalApi de f006.ReadUseCases)
  * ├── f006  transactions + transfer
  * │   ├── TransferResource     POST   /api/{uuid}/accounts/transactions/transfer
  * │   └── TransactionResource  GET    /api/{uuid}/accounts/transactions?limit=&amp;dateFrom=&amp;dateTo=&amp;status=&amp;type=       (cross-account)
@@ -59,7 +59,7 @@
  * │                            PATCH  /api/{uuid}/accounts/{accId}/transactions/{txId}
  * │                            PATCH  /api/{uuid}/accounts/{accId}/transactions/{txId}/status
  * │                            DELETE /api/{uuid}/accounts/{accId}/transactions/{txId}?mode=          (publica {@code TransactionsDeleted})
- * │   └── StatementImportResource POST /api/{uuid}/accounts/transactions/import/preview  (multipart: file/password/accountId; f007 fundida aqui na fase 6)
+ * │   └── ImportResource POST /api/{uuid}/accounts/transactions/import/preview  (multipart: file/password/accountId; f007 fundida aqui na fase 6)
  * │                                POST /api/{uuid}/accounts/transactions/import/confirm  (parsers BTG/Santander, casamento de cartão, sugestão de categoria)
  * ├── f009  dashboard
  * │   └── DashboardResource    GET /api/{uuid}/dashboard?month=&amp;year=

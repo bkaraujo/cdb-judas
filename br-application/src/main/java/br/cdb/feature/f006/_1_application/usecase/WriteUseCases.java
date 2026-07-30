@@ -1,6 +1,10 @@
 package br.cdb.feature.f006._1_application.usecase;
 
+import br.cdb.core.web.HTTPRequest;
+import br.cdb.feature.f000._0_domain.event.AccountStreamEvents;
+import br.cdb.feature.f000._0_domain.event.TransactionsDeleted;
 import br.cdb.feature.f000._0_domain.model.CostCenter;
+import br.cdb.feature.f000._1_application.UserGuards;
 import br.cdb.feature.f002._1_application.service.BalanceService;
 import br.cdb.feature.f003._0_domain.model.CreditCard;
 import br.cdb.feature.f003._1_application.service.CreditCardService;
@@ -20,61 +24,187 @@ import org.jspecify.annotations.Nullable;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.YearMonth;
 import java.util.*;
 
+/**
+ * Toda a mutação de transação da fatia {@code f006} — o par de {@link ReadUseCases}, que ficou com a
+ * leitura. Registry-wired como as demais classes ex-contexto ({@code Registry.tryGet(WriteUseCases.class)},
+ * nunca {@code @Inject}).
+ *
+ * <p>Duas camadas de operação convivem aqui, de propósito:
+ * <ul>
+ *   <li><b>Engine</b> ({@link #upsert}, {@link #delete}, {@link #createTransfer}, {@link #create},
+ *       {@code saveCategory}…): aceita qualquer comando bem-formado, publica só evento de domínio
+ *       ({@link TransactionEvents}).</li>
+ *   <li><b>Entrada da fatia</b> ({@link #createTransaction}, {@link #updateTransaction},
+ *       {@link #updateTransactionStatus}, {@link #deleteTransaction}, {@link #transfer}): aplica a
+ *       política de usuário — guarda de propriedade ({@link UserGuards}) e período fechado — e
+ *       publica os eventos de aplicação ({@link AccountStreamEvents.Refresh} para o SSE, cujo
+ *       dispatch é de {@code f999}; {@link TransactionsDeleted} para a cascata best-effort de
+ *       {@code TransactionOverlayListener}/f004).</li>
+ * </ul>
+ * É o que sobrou da antiga fronteira {@code f006._1_application.TransactionUseCase}, dissolvida aqui:
+ * os {@code *Resource} chamam esta classe direto.
+ */
 @NullMarked
-public class TransactionUseCase {
+public class WriteUseCases {
 
     private final TransactionService service = Registry.tryGet(TransactionService.class);
     private final BalanceService balanceService = Registry.tryGet(BalanceService.class);
     private final CreditCardService creditCardService = Registry.tryGet(CreditCardService.class);
+    private final ReadUseCases reads = Registry.tryGet(ReadUseCases.class);
 
-    public TransactionUseCase() {
+    public WriteUseCases() {
         MessageBus.subscribe(new TransactionEventListener());
     }
 
-
-    public Result<List<Transaction>, BusinessError> transactions(UUID accountId) {
-        val all = service.findByAccount(accountId).stream()
-                .sorted(Comparator.comparing(Transaction::date).reversed())
-                .toList();
-        return Result.success(all);
+    /** Bean CDI resolvido a cada chamada: {@code @RequestScoped}, nunca guardado em campo. */
+    private static UserGuards guards() {
+        return Registry.get(UserGuards.class);
     }
 
-    public Result<List<Transaction>, BusinessError> transactions() {
-        val all = service.findAll().stream()
-                .sorted(Comparator.comparing(Transaction::date).reversed())
-                .toList();
-        return Result.success(all);
+    // ── Entrada da fatia: política de usuário + eventos de aplicação ───────────
+
+    public Result<Transaction, BusinessError> createTransaction(UUID personId, TransactionCommand.Create cmd, @Nullable UUID categoryId) {
+        if (guards().ownsAccountAndCard(cmd.accountId(), cmd.cardId()) instanceof Result.Failure<Void, BusinessError>(var error)) {
+            return Result.failure(error);
+        }
+        if (validateClosing(cmd.date()) instanceof Result.Failure<Void, BusinessError>(var error)) {
+            return Result.failure(error);
+        }
+        return upsert(cmd).map(t -> {
+            // Vincula a categoria da primeira parcela e depois a das irmãs do grupo
+            saveCategory(t.id(), personId, categoryId);
+            saveCategoryForGroup(t, personId, categoryId);
+            MessageBus.submit(new AccountStreamEvents.Refresh(t.accountId(), personId.toString()));
+            return t.withCategory(categoryId);
+        });
     }
 
-    /** Guarda implícita: só as transações de {@code personId} — a versão que a leitura externa (listagem) usa. */
-    public Result<List<Transaction>, BusinessError> transactions(String personId) {
-        val all = service.findAllByPerson(personId).stream()
-                .sorted(Comparator.comparing(Transaction::date).reversed())
-                .toList();
-        return Result.success(all);
+    public Result<Transaction, BusinessError> updateTransaction(UUID personId, TransactionCommand.Update cmd, @Nullable UUID categoryId) {
+        if (guards().ownsAccountAndCard(cmd.accountId(), cmd.cardId()) instanceof Result.Failure<Void, BusinessError>(var error)) {
+            return Result.failure(error);
+        }
+
+        UUID previous = null;
+        if (reads.transaction(cmd.id()) instanceof Result.Success(var existing)) {
+            if (guards().ownsAccount(existing.accountId()) instanceof Result.Failure<Void, BusinessError>(var error)) {
+                return Result.failure(error);
+            }
+            val guard = validateClosing(existing.date(), cmd.date());
+            if (guard instanceof Result.Failure<Void, BusinessError>(var error)) return Result.failure(error);
+            previous = existing.accountId();
+        }
+
+        val previousAccountId = previous;
+        return upsert(cmd).map(t -> {
+            val hadCategory = reads.withCategory(t, personId).categoryId() != null;
+            saveCategory(t.id(), personId, categoryId);
+            val transferSiblings = reads.transferSiblingsOf(t, personId);
+            // Se for grupo de parcelas (nunca transferência — pernas de transferência carregam
+            // categoria por natureza da própria perna, nunca a da perna editada; ver
+            // saveTransferCategories/transfer()): atualiza a categoria de todos os membros.
+            if (t.groupId() != null && !hadCategory && transferSiblings.isEmpty()) {
+                saveCategoryForGroup(t, personId, categoryId);
+            }
+            publishAccountUpdate(personId, t.accountId(), previousAccountId, transferSiblings);
+            return t.withCategory(categoryId);
+        });
     }
 
-    public Result<List<Transaction>, BusinessError> pending() {
-        return Result.success(service.findPending());
+    public Result<Transaction, BusinessError> updateTransactionStatus(
+            UUID personId, UUID txId, Transaction.Status status, @Nullable LocalDate paymentDate) {
+        return reads.transaction(txId)
+                .flatMap(existing -> guards().ownsAccount(existing.accountId()))
+                .flatMap(ignored -> updateTransactionStatus(txId, status, paymentDate).map(t -> {
+                    MessageBus.submit(new AccountStreamEvents.Refresh(t.accountId(), personId.toString()));
+                    return reads.withCategory(t, personId);
+                }));
     }
 
-    public Result<Transaction, BusinessError> transaction(UUID id) {
-        return service.findById(id);
+    /** Não limpa vínculo de categoria/tag direto: publica {@link TransactionsDeleted} e deixa os
+     *  listeners reagirem, best-effort. */
+    public Result<Void, BusinessError> deleteTransaction(UUID txId, TransactionScope scope) {
+        UUID accountId = null;
+        if (reads.transaction(txId) instanceof Result.Success(var existing)) {
+            if (guards().ownsAccount(existing.accountId()) instanceof Result.Failure<Void, BusinessError>(var error)) {
+                return Result.failure(error);
+            }
+            if (validateClosing(existing.date()) instanceof Result.Failure<Void, BusinessError>(var error)) {
+                return Result.failure(error);
+            }
+            accountId = existing.accountId();
+        }
+
+        val affected = accountId;
+        return delete(new TransactionCommand.Delete(txId, scope)).flatMap(ids -> {
+            MessageBus.submit(new TransactionsDeleted(ids));
+            if (affected != null) MessageBus.submit(new AccountStreamEvents.Refresh(affected, HTTPRequest.personId()));
+            return Result.success();
+        });
     }
 
-    /** Guarda implícita: vazio (404) se {@code id} existe mas não pertence a {@code personId}. */
-    public Result<Transaction, BusinessError> transaction(UUID id, String personId) {
-        return service.findByIdAndPerson(id, personId);
+    public Result<Transaction, BusinessError> transfer(UUID personId, UUID fromAccountId, UUID toAccountId, LocalDate date, BigDecimal amount) {
+        if (guards().ownsAccounts(fromAccountId, toAccountId) instanceof Result.Failure<Void, BusinessError>(var error)) {
+            return Result.failure(error);
+        }
+        if (validateClosing(date) instanceof Result.Failure<Void, BusinessError>(var error)) {
+            return Result.failure(error);
+        }
+        // F005_TRANSACTION_CATEGORY.COD_CATEGORY é NOT NULL. Cada perna recebe a categoria de sistema
+        // "9. Outros / Transferência" da sua natureza: a saída (EXPENSE) a de despesa, a entrada
+        // (INCOME) a de receita. Cobre as duas pernas do grupo, mantendo o 1:1 com F006_TRANSACTION.
+        val expenseCategoryId = reads.transferCategoryId(Transaction.Type.EXPENSE);
+        val incomeCategoryId = reads.transferCategoryId(Transaction.Type.INCOME);
+        return createTransfer(fromAccountId, toAccountId, date, amount).map(t -> {
+            val categoryId = saveTransferCategories(t, personId, expenseCategoryId, incomeCategoryId);
+            MessageBus.submit(new AccountStreamEvents.Refresh(fromAccountId, personId.toString()));
+            MessageBus.submit(new AccountStreamEvents.Refresh(toAccountId, personId.toString()));
+            return t.withCategory(categoryId);
+        });
     }
+
+    /**
+     * Publica a conta atual, a conta anterior (se mudou) e — quando a transação editada é perna de
+     * transferência — a(s) conta(s) da(s) perna(s) irmã(s): {@code updateTransfer} espelha
+     * data/valor/status na perna oposta, uma mutação real fora da conta da perna editada.
+     */
+    private static void publishAccountUpdate(UUID personId, UUID accountId, @Nullable UUID previousAccountId,
+                                             List<Transaction> transferSiblings) {
+        MessageBus.submit(new AccountStreamEvents.Refresh(accountId, personId.toString()));
+        if (previousAccountId != null && !previousAccountId.equals(accountId)) {
+            MessageBus.submit(new AccountStreamEvents.Refresh(previousAccountId, personId.toString()));
+        }
+        for (val sib : transferSiblings) {
+            MessageBus.submit(new AccountStreamEvents.Refresh(sib.accountId(), personId.toString()));
+        }
+    }
+
+    /** Guarda de período fechado: busca o fechamento uma vez ({@link ReadUseCases#closingPeriod}) e
+     *  valida todas as datas localmente — {@code updateTransaction} checa data antiga + nova. */
+    private Result<Void, BusinessError> validateClosing(LocalDate... dates) {
+        val period = reads.closingPeriod();
+        if (period == null) return Result.success();
+
+        val closing = YearMonth.parse(period);
+        for (val date : dates) {
+            if (!YearMonth.from(date).isAfter(closing)) {
+                return Result.failure(new BusinessError.BusinessRule(
+                        "Período fechado. Lançamentos até " + period + " não podem ser alterados."));
+            }
+        }
+        return Result.success();
+    }
+
+    // ── Engine: aceita qualquer comando bem-formado ────────────────────────────
 
     public Result<Transaction, BusinessError> upsert(TransactionCommand.Upsert cmd) {
         return switch (cmd) {
             case TransactionCommand.Create create ->
                     validateCard(create.accountId(), create.cardId()).flatMap(ignored -> dispatchCreate(create));
             case TransactionCommand.Update update ->
-                    transaction(update.id()).flatMap(existing -> dispatchUpdate(update.id(), existing, update));
+                    service.findById(update.id()).flatMap(existing -> dispatchUpdate(update.id(), existing, update));
         };
     }
 
@@ -190,7 +320,7 @@ public class TransactionUseCase {
     }
 
     public Result<Transaction, BusinessError> updateTransactionStatus(UUID id, Transaction.Status status, @Nullable LocalDate paymentDate) {
-        return transaction(id)
+        return service.findById(id)
                 .map(existing -> {
                     val saved = service.save(new Transaction(
                             existing.id(), existing.description(), existing.amount(), existing.date(),
@@ -205,7 +335,7 @@ public class TransactionUseCase {
 
     /** Ids das transações apagadas (par de transferência / lote FUTURE / unitário). */
     public Result<List<UUID>, BusinessError> delete(TransactionCommand.Delete command) {
-        return transaction(command.id()).flatMap(existing -> {
+        return service.findById(command.id()).flatMap(existing -> {
             val transferSiblings = service.findTransferSiblings(existing);
             if (!transferSiblings.isEmpty()) return deleteTransferGroup(existing, transferSiblings);
 
@@ -257,7 +387,7 @@ public class TransactionUseCase {
         val toDelete = new LinkedHashMap<UUID, Transaction>();
         for (val id : ids) {
             if (toDelete.containsKey(id)) continue;
-            if (!(transaction(id) instanceof Result.Success<Transaction, BusinessError>(var existing))) continue;
+            if (!(service.findById(id) instanceof Result.Success<Transaction, BusinessError>(var existing))) continue;
 
             toDelete.put(existing.id(), existing);
             for (val sibling : service.findTransferSiblings(existing)) {
@@ -314,16 +444,6 @@ public class TransactionUseCase {
         service.saveCategory(transactionId, personId, categoryId);
     }
 
-    /** {@code tx} com o vínculo de categoria já resolvido — {@code null} quando não há vínculo. */
-    public Transaction withCategory(Transaction tx, UUID personId) {
-        return tx.withCategory(service.findCategory(tx.id(), personId).orElse(null));
-    }
-
-    /** Categoria por transação, para resolver uma listagem inteira num único SELECT. */
-    public Map<UUID, UUID> categoriesByPerson(UUID personId) {
-        return service.findCategoriesByPerson(personId);
-    }
-
     public void deleteCategory(UUID transactionId) {
         service.deleteCategoryByTransaction(transactionId);
     }
@@ -332,8 +452,37 @@ public class TransactionUseCase {
         service.reassignCategory(oldCategoryId, newCategoryId, personId);
     }
 
-    public List<UUID> transactionIdsByCategories(UUID personId, Collection<UUID> categoryIds) {
-        return service.findTransactionIdsByCategories(personId, categoryIds);
+    /** Aplica {@code categoryId} às demais parcelas do grupo de {@code first} (no-op fora de grupo). */
+    public void saveCategoryForGroup(Transaction first, UUID personId, @Nullable UUID categoryId) {
+        val groupId = first.groupId();
+        if (groupId == null) return;
+        reads.transactionsInGroup(groupId, personId).stream()
+                .filter(t -> !t.id().equals(first.id()))
+                .forEach(t -> saveCategory(t.id(), personId, categoryId));
+    }
+
+    /**
+     * Categoria de transferência por natureza da perna — a saída (EXPENSE) recebe
+     * {@code expenseCategoryId}, a entrada (INCOME) {@code incomeCategoryId} — aplicada a
+     * {@code first} e a todas as pernas do grupo. Devolve a categoria de {@code first}, que o
+     * chamador usa para montar a resposta.
+     */
+    public UUID saveTransferCategories(Transaction first, UUID personId, UUID expenseCategoryId, UUID incomeCategoryId) {
+        val categoryId = transferCategoryFor(first, expenseCategoryId, incomeCategoryId);
+        saveCategory(first.id(), personId, categoryId);
+
+        val groupId = first.groupId();
+        if (groupId != null) {
+            reads.transactionsInGroup(groupId, personId).stream()
+                    .filter(t -> !t.id().equals(first.id()))
+                    .forEach(t -> saveCategory(t.id(), personId,
+                            transferCategoryFor(t, expenseCategoryId, incomeCategoryId)));
+        }
+        return categoryId;
+    }
+
+    private static UUID transferCategoryFor(Transaction leg, UUID expenseCategoryId, UUID incomeCategoryId) {
+        return leg.type() == Transaction.Type.EXPENSE ? expenseCategoryId : incomeCategoryId;
     }
 
     /** Persiste uma transação já montada pelo chamador. Valida a invariante de cartão. */
