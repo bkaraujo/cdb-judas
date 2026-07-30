@@ -8,7 +8,7 @@ import br.cdb.feature.f000._0_domain.event.CategoryDeleted;
 import br.cdb.feature.f000._0_domain.event.CategoryReassigned;
 import br.cdb.feature.f000._0_domain.event.TransactionsDeleted;
 import br.cdb.feature.f000._1_application.InternalApi;
-import br.cdb.feature.f005._0_domain.UserCategory;
+import br.cdb.feature.f005._0_domain.Category;
 import br.cdb.feature.f006._0_domain.model.Transaction;
 import br.commons.MessageBus;
 import br.commons.Registry;
@@ -46,7 +46,7 @@ public class CategoryUseCase {
     private final UserCategoryService userCategoryService;
     private final InternalApi internalApi;
 
-    public List<UserCategory> categories(UUID personId) {
+    public List<Category> categories(UUID personId) {
         return userCategoryService.findAll(personId);
     }
 
@@ -54,11 +54,11 @@ public class CategoryUseCase {
      *  {@code InternalApi} por {@code f006.TransactionUseCase} (nunca chamado pelo frontend). Global
      *  (ver {@link UserCategoryService#findOrCreateTransferCategory}) — {@code personId} não influencia
      *  o resultado, só chega aqui pela simetria de rota {@code /api/{uuid}/categories/transfer}. */
-    public UserCategory transferCategory(UUID personId, Transaction.Type nature) {
+    public Category transferCategory(UUID personId, Transaction.Type nature) {
         return userCategoryService.findOrCreateTransferCategory(nature);
     }
 
-    public Result<UserCategory, BusinessError> createCategory(UUID personId, String name, Transaction.Type nature, @Nullable UUID parentId) {
+    public Result<Category, BusinessError> createCategory(UUID personId, String name, Transaction.Type nature, @Nullable UUID parentId) {
         if (parentId != null
                 && userCategoryService.validateParent(parentId, nature) instanceof Result.Failure<Void, BusinessError>(var error)) {
             return Result.failure(error);
@@ -67,7 +67,7 @@ public class CategoryUseCase {
                 .map(ignored -> userCategoryService.create(personId, name, nature, parentId));
     }
 
-    public Result<UserCategory, BusinessError> updateCategory(UUID personId, UUID id, String name, @Nullable UUID parentId, @Nullable Boolean active) {
+    public Result<Category, BusinessError> updateCategory(UUID personId, UUID id, String name, @Nullable UUID parentId, @Nullable Boolean active) {
         return userCategoryService.findById(id).flatMap(existing -> {
             if (existing.isSystem()) {
                 return Result.failure(new BusinessError.BusinessRule("Categoria de sistema não pode ser modificada"));

@@ -1,7 +1,7 @@
 package br.cdb.feature.f005._2_infrastructure.persistence;
 
-import br.cdb.feature.f005._0_domain.UserCategory;
-import br.cdb.feature.f005._0_domain.UserCategoryRepository;
+import br.cdb.feature.f005._0_domain.Category;
+import br.cdb.feature.f005._0_domain.CategoryRepository;
 import br.cdb.feature.f006._0_domain.model.Transaction;
 import br.commons.chrono.Time;
 import br.commons.framework.persistence.jdbc.JDBCRepository;
@@ -14,21 +14,21 @@ import org.jspecify.annotations.Nullable;
 import java.sql.Timestamp;
 import java.util.*;
 
-/** Adaptador JDBC (H2) da porta {@link UserCategoryRepository}; tabela {@code F005_CATEGORY}. */
+/** Adaptador JDBC (H2) da porta {@link CategoryRepository}; tabela {@code F005_CATEGORY}. */
 @NullMarked
-public final class UserCategoryJDBCRepository extends JDBCRepository<UserCategory> implements UserCategoryRepository {
+public final class CategoryJDBCRepository extends JDBCRepository<Category> implements CategoryRepository {
 
-    public UserCategoryJDBCRepository() {
+    public CategoryJDBCRepository() {
         super("F005_CATEGORY");
     }
 
     @Override
-    public Optional<UserCategory> findById(UUID id) {
+    public Optional<Category> findById(UUID id) {
         return findById(id.toString());
     }
 
     @Override
-    public List<UserCategory> findAllByPerson(UUID personId) {
+    public List<Category> findAllByPerson(UUID personId) {
         return datasource.query(
                 "SELECT " + columnList() + " FROM " + table() + " WHERE COD_PERSON = ?",
                 JDBCParameter.of(personId.toString()),
@@ -37,7 +37,7 @@ public final class UserCategoryJDBCRepository extends JDBCRepository<UserCategor
     }
 
     @Override
-    public List<UserCategory> findByNature(UUID personId, Transaction.Type nature) {
+    public List<Category> findByNature(UUID personId, Transaction.Type nature) {
         return datasource.query(
                 "SELECT " + columnList() + " FROM " + table() + " WHERE COD_PERSON = ? AND COD_NATURE = ?",
                 JDBCParameter.of(personId.toString(), nature.name()),
@@ -56,7 +56,7 @@ public final class UserCategoryJDBCRepository extends JDBCRepository<UserCategor
     }
 
     @Override
-    protected Map<String, @Nullable Object> values(UserCategory entity) {
+    protected Map<String, @Nullable Object> values(Category entity) {
         final @Nullable String parentStr = entity.parentId() == null ? null : entity.parentId().toString();
         val now = Timestamp.valueOf(Time.now());
 
@@ -74,7 +74,7 @@ public final class UserCategoryJDBCRepository extends JDBCRepository<UserCategor
     }
 
     @Override
-    protected UserCategory map(JDBCResultSet rs) {
+    protected Category map(JDBCResultSet rs) {
         val id = UUID.fromString(rs.getString("ID").get());
         val personId = UUID.fromString(rs.getString("COD_PERSON").get());
         val nature = Transaction.Type.valueOf(rs.getString("COD_NATURE").get());
@@ -88,6 +88,6 @@ public final class UserCategoryJDBCRepository extends JDBCRepository<UserCategor
         val createdAt = rs.getTimestamp("TMS_CREATE_AT").get().toLocalDateTime();
         val updatedAt = rs.getTimestamp("TMS_UPDATED_AT").get().toLocalDateTime();
 
-        return new UserCategory(id, personId, nature, name, parentId, isSystem, active, createdAt, updatedAt);
+        return new Category(id, personId, nature, name, parentId, isSystem, active, createdAt, updatedAt);
     }
 }

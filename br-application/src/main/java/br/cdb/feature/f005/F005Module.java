@@ -1,9 +1,9 @@
 package br.cdb.feature.f005;
 
 import br.cdb.feature.f000._0_domain.event.UserEvents;
-import br.cdb.feature.f005._0_domain.UserCategory;
-import br.cdb.feature.f005._0_domain.UserCategoryRepository;
-import br.cdb.feature.f005._2_infrastructure.persistence.UserCategoryJDBCRepository;
+import br.cdb.feature.f005._0_domain.Category;
+import br.cdb.feature.f005._0_domain.CategoryRepository;
+import br.cdb.feature.f005._2_infrastructure.persistence.CategoryJDBCRepository;
 import br.cdb.feature.f006._0_domain.model.Transaction;
 import br.commons.Logger;
 import br.commons.MessageBus;
@@ -33,8 +33,8 @@ public class F005Module {
 
     @Produces
     @Singleton
-    public UserCategoryRepository userCategoryRepository() {
-        return Registry.tryGet(UserCategoryRepository.class, UserCategoryJDBCRepository::new);
+    public CategoryRepository userCategoryRepository() {
+        return Registry.tryGet(CategoryRepository.class, CategoryJDBCRepository::new);
     }
 
     void onStart(@Observes @Priority(5) StartupEvent ev) {
@@ -71,11 +71,11 @@ public class F005Module {
 
             void seed(UUID personId, Transaction.Type nature, Map<String, List<String>> categories) {
                 Logger.trace("Cadastrando categorias %s para usuário %s", nature, personId);
-                val repository = Registry.tryGet(UserCategoryRepository.class, UserCategoryJDBCRepository::new);
+                val repository = Registry.tryGet(CategoryRepository.class, CategoryJDBCRepository::new);
                 val existing = repository.findByNature(personId, nature);
 
                 // 1. Mapeamento O(1) na memória para evitar loops aninhados (Stream/Filter)
-                val rootsByName = new HashMap<String, UserCategory>();
+                val rootsByName = new HashMap<String, Category>();
                 val childrenNamesByParentId = new HashMap<UUID, Set<String>>();
 
                 for (val cat : existing) {
@@ -98,7 +98,7 @@ public class F005Module {
 
                     if (parentCategory == null) {
                         parentId = UUID.randomUUID();
-                        parentCategory = new UserCategory(parentId, personId, nature, parentName, null, false);
+                        parentCategory = new Category(parentId, personId, nature, parentName, null, false);
                         repository.save(parentCategory);
                     } else {
                         parentId = parentCategory.id();
@@ -107,7 +107,7 @@ public class F005Module {
                     val children = childrenNamesByParentId.getOrDefault(parentId, Collections.emptySet());
                     for (val name : names) {
                         if (!children.contains(name)) {
-                            repository.save(new UserCategory(
+                            repository.save(new Category(
                                     UUID.randomUUID(),
                                     personId,                               // COD_PERSON
                                     nature,                                 // COD_NATURE

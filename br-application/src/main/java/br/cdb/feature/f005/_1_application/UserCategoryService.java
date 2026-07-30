@@ -1,7 +1,7 @@
 package br.cdb.feature.f005._1_application;
 
-import br.cdb.feature.f005._0_domain.UserCategory;
-import br.cdb.feature.f005._0_domain.UserCategoryRepository;
+import br.cdb.feature.f005._0_domain.Category;
+import br.cdb.feature.f005._0_domain.CategoryRepository;
 import br.cdb.feature.f005._0_domain.event.CategoryEvents;
 import br.cdb.feature.f006._0_domain.model.Transaction;
 import br.commons.MessageBus;
@@ -36,21 +36,21 @@ public class UserCategoryService {
     private static final UUID TRANSFER_CATEGORY_INCOME_ID = UUID.fromString("f9990000-0000-0000-0000-000000000003");
     private static final String TRANSFER_CATEGORY_NAME = "Transferência";
 
-    private final UserCategoryRepository repo;
+    private final CategoryRepository repo;
 
     /** Categorias da pessoa + as 2 globais de transferência (pertencem a {@link #SYSTEM_PERSON_ID},
      *  por isso não vêm de {@code findAllByPerson(personId)} — sem elas a tela de categorias e a
      *  resolução de nome de qualquer perna de transferência não enxergam a categoria do sistema). */
-    public List<UserCategory> findAll(UUID personId) {
+    public List<Category> findAll(UUID personId) {
         val categories = new ArrayList<>(repo.findAllByPerson(personId));
         repo.findById(TRANSFER_CATEGORY_EXPENSE_ID).ifPresent(categories::add);
         repo.findById(TRANSFER_CATEGORY_INCOME_ID).ifPresent(categories::add);
         return categories;
     }
 
-    public Result<UserCategory, BusinessError> findById(UUID id) {
+    public Result<Category, BusinessError> findById(UUID id) {
         return repo.findById(id)
-                .<Result<UserCategory, BusinessError>>map(Result::success)
+                .<Result<Category, BusinessError>>map(Result::success)
                 .orElseGet(() -> Result.failure(new BusinessError.NotFound("Category not found: " + id)));
     }
 
@@ -91,26 +91,26 @@ public class UserCategoryService {
         return Result.success();
     }
 
-    public UserCategory create(UUID personId, String name, Transaction.Type nature, @Nullable UUID parentId) {
-        val saved = repo.save(new UserCategory(UUID.randomUUID(), personId, nature, name, parentId));
+    public Category create(UUID personId, String name, Transaction.Type nature, @Nullable UUID parentId) {
+        val saved = repo.save(new Category(UUID.randomUUID(), personId, nature, name, parentId));
         MessageBus.submit(new CategoryEvents.Created(saved));
         return saved;
     }
 
-    public UserCategory update(UUID id, String name, @Nullable UUID parentId, @Nullable Boolean active) {
+    public Category update(UUID id, String name, @Nullable UUID parentId, @Nullable Boolean active) {
         val existing = repo.findById(id).orElseThrow(() -> new IllegalStateException("Category not found: " + id));
-        val saved = repo.save(new UserCategory(id, existing.personId(), existing.nature(), name, parentId,
+        val saved = repo.save(new Category(id, existing.personId(), existing.nature(), name, parentId,
                 existing.isSystem(), active != null ? active : existing.active(), existing.createdAt(), existing.updatedAt()));
         MessageBus.submit(new CategoryEvents.Updated(saved));
         return saved;
     }
 
-    public UserCategory findOrCreateUncategorizedCategory(UUID personId) {
+    public Category findOrCreateUncategorizedCategory(UUID personId) {
         return repo.findAllByPerson(personId).stream()
                 .filter(c -> "Sem categoria".equalsIgnoreCase(c.name()) && c.nature() == Transaction.Type.EXPENSE && c.parentId() == null)
                 .findFirst()
                 .orElseGet(() -> {
-                    val created = repo.save(new UserCategory(UUID.randomUUID(), personId, Transaction.Type.EXPENSE, "Sem categoria", null, true));
+                    val created = repo.save(new Category(UUID.randomUUID(), personId, Transaction.Type.EXPENSE, "Sem categoria", null, true));
                     MessageBus.submit(new CategoryEvents.Created(created));
                     return created;
                 });
@@ -122,10 +122,10 @@ public class UserCategoryService {
      * {@code personId} do chamador não influencia o resultado; a autocura sob {@link #SYSTEM_PERSON_ID}
      * só é exercitada em banco fresh/teste, onde {@code ContextMergeMigration} não roda.
      */
-    public UserCategory findOrCreateTransferCategory(Transaction.Type nature) {
+    public Category findOrCreateTransferCategory(Transaction.Type nature) {
         val id = nature == Transaction.Type.EXPENSE ? TRANSFER_CATEGORY_EXPENSE_ID : TRANSFER_CATEGORY_INCOME_ID;
         return repo.findById(id).orElseGet(() -> {
-            val created = repo.save(new UserCategory(id, SYSTEM_PERSON_ID, nature, TRANSFER_CATEGORY_NAME, null, true));
+            val created = repo.save(new Category(id, SYSTEM_PERSON_ID, nature, TRANSFER_CATEGORY_NAME, null, true));
             MessageBus.submit(new CategoryEvents.Created(created));
             return created;
         });
@@ -181,7 +181,7 @@ public class UserCategoryService {
         deleteSubtreeRows(subtreeIds, personId);
     }
 
-    private void collectSubtree(UUID id, List<UserCategory> all, List<UUID> acc) {
+    private void collectSubtree(UUID id, List<Category> all, List<UUID> acc) {
         acc.add(id);
         all.stream().filter(c -> id.equals(c.parentId())).forEach(c -> collectSubtree(c.id(), all, acc));
     }

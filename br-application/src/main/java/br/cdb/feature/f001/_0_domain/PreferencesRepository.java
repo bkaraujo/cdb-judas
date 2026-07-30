@@ -4,7 +4,7 @@ import org.jspecify.annotations.NullMarked;
 
 /**
  * Porta de persistência das preferências do usuário (fatia {@code profile}). Implementada por
- * um adaptador JDBC na infraestrutura, espelhando o padrão {@code UserCategoryRepository}.
+ * um adaptador JDBC na infraestrutura, espelhando o padrão {@code CategoryRepository}.
  */
 @NullMarked
 public interface PreferencesRepository {

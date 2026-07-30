@@ -14,7 +14,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 /**
- * Migração one-shot do DB de dev file-based: um bug em {@code UserCategoryJDBCRepository.findByNature}
+ * Migração one-shot do DB de dev file-based: um bug em {@code CategoryJDBCRepository.findByNature}
  * (comparava contra {@code TRANSACTION_NATURE.TXT_DESCRIPTION} em vez de {@code COD_NATURE}) fazia
  * {@code UserService.create} nunca encontrar as categorias padrão já existentes e recriar a árvore
  * inteira a cada restart do Quarkus. Esta migração funde os grupos de categorias raiz duplicadas

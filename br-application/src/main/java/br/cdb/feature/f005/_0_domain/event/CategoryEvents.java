@@ -1,6 +1,6 @@
 package br.cdb.feature.f005._0_domain.event;
 
-import br.cdb.feature.f005._0_domain.UserCategory;
+import br.cdb.feature.f005._0_domain.Category;
 import br.commons.business.BusinessEvent;
 import org.jspecify.annotations.NullMarked;
 
@@ -11,10 +11,10 @@ import java.util.UUID;
 public interface CategoryEvents extends BusinessEvent {
 
     @NullMarked
-    record Created(UserCategory category) implements CategoryEvents {}
+    record Created(Category category) implements CategoryEvents {}
 
     @NullMarked
-    record Updated(UserCategory category) implements CategoryEvents {}
+    record Updated(Category category) implements CategoryEvents {}
 
     @NullMarked
     record Deleted(UUID categoryId, UUID personId) implements CategoryEvents {}

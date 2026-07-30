@@ -1,7 +1,7 @@
 package br.cdb.feature.f999._1_application;
 
 import br.cdb.feature.f000._0_domain.SSE;
-import br.cdb.feature.f005._0_domain.UserCategory;
+import br.cdb.feature.f005._0_domain.Category;
 import br.cdb.feature.f005._0_domain.event.CategoryEvents;
 import br.cdb.feature.f005._1_application.CategoryResponse;
 import br.commons.MessageBus;
@@ -49,7 +49,7 @@ public class CategoryStreamListener {
     }
 
     @SuppressWarnings("EmptyCatch")
-    private void dispatchUpsert(UserCategory category) {
+    private void dispatchUpsert(Category category) {
         try {
             sse.dispatch(category.personId().toString(), SSE.Event.UPSERT, Map.of("type", TYPE, "payload", CategoryResponse.from(category)));
         } catch (Exception ignored) {}

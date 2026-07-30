@@ -1,6 +1,6 @@
 package br.cdb.feature.f005._1_application;
 
-import br.cdb.feature.f005._0_domain.UserCategory;
+import br.cdb.feature.f005._0_domain.Category;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 
@@ -15,7 +15,7 @@ public record CategoryResponse(
         boolean isSystem,
         boolean active
 ) {
-    public static CategoryResponse from(UserCategory entity) {
+    public static CategoryResponse from(Category entity) {
         return new CategoryResponse(
                 entity.id(),
                 entity.name(),
