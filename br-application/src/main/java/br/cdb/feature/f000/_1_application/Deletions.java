@@ -33,9 +33,12 @@ public final class Deletions {
      * quando concluída. Falhas de negócio viram {@link BusinessException} (borda traduz para HTTP).
      */
     public static Response execute(
-            @Nullable String strategy, @Nullable UUID targetId, Set<DeletionStrategy> allowed,
+            @Nullable String strategy,
+            @Nullable UUID targetId,
+            Set<DeletionStrategy> allowed,
             Function<@Nullable DeletionStrategy, Result<DeletionOutcome, BusinessError>> action,
-            String linkedSuffix) {
+            String linkedSuffix
+    ) {
         val parsed = parse(strategy, targetId, allowed);
         if (parsed instanceof Result.Failure<DeletionStrategy, BusinessError>(var error)) {
             throw new BusinessException(error);
@@ -54,7 +57,10 @@ public final class Deletions {
     /** {@code null} = nenhuma estratégia informada (exclusão simples). Inválida, não permitida
      *  para o recurso, ou {@code MOVE} sem {@code targetId} → {@link BusinessError.Validation} (422). */
     public static Result<@Nullable DeletionStrategy, BusinessError> parse(
-            @Nullable String raw, @Nullable UUID targetId, Set<DeletionStrategy> allowed) {
+            @Nullable String raw,
+            @Nullable UUID targetId,
+            Set<DeletionStrategy> allowed
+    ) {
         if (raw == null || raw.isBlank()) return Result.success(null);
 
         final DeletionStrategy strategy;
@@ -75,7 +81,10 @@ public final class Deletions {
 
     /** Só para account/card (entidades do contexto monetário). {@code DETACH} nunca chega aqui —
      *  é tratado inteiramente na feature de tags, que não usa {@link TransactionPolicy}. */
-    public static TransactionPolicy toPolicy(@Nullable DeletionStrategy strategy, @Nullable UUID targetId) {
+    public static TransactionPolicy toPolicy(
+            @Nullable DeletionStrategy strategy,
+            @Nullable UUID targetId
+    ) {
         if (strategy == null) return new TransactionPolicy.Block();
         return switch (strategy) {
             case MOVE -> new TransactionPolicy.Move(Objects.requireNonNull(targetId, "targetId required for MOVE"));

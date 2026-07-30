@@ -2,7 +2,6 @@ package br.cdb.feature.f999._1_application;
 
 import br.cdb.feature.f000._0_domain.SSE;
 import br.cdb.feature.f004._0_domain.event.TagEvents;
-import br.cdb.feature.f004._0_domain.model.Tag;
 import br.commons.MessageBus;
 import br.commons.framework.message.MessageListener;
 import br.commons.framework.message.MessageResult;
@@ -31,26 +30,27 @@ public class TagStreamListener {
 
     @MessageListener
     public MessageResult onCreated(TagEvents.Created event) {
-        dispatchUpsert(event.tag());
+        dispatchUpsert(event.tag().personId(), event.tag());
         return MessageResult.CONSUMED;
     }
 
     @MessageListener
     public MessageResult onUpdated(TagEvents.Updated event) {
-        dispatchUpsert(event.tag());
+        dispatchUpsert(event.tag().personId(), event.tag());
         return MessageResult.CONSUMED;
     }
 
     @MessageListener
     public MessageResult onDeleted(TagEvents.Deleted event) {
-        dispatchDelete(event.personId(), event.tagId());
+        dispatchDelete(event.tag().personId(), event.tag().id());
         return MessageResult.CONSUMED;
     }
 
+    /** Payload cru: a tag entra como {@code Object} para não importar o modelo de f004 (só o vocabulário de evento). */
     @SuppressWarnings("EmptyCatch")
-    private void dispatchUpsert(Tag tag) {
+    private void dispatchUpsert(UUID personId, Object tag) {
         try {
-            sse.dispatch(tag.personId().toString(), SSE.Event.UPSERT, Map.of("type", TYPE, "payload", tag));
+            sse.dispatch(personId.toString(), SSE.Event.UPSERT, Map.of("type", TYPE, "payload", tag));
         } catch (Exception ignored) {}
     }
 

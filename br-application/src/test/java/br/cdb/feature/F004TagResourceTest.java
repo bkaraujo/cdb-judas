@@ -143,8 +143,9 @@ public class F004TagResourceTest extends BaseHttpTest {
                 .then().statusCode(204);
     }
 
+    /** Sem strategy o default é DETACH: desvincula e apaga a tag, sem 409 e sem tocar na transação. */
     @Test
-    void semStrategyComVinculoRetorna409ComContagem() {
+    void semStrategyComVinculoDesvinculaPorPadrao() {
         String tagId = createTag("Viagem");
         String accountId = createAccount();
         String txId = createTransaction(accountId);
@@ -152,9 +153,10 @@ public class F004TagResourceTest extends BaseHttpTest {
 
         asTestUser()
                 .when().delete("/api/" + TEST_USER_ID + "/tags/" + tagId)
-                .then().statusCode(409)
-                .body("code", is("LINKED_TRANSACTIONS"))
-                .body("count", is(1));
+                .then().statusCode(204);
+
+        assertEquals(0, linkCount(tagId), "vínculo removido");
+        assertTrue(transactionExists(txId), "transação permanece intacta");
     }
 
     @Test
@@ -199,8 +201,9 @@ public class F004TagResourceTest extends BaseHttpTest {
         assertEquals(2, destinoLinks, "as duas transações apontam para o destino, sem duplicar a de tx2");
     }
 
+    /** DELETE saiu de ALLOWED_STRATEGIES: apagar a tag nunca apaga a transação. */
     @Test
-    void deleteApagaTransacoesVinculadas() {
+    void deleteNaoEhEstrategiaPermitida() {
         String tagId = createTag("Viagem");
         String accountId = createAccount();
         String txId = createTransaction(accountId);
@@ -209,9 +212,9 @@ public class F004TagResourceTest extends BaseHttpTest {
         asTestUser()
                 .queryParam("strategy", "DELETE")
                 .when().delete("/api/" + TEST_USER_ID + "/tags/" + tagId)
-                .then().statusCode(204);
+                .then().statusCode(422);
 
-        assertFalse(transactionExists(txId), "transação vinculada foi excluída");
-        assertEquals(0, linkCount(tagId), "vínculo removido junto");
+        assertTrue(transactionExists(txId), "transação intacta");
+        assertEquals(1, linkCount(tagId), "vínculo intacto");
     }
 }

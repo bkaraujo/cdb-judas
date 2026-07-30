@@ -31,6 +31,12 @@ public final class TagJDBCRepository extends JDBCRepository<Tag> implements TagR
     }
 
     @Override
+    public Optional<Tag> findByPersonAndId(UUID personId, UUID id) {
+        return findById(id.toString())
+                .filter(tag -> tag.personId().equals(personId));
+    }
+
+    @Override
     public Optional<Tag> findById(UUID id) {
         return findById(id.toString());
     }

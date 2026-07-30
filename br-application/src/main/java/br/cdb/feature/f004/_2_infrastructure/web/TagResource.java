@@ -26,8 +26,7 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class TagResource {
 
-    private static final Set<DeletionStrategy> ALLOWED_STRATEGIES =
-            Set.of(DeletionStrategy.MOVE, DeletionStrategy.DELETE, DeletionStrategy.DETACH);
+    private static final Set<DeletionStrategy> ALLOWED_STRATEGIES = Set.of(DeletionStrategy.MOVE, DeletionStrategy.DETACH);
 
     private final TagUseCase tagUseCase;
 
@@ -58,8 +57,12 @@ public class TagResource {
             @QueryParam("strategy") @Nullable String strategy,
             @QueryParam("targetId") @Nullable UUID targetId
     ) {
-        return Deletions.execute(strategy, targetId, ALLOWED_STRATEGIES,
+        return Deletions.execute(
+                strategy,
+                targetId,
+                ALLOWED_STRATEGIES,
                 parsed -> tagUseCase.deleteTag(uuid, id, parsed, targetId),
-                "a esta tag.");
+                "a esta tag."
+        );
     }
 }

@@ -10,6 +10,7 @@ import java.util.UUID;
 @NullMarked
 public interface TagRepository {
     List<Tag> findAllByPerson(UUID personId);
+    Optional<Tag> findByPersonAndId(UUID personId, UUID id);
     Optional<Tag> findById(UUID id);
     Tag save(Tag tag);
     void deleteById(UUID id);

@@ -1,7 +1,9 @@
 package br.cdb.feature.f006;
 
+import br.cdb.feature.f004._0_domain.event.TagEvents;
 import br.cdb.feature.f006._0_domain.CreditCardProvider;
 import br.cdb.feature.f006._0_domain.UserTransactionRepository;
+import br.cdb.feature.f006._0_domain.repository.TransactionRepository;
 import br.cdb.feature.f006._1_application.StatementImportService;
 import br.cdb.feature.f006._2_infrastructure.persistence.UserTransactionJDBCRepository;
 import br.cdb.feature.f006._2_infrastructure.provider.BTGInvoiceParser;
@@ -9,7 +11,10 @@ import br.cdb.feature.f006._2_infrastructure.provider.BTGStatementParser;
 import br.cdb.feature.f006._2_infrastructure.provider.SantanderInvoiceParser;
 import br.cdb.feature.f006._2_infrastructure.provider.SantanderStatementParser;
 import br.commons.Logger;
+import br.commons.MessageBus;
 import br.commons.Registry;
+import br.commons.framework.message.MessageListener;
+import br.commons.framework.message.MessageResult;
 import br.commons.framework.persistence.jdbc.DataSource;
 import br.commons.pdf.PdfBoxTextExtractor;
 import br.commons.pdf.PdfTextExtractor;
@@ -19,6 +24,7 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.event.Observes;
 import jakarta.enterprise.inject.Produces;
 import jakarta.inject.Singleton;
+import lombok.val;
 import org.jspecify.annotations.NullMarked;
 
 import java.util.List;
@@ -70,5 +76,37 @@ public class F006Module {
 
     void onStart(@Observes @Priority(6) StartupEvent ev) {
         Logger.debug("Iniciando módulo..");
+
+        MessageBus.subscribe(new Object(){
+
+            @MessageListener
+            public MessageResult onTagDeleted(TagEvents.Deleted message) {
+                Logger.debug("Processing %s", message);
+
+                val transactions = Registry.get(TransactionRepository.class);
+                val tagId = message.tag().id();
+                val personId = message.tag().personId();
+
+                return switch (message.strategy()){
+                    case MOVE -> {
+                        if (message.targetId() == null) {
+                            Logger.warn("Tag \"%s\" deleted with MOVE strategy without a target tag", tagId);
+                            yield MessageResult.AVAILABLE;
+                        }
+
+                        transactions.reassignTag(tagId, message.targetId(), personId);
+                        yield MessageResult.AVAILABLE;
+                    }
+                    case DETACH -> {
+                        transactions.detachTag(tagId, personId);
+                        yield MessageResult.AVAILABLE;
+                    }
+                    default -> {
+                        Logger.error("Unsupported DeletionStrategy [%s]", message.strategy());
+                        yield MessageResult.AVAILABLE;
+                    }
+                };
+            }
+        });
     }
 }

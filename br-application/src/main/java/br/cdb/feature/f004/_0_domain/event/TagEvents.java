@@ -1,8 +1,10 @@
 package br.cdb.feature.f004._0_domain.event;
 
+import br.cdb.feature.f000._0_domain.DeletionStrategy;
 import br.cdb.feature.f004._0_domain.model.Tag;
 import br.commons.business.BusinessEvent;
 import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
 
 import java.util.UUID;
 
@@ -17,5 +19,5 @@ public interface TagEvents extends BusinessEvent {
     record Updated(Tag tag) implements TagEvents {}
 
     @NullMarked
-    record Deleted(UUID tagId, UUID personId) implements TagEvents {}
+    record Deleted(Tag tag, DeletionStrategy strategy, @Nullable UUID targetId) implements TagEvents {}
 }

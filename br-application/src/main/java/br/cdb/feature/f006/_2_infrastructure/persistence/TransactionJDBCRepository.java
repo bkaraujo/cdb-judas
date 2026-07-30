@@ -56,6 +56,37 @@ public final class TransactionJDBCRepository extends JDBCRepository<Transaction>
         );
     }
 
+
+    @Override
+    public void reassignCategory(UUID oldCategoryId, UUID newCategoryId, UUID personId) {
+        datasource.execute(
+                "UPDATE F005_TRANSACTION_CATEGORY SET COD_CATEGORY = ? WHERE COD_CATEGORY = ? AND COD_PERSON = ?",
+                JDBCParameter.of(newCategoryId.toString(), oldCategoryId.toString(), personId.toString())
+        );
+    }
+
+    @Override
+    public void reassignTag(UUID oldTagId, UUID newTagId, UUID personId) {
+        // Descarta primeiro o vínculo antigo nas transações que já têm o destino (evita violar a PK composta).
+        datasource.execute(
+                "DELETE FROM F004_TRANSACTION_TAG WHERE COD_PERSON = ? AND COD_TAG = ? "
+                        + "AND COD_TRANSACTION IN (SELECT COD_TRANSACTION FROM F004_TRANSACTION_TAG WHERE COD_PERSON = ? AND COD_TAG = ?)",
+                JDBCParameter.of(personId.toString(), oldTagId.toString(), personId.toString(), newTagId.toString())
+        );
+        datasource.execute(
+                "UPDATE F004_TRANSACTION_TAG SET COD_TAG = ? WHERE COD_TAG = ? AND COD_PERSON = ?",
+                JDBCParameter.of(newTagId.toString(), oldTagId.toString(), personId.toString())
+        );
+    }
+
+    @Override
+    public void detachTag(UUID tagId, UUID personId) {
+        datasource.execute(
+                "DELETE FROM F004_TRANSACTION_TAG WHERE COD_PERSON = ? AND COD_TAG = ?",
+                JDBCParameter.of(personId.toString(), tagId.toString())
+        );
+    }
+
     @Override
     public List<Transaction> findAllByPerson(String personId) {
         return datasource.query(

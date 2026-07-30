@@ -55,6 +55,19 @@ final class InMemoryRepositories {
             }
         }
 
+        /** Vínculos de categoria/tag (F005_TRANSACTION_CATEGORY, F004_TRANSACTION_TAG) não são modelados neste fake. */
+        public void reassignCategory(UUID oldCategoryId, UUID newCategoryId, UUID personId) {
+            // não exercido por estes testes
+        }
+
+        public void reassignTag(UUID oldTagId, UUID newTagId, UUID personId) {
+            // não exercido por estes testes
+        }
+
+        public void detachTag(UUID tagId, UUID personId) {
+            // não exercido por estes testes
+        }
+
         public void reassignCard(UUID from, UUID to) {
             for (var t : List.copyOf(data.values())) {
                 if (from.equals(t.cardId())) {
