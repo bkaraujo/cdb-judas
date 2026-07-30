@@ -73,8 +73,8 @@ public class TransactionResource {
     @POST
     @Path("/{accId}/transactions")
     public RestResponse<TransactionResponse> create(@PathParam("uuid") UUID uuid, @PathParam("accId") UUID accId, @Valid TransactionRequest req) {
-        return switch (transactionUseCase.createTransaction(uuid, TransactionMapper.toCreateCommand(accId, req), req.categoryId())) {
-            case Result.Success(var transaction) -> RestResponse.status(RestResponse.Status.CREATED, TransactionMapper.toDto(transaction));
+        return switch (transactionUseCase.createTransaction(uuid, RequestMapper.toCreateCommand(accId, req), req.categoryId())) {
+            case Result.Success(var transaction) -> RestResponse.status(RestResponse.Status.CREATED, RequestMapper.toDto(transaction));
             case Result.Failure(var error) -> throw new BusinessException(error);
         };
     }
@@ -82,8 +82,8 @@ public class TransactionResource {
     @PATCH
     @Path("/{accId}/transactions/{txId}")
     public TransactionResponse update(@PathParam("uuid") UUID uuid, @PathParam("accId") UUID accId, @PathParam("txId") UUID txId, @Valid TransactionRequest req) {
-        return switch (transactionUseCase.updateTransaction(uuid, TransactionMapper.toUpdateCommand(txId, accId, req), req.categoryId())) {
-            case Result.Success(var transaction) -> TransactionMapper.toDto(transaction);
+        return switch (transactionUseCase.updateTransaction(uuid, RequestMapper.toUpdateCommand(txId, accId, req), req.categoryId())) {
+            case Result.Success(var transaction) -> RequestMapper.toDto(transaction);
             case Result.Failure(var error) -> throw new BusinessException(error);
         };
     }
@@ -92,7 +92,7 @@ public class TransactionResource {
     @Path("/{accId}/transactions/{txId}/status")
     public TransactionResponse patchStatus(@PathParam("uuid") UUID uuid, @PathParam("txId") UUID txId, @Valid PatchStatusRequest req) {
         return switch (transactionUseCase.updateTransactionStatus(uuid, txId, req.status(), req.paymentDate())) {
-            case Result.Success(var transaction) -> TransactionMapper.toDto(transaction);
+            case Result.Success(var transaction) -> RequestMapper.toDto(transaction);
             case Result.Failure(var error) -> throw new BusinessException(error);
         };
     }
@@ -100,7 +100,7 @@ public class TransactionResource {
     @DELETE
     @Path("/{accId}/transactions/{txId}")
     public void delete(@PathParam("txId") UUID txId, @QueryParam("mode") @Nullable String mode) {
-        if (transactionUseCase.deleteTransaction(txId, TransactionMapper.toScope(mode)) instanceof Result.Failure(var error)) {
+        if (transactionUseCase.deleteTransaction(txId, RequestMapper.toScope(mode)) instanceof Result.Failure(var error)) {
             throw new BusinessException(error);
         }
     }
@@ -109,7 +109,7 @@ public class TransactionResource {
 
     private List<TransactionResponse> query(UUID personId, TransactionUseCase.TransactionFilter filter) {
         return switch (transactionUseCase.transactions(personId, filter)) {
-            case Result.Success(var transactions) -> transactions.stream().map(TransactionMapper::toDto).toList();
+            case Result.Success(var transactions) -> transactions.stream().map(RequestMapper::toDto).toList();
             case Result.Failure(var error) -> throw new BusinessException(error);
         };
     }
