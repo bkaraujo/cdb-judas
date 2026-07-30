@@ -5,11 +5,7 @@ import br.commons.framework.persistence.json.Repository;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
 
 @NullMarked
 public interface TransactionRepository extends Repository<Transaction, UUID> {
