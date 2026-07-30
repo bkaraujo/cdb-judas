@@ -7,9 +7,13 @@ import br.commons.Result;
 import br.commons.business.BusinessError;
 import lombok.val;
 import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
 
+import java.util.Collection;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 
 @NullMarked
@@ -52,6 +56,32 @@ public class TransactionService {
 
     public void reassignCard(UUID from, UUID to) {
         repository.reassignCard(from, to);
+    }
+
+    // ── Vínculo transação↔categoria (F005_TRANSACTION_CATEGORY) ────────────────
+
+    public void saveCategory(UUID transactionId, UUID personId, @Nullable UUID categoryId) {
+        repository.saveCategory(transactionId, personId, categoryId);
+    }
+
+    public Optional<UUID> findCategory(UUID transactionId, UUID personId) {
+        return repository.findCategory(transactionId, personId);
+    }
+
+    public Map<UUID, UUID> findCategoriesByPerson(UUID personId) {
+        return repository.findCategoriesByPerson(personId);
+    }
+
+    public void deleteCategoryByTransaction(UUID transactionId) {
+        repository.deleteCategoryByTransaction(transactionId);
+    }
+
+    public void reassignCategory(UUID oldCategoryId, UUID newCategoryId, UUID personId) {
+        repository.reassignCategory(oldCategoryId, newCategoryId, personId);
+    }
+
+    public List<UUID> findTransactionIdsByCategories(UUID personId, Collection<UUID> categoryIds) {
+        return repository.findTransactionIdsByCategories(personId, categoryIds);
     }
 
     public List<Transaction> findByAccount(UUID accountId) {

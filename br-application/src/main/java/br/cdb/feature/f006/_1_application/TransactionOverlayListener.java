@@ -3,13 +3,14 @@ package br.cdb.feature.f006._1_application;
 import br.cdb.feature.f000._0_domain.event.CategoryReassigned;
 import br.cdb.feature.f000._0_domain.event.TransactionImported;
 import br.cdb.feature.f000._0_domain.event.TransactionsDeleted;
+import br.cdb.feature.f006._1_application.usecase.TransactionUseCase;
 import br.commons.MessageBus;
+import br.commons.Registry;
 import br.commons.framework.message.MessageListener;
 import br.commons.framework.message.MessageResult;
 import io.quarkus.runtime.StartupEvent;
 import jakarta.enterprise.event.Observes;
 import jakarta.inject.Singleton;
-import lombok.RequiredArgsConstructor;
 import org.jspecify.annotations.NullMarked;
 
 /**
@@ -21,10 +22,9 @@ import org.jspecify.annotations.NullMarked;
  */
 @NullMarked
 @Singleton
-@RequiredArgsConstructor
 public class TransactionOverlayListener {
 
-    private final UserTransactionService userTransactionService;
+    private final TransactionUseCase ucTransaction = Registry.tryGet(TransactionUseCase.class);
 
     void subscribe(@Observes StartupEvent event) {
         MessageBus.subscribe(this);
@@ -34,7 +34,7 @@ public class TransactionOverlayListener {
      *  {@code TransactionUseCase} ou uma exclusão em cascata de outra fatia, ex.: tag/categoria). */
     @MessageListener
     public MessageResult onTransactionsDeleted(TransactionsDeleted event) {
-        event.transactionIds().forEach(userTransactionService::deleteByTransaction);
+        event.transactionIds().forEach(ucTransaction::deleteCategory);
         return MessageResult.CONSUMED;
     }
 
@@ -43,7 +43,7 @@ public class TransactionOverlayListener {
      *  — mantém o 1:1 com {@code F006_TRANSACTION}. */
     @MessageListener
     public MessageResult onTransactionImported(TransactionImported event) {
-        userTransactionService.save(event.transactionId(), event.accountId(), event.personId(), event.categoryId());
+        ucTransaction.saveCategory(event.transactionId(), event.personId(), event.categoryId());
         return MessageResult.CONSUMED;
     }
 
@@ -51,7 +51,7 @@ public class TransactionOverlayListener {
     @MessageListener
     public MessageResult onCategoryReassigned(CategoryReassigned event) {
         event.oldCategoryIds().forEach(oldId ->
-                userTransactionService.reassignCategory(oldId, event.newCategoryId(), event.personId()));
+                ucTransaction.reassignCategory(oldId, event.newCategoryId(), event.personId()));
         return MessageResult.CONSUMED;
     }
 }

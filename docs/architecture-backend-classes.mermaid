@@ -25,9 +25,9 @@ classDiagram
         <<f000 _1_application Policy - fatia-base>>
         +validateDate(userId, date) Result
     }
-    class UserTransactionService {
-        <<f006 _1_application Service>>
-        dados overlay da propria fatia
+    class TransactionCategoryLink {
+        <<f006 F005_TRANSACTION_CATEGORY>>
+        vinculo transacao-categoria; Transaction.categoryId
     }
     class TransactionsDeleted {
         <<f006 _0_domain event>>
@@ -76,7 +76,7 @@ classDiagram
     TransactionResource ..> FeatureTransactionUseCase : delega TODA a orquestracao
     TransactionResource ..> Result : traduz em HTTP na borda
     FeatureTransactionUseCase ..> ClosingService : politica validada na FRONTEIRA da feature - base f000
-    FeatureTransactionUseCase ..> UserTransactionService : logica local da fatia
+    FeatureTransactionUseCase ..> TransactionCategoryLink : resolve categoria via saveCategory/withCategory
     FeatureTransactionUseCase ..> TransactionsDeleted : publica no MessageBus pos-delete
     FeatureTransactionUseCase ..> MonetaryUseCases : use case do contexto via acessor estatico
     MonetaryUseCases ..> ContextTransactionUseCase : resolve no Registry - tryGet

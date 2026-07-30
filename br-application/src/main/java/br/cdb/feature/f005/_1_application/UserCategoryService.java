@@ -147,7 +147,7 @@ public class UserCategoryService {
 
     /** Valida o alvo do MOVE (existe, subcategoria, mesma natureza, ativa, fora da subárvore) e, se ok, devolve a subárvore.
      *  Não reatribui transações nem apaga linhas — isso é orquestrado pelo {@link CategoryUseCase}, que precisa
-     *  da subárvore validada antes de tocar em {@code UserTransactionService} (fatia vizinha). */
+     *  da subárvore validada antes de tocar no vínculo transação↔categoria (fatia vizinha, f006). */
     public Result<List<UUID>, BusinessError> validateMoveTarget(UUID id, UUID targetId, UUID personId) {
         val all = repo.findAllByPerson(personId);
         val rootOpt = all.stream().filter(c -> c.id().equals(id)).findFirst();

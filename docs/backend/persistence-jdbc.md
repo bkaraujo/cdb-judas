@@ -39,7 +39,7 @@ final @Nullable String categoryRaw = rs.getString("COD_CATEGORY").get();
 final @Nullable UUID categoryId =
         (categoryRaw == null || categoryRaw.isBlank()) ? null : UUID.fromString(categoryRaw);
 ```
-Colunas `NOT NULL` (timestamps `TMS_CREATE_AT`, etc.) são seguras: `rs.getTimestamp("TMS_CREATE_AT").get().toLocalDateTime()`. Padrão real em `UserTransactionJDBCRepository.map`.
+Colunas `NOT NULL` (timestamps `TMS_CREATE_AT`, etc.) são seguras: `rs.getTimestamp("TMS_CREATE_AT").get().toLocalDateTime()`. Padrão real em `TransactionJDBCRepository.map`.
 
 ## 5. Migrações automáticas one-shot
 

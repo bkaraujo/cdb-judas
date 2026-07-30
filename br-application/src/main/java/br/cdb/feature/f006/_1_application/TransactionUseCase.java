@@ -5,7 +5,6 @@ import br.cdb.feature.f000._0_domain.event.AccountStreamEvents;
 import br.cdb.feature.f000._0_domain.event.TransactionsDeleted;
 import br.cdb.feature.f000._1_application.InternalApi;
 import br.cdb.feature.f000._1_application.UserGuards;
-import br.cdb.feature.f006._0_domain.UserTransaction;
 import br.cdb.feature.f006._0_domain.model.Transaction;
 import br.cdb.feature.f006._1_application.command.TransactionCommand;
 import br.cdb.feature.f006._1_application.command.TransactionScope;
@@ -44,7 +43,6 @@ public class TransactionUseCase {
             Registry.tryGet(br.cdb.feature.f006._1_application.usecase.TransactionUseCase.class);
 
     private final UserGuards guards;
-    private final UserTransactionService userTransactionService;
     private final InternalApi internalApi;
 
     /** Corpo mínimo do endpoint interno {@code GET /categories/transfer} (f005) — zero tipo
@@ -58,9 +56,6 @@ public class TransactionUseCase {
     private record ClosingDto(@Nullable String period) {}
 
     @NullMarked
-    public record TransactionView(Transaction transaction, @Nullable UserTransaction overlay) {}
-
-    @NullMarked
     public record TransactionFilter(@Nullable UUID accountId, @Nullable Integer limit,
                                     @Nullable LocalDate dateFrom, @Nullable LocalDate dateTo,
                                     @Nullable String status, @Nullable String type) {}
@@ -68,10 +63,10 @@ public class TransactionUseCase {
     /** IDs das transações da pessoa vinculadas a qualquer categoria de {@code categoryIds} — consumido
      *  via {@code InternalApi} por {@code CategoryUseCase} (f005) na exclusão de categoria. */
     public List<UUID> transactionIdsByCategories(UUID personId, List<UUID> categoryIds) {
-        return userTransactionService.findTransactionIdsByCategories(personId, categoryIds);
+        return ucTransaction.transactionIdsByCategories(personId, categoryIds);
     }
 
-    public Result<List<TransactionView>, BusinessError> transactions(UUID personId, TransactionFilter filter) {
+    public Result<List<Transaction>, BusinessError> transactions(UUID personId, TransactionFilter filter) {
         val accountId = filter.accountId();
         val guard = accountId == null ? Result.<BusinessError>success() : guards.ownsAccount(accountId);
 
@@ -83,7 +78,7 @@ public class TransactionUseCase {
             val limit = filter.limit();
 
             return ucTransaction.transactions(personId.toString()).map(all -> {
-                val overlays = userTransactionService.indexByTransaction(personId);
+                val categories = ucTransaction.categoriesByPerson(personId);
                 val filtered = all.stream()
                         .filter(t -> accountId == null || accountId.equals(t.accountId()))
                         .filter(t -> dateFrom == null || !t.date().isBefore(dateFrom))
@@ -94,12 +89,12 @@ public class TransactionUseCase {
                 val page = (limit != null && limit > 0 && limit < filtered.size())
                         ? filtered.subList(0, limit)
                         : filtered;
-                return page.stream().map(t -> new TransactionView(t, overlays.get(t.id()))).toList();
+                return page.stream().map(t -> t.withCategory(categories.get(t.id()))).toList();
             });
         });
     }
 
-    public Result<TransactionView, BusinessError> createTransaction(UUID personId, TransactionCommand.Create cmd, @Nullable UUID categoryId) {
+    public Result<Transaction, BusinessError> createTransaction(UUID personId, TransactionCommand.Create cmd, @Nullable UUID categoryId) {
         if (guards.ownsAccountAndCard(cmd.accountId(), cmd.cardId()) instanceof Result.Failure<Void, BusinessError>(var error)) {
             return Result.failure(error);
         }
@@ -107,15 +102,15 @@ public class TransactionUseCase {
             return Result.failure(error);
         }
         return ucTransaction.upsert(cmd).map(t -> {
-            // Cria o PERSON_TRANSACTION da primeira parcela e depois o das irmãs do grupo
-            val overlay = userTransactionService.save(t.id(), t.accountId(), personId, categoryId);
-            saveUserTransactionForGroup(t, personId, categoryId);
+            // Vincula a categoria da primeira parcela e depois a das irmãs do grupo
+            ucTransaction.saveCategory(t.id(), personId, categoryId);
+            saveCategoryForGroup(t, personId, categoryId);
             MessageBus.submit(new AccountStreamEvents.Refresh(t.accountId(), personId.toString()));
-            return new TransactionView(t, overlay);
+            return t.withCategory(categoryId);
         });
     }
 
-    public Result<TransactionView, BusinessError> updateTransaction(UUID personId, TransactionCommand.Update cmd, @Nullable UUID categoryId) {
+    public Result<Transaction, BusinessError> updateTransaction(UUID personId, TransactionCommand.Update cmd, @Nullable UUID categoryId) {
         if (guards.ownsAccountAndCard(cmd.accountId(), cmd.cardId()) instanceof Result.Failure<Void, BusinessError>(var error)) {
             return Result.failure(error);
         }
@@ -133,28 +128,27 @@ public class TransactionUseCase {
 
         val previousAccountId = previous;
         return ucTransaction.upsert(cmd).map(t -> {
-            val existingOverlay = userTransactionService.find(t.id(), personId);
-            val overlay = userTransactionService.save(t.id(), t.accountId(), personId, categoryId);
+            val hadCategory = ucTransaction.withCategory(t, personId).categoryId() != null;
+            ucTransaction.saveCategory(t.id(), personId, categoryId);
             val transferSiblings = transferSiblingsOf(t, personId);
             // Se for grupo de parcelas (nunca transferência — pernas de transferência carregam
             // categoria por natureza da própria perna, nunca a da perna editada; ver
             // saveTransferGroupCategories/transfer()): atualiza a categoria de todos os membros.
-            if (t.groupId() != null && existingOverlay.isEmpty() && transferSiblings.isEmpty()) {
-                saveUserTransactionForGroup(t, personId, categoryId);
+            if (t.groupId() != null && !hadCategory && transferSiblings.isEmpty()) {
+                saveCategoryForGroup(t, personId, categoryId);
             }
             publishAccountUpdate(personId, t.accountId(), previousAccountId, transferSiblings);
-            return new TransactionView(t, overlay);
+            return t.withCategory(categoryId);
         });
     }
 
-    public Result<TransactionView, BusinessError> updateTransactionStatus(
+    public Result<Transaction, BusinessError> updateTransactionStatus(
             UUID personId, UUID txId, Transaction.Status status, @Nullable LocalDate paymentDate) {
         return ucTransaction.transaction(txId)
                 .flatMap(existing -> guards.ownsAccount(existing.accountId()))
                 .flatMap(ignored -> ucTransaction.updateTransactionStatus(txId, status, paymentDate).map(t -> {
-                    val overlay = userTransactionService.find(t.id(), personId).orElse(null);
                     MessageBus.submit(new AccountStreamEvents.Refresh(t.accountId(), personId.toString()));
-                    return new TransactionView(t, overlay);
+                    return ucTransaction.withCategory(t, personId);
                 }));
     }
 
@@ -178,24 +172,25 @@ public class TransactionUseCase {
         });
     }
 
-    public Result<TransactionView, BusinessError> transfer(UUID personId, UUID fromAccountId, UUID toAccountId, LocalDate date, BigDecimal amount) {
+    public Result<Transaction, BusinessError> transfer(UUID personId, UUID fromAccountId, UUID toAccountId, LocalDate date, BigDecimal amount) {
         if (guards.ownsAccounts(fromAccountId, toAccountId) instanceof Result.Failure<Void, BusinessError>(var error)) {
             return Result.failure(error);
         }
         if (validateClosing(date) instanceof Result.Failure<Void, BusinessError>(var error)) {
             return Result.failure(error);
         }
-        // PERSON_TRANSACTION.COD_CATEGORY é NOT NULL. Cada perna recebe a categoria de sistema
+        // F005_TRANSACTION_CATEGORY.COD_CATEGORY é NOT NULL. Cada perna recebe a categoria de sistema
         // "9. Outros / Transferência" da sua natureza: a saída (EXPENSE) a de despesa, a entrada
         // (INCOME) a de receita. Cobre as duas pernas do grupo, mantendo o 1:1 com MON_TRANSACTION.
         val expenseCategoryId = transferCategoryId(Transaction.Type.EXPENSE);
         val incomeCategoryId = transferCategoryId(Transaction.Type.INCOME);
         return ucTransaction.createTransfer(fromAccountId, toAccountId, date, amount).map(t -> {
-            val overlay = userTransactionService.save(t.id(), t.accountId(), personId, transferCategoryFor(t, expenseCategoryId, incomeCategoryId));
+            val categoryId = transferCategoryFor(t, expenseCategoryId, incomeCategoryId);
+            ucTransaction.saveCategory(t.id(), personId, categoryId);
             saveTransferGroupCategories(t, personId, expenseCategoryId, incomeCategoryId);
             MessageBus.submit(new AccountStreamEvents.Refresh(fromAccountId, personId.toString()));
             MessageBus.submit(new AccountStreamEvents.Refresh(toAccountId, personId.toString()));
-            return new TransactionView(t, overlay);
+            return t.withCategory(categoryId);
         });
     }
 
@@ -241,12 +236,12 @@ public class TransactionUseCase {
                 .toList();
     }
 
-    private void saveUserTransactionForGroup(Transaction first, UUID personId, @Nullable UUID categoryId) {
+    private void saveCategoryForGroup(Transaction first, UUID personId, @Nullable UUID categoryId) {
         val groupId = first.groupId();
         if (groupId == null) return;
         transactionsInGroup(groupId, personId).stream()
                 .filter(t -> !t.id().equals(first.id()))
-                .forEach(t -> userTransactionService.save(t.id(), t.accountId(), personId, categoryId));
+                .forEach(t -> ucTransaction.saveCategory(t.id(), personId, categoryId));
     }
 
     /** Categoria de sistema de transferência da natureza pedida — leitura cross-slice síncrona via
@@ -283,7 +278,7 @@ public class TransactionUseCase {
         if (groupId == null) return;
         transactionsInGroup(groupId, personId).stream()
                 .filter(t -> !t.id().equals(first.id()))
-                .forEach(t -> userTransactionService.save(t.id(), t.accountId(), personId,
+                .forEach(t -> ucTransaction.saveCategory(t.id(), personId,
                         transferCategoryFor(t, expenseCategoryId, incomeCategoryId)));
     }
 }

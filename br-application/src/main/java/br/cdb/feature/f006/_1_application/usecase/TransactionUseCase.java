@@ -306,6 +306,36 @@ public class TransactionUseCase {
         return Result.success(savedOut);
     }
 
+    // ── Vínculo transação↔categoria (F005_TRANSACTION_CATEGORY) ────────────────
+    // Tabela à parte de F006_TRANSACTION: Transaction.categoryId não entra no save(Transaction).
+
+    /** Upsert do vínculo; {@code categoryId} nulo apaga a linha. */
+    public void saveCategory(UUID transactionId, UUID personId, @Nullable UUID categoryId) {
+        service.saveCategory(transactionId, personId, categoryId);
+    }
+
+    /** {@code tx} com o vínculo de categoria já resolvido — {@code null} quando não há vínculo. */
+    public Transaction withCategory(Transaction tx, UUID personId) {
+        return tx.withCategory(service.findCategory(tx.id(), personId).orElse(null));
+    }
+
+    /** Categoria por transação, para resolver uma listagem inteira num único SELECT. */
+    public Map<UUID, UUID> categoriesByPerson(UUID personId) {
+        return service.findCategoriesByPerson(personId);
+    }
+
+    public void deleteCategory(UUID transactionId) {
+        service.deleteCategoryByTransaction(transactionId);
+    }
+
+    public void reassignCategory(UUID oldCategoryId, UUID newCategoryId, UUID personId) {
+        service.reassignCategory(oldCategoryId, newCategoryId, personId);
+    }
+
+    public List<UUID> transactionIdsByCategories(UUID personId, Collection<UUID> categoryIds) {
+        return service.findTransactionIdsByCategories(personId, categoryIds);
+    }
+
     /** Persiste uma transação já montada pelo chamador. Valida a invariante de cartão. */
     public Result<Transaction, BusinessError> create(Transaction tx) {
         return validateCard(tx.accountId(), tx.cardId()).flatMap(ignored -> {

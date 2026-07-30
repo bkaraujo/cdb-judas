@@ -39,6 +39,10 @@ final class InMemoryRepositories {
     }
 
     static class Transactions extends BaseRepo<Transaction, UUID> implements TransactionRepository {
+
+        /** Vínculo F005_TRANSACTION_CATEGORY: transação → pessoa → categoria (tabela à parte, como no JDBC). */
+        private final Map<UUID, Map<UUID, UUID>> categories = new LinkedHashMap<>();
+
         public Transaction save(Transaction e) { data.put(e.id(), e); return e; }
 
         /** Fake não modela COD_PERSON — testes de engine não cobrem guarda implícita (isso é BaseHttpTest). */
@@ -55,11 +59,43 @@ final class InMemoryRepositories {
             }
         }
 
-        /** Vínculos de categoria/tag (F005_TRANSACTION_CATEGORY, F004_TRANSACTION_TAG) não são modelados neste fake. */
-        public void reassignCategory(UUID oldCategoryId, UUID newCategoryId, UUID personId) {
-            // não exercido por estes testes
+        public void saveCategory(UUID transactionId, UUID personId, @Nullable UUID categoryId) {
+            if (categoryId == null) {
+                categories.getOrDefault(transactionId, new LinkedHashMap<>()).remove(personId);
+                return;
+            }
+            categories.computeIfAbsent(transactionId, ignored -> new LinkedHashMap<>()).put(personId, categoryId);
         }
 
+        public Optional<UUID> findCategory(UUID transactionId, UUID personId) {
+            return Optional.ofNullable(categories.getOrDefault(transactionId, Map.of()).get(personId));
+        }
+
+        public Map<UUID, UUID> findCategoriesByPerson(UUID personId) {
+            var byTransaction = new LinkedHashMap<UUID, UUID>();
+            categories.forEach((transactionId, byPerson) -> {
+                var categoryId = byPerson.get(personId);
+                if (categoryId != null) byTransaction.put(transactionId, categoryId);
+            });
+            return byTransaction;
+        }
+
+        public void deleteCategoryByTransaction(UUID transactionId) { categories.remove(transactionId); }
+
+        public List<UUID> findTransactionIdsByCategories(UUID personId, Collection<UUID> categoryIds) {
+            return findCategoriesByPerson(personId).entrySet().stream()
+                    .filter(entry -> categoryIds.contains(entry.getValue()))
+                    .map(Map.Entry::getKey)
+                    .toList();
+        }
+
+        public void reassignCategory(UUID oldCategoryId, UUID newCategoryId, UUID personId) {
+            categories.values().forEach(byPerson ->
+                    byPerson.computeIfPresent(personId, (ignored, current) ->
+                            oldCategoryId.equals(current) ? newCategoryId : current));
+        }
+
+        /** O vínculo de tag (F004_TRANSACTION_TAG) não é modelado neste fake. */
         public void reassignTag(UUID oldTagId, UUID newTagId, UUID personId) {
             // não exercido por estes testes
         }
@@ -67,6 +103,9 @@ final class InMemoryRepositories {
         public void detachTag(UUID tagId, UUID personId) {
             // não exercido por estes testes
         }
+
+        @Override
+        public void clearCache() { data.clear(); categories.clear(); }
 
         public void reassignCard(UUID from, UUID to) {
             for (var t : List.copyOf(data.values())) {

@@ -3,6 +3,7 @@ package br.cdb.feature.f006._2_infrastructure.persistence;
 import br.cdb.feature.f006._0_domain.model.Transaction;
 import br.cdb.feature.f006._0_domain.repository.TransactionRepository;
 import br.cdb.infra.persistence.monetary.AccountOwnerLookup;
+import br.commons.Result;
 import br.commons.chrono.Time;
 import br.commons.framework.persistence.jdbc.JDBCRepository;
 import br.commons.framework.persistence.jdbc.primitives.JDBCParameter;
@@ -15,13 +16,18 @@ import java.sql.Date;
 import java.sql.Timestamp;
 import java.time.LocalDate;
 import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * Adaptador JDBC (H2) da porta {@link TransactionRepository}; tabela {@code F006_TRANSACTION}.
  * Enums como string, datas como {@code DATE}, timestamps como {@code TIMESTAMP};
- * {@code paymentDate}/{@code groupId}/{@code notes} são opcionais. Categoria saiu para
- * {@code F005_TRANSACTION_CATEGORY} (camada feature). {@code COD_PERSON} é derivado da conta
- * ({@link AccountOwnerLookup}) — o comando de criação não carrega personId.
+ * {@code paymentDate}/{@code groupId}/{@code notes} são opcionais. {@code COD_PERSON} é derivado da
+ * conta ({@link AccountOwnerLookup}) — o comando de criação não carrega personId.
+ *
+ * <p>{@code Transaction.categoryId} mora em {@code F005_TRANSACTION_CATEGORY}, tabela à parte:
+ * {@link #map} devolve sempre {@code null} nesse componente e {@link #values} não o grava — o
+ * vínculo tem leitura/escrita próprias ({@code findCategory}/{@code findCategoriesByPerson}/
+ * {@code saveCategory}), como o vínculo de tag em {@code F004_TRANSACTION_TAG}.
  */
 @NullMarked
 public final class TransactionJDBCRepository extends JDBCRepository<Transaction> implements TransactionRepository {
@@ -63,6 +69,93 @@ public final class TransactionJDBCRepository extends JDBCRepository<Transaction>
                 "UPDATE F005_TRANSACTION_CATEGORY SET COD_CATEGORY = ? WHERE COD_CATEGORY = ? AND COD_PERSON = ?",
                 JDBCParameter.of(newCategoryId.toString(), oldCategoryId.toString(), personId.toString())
         );
+    }
+
+    /** DELETE + INSERT (a tabela só tem as três colunas da chave/valor, nada a preservar num UPDATE). */
+    @Override
+    public void saveCategory(UUID transactionId, UUID personId, @Nullable UUID categoryId) {
+        datasource.transaction(tx -> {
+            tx.execute(
+                    "DELETE FROM F005_TRANSACTION_CATEGORY WHERE COD_TRANSACTION = ? AND COD_PERSON = ?",
+                    JDBCParameter.of(transactionId.toString(), personId.toString())
+            ).get();
+
+            if (categoryId != null) {
+                tx.execute(
+                        "INSERT INTO F005_TRANSACTION_CATEGORY (COD_TRANSACTION, COD_PERSON, COD_CATEGORY) VALUES (?, ?, ?)",
+                        JDBCParameter.of(transactionId.toString(), personId.toString(), categoryId.toString())
+                ).get();
+            }
+
+            return Result.success(true);
+        });
+    }
+
+    @Override
+    public Optional<UUID> findCategory(UUID transactionId, UUID personId) {
+        return datasource.query(
+                "SELECT COD_CATEGORY FROM F005_TRANSACTION_CATEGORY WHERE COD_TRANSACTION = ? AND COD_PERSON = ?",
+                JDBCParameter.of(transactionId.toString(), personId.toString()),
+                TransactionJDBCRepository::readCategories
+        ).stream().findFirst();
+    }
+
+    @Override
+    public Map<UUID, UUID> findCategoriesByPerson(UUID personId) {
+        return datasource.query(
+                "SELECT COD_TRANSACTION, COD_CATEGORY FROM F005_TRANSACTION_CATEGORY WHERE COD_PERSON = ?",
+                JDBCParameter.of(personId.toString()),
+                TransactionJDBCRepository::readCategoryByTransaction
+        );
+    }
+
+    @Override
+    public void deleteCategoryByTransaction(UUID transactionId) {
+        datasource.execute(
+                "DELETE FROM F005_TRANSACTION_CATEGORY WHERE COD_TRANSACTION = ?",
+                JDBCParameter.of(transactionId.toString())
+        );
+    }
+
+    @Override
+    public List<UUID> findTransactionIdsByCategories(UUID personId, Collection<UUID> categoryIds) {
+        if (categoryIds.isEmpty()) return List.of();
+
+        val placeholders = categoryIds.stream().map(ignored -> "?").collect(Collectors.joining(", "));
+        val params = new ArrayList<Object>();
+        params.add(personId.toString());
+        categoryIds.forEach(id -> params.add(id.toString()));
+
+        return datasource.query(
+                "SELECT COD_TRANSACTION FROM F005_TRANSACTION_CATEGORY WHERE COD_PERSON = ? AND COD_CATEGORY IN (" + placeholders + ")",
+                JDBCParameter.of(params.toArray()),
+                TransactionJDBCRepository::readTransactionIds
+        );
+    }
+
+    private static List<UUID> readTransactionIds(JDBCResultSet rs) {
+        val ids = new ArrayList<UUID>();
+        while (rs.next().get()) ids.add(UUID.fromString(rs.getString("COD_TRANSACTION").get()));
+        return ids;
+    }
+
+    private static List<UUID> readCategories(JDBCResultSet rs) {
+        val ids = new ArrayList<UUID>();
+        while (rs.next().get()) {
+            val raw = rs.getString("COD_CATEGORY").get();
+            if (raw != null && !raw.isBlank()) ids.add(UUID.fromString(raw));
+        }
+        return ids;
+    }
+
+    private static Map<UUID, UUID> readCategoryByTransaction(JDBCResultSet rs) {
+        val byTransaction = new LinkedHashMap<UUID, UUID>();
+        while (rs.next().get()) {
+            val raw = rs.getString("COD_CATEGORY").get();
+            if (raw == null || raw.isBlank()) continue;
+            byTransaction.put(UUID.fromString(rs.getString("COD_TRANSACTION").get()), UUID.fromString(raw));
+        }
+        return byTransaction;
     }
 
     @Override

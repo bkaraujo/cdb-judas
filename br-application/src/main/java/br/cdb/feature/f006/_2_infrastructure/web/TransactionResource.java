@@ -74,7 +74,7 @@ public class TransactionResource {
     @Path("/{accId}/transactions")
     public RestResponse<TransactionResponse> create(@PathParam("uuid") UUID uuid, @PathParam("accId") UUID accId, @Valid TransactionRequest req) {
         return switch (transactionUseCase.createTransaction(uuid, TransactionMapper.toCreateCommand(accId, req), req.categoryId())) {
-            case Result.Success(var view) -> RestResponse.status(RestResponse.Status.CREATED, toDto(view));
+            case Result.Success(var transaction) -> RestResponse.status(RestResponse.Status.CREATED, TransactionMapper.toDto(transaction));
             case Result.Failure(var error) -> throw new BusinessException(error);
         };
     }
@@ -83,7 +83,7 @@ public class TransactionResource {
     @Path("/{accId}/transactions/{txId}")
     public TransactionResponse update(@PathParam("uuid") UUID uuid, @PathParam("accId") UUID accId, @PathParam("txId") UUID txId, @Valid TransactionRequest req) {
         return switch (transactionUseCase.updateTransaction(uuid, TransactionMapper.toUpdateCommand(txId, accId, req), req.categoryId())) {
-            case Result.Success(var view) -> toDto(view);
+            case Result.Success(var transaction) -> TransactionMapper.toDto(transaction);
             case Result.Failure(var error) -> throw new BusinessException(error);
         };
     }
@@ -92,7 +92,7 @@ public class TransactionResource {
     @Path("/{accId}/transactions/{txId}/status")
     public TransactionResponse patchStatus(@PathParam("uuid") UUID uuid, @PathParam("txId") UUID txId, @Valid PatchStatusRequest req) {
         return switch (transactionUseCase.updateTransactionStatus(uuid, txId, req.status(), req.paymentDate())) {
-            case Result.Success(var view) -> toDto(view);
+            case Result.Success(var transaction) -> TransactionMapper.toDto(transaction);
             case Result.Failure(var error) -> throw new BusinessException(error);
         };
     }
@@ -109,12 +109,8 @@ public class TransactionResource {
 
     private List<TransactionResponse> query(UUID personId, TransactionUseCase.TransactionFilter filter) {
         return switch (transactionUseCase.transactions(personId, filter)) {
-            case Result.Success(var views) -> views.stream().map(TransactionResource::toDto).toList();
+            case Result.Success(var transactions) -> transactions.stream().map(TransactionMapper::toDto).toList();
             case Result.Failure(var error) -> throw new BusinessException(error);
         };
-    }
-
-    private static TransactionResponse toDto(TransactionUseCase.TransactionView view) {
-        return TransactionMapper.toDto(view.transaction(), view.overlay());
     }
 }

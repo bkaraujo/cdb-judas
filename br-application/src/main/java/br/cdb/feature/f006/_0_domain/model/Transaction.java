@@ -8,6 +8,13 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
+/**
+ * Lançamento. {@code categoryId} veio do antigo overlay {@code UserTransaction}: mora na tabela
+ * {@code F005_TRANSACTION_CATEGORY} (PK {@code (COD_TRANSACTION, COD_PERSON)}), não em
+ * {@code F006_TRANSACTION} — {@code TransactionJDBCRepository#save} não o grava junto, a escrita do
+ * vínculo é a chamada explícita {@code saveCategory}. Nas leituras da engine vem {@code null}; quem
+ * precisa dele preenche com {@link #withCategory(UUID)} (ver {@code f006._1_application.TransactionUseCase}).
+ */
 @NullMarked
 public record Transaction(
         UUID id,
@@ -25,10 +32,18 @@ public record Transaction(
         @Nullable String notes,
         @Nullable LocalDateTime createdAt,
         @Nullable LocalDateTime updatedAt,
-        @Nullable UUID cardId
+        @Nullable UUID cardId,
+        @Nullable UUID categoryId
 ) {
     /** Convenience accessor returning the purchase date part. */
     public LocalDate date() { return purchasedAt.toLocalDate(); }
+
+    /** Mesma transação com o vínculo de categoria resolvido (ou limpo, com {@code null}). */
+    public Transaction withCategory(@Nullable UUID category) {
+        return new Transaction(id, description, signal, amount, purchasedAt, accountId, status, costCenterId,
+                paymentDate, groupId, installmentNumber, totalInstallments, notes, createdAt, updatedAt, cardId,
+                category);
+    }
 
     /** Derived from signal: positive signal = INCOME, non-positive = EXPENSE. */
     public Type type() { return signal > 0 ? Type.INCOME : Type.EXPENSE; }
@@ -63,6 +78,15 @@ public record Transaction(
             int installmentNumber, int totalInstallments, @Nullable String notes, @Nullable UUID cardId) {
         this(id, description, type == Type.INCOME ? 1 : -1, amount.abs(), date.atStartOfDay(),
                 accountId, status, costCenterId, paymentDate, groupId,
-                installmentNumber, totalInstallments, notes, null, null, cardId);
+                installmentNumber, totalInstallments, notes, null, null, cardId, null);
+    }
+
+    /** Forma completa sem categoria — o vínculo é resolvido à parte, com {@link #withCategory(UUID)}. */
+    public Transaction(UUID id, String description, int signal, BigDecimal amount, LocalDateTime purchasedAt,
+            UUID accountId, Status status, UUID costCenterId, @Nullable LocalDate paymentDate,
+            @Nullable UUID groupId, int installmentNumber, int totalInstallments, @Nullable String notes,
+            @Nullable LocalDateTime createdAt, @Nullable LocalDateTime updatedAt, @Nullable UUID cardId) {
+        this(id, description, signal, amount, purchasedAt, accountId, status, costCenterId, paymentDate,
+                groupId, installmentNumber, totalInstallments, notes, createdAt, updatedAt, cardId, null);
     }
 }

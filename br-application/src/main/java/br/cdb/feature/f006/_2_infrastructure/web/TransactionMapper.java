@@ -1,6 +1,5 @@
 package br.cdb.feature.f006._2_infrastructure.web;
 
-import br.cdb.feature.f006._0_domain.UserTransaction;
 import br.cdb.feature.f006._0_domain.model.Transaction;
 import br.cdb.feature.f006._1_application.command.TransactionCommand;
 import br.cdb.feature.f006._1_application.command.TransactionScope;
@@ -17,13 +16,13 @@ public final class TransactionMapper {
 
     private TransactionMapper() {}
 
-    public static TransactionResponse toDto(Transaction t, @Nullable UserTransaction ut) {
+    public static TransactionResponse toDto(Transaction t) {
         return new TransactionResponse(
                 t.id(),
                 t.description(),
                 BigDecimal.valueOf(t.signal()).multiply(t.amount()),
                 t.date(),
-                ut != null ? ut.categoryId() : null,
+                t.categoryId(),
                 t.accountId(),
                 t.status(),
                 t.type(),

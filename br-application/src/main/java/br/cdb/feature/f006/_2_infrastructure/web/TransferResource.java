@@ -31,8 +31,8 @@ public class TransferResource {
     public RestResponse<TransactionResponse> transfer(@Valid TransferRequest req) {
         val personId = UUID.fromString(HTTPRequest.personId());
         return switch (transactionUseCase.transfer(personId, req.fromAccountId(), req.toAccountId(), req.date(), req.amount())) {
-            case Result.Success(var view) ->
-                    RestResponse.status(RestResponse.Status.CREATED, TransactionMapper.toDto(view.transaction(), view.overlay()));
+            case Result.Success(var transaction) ->
+                    RestResponse.status(RestResponse.Status.CREATED, TransactionMapper.toDto(transaction));
             case Result.Failure(var error) -> throw new BusinessException(error);
         };
     }

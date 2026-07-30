@@ -19,7 +19,6 @@ import br.cdb.feature.f006._0_domain.model.Transaction;
 import br.cdb.feature.f006._0_domain.repository.TransactionRepository;
 import br.cdb.feature.f006._1_application.StatementImportService;
 import br.cdb.feature.f006._1_application.TransactionOverlayListener;
-import br.cdb.feature.f006._1_application.UserTransactionService;
 import br.cdb.feature.f006._1_application.confirm.StatementConfirmCommand;
 import br.cdb.feature.f006._1_application.preview.BankStatementPreview;
 import br.cdb.feature.f006._1_application.preview.ImportPreviewOutcome;
@@ -51,8 +50,6 @@ class StatementImportServiceTest {
     private static final long MAX_BYTES = 4096;
     private static final Clock CLOCK = Clock.fixed(Instant.parse("2025-07-15T12:00:00Z"), ZoneOffset.UTC);
     private static final UUID PERSON = UUID.randomUUID();
-
-    private InMemoryUserTransactions overlays = new InMemoryUserTransactions();
 
     private static final String EXTRATO = String.join("\n",
             "Extrato de conta corrente",
@@ -114,10 +111,10 @@ class StatementImportServiceTest {
         assertEquals(1, pix.amount().signum(), "imported income must be stored positive");
 
         // 1:1 com F006_TRANSACTION: cada linha importada cria vínculo F005_TRANSACTION_CATEGORY com a categoria da linha.
-        assertEquals(2, overlays.all().size(), "cada transação importada gera vínculo F005_TRANSACTION_CATEGORY");
-        assertTrue(overlays.all().stream().allMatch(o -> PERSON.equals(o.personId())));
-        assertEquals(catOdonto, overlays.findByTransactionAndPerson(odonto.id(), PERSON).orElseThrow().categoryId());
-        assertEquals(catPix, overlays.findByTransactionAndPerson(pix.id(), PERSON).orElseThrow().categoryId());
+        var links = transactions.findCategoriesByPerson(PERSON);
+        assertEquals(2, links.size(), "cada transação importada gera vínculo F005_TRANSACTION_CATEGORY");
+        assertEquals(catOdonto, links.get(odonto.id()));
+        assertEquals(catPix, links.get(pix.id()));
     }
 
     @Test
@@ -197,10 +194,9 @@ class StatementImportServiceTest {
     private StatementImportService useCaseWith(InMemoryRepositories.Accounts accounts, InMemoryRepositories.Transactions transactions) {
         final PdfTextExtractor extractor = (bytes, password) -> Result.success(EXTRATO);
         resetMonetaryRegistry(accounts, transactions);
-        this.overlays = new InMemoryUserTransactions();
         // O save do vínculo agora é reação a TransactionImported (f000, publicado pelos processors) —
         // sem @QuarkusTest não há StartupEvent pra assinar o listener real, então assina aqui.
-        MessageBus.subscribe(new TransactionOverlayListener(new UserTransactionService(overlays)));
+        MessageBus.subscribe(new TransactionOverlayListener());
         return new StatementImportService(
                 List::of, extractor, // empty card provider (bank-statement path)
                 List.of(new BTGStatementParser(), new SantanderStatementParser(),

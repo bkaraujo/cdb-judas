@@ -21,7 +21,6 @@ import br.cdb.feature.f006._0_domain.repository.TransactionRepository;
 import br.cdb.feature.f006._1_application.GroupSignature;
 import br.cdb.feature.f006._1_application.StatementImportService;
 import br.cdb.feature.f006._1_application.TransactionOverlayListener;
-import br.cdb.feature.f006._1_application.UserTransactionService;
 import br.cdb.feature.f006._1_application.confirm.InvoiceConfirmCommand;
 import br.cdb.feature.f006._1_application.preview.ImportPreview;
 import br.cdb.feature.f006._1_application.preview.ImportPreviewOutcome;
@@ -57,8 +56,6 @@ class CreditCardStatementImportServiceTest {
     private static final Clock CLOCK = Clock.fixed(Instant.parse("2025-07-15T12:00:00Z"), ZoneOffset.UTC);
     private static final UUID PERSON = UUID.randomUUID();
 
-    private InMemoryUserTransactions overlays = new InMemoryUserTransactions();
-
     private static ImportPreview invoicePreview(Result<ImportPreviewOutcome, ImportError> result) {
         var outcome = assertInstanceOf(Result.Success.class, result).value();
         return assertInstanceOf(ImportPreviewOutcome.Invoice.class, outcome).preview();
@@ -90,10 +87,9 @@ class CreditCardStatementImportServiceTest {
             cardRepo.save(c);
         }
         resetMonetaryRegistry(accounts, transactions, cardRepo);
-        this.overlays = new InMemoryUserTransactions();
         // O save do vínculo agora é reação a TransactionImported (f000, publicado pelos processors) —
         // sem @QuarkusTest não há StartupEvent pra assinar o listener real, então assina aqui.
-        MessageBus.subscribe(new TransactionOverlayListener(new UserTransactionService(overlays)));
+        MessageBus.subscribe(new TransactionOverlayListener());
         final CreditCardProvider provider = () -> creditCards;
         return new StatementImportService(
                 provider, extractor,
@@ -454,9 +450,9 @@ class CreditCardStatementImportServiceTest {
         assertEquals(accountA.id(), a.accountId());
         assertEquals(accountB.id(), b.accountId());
 
-        var savedOverlays = overlays.all();
-        assertEquals(2, savedOverlays.size(), "cada linha importada gera vínculo F005_TRANSACTION_CATEGORY (1:1)");
-        assertTrue(savedOverlays.stream().allMatch(o -> PERSON.equals(o.personId()) && categoryId.equals(o.categoryId())));
+        var links = transactions.findCategoriesByPerson(PERSON);
+        assertEquals(2, links.size(), "cada linha importada gera vínculo F005_TRANSACTION_CATEGORY (1:1)");
+        assertTrue(links.values().stream().allMatch(categoryId::equals));
     }
 
     @Test
