@@ -39,7 +39,7 @@
  * │                              POST   /api/{uuid}/accounts/{accountId}/cards
  * │                              PATCH  /api/{uuid}/accounts/{accountId}/cards/{cardId}
  * │                              DELETE /api/{uuid}/accounts/{accountId}/cards/{cardId}?strategy=&amp;targetId=
- * ├── f004  tags
+ * ├── f004  tags (par CQRS ReadUseCase/WriteUseCase, sem *UseCase de fronteira)
  * │   └── TagResource          GET    /api/{uuid}/tags
  * │                            POST   /api/{uuid}/tags
  * │                            PATCH  /api/{uuid}/tags/{id}

@@ -7,21 +7,18 @@ import br.commons.MessageBus;
 import br.commons.Result;
 import br.commons.business.BusinessError;
 import br.commons.framework.cdi.Context;
-import jakarta.inject.Singleton;
-import lombok.RequiredArgsConstructor;
 import lombok.val;
 import org.jspecify.annotations.NullMarked;
 
 import java.util.List;
 import java.util.UUID;
 
+/** Context-wired como os demais serviços de fatia (o par {@code ReadUseCase}/{@code WriteUseCase} o
+ *  resolve com {@code Context.tryGet}); sem CDI. */
 @NullMarked
-@Singleton
-@RequiredArgsConstructor
 public class TagService {
 
     private final TagRepository repository = Context.get(TagRepository.class);
-    private final TransactionTagService tagLinkService;
 
     public List<Tag> findAll(UUID personId) {
         return repository.findAllByPerson(personId);

@@ -2,14 +2,14 @@ package br.cdb.feature.f004._1_application.service;
 
 import br.cdb.feature.f004._0_domain.repository.TransactionTagRepository;
 import br.commons.framework.cdi.Context;
-import jakarta.inject.Singleton;
 import org.jspecify.annotations.NullMarked;
 
 import java.util.List;
 import java.util.UUID;
 
+/** Context-wired, sem CDI — resolvido com {@code Context.tryGet} por quem precisa (hoje só o
+ *  {@code TagTransactionListener}, na purga best-effort dos vínculos). */
 @NullMarked
-@Singleton
 public class TransactionTagService {
 
     private final TransactionTagRepository repo = Context.get(TransactionTagRepository.class);

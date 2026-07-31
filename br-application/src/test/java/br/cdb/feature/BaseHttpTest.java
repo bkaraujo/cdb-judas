@@ -21,6 +21,12 @@ import br.cdb.feature.f002._2_infrastructure.persistence.UserAccountBalanceJDBCR
 import br.cdb.feature.f003._0_domain.repository.CreditCardRepository;
 import br.cdb.feature.f003._1_application.service.CreditCardService;
 import br.cdb.feature.f003._2_infrastructure.persistence.CreditCardJDBCRepository;
+import br.cdb.feature.f004._0_domain.repository.TagRepository;
+import br.cdb.feature.f004._0_domain.repository.TransactionTagRepository;
+import br.cdb.feature.f004._1_application.service.TagService;
+import br.cdb.feature.f004._1_application.service.TransactionTagService;
+import br.cdb.feature.f004._2_infrastructure.persistence.TagJDBCRepository;
+import br.cdb.feature.f004._2_infrastructure.persistence.TransactionTagJDBCRepository;
 import br.cdb.feature.f006._0_domain.repository.TransactionRepository;
 import br.cdb.feature.f006._1_application.service.TransactionService;
 import br.cdb.feature.f006._1_application.usecase.ReadUseCases;
@@ -136,11 +142,15 @@ public abstract class BaseHttpTest {
         Context.set(CostCenterRepository.class, CostCenterJDBCRepository::new);
         Context.set(TransactionRepository.class, TransactionJDBCRepository::new);
         Context.set(CreditCardRepository.class, CreditCardJDBCRepository::new);
+        Context.set(TagRepository.class, TagJDBCRepository::new);
+        Context.set(TransactionTagRepository.class, TransactionTagJDBCRepository::new);
 
         Context.remove(AccountService.class);
         Context.remove(BalanceService.class);
         Context.remove(TransactionService.class);
         Context.remove(CreditCardService.class);
+        Context.remove(TagService.class);
+        Context.remove(TransactionTagService.class);
         // Alcançados por Context.get() estrito (não se auto-instanciam): re-registra em vez de remover.
         Context.set(CostCenterService.class, CostCenterService::new);
         Context.set(PersonService.class, () -> new PersonService(Context.get(PersonRepository.class)));
@@ -152,6 +162,8 @@ public abstract class BaseHttpTest {
         // FQN: nome simples colide com o par de f002.
         Context.remove(br.cdb.feature.f003._1_application.usecase.ReadUseCase.class);
         Context.remove(br.cdb.feature.f003._1_application.usecase.WriteUseCase.class);
+        Context.remove(br.cdb.feature.f004._1_application.usecase.ReadUseCase.class);
+        Context.remove(br.cdb.feature.f004._1_application.usecase.WriteUseCase.class);
     }
 
     /**

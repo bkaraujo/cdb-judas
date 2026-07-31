@@ -9,8 +9,12 @@ import br.cdb.feature.f002._0_domain.repository.BalanceRepository;
 import br.cdb.feature.f002._0_domain.repository.ClosingRepository;
 import br.cdb.feature.f003._0_domain.model.CreditCard;
 import br.cdb.feature.f003._0_domain.repository.CreditCardRepository;
+import br.cdb.feature.f004._0_domain.model.Tag;
+import br.cdb.feature.f004._0_domain.repository.TagRepository;
+import br.cdb.feature.f004._0_domain.repository.TransactionTagRepository;
 import br.cdb.feature.f006._0_domain.model.Transaction;
 import br.cdb.feature.f006._0_domain.repository.TransactionRepository;
+import lombok.val;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 
@@ -168,6 +172,56 @@ final class InMemoryRepositories {
         public List<CreditCard> findByAccountAndPerson(UUID accountId, String personId) {
             return findAll().stream().filter(c -> accountId.equals(c.accountId())).toList();
         }
+    }
+
+    /** Ao contrário dos demais fakes, este modela {@code COD_PERSON}: {@code personId} é campo do
+     *  próprio {@link Tag}, então filtrar por pessoa aqui é fiel ao adaptador JDBC. */
+    static class Tags extends BaseRepo<Tag, UUID> implements TagRepository {
+        public Tag save(Tag e) { data.put(e.id(), e); return e; }
+
+        public List<Tag> findAllByPerson(UUID personId) {
+            return findAll().stream().filter(t -> personId.equals(t.personId())).toList();
+        }
+
+        public Optional<Tag> findByPersonAndId(UUID personId, UUID id) {
+            return findById(id).filter(t -> personId.equals(t.personId()));
+        }
+    }
+
+    /** Junção transação×tag por pessoa ({@code F004_TRANSACTION_TAG}). */
+    static class TransactionTags implements TransactionTagRepository {
+        private record Link(UUID personId, UUID transactionId, UUID tagId) {}
+
+        private final List<Link> links = new ArrayList<>();
+
+        void link(UUID personId, UUID transactionId, UUID tagId) { links.add(new Link(personId, transactionId, tagId)); }
+
+        public List<UUID> findTransactionIdsByTag(UUID personId, UUID tagId) {
+            return links.stream()
+                    .filter(l -> personId.equals(l.personId()) && tagId.equals(l.tagId()))
+                    .map(Link::transactionId)
+                    .toList();
+        }
+
+        public void reassignTag(UUID oldTagId, UUID newTagId, UUID personId) {
+            val reassigned = links.stream()
+                    .filter(l -> personId.equals(l.personId()) && oldTagId.equals(l.tagId()))
+                    .map(l -> new Link(l.personId(), l.transactionId(), newTagId))
+                    .filter(l -> !links.contains(l)) // dedupe: já vinculada ao destino
+                    .toList();
+            links.removeIf(l -> personId.equals(l.personId()) && oldTagId.equals(l.tagId()));
+            links.addAll(reassigned);
+        }
+
+        public void deleteByTag(UUID personId, UUID tagId) {
+            links.removeIf(l -> personId.equals(l.personId()) && tagId.equals(l.tagId()));
+        }
+
+        public void deleteByTransaction(UUID transactionId) {
+            links.removeIf(l -> transactionId.equals(l.transactionId()));
+        }
+
+        public void clearCache() { links.clear(); }
     }
 
     static class Closings implements ClosingRepository {

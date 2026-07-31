@@ -8,25 +8,31 @@ import br.cdb.feature.f004._1_application.service.TagService;
 import br.commons.MessageBus;
 import br.commons.Result;
 import br.commons.business.BusinessError;
-import jakarta.inject.Singleton;
-import lombok.RequiredArgsConstructor;
+import br.commons.framework.cdi.Context;
 import lombok.val;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 
-import java.util.List;
 import java.util.UUID;
 
+/**
+ * Toda a mutação de tag da fatia {@code f004} — o par de {@link ReadUseCase}, mesmo arranjo CQRS de
+ * {@code f002}/{@code f003}/{@code f006}. Context-wired ({@code Context.tryGet(WriteUseCase.class)},
+ * nunca {@code @Inject}); o {@code TagResource} escreve <b>só</b> por aqui.
+ *
+ * <p>A exclusão publica {@link TagEvents.Deleted} com a estratégia já resolvida ({@code DETACH} é o
+ * padrão quando o chamador não escolhe) — quem reage é {@code f006} (re-key/limpeza do vínculo
+ * transação↔tag) e {@code f999} (dispatch SSE), sempre best-effort. A tag é apagada antes do evento:
+ * sem FK entre tabelas de dados, o vínculo órfão é limpo pelo listener.
+ *
+ * <p>Nota: o nome simples coincide com o {@code WriteUseCase} de {@code f002}/{@code f003} — quem
+ * precisa de mais de um referencia os demais pelo nome completo.
+ */
 @NullMarked
-@Singleton
-@RequiredArgsConstructor
-public class TagUseCase {
+public class WriteUseCase {
 
-    private final TagService service;
-
-    public List<Tag> tags(UUID personId) {
-        return service.findAll(personId);
-    }
+    private final TagService service = Context.tryGet(TagService.class);
+    private final ReadUseCase reads = Context.tryGet(ReadUseCase.class);
 
     public Tag createTag(UUID personId, String name, String color) {
         return service.create(personId, name, color);
@@ -37,7 +43,7 @@ public class TagUseCase {
     }
 
     public Result<DeletionOutcome, BusinessError> deleteTag(UUID personId, UUID tagId, @Nullable DeletionStrategy strategy, @Nullable UUID targetId) {
-        return switch (service.find(personId, tagId)) {
+        return switch (reads.tag(personId, tagId)) {
             case Result.Success(var tag) -> {
                 val effectiveStrategy = strategy != null ? strategy : DeletionStrategy.DETACH;
 
@@ -48,5 +54,4 @@ public class TagUseCase {
             case Result.Failure(var error) -> Result.failure(error);
         };
     }
-
 }
