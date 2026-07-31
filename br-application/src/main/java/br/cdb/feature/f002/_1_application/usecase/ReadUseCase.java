@@ -8,7 +8,7 @@ import br.cdb.feature.f002._1_application.service.AccountService;
 import br.cdb.feature.f002._1_application.service.BalanceService;
 import br.cdb.feature.f002._1_application.service.ClosingService;
 import br.cdb.feature.f003._0_domain.model.CreditCard;
-import br.cdb.feature.f003._1_application.usecase.CreditCardUseCase;
+import br.cdb.feature.f003._1_application.service.CreditCardService;
 import br.cdb.feature.f006._0_domain.model.Transaction;
 import br.cdb.feature.f006._1_application.usecase.ReadUseCases;
 import br.commons.Logger;
@@ -47,7 +47,7 @@ public class ReadUseCase {
 
     private final AccountService service = Context.tryGet(AccountService.class);
     private final BalanceService balanceService = Context.tryGet(BalanceService.class);
-    private final CreditCardUseCase ucCreditCard = Context.tryGet(CreditCardUseCase.class);
+    private final CreditCardService creditCardService = Context.tryGet(CreditCardService.class);
     private final ReadUseCases transactions = Context.tryGet(ReadUseCases.class);
 
     /** Conta (dono+cor inclusos) + cartões; {@code transactions} é a lista completa (o saldo
@@ -146,9 +146,12 @@ public class ReadUseCase {
 
     // ── Leituras auxiliares do lado de escrita ─────────────────────
 
-    /** Cartões da conta (projeção somente-leitura de {@code f003}); vazio quando a conta não é da pessoa. */
+    /** Cartões da conta (projeção somente-leitura de {@code f003}); vazio quando a conta não é da
+     *  pessoa — a query já filtra por {@code COD_PERSON}. Lê o serviço de f003, não o use case:
+     *  aqui a conta já veio resolvida por pessoa, então a guarda que {@code f003.ReadUseCase.list}
+     *  aplicaria seria uma segunda checagem do mesmo fato. */
     public List<CreditCard> cards(UUID accountId, String personId) {
-        return ucCreditCard.list(accountId, personId).getOrElse(List.of());
+        return creditCardService.findByAccountAndPerson(accountId, personId);
     }
 
     /** Quantas transações da pessoa estão ligadas à conta — usado pelo delete sem estratégia

@@ -6,8 +6,10 @@ import br.cdb.feature.f002._0_domain.model.Account;
 import br.cdb.feature.f003._0_domain.model.CreditCard;
 import br.cdb.feature.f003._1_application.command.CreditCardCommand;
 import br.cdb.feature.f006._0_domain.model.Transaction;
+import br.cdb.feature.f006._1_application.usecase.ReadUseCases;
 import br.commons.Result;
 import br.commons.business.BusinessError;
+import br.commons.framework.cdi.Context;
 import lombok.val;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -18,14 +20,23 @@ import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-/** Cobre cartão: identificado só pelo last4, sempre vinculado a uma conta real existente e ativa. */
-class CreditCardUseCaseTest extends AbstractUseCaseTest {
+/**
+ * Cobre a mutação de cartão da fatia {@code f003} — o par de {@code ReadUseCaseTest}. Só a camada de
+ * engine ({@code upsert}/{@code delete}): cartão é identificado só pelo last4, sempre vinculado a uma
+ * conta real existente e ativa. Os métodos de entrada dependem de {@code HTTPRequest.personId()} e
+ * quem os cobre é {@code F003CardResourceTest}.
+ */
+class WriteUseCaseTest extends AbstractUseCaseTest {
 
-    private CreditCardUseCase useCase;
+    private WriteUseCase useCase;
 
     @BeforeEach
     void setUp() {
-        useCase = new CreditCardUseCase();
+        // Grafo Context-wired: sem isso, os singletons ficariam presos aos fakes da classe de teste
+        // anterior (os services já são removidos por AbstractUseCaseTest).
+        Context.remove(ReadUseCase.class);
+        Context.remove(ReadUseCases.class);
+        useCase = new WriteUseCase();
     }
 
     private Account seedChecking() {
@@ -107,7 +118,7 @@ class CreditCardUseCaseTest extends AbstractUseCaseTest {
         val creditCard = createCard(account.id(), "1234");
         val r = useCase.delete(new CreditCardCommand.Delete(creditCard.id(), new TransactionPolicy.Block()));
         assertTrue(r.isSuccess());
-        assertTrue(((Result.Success<List<CreditCard>, BusinessError>) useCase.list(account.id(), "person")).value().isEmpty());
+        assertTrue(cardRepository().findById(creditCard.id()).isEmpty());
     }
 
     @Test

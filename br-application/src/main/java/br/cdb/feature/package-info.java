@@ -23,8 +23,8 @@
  * │   └── VersionResource      GET  /api/version                              (sem namespace de usuário)
  * ├── f001  self-service
  * │   └── SelfResource         GET/PATCH /api/me                              (nome + preferências write-through)
- * ├── f002  accounts (+ balance fundido: sem overlay próprio; cards[] embutido é projeção
- * │         somente-leitura de f003 — ver f003.CardUseCase para a mutação)
+ * ├── f002  accounts (+ balance e closing fundidos: sem overlay próprio; cards[] embutido é projeção
+ * │         somente-leitura de f003 — ver f003.WriteUseCase para a mutação)
  * │   ├── ClosingResource        GET/POST/DELETE /api/{uuid}/accounts/closing
  * │   ├── AccountResource        GET    /api/{uuid}/accounts
  * │   │                          GET    /api/{uuid}/accounts/{id}
@@ -33,8 +33,8 @@
  * │   │                          DELETE /api/{uuid}/accounts/{id}?strategy=&amp;targetId=
  * │   └── AccountBalanceResource GET    /api/{uuid}/accounts/balance?period=yyyyMM
  * │                              GET    /api/{uuid}/accounts/{id}/balance?period=yyyyMM|year=yyyy
- * ├── f003  cards (extraída de f002 — ver .claude/refactor.md; sem _0_domain/módulo CDI próprio,
- * │         mesmo precedente de f009)
+ * ├── f003  cards (extraída de f002 — ver .claude/refactor.md; par CQRS ReadUseCase/WriteUseCase,
+ * │         sem *UseCase de fronteira, como f002/f006)
  * │   └── AccountCardResource    GET    /api/{uuid}/accounts/{accountId}/cards
  * │                              POST   /api/{uuid}/accounts/{accountId}/cards
  * │                              PATCH  /api/{uuid}/accounts/{accountId}/cards/{cardId}

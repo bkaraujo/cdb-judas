@@ -96,7 +96,7 @@ class ArchitectureTest {
      * {@code InternalApi}); a fase 6 fechou os dois outros nomeados até aqui — {@code f007} (importação
      * de extrato/fatura, fundida em {@code f006}, deixou de ser cross-slice) e {@code f009} (dashboard,
      * trocou para {@code InternalApi}). Resta {@code UserGuards} (em {@code f000}), que ainda chama
-     * {@code f002.ReadUseCase}/{@code f003.CreditCardUseCase} direto — sem fase nomeada pra fechar
+     * {@code f002.ReadUseCase}/{@code f003.ReadUseCase} direto — sem fase nomeada pra fechar
      * esse caso ainda. Enquanto essa exceção existir, "{@code mvn verify} verde" não significa "zero
      * acoplamento cross-slice" — só "zero acoplamento novo fora do que já veio da dissolução".</p>
      */

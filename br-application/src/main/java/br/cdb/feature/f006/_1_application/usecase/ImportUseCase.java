@@ -6,7 +6,6 @@ import br.cdb.feature.f000._1_application.service.UserGuards;
 import br.cdb.feature.f002._0_domain.model.Account;
 import br.cdb.feature.f002._1_application.usecase.ReadUseCase;
 import br.cdb.feature.f003._0_domain.model.CreditCard;
-import br.cdb.feature.f003._1_application.usecase.CreditCardUseCase;
 import br.cdb.feature.f006._0_domain.ImportError;
 import br.cdb.feature.f006._0_domain.ImportResult;
 import br.cdb.feature.f006._1_application.confirm.InvoiceConfirmCommand;
@@ -40,7 +39,9 @@ import java.util.stream.Collectors;
 public class ImportUseCase {
 
     private final ReadUseCase accountReads = Context.tryGet(ReadUseCase.class);
-    private final CreditCardUseCase ucCreditCard = Context.tryGet(CreditCardUseCase.class);
+    // FQN: o ReadUseCase de f003 tem o mesmo nome simples do de f002, importado acima.
+    private final br.cdb.feature.f003._1_application.usecase.ReadUseCase cardReads =
+            Context.tryGet(br.cdb.feature.f003._1_application.usecase.ReadUseCase.class);
 
     private final StatementImportService service = Context.get(StatementImportService.class);
 
@@ -83,7 +84,7 @@ public class ImportUseCase {
 
     /** Contas distintas donas dos cartões das linhas confirmadas. */
     private List<UUID> affectedAccountIds(List<InvoiceConfirmCommand.Row> rows, String personId) {
-        val accountByCard = ucCreditCard.list(personId).getOrElse(List.of()).stream()
+        val accountByCard = cardReads.list(personId).getOrElse(List.of()).stream()
                 .collect(Collectors.toMap(CreditCard::id, CreditCard::accountId));
         return rows.stream()
                 .map(row -> accountByCard.get(row.cardId()))

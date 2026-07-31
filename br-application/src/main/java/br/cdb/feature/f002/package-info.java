@@ -9,7 +9,7 @@
  * {@code Context} ({@code Context.tryGet(...)}), como em f006.
  *
  * <p>{@code AccountResponse} mantém {@code cards[]} embutido via uma projeção somente-leitura própria
- * ({@code AccountResponse.Card}, lendo a engine {@code CreditCardUseCase} de f003 direto — Context-wired,
+ * ({@code AccountResponse.Card}, lendo o {@code CreditCardService} de f003 direto — Context-wired,
  * ex-contexto monetário); a mutação de cartão é de f003.
  */
 @NullMarked

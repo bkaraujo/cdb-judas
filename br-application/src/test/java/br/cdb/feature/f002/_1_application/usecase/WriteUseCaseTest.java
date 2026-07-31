@@ -6,7 +6,6 @@ import br.cdb.feature.f002._0_domain.model.Account;
 import br.cdb.feature.f002._0_domain.model.Balance;
 import br.cdb.feature.f002._1_application.command.AccountCommand;
 import br.cdb.feature.f003._0_domain.model.CreditCard;
-import br.cdb.feature.f003._1_application.usecase.CreditCardUseCase;
 import br.cdb.feature.f006._0_domain.model.Transaction;
 import br.cdb.feature.f006._1_application.usecase.ReadUseCases;
 import br.commons.Result;
@@ -44,7 +43,9 @@ class WriteUseCaseTest extends AbstractUseCaseTest {
         // anterior (os services já são removidos por AbstractUseCaseTest).
         Context.remove(ReadUseCase.class);
         Context.remove(ReadUseCases.class);
-        Context.remove(CreditCardUseCase.class);
+        // FQN: nome simples colide com o par de f002.
+        Context.remove(br.cdb.feature.f003._1_application.usecase.ReadUseCase.class);
+        Context.remove(br.cdb.feature.f003._1_application.usecase.WriteUseCase.class);
         useCase = new WriteUseCase();
     }
 

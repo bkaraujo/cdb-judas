@@ -1,6 +1,13 @@
 package br.cdb.feature.f003._1_application.usecase;
 
+import br.cdb.core.web.HTTPRequest;
+import br.cdb.feature.f000._0_domain.DeletionOutcome;
+import br.cdb.feature.f000._0_domain.DeletionStrategy;
 import br.cdb.feature.f000._0_domain.TransactionPolicy;
+import br.cdb.feature.f000._0_domain.event.AccountStreamEvents;
+import br.cdb.feature.f000._0_domain.event.TransactionsDeleted;
+import br.cdb.feature.f000._1_application.Deletions;
+import br.cdb.feature.f000._1_application.service.UserGuards;
 import br.cdb.feature.f002._0_domain.model.Account;
 import br.cdb.feature.f002._1_application.service.AccountService;
 import br.cdb.feature.f002._1_application.service.BalanceService;
@@ -16,13 +23,32 @@ import br.commons.business.BusinessError;
 import br.commons.framework.cdi.Context;
 import lombok.val;
 import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
 
 import java.util.List;
 import java.util.UUID;
 import java.util.regex.Pattern;
 
+/**
+ * Toda a mutação de cartão da fatia {@code f003} — o par de {@link ReadUseCase}, mesmo arranjo CQRS
+ * de {@code f002}/{@code f006}. Context-wired como as demais classes ex-contexto
+ * ({@code Context.tryGet(WriteUseCase.class)}, nunca {@code @Inject}); o {@code AccountCardResource}
+ * escreve <b>só</b> por aqui. {@code f002} mantém apenas uma projeção somente-leitura do cartão
+ * (ver {@code AccountResponse.Card}) — f003 é dono das mutações.
+ *
+ * <p>As duas camadas convivem no mesmo tipo: métodos de <b>entrada</b> ({@link #createCard},
+ * {@link #deleteCard}, {@link #setCardActive}) aplicam a política de usuário ({@link UserGuards},
+ * bean CDI resolvido <b>por chamada</b> — {@code @RequestScoped}, nunca guardado em campo) e
+ * publicam SSE ({@link AccountStreamEvents#Refresh}, despachado por {@code f999}) e a cascata de
+ * exclusão ({@link TransactionsDeleted}); os de <b>engine</b> ({@link #upsert}, {@link #delete})
+ * aceitam qualquer comando bem-formado e só publicam o evento de domínio da fatia
+ * ({@link CreditCardEvents}).
+ *
+ * <p>Nota: o nome simples coincide com o {@code WriteUseCase} de {@code f002} — quem precisa dos dois
+ * referencia um deles pelo nome completo.
+ */
 @NullMarked
-public class CreditCardUseCase {
+public class WriteUseCase {
 
     private static final Pattern LAST4 = Pattern.compile("\\d{4}");
 
@@ -30,24 +56,55 @@ public class CreditCardUseCase {
     private final AccountService accountService = Context.tryGet(AccountService.class);
     private final BalanceService balanceService = Context.tryGet(BalanceService.class);
     private final TransactionService transactionService = Context.tryGet(TransactionService.class);
+    private final ReadUseCase reads = Context.tryGet(ReadUseCase.class);
 
-    public Result<List<CreditCard>, BusinessError> list(String personId) {
-        return Result.success(service.findAllByPerson(personId));
+    /** Bean CDI resolvido a cada chamada: {@code @RequestScoped}, nunca guardado em campo. */
+    private static UserGuards guards() {
+        return Context.get(UserGuards.class);
     }
 
-    public Result<List<CreditCard>, BusinessError> list(UUID accountId, String personId) {
-        return accountService.findByIdAndPerson(accountId, personId)
-                .map(ignored -> service.findByAccountAndPerson(accountId, personId));
+    // ── Cartões (entrada HTTP) ─────────────────────────────────────
+
+    public Result<CreditCard, BusinessError> createCard(CreditCardCommand.Create cmd) {
+        return guards().ownsAccount(cmd.accountId()).flatMap(ignored -> upsert(cmd))
+                .ifSuccess(ignored -> MessageBus.submit(new AccountStreamEvents.Refresh(cmd.accountId(), HTTPRequest.personId())));
     }
+
+    public Result<DeletionOutcome, BusinessError> deleteCard(
+            UUID accountId, UUID cardId, @Nullable DeletionStrategy strategy, @Nullable UUID targetId) {
+        return guards().ownsCard(accountId, cardId).flatMap(ignored -> {
+            if (strategy == null) {
+                val count = reads.transactionCount(HTTPRequest.personId(), cardId);
+                if (count > 0) return Result.success(new DeletionOutcome.Linked(count));
+            }
+
+            return delete(new CreditCardCommand.Delete(cardId, Deletions.toPolicy(strategy, targetId))).map(ids -> {
+                // MOVE mantém o cartão de destino na mesma conta: sem re-key de overlay a fazer.
+                if (strategy != DeletionStrategy.MOVE) {
+                    MessageBus.submit(new TransactionsDeleted(ids));
+                }
+                MessageBus.submit(new AccountStreamEvents.Refresh(accountId, HTTPRequest.personId()));
+                return new DeletionOutcome.Completed();
+            });
+        });
+    }
+
+    public Result<CreditCard, BusinessError> setCardActive(UUID accountId, UUID cardId, boolean active) {
+        return guards().ownsCard(accountId, cardId)
+                .flatMap(ignored -> upsert(new CreditCardCommand.Update(cardId, active)))
+                .ifSuccess(ignored -> MessageBus.submit(new AccountStreamEvents.Refresh(accountId, HTTPRequest.personId())));
+    }
+
+    // ── Cartões (engine — sem política de usuário) ─────────────────
 
     public Result<CreditCard, BusinessError> upsert(CreditCardCommand.Upsert cmd) {
         return switch (cmd) {
-            case CreditCardCommand.Create(var accountId, var last4) -> createCard(accountId, last4);
+            case CreditCardCommand.Create(var accountId, var last4) -> create(accountId, last4);
             case CreditCardCommand.Update(var id, var active) -> setActive(id, active);
         };
     }
 
-    private Result<CreditCard, BusinessError> createCard(UUID accountId, String last4) {
+    private Result<CreditCard, BusinessError> create(UUID accountId, String last4) {
         if (!LAST4.matcher(last4).matches()) {
             return Result.failure(new BusinessError.Validation("last4 must be exactly 4 digits"));
         }

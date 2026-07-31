@@ -4,7 +4,6 @@ import br.cdb.core.web.HTTPRequest;
 import br.cdb.feature.f002._0_domain.model.Account;
 import br.cdb.feature.f002._1_application.usecase.ReadUseCase;
 import br.cdb.feature.f003._0_domain.model.CreditCard;
-import br.cdb.feature.f003._1_application.usecase.CreditCardUseCase;
 import br.commons.Result;
 import br.commons.business.BusinessError;
 import br.commons.framework.cdi.Context;
@@ -98,7 +97,9 @@ public class UserGuards {
         var cached = accountByCard;
         if (cached == null) {
             val personId = HTTPRequest.personId();
-            cached = Context.tryGet(CreditCardUseCase.class).list(personId).getOrElse(List.of()).stream()
+            // FQN: o ReadUseCase de f003 tem o mesmo nome simples do de f002, importado acima.
+            cached = Context.tryGet(br.cdb.feature.f003._1_application.usecase.ReadUseCase.class)
+                    .list(personId).getOrElse(List.of()).stream()
                     .collect(Collectors.toUnmodifiableMap(CreditCard::id, CreditCard::accountId));
             accountByCard = cached;
         }

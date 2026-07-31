@@ -20,7 +20,6 @@ import br.cdb.feature.f002._2_infrastructure.persistence.AccountJDBCRepository;
 import br.cdb.feature.f002._2_infrastructure.persistence.UserAccountBalanceJDBCRepository;
 import br.cdb.feature.f003._0_domain.repository.CreditCardRepository;
 import br.cdb.feature.f003._1_application.service.CreditCardService;
-import br.cdb.feature.f003._1_application.usecase.CreditCardUseCase;
 import br.cdb.feature.f003._2_infrastructure.persistence.CreditCardJDBCRepository;
 import br.cdb.feature.f006._0_domain.repository.TransactionRepository;
 import br.cdb.feature.f006._1_application.service.TransactionService;
@@ -150,7 +149,9 @@ public abstract class BaseHttpTest {
         Context.remove(WriteUseCases.class);
         Context.remove(ReadUseCases.class);
         Context.remove(CostCenterUseCase.class);
-        Context.remove(CreditCardUseCase.class);
+        // FQN: nome simples colide com o par de f002.
+        Context.remove(br.cdb.feature.f003._1_application.usecase.ReadUseCase.class);
+        Context.remove(br.cdb.feature.f003._1_application.usecase.WriteUseCase.class);
     }
 
     /**
