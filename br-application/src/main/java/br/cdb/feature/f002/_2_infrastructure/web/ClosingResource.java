@@ -1,7 +1,7 @@
 package br.cdb.feature.f002._2_infrastructure.web;
 
-import br.cdb.feature.f002._1_application.service.ClosingService;
 import br.cdb.feature.f002._1_application.usecase.ReadUseCase;
+import br.cdb.feature.f002._1_application.usecase.WriteUseCase;
 import br.cdb.feature.f002._2_infrastructure.web.request.ClosingRequest;
 import br.cdb.feature.f002._2_infrastructure.web.response.ClosingResponse;
 import br.commons.Logger;
@@ -20,7 +20,7 @@ import java.time.YearMonth;
 public class ClosingResource {
 
     private final ReadUseCase reads = Context.tryGet(ReadUseCase.class);
-    private final ClosingService closingService = Context.get(ClosingService.class);
+    private final WriteUseCase writes = Context.tryGet(WriteUseCase.class);
 
     @GET
     public ClosingResponse get() {
@@ -32,13 +32,13 @@ public class ClosingResource {
     @POST
     public ClosingResponse set(@Valid ClosingRequest req) {
         Logger.debug("ClosingRequest: %s", req);
-        val ym = closingService.save(YearMonth.parse(req.period()));
+        val ym = writes.saveClosing(YearMonth.parse(req.period()));
         return new ClosingResponse(ym.toString());
     }
 
     @DELETE
     public void clear() {
         Logger.debug("Clearing closing");
-        closingService.clear();
+        writes.clearClosing();
     }
 }

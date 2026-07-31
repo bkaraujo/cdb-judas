@@ -14,7 +14,7 @@ import br.cdb.feature.f002._0_domain.repository.AccountRepository;
 import br.cdb.feature.f002._0_domain.repository.BalanceRepository;
 import br.cdb.feature.f002._1_application.service.AccountService;
 import br.cdb.feature.f002._1_application.service.BalanceService;
-import br.cdb.feature.f002._1_application.usecase.AccountUseCase;
+import br.cdb.feature.f002._1_application.usecase.WriteUseCase;
 import br.cdb.feature.f002._1_application.usecase.ReadUseCase;
 import br.cdb.feature.f002._2_infrastructure.persistence.AccountJDBCRepository;
 import br.cdb.feature.f002._2_infrastructure.persistence.UserAccountBalanceJDBCRepository;
@@ -145,7 +145,7 @@ public abstract class BaseHttpTest {
         // Alcançados por Context.get() estrito (não se auto-instanciam): re-registra em vez de remover.
         Context.set(CostCenterService.class, CostCenterService::new);
         Context.set(PersonService.class, () -> new PersonService(Context.get(PersonRepository.class)));
-        Context.remove(AccountUseCase.class);
+        Context.remove(WriteUseCase.class);
         Context.remove(ReadUseCase.class);
         Context.remove(WriteUseCases.class);
         Context.remove(ReadUseCases.class);

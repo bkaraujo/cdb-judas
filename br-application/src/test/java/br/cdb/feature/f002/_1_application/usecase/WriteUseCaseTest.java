@@ -6,9 +6,12 @@ import br.cdb.feature.f002._0_domain.model.Account;
 import br.cdb.feature.f002._0_domain.model.Balance;
 import br.cdb.feature.f002._1_application.command.AccountCommand;
 import br.cdb.feature.f003._0_domain.model.CreditCard;
+import br.cdb.feature.f003._1_application.usecase.CreditCardUseCase;
 import br.cdb.feature.f006._0_domain.model.Transaction;
+import br.cdb.feature.f006._1_application.usecase.ReadUseCases;
 import br.commons.Result;
 import br.commons.business.BusinessError;
+import br.commons.framework.cdi.Context;
 import lombok.val;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -23,20 +26,26 @@ import java.util.UUID;
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
- * Cobre as operações de conta do contexto monetary. As regras de cartão (conta vinculada, limites)
- * são uma preocupação da feature ({@code PERSON_ACCOUNT}) e estão cobertas em {@code F002AccountResourceTest}
- * (br-application).
+ * Cobre a mutação de conta da fatia {@code f002} — o par de {@code ReadUseCaseTest}. Só a camada de
+ * engine ({@code upsert}/{@code delete}): os métodos de entrada dependem de
+ * {@code HTTPRequest.personId()} e da fila de exclusão, e quem os cobre é
+ * {@code F002AccountResourceTest}.
  */
-class AccountUseCaseTest extends AbstractUseCaseTest {
+class WriteUseCaseTest extends AbstractUseCaseTest {
 
     private static final String PERSON_ID = UUID.randomUUID().toString();
     private static final String COLOR = "#000000";
 
-    private AccountUseCase useCase;
+    private WriteUseCase useCase;
 
     @BeforeEach
     void setUp() {
-        useCase = new AccountUseCase();
+        // Grafo Context-wired: sem isso, os singletons ficariam presos aos fakes da classe de teste
+        // anterior (os services já são removidos por AbstractUseCaseTest).
+        Context.remove(ReadUseCase.class);
+        Context.remove(ReadUseCases.class);
+        Context.remove(CreditCardUseCase.class);
+        useCase = new WriteUseCase();
     }
 
     private Account seedChecking() {

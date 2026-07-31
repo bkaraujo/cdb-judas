@@ -6,7 +6,7 @@ import org.jspecify.annotations.NullMarked;
 import java.util.UUID;
 
 /**
- * Publicado por {@code AccountUseCase.deleteAccount} (f002) após o contexto monetário apagar a
+ * Publicado por {@code WriteUseCase.deleteAccount} (f002) após o contexto monetário apagar a
  * conta (linha única, dono+cor inclusos). Mora em {@code f000} (não em quem publica) para respeitar
  * a ordem de fatias.
  */

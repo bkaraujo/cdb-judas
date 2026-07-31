@@ -1,8 +1,10 @@
 package br.cdb.feature.f999;
 
 import br.cdb.feature.f000._1_application.service.UserService;
+import br.cdb.feature.f002._0_domain.DeletionQueue;
 import br.cdb.feature.f999._0_domain.DeletionQueueRepository;
 import br.cdb.feature.f999._1_application.DeletionQueueService;
+import br.cdb.feature.f999._2_infrastructure.adapter.DeletionQueueAdapter;
 import br.cdb.feature.f999._2_infrastructure.persistence.DeletionQueueJDBCRepository;
 import br.commons.Logger;
 import br.commons.Result;
@@ -34,6 +36,9 @@ public class F999Module implements Lifecycle {
 
         Context.set(DeletionQueueRepository.class, DeletionQueueJDBCRepository::new);
         Context.set(DeletionQueueService.class, () -> new DeletionQueueService(Context.get(DeletionQueueRepository.class)));
+        // Depois do service: o adapter o resolve em campo. Publicado aqui (composition root) porque
+        // quem consome a porta é f002.WriteUseCase, Context-wired — não há injeção CDI no caminho.
+        Context.set(DeletionQueue.class, DeletionQueueAdapter::new);
 
         // Montado só aqui (não no FeatureBootstrap): resolve PersonRepository/UserRepository em campo,
         // então só pode ser construído depois de f000 registrar suas portas.

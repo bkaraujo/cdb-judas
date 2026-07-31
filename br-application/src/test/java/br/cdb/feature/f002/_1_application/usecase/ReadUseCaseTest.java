@@ -24,7 +24,7 @@ import java.util.UUID;
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
- * Cobre a leitura da fatia {@code f002} — o par de {@code AccountUseCaseTest} (que ficou só com a
+ * Cobre a leitura da fatia {@code f002} — o par de {@code WriteUseCaseTest} (que ficou só com a
  * escrita). Os métodos de entrada que dependem de {@code HTTPRequest.personId()}
  * ({@code accounts()}/{@code balances()}) não são exercitáveis fora de uma requisição: quem os cobre
  * é {@code F002AccountResourceTest}. A guarda de propriedade é dublada aqui ({@link #guards}) —
