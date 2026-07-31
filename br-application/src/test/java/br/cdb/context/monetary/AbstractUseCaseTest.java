@@ -1,7 +1,9 @@
 package br.cdb.context.monetary;
 
 import br.cdb.feature.f000._0_domain.repository.CostCenterRepository;
+import br.cdb.feature.f000._0_domain.repository.PersonRepository;
 import br.cdb.feature.f000._1_application.service.CostCenterService;
+import br.cdb.feature.f000._1_application.service.PersonService;
 import br.cdb.feature.f002._0_domain.repository.AccountRepository;
 import br.cdb.feature.f002._0_domain.repository.BalanceRepository;
 import br.cdb.feature.f002._1_application.service.AccountService;
@@ -32,6 +34,7 @@ public abstract class AbstractUseCaseTest {
     protected TagRepository tagRepository() { return Context.get(TagRepository.class); }
     protected TransactionTagRepository transactionTagRepository() { return Context.get(TransactionTagRepository.class); }
     protected CategoryRepository categoryRepository() { return Context.get(CategoryRepository.class); }
+    protected PersonRepository personRepository() { return Context.get(PersonRepository.class); }
 
     @BeforeEach
     public void beforeEach() {
@@ -56,10 +59,15 @@ public abstract class AbstractUseCaseTest {
         Context.set(TagRepository.class, InMemoryRepositories.Tags::new);
         Context.set(TransactionTagRepository.class, InMemoryRepositories.TransactionTags::new);
         Context.set(CategoryRepository.class, InMemoryRepositories.Categories::new);
+        Context.set(PersonRepository.class, InMemoryRepositories.People::new);
 
-        // CostCenterUseCase resolve o service com Context.get() estrito (em produção quem registra é
+        // O par ReadUseCase/WriteUseCase resolve o service com Context.get() estrito (em produção quem registra é
         // F000Module): re-registra sobre os fakes acima, depois de removido.
         Context.set(CostCenterService.class, CostCenterService::new);
+        Context.set(PersonService.class, () -> new PersonService(Context.get(PersonRepository.class)));
+        // O par de f000 guarda os dois services acima em campo: precisa cair junto com eles.
+        Context.remove(br.cdb.feature.f000._1_application.usecase.ReadUseCase.class);
+        Context.remove(br.cdb.feature.f000._1_application.usecase.WriteUseCase.class);
     }
 
 }

@@ -30,7 +30,7 @@ public class F000Module implements Lifecycle {
         Context.set(SSE.class, SseService::new);
         Context.set(CostCenterRepository.class, CostCenterJDBCRepository::new);
         Context.set(PersonRepository.class, () -> new CachingPersonRepository(new PersonJDBCRepository()));
-        // Os dois services alcançados por Context.get() estrito (PersonUseCase/CostCenterUseCase);
+        // Os dois services alcançados por Context.get() estrito (o par ReadUseCase/WriteUseCase);
         // as demais engines resolvem suas portas em campo e o Context as instancia sozinho via tryGet.
         Context.set(PersonService.class, () -> new PersonService(Context.get(PersonRepository.class)));
         Context.set(CostCenterService.class, CostCenterService::new);

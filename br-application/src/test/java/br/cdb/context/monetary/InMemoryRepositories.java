@@ -1,7 +1,9 @@
 package br.cdb.context.monetary;
 
 import br.cdb.feature.f000._0_domain.model.CostCenter;
+import br.cdb.feature.f000._0_domain.model.Person;
 import br.cdb.feature.f000._0_domain.repository.CostCenterRepository;
+import br.cdb.feature.f000._0_domain.repository.PersonRepository;
 import br.cdb.feature.f002._0_domain.model.Account;
 import br.cdb.feature.f002._0_domain.model.Balance;
 import br.cdb.feature.f002._0_domain.repository.AccountRepository;
@@ -238,6 +240,11 @@ final class InMemoryRepositories {
         public List<Category> findByNature(UUID personId, Transaction.Type nature) {
             return findAllByPerson(personId).stream().filter(c -> c.nature() == nature).toList();
         }
+    }
+
+    /** Pessoas ({@code F000_PERSON}) — o kernel f000 é dono. */
+    static class People extends BaseRepo<Person, UUID> implements PersonRepository {
+        public Person save(Person e) { data.put(e.id(), e); return e; }
     }
 
     static class Closings implements ClosingRepository {

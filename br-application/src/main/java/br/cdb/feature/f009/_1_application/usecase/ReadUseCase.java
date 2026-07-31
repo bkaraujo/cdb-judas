@@ -1,11 +1,10 @@
-package br.cdb.feature.f009._1_application;
+package br.cdb.feature.f009._1_application.usecase;
 
 import br.cdb.feature.f000._1_application.InternalApi;
 import br.commons.Result;
 import br.commons.business.BusinessError;
-import jakarta.inject.Singleton;
+import br.commons.framework.cdi.Context;
 import lombok.Builder;
-import lombok.RequiredArgsConstructor;
 import lombok.val;
 import org.jspecify.annotations.NullMarked;
 
@@ -14,12 +13,26 @@ import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Toda a leitura do dashboard da fatia {@code f009} — agregação mensal (receitas/despesas/líquido +
+ * histórico semanal) sobre as transações de {@code f006}, lidas por HTTP real via
+ * {@link InternalApi}. Context-wired ({@code Context.tryGet(ReadUseCase.class)}, nunca
+ * {@code @Inject}); o {@code DashboardResource} lê <b>só</b> daqui.
+ *
+ * <p><b>Sem {@code WriteUseCase}</b>, ao contrário de {@code f001}–{@code f006}: a fatia é
+ * somente-leitura — não tem porta, repositório nem mutação própria, então o par teria um lado vazio.
+ * O dia em que o dashboard ganhar estado (meta, orçamento), o par se completa aqui.
+ *
+ * <p>Nota: o nome simples coincide com o {@code ReadUseCase} das demais fatias — quem precisa de
+ * mais de um referencia os outros pelo nome completo.
+ */
 @NullMarked
-@Singleton
-@RequiredArgsConstructor
-public class DashboardService {
+public class ReadUseCase {
 
-    private final InternalApi internalApi;
+    /** Bean CDI publicado no {@code Context} por {@code f999.FeatureBootstrap}; resolvido por chamada. */
+    private static InternalApi internalApi() {
+        return Context.get(InternalApi.class);
+    }
 
     /** Corpo mínimo do endpoint público {@code GET /accounts/transactions} (f006) — zero tipo
      *  cross-slice, mesma regra dos antigos ports. {@code type} vem lowercase ("income"/"expense",
@@ -33,7 +46,7 @@ public class DashboardService {
 
         // Filtro já aplicado no servidor (status/dateFrom/dateTo são suportados pelo endpoint público
         // de f006) — evita trazer o histórico inteiro só pra descartar a maior parte aqui.
-        val confirmedThisMonth = List.of(internalApi.get(
+        val confirmedThisMonth = List.of(internalApi().get(
                 "/accounts/transactions?status=CONFIRMED&dateFrom=" + start + "&dateTo=" + end,
                 TransactionDto[].class));
 

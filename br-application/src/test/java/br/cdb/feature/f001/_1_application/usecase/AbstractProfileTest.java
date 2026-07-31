@@ -64,9 +64,13 @@ abstract class AbstractProfileTest {
         Context.set(PersonService.class, () -> new PersonService(people));
         Context.set(PreferencesRepository.class, () -> prefs);
         // Grafo Context-wired: sem isso, os singletons ficariam presos aos fakes do teste anterior.
+        // O par de f000 entra na lista porque ProfileService o resolve (a pessoa mora no kernel);
+        // FQN porque o nome simples colide com o par desta fatia.
         Context.remove(ProfileService.class);
         Context.remove(ReadUseCase.class);
         Context.remove(WriteUseCase.class);
+        Context.remove(br.cdb.feature.f000._1_application.usecase.ReadUseCase.class);
+        Context.remove(br.cdb.feature.f000._1_application.usecase.WriteUseCase.class);
     }
 
     protected String seed(String name, Preferences preferences) {

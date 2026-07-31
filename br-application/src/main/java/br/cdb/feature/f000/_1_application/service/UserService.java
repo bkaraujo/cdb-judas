@@ -3,7 +3,7 @@ package br.cdb.feature.f000._1_application.service;
 import br.cdb.core.persistence.UserRepository;
 import br.cdb.core.security.User;
 import br.cdb.feature.f000._0_domain.event.UserEvents;
-import br.cdb.feature.f000._1_application.usecase.PersonUseCase;
+import br.cdb.feature.f000._1_application.usecase.WriteUseCase;
 import br.commons.Logger;
 import br.commons.MessageBus;
 import br.commons.Result;
@@ -22,8 +22,8 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class UserService {
 
-    // Contexto people não é bean CDI — resolve-se pelo Context (mesmo padrão de f001 ProfileService).
-    private final PersonUseCase personUseCase = new PersonUseCase();
+    // O par de use cases não é bean CDI — resolve-se pelo Context (mesmo padrão de f001 ProfileService).
+    private final WriteUseCase writes = Context.tryGet(WriteUseCase.class);
     private final UserRepository userRepository = Context.get(UserRepository.class);
 
     public Result<User, BusinessError> createUser(String username, String name, char[] password) {
@@ -34,7 +34,7 @@ public class UserService {
         }
 
         // 1 - Cria a Person (dono dos recursos; toda a funcionalidade referencia a Person)
-        return personUseCase.register(name, UserGuards.DEFAULT_LOCALE, UserGuards.DEFAULT_LANGUAGE).map(person -> {
+        return writes.registerPerson(name, UserGuards.DEFAULT_LOCALE, UserGuards.DEFAULT_LANGUAGE).map(person -> {
             // 2 - Cria o User (login) vinculado à Person
             val user = userRepository.save(new User(
                     UUID.randomUUID().toString(),

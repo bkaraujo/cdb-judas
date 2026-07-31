@@ -8,7 +8,6 @@ import br.cdb.feature.f000._0_domain.repository.CostCenterRepository;
 import br.cdb.feature.f000._0_domain.repository.PersonRepository;
 import br.cdb.feature.f000._1_application.service.CostCenterService;
 import br.cdb.feature.f000._1_application.service.PersonService;
-import br.cdb.feature.f000._1_application.usecase.CostCenterUseCase;
 import br.cdb.feature.f000._2_infrastructure.persistence.CachingPersonRepository;
 import br.cdb.feature.f000._2_infrastructure.persistence.CostCenterJDBCRepository;
 import br.cdb.feature.f000._2_infrastructure.persistence.PersonJDBCRepository;
@@ -176,7 +175,8 @@ public abstract class BaseHttpTest {
         Context.remove(ReadUseCase.class);
         Context.remove(WriteUseCases.class);
         Context.remove(ReadUseCases.class);
-        Context.remove(CostCenterUseCase.class);
+        Context.remove(br.cdb.feature.f000._1_application.usecase.ReadUseCase.class);
+        Context.remove(br.cdb.feature.f000._1_application.usecase.WriteUseCase.class);
         // FQN: nome simples colide com o par de f002.
         Context.remove(br.cdb.feature.f003._1_application.usecase.ReadUseCase.class);
         Context.remove(br.cdb.feature.f003._1_application.usecase.WriteUseCase.class);

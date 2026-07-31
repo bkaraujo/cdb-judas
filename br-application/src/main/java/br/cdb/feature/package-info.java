@@ -17,6 +17,7 @@
  * <pre>
  * feature
  * ├── f000  fatia-base — todas as demais podem depender dela, ela de nenhuma
+ * │         (par CQRS ReadUseCase/WriteUseCase: pessoa + centro de custo, consumido por f001/UserService)
  * │   ├── CostCenterResource   GET  /api/cost-center                          (sem namespace de usuário)
  * │   ├── LoginResource        POST /login
  * │   ├── SseResource          GET  /api/{uuid}/stream                        (Server-Sent Events)
@@ -61,7 +62,7 @@
  * │                            DELETE /api/{uuid}/accounts/{accId}/transactions/{txId}?mode=          (publica {@code TransactionsDeleted})
  * │   └── ImportResource POST /api/{uuid}/accounts/transactions/import/preview  (multipart: file/password/accountId; f007 fundida aqui na fase 6)
  * │                                POST /api/{uuid}/accounts/transactions/import/confirm  (parsers BTG/Santander, casamento de cartão, sugestão de categoria)
- * ├── f009  dashboard
+ * ├── f009  dashboard (só ReadUseCase: fatia somente-leitura)
  * │   └── DashboardResource    GET /api/{uuid}/dashboard?month=&amp;year=
  * ├── f999  Initialization routines                                                       (sem HTTP)
  * </pre>

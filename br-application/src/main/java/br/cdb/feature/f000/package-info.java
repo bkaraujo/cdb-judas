@@ -20,6 +20,14 @@
  *       ({@code /api/{uuid}/accounts/closing}); gate de política síncrono ({@code validateDate})
  *       consumido por transactions/transfer</li>
  * </ul>
+ *
+ * <p><b>Par CQRS</b> ({@code _1_application.usecase.ReadUseCase}/{@code WriteUseCase}, Context-wired
+ * como em f001–f006), com uma diferença: aqui ele não serve a nenhum {@code *Resource} da própria
+ * fatia — quem o consome é {@code f001.ProfileService} (pessoa por trás de {@code /api/me}) e o
+ * {@code UserService} local (cria a pessoa antes do login). Pessoa e centro de custo dividem o mesmo
+ * par: {@code f000} é o kernel plano, sem sub-pacote por assunto, e só cabe um {@code ReadUseCase}
+ * por pacote. Se um terceiro assunto precisar de use case aqui, vale reavaliar — a alternativa é
+ * voltar a nomear por assunto, como eram {@code PersonUseCase}/{@code CostCenterUseCase}.
  */
 @NullMarked
 package br.cdb.feature.f000;

@@ -3,7 +3,6 @@ package br.cdb.context.monetary;
 import br.cdb.feature.f000._0_domain.model.CostCenter;
 import br.cdb.feature.f000._0_domain.repository.CostCenterRepository;
 import br.cdb.feature.f000._1_application.service.CostCenterService;
-import br.cdb.feature.f000._1_application.usecase.CostCenterUseCase;
 import br.cdb.feature.f002._0_domain.model.Account;
 import br.cdb.feature.f002._0_domain.repository.AccountRepository;
 import br.cdb.feature.f002._0_domain.repository.BalanceRepository;
@@ -224,7 +223,8 @@ class StatementImportServiceTest {
         Context.remove(ReadUseCase.class);
         Context.remove(WriteUseCases.class);
         Context.remove(ReadUseCases.class);
-        Context.remove(CostCenterUseCase.class);
+        Context.remove(br.cdb.feature.f000._1_application.usecase.ReadUseCase.class);
+        Context.remove(br.cdb.feature.f000._1_application.usecase.WriteUseCase.class);
         // FQN: nome simples colide com o par de f002.
         Context.remove(br.cdb.feature.f003._1_application.usecase.ReadUseCase.class);
         Context.remove(br.cdb.feature.f003._1_application.usecase.WriteUseCase.class);
