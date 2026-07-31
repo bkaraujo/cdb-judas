@@ -1,5 +1,6 @@
-package br.cdb.infra.persistence.core;
+package br.cdb.core.persistence.migration;
 
+import br.cdb.core.persistence.Database;
 import br.commons.Logger;
 import br.commons.framework.persistence.jdbc.DataSource;
 import br.commons.framework.persistence.jdbc.primitives.JDBCParameter;
@@ -54,7 +55,7 @@ public final class DuplicateCategoryMigration {
      * cada cópia de uma raiz duplicada tem suas próprias filhas, sob um {@code COD_PARENT} diferente,
      * então filhas duplicadas nunca somam {@code COUNT(*) > 1} nesse mesmo agrupamento — são resolvidas
      * junto quando o grupo da raiz é processado, em {@link #mergeGroup}. Num banco fresh, migrações
-     * rodam antes de {@link br.cdb.infra.persistence.Database#model()} — {@code USER_CATEGORY}
+     * rodam antes de {@link Database#model()} — {@code USER_CATEGORY}
      * ainda não existe, daí o primeiro passo evitar consultar uma tabela inexistente.
      */
     private static List<GroupKey> duplicateRootGroups(DataSource ds) {

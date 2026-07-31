@@ -1,4 +1,4 @@
-package br.cdb.infra.persistence.core;
+package br.cdb.core.persistence.migration;
 
 import br.commons.Logger;
 import br.commons.framework.persistence.jdbc.DataSource;

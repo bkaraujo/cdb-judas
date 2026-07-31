@@ -1,5 +1,6 @@
-package br.cdb.infra.persistence.core;
+package br.cdb.core.persistence.migration;
 
+import br.cdb.core.persistence.Database;
 import br.commons.Logger;
 import br.commons.chrono.Time;
 import br.commons.framework.persistence.jdbc.DataSource;
@@ -63,7 +64,7 @@ public final class ContextMergeMigration {
 
     /**
      * Migra só quando {@code PEP_PERSON} (marcador antigo) ainda existe. Num banco fresh, migrações
-     * rodam antes de {@link br.cdb.infra.persistence.Database#model()} — {@code PEP_PERSON} ainda não
+     * rodam antes de {@link Database#model()} — {@code PEP_PERSON} ainda não
      * existe, então a contagem já vem zero e não dispara nada contra tabelas inexistentes.
      */
     private static boolean needsMigration(DataSource ds) {

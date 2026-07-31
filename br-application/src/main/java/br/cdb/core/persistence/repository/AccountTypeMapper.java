@@ -1,4 +1,4 @@
-package br.cdb.infra.persistence.monetary;
+package br.cdb.core.persistence.repository;
 
 import br.cdb.feature.f002._0_domain.model.Account;
 import lombok.val;

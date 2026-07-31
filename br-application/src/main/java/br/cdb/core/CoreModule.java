@@ -1,10 +1,10 @@
 package br.cdb.core;
 
-import br.cdb.core.persistence.CachingUserRepository;
-import br.cdb.core.persistence.UserJDBCRepository;
-import br.cdb.core.persistence.UserRepository;
-import br.cdb.infra.persistence.Database;
-import br.cdb.infra.persistence.core.*;
+import br.cdb.core.persistence.Database;
+import br.cdb.core.persistence.migration.*;
+import br.cdb.core.persistence.repository.CachingUserRepository;
+import br.cdb.core.persistence.repository.UserJDBCRepository;
+import br.cdb.core.persistence.repository.UserRepository;
 import br.commons.Logger;
 import br.commons.Result;
 import br.commons.Yaml;

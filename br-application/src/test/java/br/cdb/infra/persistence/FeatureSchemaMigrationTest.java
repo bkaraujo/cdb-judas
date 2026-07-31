@@ -1,6 +1,6 @@
 package br.cdb.infra.persistence;
 
-import br.cdb.infra.persistence.core.FeatureSchemaMigration;
+import br.cdb.core.persistence.migration.FeatureSchemaMigration;
 import br.commons.framework.persistence.jdbc.DataSource;
 import br.commons.framework.persistence.jdbc.JDBCProperties;
 import lombok.val;

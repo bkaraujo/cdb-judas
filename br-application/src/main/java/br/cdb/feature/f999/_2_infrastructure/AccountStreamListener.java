@@ -2,8 +2,8 @@ package br.cdb.feature.f999._2_infrastructure;
 
 import br.cdb.feature.f000._0_domain.SSE;
 import br.cdb.feature.f000._0_domain.event.AccountStreamEvents;
-import br.cdb.feature.f002._2_infrastructure.web.response.AccountResponse;
 import br.cdb.feature.f002._1_application.usecase.ReadUseCase;
+import br.cdb.feature.f002._2_infrastructure.web.response.AccountResponse;
 import br.cdb.feature.f006._1_application.usecase.ReadUseCases;
 import br.commons.MessageBus;
 import br.commons.Result;

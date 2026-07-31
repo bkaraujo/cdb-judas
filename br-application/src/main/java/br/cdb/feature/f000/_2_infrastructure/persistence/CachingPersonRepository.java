@@ -1,7 +1,7 @@
 package br.cdb.feature.f000._2_infrastructure.persistence;
 
-import br.cdb.core.persistence.AbstractCachingRepository;
-import br.cdb.core.persistence.CachingUserRepository;
+import br.cdb.core.persistence.repository.AbstractCachingRepository;
+import br.cdb.core.persistence.repository.CachingUserRepository;
 import br.cdb.feature.f000._0_domain.model.Person;
 import br.cdb.feature.f000._0_domain.repository.PersonRepository;
 import lombok.val;

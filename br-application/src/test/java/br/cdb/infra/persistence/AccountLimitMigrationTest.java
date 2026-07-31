@@ -1,6 +1,6 @@
 package br.cdb.infra.persistence;
 
-import br.cdb.infra.persistence.core.AccountLimitMigration;
+import br.cdb.core.persistence.migration.AccountLimitMigration;
 import br.commons.framework.persistence.jdbc.DataSource;
 import br.commons.framework.persistence.jdbc.JDBCProperties;
 import lombok.val;

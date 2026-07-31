@@ -12,11 +12,7 @@ import br.commons.business.BusinessError;
 import br.commons.framework.cdi.Context;
 import org.junit.jupiter.api.BeforeEach;
 
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;

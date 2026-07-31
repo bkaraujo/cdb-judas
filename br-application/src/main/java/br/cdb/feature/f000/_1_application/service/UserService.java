@@ -1,6 +1,6 @@
 package br.cdb.feature.f000._1_application.service;
 
-import br.cdb.core.persistence.UserRepository;
+import br.cdb.core.persistence.repository.UserRepository;
 import br.cdb.core.security.User;
 import br.cdb.feature.f000._0_domain.event.UserEvents;
 import br.cdb.feature.f000._1_application.usecase.WriteUseCase;

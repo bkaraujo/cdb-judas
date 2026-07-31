@@ -1,6 +1,6 @@
 package br.cdb.core.web.filter;
 
-import br.cdb.core.persistence.UserRepository;
+import br.cdb.core.persistence.repository.UserRepository;
 import br.cdb.core.security.AccessTokenStore;
 import br.cdb.core.web.HTTPRequest;
 import br.cdb.core.web.security.AuthenticatedUser;

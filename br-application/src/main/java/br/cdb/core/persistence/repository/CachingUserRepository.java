@@ -1,4 +1,4 @@
-package br.cdb.core.persistence;
+package br.cdb.core.persistence.repository;
 
 import br.cdb.core.security.User;
 import br.cdb.feature.f000._2_infrastructure.persistence.CachingPersonRepository;

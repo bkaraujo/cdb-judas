@@ -1,6 +1,6 @@
-package br.cdb.infra.persistence.core;
+package br.cdb.core.persistence.migration;
 
-import br.cdb.infra.persistence.Database;
+import br.cdb.core.persistence.Database;
 import br.commons.Logger;
 import br.commons.chrono.Time;
 import br.commons.framework.persistence.jdbc.DataSource;

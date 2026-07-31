@@ -2,12 +2,12 @@ package br.cdb.feature.f003._2_infrastructure.web;
 
 import br.cdb.feature.f000._0_domain.DeletionStrategy;
 import br.cdb.feature.f000._1_application.Deletions;
-import br.cdb.feature.f003._2_infrastructure.web.response.CardResponse;
 import br.cdb.feature.f003._1_application.command.CreditCardCommand;
 import br.cdb.feature.f003._1_application.usecase.ReadUseCase;
 import br.cdb.feature.f003._1_application.usecase.WriteUseCase;
 import br.cdb.feature.f003._2_infrastructure.web.request.CardRequest;
 import br.cdb.feature.f003._2_infrastructure.web.request.CardStatusRequest;
+import br.cdb.feature.f003._2_infrastructure.web.response.CardResponse;
 import br.commons.Result;
 import br.commons.business.BusinessException;
 import br.commons.framework.cdi.Context;

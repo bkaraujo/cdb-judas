@@ -1,6 +1,6 @@
-package br.cdb.infra.persistence;
+package br.cdb.core.persistence;
 
-import br.cdb.infra.persistence.monetary.AccountTypeMapper;
+import br.cdb.core.persistence.repository.AccountTypeMapper;
 import lombok.val;
 import org.jspecify.annotations.NullMarked;
 

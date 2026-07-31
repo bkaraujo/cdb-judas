@@ -1,4 +1,4 @@
-package br.cdb.infra.persistence.monetary;
+package br.cdb.core.persistence.repository;
 
 import br.cdb.feature.f003._2_infrastructure.persistence.CreditCardJDBCRepository;
 import br.cdb.feature.f006._2_infrastructure.persistence.TransactionJDBCRepository;
