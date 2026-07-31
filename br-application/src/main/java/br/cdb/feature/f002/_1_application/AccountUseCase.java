@@ -7,7 +7,7 @@ import br.cdb.feature.f000._0_domain.event.AccountDeleted;
 import br.cdb.feature.f000._0_domain.event.AccountStreamEvents;
 import br.cdb.feature.f000._0_domain.event.TransactionsDeleted;
 import br.cdb.feature.f000._1_application.Deletions;
-import br.cdb.feature.f000._1_application.UserGuards;
+import br.cdb.feature.f000._1_application.service.UserGuards;
 import br.cdb.feature.f002._0_domain.DeletionQueue;
 import br.cdb.feature.f002._0_domain.model.Account;
 import br.cdb.feature.f002._0_domain.model.Balance;

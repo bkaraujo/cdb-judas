@@ -6,7 +6,7 @@ import br.cdb.feature.f000._0_domain.DeletionStrategy;
 import br.cdb.feature.f000._0_domain.event.AccountStreamEvents;
 import br.cdb.feature.f000._0_domain.event.TransactionsDeleted;
 import br.cdb.feature.f000._1_application.Deletions;
-import br.cdb.feature.f000._1_application.UserGuards;
+import br.cdb.feature.f000._1_application.service.UserGuards;
 import br.cdb.feature.f003._0_domain.model.CreditCard;
 import br.cdb.feature.f003._1_application.command.CreditCardCommand;
 import br.cdb.feature.f003._1_application.usecase.CreditCardUseCase;

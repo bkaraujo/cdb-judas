@@ -1,4 +1,4 @@
-package br.cdb.feature.f000._1_application;
+package br.cdb.feature.f000._1_application.service;
 
 import br.cdb.core.persistence.UserRepository;
 import br.cdb.core.security.User;

@@ -2,7 +2,7 @@ package br.cdb.feature.f006._1_application.usecase;
 
 import br.cdb.core.web.HTTPRequest;
 import br.cdb.feature.f000._0_domain.event.AccountStreamEvents;
-import br.cdb.feature.f000._1_application.UserGuards;
+import br.cdb.feature.f000._1_application.service.UserGuards;
 import br.cdb.feature.f002._0_domain.model.Account;
 import br.cdb.feature.f002._1_application.usecase.AccountUseCase;
 import br.cdb.feature.f003._0_domain.model.CreditCard;

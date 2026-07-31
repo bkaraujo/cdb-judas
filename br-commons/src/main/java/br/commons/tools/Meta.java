@@ -10,10 +10,7 @@ import org.jspecify.annotations.Nullable;
 import java.io.Closeable;
 import java.io.IOException;
 import java.lang.reflect.Field;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Supplier;
 
@@ -126,12 +123,12 @@ public abstract class Meta {
 
     private static final StackWalker STACK_WALKER = StackWalker.getInstance(StackWalker.Option.RETAIN_CLASS_REFERENCE);
     public static List<StackFrame> stackFrame() {
-        return STACK_WALKER
+        return Collections.unmodifiableList(STACK_WALKER
                 .walk(stream -> stream
                         .filter(frame -> !isStackFrameExcluded(frame.getClassName()))
                         .map(frame -> new StackFrame(frame.getClassName(), frame.getLineNumber()))
                         .toList()
-                );
+                ));
     }
 
     public static StackFrame stackFrame(int skipFrames) {

@@ -1,7 +1,7 @@
 package br.cdb.feature;
 
 import br.cdb.core.web.HTTPRequest;
-import br.cdb.feature.f000._1_application.UserGuards;
+import br.cdb.feature.f000._1_application.service.UserGuards;
 import io.quarkus.test.junit.QuarkusTest;
 import io.restassured.RestAssured;
 import io.restassured.http.ContentType;

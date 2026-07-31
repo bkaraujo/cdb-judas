@@ -1,7 +1,7 @@
 package br.cdb.feature.f006._1_application.usecase;
 
 import br.cdb.feature.f000._1_application.InternalApi;
-import br.cdb.feature.f000._1_application.UserGuards;
+import br.cdb.feature.f000._1_application.service.UserGuards;
 import br.cdb.feature.f006._0_domain.model.Transaction;
 import br.cdb.feature.f006._1_application.service.TransactionService;
 import br.commons.Result;

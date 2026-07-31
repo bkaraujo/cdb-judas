@@ -1,6 +1,6 @@
 package br.cdb.feature.f001._0_domain;
 
-import br.cdb.feature.f000._1_application.UserGuards;
+import br.cdb.feature.f000._1_application.service.UserGuards;
 import br.cdb.feature.f001._1_application.PreferencesPatch;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;

@@ -1,6 +1,8 @@
 package br.cdb;
 
 import br.cdb.core.Logging;
+import br.commons.framework.cdi.Context;
+import br.commons.framework.persistence.jdbc.DataSource;
 import br.commons.tools.Strings;
 import io.quarkus.runtime.Quarkus;
 import io.quarkus.runtime.QuarkusApplication;
@@ -29,6 +31,7 @@ public class Application implements QuarkusApplication {
     @Override
     public int run(String... args) {
         Quarkus.waitForExit();
+        Context.get(DataSource.class).close();
         return 0;
     }
 

@@ -4,7 +4,7 @@ import br.cdb.core.web.HTTPRequest;
 import br.cdb.feature.f000._0_domain.event.AccountStreamEvents;
 import br.cdb.feature.f000._0_domain.event.TransactionsDeleted;
 import br.cdb.feature.f000._0_domain.model.CostCenter;
-import br.cdb.feature.f000._1_application.UserGuards;
+import br.cdb.feature.f000._1_application.service.UserGuards;
 import br.cdb.feature.f002._1_application.service.BalanceService;
 import br.cdb.feature.f003._0_domain.model.CreditCard;
 import br.cdb.feature.f003._1_application.service.CreditCardService;

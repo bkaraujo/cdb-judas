@@ -12,6 +12,7 @@ import org.jspecify.annotations.NullMarked;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 
@@ -29,6 +30,14 @@ public class DataSource {
 
     /** Active transactions */
     static final Map<String, ThreadLocal<JDBCTransaction>> transactions = new ConcurrentHashMap<>();
+
+    /**
+     * Transações vivas desta DataSource, de todas as threads. O {@link #transactions} é ThreadLocal —
+     * uma thread nunca vê o slot de outra —, por isso o {@link #close()} não teria como denunciar
+     * transações órfãs sem este registo paralelo. Entra em {@link #begin(String, long)} e sai em
+     * {@link JDBCTransaction#close()} (via {@link #unregister(JDBCTransaction)}).
+     */
+    private final Set<JDBCTransaction> live = ConcurrentHashMap.newKeySet();
 
     /**
      * Creates a new DataSource with the specified properties.
@@ -78,10 +87,16 @@ public class DataSource {
 
         Logger.trace("Initializing transaction '%s' with timeout: %d", name, timeout);
         return getConnection(timeout).map(connection -> {
-            val transaction = new JDBCTransaction(name, connection);
+            val transaction = new JDBCTransaction(this, name, connection);
             holder.set(transaction);
+            live.add(transaction);
             return transaction;
         });
+    }
+
+    /** Retira a transação do registo de vivas. Chamado por {@link JDBCTransaction#close()}. */
+    void unregister(JDBCTransaction transaction) {
+        live.remove(transaction);
     }
 
     /**
@@ -257,13 +272,32 @@ public class DataSource {
     /**
      * Closes this data source and releases all pooled connections.
      * After calling this method, no more connections can be acquired.
+     * Toda transação ainda aberta (sem commit nem rollback) é denunciada em WARN antes de o pool fechar.
      */
     public void close() {
         Logger.trace("Closing DataSource '%s'", name);
         if (closed) { return; }
 
         closed = true;
+        warnPendingTransactions();
         pool.close();
+    }
+
+    /**
+     * Denuncia em WARN cada transação que continua aberta no momento do fecho: são trabalhos que nunca
+     * decidiram commit/rollback e cujo destino passa a ser o rollback implícito do driver ao fechar a
+     * conexão. Serve de rastro para o vazamento (que thread e que bloco a deixou aberta).
+     */
+    private void warnPendingTransactions() {
+        for (val transaction : live) {
+            if (!transaction.isPending()) { continue; }
+
+            transaction.rollback();
+            Logger.warn("DataSource '%s' closed with transaction '%s' still open (thread '%s', depth %d): rollback-ed",
+                    name, transaction.name(), transaction.ownerThread(), transaction.depth());
+        }
+
+        live.clear();
     }
 
     @Override

@@ -1,4 +1,4 @@
-package br.cdb.feature.f000._1_application;
+package br.cdb.feature.f000._1_application.service;
 
 import br.cdb.core.web.HTTPRequest;
 import br.cdb.feature.f002._0_domain.model.Account;

@@ -1,6 +1,6 @@
 package br.cdb.feature;
 
-import br.cdb.feature.f000._1_application.UserService;
+import br.cdb.feature.f000._1_application.service.UserService;
 import br.cdb.feature.f005._1_application.UserCategoryService;
 import br.commons.Result;
 import br.commons.framework.persistence.jdbc.primitives.JDBCParameter;

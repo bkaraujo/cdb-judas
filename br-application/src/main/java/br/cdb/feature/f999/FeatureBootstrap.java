@@ -2,8 +2,7 @@ package br.cdb.feature.f999;
 
 import br.cdb.feature.f000.F000Module;
 import br.cdb.feature.f000._1_application.InternalApi;
-import br.cdb.feature.f000._1_application.UserGuards;
-import br.cdb.feature.f000._1_application.UserService;
+import br.cdb.feature.f000._1_application.service.UserGuards;
 import br.cdb.feature.f001.F001Module;
 import br.cdb.feature.f002.F002Module;
 import br.cdb.feature.f003.F003Module;

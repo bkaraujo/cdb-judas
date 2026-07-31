@@ -14,9 +14,14 @@ import java.util.function.Function;
 @NullMarked
 public class JDBCTransaction {
 
+    private final DataSource dataSource;
+
     private final JDBCConnection connection;
 
     private final String name;
+
+    /** Thread que abriu a transação — só serve para identificar o dono no aviso de transação órfã. */
+    private final String ownerThread;
 
     /**
      * Nível de reentrância (propagação REQUIRED): a instância nasce no nível 1 (o {@code begin()} que a
@@ -28,9 +33,17 @@ public class JDBCTransaction {
     /** Marcado por um bloco aninhado que falhou: o nível externo reverte em vez de commitar. */
     private boolean rollbackOnly;
 
-    JDBCTransaction(String name, JDBCConnection connection) {
+    /**
+     * {@code true} depois de o nível mais externo ter commitado ou revertido. Enquanto for {@code false}
+     * a transação está aberta e pendente de decisão — é o que {@link DataSource#close()} denuncia.
+     */
+    private volatile boolean settled;
+
+    JDBCTransaction(DataSource dataSource, String name, JDBCConnection connection) {
+        this.dataSource = dataSource;
         this.name = name;
         this.connection = connection;
+        this.ownerThread = Thread.currentThread().getName();
     }
 
     /** Regista mais um nível de reentrância. Chamado por {@link DataSource#begin(String, long)}. */
@@ -51,6 +64,23 @@ public class JDBCTransaction {
 
     boolean isRollbackOnly() {
         return rollbackOnly;
+    }
+
+    /** {@code true} enquanto a transação estiver aberta sem commit nem rollback. */
+    boolean isPending() {
+        return !settled;
+    }
+
+    String name() {
+        return name;
+    }
+
+    String ownerThread() {
+        return ownerThread;
+    }
+
+    int depth() {
+        return depth;
     }
 
     public <T> Result<T, String> execute(Function<JDBCConnection, Result<T, String>> function) {
@@ -140,6 +170,7 @@ public class JDBCTransaction {
 
         Logger.trace("Committing transaction");
         return connection.commit().map(c -> {
+            settled = true;
             connection.close() ;
             return true;
         });
@@ -151,6 +182,7 @@ public class JDBCTransaction {
 
         Logger.trace("Rolling back transaction");
         return connection.rollback().map(c -> {
+            settled = true;
             connection.close() ;
             return true;
         });
@@ -174,6 +206,8 @@ public class JDBCTransaction {
 
     /** Liberta o slot da transação nesta thread para que o próximo begin() crie uma nova. */
     private void unbind() {
+        dataSource.unregister(this);
+
         val holder = DataSource.transactions.get(name);
         if (holder != null) {
             holder.remove();
