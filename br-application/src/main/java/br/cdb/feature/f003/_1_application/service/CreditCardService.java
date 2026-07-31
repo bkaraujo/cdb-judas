@@ -2,9 +2,9 @@ package br.cdb.feature.f003._1_application.service;
 
 import br.cdb.feature.f003._0_domain.model.CreditCard;
 import br.cdb.feature.f003._0_domain.repository.CreditCardRepository;
-import br.commons.framework.cdi.Context;
 import br.commons.Result;
 import br.commons.business.BusinessError;
+import br.commons.framework.cdi.Context;
 import org.jspecify.annotations.NullMarked;
 
 import java.util.List;

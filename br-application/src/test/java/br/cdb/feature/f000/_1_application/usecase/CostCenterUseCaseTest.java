@@ -5,7 +5,6 @@ import br.cdb.feature.f000._0_domain.model.CostCenter;
 import br.cdb.feature.f000._1_application.command.CostCenterCommand;
 import br.commons.Result;
 import br.commons.business.BusinessError;
-import br.commons.framework.cdi.Context;
 import lombok.val;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;

@@ -7,7 +7,6 @@ import br.commons.tools.Strings;
 import io.quarkus.runtime.Quarkus;
 import io.quarkus.runtime.QuarkusApplication;
 import io.quarkus.runtime.annotations.QuarkusMain;
-import lombok.val;
 import org.jspecify.annotations.NullMarked;
 
 @NullMarked
