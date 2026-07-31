@@ -11,33 +11,37 @@ import br.cdb.feature.f003._1_application.service.CreditCardService;
 import br.cdb.feature.f006._0_domain.repository.TransactionRepository;
 import br.cdb.feature.f006._1_application.service.TransactionService;
 import br.commons.MessageBus;
-import br.commons.Registry;
+import br.commons.framework.cdi.Context;
 import org.jspecify.annotations.NullMarked;
 import org.junit.jupiter.api.BeforeEach;
 
 @NullMarked
 public abstract class AbstractUseCaseTest {
 
-    protected CreditCardRepository cardRepository() { return Registry.get(CreditCardRepository.class); }
-    protected BalanceRepository balanceRepository() { return Registry.get(BalanceRepository.class); }
-    protected AccountRepository accountRepository() { return Registry.get(AccountRepository.class); }
-    protected CostCenterRepository costCenterRepository() { return Registry.get(CostCenterRepository.class); }
-    protected TransactionRepository transactionRepository() { return Registry.get(TransactionRepository.class); }
+    protected CreditCardRepository cardRepository() { return Context.get(CreditCardRepository.class); }
+    protected BalanceRepository balanceRepository() { return Context.get(BalanceRepository.class); }
+    protected AccountRepository accountRepository() { return Context.get(AccountRepository.class); }
+    protected CostCenterRepository costCenterRepository() { return Context.get(CostCenterRepository.class); }
+    protected TransactionRepository transactionRepository() { return Context.get(TransactionRepository.class); }
 
     @BeforeEach
     public void beforeEach() {
         MessageBus.reset();
-        Registry.remove(CreditCardService.class);
-        Registry.remove(AccountService.class);
-        Registry.remove(BalanceService.class);
-        Registry.remove(CostCenterService.class);
-        Registry.remove(TransactionService.class);
+        Context.remove(CreditCardService.class);
+        Context.remove(AccountService.class);
+        Context.remove(BalanceService.class);
+        Context.remove(CostCenterService.class);
+        Context.remove(TransactionService.class);
 
-        Registry.tryGet(CreditCardRepository.class, InMemoryRepositories.Cards::new).clearCache();
-        Registry.tryGet(BalanceRepository.class, InMemoryRepositories.Balances::new).clearCache();
-        Registry.tryGet(AccountRepository.class, InMemoryRepositories.Accounts::new).clearCache();
-        Registry.tryGet(TransactionRepository.class, InMemoryRepositories.Transactions::new).clearCache();
-        Registry.tryGet(CostCenterRepository.class, InMemoryRepositories.CostCenters::new).clearCache();
+        Context.tryGet(CreditCardRepository.class, InMemoryRepositories.Cards::new).clearCache();
+        Context.tryGet(BalanceRepository.class, InMemoryRepositories.Balances::new).clearCache();
+        Context.tryGet(AccountRepository.class, InMemoryRepositories.Accounts::new).clearCache();
+        Context.tryGet(TransactionRepository.class, InMemoryRepositories.Transactions::new).clearCache();
+        Context.tryGet(CostCenterRepository.class, InMemoryRepositories.CostCenters::new).clearCache();
+
+        // CostCenterUseCase resolve o service com Context.get() estrito (em produção quem registra é
+        // F000Module): re-registra sobre os fakes acima, depois de removido.
+        Context.set(CostCenterService.class, CostCenterService::new);
     }
 
 }

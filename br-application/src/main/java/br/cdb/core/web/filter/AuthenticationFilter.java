@@ -5,9 +5,9 @@ import br.cdb.core.security.AccessTokenStore;
 import br.cdb.core.web.HTTPRequest;
 import br.cdb.core.web.security.AuthenticatedUser;
 import br.commons.Logger;
+import br.commons.framework.cdi.Context;
 import br.commons.framework.logger.MDC;
 import jakarta.annotation.Priority;
-import jakarta.enterprise.inject.Instance;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.Priorities;
 import jakarta.ws.rs.container.ContainerRequestContext;
@@ -34,14 +34,14 @@ public class AuthenticationFilter implements ContainerRequestFilter {
     AccessTokenStore tokenStore;
 
     /**
-     * {@code Instance} (não injeção direta) de propósito: filtros {@code @Provider} são construídos
-     * na montagem do deployment JAX-RS, antes do {@code StartupEvent} — resolver {@code UserRepository}
-     * (e, por trás dele, o {@code DataSource} via {@code Registry}) cedo demais quebra o boot. Adiar
-     * para o primeiro uso em {@link #authenticate} garante que o {@code StartupEvent} de
-     * {@code ContextBridge} já publicou o {@code DataSource} no {@code Registry}.
+     * Resolvido por chamada, nunca em campo: filtros {@code @Provider} são construídos na montagem do
+     * deployment JAX-RS, antes do {@code StartupEvent} — resolver {@code UserRepository} (e, por trás
+     * dele, o {@code DataSource}) na construção quebraria o boot. Adiar para o primeiro uso garante
+     * que {@code CoreModule} já publicou os dois no {@code Context}.
      */
-    @Inject
-    Instance<UserRepository> userRepository;
+    private static UserRepository userRepository() {
+        return Context.get(UserRepository.class);
+    }
 
     @Override
     public void filter(ContainerRequestContext request) {
@@ -77,7 +77,7 @@ public class AuthenticationFilter implements ContainerRequestFilter {
     }
 
     private void authenticateStream(String userId, ContainerRequestContext request) {
-        val user = userRepository.get().findById(userId).orElse(null);
+        val user = userRepository().findById(userId).orElse(null);
         if (user == null || user.personId() == null) {
             Logger.debug("AUTHN %s %s => token references unknown user '%s'", request.getMethod(), HTTPRequest.path(request), userId);
             return;
@@ -87,7 +87,7 @@ public class AuthenticationFilter implements ContainerRequestFilter {
     }
 
     private void authenticate(String userId, ContainerRequestContext request) {
-        val user = userRepository.get().findById(userId).orElse(null);
+        val user = userRepository().findById(userId).orElse(null);
         if (user == null || user.personId() == null) {
             Logger.debug("AUTHN %s %s => token references unknown user '%s'", request.getMethod(), HTTPRequest.path(request), userId);
             return;

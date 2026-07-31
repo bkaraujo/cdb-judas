@@ -1,26 +1,22 @@
 package br.cdb.feature.f999._1_application;
 
+import br.commons.framework.cdi.Context;
 import io.quarkus.scheduler.Scheduled;
 import jakarta.enterprise.context.ApplicationScoped;
-import lombok.RequiredArgsConstructor;
 import org.jspecify.annotations.NullMarked;
 
 /**
  * Amarra o timer de produção a {@link DeletionQueueService#runOnce}, o método testado direto (ver
- * {@code DeletionQueueServiceTest}). Classe própria (não {@code F999Module}) de propósito: um
- * produtor CDI de {@code DeletionQueueRepository} vive em {@code F999Module}, e injetar
- * {@link DeletionQueueService} (que depende dessa porta) de volta nele criaria um ciclo — o próprio
- * bean precisando do produtor que ele mesmo hospeda.
+ * {@code DeletionQueueServiceTest}). Classe própria (não {@code F999Module}) porque o módulo não é
+ * mais um bean CDI: aqui mora o único {@code @Scheduled} da fatia, e o serviço vem do {@link Context}
+ * a cada disparo — resolvido tarde, nunca no boot (o adaptador JDBC precisa do schema já criado).
  */
 @NullMarked
 @ApplicationScoped
-@RequiredArgsConstructor
 public class DeletionQueuePurgeJob {
 
-    private final DeletionQueueService deletionQueueService;
-
-    @Scheduled(every = "5m")
+    @Scheduled(every = "5m", delayed = "5m")
     void purge() {
-        deletionQueueService.runOnce();
+        Context.get(DeletionQueueService.class).runOnce();
     }
 }

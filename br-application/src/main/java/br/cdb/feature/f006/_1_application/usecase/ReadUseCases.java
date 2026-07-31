@@ -4,9 +4,9 @@ import br.cdb.feature.f000._1_application.InternalApi;
 import br.cdb.feature.f000._1_application.UserGuards;
 import br.cdb.feature.f006._0_domain.model.Transaction;
 import br.cdb.feature.f006._1_application.service.TransactionService;
-import br.commons.Registry;
 import br.commons.Result;
 import br.commons.business.BusinessError;
+import br.commons.framework.cdi.Context;
 import lombok.val;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
@@ -15,11 +15,11 @@ import java.time.LocalDate;
 import java.util.*;
 
 /**
- * Toda a leitura de transação da fatia {@code f006} — o par de {@link WriteUseCases}. Registry-wired
- * como as demais classes ex-contexto ({@code Registry.tryGet(ReadUseCases.class)}, nunca {@code @Inject}).
+ * Toda a leitura de transação da fatia {@code f006} — o par de {@link WriteUseCases}. Context-wired
+ * como as demais classes ex-contexto ({@code Context.tryGet(ReadUseCases.class)}, nunca {@code @Inject}).
  *
  * <p>A guarda de propriedade (anti-IDOR) da listagem vive aqui, não mais numa camada de fronteira
- * acima: {@link UserGuards} e {@link InternalApi} são beans CDI resolvidos pelo {@code Registry}
+ * acima: {@link UserGuards} e {@link InternalApi} são beans CDI resolvidos pelo {@code Context}
  * (publicados por {@code F006Module} no {@code StartupEvent}) e alcançados <b>sob demanda</b> —
  * {@code UserGuards} é {@code @RequestScoped}, então só pode ser tocado dentro de uma requisição.
  * As consultas por {@code personId} têm, além disso, a <b>guarda implícita</b> do
@@ -28,7 +28,7 @@ import java.util.*;
 @NullMarked
 public class ReadUseCases {
 
-    private final TransactionService service = Registry.tryGet(TransactionService.class);
+    private final TransactionService service = Context.tryGet(TransactionService.class);
 
     /** Corpo mínimo do endpoint interno {@code GET /categories/transfer} (f005) — zero tipo
      *  cross-slice, mesma regra dos antigos ports. */
@@ -42,11 +42,11 @@ public class ReadUseCases {
 
     /** Bean CDI resolvido a cada chamada: {@code @RequestScoped}, nunca guardado em campo. */
     private static UserGuards guards() {
-        return Registry.get(UserGuards.class);
+        return Context.get(UserGuards.class);
     }
 
     private static InternalApi internalApi() {
-        return Registry.get(InternalApi.class);
+        return Context.get(InternalApi.class);
     }
 
     /** Filtro da listagem HTTP; campos nulos não filtram. {@code limit} ≤ 0 também não pagina. */

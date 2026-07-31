@@ -8,9 +8,9 @@ import br.cdb.feature.f001._0_domain.PreferencesRepository;
 import br.cdb.feature.f001._0_domain.Profile;
 import br.cdb.feature.f001._1_application.PreferencesPatch;
 import br.cdb.feature.f001._1_application.ProfileService;
-import br.commons.Registry;
 import br.commons.Result;
 import br.commons.business.BusinessError;
+import br.commons.framework.cdi.Context;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -52,9 +52,11 @@ class F001ProfileServiceTest {
     void setUp() {
         people = new InMemoryPeople();
         prefs = new InMemoryPreferences();
-        Registry.remove(PersonService.class);
-        Registry.set(PersonRepository.class, () -> people);
-        useCase = new ProfileService(prefs);
+        // PersonService é registrado por F000Module em produção; aqui, sobre o repositório fake.
+        Context.set(PersonRepository.class, () -> people);
+        Context.set(PersonService.class, () -> new PersonService(people));
+        Context.set(PreferencesRepository.class, () -> prefs);
+        useCase = new ProfileService();
     }
 
     @Test

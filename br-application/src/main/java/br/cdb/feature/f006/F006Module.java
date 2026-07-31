@@ -1,97 +1,61 @@
 package br.cdb.feature.f006;
 
-import br.cdb.feature.f000._1_application.InternalApi;
-import br.cdb.feature.f000._1_application.UserGuards;
 import br.cdb.feature.f004._0_domain.event.TagEvents;
 import br.cdb.feature.f006._0_domain.CreditCardProvider;
 import br.cdb.feature.f006._0_domain.repository.TransactionRepository;
 import br.cdb.feature.f006._1_application.service.StatementImportService;
 import br.cdb.feature.f006._1_application.usecase.ReadUseCases;
 import br.cdb.feature.f006._1_application.usecase.WriteUseCases;
+import br.cdb.feature.f006._2_infrastructure.MonetaryCardProvider;
+import br.cdb.feature.f006._2_infrastructure.persistence.TransactionJDBCRepository;
 import br.cdb.feature.f006._2_infrastructure.provider.BTGInvoiceParser;
 import br.cdb.feature.f006._2_infrastructure.provider.BTGStatementParser;
 import br.cdb.feature.f006._2_infrastructure.provider.SantanderInvoiceParser;
 import br.cdb.feature.f006._2_infrastructure.provider.SantanderStatementParser;
 import br.commons.Logger;
 import br.commons.MessageBus;
-import br.commons.Registry;
+import br.commons.Result;
+import br.commons.annotation.Lifecycle;
+import br.commons.framework.cdi.Context;
 import br.commons.framework.message.MessageListener;
 import br.commons.framework.message.MessageResult;
 import br.commons.pdf.PdfBoxTextExtractor;
 import br.commons.pdf.PdfTextExtractor;
-import io.quarkus.runtime.StartupEvent;
-import jakarta.annotation.Priority;
-import jakarta.enterprise.context.ApplicationScoped;
-import jakarta.enterprise.event.Observes;
-import jakarta.enterprise.inject.Produces;
-import jakarta.inject.Singleton;
 import lombok.val;
 import org.jspecify.annotations.NullMarked;
 
 import java.util.List;
 
 /**
- * Módulo CDI da fatia {@code f006} (transactions + transfer + importação de extrato/fatura — f007
- * fundida aqui na fase 6 de {@code .claude/plan.md}). {@link #statementImportService}
- * amarra o extrator de PDF (utilitário técnico) e os parsers; {@link StatementImportService} alcança
- * as engines Registry-wired (ex-contexto monetário) de f002/f003/f006 via {@code Registry.tryGet(...)}.
+ * Módulo da fatia {@code f006} (transactions + transfer + importação de extrato/fatura — f007
+ * fundida aqui na fase 6 de {@code .claude/plan.md}). Amarra o extrator de PDF (utilitário técnico)
+ * e os parsers em {@link StatementImportService}; o par CQRS {@link ReadUseCases}/
+ * {@link WriteUseCases} monta-se sozinho no {@link Context} ({@code Context.tryGet(...)} no primeiro
+ * consumidor), como as demais classes ex-contexto.
  */
 @NullMarked
-@ApplicationScoped
-public class F006Module {
+public class F006Module implements Lifecycle {
 
     private static final int MAX_STATEMENT_PAGES = 50;
     private static final long MAX_STATEMENT_FILE_BYTES = 10L * 1024 * 1024;
 
-    /** Leitura/escrita da fatia (Registry-wired) expostas como bean para os {@code *Resource} injetarem. */
-    @Produces
-    @Singleton
-    ReadUseCases readUseCases() {
-        return Registry.tryGet(ReadUseCases.class);
-    }
+    @Override
+    public Result<Void, Throwable> initialize() {
+        Logger.debug("Iniciando módulo..");
 
-    @Produces
-    @Singleton
-    WriteUseCases writeUseCases() {
-        return Registry.tryGet(WriteUseCases.class);
-    }
-
-    @Produces
-    @Singleton
-    PdfTextExtractor pdfTextExtractor() {
-        return new PdfBoxTextExtractor(MAX_STATEMENT_PAGES);
-    }
-
-    @Produces
-    @Singleton
-    StatementImportService statementImportService(
-            CreditCardProvider creditCardProvider,
-            PdfTextExtractor extractor
-    ) {
-        return new StatementImportService(
-                creditCardProvider,
-                extractor,
+        Context.set(TransactionRepository.class, TransactionJDBCRepository::new);
+        Context.set(CreditCardProvider.class, MonetaryCardProvider::new);
+        Context.set(PdfTextExtractor.class, () -> new PdfBoxTextExtractor(MAX_STATEMENT_PAGES));
+        Context.set(StatementImportService.class, () -> new StatementImportService(
+                Context.get(CreditCardProvider.class),
+                Context.get(PdfTextExtractor.class),
                 List.of(
                         new BTGStatementParser(),
                         new BTGInvoiceParser(),
                         new SantanderStatementParser(),
                         new SantanderInvoiceParser()
                 ),
-                MAX_STATEMENT_FILE_BYTES);
-    }
-
-    /**
-     * Costura CDI→Registry da fatia: {@link ReadUseCases}/{@link WriteUseCases} são Registry-wired
-     * (sem {@code @Inject}) mas precisam de dois beans CDI de {@code f000} — {@link UserGuards}
-     * (guarda anti-IDOR, {@code @RequestScoped}) e {@link InternalApi} (leitura cross-slice). O que
-     * entra no Registry é a referência injetada aqui: para {@code UserGuards} isso é o client proxy
-     * do CDI, então cada chamada resolve a instância da requisição corrente.
-     */
-    void onStart(@Observes @Priority(6) StartupEvent ev, UserGuards guards, InternalApi internalApi) {
-        Logger.debug("Iniciando módulo..");
-
-        Registry.set(UserGuards.class, () -> guards);
-        Registry.set(InternalApi.class, () -> internalApi);
+                MAX_STATEMENT_FILE_BYTES));
 
         MessageBus.subscribe(new Object(){
 
@@ -99,7 +63,7 @@ public class F006Module {
             public MessageResult onTagDeleted(TagEvents.Deleted message) {
                 Logger.debug("Processing %s", message);
 
-                val transactions = Registry.get(TransactionRepository.class);
+                val transactions = Context.get(TransactionRepository.class);
                 val tagId = message.tag().id();
                 val personId = message.tag().personId();
 
@@ -124,5 +88,7 @@ public class F006Module {
                 };
             }
         });
+
+        return Result.success();
     }
 }

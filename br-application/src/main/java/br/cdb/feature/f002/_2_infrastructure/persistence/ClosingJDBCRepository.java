@@ -2,8 +2,8 @@ package br.cdb.feature.f002._2_infrastructure.persistence;
 
 import br.cdb.core.web.HTTPRequest;
 import br.cdb.feature.f002._0_domain.repository.ClosingRepository;
-import br.commons.Registry;
 import br.commons.Result;
+import br.commons.framework.cdi.Context;
 import br.commons.framework.persistence.jdbc.DataSource;
 import br.commons.framework.persistence.jdbc.primitives.JDBCParameter;
 import lombok.val;
@@ -18,7 +18,7 @@ public class ClosingJDBCRepository implements ClosingRepository {
 
     private static final String KEY = "closing";
 
-    private final DataSource dataSource = Registry.get(DataSource.class);
+    private final DataSource dataSource = Context.get(DataSource.class);
 
     @Override
     public Optional<YearMonth> find() {

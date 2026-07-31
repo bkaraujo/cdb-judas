@@ -17,7 +17,7 @@ import java.util.List;
  * deixaram de ser {@code MON_ACCOUNT_LIMIT} (linha própria por conta) e viraram colunas direto em
  * {@code MON_ACCOUNT}.
  *
- * <p>{@link #apply(DataSource)} é chamado por {@code ContextBridge.dataSource(...)} logo após
+ * <p>{@link #apply(DataSource)} é chamado por {@code CoreModule.dataSource(...)} logo após
  * {@link LegacyCardMigration#apply(DataSource)}. Detecta se a tabela {@code MON_ACCOUNT_LIMIT}
  * ainda existe; se não — banco novo ou já migrado — não faz nada. Roda um backup online (arquivo
  * {@code .zip}) antes de qualquer alteração.

@@ -1,5 +1,6 @@
-package br.commons;
+package br.commons.framework.cdi;
 
+import br.commons.Logger;
 import br.commons.tools.Meta;
 import br.commons.tools.Threads;
 import lombok.val;
@@ -12,7 +13,7 @@ import java.util.function.Supplier;
 
 /**
  * <p>
- *     The Registry class is a utility for managing singleton instances of various types
+ *     The Context class is a utility for managing singleton instances of various types
  *     in a thread-safe manner. It provides methods for storing, retrieving, and removing
  *     instances associated with specific types.
  *</p>
@@ -22,12 +23,12 @@ import java.util.function.Supplier;
  * </p>
  */
 @NullMarked
-public abstract class Registry {
+public abstract class Context {
 
     private static final ReentrantLock lock = new ReentrantLock();
     private static final Map<Class<?>, Object> registry = new ConcurrentHashMap<>();
 
-    private Registry(){}
+    private Context(){}
 
     public static <T> T get(Class<T> type) {
         return Threads.locked(lock,  () -> {
@@ -53,7 +54,7 @@ public abstract class Registry {
 
     public static <T> void set(Class<T> type, Supplier<T> instance) {
         Threads.locked(lock, () -> {
-            Logger.verbose("Registering %s", type);
+            Logger.debug("Registering %s", type);
             registry.put(type, instance.get());
         });
     }
@@ -64,13 +65,13 @@ public abstract class Registry {
 
     public static void remove(Class<?> type) {
         Threads.locked(lock, () -> {
-            Logger.verbose("Removing %s", type);
+            Logger.debug("Removing %s", type);
             registry.remove(type);
         });
     }
 
     public static void clear() {
-        Logger.verbose("Clearing registry");
+        Logger.debug("Clearing registry");
         Threads.locked(lock, registry::clear);
     }
 

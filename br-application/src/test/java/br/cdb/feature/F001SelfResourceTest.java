@@ -5,10 +5,10 @@ import br.cdb.feature.f000._0_domain.model.Person;
 import br.cdb.feature.f000._0_domain.repository.PersonRepository;
 import br.cdb.feature.f001._0_domain.Preferences;
 import br.cdb.feature.f001._0_domain.PreferencesRepository;
+import br.commons.framework.cdi.Context;
 import io.quarkus.test.junit.QuarkusTest;
 import io.restassured.RestAssured;
 import io.restassured.http.ContentType;
-import jakarta.inject.Inject;
 import org.junit.jupiter.api.Test;
 
 import java.util.UUID;
@@ -25,11 +25,9 @@ import static org.hamcrest.Matchers.nullValue;
 @QuarkusTest
 public class F001SelfResourceTest extends BaseHttpTest {
 
-    @Inject
-    PreferencesRepository preferencesRepository;
+    final PreferencesRepository preferencesRepository = Context.get(PreferencesRepository.class);
 
-    @Inject
-    PersonRepository personRepository;
+    final PersonRepository personRepository = Context.get(PersonRepository.class);
 
     @Test
     void getMeAutenticadoRetorna200ComPerfil() {

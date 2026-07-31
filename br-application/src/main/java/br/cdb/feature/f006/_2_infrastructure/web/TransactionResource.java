@@ -7,10 +7,10 @@ import br.cdb.feature.f006._2_infrastructure.web.request.TransactionRequest;
 import br.cdb.feature.f006._2_infrastructure.web.response.TransactionResponse;
 import br.commons.Result;
 import br.commons.business.BusinessException;
+import br.commons.framework.cdi.Context;
 import jakarta.validation.Valid;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
-import lombok.RequiredArgsConstructor;
 import lombok.val;
 import org.jboss.resteasy.reactive.RestResponse;
 import org.jspecify.annotations.NullMarked;
@@ -24,11 +24,10 @@ import java.util.UUID;
 @NullMarked
 @Path("/api/{uuid}/accounts")
 @Produces(MediaType.APPLICATION_JSON)
-@RequiredArgsConstructor
 public class TransactionResource {
 
-    private final ReadUseCases reads;
-    private final WriteUseCases writes;
+    private final ReadUseCases reads = Context.tryGet(ReadUseCases.class);
+    private final WriteUseCases writes = Context.tryGet(WriteUseCases.class);
 
     // ── Cross-account collection ───────────────────────────────────
 

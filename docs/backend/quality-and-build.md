@@ -31,7 +31,19 @@ Compile o pacote alterado contra `target/classes`:
 ```
 JDK 23+ só roda processadores de anotação com `-proc:full` (ou `-proc:only`); sem isso o lombok nunca desugara `val` → "cannot find symbol class val". O jar do lombok no classpath fornece o processador; o do jspecify resolve `@NullMarked`. Jars em `~/.m2/repository`. Isso **não** roda NullAway/ErrorProne — é só type-check, não o gate de null-safety.
 
-## 4. Run/debug pela IntelliJ (específico de ambiente)
+## 4. Configuração YAML nos testes (`cdb.application.yaml`)
+
+`CoreModule` lê o YAML de configuração pelo caminho da system property **`cdb.application.yaml`** (default `application.yaml`, relativo ao CWD). O fork do surefire roda em `br-application/`, onde esse arquivo não existe — e o da raiz aponta pro H2 **em arquivo** (`./database`), que teste nenhum pode tocar.
+
+Por isso o `pom.xml` de `br-application` configura o surefire com:
+```xml
+<systemPropertyVariables>
+  <cdb.application.yaml>${project.build.testOutputDirectory}/application.test.yaml</cdb.application.yaml>
+</systemPropertyVariables>
+```
+O arquivo é `br-application/src/test/resources/application.test.yaml`: H2 **in-memory** e `cdb.internal.base-url` na porta 8081 (a do perfil `%test` do Quarkus, que `quarkus.http.port` não muda). Rodando um teste pela IDE, passe a mesma `-D` na run config.
+
+## 5. Run/debug pela IntelliJ (específico de ambiente)
 
 > Os caminhos abaixo são da máquina do autor; ajuste aos seus.
 

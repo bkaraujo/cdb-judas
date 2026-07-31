@@ -2,7 +2,7 @@ package br.cdb.feature.f006._1_application.event;
 
 import br.cdb.feature.f002._1_application.service.BalanceService;
 import br.cdb.feature.f006._0_domain.event.TransactionEvents;
-import br.commons.Registry;
+import br.commons.framework.cdi.Context;
 import br.commons.framework.message.MessageListener;
 import br.commons.framework.message.MessageResult;
 import org.jspecify.annotations.NullMarked;
@@ -10,7 +10,7 @@ import org.jspecify.annotations.NullMarked;
 @NullMarked
 public class TransactionEventListener {
 
-    private final BalanceService service = Registry.tryGet(BalanceService.class);
+    private final BalanceService service = Context.tryGet(BalanceService.class);
 
     @MessageListener
     public MessageResult onTransaction(TransactionEvents.Created transaction) {

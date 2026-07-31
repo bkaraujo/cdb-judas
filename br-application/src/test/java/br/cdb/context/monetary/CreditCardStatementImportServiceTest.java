@@ -19,12 +19,12 @@ import br.cdb.feature.f006._0_domain.event.TransactionEvents;
 import br.cdb.feature.f006._0_domain.model.Transaction;
 import br.cdb.feature.f006._0_domain.repository.TransactionRepository;
 import br.cdb.feature.f006._1_application.GroupSignature;
-import br.cdb.feature.f006._1_application.service.StatementImportService;
 import br.cdb.feature.f006._1_application.TransactionOverlayListener;
 import br.cdb.feature.f006._1_application.confirm.InvoiceConfirmCommand;
 import br.cdb.feature.f006._1_application.preview.ImportPreview;
 import br.cdb.feature.f006._1_application.preview.ImportPreviewOutcome;
 import br.cdb.feature.f006._1_application.preview.PreviewRow;
+import br.cdb.feature.f006._1_application.service.StatementImportService;
 import br.cdb.feature.f006._1_application.service.TransactionService;
 import br.cdb.feature.f006._1_application.usecase.ReadUseCases;
 import br.cdb.feature.f006._1_application.usecase.WriteUseCases;
@@ -33,9 +33,9 @@ import br.cdb.feature.f006._2_infrastructure.provider.BTGStatementParser;
 import br.cdb.feature.f006._2_infrastructure.provider.SantanderInvoiceParser;
 import br.cdb.feature.f006._2_infrastructure.provider.SantanderStatementParser;
 import br.commons.MessageBus;
-import br.commons.Registry;
 import br.commons.Result;
 import br.commons.business.BusinessError;
+import br.commons.framework.cdi.Context;
 import br.commons.pdf.ExtractionFailure;
 import br.commons.pdf.PdfTextExtractor;
 import lombok.val;
@@ -100,32 +100,32 @@ class CreditCardStatementImportServiceTest {
     }
 
     /**
-     * Reseta o grafo Registry-wired do contexto (services/use cases se auto-conectam via
-     * Registry.tryGet — sem isso, a chamada seguinte reaproveitaria os singletons presos aos fakes
+     * Reseta o grafo Context-wired do contexto (services/use cases se auto-conectam via
+     * Context.tryGet — sem isso, a chamada seguinte reaproveitaria os singletons presos aos fakes
      * do teste anterior) e publica fakes novos antes de construir o {@code StatementImportService},
-     * cujos campos resolvem os use cases via {@code Registry.tryGet(...)} na construção.
+     * cujos campos resolvem os use cases via {@code Context.tryGet(...)} na construção.
      */
     private static void resetMonetaryRegistry(
             InMemoryRepositories.Accounts accounts,
             InMemoryRepositories.Transactions transactions,
             InMemoryRepositories.Cards cardRepo) {
         MessageBus.reset();
-        Registry.remove(AccountService.class);
-        Registry.remove(BalanceService.class);
-        Registry.remove(TransactionService.class);
-        Registry.remove(CreditCardService.class);
-        Registry.remove(CostCenterService.class);
-        Registry.remove(AccountUseCase.class);
-        Registry.remove(WriteUseCases.class);
-        Registry.remove(ReadUseCases.class);
-        Registry.remove(CostCenterUseCase.class);
-        Registry.remove(CreditCardUseCase.class);
+        Context.remove(AccountService.class);
+        Context.remove(BalanceService.class);
+        Context.remove(TransactionService.class);
+        Context.remove(CreditCardService.class);
+        Context.remove(CostCenterService.class);
+        Context.remove(AccountUseCase.class);
+        Context.remove(WriteUseCases.class);
+        Context.remove(ReadUseCases.class);
+        Context.remove(CostCenterUseCase.class);
+        Context.remove(CreditCardUseCase.class);
 
-        Registry.set(AccountRepository.class, () -> accounts);
-        Registry.set(BalanceRepository.class, InMemoryRepositories.Balances::new);
-        Registry.set(TransactionRepository.class, () -> transactions);
-        Registry.set(CostCenterRepository.class, InMemoryRepositories.CostCenters::new);
-        Registry.set(CreditCardRepository.class, () -> cardRepo);
+        Context.set(AccountRepository.class, () -> accounts);
+        Context.set(BalanceRepository.class, InMemoryRepositories.Balances::new);
+        Context.set(TransactionRepository.class, () -> transactions);
+        Context.set(CostCenterRepository.class, InMemoryRepositories.CostCenters::new);
+        Context.set(CreditCardRepository.class, () -> cardRepo);
     }
 
     /** Cartão do contexto: identificado só pelo last4, sempre vinculado a uma conta real existente. */

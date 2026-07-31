@@ -1,5 +1,6 @@
 package br.cdb.feature.f000._1_application;
 
+import br.cdb.core.CoreModule;
 import br.cdb.core.security.AccessTokenStore;
 import br.cdb.core.web.HTTPRequest;
 import br.commons.tools.Threads;
@@ -7,7 +8,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.inject.Inject;
 import jakarta.inject.Singleton;
 import lombok.val;
-import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.jspecify.annotations.NullMarked;
 
 import java.io.IOException;
@@ -15,6 +15,7 @@ import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.util.Objects;
 
 /**
  * Leitura cross-slice síncrona: chama o endpoint público da fatia dona via HTTP real (loopback),
@@ -35,8 +36,7 @@ public class InternalApi {
     @Inject
     ObjectMapper mapper;
 
-    @ConfigProperty(name = "cdb.internal.base-url")
-    String baseUrl;
+    private final String baseUrl = Objects.requireNonNull(CoreModule.yaml.asString("cdb.internal.base-url"));
 
     private final HttpClient client = HttpClient.newHttpClient();
 

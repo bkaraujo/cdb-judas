@@ -39,12 +39,12 @@ O projeto abrange frontend e backend, com forte separação arquitetural interna
 ### Backend (Java 25 + Quarkus)
 
 - **Vertical Slice Architecture (VSA):** Cada funcionalidade vive isolada numa fatia numerada `br.cdb.feature.fNNN` (hoje `f000`–`f007`, `f009`, `f999`), que é um hexágono auto-contido — `_0_domain` (modelos/overlays + portas + eventos), `_1_application` (`*Service`/`*UseCase` + commands + listeners), `_2_infrastructure` (`*Resource`, DTOs HTTP, `*JDBCRepository`) e um módulo CDI `FNNNModule` próprio (algumas fatias finas, como `f003`/`f009`, não têm `_0_domain` nem módulo próprio). O número expressa ordem de criação, não mais dependência: fatia de negócio nunca importa fatia irmã (regra ArchUnit `feature_slices_must_not_depend_on_sibling_slices`); `f000` é o kernel compartilhado, `f999` o composition root.
-- **Arquitetura Hexagonal:** Dentro de cada contexto de negócio, livre de framework e com DI por `Registry`:
+- **Arquitetura Hexagonal:** Dentro de cada contexto de negócio, livre de framework e com DI por `Context`:
   - `_0_domain` — modelos, portas (`*Repository`) e eventos de domínio.
   - `_1_application` — *commands*, *services*, *use cases* e escutadores de eventos (lógica pura).
   - Os adaptadores concretos (`*JDBCRepository`) ficam **fora** do contexto, em `br-application` (`br.cdb.infra.persistence`).
 - **Contextos:** `monetary` (lógica financeira; facade `MonetaryUseCases`) e `people` (identidade mínima; facade `PeopleContext`). Não existe contexto `security` nem `shared` — login/preferências são agregados de `br-application`, e o vocabulário comum de erro/evento vive em `br.commons.business`.
-- **Núcleo / Plataforma (`br.cdb.core`):** Autenticação e autorização (token opaco rotativo, `OwnershipFilter`), observabilidade (log de requisições + MDC), erro HTTP (`ProblemDetail`), `ContextBridge` (costura CDI↔`Registry`) e `SpaFallbackRoute` (deep-links da SPA caem em `index.html`).
+- **Núcleo / Plataforma (`br.cdb.core`):** Autenticação e autorização (token opaco rotativo, `OwnershipFilter`), observabilidade (log de requisições + MDC), erro HTTP (`ProblemDetail`), `CoreModule` (costura CDI↔`Context`) e `SpaFallbackRoute` (deep-links da SPA caem em `index.html`).
 - **Padrão Result:** Fluxo de negócio sem exceções (`Result` Success/Failure).
 - **Eventos:** Comunicação cross-feature é best-effort via `br.commons.MessageBus` (nunca import direto entre fatias irmãs). O despacho SSE é responsabilidade exclusiva de `f999`.
 - **Persistência:** **100% JDBC/H2** sobre pool próprio (dev: arquivo `./database`; testes: in-memory) — processamento e privacidade locais, sem servidor de banco externo. O schema vive em `Database` e conforma aos diagramas Mermaid em `docs/`.

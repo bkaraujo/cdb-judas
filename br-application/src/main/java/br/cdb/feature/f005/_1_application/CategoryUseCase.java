@@ -13,9 +13,9 @@ import br.cdb.feature.f006._0_domain.model.Transaction;
 import br.cdb.feature.f006._1_application.usecase.ReadUseCases;
 import br.cdb.feature.f006._1_application.usecase.WriteUseCases;
 import br.commons.MessageBus;
-import br.commons.Registry;
 import br.commons.Result;
 import br.commons.business.BusinessError;
+import br.commons.framework.cdi.Context;
 import jakarta.inject.Singleton;
 import lombok.RequiredArgsConstructor;
 import lombok.val;
@@ -42,8 +42,8 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class CategoryUseCase {
 
-    private final ReadUseCases reads = Registry.tryGet(ReadUseCases.class);
-    private final WriteUseCases writes = Registry.tryGet(WriteUseCases.class);
+    private final ReadUseCases reads = Context.tryGet(ReadUseCases.class);
+    private final WriteUseCases writes = Context.tryGet(WriteUseCases.class);
 
     private final UserCategoryService userCategoryService;
     private final InternalApi internalApi;

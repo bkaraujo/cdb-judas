@@ -6,6 +6,7 @@ import br.cdb.feature.f004._0_domain.repository.TagRepository;
 import br.commons.MessageBus;
 import br.commons.Result;
 import br.commons.business.BusinessError;
+import br.commons.framework.cdi.Context;
 import jakarta.inject.Singleton;
 import lombok.RequiredArgsConstructor;
 import lombok.val;
@@ -19,7 +20,7 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class TagService {
 
-    private final TagRepository repository;
+    private final TagRepository repository = Context.get(TagRepository.class);
     private final TransactionTagService tagLinkService;
 
     public List<Tag> findAll(UUID personId) {

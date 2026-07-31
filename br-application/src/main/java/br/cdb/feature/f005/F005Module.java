@@ -7,38 +7,30 @@ import br.cdb.feature.f005._2_infrastructure.persistence.CategoryJDBCRepository;
 import br.cdb.feature.f006._0_domain.model.Transaction;
 import br.commons.Logger;
 import br.commons.MessageBus;
-import br.commons.Registry;
+import br.commons.Result;
+import br.commons.annotation.Lifecycle;
+import br.commons.framework.cdi.Context;
 import br.commons.framework.message.MessageListener;
 import br.commons.framework.message.MessageResult;
-import br.commons.framework.persistence.jdbc.DataSource;
-import io.quarkus.runtime.StartupEvent;
-import jakarta.annotation.Priority;
-import jakarta.enterprise.context.ApplicationScoped;
-import jakarta.enterprise.event.Observes;
-import jakarta.enterprise.inject.Produces;
-import jakarta.inject.Singleton;
 import lombok.val;
 import org.jspecify.annotations.NullMarked;
 
 import java.util.*;
 
 /**
- * Módulo CDI da fatia {@code f005} (categories). {@link #userCategoryRepository} recebe
- * {@link DataSource} sem usá-lo no corpo só para forçar o CDI a criar o schema antes do adaptador
- * JDBC — a dependência real fica escondida dentro do {@link Registry}.
+ * Módulo da fatia {@code f005} (categories). Semeia as categorias padrão reagindo a
+ * {@link UserEvents.Created} — o listener é registrado no {@link MessageBus} aqui, antes de
+ * {@code F999Module} criar o usuário {@code admin} (ordem da lista de módulos em
+ * {@code FeatureBootstrap}).
  */
 @NullMarked
-@ApplicationScoped
-public class F005Module {
+public class F005Module implements Lifecycle {
 
-    @Produces
-    @Singleton
-    public CategoryRepository userCategoryRepository() {
-        return Registry.tryGet(CategoryRepository.class, CategoryJDBCRepository::new);
-    }
-
-    void onStart(@Observes @Priority(5) StartupEvent ev) {
+    @Override
+    public Result<Void, Throwable> initialize() {
         Logger.debug("Iniciando módulo..");
+
+        Context.set(CategoryRepository.class, CategoryJDBCRepository::new);
 
         MessageBus.subscribe(new Object(){
             @MessageListener
@@ -71,7 +63,7 @@ public class F005Module {
 
             void seed(UUID personId, Transaction.Type nature, Map<String, List<String>> categories) {
                 Logger.trace("Cadastrando categorias %s para usuário %s", nature, personId);
-                val repository = Registry.tryGet(CategoryRepository.class, CategoryJDBCRepository::new);
+                val repository = Context.get(CategoryRepository.class);
                 val existing = repository.findByNature(personId, nature);
 
                 // 1. Mapeamento O(1) na memória para evitar loops aninhados (Stream/Filter)
@@ -120,6 +112,8 @@ public class F005Module {
                 }
             }
         });
+
+        return Result.success();
     }
 
 }

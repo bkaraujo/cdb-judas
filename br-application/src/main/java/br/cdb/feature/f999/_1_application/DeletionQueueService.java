@@ -7,9 +7,8 @@ import br.cdb.feature.f999._0_domain.DeletionQueueEntry;
 import br.cdb.feature.f999._0_domain.DeletionQueueRepository;
 import br.commons.Logger;
 import br.commons.MessageBus;
-import br.commons.Registry;
 import br.commons.chrono.Time;
-import jakarta.inject.Singleton;
+import br.commons.framework.cdi.Context;
 import lombok.RequiredArgsConstructor;
 import lombok.val;
 import org.jspecify.annotations.NullMarked;
@@ -28,9 +27,11 @@ import java.util.UUID;
  *
  * <p>{@link #runOnce} é público e chamado tanto pelo {@code @Scheduled} de produção quanto direto
  * pelos testes (sem depender do timer) — ver {@code .claude/plan.md} fase 5.
+ *
+ * <p>Registrado no {@link Context} por {@code F999Module} (nunca um bean CDI): o construtor recebe a
+ * porta, o que deixa os testes injetarem um fake.
  */
 @NullMarked
-@Singleton
 @RequiredArgsConstructor
 public class DeletionQueueService {
 
@@ -40,7 +41,7 @@ public class DeletionQueueService {
     private static final int MAX_ATTEMPTS = 5;
 
     private final DeletionQueueRepository repo;
-    private final BalanceService balanceService = Registry.tryGet(BalanceService.class);
+    private final BalanceService balanceService = Context.tryGet(BalanceService.class);
 
     public void enqueue(String type, UUID targetId, UUID personId) {
         val now = Time.now();

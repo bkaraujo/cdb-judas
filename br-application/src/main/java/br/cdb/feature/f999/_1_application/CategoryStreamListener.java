@@ -5,12 +5,12 @@ import br.cdb.feature.f005._0_domain.Category;
 import br.cdb.feature.f005._0_domain.event.CategoryEvents;
 import br.cdb.feature.f005._1_application.CategoryResponse;
 import br.commons.MessageBus;
+import br.commons.framework.cdi.Context;
 import br.commons.framework.message.MessageListener;
 import br.commons.framework.message.MessageResult;
 import io.quarkus.runtime.StartupEvent;
 import jakarta.enterprise.event.Observes;
 import jakarta.inject.Singleton;
-import lombok.RequiredArgsConstructor;
 import org.jspecify.annotations.NullMarked;
 
 import java.util.Map;
@@ -19,12 +19,11 @@ import java.util.UUID;
 /** Único dono do dispatch SSE de categoria — reage ao vocabulário {@link CategoryEvents}. */
 @NullMarked
 @Singleton
-@RequiredArgsConstructor
 public class CategoryStreamListener {
 
     private static final String TYPE = "CATEGORY";
 
-    private final SSE sse;
+    private final SSE sse = Context.get(SSE.class);
 
     void subscribe(@Observes StartupEvent event) {
         MessageBus.subscribe(this);

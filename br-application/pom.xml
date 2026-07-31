@@ -31,4 +31,21 @@
 
         <dependency><groupId>io.rest-assured</groupId><artifactId>rest-assured</artifactId><scope>test</scope></dependency>
     </dependencies>
+
+    <build>
+        <plugins>
+            <!-- CoreModule lê o YAML pelo caminho em cdb.application.yaml (default: ./application.yaml,
+                 relativo ao CWD). O fork do surefire roda em br-application/, onde não existe o arquivo
+                 da raiz do repo — e o de dev aponta pro H2 em arquivo. Aponta pro YAML de teste. -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <configuration>
+                    <systemPropertyVariables>
+                        <cdb.application.yaml>${project.build.testOutputDirectory}/application.test.yaml</cdb.application.yaml>
+                    </systemPropertyVariables>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
 </project>

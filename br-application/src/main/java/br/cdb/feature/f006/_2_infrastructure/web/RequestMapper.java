@@ -2,7 +2,6 @@ package br.cdb.feature.f006._2_infrastructure.web;
 
 import br.cdb.feature.f003._0_domain.model.CreditCard;
 import br.cdb.feature.f006._0_domain.model.Transaction;
-import br.cdb.feature.f006._1_application.usecase.ImportUseCase;
 import br.cdb.feature.f006._1_application.command.TransactionCommand;
 import br.cdb.feature.f006._1_application.command.TransactionScope;
 import br.cdb.feature.f006._1_application.confirm.InvoiceConfirmCommand;
@@ -10,6 +9,7 @@ import br.cdb.feature.f006._1_application.preview.BankStatementPreview;
 import br.cdb.feature.f006._1_application.preview.ImportPreview;
 import br.cdb.feature.f006._1_application.preview.ImportPreviewOutcome;
 import br.cdb.feature.f006._1_application.preview.PreviewRow;
+import br.cdb.feature.f006._1_application.usecase.ImportUseCase;
 import br.cdb.feature.f006._2_infrastructure.web.request.StatementConfirmRequest;
 import br.cdb.feature.f006._2_infrastructure.web.request.TransactionRequest;
 import br.cdb.feature.f006._2_infrastructure.web.response.BankStatementPreviewResponse;

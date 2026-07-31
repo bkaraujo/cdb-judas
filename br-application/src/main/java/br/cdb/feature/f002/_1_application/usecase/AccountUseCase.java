@@ -12,7 +12,7 @@ import br.cdb.feature.f003._1_application.service.CreditCardService;
 import br.cdb.feature.f006._0_domain.model.Transaction;
 import br.cdb.feature.f006._1_application.service.TransactionService;
 import br.commons.MessageBus;
-import br.commons.Registry;
+import br.commons.framework.cdi.Context;
 import br.commons.Result;
 import br.commons.business.BusinessError;
 import br.commons.tools.Strings;
@@ -29,10 +29,10 @@ import java.util.UUID;
 @NullMarked
 public class AccountUseCase {
 
-    private final AccountService service = Registry.tryGet(AccountService.class);
-    private final BalanceService balanceService = Registry.tryGet(BalanceService.class);
-    private final CreditCardService creditCardService = Registry.tryGet(CreditCardService.class);
-    private final TransactionService transactionService = Registry.tryGet(TransactionService.class);
+    private final AccountService service = Context.tryGet(AccountService.class);
+    private final BalanceService balanceService = Context.tryGet(BalanceService.class);
+    private final CreditCardService creditCardService = Context.tryGet(CreditCardService.class);
+    private final TransactionService transactionService = Context.tryGet(TransactionService.class);
 
     public Result<List<Account>, BusinessError> listAccounts(String personId) {
         return Result.success(service.findAllByPerson(personId));

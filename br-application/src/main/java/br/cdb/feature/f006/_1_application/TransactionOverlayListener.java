@@ -5,7 +5,7 @@ import br.cdb.feature.f000._0_domain.event.TransactionImported;
 import br.cdb.feature.f000._0_domain.event.TransactionsDeleted;
 import br.cdb.feature.f006._1_application.usecase.WriteUseCases;
 import br.commons.MessageBus;
-import br.commons.Registry;
+import br.commons.framework.cdi.Context;
 import br.commons.framework.message.MessageListener;
 import br.commons.framework.message.MessageResult;
 import io.quarkus.runtime.StartupEvent;
@@ -24,7 +24,7 @@ import org.jspecify.annotations.NullMarked;
 @Singleton
 public class TransactionOverlayListener {
 
-    private final WriteUseCases writes = Registry.tryGet(WriteUseCases.class);
+    private final WriteUseCases writes = Context.tryGet(WriteUseCases.class);
 
     void subscribe(@Observes StartupEvent event) {
         MessageBus.subscribe(this);

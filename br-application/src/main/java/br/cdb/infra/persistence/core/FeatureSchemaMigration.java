@@ -35,7 +35,7 @@ import java.util.UUID;
  *       {@code (COD_USER, COD_ACCOUNT, COD_TRANSACTION)}.</li>
  * </ul>
  *
- * <p>{@link #apply(DataSource)} é chamado por {@code ContextBridge.dataSource(...)} logo após
+ * <p>{@link #apply(DataSource)} é chamado por {@code CoreModule.dataSource(...)} logo após
  * {@link AccountLimitMigration#apply(DataSource)}. Detecta ausência de {@code SEC_USER.FLG_ACTIVE};
  * se presente — banco novo ou já migrado — não faz nada. Roda um backup online antes de qualquer
  * alteração.

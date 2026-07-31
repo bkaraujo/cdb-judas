@@ -16,9 +16,9 @@ import br.cdb.feature.f006._1_application.usecase.ReadUseCases;
 import br.cdb.feature.f006._1_application.usecase.WriteUseCases;
 import br.commons.Logger;
 import br.commons.MessageBus;
-import br.commons.Registry;
 import br.commons.Result;
 import br.commons.business.BusinessError;
+import br.commons.framework.cdi.Context;
 import br.commons.tools.Strings;
 import lombok.val;
 import org.jspecify.annotations.NullMarked;
@@ -44,9 +44,9 @@ public class StatementImportProcessor {
 
     private static final int RECONCILE_WINDOW_DAYS = 3;
 
-    private final AccountUseCase ucAccount = Registry.tryGet(AccountUseCase.class);
-    private final WriteUseCases writes = Registry.tryGet(WriteUseCases.class);
-    private final ReadUseCases reads = Registry.tryGet(ReadUseCases.class);
+    private final AccountUseCase ucAccount = Context.tryGet(AccountUseCase.class);
+    private final WriteUseCases writes = Context.tryGet(WriteUseCases.class);
+    private final ReadUseCases reads = Context.tryGet(ReadUseCases.class);
 
     private final CategoryGuesser categoryGuesser = new CategoryGuesser();
     private final Clock clock;

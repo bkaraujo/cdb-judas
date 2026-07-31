@@ -8,6 +8,7 @@ import br.commons.Logger;
 import br.commons.MessageBus;
 import br.commons.Result;
 import br.commons.business.BusinessError;
+import br.commons.framework.cdi.Context;
 import io.quarkus.elytron.security.common.BcryptUtil;
 import jakarta.inject.Singleton;
 import lombok.RequiredArgsConstructor;
@@ -21,9 +22,9 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class UserService {
 
-    // Contexto people não é bean CDI — resolve-se pelo Registry (mesmo padrão de f001 ProfileService).
+    // Contexto people não é bean CDI — resolve-se pelo Context (mesmo padrão de f001 ProfileService).
     private final PersonUseCase personUseCase = new PersonUseCase();
-    private final UserRepository userRepository;
+    private final UserRepository userRepository = Context.get(UserRepository.class);
 
     public Result<User, BusinessError> createUser(String username, String name, char[] password) {
         Logger.debug("Criando usuário %s", username);

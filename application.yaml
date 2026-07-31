@@ -1,0 +1,15 @@
+cdb:
+  application:
+    version: 1.0.0
+  datasource:
+    jdbc:
+      driver: "org.h2.Driver"
+      url: "jdbc:h2:file:./database;DB_CLOSE_DELAY=-1"
+      username: "sa"
+      password: ""
+    validation-query: SELECT 1
+    pool:
+      min: 5
+      max: 20
+  internal:
+    base-url: "http://localhost:8080"

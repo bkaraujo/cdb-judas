@@ -4,6 +4,7 @@ import br.cdb.core.persistence.UserRepository;
 import br.cdb.core.security.AccessTokenStore;
 import br.cdb.feature.f000._2_infrastructure.web.request.LoginRequest;
 import br.commons.Logger;
+import br.commons.framework.cdi.Context;
 import io.quarkus.elytron.security.common.BcryptUtil;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.POST;
@@ -20,8 +21,7 @@ public class LoginResource {
 
     public static final String USER_ID_HEADER = "X-User-Id";
 
-    @Inject
-    UserRepository userRepository;
+    private final UserRepository userRepository = Context.get(UserRepository.class);
 
     @Inject
     AccessTokenStore tokenStore;

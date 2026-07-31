@@ -1,17 +1,22 @@
 package br.cdb.feature.f003;
 
+import br.cdb.feature.f003._0_domain.repository.CreditCardRepository;
+import br.cdb.feature.f003._2_infrastructure.persistence.CreditCardJDBCRepository;
 import br.commons.Logger;
-import io.quarkus.runtime.StartupEvent;
-import jakarta.annotation.Priority;
-import jakarta.enterprise.context.ApplicationScoped;
-import jakarta.enterprise.event.Observes;
+import br.commons.Result;
+import br.commons.annotation.Lifecycle;
+import br.commons.framework.cdi.Context;
 import org.jspecify.annotations.NullMarked;
 
 @NullMarked
-@ApplicationScoped
-public class F003Module {
+public class F003Module implements Lifecycle {
 
-    void onStart(@Observes @Priority(2) StartupEvent ev) {
+    @Override
+    public Result<Void, Throwable> initialize() {
         Logger.debug("Iniciando módulo..");
+
+        Context.set(CreditCardRepository.class, CreditCardJDBCRepository::new);
+
+        return Result.success();
     }
 }

@@ -15,9 +15,9 @@ import br.cdb.feature.f006._1_application.command.TransactionScope;
 import br.cdb.feature.f006._1_application.event.TransactionEventListener;
 import br.cdb.feature.f006._1_application.service.TransactionService;
 import br.commons.MessageBus;
-import br.commons.Registry;
 import br.commons.Result;
 import br.commons.business.BusinessError;
+import br.commons.framework.cdi.Context;
 import lombok.val;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
@@ -29,7 +29,7 @@ import java.util.*;
 
 /**
  * Toda a mutação de transação da fatia {@code f006} — o par de {@link ReadUseCases}, que ficou com a
- * leitura. Registry-wired como as demais classes ex-contexto ({@code Registry.tryGet(WriteUseCases.class)},
+ * leitura. Context-wired como as demais classes ex-contexto ({@code Context.tryGet(WriteUseCases.class)},
  * nunca {@code @Inject}).
  *
  * <p>Duas camadas de operação convivem aqui, de propósito:
@@ -50,10 +50,10 @@ import java.util.*;
 @NullMarked
 public class WriteUseCases {
 
-    private final TransactionService service = Registry.tryGet(TransactionService.class);
-    private final BalanceService balanceService = Registry.tryGet(BalanceService.class);
-    private final CreditCardService creditCardService = Registry.tryGet(CreditCardService.class);
-    private final ReadUseCases reads = Registry.tryGet(ReadUseCases.class);
+    private final TransactionService service = Context.tryGet(TransactionService.class);
+    private final BalanceService balanceService = Context.tryGet(BalanceService.class);
+    private final CreditCardService creditCardService = Context.tryGet(CreditCardService.class);
+    private final ReadUseCases reads = Context.tryGet(ReadUseCases.class);
 
     public WriteUseCases() {
         MessageBus.subscribe(new TransactionEventListener());
@@ -61,7 +61,7 @@ public class WriteUseCases {
 
     /** Bean CDI resolvido a cada chamada: {@code @RequestScoped}, nunca guardado em campo. */
     private static UserGuards guards() {
-        return Registry.get(UserGuards.class);
+        return Context.get(UserGuards.class);
     }
 
     // ── Entrada da fatia: política de usuário + eventos de aplicação ───────────

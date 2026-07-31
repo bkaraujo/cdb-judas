@@ -20,7 +20,7 @@ import java.util.List;
  * {@code F005_TRANSACTION_CATEGORY} da coluna {@code PERSON_TRANSACTION.COD_CATEGORY}, cria o usuário
  * SYSTEM com as 2 categorias de transferência globais e reatribui os vínculos existentes a elas.
  *
- * <p>{@link #apply(DataSource)} é chamado por {@code ContextBridge.dataSource(...)} por último na
+ * <p>{@link #apply(DataSource)} é chamado por {@code CoreModule.dataSource(...)} por último na
  * cadeia — depende do schema final de {@link FeatureSchemaMigration}/{@link DuplicateCategoryMigration}.
  * Detecta a presença de {@code PEP_PERSON} (marcador antigo); banco novo ou já migrado não tem essa
  * tabela nesse ponto (migrações rodam antes de {@code Database.model()}), então não faz nada. Roda um

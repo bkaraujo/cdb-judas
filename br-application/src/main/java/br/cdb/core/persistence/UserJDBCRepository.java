@@ -1,9 +1,9 @@
 package br.cdb.core.persistence;
 
 import br.cdb.core.security.User;
-import br.commons.Registry;
 import br.commons.Result;
 import br.commons.chrono.Time;
+import br.commons.framework.cdi.Context;
 import br.commons.framework.persistence.jdbc.DataSource;
 import br.commons.framework.persistence.jdbc.JDBCTransaction;
 import br.commons.framework.persistence.jdbc.primitives.JDBCParameter;
@@ -31,7 +31,7 @@ import java.util.UUID;
 @NullMarked
 public final class UserJDBCRepository implements UserRepository {
 
-    private final DataSource dataSource = Registry.get(DataSource.class);
+    private final DataSource dataSource = Context.get(DataSource.class);
 
     @Override
     public Optional<User> findByUsername(String username) {

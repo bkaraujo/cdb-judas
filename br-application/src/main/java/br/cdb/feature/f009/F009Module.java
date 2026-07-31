@@ -1,17 +1,18 @@
 package br.cdb.feature.f009;
 
 import br.commons.Logger;
-import io.quarkus.runtime.StartupEvent;
-import jakarta.annotation.Priority;
-import jakarta.enterprise.context.ApplicationScoped;
-import jakarta.enterprise.event.Observes;
+import br.commons.Result;
+import br.commons.annotation.Lifecycle;
 import org.jspecify.annotations.NullMarked;
 
+/** Módulo da fatia {@code f009} (dashboard): sem porta nem serviço próprio — lê f006 via {@code InternalApi}. */
 @NullMarked
-@ApplicationScoped
-public class F009Module {
+public class F009Module implements Lifecycle {
 
-    void onStart(@Observes @Priority(2) StartupEvent ev) {
+    @Override
+    public Result<Void, Throwable> initialize() {
         Logger.debug("Iniciando módulo..");
+
+        return Result.success();
     }
 }

@@ -5,6 +5,7 @@ import br.cdb.feature.f001._0_domain.PreferencesRepository;
 import br.cdb.feature.f001._0_domain.Profile;
 import br.commons.Result;
 import br.commons.business.BusinessError;
+import br.commons.framework.cdi.Context;
 import jakarta.inject.Singleton;
 import lombok.RequiredArgsConstructor;
 import lombok.val;
@@ -24,7 +25,7 @@ import org.jspecify.annotations.NullMarked;
 public class ProfileService {
 
     private final PersonUseCase personUseCase = new PersonUseCase();
-    private final PreferencesRepository preferences;
+    private final PreferencesRepository preferences = Context.get(PreferencesRepository.class);
 
     public Result<Profile, BusinessError> getProfile(String personId) {
         return personUseCase.findById(personId).map(person -> new Profile(person, preferences.findByPersonId(personId)));

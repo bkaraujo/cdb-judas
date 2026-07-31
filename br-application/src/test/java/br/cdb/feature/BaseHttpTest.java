@@ -5,7 +5,9 @@ import br.cdb.core.persistence.UserRepository;
 import br.cdb.core.security.AccessTokenStore;
 import br.cdb.core.web.HTTPRequest;
 import br.cdb.feature.f000._0_domain.repository.CostCenterRepository;
+import br.cdb.feature.f000._0_domain.repository.PersonRepository;
 import br.cdb.feature.f000._1_application.service.CostCenterService;
+import br.cdb.feature.f000._1_application.service.PersonService;
 import br.cdb.feature.f000._1_application.usecase.CostCenterUseCase;
 import br.cdb.feature.f000._2_infrastructure.persistence.CostCenterJDBCRepository;
 import br.cdb.feature.f002._0_domain.repository.AccountRepository;
@@ -25,19 +27,17 @@ import br.cdb.feature.f006._1_application.usecase.ReadUseCases;
 import br.cdb.feature.f006._1_application.usecase.WriteUseCases;
 import br.cdb.feature.f006._2_infrastructure.persistence.TransactionJDBCRepository;
 import br.cdb.infra.persistence.Database;
-import br.commons.Registry;
 import br.commons.Result;
 import br.commons.chrono.Time;
+import br.commons.framework.cdi.Context;
 import br.commons.framework.persistence.Storage;
 import br.commons.framework.persistence.jdbc.DataSource;
 import br.commons.framework.persistence.jdbc.primitives.JDBCParameter;
-import br.commons.framework.persistence.json.Repository;
 import io.quarkus.elytron.security.common.BcryptUtil;
 import io.quarkus.test.junit.QuarkusTest;
 import io.restassured.RestAssured;
 import io.restassured.http.ContentType;
 import io.restassured.specification.RequestSpecification;
-import jakarta.enterprise.inject.Instance;
 import jakarta.inject.Inject;
 import lombok.val;
 import org.junit.jupiter.api.BeforeEach;
@@ -61,14 +61,10 @@ public abstract class BaseHttpTest {
     @Inject
     protected JsonStorageProperties storageProperties;
 
-    @Inject
-    DataSource dataSource;
+    // Context-wired (não são mais beans CDI): publicados no startup por CoreModule/FNNNModule.
+    final DataSource dataSource = Context.get(DataSource.class);
 
-    @Inject
-    Instance<Repository<?, ?>> repositories;
-
-    @Inject
-    UserRepository userRepository;
+    final UserRepository userRepository = Context.get(UserRepository.class);
 
     @Inject
     AccessTokenStore tokenStore;
@@ -80,9 +76,7 @@ public abstract class BaseHttpTest {
         deleteRecursively(path);
         Files.createDirectories(path);
 
-        // Reset relational tables — H2 in-memory é compartilhado entre métodos de teste. Também
-        // garante que o DataSource já está publicado no Registry (JDBCRepository.<init> o exige)
-        // antes de repositories.forEach abaixo forçar a construção de todos os *JDBCRepository.
+        // Reset relational tables — H2 in-memory é compartilhado entre métodos de teste.
         val tx = dataSource.begin().get();
         for (val sql : Database.reset()) tx.execute(sql).get();
         tx.commit().get();
@@ -91,11 +85,11 @@ public abstract class BaseHttpTest {
         // numa conexão já devolvida ao pool.
         tx.close();
 
-        // Clear repository caches
-        repositories.forEach(Repository::clearCache);
+        // Clear repository caches — só os adaptadores com cache próprio sobrevivem ao reset abaixo.
+        Context.get(PersonRepository.class).clearCache();
 
         // Reancora o contexto monetário nos adaptadores JDBC: os testes de unidade puros
-        // (br.cdb.context.monetary) trocam as portas do Registry por fakes in-memory e removem
+        // (br.cdb.context.monetary) trocam as portas do Context por fakes in-memory e removem
         // services/use cases — sem este reset, uma requisição HTTP posterior reconstruiria o
         // grafo do contexto em cima dos fakes do último teste puro executado.
         resetMonetaryRegistry();
@@ -137,22 +131,24 @@ public abstract class BaseHttpTest {
     }
 
     private static void resetMonetaryRegistry() {
-        Registry.set(AccountRepository.class, AccountJDBCRepository::new);
-        Registry.set(BalanceRepository.class, UserAccountBalanceJDBCRepository::new);
-        Registry.set(CostCenterRepository.class, CostCenterJDBCRepository::new);
-        Registry.set(TransactionRepository.class, TransactionJDBCRepository::new);
-        Registry.set(CreditCardRepository.class, CreditCardJDBCRepository::new);
+        Context.set(AccountRepository.class, AccountJDBCRepository::new);
+        Context.set(BalanceRepository.class, UserAccountBalanceJDBCRepository::new);
+        Context.set(CostCenterRepository.class, CostCenterJDBCRepository::new);
+        Context.set(TransactionRepository.class, TransactionJDBCRepository::new);
+        Context.set(CreditCardRepository.class, CreditCardJDBCRepository::new);
 
-        Registry.remove(AccountService.class);
-        Registry.remove(BalanceService.class);
-        Registry.remove(TransactionService.class);
-        Registry.remove(CreditCardService.class);
-        Registry.remove(CostCenterService.class);
-        Registry.remove(AccountUseCase.class);
-        Registry.remove(WriteUseCases.class);
-        Registry.remove(ReadUseCases.class);
-        Registry.remove(CostCenterUseCase.class);
-        Registry.remove(CreditCardUseCase.class);
+        Context.remove(AccountService.class);
+        Context.remove(BalanceService.class);
+        Context.remove(TransactionService.class);
+        Context.remove(CreditCardService.class);
+        // Alcançados por Context.get() estrito (não se auto-instanciam): re-registra em vez de remover.
+        Context.set(CostCenterService.class, CostCenterService::new);
+        Context.set(PersonService.class, () -> new PersonService(Context.get(PersonRepository.class)));
+        Context.remove(AccountUseCase.class);
+        Context.remove(WriteUseCases.class);
+        Context.remove(ReadUseCases.class);
+        Context.remove(CostCenterUseCase.class);
+        Context.remove(CreditCardUseCase.class);
     }
 
     /**

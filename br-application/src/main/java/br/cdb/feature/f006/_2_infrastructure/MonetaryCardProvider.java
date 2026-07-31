@@ -4,9 +4,7 @@ import br.cdb.core.web.HTTPRequest;
 import br.cdb.feature.f003._0_domain.model.CreditCard;
 import br.cdb.feature.f003._1_application.usecase.CreditCardUseCase;
 import br.cdb.feature.f006._0_domain.CreditCardProvider;
-import br.commons.Registry;
-import jakarta.inject.Singleton;
-import lombok.RequiredArgsConstructor;
+import br.commons.framework.cdi.Context;
 import org.jspecify.annotations.NullMarked;
 
 import java.util.List;
@@ -17,11 +15,9 @@ import java.util.List;
  * resposta — não faz parte da identidade do cartão.
  */
 @NullMarked
-@Singleton
-@RequiredArgsConstructor
 public class MonetaryCardProvider implements CreditCardProvider {
 
-    private final CreditCardUseCase ucCreditCard = Registry.tryGet(CreditCardUseCase.class);
+    private final CreditCardUseCase ucCreditCard = Context.tryGet(CreditCardUseCase.class);
 
     @Override
     public List<CreditCard> creditCards() {

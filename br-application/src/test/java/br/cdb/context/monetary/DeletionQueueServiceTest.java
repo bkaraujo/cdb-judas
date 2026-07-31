@@ -6,8 +6,8 @@ import br.cdb.feature.f002._1_application.service.BalanceService;
 import br.cdb.feature.f999._0_domain.DeletionQueueEntry;
 import br.cdb.feature.f999._0_domain.DeletionQueueRepository;
 import br.cdb.feature.f999._1_application.DeletionQueueService;
-import br.commons.Registry;
 import br.commons.chrono.Time;
+import br.commons.framework.cdi.Context;
 import lombok.val;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -70,7 +70,7 @@ class DeletionQueueServiceTest extends AbstractUseCaseTest {
     @Test
     void runOnce_recomputesDirtyBalanceSnapshots() {
         val account = accountRepository().save(new Account(UUID.randomUUID(), "Conta", Account.Type.CHECKING, true));
-        val balanceService = Registry.tryGet(BalanceService.class);
+        val balanceService = Context.tryGet(BalanceService.class);
         balanceService.save(new Balance(account, YearMonth.now(), new BigDecimal("100.00")));
         balanceService.markDirty(account.id());
         assertTrue(balanceRepository().findDirtyAccountIds().contains(account.id()));

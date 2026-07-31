@@ -1,5 +1,6 @@
 package br.cdb;
 
+import br.commons.framework.cdi.Context;
 import com.tngtech.archunit.core.domain.JavaClass;
 import com.tngtech.archunit.core.importer.ImportOption;
 import com.tngtech.archunit.junit.AnalyzeClasses;
@@ -42,9 +43,9 @@ class ArchitectureTest {
 
     /**
      * <strong>Exceção temporária (fase 2→4 de {@code .claude/plan.md}):</strong> alvo remanescente
-     * dos contextos dissolvidos ({@link #isDissolvedContextRemnant}) é tolerado — {@code ContextBridge}
+     * dos contextos dissolvidos ({@link #isDissolvedContextRemnant}) é tolerado — {@code CoreModule}
      * (core) precisa referenciar as portas de repositório ex-contexto (agora {@code fNNN._0_domain.repository})
-     * para publicar os adaptadores JDBC no {@link br.commons.Registry} no startup, papel que já exercia
+     * para publicar os adaptadores JDBC no {@link Context} no startup, papel que já exercia
      * antes da dissolução sem violar esta regra (as portas não moravam em {@code ..feature..}).
      */
     @ArchTest

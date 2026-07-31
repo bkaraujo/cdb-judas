@@ -91,7 +91,7 @@ Teste `FeatureSchemaMigrationTest`, mesmo molde, cobrindo as 4 tabelas + idempot
 
 - **`begin()` reentrante participa**: se já há transação em curso na thread, devolve **a mesma** `JDBCTransaction` e incrementa o nível de reentrância. Só o `begin()` mais externo adquire conexão do pool.
 - **Só o nível mais externo decide**: `commit()` / `rollback()` chamados num nível aninhado são no-op. Quando um bloco aninhado falha (`Result.Failure` ou `RuntimeException`), ele marca `rollbackOnly` — e o nível externo reverte tudo em vez de commitar trabalho parcial.
-- **`close()` é balanceado**: cada `begin()` exige um `close()`; só o último devolve a conexão ao pool e libera o slot da thread. Quem chama `begin()` direto (`ContextBridge`, `BaseHttpTest`) tem de fechar.
+- **`close()` é balanceado**: cada `begin()` exige um `close()`; só o último devolve a conexão ao pool e libera o slot da thread. Quem chama `begin()` direto (`CoreModule`, `BaseHttpTest`) tem de fechar.
 - **Leitura aninhada não descarta escrita**: o `rollback()` que `query(...)` faz no fim só vale no nível mais externo.
 
 Consequência de projeto: **eventos de domínio despachados dentro de uma transação participam dela**. O `MessageBus` é síncrono e in-thread, então um `@MessageListener` que escreve no banco (ex.: o seed de categorias de `f005` reagindo a `UserEvents.Created`) commita junto com quem publicou — e uma falha sua reverte o trabalho do publicador. É o que torna real o "uma transação por usuário" de `f999`.

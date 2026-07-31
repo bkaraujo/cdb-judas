@@ -14,9 +14,9 @@ import br.cdb.feature.f006._1_application.confirm.StatementConfirmCommand;
 import br.cdb.feature.f006._1_application.preview.ImportPreviewOutcome;
 import br.cdb.feature.f006._1_application.service.StatementImportService;
 import br.commons.MessageBus;
-import br.commons.Registry;
 import br.commons.Result;
 import br.commons.business.BusinessError;
+import br.commons.framework.cdi.Context;
 import jakarta.inject.Singleton;
 import lombok.RequiredArgsConstructor;
 import lombok.val;
@@ -39,11 +39,12 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class ImportUseCase {
 
-    private final AccountUseCase ucAccount = Registry.tryGet(AccountUseCase.class);
-    private final CreditCardUseCase ucCreditCard = Registry.tryGet(CreditCardUseCase.class);
+    private final AccountUseCase ucAccount = Context.tryGet(AccountUseCase.class);
+    private final CreditCardUseCase ucCreditCard = Context.tryGet(CreditCardUseCase.class);
+
+    private final StatementImportService service = Context.get(StatementImportService.class);
 
     private final UserGuards guards;
-    private final StatementImportService service;
 
     /** Preview + nomes de conta por personId (rotulam as opções de cartão na resposta). */
     @NullMarked

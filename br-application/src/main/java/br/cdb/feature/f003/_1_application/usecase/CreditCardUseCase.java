@@ -11,9 +11,9 @@ import br.cdb.feature.f003._1_application.service.CreditCardService;
 import br.cdb.feature.f006._0_domain.model.Transaction;
 import br.cdb.feature.f006._1_application.service.TransactionService;
 import br.commons.MessageBus;
-import br.commons.Registry;
 import br.commons.Result;
 import br.commons.business.BusinessError;
+import br.commons.framework.cdi.Context;
 import lombok.val;
 import org.jspecify.annotations.NullMarked;
 
@@ -26,10 +26,10 @@ public class CreditCardUseCase {
 
     private static final Pattern LAST4 = Pattern.compile("\\d{4}");
 
-    private final CreditCardService service = Registry.tryGet(CreditCardService.class);
-    private final AccountService accountService = Registry.tryGet(AccountService.class);
-    private final BalanceService balanceService = Registry.tryGet(BalanceService.class);
-    private final TransactionService transactionService = Registry.tryGet(TransactionService.class);
+    private final CreditCardService service = Context.tryGet(CreditCardService.class);
+    private final AccountService accountService = Context.tryGet(AccountService.class);
+    private final BalanceService balanceService = Context.tryGet(BalanceService.class);
+    private final TransactionService transactionService = Context.tryGet(TransactionService.class);
 
     public Result<List<CreditCard>, BusinessError> list(String personId) {
         return Result.success(service.findAllByPerson(personId));

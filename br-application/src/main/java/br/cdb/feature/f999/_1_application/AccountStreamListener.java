@@ -7,8 +7,8 @@ import br.cdb.feature.f002._1_application.usecase.AccountUseCase;
 import br.cdb.feature.f003._1_application.usecase.CreditCardUseCase;
 import br.cdb.feature.f006._1_application.usecase.ReadUseCases;
 import br.commons.MessageBus;
-import br.commons.Registry;
 import br.commons.Result;
+import br.commons.framework.cdi.Context;
 import br.commons.framework.message.MessageListener;
 import br.commons.framework.message.MessageResult;
 import io.quarkus.runtime.StartupEvent;
@@ -35,11 +35,11 @@ public class AccountStreamListener {
 
     private static final String TYPE = "ACCOUNT";
 
-    private final AccountUseCase ucAccount = Registry.tryGet(AccountUseCase.class);
-    private final CreditCardUseCase ucCreditCard = Registry.tryGet(CreditCardUseCase.class);
-    private final ReadUseCases reads = Registry.tryGet(ReadUseCases.class);
+    private final AccountUseCase ucAccount = Context.tryGet(AccountUseCase.class);
+    private final CreditCardUseCase ucCreditCard = Context.tryGet(CreditCardUseCase.class);
+    private final ReadUseCases reads = Context.tryGet(ReadUseCases.class);
 
-    private final SSE sse;
+    private final SSE sse = Context.get(SSE.class);
 
     void subscribe(@Observes StartupEvent event) {
         MessageBus.subscribe(this);

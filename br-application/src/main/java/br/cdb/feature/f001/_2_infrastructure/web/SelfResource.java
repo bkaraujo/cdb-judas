@@ -10,6 +10,7 @@ import br.cdb.feature.f001._2_infrastructure.web.response.SelfResponse;
 import br.commons.Result;
 import br.commons.business.BusinessError;
 import br.commons.business.BusinessException;
+import br.commons.framework.cdi.Context;
 import jakarta.validation.Valid;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
@@ -32,7 +33,7 @@ import org.jspecify.annotations.Nullable;
 public class SelfResource {
 
     private final ProfileService profileService;
-    private final UserRepository userRepository;
+    private final UserRepository userRepository = Context.get(UserRepository.class);
 
     @GET
     public SelfResponse getMe() {

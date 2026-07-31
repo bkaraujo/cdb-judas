@@ -2,7 +2,7 @@ package br.cdb.feature.f003._1_application.service;
 
 import br.cdb.feature.f003._0_domain.model.CreditCard;
 import br.cdb.feature.f003._0_domain.repository.CreditCardRepository;
-import br.commons.Registry;
+import br.commons.framework.cdi.Context;
 import br.commons.Result;
 import br.commons.business.BusinessError;
 import org.jspecify.annotations.NullMarked;
@@ -13,7 +13,7 @@ import java.util.UUID;
 @NullMarked
 public class CreditCardService {
 
-    private final CreditCardRepository repository = Registry.get(CreditCardRepository.class);
+    private final CreditCardRepository repository = Context.get(CreditCardRepository.class);
 
     public List<CreditCard> findAll() {
         return repository.findAll();

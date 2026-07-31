@@ -21,7 +21,7 @@ import java.util.*;
  * vinculada a uma conta real); limites/ciclo de fatura saíram do overlay {@code USER_ACCOUNT} para
  * {@code MON_ACCOUNT_LIMIT} (linha única por conta).
  *
- * <p>{@link #apply(DataSource)} é chamado por {@code ContextBridge.dataSource(...)} antes de
+ * <p>{@link #apply(DataSource)} é chamado por {@code CoreModule.dataSource(...)} antes de
  * {@link Database#model()} rodar. Detecta se o schema é o legado (coluna
  * {@code USER_ACCOUNT.TXT_CARD_LAST4} ainda presente); se não for — banco novo ou já migrado —
  * não faz nada. Roda um backup online (arquivo {@code .zip}) antes de qualquer alteração.

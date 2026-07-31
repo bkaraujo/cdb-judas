@@ -2,9 +2,9 @@ package br.cdb.feature.f002._1_application.service;
 
 import br.cdb.feature.f002._0_domain.model.Account;
 import br.cdb.feature.f002._0_domain.repository.AccountRepository;
-import br.commons.Registry;
 import br.commons.Result;
 import br.commons.business.BusinessError;
+import br.commons.framework.cdi.Context;
 import org.jspecify.annotations.NullMarked;
 
 import java.util.List;
@@ -13,7 +13,7 @@ import java.util.UUID;
 @NullMarked
 public class AccountService {
 
-    private final AccountRepository repository = Registry.get(AccountRepository.class);
+    private final AccountRepository repository = Context.get(AccountRepository.class);
 
     public List<Account> findAll() {
         return repository.findAll();

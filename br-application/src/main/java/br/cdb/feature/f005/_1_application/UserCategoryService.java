@@ -7,8 +7,8 @@ import br.cdb.feature.f006._0_domain.model.Transaction;
 import br.commons.MessageBus;
 import br.commons.Result;
 import br.commons.business.BusinessError;
+import br.commons.framework.cdi.Context;
 import jakarta.inject.Singleton;
-import lombok.RequiredArgsConstructor;
 import lombok.val;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
@@ -20,7 +20,6 @@ import java.util.UUID;
 
 @NullMarked
 @Singleton
-@RequiredArgsConstructor
 public class UserCategoryService {
 
     /**
@@ -36,7 +35,7 @@ public class UserCategoryService {
     private static final UUID TRANSFER_CATEGORY_INCOME_ID = UUID.fromString("f9990000-0000-0000-0000-000000000003");
     private static final String TRANSFER_CATEGORY_NAME = "Transferência";
 
-    private final CategoryRepository repo;
+    private final CategoryRepository repo = Context.get(CategoryRepository.class);
 
     /** Categorias da pessoa + as 2 globais de transferência (pertencem a {@link #SYSTEM_PERSON_ID},
      *  por isso não vêm de {@code findAllByPerson(personId)} — sem elas a tela de categorias e a

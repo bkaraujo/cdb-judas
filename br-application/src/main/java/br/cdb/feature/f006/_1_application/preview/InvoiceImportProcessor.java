@@ -13,7 +13,7 @@ import br.cdb.feature.f006._1_application.usecase.ReadUseCases;
 import br.cdb.feature.f006._1_application.usecase.WriteUseCases;
 import br.commons.Logger;
 import br.commons.MessageBus;
-import br.commons.Registry;
+import br.commons.framework.cdi.Context;
 import br.commons.Result;
 import br.commons.business.BusinessError;
 import br.commons.tools.Strings;
@@ -37,8 +37,8 @@ import java.util.stream.Collectors;
 @NullMarked
 public class InvoiceImportProcessor {
 
-    private final WriteUseCases writes = Registry.tryGet(WriteUseCases.class);
-    private final ReadUseCases reads = Registry.tryGet(ReadUseCases.class);
+    private final WriteUseCases writes = Context.tryGet(WriteUseCases.class);
+    private final ReadUseCases reads = Context.tryGet(ReadUseCases.class);
 
     private final CreditCardProvider creditCardProvider;
     private final CardMatcher cardMatcher = new CardMatcher();

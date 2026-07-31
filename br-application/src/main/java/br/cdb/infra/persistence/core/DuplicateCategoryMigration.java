@@ -22,7 +22,7 @@ import java.util.stream.Collectors;
  * transitivamente, suas filhas — mantendo sempre a cópia mais antiga e reatribuindo qualquer
  * {@code USER_TRANSACTION} vinculada às cópias descartadas antes de apagá-las.
  *
- * <p>{@link #apply(DataSource)} é chamado por {@code ContextBridge.dataSource(...)} por último na
+ * <p>{@link #apply(DataSource)} é chamado por {@code CoreModule.dataSource(...)} por último na
  * cadeia, depois de {@link FeatureSchemaMigration#apply(DataSource)} — depende de {@code COD_NATURE}/
  * {@code FLG_SYSTEM} já estarem com os nomes atuais. Detecta grupos de categorias raiz duplicadas;
  * se não houver — banco novo, ou já limpo numa execução anterior — não faz nada. Roda um backup

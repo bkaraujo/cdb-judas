@@ -3,8 +3,8 @@ package br.cdb.feature.f002._2_infrastructure.persistence;
 import br.cdb.feature.f002._0_domain.model.Balance;
 import br.cdb.feature.f002._0_domain.repository.AccountRepository;
 import br.cdb.feature.f002._0_domain.repository.BalanceRepository;
-import br.commons.Registry;
 import br.commons.Result;
+import br.commons.framework.cdi.Context;
 import br.commons.framework.persistence.jdbc.JDBCRepository;
 import br.commons.framework.persistence.jdbc.primitives.JDBCParameter;
 import br.commons.framework.persistence.jdbc.primitives.JDBCResultSet;
@@ -129,11 +129,11 @@ public final class UserAccountBalanceJDBCRepository extends JDBCRepository<Balan
         return values;
     }
 
-    /** Resolve o {@code Account} pela porta no Registry (lazy — a ordem de registro dos adaptadores não importa); a FK de COD_ACCOUNT garante que a conta existe. */
+    /** Resolve o {@code Account} pela porta no Context (lazy — a ordem de registro dos adaptadores não importa); a FK de COD_ACCOUNT garante que a conta existe. */
     @Override
     protected Balance map(JDBCResultSet rs) {
         val accountId = UUID.fromString(rs.getString("COD_ACCOUNT").get());
-        val account = Registry.get(AccountRepository.class).findById(accountId)
+        val account = Context.get(AccountRepository.class).findById(accountId)
                 .orElseThrow(() -> new IllegalStateException("Account not found for balance row: " + accountId));
         return new Balance(
                 account,

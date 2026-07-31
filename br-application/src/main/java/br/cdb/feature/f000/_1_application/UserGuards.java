@@ -5,9 +5,9 @@ import br.cdb.feature.f002._0_domain.model.Account;
 import br.cdb.feature.f002._1_application.usecase.AccountUseCase;
 import br.cdb.feature.f003._0_domain.model.CreditCard;
 import br.cdb.feature.f003._1_application.usecase.CreditCardUseCase;
-import br.commons.Registry;
 import br.commons.Result;
 import br.commons.business.BusinessError;
+import br.commons.framework.cdi.Context;
 import jakarta.enterprise.context.RequestScoped;
 import lombok.val;
 import org.jspecify.annotations.NullMarked;
@@ -86,7 +86,7 @@ public class UserGuards {
         var cached = ownedAccounts;
         if (cached == null) {
             val personId = HTTPRequest.personId();
-            cached = Registry.tryGet(AccountUseCase.class).listAccounts(personId).getOrElse(List.of()).stream()
+            cached = Context.tryGet(AccountUseCase.class).listAccounts(personId).getOrElse(List.of()).stream()
                     .map(Account::id)
                     .collect(Collectors.toUnmodifiableSet());
             ownedAccounts = cached;
@@ -98,7 +98,7 @@ public class UserGuards {
         var cached = accountByCard;
         if (cached == null) {
             val personId = HTTPRequest.personId();
-            cached = Registry.tryGet(CreditCardUseCase.class).list(personId).getOrElse(List.of()).stream()
+            cached = Context.tryGet(CreditCardUseCase.class).list(personId).getOrElse(List.of()).stream()
                     .collect(Collectors.toUnmodifiableMap(CreditCard::id, CreditCard::accountId));
             accountByCard = cached;
         }

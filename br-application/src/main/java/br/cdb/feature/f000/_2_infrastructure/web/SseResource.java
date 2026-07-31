@@ -8,15 +8,14 @@ import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.sse.Sse;
 import jakarta.ws.rs.sse.SseEventSink;
-import lombok.RequiredArgsConstructor;
 import org.jspecify.annotations.NullMarked;
 
 @Path("/api/{uuid}/stream")
 @NullMarked
-@RequiredArgsConstructor
 public class SseResource {
 
-    private final SSE sse;
+    // FQN: o simple name Context é do JAX-RS aqui (@Context SseEventSink), não do br-commons.
+    private final SSE sse = br.commons.framework.cdi.Context.get(SSE.class);
 
     // Controlador agnóstico ao segmento {uuid} (sem binding); a guarda de propriedade valida a rota.
     @GET

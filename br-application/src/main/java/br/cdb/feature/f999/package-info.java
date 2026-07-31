@@ -14,7 +14,7 @@
  *
  * <p><b>(c) Composition root</b> — {@code _2_infrastructure.adapter} é onde mora o único adapter que
  * ligaria a porta de uma fatia ao provedor de outra, resolvido por CDI puro (sem {@code @Produces}/
- * {@code Registry}). Os 4 casos que existiam até a fase 3 (transferência de categoria, overlay de
+ * {@code Context}). Os 4 casos que existiam até a fase 3 (transferência de categoria, overlay de
  * conta/categoria/import) viraram evento (best-effort, cascata de exclusão) ou leitura síncrona via
  * {@code f000.InternalApi} (HTTP interno contra o endpoint público da fatia dona) na fase 4;
  * {@code DeletionQueueAdapter} (fase 5) é a instância viva de hoje — liga {@code f002.DeletionQueue}

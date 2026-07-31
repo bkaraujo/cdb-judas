@@ -13,9 +13,9 @@ import br.cdb.feature.f003._1_application.usecase.CreditCardUseCase;
 import br.cdb.feature.f006._0_domain.model.Transaction;
 import br.cdb.feature.f006._1_application.usecase.ReadUseCases;
 import br.commons.MessageBus;
-import br.commons.Registry;
 import br.commons.Result;
 import br.commons.business.BusinessError;
+import br.commons.framework.cdi.Context;
 import jakarta.inject.Singleton;
 import lombok.RequiredArgsConstructor;
 import lombok.val;
@@ -36,8 +36,8 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class CardUseCase {
 
-    private final CreditCardUseCase ucCreditCard = Registry.tryGet(CreditCardUseCase.class);
-    private final ReadUseCases reads = Registry.tryGet(ReadUseCases.class);
+    private final CreditCardUseCase ucCreditCard = Context.tryGet(CreditCardUseCase.class);
+    private final ReadUseCases reads = Context.tryGet(ReadUseCases.class);
 
     private final UserGuards guards;
 

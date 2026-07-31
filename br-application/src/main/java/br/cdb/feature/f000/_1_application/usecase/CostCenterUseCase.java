@@ -3,9 +3,9 @@ package br.cdb.feature.f000._1_application.usecase;
 import br.cdb.feature.f000._0_domain.model.CostCenter;
 import br.cdb.feature.f000._1_application.command.CostCenterCommand;
 import br.cdb.feature.f000._1_application.service.CostCenterService;
-import br.commons.Registry;
 import br.commons.Result;
 import br.commons.business.BusinessError;
+import br.commons.framework.cdi.Context;
 import lombok.val;
 import org.jspecify.annotations.NullMarked;
 
@@ -15,7 +15,7 @@ import java.util.UUID;
 @NullMarked
 public class CostCenterUseCase {
 
-    private final CostCenterService service = Registry.tryGet(CostCenterService.class);
+    private final CostCenterService service = Context.get(CostCenterService.class);
 
     public Result<List<CostCenter>, BusinessError> list() {
         return Result.success(service.findAll());

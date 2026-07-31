@@ -1,7 +1,7 @@
 package br.commons.framework.persistence.jdbc;
 
-import br.commons.Registry;
 import br.commons.Result;
+import br.commons.framework.cdi.Context;
 import br.commons.framework.persistence.jdbc.primitives.JDBCResultSet;
 import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.Test;
@@ -114,7 +114,7 @@ class DataSourceTransactionPropagationTest {
     @Test
     void repositoryIntrospectionInsideTransactionDoesNotCloseIt() {
         var ds = dataSource("txpropintrospect");
-        Registry.set(DataSource.class, () -> ds);
+        Context.set(DataSource.class, () -> ds);
         try {
             ds.transaction(_ -> {
                 ds.execute("INSERT INTO T VALUES (1)");
@@ -131,7 +131,7 @@ class DataSourceTransactionPropagationTest {
 
             assertEquals(1, countFromAnotherConnection(ds));
         } finally {
-            Registry.remove(DataSource.class);
+            Context.remove(DataSource.class);
             ds.close();
         }
     }

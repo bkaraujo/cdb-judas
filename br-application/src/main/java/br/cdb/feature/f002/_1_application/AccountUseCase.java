@@ -19,9 +19,9 @@ import br.cdb.feature.f006._0_domain.model.Transaction;
 import br.cdb.feature.f006._1_application.usecase.ReadUseCases;
 import br.commons.Logger;
 import br.commons.MessageBus;
-import br.commons.Registry;
 import br.commons.Result;
 import br.commons.business.BusinessError;
+import br.commons.framework.cdi.Context;
 import jakarta.inject.Singleton;
 import lombok.RequiredArgsConstructor;
 import lombok.val;
@@ -59,13 +59,13 @@ import java.util.UUID;
 public class AccountUseCase {
 
     private final br.cdb.feature.f002._1_application.usecase.AccountUseCase ucAccount =
-            Registry.tryGet(br.cdb.feature.f002._1_application.usecase.AccountUseCase.class);
-    private final CreditCardUseCase ucCreditCard = Registry.tryGet(CreditCardUseCase.class);
-    private final ReadUseCases reads = Registry.tryGet(ReadUseCases.class);
+            Context.tryGet(br.cdb.feature.f002._1_application.usecase.AccountUseCase.class);
+    private final CreditCardUseCase ucCreditCard = Context.tryGet(CreditCardUseCase.class);
+    private final ReadUseCases reads = Context.tryGet(ReadUseCases.class);
 
     private final UserGuards guards;
     private final DeletionQueue deletionQueue;
-    private final BalanceService balanceService = Registry.tryGet(BalanceService.class);
+    private final BalanceService balanceService = Context.tryGet(BalanceService.class);
 
     /** Conta (dono+cor inclusos) + cartões; {@code transactions} é a lista completa (o saldo
      *  corrente do DTO é derivado dela). */

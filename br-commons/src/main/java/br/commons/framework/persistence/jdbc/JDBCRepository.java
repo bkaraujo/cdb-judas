@@ -1,8 +1,8 @@
 package br.commons.framework.persistence.jdbc;
 
 import br.commons.Logger;
-import br.commons.Registry;
 import br.commons.Result;
+import br.commons.framework.cdi.Context;
 import br.commons.framework.persistence.jdbc.primitives.JDBCMetaData;
 import br.commons.framework.persistence.jdbc.primitives.JDBCParameter;
 import br.commons.framework.persistence.jdbc.primitives.JDBCResultSet;
@@ -30,7 +30,7 @@ import java.util.stream.Collectors;
 @NullMarked
 public abstract class JDBCRepository<T> {
 
-    protected final DataSource datasource = Registry.get(DataSource.class);
+    protected final DataSource datasource = Context.get(DataSource.class);
 
     private final @Nullable String schema;
     public @Nullable String schema() { return schema; }

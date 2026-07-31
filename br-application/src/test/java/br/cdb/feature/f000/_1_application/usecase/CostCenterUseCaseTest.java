@@ -3,9 +3,9 @@ package br.cdb.feature.f000._1_application.usecase;
 import br.cdb.context.monetary.AbstractUseCaseTest;
 import br.cdb.feature.f000._0_domain.model.CostCenter;
 import br.cdb.feature.f000._1_application.command.CostCenterCommand;
-import br.commons.Registry;
 import br.commons.Result;
 import br.commons.business.BusinessError;
+import br.commons.framework.cdi.Context;
 import lombok.val;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -19,7 +19,9 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 /** Cobre centro de custo. Categorias e tags são camada feature (PERSON_CATEGORY / PERSON_TAG), não este contexto. */
 class CostCenterUseCaseTest extends AbstractUseCaseTest {
 
-    private CostCenterUseCase useCase = Registry.tryGet(CostCenterUseCase.class);
+    // Construído só no setUp (nunca no campo): o construtor resolve CostCenterService, e quem o
+    // registra sobre os fakes é o @BeforeEach da superclasse (em produção, F000Module).
+    private CostCenterUseCase useCase;
 
     @BeforeEach
     void setUp() {

@@ -5,9 +5,9 @@ import br.cdb.feature.f002._0_domain.model.Balance;
 import br.cdb.feature.f002._0_domain.repository.BalanceRepository;
 import br.cdb.feature.f006._1_application.service.TransactionService;
 import br.commons.Logger;
-import br.commons.Registry;
 import br.commons.Result;
 import br.commons.business.BusinessError;
+import br.commons.framework.cdi.Context;
 import lombok.val;
 import org.jspecify.annotations.NullMarked;
 
@@ -22,9 +22,9 @@ import java.util.UUID;
 @NullMarked
 public class BalanceService {
 
-    private final BalanceRepository repository = Registry.get(BalanceRepository.class);
-    private final AccountService accountService = Registry.tryGet(AccountService.class);
-    private final TransactionService transactionService = Registry.tryGet(TransactionService.class);
+    private final BalanceRepository repository = Context.get(BalanceRepository.class);
+    private final AccountService accountService = Context.tryGet(AccountService.class);
+    private final TransactionService transactionService = Context.tryGet(TransactionService.class);
 
     public List<Balance> findByAccount(UUID accountId) {
         return repository.findByAccount(accountId);

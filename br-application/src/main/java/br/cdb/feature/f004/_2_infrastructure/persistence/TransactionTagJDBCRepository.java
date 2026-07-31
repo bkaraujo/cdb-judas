@@ -1,7 +1,7 @@
 package br.cdb.feature.f004._2_infrastructure.persistence;
 
 import br.cdb.feature.f004._0_domain.repository.TransactionTagRepository;
-import br.commons.Registry;
+import br.commons.framework.cdi.Context;
 import br.commons.framework.persistence.jdbc.DataSource;
 import br.commons.framework.persistence.jdbc.primitives.JDBCParameter;
 import br.commons.framework.persistence.jdbc.primitives.JDBCResultSet;
@@ -20,7 +20,7 @@ import java.util.UUID;
 @NullMarked
 public final class TransactionTagJDBCRepository implements TransactionTagRepository {
 
-    private final DataSource datasource = Registry.get(DataSource.class);
+    private final DataSource datasource = Context.get(DataSource.class);
 
     @Override
     public List<UUID> findTransactionIdsByTag(UUID personId, UUID tagId) {

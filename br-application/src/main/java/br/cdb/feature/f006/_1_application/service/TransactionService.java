@@ -2,7 +2,7 @@ package br.cdb.feature.f006._1_application.service;
 
 import br.cdb.feature.f006._0_domain.model.Transaction;
 import br.cdb.feature.f006._0_domain.repository.TransactionRepository;
-import br.commons.Registry;
+import br.commons.framework.cdi.Context;
 import br.commons.Result;
 import br.commons.business.BusinessError;
 import lombok.val;
@@ -14,7 +14,7 @@ import java.util.*;
 @NullMarked
 public class TransactionService {
 
-    private final TransactionRepository repository = Registry.get(TransactionRepository.class);
+    private final TransactionRepository repository = Context.get(TransactionRepository.class);
 
     public List<Transaction> findAll() {
         return repository.findAll();
