@@ -1,0 +1,17 @@
+cdb:
+  application:
+    version: 1.0.0-test
+  # 100% em memória — teste nunca toca o ./database de desenvolvimento.
+  datasource:
+    jdbc:
+      driver: "org.h2.Driver"
+      url: "jdbc:h2:mem:cdb;DB_CLOSE_DELAY=-1"
+      username: "sa"
+      password: ""
+    validation-query: SELECT 1
+    pool:
+      min: 5
+      max: 20
+  # Porta do perfil %test do Quarkus (8081, não configurável por quarkus.http.port).
+  internal:
+    base-url: "http://localhost:8081"
