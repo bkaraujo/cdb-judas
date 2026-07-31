@@ -3,7 +3,7 @@ package br.cdb.feature.f006._1_application.preview;
 import br.cdb.feature.f000._0_domain.event.TransactionImported;
 import br.cdb.feature.f000._0_domain.model.CostCenter;
 import br.cdb.feature.f002._0_domain.model.Account;
-import br.cdb.feature.f002._1_application.usecase.AccountUseCase;
+import br.cdb.feature.f002._1_application.usecase.ReadUseCase;
 import br.cdb.feature.f006._0_domain.ImportError;
 import br.cdb.feature.f006._0_domain.ImportResult;
 import br.cdb.feature.f006._0_domain.MonetaryDocumentEntry;
@@ -44,7 +44,7 @@ public class StatementImportProcessor {
 
     private static final int RECONCILE_WINDOW_DAYS = 3;
 
-    private final AccountUseCase ucAccount = Context.tryGet(AccountUseCase.class);
+    private final ReadUseCase accountReads = Context.tryGet(ReadUseCase.class);
     private final WriteUseCases writes = Context.tryGet(WriteUseCases.class);
     private final ReadUseCases reads = Context.tryGet(ReadUseCases.class);
 
@@ -56,7 +56,7 @@ public class StatementImportProcessor {
     }
 
     public Result<ImportPreviewOutcome, ImportError> preview(String personId, String issuer, List<MonetaryDocumentEntry> statement, @Nullable UUID accountId) {
-        val candidates = ucAccount.listAccounts(personId).getOrElse(List.of()).stream()
+        val candidates = accountReads.listAccounts(personId).getOrElse(List.of()).stream()
                 .filter(Account::active)
                 .toList();
         val selectedAccountId = selectAccount(accountId, candidates, Strings.lower(issuer));
@@ -80,7 +80,7 @@ public class StatementImportProcessor {
 
     public Result<ImportResult, BusinessError> confirmStatement(UUID personId, StatementConfirmCommand cmd) {
         val personIdStr = personId.toString();
-        return ucAccount.findAccount(cmd.accountId(), personIdStr).map(account -> {
+        return accountReads.findAccount(cmd.accountId(), personIdStr).map(account -> {
             val accountId = account.id();
             val today = LocalDate.now(clock);
 

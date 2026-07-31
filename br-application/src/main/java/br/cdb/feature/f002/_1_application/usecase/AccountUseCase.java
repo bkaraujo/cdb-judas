@@ -3,7 +3,6 @@ package br.cdb.feature.f002._1_application.usecase;
 import br.cdb.feature.f000._0_domain.TransactionPolicy;
 import br.cdb.feature.f002._0_domain.event.AccountEvents;
 import br.cdb.feature.f002._0_domain.model.Account;
-import br.cdb.feature.f002._0_domain.model.Balance;
 import br.cdb.feature.f002._1_application.command.AccountCommand;
 import br.cdb.feature.f002._1_application.service.AccountService;
 import br.cdb.feature.f002._1_application.service.BalanceService;
@@ -21,11 +20,15 @@ import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 
 import java.math.BigDecimal;
-import java.time.YearMonth;
 import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
 
+/**
+ * Mutação de conta da fatia {@code f002} (upsert + delete com as três estratégias de
+ * {@link TransactionPolicy}). Toda a <b>leitura</b> mudou-se para {@link ReadUseCase} — inclusive os
+ * finders consumidos cross-slice ({@code listAccounts}/{@code findAccount}).
+ */
 @NullMarked
 public class AccountUseCase {
 
@@ -33,24 +36,6 @@ public class AccountUseCase {
     private final BalanceService balanceService = Context.tryGet(BalanceService.class);
     private final CreditCardService creditCardService = Context.tryGet(CreditCardService.class);
     private final TransactionService transactionService = Context.tryGet(TransactionService.class);
-
-    public Result<List<Account>, BusinessError> listAccounts(String personId) {
-        return Result.success(service.findAllByPerson(personId));
-    }
-
-    public Result<Account, BusinessError> findAccount(UUID id, String personId) {
-        return service.findByIdAndPerson(id, personId);
-    }
-
-    public Result<Balance, BusinessError> getMonthlyBalance(UUID accountId, YearMonth period) {
-        return service.findById(accountId)
-                .flatMap(ignored -> balanceService.findByAccountAndPeriod(accountId, period));
-    }
-
-    public Result<List<Balance>, BusinessError> getYearBalances(UUID accountId, int year) {
-        return service.findById(accountId)
-                .map(ignored -> balanceService.findByAccountAndYear(accountId, year));
-    }
 
     public Result<Account, BusinessError> upsert(AccountCommand.Upsert cmd, String personId, String color) {
         return switch (cmd) {

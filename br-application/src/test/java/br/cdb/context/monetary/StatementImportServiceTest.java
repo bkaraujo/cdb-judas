@@ -10,6 +10,7 @@ import br.cdb.feature.f002._0_domain.repository.BalanceRepository;
 import br.cdb.feature.f002._1_application.service.AccountService;
 import br.cdb.feature.f002._1_application.service.BalanceService;
 import br.cdb.feature.f002._1_application.usecase.AccountUseCase;
+import br.cdb.feature.f002._1_application.usecase.ReadUseCase;
 import br.cdb.feature.f003._0_domain.repository.CreditCardRepository;
 import br.cdb.feature.f003._1_application.service.CreditCardService;
 import br.cdb.feature.f003._1_application.usecase.CreditCardUseCase;
@@ -221,6 +222,7 @@ class StatementImportServiceTest {
         Context.remove(CreditCardService.class);
         Context.remove(CostCenterService.class);
         Context.remove(AccountUseCase.class);
+        Context.remove(ReadUseCase.class);
         Context.remove(WriteUseCases.class);
         Context.remove(ReadUseCases.class);
         Context.remove(CostCenterUseCase.class);

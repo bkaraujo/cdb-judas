@@ -4,7 +4,7 @@ import br.cdb.core.web.HTTPRequest;
 import br.cdb.feature.f000._0_domain.event.AccountStreamEvents;
 import br.cdb.feature.f000._1_application.service.UserGuards;
 import br.cdb.feature.f002._0_domain.model.Account;
-import br.cdb.feature.f002._1_application.usecase.AccountUseCase;
+import br.cdb.feature.f002._1_application.usecase.ReadUseCase;
 import br.cdb.feature.f003._0_domain.model.CreditCard;
 import br.cdb.feature.f003._1_application.usecase.CreditCardUseCase;
 import br.cdb.feature.f006._0_domain.ImportError;
@@ -39,7 +39,7 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class ImportUseCase {
 
-    private final AccountUseCase ucAccount = Context.tryGet(AccountUseCase.class);
+    private final ReadUseCase accountReads = Context.tryGet(ReadUseCase.class);
     private final CreditCardUseCase ucCreditCard = Context.tryGet(CreditCardUseCase.class);
 
     private final StatementImportService service = Context.get(StatementImportService.class);
@@ -77,7 +77,7 @@ public class ImportUseCase {
 
     /** Nome da conta a que cada cartão pertence, para rotular as opções de cartão do preview. */
     private Map<UUID, String> accountNamesById() {
-        return ucAccount.listAccounts(HTTPRequest.personId()).getOrElse(List.of()).stream()
+        return accountReads.listAccounts(HTTPRequest.personId()).getOrElse(List.of()).stream()
                 .collect(Collectors.toMap(Account::id, Account::name));
     }
 

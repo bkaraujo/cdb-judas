@@ -2,7 +2,7 @@ package br.cdb.feature.f000._1_application.service;
 
 import br.cdb.core.web.HTTPRequest;
 import br.cdb.feature.f002._0_domain.model.Account;
-import br.cdb.feature.f002._1_application.usecase.AccountUseCase;
+import br.cdb.feature.f002._1_application.usecase.ReadUseCase;
 import br.cdb.feature.f003._0_domain.model.CreditCard;
 import br.cdb.feature.f003._1_application.usecase.CreditCardUseCase;
 import br.commons.Result;
@@ -86,7 +86,7 @@ public class UserGuards {
         var cached = ownedAccounts;
         if (cached == null) {
             val personId = HTTPRequest.personId();
-            cached = Context.tryGet(AccountUseCase.class).listAccounts(personId).getOrElse(List.of()).stream()
+            cached = Context.tryGet(ReadUseCase.class).listAccounts(personId).getOrElse(List.of()).stream()
                     .map(Account::id)
                     .collect(Collectors.toUnmodifiableSet());
             ownedAccounts = cached;

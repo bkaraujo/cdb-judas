@@ -3,7 +3,7 @@ package br.cdb.feature.f999._1_application;
 import br.cdb.feature.f000._0_domain.SSE;
 import br.cdb.feature.f000._0_domain.event.AccountStreamEvents;
 import br.cdb.feature.f002._1_application.AccountResponse;
-import br.cdb.feature.f002._1_application.usecase.AccountUseCase;
+import br.cdb.feature.f002._1_application.usecase.ReadUseCase;
 import br.cdb.feature.f003._1_application.usecase.CreditCardUseCase;
 import br.cdb.feature.f006._1_application.usecase.ReadUseCases;
 import br.commons.MessageBus;
@@ -35,7 +35,7 @@ public class AccountStreamListener {
 
     private static final String TYPE = "ACCOUNT";
 
-    private final AccountUseCase ucAccount = Context.tryGet(AccountUseCase.class);
+    private final ReadUseCase accountReads = Context.tryGet(ReadUseCase.class);
     private final CreditCardUseCase ucCreditCard = Context.tryGet(CreditCardUseCase.class);
     private final ReadUseCases reads = Context.tryGet(ReadUseCases.class);
 
@@ -72,7 +72,7 @@ public class AccountStreamListener {
     @SuppressWarnings("EmptyCatch")
     private void dispatchUpsert(UUID accountId, String personId) {
         try {
-            switch (ucAccount.findAccount(accountId, personId)) {
+            switch (accountReads.findAccount(accountId, personId)) {
                 case Result.Success(var account) -> {
                     val cards = ucCreditCard.list(accountId, personId).getOrElse(List.of());
                     val transactions = reads.transactions(personId).getOrElse(List.of());

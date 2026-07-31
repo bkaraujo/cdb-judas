@@ -5,9 +5,11 @@ import br.cdb.feature.f000._1_application.Deletions;
 import br.cdb.feature.f002._1_application.AccountResponse;
 import br.cdb.feature.f002._1_application.AccountUseCase;
 import br.cdb.feature.f002._1_application.command.AccountCommand;
+import br.cdb.feature.f002._1_application.usecase.ReadUseCase;
 import br.cdb.feature.f002._2_infrastructure.web.request.AccountRequest;
 import br.commons.Result;
 import br.commons.business.BusinessException;
+import br.commons.framework.cdi.Context;
 import jakarta.validation.Valid;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
@@ -29,11 +31,13 @@ public class AccountResource {
 
     private static final Set<DeletionStrategy> ALLOWED_STRATEGIES = Set.of(DeletionStrategy.MOVE, DeletionStrategy.DELETE);
 
+    private final ReadUseCase reads = Context.tryGet(ReadUseCase.class);
+
     private final AccountUseCase accountUseCase;
 
     @GET
     public List<AccountResponse> listAll() {
-        return switch (accountUseCase.accounts()) {
+        return switch (reads.accounts()) {
             case Result.Success(var views) -> views.stream().map(AccountResource::toDto).toList();
             case Result.Failure(var error) -> throw new BusinessException(error);
         };
@@ -42,7 +46,7 @@ public class AccountResource {
     @GET
     @Path("/{id}")
     public AccountResponse getById(@PathParam("id") UUID id) {
-        return switch (accountUseCase.account(id)) {
+        return switch (reads.account(id)) {
             case Result.Success(var view) -> toDto(view);
             case Result.Failure(var error) -> throw new BusinessException(error);
         };
@@ -78,7 +82,7 @@ public class AccountResource {
                 "a esta conta.");
     }
 
-    private static AccountResponse toDto(AccountUseCase.AccountView view) {
+    private static AccountResponse toDto(ReadUseCase.AccountView view) {
         return AccountResponse.from(view.account(), view.cards(), view.transactions());
     }
 

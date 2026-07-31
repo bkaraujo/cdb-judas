@@ -1,6 +1,7 @@
 package br.cdb.feature.f002._2_infrastructure.web;
 
 import br.cdb.feature.f002._1_application.service.ClosingService;
+import br.cdb.feature.f002._1_application.usecase.ReadUseCase;
 import br.cdb.feature.f002._2_infrastructure.web.request.ClosingRequest;
 import br.cdb.feature.f002._2_infrastructure.web.response.ClosingResponse;
 import br.commons.Logger;
@@ -18,11 +19,12 @@ import java.time.YearMonth;
 @Produces(MediaType.APPLICATION_JSON)
 public class ClosingResource {
 
+    private final ReadUseCase reads = Context.tryGet(ReadUseCase.class);
     private final ClosingService closingService = Context.get(ClosingService.class);
 
     @GET
     public ClosingResponse get() {
-        return closingService.find()
+        return reads.closingPeriod()
                 .map(ym -> new ClosingResponse(ym.toString()))
                 .orElse(new ClosingResponse(null));
     }

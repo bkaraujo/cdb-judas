@@ -15,6 +15,7 @@ import br.cdb.feature.f002._0_domain.repository.BalanceRepository;
 import br.cdb.feature.f002._1_application.service.AccountService;
 import br.cdb.feature.f002._1_application.service.BalanceService;
 import br.cdb.feature.f002._1_application.usecase.AccountUseCase;
+import br.cdb.feature.f002._1_application.usecase.ReadUseCase;
 import br.cdb.feature.f002._2_infrastructure.persistence.AccountJDBCRepository;
 import br.cdb.feature.f002._2_infrastructure.persistence.UserAccountBalanceJDBCRepository;
 import br.cdb.feature.f003._0_domain.repository.CreditCardRepository;
@@ -145,6 +146,7 @@ public abstract class BaseHttpTest {
         Context.set(CostCenterService.class, CostCenterService::new);
         Context.set(PersonService.class, () -> new PersonService(Context.get(PersonRepository.class)));
         Context.remove(AccountUseCase.class);
+        Context.remove(ReadUseCase.class);
         Context.remove(WriteUseCases.class);
         Context.remove(ReadUseCases.class);
         Context.remove(CostCenterUseCase.class);
