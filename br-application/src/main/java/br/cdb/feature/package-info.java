@@ -21,7 +21,7 @@
  * │   ├── LoginResource        POST /login
  * │   ├── SseResource          GET  /api/{uuid}/stream                        (Server-Sent Events)
  * │   └── VersionResource      GET  /api/version                              (sem namespace de usuário)
- * ├── f001  self-service
+ * ├── f001  self-service (par CQRS ReadUseCase/WriteUseCase, sem *UseCase de fronteira)
  * │   └── SelfResource         GET/PATCH /api/me                              (nome + preferências write-through)
  * ├── f002  accounts (+ balance e closing fundidos: sem overlay próprio; cards[] embutido é projeção
  * │         somente-leitura de f003 — ver f003.WriteUseCase para a mutação)

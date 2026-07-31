@@ -25,15 +25,23 @@ import static org.hamcrest.Matchers.nullValue;
 @QuarkusTest
 public class F001SelfResourceTest extends BaseHttpTest {
 
-    final PreferencesRepository preferencesRepository = Context.get(PreferencesRepository.class);
+    /** Resolvidos por chamada, nunca em campo: {@link BaseHttpTest} reancora as portas no
+     *  {@code @BeforeEach} (os testes de unidade de f001 publicam fakes no mesmo {@code Context}
+     *  global), então um campo capturado na construção da instância apontaria para o repositório
+     *  anterior — fixture e aplicação escreveriam em instâncias diferentes. */
+    private static PreferencesRepository preferencesRepository() {
+        return Context.get(PreferencesRepository.class);
+    }
 
-    final PersonRepository personRepository = Context.get(PersonRepository.class);
+    private static PersonRepository personRepository() {
+        return Context.get(PersonRepository.class);
+    }
 
     @Test
     void getMeAutenticadoRetorna200ComPerfil() {
         userRepository.save(new User(TEST_USER_ID, "tester", null, "hash"));
         seedName("Tester");
-        preferencesRepository.save(TEST_USER_ID, Preferences.defaults());
+        preferencesRepository().save(TEST_USER_ID, Preferences.defaults());
 
         asTestUser()
                 .when().get("/api/me")
@@ -58,7 +66,7 @@ public class F001SelfResourceTest extends BaseHttpTest {
     void patchSomenteNomeNaoAfetaPreferencias() {
         userRepository.save(new User(TEST_USER_ID, "tester", null, "hash"));
         seedName("Tester");
-        preferencesRepository.save(TEST_USER_ID, new Preferences("dark", "pt-BR", "pt-BR", false));
+        preferencesRepository().save(TEST_USER_ID, new Preferences("dark", "pt-BR", "pt-BR", false));
 
         asTestUser()
                 .body("{\"name\":\"Renomeado\"}")
@@ -93,6 +101,6 @@ public class F001SelfResourceTest extends BaseHttpTest {
     }
 
     private void seedName(String name) {
-        personRepository.save(new Person(UUID.fromString(TEST_USER_ID), name, "pt-BR", "pt-BR"));
+        personRepository().save(new Person(UUID.fromString(TEST_USER_ID), name, "pt-BR", "pt-BR"));
     }
 }

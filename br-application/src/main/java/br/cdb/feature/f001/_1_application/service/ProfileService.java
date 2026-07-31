@@ -1,13 +1,12 @@
-package br.cdb.feature.f001._1_application;
+package br.cdb.feature.f001._1_application.service;
 
 import br.cdb.feature.f000._1_application.usecase.PersonUseCase;
 import br.cdb.feature.f001._0_domain.PreferencesRepository;
 import br.cdb.feature.f001._0_domain.Profile;
+import br.cdb.feature.f001._1_application.PreferencesPatch;
 import br.commons.Result;
 import br.commons.business.BusinessError;
 import br.commons.framework.cdi.Context;
-import jakarta.inject.Singleton;
-import lombok.RequiredArgsConstructor;
 import lombok.val;
 import org.jspecify.annotations.NullMarked;
 
@@ -18,10 +17,11 @@ import org.jspecify.annotations.NullMarked;
  * ({@link PreferencesRepository}). Ambas são reunidas em {@link Profile}. Esta fatia não conhece
  * o agregado {@code User} (login) — o {@code username} é resolvido à parte por
  * {@code SelfResource} (via {@code UserRepository#findByPersonId}), na borda.
+ *
+ * <p>Context-wired como os demais serviços de fatia (o par {@code ReadUseCase}/{@code WriteUseCase}
+ * o resolve com {@code Context.tryGet}); sem CDI.
  */
-@Singleton
 @NullMarked
-@RequiredArgsConstructor
 public class ProfileService {
 
     private final PersonUseCase personUseCase = new PersonUseCase();

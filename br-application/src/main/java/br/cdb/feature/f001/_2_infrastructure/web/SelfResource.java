@@ -4,7 +4,8 @@ import br.cdb.core.persistence.UserRepository;
 import br.cdb.core.web.HTTPRequest;
 import br.cdb.feature.f001._0_domain.Profile;
 import br.cdb.feature.f001._1_application.PreferencesPatch;
-import br.cdb.feature.f001._1_application.ProfileService;
+import br.cdb.feature.f001._1_application.usecase.ReadUseCase;
+import br.cdb.feature.f001._1_application.usecase.WriteUseCase;
 import br.cdb.feature.f001._2_infrastructure.web.request.UpdateMeRequest;
 import br.cdb.feature.f001._2_infrastructure.web.response.SelfResponse;
 import br.commons.Result;
@@ -14,7 +15,6 @@ import br.commons.framework.cdi.Context;
 import jakarta.validation.Valid;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
-import lombok.RequiredArgsConstructor;
 import lombok.val;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
@@ -22,23 +22,23 @@ import org.jspecify.annotations.Nullable;
 /**
  * Recurso {@code self}: a identidade vem do contexto autenticado (sem personId no caminho →
  * sem risco de IDOR). Sem token, a cadeia de filtros responde 401 antes de chegar aqui.
- * Orquestra {@link ProfileService} (Person + Preferences, fatia {@code f001}) e
+ * Orquestra o par {@link ReadUseCase}/{@link WriteUseCase} (Person + Preferences, fatia {@code f001}) e
  * {@link UserRepository#findByPersonId} (username de login) — a composição dos dois em
  * {@link SelfView} é específica deste recurso, não mora em nenhum dos dois.
  */
 @NullMarked
 @Path("/api/me")
 @Produces(MediaType.APPLICATION_JSON)
-@RequiredArgsConstructor
 public class SelfResource {
 
-    private final ProfileService profileService;
+    private final ReadUseCase reads = Context.tryGet(ReadUseCase.class);
+    private final WriteUseCase writes = Context.tryGet(WriteUseCase.class);
     private final UserRepository userRepository = Context.get(UserRepository.class);
 
     @GET
     public SelfResponse getMe() {
         val personId = HTTPRequest.personId();
-        return switch (self(personId, profileService.getProfile(personId))) {
+        return switch (self(personId, reads.profile(personId))) {
             case Result.Success(var self) -> SelfResponse.from(self);
             case Result.Failure(var error) -> throw new BusinessException(error);
         };
@@ -51,12 +51,12 @@ public class SelfResource {
         val personId = HTTPRequest.personId();
 
         var result = req.name() != null
-                ? profileService.updateName(personId, req.name())
-                : profileService.getProfile(personId);
+                ? writes.updateName(personId, req.name())
+                : reads.profile(personId);
 
         val patch = toPatch(req);
         if (patch != null) {
-            result = result.flatMap(ignored -> profileService.updatePreferences(personId, patch));
+            result = result.flatMap(ignored -> writes.updatePreferences(personId, patch));
         }
 
         return switch (self(personId, result)) {

@@ -9,7 +9,9 @@ import br.cdb.feature.f000._0_domain.repository.PersonRepository;
 import br.cdb.feature.f000._1_application.service.CostCenterService;
 import br.cdb.feature.f000._1_application.service.PersonService;
 import br.cdb.feature.f000._1_application.usecase.CostCenterUseCase;
+import br.cdb.feature.f000._2_infrastructure.persistence.CachingPersonRepository;
 import br.cdb.feature.f000._2_infrastructure.persistence.CostCenterJDBCRepository;
+import br.cdb.feature.f000._2_infrastructure.persistence.PersonJDBCRepository;
 import br.cdb.feature.f002._0_domain.repository.AccountRepository;
 import br.cdb.feature.f002._0_domain.repository.BalanceRepository;
 import br.cdb.feature.f002._1_application.service.AccountService;
@@ -29,6 +31,9 @@ import br.cdb.feature.f004._2_infrastructure.persistence.TagJDBCRepository;
 import br.cdb.feature.f004._2_infrastructure.persistence.TransactionTagJDBCRepository;
 import br.cdb.feature.f005._0_domain.CategoryRepository;
 import br.cdb.feature.f005._1_application.service.UserCategoryService;
+import br.cdb.feature.f001._0_domain.PreferencesRepository;
+import br.cdb.feature.f001._1_application.service.ProfileService;
+import br.cdb.feature.f001._2_infrastructure.persistence.PreferencesJDBCRepository;
 import br.cdb.feature.f005._2_infrastructure.persistence.CategoryJDBCRepository;
 import br.cdb.feature.f006._0_domain.repository.TransactionRepository;
 import br.cdb.feature.f006._1_application.service.TransactionService;
@@ -148,6 +153,14 @@ public abstract class BaseHttpTest {
         Context.set(TagRepository.class, TagJDBCRepository::new);
         Context.set(TransactionTagRepository.class, TransactionTagJDBCRepository::new);
         Context.set(CategoryRepository.class, CategoryJDBCRepository::new);
+        // Pessoa/preferências: os testes de unidade de f001 publicam fakes no mesmo Context global.
+        // O repositório de pessoa é reancorado só quando o que está publicado não é o real — trocar
+        // a instância a cada teste descartaria o cache write-ahead que o próprio request acabou de
+        // popular (ver CachingPersonRepository).
+        if (!(Context.get(PersonRepository.class) instanceof CachingPersonRepository)) {
+            Context.set(PersonRepository.class, () -> new CachingPersonRepository(new PersonJDBCRepository()));
+        }
+        Context.set(PreferencesRepository.class, PreferencesJDBCRepository::new);
 
         Context.remove(AccountService.class);
         Context.remove(BalanceService.class);
@@ -171,6 +184,9 @@ public abstract class BaseHttpTest {
         Context.remove(br.cdb.feature.f004._1_application.usecase.WriteUseCase.class);
         Context.remove(br.cdb.feature.f005._1_application.usecase.ReadUseCase.class);
         Context.remove(br.cdb.feature.f005._1_application.usecase.WriteUseCase.class);
+        Context.remove(ProfileService.class);
+        Context.remove(br.cdb.feature.f001._1_application.usecase.ReadUseCase.class);
+        Context.remove(br.cdb.feature.f001._1_application.usecase.WriteUseCase.class);
     }
 
     /** Context-wired (deixou de ser bean CDI): resolvido a cada uso, depois do reset do registry. */
