@@ -1,5 +1,6 @@
 package br.cdb.feature.f005;
 
+import br.cdb.core.persistence.Database;
 import br.cdb.feature.f000._0_domain.event.UserEvents;
 import br.cdb.feature.f005._0_domain.Category;
 import br.cdb.feature.f005._0_domain.CategoryRepository;
@@ -26,9 +27,38 @@ import java.util.*;
 @NullMarked
 public class F005Module implements Lifecycle {
 
+
+    private static List<String> model() {
+        return List.of(
+                """
+                CREATE TABLE F005_CATEGORY (
+                    ID CHAR(36) PRIMARY KEY,
+                    COD_PERSON CHAR(36) NOT NULL,
+                    COD_PARENT CHAR(36),
+                    COD_NATURE VARCHAR(20) NOT NULL REFERENCES SYS_TRANSACTION_NATURE(ID),
+                    TXT_NAME VARCHAR(80) NOT NULL,
+                    FLG_SYSTEM CHAR(1) NOT NULL,
+                    FLG_ACTIVE CHAR(1) NOT NULL,
+                    TMS_CREATE_AT TIMESTAMP NOT NULL,
+                    TMS_UPDATED_AT TIMESTAMP NOT NULL
+                )
+                """,
+                """
+                CREATE TABLE F005_TRANSACTION_CATEGORY (
+                    COD_TRANSACTION CHAR(36) NOT NULL,
+                    COD_PERSON CHAR(36) NOT NULL,
+                    COD_CATEGORY CHAR(36) NOT NULL,
+                    PRIMARY KEY (COD_TRANSACTION, COD_PERSON)
+                )
+                """
+        );
+    }
+
     @Override
     public Result<Void, Throwable> initialize() {
         Logger.debug("Iniciando módulo..");
+
+        Database.initialize(model());
 
         Context.set(CategoryRepository.class, CategoryJDBCRepository::new);
 

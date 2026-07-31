@@ -1,5 +1,6 @@
 package br.cdb.feature.f999;
 
+import br.cdb.core.persistence.Database;
 import br.cdb.feature.f000._1_application.service.UserService;
 import br.cdb.feature.f002._0_domain.DeletionQueue;
 import br.cdb.feature.f999._0_domain.DeletionQueueRepository;
@@ -30,9 +31,28 @@ import java.util.List;
 @NullMarked
 public class F999Module implements Lifecycle {
 
+    private static List<String> model() {
+        return List.of(
+                """
+                CREATE TABLE F999_DELETION_QUEUE (
+                    ID CHAR(36) PRIMARY KEY,
+                    TXT_TYPE VARCHAR(40) NOT NULL,
+                    COD_TARGET CHAR(36) NOT NULL,
+                    COD_PERSON CHAR(36) NOT NULL,
+                    NUM_ATTEMPTS INT NOT NULL,
+                    FLG_LOCKED CHAR(1) NOT NULL,
+                    TMS_CREATE_AT TIMESTAMP NOT NULL,
+                    TMS_UPDATED_AT TIMESTAMP NOT NULL
+                )
+                """
+        );
+    }
+
     @Override
     public Result<Void, Throwable> initialize() {
         Logger.debug("Iniciando módulo..");
+
+        Database.initialize(model());
 
         Context.set(DeletionQueueRepository.class, DeletionQueueJDBCRepository::new);
         Context.set(DeletionQueueService.class, () -> new DeletionQueueService(Context.get(DeletionQueueRepository.class)));

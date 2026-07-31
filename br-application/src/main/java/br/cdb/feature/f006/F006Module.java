@@ -1,5 +1,6 @@
 package br.cdb.feature.f006;
 
+import br.cdb.core.persistence.Database;
 import br.cdb.feature.f004._0_domain.event.TagEvents;
 import br.cdb.feature.f006._0_domain.CreditCardProvider;
 import br.cdb.feature.f006._0_domain.repository.TransactionRepository;
@@ -39,9 +40,37 @@ public class F006Module implements Lifecycle {
     private static final int MAX_STATEMENT_PAGES = 50;
     private static final long MAX_STATEMENT_FILE_BYTES = 10L * 1024 * 1024;
 
+    private static List<String> model() {
+        return List.of(
+                """
+                CREATE TABLE F006_TRANSACTION (
+                    ID CHAR(36) PRIMARY KEY,
+                    COD_PERSON CHAR(36),
+                    TXT_DESCRIPTION VARCHAR(255) NOT NULL,
+                    NUM_SIGNAL INT NOT NULL,
+                    DEC_AMOUNT DECIMAL(19, 2) NOT NULL,
+                    TMS_PURCHASE TIMESTAMP NOT NULL,
+                    COD_ACCOUNT CHAR(36) NOT NULL,
+                    COD_CARD CHAR(36),
+                    COD_STATUS VARCHAR(20) NOT NULL REFERENCES SYS_STATUS(ID),
+                    COD_COST_CENTER CHAR(36) NOT NULL REFERENCES F000_COST_CENTER(ID),
+                    DAT_PAYMENT DATE,
+                    GROUP_ID CHAR(36),
+                    NUM_INSTALLMENT INT NOT NULL,
+                    NUM_INSTALLMENT_TOTAL INT NOT NULL,
+                    TXT_NOTES VARCHAR(1000),
+                    TMS_CREATE_AT TIMESTAMP NOT NULL,
+                    TMS_UPDATED_AT TIMESTAMP NOT NULL
+                )
+                """
+        );
+    }
+
     @Override
     public Result<Void, Throwable> initialize() {
         Logger.debug("Iniciando módulo..");
+
+        Database.initialize(model());
 
         Context.set(TransactionRepository.class, TransactionJDBCRepository::new);
         Context.set(CreditCardProvider.class, MonetaryCardProvider::new);

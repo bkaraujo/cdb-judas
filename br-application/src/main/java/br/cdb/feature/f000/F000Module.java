@@ -1,5 +1,7 @@
 package br.cdb.feature.f000;
 
+import br.cdb.core.persistence.Database;
+import br.cdb.core.persistence.repository.AccountTypeMapper;
 import br.cdb.feature.f000._0_domain.SSE;
 import br.cdb.feature.f000._0_domain.repository.CostCenterRepository;
 import br.cdb.feature.f000._0_domain.repository.PersonRepository;
@@ -15,6 +17,8 @@ import br.commons.annotation.Lifecycle;
 import br.commons.framework.cdi.Context;
 import org.jspecify.annotations.NullMarked;
 
+import java.util.List;
+
 /**
  * Módulo da fatia {@code f000} (kernel). Sem CDI: classe pura montada pelo {@link Context} de
  * {@code br-commons} e inicializada por {@code F999Module.FeatureBootstrap}, na ordem da lista de
@@ -23,9 +27,88 @@ import org.jspecify.annotations.NullMarked;
 @NullMarked
 public class F000Module implements Lifecycle {
 
+    private static List<String> model() {
+        return List.of(
+                """
+                CREATE TABLE SYS_ACCOUNT_TYPE (
+                    ID CHAR(36) PRIMARY KEY,
+                    TXT_DESCRIPTION VARCHAR(50) NOT NULL,
+                    FLG_ACTIVE CHAR(1) NOT NULL
+                )
+                """,
+                "INSERT INTO SYS_ACCOUNT_TYPE (ID, TXT_DESCRIPTION, FLG_ACTIVE) VALUES ('" + AccountTypeMapper.CHECKING_ID    + "', 'Conta corrente', 'Y')",
+                "INSERT INTO SYS_ACCOUNT_TYPE (ID, TXT_DESCRIPTION, FLG_ACTIVE) VALUES ('" + AccountTypeMapper.INVESTMENT_ID  + "', 'Investimento', 'Y')",
+                """
+                CREATE TABLE SYS_STATUS (
+                    ID VARCHAR(20) PRIMARY KEY,
+                    TXT_DESCRIPTION VARCHAR(50) NOT NULL,
+                    FLG_ACTIVE CHAR(1) NOT NULL
+                )
+                """,
+                "INSERT INTO SYS_STATUS (ID, TXT_DESCRIPTION, FLG_ACTIVE) VALUES ('SCHEDULED', 'Agendado', 'Y')",
+                "INSERT INTO SYS_STATUS (ID, TXT_DESCRIPTION, FLG_ACTIVE) VALUES ('CONFIRMED', 'Confirmado', 'Y')",
+                "INSERT INTO SYS_STATUS (ID, TXT_DESCRIPTION, FLG_ACTIVE) VALUES ('PENDING', 'Pendente', 'Y')",
+                """
+                CREATE TABLE SYS_TRANSACTION_NATURE (
+                    ID VARCHAR(20) PRIMARY KEY,
+                    TXT_DESCRIPTION VARCHAR(50) NOT NULL
+                )
+                """,
+                "INSERT INTO SYS_TRANSACTION_NATURE (ID, TXT_DESCRIPTION) VALUES ('EXPENSE', 'Despesa')",
+                "INSERT INTO SYS_TRANSACTION_NATURE (ID, TXT_DESCRIPTION) VALUES ('INCOME', 'Receita')",
+                """
+                CREATE TABLE F000_PERSON (
+                    ID CHAR(36) PRIMARY KEY,
+                    TXT_NAME VARCHAR(255) NOT NULL,
+                    TXT_LOCALE VARCHAR(20) NOT NULL,
+                    TXT_LANGUAGE VARCHAR(20) NOT NULL,
+                    TMS_CREATE_AT TIMESTAMP NOT NULL,
+                    TMS_UPDATED_AT TIMESTAMP NOT NULL
+                )
+                """,
+                """
+                CREATE TABLE F000_USER (
+                    ID CHAR(36) PRIMARY KEY,
+                    COD_PERSON CHAR(36) NOT NULL,
+                    TXT_USERNAME VARCHAR(120) NOT NULL,
+                    FLG_ACTIVE CHAR(1) NOT NULL,
+                    TMS_CREATE_AT TIMESTAMP NOT NULL,
+                    TMS_UPDATED_AT TIMESTAMP NOT NULL
+                )
+                """,
+                """
+                CREATE TABLE F000_USER_CREDENTIAL (
+                    ID CHAR(36) PRIMARY KEY,
+                    COD_USER CHAR(36) NOT NULL,
+                    TXT_PASSWORD VARCHAR(255) NOT NULL,
+                    TMS_CREATE_AT TIMESTAMP NOT NULL
+                )
+                """,
+                """
+                CREATE TABLE F000_PREFERENCES (
+                    COD_PERSON CHAR(36) NOT NULL,
+                    TXT_KEY VARCHAR(50) NOT NULL,
+                    TXT_VALUE VARCHAR(255),
+                    PRIMARY KEY (COD_PERSON, TXT_KEY)
+                )
+                """,
+                """
+                CREATE TABLE F000_COST_CENTER (
+                    ID CHAR(36) PRIMARY KEY,
+                    TXT_DESCRIPTION VARCHAR(255) NOT NULL,
+                    FLG_ACTIVE CHAR(1) NOT NULL
+                )
+                """,
+                "INSERT INTO F000_COST_CENTER (ID, TXT_DESCRIPTION, FLG_ACTIVE) VALUES ('d0000000-0000-0000-0000-000000000001', 'Fixo', 'Y')",
+                "INSERT INTO F000_COST_CENTER (ID, TXT_DESCRIPTION, FLG_ACTIVE) VALUES ('d0000000-0000-0000-0000-000000000002', 'Variável', 'Y')"
+        );
+    }
+
     @Override
     public Result<Void, Throwable> initialize() {
         Logger.debug("Iniciando módulo..");
+
+        Database.initialize(model());
 
         Context.set(SSE.class, SseService::new);
         Context.set(CostCenterRepository.class, CostCenterJDBCRepository::new);
