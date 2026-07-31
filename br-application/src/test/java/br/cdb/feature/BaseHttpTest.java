@@ -27,6 +27,9 @@ import br.cdb.feature.f004._1_application.service.TagService;
 import br.cdb.feature.f004._1_application.service.TransactionTagService;
 import br.cdb.feature.f004._2_infrastructure.persistence.TagJDBCRepository;
 import br.cdb.feature.f004._2_infrastructure.persistence.TransactionTagJDBCRepository;
+import br.cdb.feature.f005._0_domain.CategoryRepository;
+import br.cdb.feature.f005._1_application.service.UserCategoryService;
+import br.cdb.feature.f005._2_infrastructure.persistence.CategoryJDBCRepository;
 import br.cdb.feature.f006._0_domain.repository.TransactionRepository;
 import br.cdb.feature.f006._1_application.service.TransactionService;
 import br.cdb.feature.f006._1_application.usecase.ReadUseCases;
@@ -144,6 +147,7 @@ public abstract class BaseHttpTest {
         Context.set(CreditCardRepository.class, CreditCardJDBCRepository::new);
         Context.set(TagRepository.class, TagJDBCRepository::new);
         Context.set(TransactionTagRepository.class, TransactionTagJDBCRepository::new);
+        Context.set(CategoryRepository.class, CategoryJDBCRepository::new);
 
         Context.remove(AccountService.class);
         Context.remove(BalanceService.class);
@@ -151,6 +155,7 @@ public abstract class BaseHttpTest {
         Context.remove(CreditCardService.class);
         Context.remove(TagService.class);
         Context.remove(TransactionTagService.class);
+        Context.remove(UserCategoryService.class);
         // Alcançados por Context.get() estrito (não se auto-instanciam): re-registra em vez de remover.
         Context.set(CostCenterService.class, CostCenterService::new);
         Context.set(PersonService.class, () -> new PersonService(Context.get(PersonRepository.class)));
@@ -164,6 +169,13 @@ public abstract class BaseHttpTest {
         Context.remove(br.cdb.feature.f003._1_application.usecase.WriteUseCase.class);
         Context.remove(br.cdb.feature.f004._1_application.usecase.ReadUseCase.class);
         Context.remove(br.cdb.feature.f004._1_application.usecase.WriteUseCase.class);
+        Context.remove(br.cdb.feature.f005._1_application.usecase.ReadUseCase.class);
+        Context.remove(br.cdb.feature.f005._1_application.usecase.WriteUseCase.class);
+    }
+
+    /** Context-wired (deixou de ser bean CDI): resolvido a cada uso, depois do reset do registry. */
+    protected UserCategoryService userCategoryService() {
+        return Context.tryGet(UserCategoryService.class);
     }
 
     /**

@@ -1,7 +1,6 @@
 package br.cdb.feature;
 
 import br.cdb.feature.f000._1_application.service.UserService;
-import br.cdb.feature.f005._1_application.UserCategoryService;
 import br.commons.Result;
 import br.commons.framework.persistence.jdbc.primitives.JDBCParameter;
 import io.quarkus.test.junit.QuarkusTest;
@@ -18,8 +17,6 @@ import static org.junit.jupiter.api.Assertions.*;
 class F000UserServiceTest extends BaseHttpTest {
     @Inject
     UserService userService;
-    @Inject
-    UserCategoryService userCategoryService;
 
     /** Username próprio (não {@link #TEST_USERNAME}, já semeado direto no banco por
      *  {@code BaseHttpTest.seedUser} no {@code @BeforeEach}, sem passar por {@code UserService}/
@@ -33,11 +30,11 @@ class F000UserServiceTest extends BaseHttpTest {
             case Result.Failure(var error) -> throw new IllegalStateException(error.toString());
         };
 
-        int afterFirst = userCategoryService.findAll(personId).size();
+        int afterFirst = userCategoryService().findAll(personId).size();
         assertTrue(afterFirst > 0);
 
         userService.createUser(username, "", "x".toCharArray()); // simulates a restart
-        assertEquals(afterFirst, userCategoryService.findAll(personId).size(),
+        assertEquals(afterFirst, userCategoryService().findAll(personId).size(),
                 "reseeding must not duplicate categories");
     }
 
@@ -67,7 +64,7 @@ class F000UserServiceTest extends BaseHttpTest {
 
         UUID personId = UUID.fromString(Objects.requireNonNull(user.personId()));
         assertEquals(1, countUsers(username), "o commit externo tem de publicar o login criado");
-        assertTrue(userCategoryService.findAll(personId).size() > 0,
+        assertTrue(userCategoryService().findAll(personId).size() > 0,
                 "as categorias semeadas pelo evento têm de vir no mesmo commit");
         assertEquals(baseline, dataSource.getActiveConnections(), "a conexão tem de voltar ao pool");
     }

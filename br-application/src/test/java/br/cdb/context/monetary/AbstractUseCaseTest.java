@@ -12,6 +12,8 @@ import br.cdb.feature.f004._0_domain.repository.TagRepository;
 import br.cdb.feature.f004._0_domain.repository.TransactionTagRepository;
 import br.cdb.feature.f004._1_application.service.TagService;
 import br.cdb.feature.f004._1_application.service.TransactionTagService;
+import br.cdb.feature.f005._0_domain.CategoryRepository;
+import br.cdb.feature.f005._1_application.service.UserCategoryService;
 import br.cdb.feature.f006._0_domain.repository.TransactionRepository;
 import br.cdb.feature.f006._1_application.service.TransactionService;
 import br.commons.MessageBus;
@@ -29,6 +31,7 @@ public abstract class AbstractUseCaseTest {
     protected TransactionRepository transactionRepository() { return Context.get(TransactionRepository.class); }
     protected TagRepository tagRepository() { return Context.get(TagRepository.class); }
     protected TransactionTagRepository transactionTagRepository() { return Context.get(TransactionTagRepository.class); }
+    protected CategoryRepository categoryRepository() { return Context.get(CategoryRepository.class); }
 
     @BeforeEach
     public void beforeEach() {
@@ -40,6 +43,7 @@ public abstract class AbstractUseCaseTest {
         Context.remove(TransactionService.class);
         Context.remove(TagService.class);
         Context.remove(TransactionTagService.class);
+        Context.remove(UserCategoryService.class);
 
         Context.tryGet(CreditCardRepository.class, InMemoryRepositories.Cards::new).clearCache();
         Context.tryGet(BalanceRepository.class, InMemoryRepositories.Balances::new).clearCache();
@@ -51,6 +55,7 @@ public abstract class AbstractUseCaseTest {
         // JDBC deixado por um @QuarkusTest anterior.
         Context.set(TagRepository.class, InMemoryRepositories.Tags::new);
         Context.set(TransactionTagRepository.class, InMemoryRepositories.TransactionTags::new);
+        Context.set(CategoryRepository.class, InMemoryRepositories.Categories::new);
 
         // CostCenterUseCase resolve o service com Context.get() estrito (em produção quem registra é
         // F000Module): re-registra sobre os fakes acima, depois de removido.

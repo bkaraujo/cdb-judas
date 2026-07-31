@@ -1,6 +1,5 @@
 package br.cdb.feature;
 
-import br.cdb.feature.f005._1_application.UserCategoryService;
 import br.cdb.feature.f006._0_domain.model.Transaction.Type;
 import br.commons.framework.persistence.jdbc.primitives.JDBCParameter;
 import io.quarkus.test.junit.QuarkusTest;
@@ -18,8 +17,6 @@ public class F005CategoryResourceTest extends BaseHttpTest {
 
     private static final String COST_CENTER_ID = "d0000000-0000-0000-0000-000000000002";
 
-    @Inject
-    UserCategoryService userCategoryService;
 
     private String createCategory(String name, String nature, String parentId) {
         String json = parentId == null
@@ -374,7 +371,7 @@ public class F005CategoryResourceTest extends BaseHttpTest {
 
     @Test
     void categoriaSistemaNaoPodeSerExcluida() {
-        String systemId = userCategoryService.findOrCreateUncategorizedCategory(UUID.fromString(TEST_USER_ID)).id().toString();
+        String systemId = userCategoryService().findOrCreateUncategorizedCategory(UUID.fromString(TEST_USER_ID)).id().toString();
 
         asTestUser()
                 .when().delete("/api/" + TEST_USER_ID + "/categories/" + systemId)

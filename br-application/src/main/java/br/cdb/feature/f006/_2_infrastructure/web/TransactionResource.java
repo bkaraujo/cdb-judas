@@ -44,7 +44,7 @@ public class TransactionResource {
         return query(uuid, new ReadUseCases.TransactionFilter(null, limit, dateFrom, dateTo, status, type));
     }
 
-    /** Endpoint interno (consumido via {@code InternalApi} por {@code f005.CategoryUseCase} na
+    /** Endpoint interno (consumido via {@code InternalApi} por {@code f005.WriteUseCase} na
      *  exclusão de categoria) — público como qualquer outro em {@code /api/{uuid}/…}, guardado pelo
      *  mesmo {@code OwnershipFilter}, nunca chamado pelo frontend. */
     @GET

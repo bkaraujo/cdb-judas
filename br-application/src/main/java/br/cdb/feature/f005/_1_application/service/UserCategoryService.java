@@ -1,4 +1,4 @@
-package br.cdb.feature.f005._1_application;
+package br.cdb.feature.f005._1_application.service;
 
 import br.cdb.feature.f005._0_domain.Category;
 import br.cdb.feature.f005._0_domain.CategoryRepository;
@@ -8,7 +8,6 @@ import br.commons.MessageBus;
 import br.commons.Result;
 import br.commons.business.BusinessError;
 import br.commons.framework.cdi.Context;
-import jakarta.inject.Singleton;
 import lombok.val;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
@@ -18,8 +17,9 @@ import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
 
+/** Context-wired como os demais serviços de fatia (o par {@code ReadUseCase}/{@code WriteUseCase} o
+ *  resolve com {@code Context.tryGet}); sem CDI. */
 @NullMarked
-@Singleton
 public class UserCategoryService {
 
     /**
@@ -145,7 +145,7 @@ public class UserCategoryService {
     }
 
     /** Valida o alvo do MOVE (existe, subcategoria, mesma natureza, ativa, fora da subárvore) e, se ok, devolve a subárvore.
-     *  Não reatribui transações nem apaga linhas — isso é orquestrado pelo {@link CategoryUseCase}, que precisa
+     *  Não reatribui transações nem apaga linhas — isso é orquestrado pelo {@code WriteUseCase}, que precisa
      *  da subárvore validada antes de tocar no vínculo transação↔categoria (fatia vizinha, f006). */
     public Result<List<UUID>, BusinessError> validateMoveTarget(UUID id, UUID targetId, UUID personId) {
         val all = repo.findAllByPerson(personId);

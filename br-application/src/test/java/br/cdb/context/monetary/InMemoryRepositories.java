@@ -12,6 +12,8 @@ import br.cdb.feature.f003._0_domain.repository.CreditCardRepository;
 import br.cdb.feature.f004._0_domain.model.Tag;
 import br.cdb.feature.f004._0_domain.repository.TagRepository;
 import br.cdb.feature.f004._0_domain.repository.TransactionTagRepository;
+import br.cdb.feature.f005._0_domain.Category;
+import br.cdb.feature.f005._0_domain.CategoryRepository;
 import br.cdb.feature.f006._0_domain.model.Transaction;
 import br.cdb.feature.f006._0_domain.repository.TransactionRepository;
 import lombok.val;
@@ -222,6 +224,20 @@ final class InMemoryRepositories {
         }
 
         public void clearCache() { links.clear(); }
+    }
+
+    /** Como o fake de tag, modela {@code COD_PERSON} — {@code personId} é campo do próprio
+     *  {@link Category}. */
+    static class Categories extends BaseRepo<Category, UUID> implements CategoryRepository {
+        public Category save(Category e) { data.put(e.id(), e); return e; }
+
+        public List<Category> findAllByPerson(UUID personId) {
+            return findAll().stream().filter(c -> personId.equals(c.personId())).toList();
+        }
+
+        public List<Category> findByNature(UUID personId, Transaction.Type nature) {
+            return findAllByPerson(personId).stream().filter(c -> c.nature() == nature).toList();
+        }
     }
 
     static class Closings implements ClosingRepository {

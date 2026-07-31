@@ -44,7 +44,7 @@
  * │                            POST   /api/{uuid}/tags
  * │                            PATCH  /api/{uuid}/tags/{id}
  * │                            DELETE /api/{uuid}/tags/{id}?strategy=&amp;targetId=  (reage a {@code TransactionsDeleted}, evento de f000/f006)
- * ├── f005  categories
+ * ├── f005  categories (par CQRS ReadUseCase/WriteUseCase, sem *UseCase de fronteira)
  * │   └── CategoryResource     GET    /api/{uuid}/categories
  * │                            POST   /api/{uuid}/categories
  * │                            PATCH  /api/{uuid}/categories/{id}
@@ -53,7 +53,7 @@
  * ├── f006  transactions + transfer
  * │   ├── TransferResource     POST   /api/{uuid}/accounts/transactions/transfer
  * │   └── TransactionResource  GET    /api/{uuid}/accounts/transactions?limit=&amp;dateFrom=&amp;dateTo=&amp;status=&amp;type=       (cross-account)
- * │                            GET    /api/{uuid}/accounts/transactions/by-category?categoryIds=     (interno — InternalApi de f005.CategoryUseCase)
+ * │                            GET    /api/{uuid}/accounts/transactions/by-category?categoryIds=     (interno — InternalApi de f005.WriteUseCase)
  * │                            GET    /api/{uuid}/accounts/{accId}/transactions?limit=&amp;dateFrom=&amp;dateTo=&amp;status=&amp;type=
  * │                            POST   /api/{uuid}/accounts/{accId}/transactions
  * │                            PATCH  /api/{uuid}/accounts/{accId}/transactions/{txId}
