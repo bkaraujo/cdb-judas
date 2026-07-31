@@ -1,4 +1,4 @@
-package br.cdb.feature.f005._1_application;
+package br.cdb.feature.f005._2_infrastructure.web.response;
 
 import br.cdb.feature.f005._0_domain.Category;
 import org.jspecify.annotations.NullMarked;

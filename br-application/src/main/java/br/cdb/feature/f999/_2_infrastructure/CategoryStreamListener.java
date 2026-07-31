@@ -1,9 +1,9 @@
-package br.cdb.feature.f999._1_application;
+package br.cdb.feature.f999._2_infrastructure;
 
 import br.cdb.feature.f000._0_domain.SSE;
 import br.cdb.feature.f005._0_domain.Category;
 import br.cdb.feature.f005._0_domain.event.CategoryEvents;
-import br.cdb.feature.f005._1_application.CategoryResponse;
+import br.cdb.feature.f005._2_infrastructure.web.response.CategoryResponse;
 import br.commons.MessageBus;
 import br.commons.framework.cdi.Context;
 import br.commons.framework.message.MessageListener;

@@ -1,4 +1,4 @@
-package br.cdb.feature.f002._1_application;
+package br.cdb.feature.f002._2_infrastructure.web.response;
 
 import br.cdb.feature.f002._0_domain.model.Account;
 import br.cdb.feature.f003._0_domain.model.CreditCard;

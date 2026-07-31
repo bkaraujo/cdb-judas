@@ -1,4 +1,4 @@
-package br.cdb.feature.f999;
+package br.cdb.feature;
 
 import br.cdb.feature.f000.F000Module;
 import br.cdb.feature.f000._1_application.InternalApi;
@@ -10,14 +10,15 @@ import br.cdb.feature.f004.F004Module;
 import br.cdb.feature.f005.F005Module;
 import br.cdb.feature.f006.F006Module;
 import br.cdb.feature.f009.F009Module;
+import br.cdb.feature.f999.F999Module;
 import br.commons.Logger;
 import br.commons.annotation.Lifecycle;
 import br.commons.framework.cdi.Context;
+import br.commons.tools.Meta;
 import io.quarkus.runtime.StartupEvent;
 import jakarta.annotation.Priority;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.event.Observes;
-import lombok.val;
 import org.jspecify.annotations.NullMarked;
 
 import java.util.List;
@@ -50,23 +51,24 @@ public class FeatureBootstrap {
         Context.set(UserGuards.class, () -> guards);
         Context.set(InternalApi.class, () -> internalApi);
 
+        initialize(new F000Module());
+
         List.of(
-                new F000Module(),
                 new F001Module(),
                 new F002Module(),
                 new F003Module(),
                 new F004Module(),
                 new F005Module(),
                 new F006Module(),
-                new F009Module(),
-                new F999Module()
+                new F009Module()
         ).forEach(FeatureBootstrap::initialize);
+
+        initialize(new F999Module());
     }
 
     private static void initialize(Lifecycle module) {
-        val name = module.getClass().getSimpleName();
         module
                 .initialize()
-                .ifFailure(error -> Logger.fatal("Falha ao iniciar %s: %s", name, error));
+                .ifFailure(error -> Logger.fatal("Falha ao iniciar %s: %s", Meta.fqn(module), error));
     }
 }

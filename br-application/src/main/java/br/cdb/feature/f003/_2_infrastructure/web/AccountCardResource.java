@@ -2,7 +2,7 @@ package br.cdb.feature.f003._2_infrastructure.web;
 
 import br.cdb.feature.f000._0_domain.DeletionStrategy;
 import br.cdb.feature.f000._1_application.Deletions;
-import br.cdb.feature.f003._1_application.CardResponse;
+import br.cdb.feature.f003._2_infrastructure.web.response.CardResponse;
 import br.cdb.feature.f003._1_application.command.CreditCardCommand;
 import br.cdb.feature.f003._1_application.usecase.ReadUseCase;
 import br.cdb.feature.f003._1_application.usecase.WriteUseCase;

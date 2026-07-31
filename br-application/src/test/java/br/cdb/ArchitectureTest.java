@@ -1,6 +1,7 @@
 package br.cdb;
 
-import br.commons.framework.cdi.Context;
+import br.commons.framework.persistence.jdbc.JDBCRepository;
+import br.commons.tools.Meta;
 import com.tngtech.archunit.core.domain.JavaClass;
 import com.tngtech.archunit.core.importer.ImportOption;
 import com.tngtech.archunit.junit.AnalyzeClasses;
@@ -9,6 +10,7 @@ import com.tngtech.archunit.lang.ArchCondition;
 import com.tngtech.archunit.lang.ArchRule;
 import com.tngtech.archunit.lang.ConditionEvents;
 import com.tngtech.archunit.lang.SimpleConditionEvent;
+import jakarta.ws.rs.Path;
 import lombok.val;
 import org.jspecify.annotations.NullMarked;
 
@@ -23,15 +25,6 @@ import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noClasses;
 )
 @NullMarked
 class ArchitectureTest {
-
-    @ArchTest
-    static final ArchRule resources_must_not_access_repositories =
-            noClasses().that().haveSimpleNameEndingWith("Resource")
-                    .and().haveSimpleNameNotEndingWith("LoginResource")
-                    .and().haveSimpleNameNotEndingWith("SelfResource")
-                    .should().accessClassesThat().haveSimpleNameEndingWith("Repository")
-                    .because("LoginResource e SelfResource são exceções deliberadas: acessam UserRepository direto (equivalente ao UserDetailsService do Spring) para autenticação/username de login, sem Facade de contexto para isso");
-
     @ArchTest
     static final ArchRule all_classes_must_be_null_marked =
             classes().that().areNotEnums()
@@ -41,13 +34,37 @@ class ArchitectureTest {
                     .should().beAnnotatedWith(NullMarked.class)
                     .because("todo tipo deve declarar explicitamente seu contrato de nullability");
 
-    /**
-     * <strong>Exceção temporária (fase 2→4 de {@code .claude/plan.md}):</strong> alvo remanescente
-     * dos contextos dissolvidos ({@link #isDissolvedContextRemnant}) é tolerado — {@code CoreModule}
-     * (core) precisa referenciar as portas de repositório ex-contexto (agora {@code fNNN._0_domain.repository})
-     * para publicar os adaptadores JDBC no {@link Context} no startup, papel que já exercia
-     * antes da dissolução sem violar esta regra (as portas não moravam em {@code ..feature..}).
-     */
+    @ArchTest
+    static final ArchRule resources_must_live_in_infrastructure = classes()
+            .that().areAnnotatedWith(Path.class)
+            .should().resideInAnyPackage(".._2_infrastructure.web");
+
+    @ArchTest
+    static final ArchRule resources_request_must_live_in_infrastructure = classes()
+            .that().areRecords()
+            .and().haveSimpleNameEndingWith("Request")
+            .should().resideInAnyPackage(".._2_infrastructure.web.request");
+    @ArchTest
+    static final ArchRule resources_response_must_live_in_infrastructure = classes()
+            .that().areRecords()
+            .and().haveSimpleNameEndingWith("Response")
+            .should().resideInAnyPackage(".._2_infrastructure.web.response");
+
+    @ArchTest
+    static final ArchRule resources_must_not_access_repositories =
+            noClasses().that().haveSimpleNameEndingWith("Resource")
+                    .and().haveSimpleNameNotEndingWith("LoginResource")
+                    .and().haveSimpleNameNotEndingWith("SelfResource")
+                    .should().accessClassesThat().haveSimpleNameEndingWith("Repository")
+                    .because("LoginResource e SelfResource são exceções deliberadas: acessam UserRepository direto (equivalente ao UserDetailsService do Spring) para autenticação/username de login, sem Facade de contexto para isso");
+
+
+    @ArchTest
+    static final ArchRule jdbcrepository_must_live_in_infrastructure = classes()
+            .that().areAssignableTo(JDBCRepository.class)
+            .and().doNotHaveFullyQualifiedName(Meta.fqn(JDBCRepository.class))
+            .should().resideInAnyPackage(".._2_infrastructure.persistence");
+
     @ArchTest
     static final ArchRule core_must_not_access_feature =
             noClasses().that().resideInAPackage("..core..")
@@ -61,63 +78,18 @@ class ArchitectureTest {
                     .should().accessClassesThat().resideInAPackage(".._2_infrastructure..")
                     .because("serviços de aplicação devem depender de abstrações de domínio (_0_domain), não de implementações de infraestrutura");
 
-    /**
-     * O número da fatia expressa ordem de criação: uma feature {@code fNNN} só pode consumir recursos
-     * de fatias que já existiam antes dela — {@code fMMM} com {@code MMM < NNN}. {@code f000} é a base
-     * (não depende de feature nenhuma). Ex.: {@code f006} pode consumir {@code f002}/{@code f004}/
-     * {@code f005}, mas nunca {@code f009}. A inversão de dependência resolve os casos em que uma fatia
-     * anterior precisa de serviço de uma posterior: a anterior define a porta ({@code _0_domain}) e um
-     * adapter em {@code f999._2_infrastructure.adapter} a implementa, delegando ao provedor real —
-     * mecanismo hoje sem instância ativa no código (os 4 casos que existiam até a fase 3 foram
-     * removidos na fase 4 de {@code .claude/plan.md}, virando evento ou leitura via {@code InternalApi}),
-     * mas disponível para o próximo caso legítimo.
-     */
-    @ArchTest
+
     static final ArchRule feature_slices_depend_only_on_earlier_ones =
             classes().that().resideInAPackage("..feature..")
                     .should(dependOnlyOnEarlierFeatureSlices())
                     .because("fNNN só consome fMMM com MMM < NNN (f000 é base); dependência 'para cima' inverte-se via porta na fatia anterior — ver CLAUDE.md");
 
-    /**
-     * Fatia de negócio não pode depender de fatia de negócio irmã, nem "para baixo" (regra 7 já
-     * cobre "para cima"). Duas exceções, ambas por papel arquitetural, não por número específico:
-     * alvo {@code f000} (kernel compartilhado) sempre permitido; origem {@code f999} (composition
-     * root — único lugar que liga porta a provedor via adapter) sempre permitida como origem. Toda
-     * outra dependência cross-slice resolve-se por evento em {@code f000._0_domain.event}, por porta
-     * declarada pelo consumidor em seu próprio {@code _0_domain}, ou por adapter em
-     * {@code f999._2_infrastructure.adapter} — ver CLAUDE.md.
-     *
-     * <p><strong>Exceção temporária (desde a fase 2 de {@code .claude/plan.md}):</strong> alvo que é
-     * remanescente dos contextos recém-dissolvidos ({@link #isDissolvedContextRemnant}) também é
-     * tolerado, qualquer que seja a origem — os antigos usecases/services/models/repositories de
-     * {@code br-context-monetary}/{@code br-context-people} viraram subpacotes dentro de {@code fNNN}
-     * preservando a organização interna que já tinham como contexto, mas ainda são chamados cross-slice
-     * do jeito antigo. A fase 4 fechou os 4 casos que tinham porta+adapter dedicados (viraram evento ou
-     * {@code InternalApi}); a fase 6 fechou os dois outros nomeados até aqui — {@code f007} (importação
-     * de extrato/fatura, fundida em {@code f006}, deixou de ser cross-slice) e {@code f009} (dashboard,
-     * trocou para {@code InternalApi}). Resta {@code UserGuards} (em {@code f000}), que ainda chama
-     * {@code f002.ReadUseCase}/{@code f003.ReadUseCase} direto — sem fase nomeada pra fechar
-     * esse caso ainda. Enquanto essa exceção existir, "{@code mvn verify} verde" não significa "zero
-     * acoplamento cross-slice" — só "zero acoplamento novo fora do que já veio da dissolução".</p>
-     */
     @ArchTest
     static final ArchRule feature_slices_must_not_depend_on_sibling_slices =
             classes().that().resideInAPackage("..feature..")
                     .should(notDependOnSiblingFeatureSlices())
                     .because("fatia de negócio não importa fatia de negócio irmã; use evento (f000), porta no _0_domain do consumidor, ou adapter em f999 — ver CLAUDE.md");
 
-    /**
-     * Guarda implícita (fase 3 de {@code .claude/plan.md}): {@code F002_ACCOUNT}/{@code F003_CARD}/
-     * {@code F006_TRANSACTION} carregam {@code COD_PERSON} nativo — o repositório precisa declarar
-     * pelo menos um finder que o use ({@code findAllByPerson}/{@code findByIdAndPerson}/
-     * {@code findByAccountAndPerson}, todos com "Person" no nome), não só os herdados de
-     * {@code Repository<T,ID>} ({@code findAll}/{@code findById}, sem pessoa — mantidos para uso
-     * interno do engine, ver {@code AccountService}/{@code CreditCardService}/
-     * {@code TransactionService}). Checagem deliberadamente estreita: confirma que a porta
-     * <em>declara</em> acesso escopado, não que todo chamador o usa — ArchUnit não faz
-     * taint-tracking de qual argumento chega em qual query, então isto não substitui revisão dos
-     * call sites (ver {@code UserGuards}, que lê exclusivamente pelos finders escopados).
-     */
     @ArchTest
     static final ArchRule person_scoped_repositories_must_declare_a_person_scoped_finder =
             classes().that().haveSimpleName("AccountRepository")
