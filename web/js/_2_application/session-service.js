@@ -19,9 +19,14 @@
   function login(user, password) {
     return loginFn(user, password)
       .then(function (result) {
+        // A missing X-User-Id must not produce a session that "works" (valid token) but silently
+        // 404s every /api/{uuid}/... call via withUser's empty-prefix fallback (http-client.js) —
+        // fail loudly here instead of leaving a half-authenticated session to surface as a random
+        // 404 minutes later on an unrelated feature.
+        if (!result.userId) throw new Error('Login sem X-User-Id na resposta');
         authStore.set(result.token);
         authStore.setUser(user);
-        if (result.userId) authStore.setUserId(result.userId);
+        authStore.setUserId(result.userId);
         return hydrate();
       })
       .catch(function (e) {

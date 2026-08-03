@@ -42,6 +42,11 @@
       return next;
     }
 
+    /* `auth.get() === token` on 401 guards against a stale-request race: mountChrome() fires an
+     * unauthenticated GET (e.g. sidebar version check) before login, queued same as everything
+     * else; if it resolves 401 *after* a subsequent successful login, an unconditional auth.clear()
+     * would wipe the freshly-set session. Comparing against the token this specific request was
+     * sent with skips the clear once something fresher has already taken over. */
     function doRequest(method, path, body) {
       const auth = window.Infra.AuthStore;
       const headers = { 'X-request-id': reqId() };
@@ -58,7 +63,7 @@
         if (nextToken) auth.set(nextToken);
 
         if (!res.ok) {
-          if (res.status === 401) {
+          if (res.status === 401 && auth.get() === token) {
             auth.clear();
             try { onUnauthorized(); } catch (e) { /* noop */ }
           }
@@ -104,7 +109,7 @@
         if (nextToken) auth.set(nextToken);
 
         if (!res.ok) {
-          if (res.status === 401) {
+          if (res.status === 401 && auth.get() === token) {
             auth.clear();
             try { onUnauthorized(); } catch (e) { /* noop */ }
           }
@@ -129,20 +134,33 @@
     }
 
     /* Prepends the authenticated user's id, building /api/{uuid}<path>. This is the default for all
-     * data routes after the cutover; global routes (cost-center) opt out via http.global.*. */
+     * data routes after the cutover; global routes (cost-center) opt out via http.global.*.
+     * Returns null instead of silently falling back to an unprefixed path — callers (scoped()
+     * below) turn that into a rejected promise, so a missing uid surfaces as a caught error, not
+     * a confusing 404 on the wrong URL. */
     function withUser(path) {
       const uid = window.Infra.AuthStore.userId();
-      return (uid ? '/' + uid : '') + path;
+      return uid ? '/' + uid + path : null;
+    }
+
+    function scoped(method, path, body) {
+      const p = withUser(path);
+      if (!p) return Promise.reject(new Error('Sem uid de usuário autenticado para ' + path));
+      return request(method, p, body);
     }
 
     return {
       baseUrl: baseUrl,
-      get:    function (p)    { return request('GET',    withUser(p)); },
-      post:   function (p, b) { return request('POST',   withUser(p), b); },
-      put:    function (p, b) { return request('PUT',    withUser(p), b); },
-      patch:  function (p, b) { return request('PATCH',  withUser(p), b); },
-      delete: function (p)    { return request('DELETE', withUser(p)); },
-      upload: function (p, fd) { return enqueue(function () { return doUpload('POST', withUser(p), fd); }); },
+      get:    function (p)    { return scoped('GET',    p); },
+      post:   function (p, b) { return scoped('POST',   p, b); },
+      put:    function (p, b) { return scoped('PUT',    p, b); },
+      patch:  function (p, b) { return scoped('PATCH',  p, b); },
+      delete: function (p)    { return scoped('DELETE', p); },
+      upload: function (p, fd) {
+        const up = withUser(p);
+        if (!up) return Promise.reject(new Error('Sem uid de usuário autenticado para ' + p));
+        return enqueue(function () { return doUpload('POST', up, fd); });
+      },
       // Global (no user prefix) — only for system-wide routes such as /cost-center.
       global: {
         get:    function (p)    { return request('GET',    p); },

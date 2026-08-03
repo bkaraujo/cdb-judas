@@ -122,7 +122,10 @@
         });
 
         if (!res.ok || !res.body) {
-          if (res.status === 401) {
+          // Only clear if no rotated token (from a concurrent non-SSE request, pattern 004)
+          // has already superseded `t` since this connection opened — a stale 401 for `t`
+          // must not blow away a session that's since moved on.
+          if (res.status === 401 && auth.get() === t) {
             auth.clear();
             connecting = false;
             return;
