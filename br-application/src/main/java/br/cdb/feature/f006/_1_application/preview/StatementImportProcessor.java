@@ -9,7 +9,6 @@ import br.cdb.feature.f006._0_domain.ImportResult;
 import br.cdb.feature.f006._0_domain.MonetaryDocumentEntry;
 import br.cdb.feature.f006._0_domain.RowState;
 import br.cdb.feature.f006._0_domain.model.Transaction;
-import br.cdb.feature.f006._1_application.CategoryGuesser;
 import br.cdb.feature.f006._1_application.GroupSignature;
 import br.cdb.feature.f006._1_application.confirm.StatementConfirmCommand;
 import br.cdb.feature.f006._1_application.usecase.ReadUseCases;
@@ -48,7 +47,6 @@ public class StatementImportProcessor {
     private final WriteUseCases writes = Context.tryGet(WriteUseCases.class);
     private final ReadUseCases reads = Context.tryGet(ReadUseCases.class);
 
-    private final CategoryGuesser categoryGuesser = new CategoryGuesser();
     private final Clock clock;
 
     public StatementImportProcessor(Clock clock) {
@@ -70,7 +68,7 @@ public class StatementImportProcessor {
 
         val rows = new ArrayList<BankStatementPreviewRow>();
         for (int i = 0; i < statement.size(); i++) {
-            rows.add(bankRow(statement.get(i), classes.get(i), List.of()));
+            rows.add(bankRow(statement.get(i), classes.get(i)));
         }
 
         return Result.success(new ImportPreviewOutcome.Statement(
@@ -144,14 +142,12 @@ public class StatementImportProcessor {
         }
     }
 
-    private BankStatementPreviewRow bankRow(MonetaryDocumentEntry line, Classification cls, List<CategoryGuesser.Entry> historyEntries) {
+    /** {@code categoryId} sai sempre nulo: quem escolhe a categoria de cada linha é o usuário, na tela. */
+    private BankStatementPreviewRow bankRow(MonetaryDocumentEntry line, Classification cls) {
         val type = line.amount().signum() < 0 ? Transaction.Type.EXPENSE : Transaction.Type.INCOME;
-        val categoryId = cls.state() == RowState.NEW
-                ? categoryGuesser.guess(line.description(), historyEntries).orElse(null)
-                : null;
         val reconcileDescription = cls.target() != null ? cls.target().description() : null;
         return new BankStatementPreviewRow(
-                line.date(), line.description(), line.amount(), type, cls.state(), categoryId, reconcileDescription);
+                line.date(), line.description(), line.amount(), type, cls.state(), null, reconcileDescription);
     }
 
     private List<Classification> classify(List<MonetaryDocumentEntry> movements, List<Transaction> accountTx) {

@@ -62,6 +62,7 @@ O stack JSON de `br.commons` sobrevive só como resíduo: `br.cdb.core.persisten
 | **`br-context-monetary/src/main/java/CLAUDE.md`** | **Contexto monetary** — estrutura, modelos/use-cases reais, pontos não óbvios (`TransactionPolicy`, cartão como entidade) |
 | **`br-application/src/main/java/CLAUDE.md`** | **Diretrizes backend (borda HTTP/CDI)** — índice operacional: VSA/Hexagonal, Result, Lombok, Null-Safety, Testes/ArchUnit, Qualidade & Build |
 | **`web/CLAUDE.md`** | **Diretrizes frontend** — estilo + padrões 001–006 (request tracing, token rotativo, namespace de usuário, preferências server-owned) |
+| `docs/backend/testing.md` | **Os três tipos de teste** (use case / interface Web / ArchUnit), por que não há teste de unidade de classe interna, e como exercitar o import de PDF pela borda |
 | `docs/backend/hexagonal-architecture.md` | Camadas Resource → UseCase → Service → Repository |
 | `docs/backend/result-pattern.md` | Result / Railway + desembrulho `.get()`/fatal nos adapters |
 | `docs/backend/null-safety.md` | JSpecify `@NullMarked` + NullAway/ErrorProne |
