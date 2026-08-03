@@ -104,7 +104,7 @@ public abstract class RequestMapper {
         val rows = preview.rows().stream()
                 .map(r -> new BankStatementPreviewResponse.Row(
                         r.date().toString(), r.description(), r.amount(), r.type(),
-                        r.state().name(), r.categoryId(), r.reconcileDescription()))
+                        r.state().name(), r.categoryId(), r.costCenterId(), r.reconcileDescription()))
                 .toList();
         return new BankStatementPreviewResponse(
                 "BANK_STATEMENT", preview.issuer(), accounts, preview.selectedAccountId(), rows);
@@ -128,13 +128,14 @@ public abstract class RequestMapper {
                 draft.status(),
                 row.duplicate(),
                 row.categoryId(),
+                row.costCenterId(),
                 row.suggestedCardId());
     }
 
     static InvoiceConfirmCommand.Row toInvoiceRow(StatementConfirmRequest.Row row) {
         return new InvoiceConfirmCommand.Row(
                 row.description(), row.amount(), row.date(), row.originalDate(),
-                row.installmentNumber(), row.installmentTotal(), row.categoryId(),
+                row.installmentNumber(), row.installmentTotal(), row.categoryId(), row.costCenterId(),
                 Objects.requireNonNull(row.cardId()));
     }
 }

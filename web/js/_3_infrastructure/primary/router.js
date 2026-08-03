@@ -13,6 +13,7 @@
     'cost-centers':     'Centros de Custo',
     'accounts':         'Contas Bancárias',
     'tags':             'Tags',
+    'import-rules':     'Regras de Nomenclatura',
     'settings':         'Configurações',
   };
 

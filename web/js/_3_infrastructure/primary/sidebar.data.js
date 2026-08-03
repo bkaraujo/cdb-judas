@@ -20,7 +20,8 @@ window.SIDEBAR_NAV = [
       {"id": "cost-centers", "label": "Centros de Custo", "icon": "briefcase" },
       {"id": "categories",   "label": "Categorias",      "icon": "tag" },
       {"id": "accounts",     "label": "Contas",           "icon": "building" },
-      {"id": "tags",         "label": "Tags",             "icon": "hash" }
+      {"id": "tags",         "label": "Tags",             "icon": "hash" },
+      {"id": "import-rules", "label": "Regras de Nomenclatura", "icon": "edit" }
     ]
   }
 ];

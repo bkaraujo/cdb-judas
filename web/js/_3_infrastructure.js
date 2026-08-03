@@ -26,6 +26,7 @@
     'category-repository.js',
     'tag-repository.js',
     'cost-center-repository.js',
+    'import-rule-repository.js',
     'transaction-repository.js',
     'balance-repository.js',
     'budget-repository.js',

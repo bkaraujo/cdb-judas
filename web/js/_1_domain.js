@@ -11,6 +11,7 @@
     'category.js',
     'tag.js',
     'cost-center.js',
+    'import-rule-matcher.js',
     'budget.js',
     'payable.js',
     'statement-item.js',

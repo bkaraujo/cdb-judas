@@ -27,6 +27,7 @@
     'cost-centers.js',
     'accounts.js',
     'tags.js',
+    'import-rules.js',
     'settings.js'
   ];
   files.forEach(function (path) {

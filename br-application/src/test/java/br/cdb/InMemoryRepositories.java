@@ -18,6 +18,8 @@ import br.cdb.feature.f005._0_domain.Category;
 import br.cdb.feature.f005._0_domain.CategoryRepository;
 import br.cdb.feature.f006._0_domain.model.Transaction;
 import br.cdb.feature.f006._0_domain.repository.TransactionRepository;
+import br.cdb.feature.f010._0_domain.model.ImportRule;
+import br.cdb.feature.f010._0_domain.repository.ImportRuleRepository;
 import lombok.val;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
@@ -189,6 +191,18 @@ public abstract class InMemoryRepositories {
 
         public Optional<Tag> findByPersonAndId(UUID personId, UUID id) {
             return findById(id).filter(t -> personId.equals(t.personId()));
+        }
+    }
+
+    public static class ImportRules extends BaseRepo<ImportRule, UUID> implements ImportRuleRepository {
+        public ImportRule save(ImportRule e) { data.put(e.id(), e); return e; }
+
+        public List<ImportRule> findAllByPerson(UUID personId) {
+            return findAll().stream().filter(r -> personId.equals(r.personId())).toList();
+        }
+
+        public Optional<ImportRule> findByPersonAndId(UUID personId, UUID id) {
+            return findById(id).filter(r -> personId.equals(r.personId()));
         }
     }
 

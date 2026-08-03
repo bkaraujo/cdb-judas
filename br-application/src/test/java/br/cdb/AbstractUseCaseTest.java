@@ -18,6 +18,8 @@ import br.cdb.feature.f005._0_domain.CategoryRepository;
 import br.cdb.feature.f005._1_application.service.UserCategoryService;
 import br.cdb.feature.f006._0_domain.repository.TransactionRepository;
 import br.cdb.feature.f006._1_application.service.TransactionService;
+import br.cdb.feature.f010._0_domain.repository.ImportRuleRepository;
+import br.cdb.feature.f010._1_application.service.ImportRuleService;
 import br.commons.MessageBus;
 import br.commons.framework.cdi.Context;
 import org.jspecify.annotations.NullMarked;
@@ -35,6 +37,7 @@ public abstract class AbstractUseCaseTest {
     protected TransactionTagRepository transactionTagRepository() { return Context.get(TransactionTagRepository.class); }
     protected CategoryRepository categoryRepository() { return Context.get(CategoryRepository.class); }
     protected PersonRepository personRepository() { return Context.get(PersonRepository.class); }
+    protected ImportRuleRepository importRuleRepository() { return Context.get(ImportRuleRepository.class); }
 
     @BeforeEach
     public void beforeEach() {
@@ -47,6 +50,7 @@ public abstract class AbstractUseCaseTest {
         Context.remove(TagService.class);
         Context.remove(TransactionTagService.class);
         Context.remove(UserCategoryService.class);
+        Context.remove(ImportRuleService.class);
 
         Context.tryGet(CreditCardRepository.class, InMemoryRepositories.Cards::new).clearCache();
         Context.tryGet(BalanceRepository.class, InMemoryRepositories.Balances::new).clearCache();
@@ -60,6 +64,7 @@ public abstract class AbstractUseCaseTest {
         Context.set(TransactionTagRepository.class, InMemoryRepositories.TransactionTags::new);
         Context.set(CategoryRepository.class, InMemoryRepositories.Categories::new);
         Context.set(PersonRepository.class, InMemoryRepositories.People::new);
+        Context.set(ImportRuleRepository.class, InMemoryRepositories.ImportRules::new);
 
         // O par ReadUseCase/WriteUseCase resolve o service com Context.get() estrito (em produção quem registra é
         // F000Module): re-registra sobre os fakes acima, depois de removido.

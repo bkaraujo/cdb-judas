@@ -291,6 +291,44 @@
     }
     bindNotesCounter();
 
+    // Live "regra de nomenclatura" match: while typing the description, if a rule's name appears
+    // in the text, replace the description with the rule's own name and pre-fill whichever of
+    // conta/categoria/centro de custo the rule sets — same widget, still editable by hand
+    // afterwards. Delegated on m.$body (survives the grid rebuild on type change) and idempotent
+    // (once the field equals the rule's name, re-matching is a no-op, so it never fights further
+    // manual edits to the other fields).
+    m.$body.on('input', 'input[name=description]', function () {
+      const $desc = $(this);
+      const value = $desc.val() || '';
+      const rule = window.Domain.ImportRuleMatcher.match(value, window.App.ImportRuleService.listCached());
+      if (!rule || value === rule.name) return;
+
+      $desc.val(rule.name);
+      initial.description = rule.name;
+
+      if (rule.accountId) {
+        const $acc = m.$body.find('select[name=accountId]');
+        if ($acc.find('option[value="' + esc(rule.accountId) + '"]').length) {
+          $acc.val(String(rule.accountId)).trigger('change');
+          initial.accountId = String(rule.accountId);
+        }
+      }
+      if (rule.categoryId) {
+        const $cat = m.$body.find('select[name=categoryId]');
+        if ($cat.find('option[value="' + esc(rule.categoryId) + '"]').length) {
+          $cat.val(String(rule.categoryId));
+          initial.categoryId = String(rule.categoryId);
+        }
+      }
+      if (rule.costCenterId) {
+        const $cc = m.$body.find('select[name=costCenterId]');
+        if ($cc.find('option[value="' + esc(rule.costCenterId) + '"]').length) {
+          $cc.val(String(rule.costCenterId));
+          initial.costCenterId = String(rule.costCenterId);
+        }
+      }
+    });
+
     // Account change refreshes which cards are offered (a card belongs to one account).
     m.$body.on('change', 'select[name=accountId]', function () {
       const $field = m.$body.find('[data-region=card-field]');

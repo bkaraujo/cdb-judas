@@ -74,7 +74,7 @@ public class InvoiceImportProcessor {
             for (val draft : expander.expand(line, accountId, statementPeriod, today)) {
                 val dup = suggestedCard != null && isDuplicate(draft, history);
                 Logger.verbose("Attaching %s", draft);
-                rows.add(new PreviewRow(draft, dup, null, suggestedCardId));
+                rows.add(new PreviewRow(draft, dup, null, null, suggestedCardId));
             }
         }
 
@@ -195,9 +195,10 @@ public class InvoiceImportProcessor {
                                 @Nullable Integer totalInstallments
     ) {
         val status = YearMonth.from(row.date()).isAfter(YearMonth.from(today)) ? Transaction.Status.SCHEDULED : Transaction.Status.CONFIRMED;
+        val costCenterId = row.costCenterId() != null ? row.costCenterId() : CostCenter.VARIAVEL.id();
         val tx = new Transaction(
                 UUID.randomUUID(), row.description(), row.amount(), row.date(),
-                accountId, status, Transaction.Type.EXPENSE, CostCenter.VARIAVEL.id(), null,
+                accountId, status, Transaction.Type.EXPENSE, costCenterId, null,
                 groupId, installmentNumber == null ? 1 : installmentNumber,
                 totalInstallments == null ? 1 : totalInstallments, null, row.cardId());
         try {

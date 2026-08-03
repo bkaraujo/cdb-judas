@@ -10,6 +10,7 @@ import br.cdb.feature.f004.F004Module;
 import br.cdb.feature.f005.F005Module;
 import br.cdb.feature.f006.F006Module;
 import br.cdb.feature.f009.F009Module;
+import br.cdb.feature.f010.F010Module;
 import br.cdb.feature.f999.F999Module;
 import br.commons.Logger;
 import br.commons.annotation.Lifecycle;
@@ -60,7 +61,8 @@ public class FeatureBootstrap {
                 new F004Module(),
                 new F005Module(),
                 new F006Module(),
-                new F009Module()
+                new F009Module(),
+                new F010Module()
         ).forEach(FeatureBootstrap::initialize);
 
         initialize(new F999Module());

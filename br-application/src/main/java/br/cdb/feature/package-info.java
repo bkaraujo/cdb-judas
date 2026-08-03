@@ -1,7 +1,7 @@
 /**
  * Raiz da camada de features da aplicação.
  *
- * <p>Cada feature é uma fatia numerada {@code fNNN} (hoje f000–f006, f009, f999), hexágono auto-contido:
+ * <p>Cada feature é uma fatia numerada {@code fNNN} (hoje f000–f006, f009, f010, f999), hexágono auto-contido:
  * {@code _0_domain} (modelos/overlays + portas {@code *Repository} + eventos de domínio),
  * {@code _1_application} ({@code *Service}/{@code *UseCase} + commands + {@code @MessageListener}
  * best-effort), {@code _2_infrastructure} ({@code *Resource}, DTOs HTTP, {@code *JDBCRepository},
@@ -64,6 +64,12 @@
  * │                                POST /api/{uuid}/accounts/transactions/import/confirm  (parsers BTG/Santander, casamento de cartão, sugestão de categoria)
  * ├── f009  dashboard (só ReadUseCase: fatia somente-leitura)
  * │   └── DashboardResource    GET /api/{uuid}/dashboard?month=&amp;year=
+ * ├── f010  regras de nomenclatura (par CQRS ReadUseCase/WriteUseCase, sem *UseCase de fronteira;
+ * │         CRUD puro, sem consumidor cross-slice — casamento de texto é 100% client-side)
+ * │   └── ImportRuleResource   GET    /api/{uuid}/accounts/transaction/rules
+ * │                            POST   /api/{uuid}/accounts/transaction/rules
+ * │                            PATCH  /api/{uuid}/accounts/transaction/rules/{id}
+ * │                            DELETE /api/{uuid}/accounts/transaction/rules/{id}
  * ├── f999  Initialization routines                                                       (sem HTTP)
  * </pre>
  */

@@ -32,6 +32,7 @@ public record BankStatementPreviewResponse(
             Transaction.Type type,
             String state,
             @Nullable UUID categoryId,
+            @Nullable UUID costCenterId,
             @Nullable String reconcileDescription
     ) {}
 

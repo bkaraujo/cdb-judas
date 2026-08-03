@@ -36,6 +36,7 @@ public record StatementConfirmRequest(
             @Nullable Integer installmentTotal,
             Transaction.@Nullable Type transactionType,
             @NotNull UUID categoryId,
+            @Nullable UUID costCenterId,
             @Nullable UUID cardId
     ) {}
 }

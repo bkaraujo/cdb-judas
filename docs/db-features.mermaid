@@ -209,3 +209,18 @@ erDiagram
     SYS_STATUS ||--o{ F006_TRANSACTION : ""
     F006_TRANSACTION ||--o{ F005_TRANSACTION_CATEGORY : ""
     F006_TRANSACTION ||--o{ F004_TRANSACTION_TAG : ""
+
+%% ── f010 — regras de nomenclatura ────────────────────────────────────────
+%% Casamento de texto (nome → conta/categoria/centro de custo) é 100% client-side; sem FK real nas
+%% referências de dados (COD_ACCOUNT/COD_CATEGORY), mesma convenção de F006_TRANSACTION.
+
+    F010_IMPORT_RULE {
+        CHAR(36) ID PK
+        CHAR(36) COD_PERSON PK
+        VARCHAR(255) TXT_NAME
+        CHAR(36) COD_ACCOUNT
+        CHAR(36) COD_CATEGORY
+        CHAR(36) COD_COST_CENTER
+        TIMESTAMP TMS_CREATE_AT
+    }
+    F000_PERSON ||--o{ F010_IMPORT_RULE : ""

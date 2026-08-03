@@ -29,6 +29,7 @@ public record InvoiceConfirmCommand(List<Row> rows) {
             @Nullable Integer installmentNumber,
             @Nullable Integer installmentTotal,
             UUID categoryId,
+            @Nullable UUID costCenterId,
             UUID cardId
     ) {}
 }

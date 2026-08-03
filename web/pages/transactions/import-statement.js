@@ -126,6 +126,41 @@
         'style="width:auto;font-size:12px;padding:4px 6px;' + (locked ? 'opacity:0.6;' : '') + '">' + options + '</select>';
     }
 
+    // Mesma convenção de create-edit.js: sem valor da regra, pré-seleciona o centro "Variável"
+    // (o backend faz o mesmo fallback quando a linha chega sem costCenterId no confirm).
+    function costCenterSelectHtml(selectedId, idx) {
+      const ccs = window.App.CacheStore.costCenters();
+      if (!ccs.length) {
+        return '<select data-row-costcenter data-idx="' + idx + '" disabled>' +
+          '<option value="">Sem centros</option></select>';
+      }
+      const variavel = ccs.filter(function (c) { return /vari/i.test(c.description || c.name || ''); })[0];
+      const target = selectedId || (variavel && variavel.id) || '';
+      const options = ccs.map(function (c) {
+        const label = c.description || c.name || '';
+        const sel = String(c.id) === String(target) ? ' selected' : '';
+        return '<option value="' + esc(c.id) + '"' + sel + '>' + esc(label) + '</option>';
+      }).join('');
+      return '<select data-row-costcenter data-idx="' + idx + '" ' +
+        'style="width:auto;font-size:12px;padding:4px 6px;">' + options + '</select>';
+    }
+
+    // Regra de nomenclatura: casa a descrição crua de cada linha contra o cache de regras e, ao
+    // bater, sobrescreve descrição/categoria/centro de custo (nunca conta — extrato já tem conta
+    // fixa por importação, fatura casa por cartão) antes da linha ser renderizada. Roda antes de
+    // alignGroupFields() na fatura, pra a propagação de parcelas herdar o resultado da 1ª parcela.
+    function applyImportRules(rows) {
+      const rules = window.App.ImportRuleService.listCached();
+      if (!rules.length) return;
+      rows.forEach(function (row) {
+        const rule = window.Domain.ImportRuleMatcher.match(row.description, rules);
+        if (!rule) return;
+        row.description = rule.name;
+        if (rule.categoryId) row.categoryId = rule.categoryId;
+        if (rule.costCenterId) row.costCenterId = rule.costCenterId;
+      });
+    }
+
     function cardOptionShort(card) {
       return card.last4 ? (card.name + ' — •••• ' + card.last4) : card.name;
     }
@@ -163,6 +198,7 @@
           '</td>' +
           '<td style="padding:8px 10px;width:90px;white-space:nowrap;color:var(--text-secondary);">' + esc(fmtIsoDate(row.date)) + '</td>' +
           '<td style="padding:8px 10px;">' + categorySelectHtml(row.categoryId, idx, row.groupId, groupLocked) + '</td>' +
+          '<td style="padding:8px 10px;">' + costCenterSelectHtml(row.costCenterId, idx) + '</td>' +
           '<td style="padding:8px 10px;text-align:center;color:var(--text-secondary);">' + parcela + '</td>' +
           '<td style="padding:8px 10px;">' +
             '<input type="text" data-row-description data-idx="' + idx + '" data-group-id="' + esc(row.groupId || '') + '" value="' + esc(row.description) + '"' + descLockedAttrs + ' ' +
@@ -221,6 +257,7 @@
                 '</th>' +
                 '<th data-sort="date" style="padding:8px 10px;width:90px;text-align:left;font-size:11px;color:var(--text-muted);cursor:pointer;">Data' + sortIcon('date') + '</th>' +
                 '<th data-sort="categoryId" style="padding:8px 10px;text-align:left;font-size:11px;color:var(--text-muted);cursor:pointer;">Categoria' + sortIcon('categoryId') + '</th>' +
+                '<th data-sort="costCenterId" style="padding:8px 10px;text-align:left;font-size:11px;color:var(--text-muted);cursor:pointer;">Centro de Custo' + sortIcon('costCenterId') + '</th>' +
                 '<th data-sort="installmentNumber" style="padding:8px 10px;text-align:center;font-size:11px;color:var(--text-muted);cursor:pointer;">Parcela' + sortIcon('installmentNumber') + '</th>' +
                 '<th data-sort="description" style="padding:8px 10px;text-align:left;font-size:11px;color:var(--text-muted);cursor:pointer;">Descrição' + sortIcon('description') + '</th>' +
                 '<th data-sort="suggestedCardId" style="padding:8px 10px;text-align:left;font-size:11px;color:var(--text-muted);cursor:pointer;">Cartão' + sortIcon('suggestedCardId') + '</th>' +
@@ -272,9 +309,11 @@
         const src = preview.rows && preview.rows[idx];
         if (!src) return;
         const $cat = m.$el.find('[data-row-category][data-idx="' + idx + '"]');
+        const $costCenter = m.$el.find('[data-row-costcenter][data-idx="' + idx + '"]');
         const $desc = m.$el.find('[data-row-description][data-idx="' + idx + '"]');
         const $card = m.$el.find('[data-row-card][data-idx="' + idx + '"]');
         const categoryId = ($cat.val() || src.categoryId) || null;
+        const costCenterId = ($costCenter.val() || src.costCenterId) || null;
         const description = ($desc.val() || src.description || '').trim();
         // O cartão é definido por transação — cada linha incluída precisa de um cartão.
         const cardId = $card.length ? ($card.val() || null) : null;
@@ -287,6 +326,7 @@
           installmentNumber: src.installmentNumber,
           installmentTotal: src.installmentTotal,
           categoryId: categoryId,
+          costCenterId: costCenterId,
           cardId: cardId,
         });
       });
@@ -332,6 +372,7 @@
 
     // ── Bank statement (extrato) preview ───────────────────────
     function routePreview(preview) {
+      applyImportRules((preview && preview.rows) || []);
       if (preview && preview.documentType === 'BANK_STATEMENT') {
         showStatementPreview(preview);
       } else {
@@ -380,6 +421,7 @@
           '</td>' +
           '<td style="padding:8px 10px;width:90px;white-space:nowrap;color:var(--text-secondary);">' + esc(fmtIsoDate(row.date)) + '</td>' +
           '<td style="padding:8px 10px;">' + statementCategorySelectHtml(row.categoryId, idx, row.type) + '</td>' +
+          '<td style="padding:8px 10px;">' + costCenterSelectHtml(row.costCenterId, idx) + '</td>' +
           '<td style="padding:8px 10px;">' +
             '<input type="text" data-row-description data-idx="' + idx + '" value="' + esc(row.description) + '" ' +
               'style="width:100%;font-size:12px;padding:4px 6px;border:1px solid transparent;background:transparent;color:inherit;outline:none;text-transform:uppercase;" ' +
@@ -432,6 +474,7 @@
                 '</th>' +
                 '<th data-sort="date" style="padding:8px 10px;width:90px;text-align:left;font-size:11px;color:var(--text-muted);cursor:pointer;">Data' + sortIcon('date') + '</th>' +
                 '<th data-sort="categoryId" style="padding:8px 10px;text-align:left;font-size:11px;color:var(--text-muted);cursor:pointer;">Categoria' + sortIcon('categoryId') + '</th>' +
+                '<th data-sort="costCenterId" style="padding:8px 10px;text-align:left;font-size:11px;color:var(--text-muted);cursor:pointer;">Centro de Custo' + sortIcon('costCenterId') + '</th>' +
                 '<th data-sort="description" style="padding:8px 10px;text-align:left;font-size:11px;color:var(--text-muted);cursor:pointer;">Descrição' + sortIcon('description') + '</th>' +
                 '<th data-sort="state" style="padding:8px 10px;text-align:center;font-size:11px;color:var(--text-muted);cursor:pointer;">Estado' + sortIcon('state') + '</th>' +
                 '<th data-sort="amount" style="padding:8px 10px;text-align:right;font-size:11px;color:var(--text-muted);cursor:pointer;">Valor' + sortIcon('amount') + '</th>' +
@@ -477,7 +520,10 @@
       if (!selectedFile) return;
       window.App.TransactionService.importPreview(selectedFile, lastPassword, selectedAccountId)
         .then(function (preview) {
-          if (preview && preview.documentType === 'BANK_STATEMENT') showStatementPreview(preview);
+          if (preview && preview.documentType === 'BANK_STATEMENT') {
+            applyImportRules((preview && preview.rows) || []);
+            showStatementPreview(preview);
+          }
         })
         .catch(function (err) {
           window.toast((err && err.message) || 'Falha ao atualizar o preview', 'error');
@@ -495,8 +541,10 @@
         const src = statementData.rows && statementData.rows[idx];
         if (!src) return;
         const $cat = m.$el.find('[data-row-category][data-idx="' + idx + '"]');
+        const $costCenter = m.$el.find('[data-row-costcenter][data-idx="' + idx + '"]');
         const $desc = m.$el.find('[data-row-description][data-idx="' + idx + '"]');
         const categoryId = ($cat.val() || src.categoryId) || null;
+        const costCenterId = ($costCenter.val() || src.costCenterId) || null;
         const description = ($desc.val() || src.description || '').trim();
         rows.push({
           description: description,
@@ -504,6 +552,7 @@
           date: src.date,
           transactionType: src.type,
           categoryId: categoryId,
+          costCenterId: costCenterId,
         });
       });
 
@@ -564,6 +613,11 @@
       propagateGroupEdit(idx, 'categoryId', this.value);
     });
 
+    m.$el.on('change', '[data-row-costcenter]', function () {
+      const idx = Number($(this).attr('data-idx'));
+      if (previewData && previewData.rows && previewData.rows[idx]) previewData.rows[idx].costCenterId = this.value;
+    });
+
     m.$el.on('click', '[data-act=toggle-password]', function () { revealPassword(''); });
 
     m.$el.on('click', '[data-act=do-confirm]', function () { confirmImport(); });
@@ -612,6 +666,10 @@
       m.$el.find('[data-row-category]').each(function () {
         const idx = Number($(this).attr('data-idx'));
         data.rows[idx].categoryId = this.value;
+      });
+      m.$el.find('[data-row-costcenter]').each(function () {
+        const idx = Number($(this).attr('data-idx'));
+        data.rows[idx].costCenterId = this.value;
       });
       m.$el.find('[data-row-description]').each(function () {
         const idx = Number($(this).attr('data-idx'));

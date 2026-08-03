@@ -14,6 +14,7 @@
     'category-service.js',
     'tag-service.js',
     'cost-center-service.js',
+    'import-rule-service.js',
     'transaction-service.js',
     'payable-service.js',
     'balance-service.js',

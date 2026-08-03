@@ -14,8 +14,9 @@ import java.util.UUID;
  * positive) and {@code type} is derived from that sign ({@code EXPENSE}/{@code INCOME}).
  * {@code state} reflects the row against the chosen account (see {@link RowState}); when it is
  * {@link RowState#RECONCILE}, {@code reconcileDescription} carries the matched manual transaction's
- * description so the UI can show what it will confirm. {@code categoryId} is always {@code null} —
- * it is the slot the UI fills in when the user picks a category for the row before confirming.
+ * description so the UI can show what it will confirm. {@code categoryId} and {@code costCenterId}
+ * are always {@code null} — slots the UI fills in when the user (or a matched import rule,
+ * client-side) picks them for the row before confirming.
  */
 @NullMarked
 public record BankStatementPreviewRow(
@@ -25,4 +26,5 @@ public record BankStatementPreviewRow(
         Transaction.Type type,
         RowState state,
         @Nullable UUID categoryId,
+        @Nullable UUID costCenterId,
         @Nullable String reconcileDescription) {}

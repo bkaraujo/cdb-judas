@@ -37,6 +37,7 @@ public record ImportPreviewResponse(
             Transaction.Status status,
             boolean duplicate,
             @Nullable UUID categoryId,
+            @Nullable UUID costCenterId,
             @Nullable UUID suggestedCardId) {}
 
     @NullMarked

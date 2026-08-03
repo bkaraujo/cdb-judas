@@ -21,6 +21,7 @@
   function accounts()    { return list('accounts'); }
   function tags()        { return list('tags'); }
   function costCenters() { return list('costCenters'); }
+  function importRules() { return list('importRules'); }
 
   function findById(key, id) {
     const arr = list(key);
@@ -54,6 +55,7 @@
     accounts: accounts,
     tags: tags,
     costCenters: costCenters,
+    importRules: importRules,
     findById: findById,
     subscribe: subscribe,
   };

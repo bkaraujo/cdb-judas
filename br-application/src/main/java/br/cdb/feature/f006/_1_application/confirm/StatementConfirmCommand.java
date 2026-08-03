@@ -22,6 +22,7 @@ public record StatementConfirmCommand(UUID accountId, List<Row> rows) {
             BigDecimal amount,
             LocalDate date,
             Transaction.@Nullable Type type,
-            UUID categoryId
+            UUID categoryId,
+            @Nullable UUID costCenterId
     ) {}
 }

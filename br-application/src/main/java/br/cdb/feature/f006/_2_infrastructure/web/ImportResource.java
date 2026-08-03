@@ -96,7 +96,7 @@ public class ImportResource {
             return HTTPResponse.unprocessable("ACCOUNT_REQUIRED", "O campo accountId é obrigatório para extratos bancários.");
         }
         val rows = req.rows().stream()
-                .map(r -> new StatementConfirmCommand.Row(r.description(), r.amount(), r.date(), r.transactionType(), r.categoryId()))
+                .map(r -> new StatementConfirmCommand.Row(r.description(), r.amount(), r.date(), r.transactionType(), r.categoryId(), r.costCenterId()))
                 .toList();
 
         return switch (importUseCase.confirmStatementImport(personId, new StatementConfirmCommand(req.accountId(), rows))) {
