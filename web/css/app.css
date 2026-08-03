@@ -398,6 +398,8 @@ button { font-family: var(--font); cursor: pointer; border: none; outline: none;
   justify-content: space-between;
 }
 .sidebar-foot-right { margin-left: auto; }
+.sidebar.collapsed .sidebar-foot { flex-wrap: wrap; justify-content: center; }
+.sidebar.collapsed .sidebar-foot-right { margin-left: 0; }
 .sidebar-foot .icon-btn {
   width: 36px; height: 36px;
   display: flex; align-items: center; justify-content: center;

@@ -16,10 +16,11 @@
  *   <li><b>guards</b> — {@code UserGuards}, checagem de propriedade/anti-IDOR</li>
  *   <li><b>costcenter</b> — {@code CostCenterResource} ({@code GET /api/cost-center}, catálogo fixo)</li>
  *   <li><b>version</b> — {@code VersionResource} ({@code GET /api/version})</li>
- *   <li><b>closing</b> — {@code ClosingService}/{@code ClosingRepository}/{@code ClosingResource}
- *       ({@code /api/{uuid}/accounts/closing}); gate de política síncrono ({@code validateDate})
- *       consumido por transactions/transfer</li>
  * </ul>
+ *
+ * <p><b>Nota:</b> {@code closing} (fechamento contábil) vive em {@code f002}, não aqui — apesar de
+ * gravar em {@code F000_PREFERENCES}, é {@code f002.WriteUseCase.validateClosing} quem faz o gate
+ * consumido por {@code f006} (transactions/transfer).</p>
  *
  * <p><b>Par CQRS</b> ({@code _1_application.usecase.ReadUseCase}/{@code WriteUseCase}, Context-wired
  * como em f001–f006), com uma diferença: aqui ele não serve a nenhum {@code *Resource} da própria

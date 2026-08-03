@@ -79,6 +79,7 @@
         if (me) {
           window.Infra.AuthStore.setName(me.name || '');
           if (me.username) window.Infra.AuthStore.setUser(me.username);
+          if (window.Sidebar && window.Sidebar.refreshClosing) window.Sidebar.refreshClosing();
           if (me.preferences) {
             // Reconcile: server wins (server theme null → client value is taught back).
             window.App.PreferencesService.applyServer(me.preferences);

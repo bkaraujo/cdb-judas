@@ -21,6 +21,7 @@
     collapsed: false,
     groups: Object.assign({}, DEFAULT_GROUPS),
     version: '0.0.0',
+    closing: null,
     onNav: null,
     $root: null,
   };
@@ -58,6 +59,12 @@
     }
     who = (who || '').trim();
     return who ? who.charAt(0).toUpperCase() : 'C';
+  }
+
+  // "2026-06" -> "06/2026" for the closing tooltip.
+  function closingLabel(period) {
+    const parts = period.split('-');
+    return parts[1] + '/' + parts[0];
   }
 
   function isActive(item) {
@@ -157,8 +164,28 @@
     $avatarWrap.append('<span class="tooltip">Perfil</span>');
     $foot.append($avatarWrap);
 
+    // Accounting closing lock (right, before theme) — icon reflects whether a period is set.
+    const closingLbl = state.closing
+      ? 'Fechamento: ' + esc(closingLabel(state.closing))
+      : 'Fechamento contábil';
+    const $closingWrap = $('<div class="tooltip-wrap sidebar-foot-right"></div>');
+    const $closingBtn = $(
+      '<button class="icon-btn"' + (state.closing ? ' style="color:var(--accent);"' : '') + '>' +
+        window.icon(state.closing ? 'lock' : 'unlock', 16) +
+      '</button>'
+    );
+    $closingBtn.on('click', function () {
+      window.closingDialog({
+        current: state.closing,
+        onChange: function (p) { state.closing = p; render(); },
+      });
+    });
+    $closingWrap.append($closingBtn);
+    $closingWrap.append('<span class="tooltip">' + closingLbl + '</span>');
+    $foot.append($closingWrap);
+
     // Theme toggle icon (right)
-    const $themeWrap = $('<div class="tooltip-wrap sidebar-foot-right"></div>');
+    const $themeWrap = $('<div class="tooltip-wrap"></div>');
     const $themeBtn = $('<button class="icon-btn">' + window.icon(themeName, 16) + '</button>');
     $themeBtn.on('click', function () { window.Theme.toggle(); render(); });
     $themeWrap.append($themeBtn);
@@ -219,6 +246,20 @@
     refreshState: function () {
       loadState();
       if (state.$root) render();
+    },
+    // Pulls the active accounting-closing period. Not called from mount() — an anonymous
+    // GET before login would 401; composition-root calls this from hydrateSelf() instead.
+    refreshClosing: function () {
+      if (window.App && window.App.ClosingService) {
+        window.App.ClosingService.get()
+          .then(function (res) {
+            state.closing = res && res.period;
+            if (state.$root) render();
+          })
+          .catch(function (err) {
+            console.warn('Sidebar: falha ao obter fechamento', err);
+          });
+      }
     },
   };
 })();

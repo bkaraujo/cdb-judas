@@ -42,6 +42,8 @@ window.ICONS = {
   menu:        'M3 12h18M3 6h18M3 18h18',
   activity:    'M22 12h-4l-3 9L9 3l-3 9H2',
   pieChart:    'M21.21 15.89A10 10 0 118 2.83M22 12A10 10 0 0012 2v10z',
+  lock:        'M5 11h14a2 2 0 012 2v7a2 2 0 01-2 2H5a2 2 0 01-2-2v-7a2 2 0 012-2z M8 11V7a4 4 0 018 0v4',
+  unlock:      'M5 11h14a2 2 0 012 2v7a2 2 0 01-2 2H5a2 2 0 01-2-2v-7a2 2 0 012-2z M8 11V7a4 4 0 017.9-1',
 };
 
 window.icon = function (name, size, strokeWidth) {

@@ -8,6 +8,7 @@
     'ui.js',
     'helpers.js',
     'delete-dialog.js',
+    'closing-dialog.js',
     'theme.js',
     'sidebar.data.js',
     'sidebar.js',

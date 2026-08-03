@@ -38,6 +38,19 @@
     return a && b && a.month === b.month && a.year === b.year;
   }
 
+  /* "YYYY-MM" — the closing-period format used by the accounting-closing endpoint.
+   * Distinct from yyyymm() above, which is the balance-endpoint format ("yyyyMM"). */
+  function yyyyDashMm(p) {
+    return p.year + '-' + pad2(p.month);
+  }
+
+  function fromYyyyDashMm(s) {
+    if (!s) return null;
+    const parts = s.split('-');
+    if (parts.length !== 2) return null;
+    return create(parseInt(parts[1], 10), parseInt(parts[0], 10));
+  }
+
   window.Domain = window.Domain || {};
   window.Domain.Period = {
     create: create,
@@ -45,6 +58,8 @@
     shift: shift,
     bounds: bounds,
     yyyymm: yyyymm,
+    yyyyDashMm: yyyyDashMm,
+    fromYyyyDashMm: fromYyyyDashMm,
     containsDate: containsDate,
     equals: equals,
   };
