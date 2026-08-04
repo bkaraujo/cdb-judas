@@ -17,19 +17,24 @@
 
   /* Builds the statement rows for a period: a "Saldo anterior" balance-header row carrying
      `opening`, then each transaction (all statuses, sorted ascending by date) with its
-     cumulative running balance. Empty `txs` yields the opening row alone. Pure — no I/O. */
-  function buildRows(opening, txs, openingDate) {
+     cumulative running balance. Empty `txs` yields the opening row alone. Pure — no I/O.
+     `opts` (opcional) atende o extrato de cartão, onde o cabeçalho mostra o total da fatura
+     ANTERIOR mas o acumulado do ciclo atual recomeça do zero:
+       { headerLabel: 'Fatura anterior', headerBalance: <total anterior>, startBalance: 0 } */
+  function buildRows(opening, txs, openingDate, opts) {
+    const o = opts || {};
     const open = +opening || 0;
+    const headerBalance = o.headerBalance != null ? +o.headerBalance : open;
     const rows = [{
       id: null,
       date: openingDate || null,
-      description: 'Saldo anterior',
+      description: o.headerLabel || 'Saldo anterior',
       amount: 0,
       status: STATUS.BALANCE,
-      runningBal: open,
+      runningBal: headerBalance,
       categoryId: null,
     }];
-    let running = open;
+    let running = o.startBalance != null ? +o.startBalance : open;
     (txs || []).slice()
       .sort(function (a, b) { return String(a.date).localeCompare(String(b.date)); })
       .forEach(function (t) {
@@ -42,6 +47,9 @@
           status: t.status,
           runningBal: running,
           categoryId: t.categoryId,
+          // Propagados para a view montar o link da fatura (statement.js) e resolver o cartão.
+          cardId: t.cardId != null ? t.cardId : null,
+          invoice: t.invoice === true,
         });
       });
     return rows;

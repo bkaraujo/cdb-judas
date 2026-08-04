@@ -15,7 +15,9 @@
     accounts.forEach(function (a, i) {
       var limit = a.creditLimit || 0;
       // Invoice total = every card on the account combined, matched by tx.cardId.
-      var used = window.Domain.CreditCard.accountInvoiceTotal(ctx.currentMonthTxs(), a, period);
+      // Usa a lista inteira (não currentMonthTxs): o ciclo da fatura que vence neste mês começa
+      // no mês anterior — ver Domain.Invoice.
+      var used = window.Domain.CreditCard.accountInvoiceTotal(ctx.allTxs(), a, period);
       var pct = window.Domain.CreditCard.usagePct(used, limit);
       var color = ctx.pickColor(i + 4, a.color);
       var barColor = 'var(--' + window.Domain.CreditCard.barColorByUsage(pct) + ')';

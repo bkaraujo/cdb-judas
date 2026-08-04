@@ -2,6 +2,7 @@ package br.cdb.feature.f002._1_application.service;
 
 import br.cdb.feature.f002._0_domain.model.Account;
 import br.cdb.feature.f002._0_domain.model.Balance;
+import br.cdb.feature.f002._0_domain.model.InvoiceCycle;
 import br.cdb.feature.f002._0_domain.repository.BalanceRepository;
 import br.cdb.feature.f006._1_application.service.TransactionService;
 import br.commons.Logger;
@@ -62,6 +63,18 @@ public class BalanceService {
         repository.findDirtyAccountIds().forEach(this::recalculate);
     }
 
+    /**
+     * Varredura de startup: marca todo snapshot como sujo e recomputa na hora. Existe porque a
+     * regra de cálculo pode mudar entre versões (foi o caso da fatura de cartão, que passou a
+     * debitar no vencimento em vez da data da compra) sem que nenhuma transação seja escrita — sem
+     * isto, {@code F002_BALANCE} ficaria com valores da regra antiga até a próxima escrita em cada
+     * conta. Barato: recomputa a partir das transações que já estão em memória por conta.
+     */
+    public void recomputeAll() {
+        repository.markAllDirty();
+        recomputeDirty();
+    }
+
 
     @NullMarked
     private record MonthBalance(
@@ -69,14 +82,22 @@ public class BalanceService {
             BigDecimal amount
     ) {}
 
+    /**
+     * Compra de cartão não sai da conta na data da compra — sai quando a fatura vence. Por isso a
+     * transação com {@code cardId} é re-datada para {@link InvoiceCycle#dueDate}: o valor é o mesmo,
+     * muda o mês do snapshot em que ele entra. Transação sem cartão conta na própria data.
+     */
     public void recalculate(UUID accountId) {
         val accountResult = accountService.findById(accountId);
         if (accountResult.isFailure()) return;
+        val account = accountResult.get();
         val transactions = transactionService.findByAccount(accountId).stream()
-                .map(t -> new MonthBalance(t.date(), BigDecimal.valueOf(t.signal()).multiply(t.amount())))
+                .map(t -> new MonthBalance(
+                        t.cardId() == null ? t.date() : InvoiceCycle.dueDate(account, t.date()),
+                        BigDecimal.valueOf(t.signal()).multiply(t.amount())))
                 .toList();
 
-        recalculateBalance(accountResult.get(), transactions);
+        recalculateBalance(account, transactions);
     }
 
     private void recalculateBalance(Account account, List<MonthBalance> transactions) {

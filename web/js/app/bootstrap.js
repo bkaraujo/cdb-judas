@@ -7,8 +7,10 @@
     window.Theme.restore();
     window.App.Shell.buildShell();
 
-    const initial = (location.hash || '').replace(/^#\/?/, '') ||
-                  window.App.PreferencesService.getLastScreen() || 'dashboard';
+    // Só o id da tela: a rota pode carregar parâmetro (`card-statement/<cardId>`), que o sidebar
+    // não conhece — quem interpreta o path inteiro é o Router.
+    const initial = ((location.hash || '').replace(/^#\/?/, '') ||
+                  window.App.PreferencesService.getLastScreen() || 'dashboard').split('/')[0];
 
     window.App.Shell.mountChrome(initial);
 

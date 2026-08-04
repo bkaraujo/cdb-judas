@@ -27,16 +27,28 @@
     return cache.accounts().filter(window.Domain.Account.hasCards);
   }
 
-  function invoiceFor(cardId, period) {
-    const b = window.Domain.Period.bounds(period);
-    const params = 'from=' + b.from + '&to=' + b.to;
-    return txRepo.list(params).then(function (txs) {
-      const arr = Array.isArray(txs) ? txs : [];
-      return {
-        transactions: arr,
-        total: window.Domain.CreditCard.invoiceTotal(arr, cardId, period),
-      };
-    });
+  /* Fatura que VENCE em `period`: as compras do ciclo (que começa no mês anterior — ver
+     Domain.Invoice) lançadas contra este cartão. Devolve também o vencimento e o ciclo, que a
+     tela de Extrato do Cartão usa no cabeçalho. Período sem vencimento → fatura vazia. */
+  function invoiceFor(card, account, period) {
+    const dues = window.Domain.Invoice.dueDatesIn(account, period);
+    if (!dues.length) {
+      return Promise.resolve({ dueDate: null, cycle: null, transactions: [], total: 0 });
+    }
+    const due = dues[0];
+    const cycle = window.Domain.Invoice.cycleFor(account, due);
+    return txRepo.listByAccount(account.id, 'dateFrom=' + cycle.from + '&dateTo=' + cycle.to)
+      .then(function (txs) {
+        const items = (Array.isArray(txs) ? txs : []).filter(function (t) {
+          return String(t.cardId) === String(card.id);
+        });
+        return {
+          dueDate: due,
+          cycle: cycle,
+          transactions: items,
+          total: window.Domain.CreditCard.invoiceTotal(items, card.id, account, period),
+        };
+      });
   }
 
   window.App = window.App || {};

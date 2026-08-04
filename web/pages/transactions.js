@@ -1,6 +1,17 @@
 /* pages/transactions.js — Lançamentos (list + filtros + CRUD modal + status).
  * Card da lista no leiaute de linha do Extrato de Contas: data | conta (coluna fixa) |
- * categoria (coluna fixa) | descrição | badge de status | valor | ações. */
+ * categoria (coluna fixa) | descrição | badge de status | valor | ações.
+ *
+ * Compra de cartão não aparece linha a linha: App.TransactionService.listForPeriod a colapsa numa
+ * linha por (cartão, vencimento) — 'FATURA · CONTA 1234', lançada na data de vencimento e clicável
+ * para #/card-statement/{cardId} (ver Domain.Invoice). Consequências:
+ *   - a linha de fatura é derivada: sem editar/excluir/confirmar;
+ *   - os filtros de CATEGORIA e STATUS a escondem — uma fatura agrega lançamentos de várias
+ *     categorias e não tem status próprio, então nenhum valor único a representa;
+ *   - conta, tipo e busca funcionam normalmente (a busca casa o rótulo);
+ *   - os cards de resumo passam a somar a fatura no mês do vencimento.
+ * `state.raw` guarda as transações cruas da janela buscada — é delas que os modais de
+ * editar/excluir resolvem o lançamento por trás de uma linha. */
 (function () {
   window.Pages = window.Pages || {};
 
@@ -29,7 +40,8 @@
     state = {
       $root: null,
       loading: true,
-      transactions: [],
+      transactions: [],         // linhas exibidas (compras de cartão já colapsadas em fatura)
+      raw: [],                  // transações cruas da janela — resolve editar/excluir por id
       month: p.month - 1,       // 0-11
       year: p.year,
       search: '',
@@ -43,7 +55,7 @@
 
   // ── Helpers ───────────────────────────────────────────────
 
-  function findTx(id) { return window.byId(state.transactions, id); }
+  function findTx(id) { return window.byId(state.raw, id); }
 
   // Default date for a new transaction: today when the displayed month is the
   // current month, otherwise the first day of the month being displayed.
@@ -58,7 +70,7 @@
   function openFormModal(existing) {
     window.transactionActions.openFormModal({
       existing: existing || null,
-      list: state.transactions,
+      list: state.raw,
       defaultDate: defaultNewDate(),
       onSaved: function () { return loadTransactions(); },
     });
@@ -68,15 +80,16 @@
   function loadTransactions() {
     state.loading = true;
     render();
-    const b = monthBounds(state.month, state.year);
-    const qs = 'dateFrom=' + b.from + '&dateTo=' + b.to;
-    return window.App.TransactionService.list(qs).then(function (list) {
-      state.transactions = Array.isArray(list) ? list : [];
+    const period = window.Domain.Period.create(state.month + 1, state.year);
+    return window.App.TransactionService.listForPeriod(period).then(function (res) {
+      state.transactions = res.rows;
+      state.raw = res.raw;
       state.loading = false;
       render();
     }).catch(function (err) {
       state.loading = false;
       state.transactions = [];
+      state.raw = [];
       render();
       window.toast((err && err.message) || 'Falha ao carregar lançamentos', 'error');
     });
@@ -87,6 +100,9 @@
     const catMap = categoryById();
     const s = (state.search || '').toLowerCase();
     return state.transactions.filter(function (tx) {
+      // Fatura agrega várias categorias e não tem status próprio: filtrar por um desses valores
+      // a exclui em vez de fingir que ela tem um.
+      if (tx.invoice && (state.filterCategory || state.filterStatus)) return false;
       const cat = catMap[tx.categoryId];
       const catLbl = cat ? categoryLabel(cat).toLowerCase() : '';
       const matchSearch = !s ||
@@ -372,7 +388,8 @@
             window.icon('check', 14) +
           '</button>'
         : '';
-      const actionsHtml =
+      // Linha de fatura é derivada — edita-se cada compra no extrato do cartão.
+      const actionsHtml = tx.invoice ? '' :
         markPaidHtml +
         '<button type="button" class="icon-btn" title="Editar" ' +
           'data-act="edit" data-id="' + esc(tx.id) + '" style="width:28px;height:28px;">' +
@@ -382,6 +399,15 @@
           'data-act="trash" data-id="' + esc(tx.id) + '" style="width:28px;height:28px;color:var(--expense);">' +
           window.icon('trash', 14) +
         '</button>';
+
+      // O link é um <a href> de verdade: o router é hash-based, então a navegação não precisa de
+      // handler (e o deep-link fica copiável/abrível em nova aba).
+      const descHtml = tx.invoice
+        ? '<a href="#/card-statement/' + esc(tx.cardId) + '" style="' + descStyle +
+            'color:var(--accent);text-decoration:none;">' +
+            esc(tx.description || '—') +
+          '</a>'
+        : '<span style="' + descStyle + '">' + esc(tx.description || '—') + '</span>';
 
       $card.append(
         '<div class="stm-row" data-row="tx" data-id="' + esc(tx.id) + '" style="' + rowStyle + '">' +
@@ -393,7 +419,7 @@
           '</span>' +
           '<span style="' + accStyle + '">' + esc(accName) + '</span>' +
           '<span style="' + catStyle + '">' + esc(catLbl) + '</span>' +
-          '<span style="' + descStyle + '">' + esc(tx.description || '—') + '</span>' +
+          descHtml +
           '<span class="badge badge-' + esc(STATUS_BADGE[stKey] || 'muted') + '" ' +
           'style="flex-shrink:0;">' + esc(STATUS_LABEL[stKey] || stKey) + '</span>' +
           '<span style="font-size:13px;font-weight:700;color:' + amtColor + ';min-width:100px;text-align:right;">' +

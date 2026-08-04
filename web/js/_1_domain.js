@@ -6,6 +6,7 @@
     'period.js',
     'money.js',
     'account.js',
+    'invoice.js',
     'credit-card.js',
     'transaction.js',
     'category.js',

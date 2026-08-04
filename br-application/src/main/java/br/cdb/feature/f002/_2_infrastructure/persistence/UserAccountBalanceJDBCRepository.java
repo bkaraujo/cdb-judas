@@ -107,6 +107,11 @@ public final class UserAccountBalanceJDBCRepository extends JDBCRepository<Balan
     }
 
     @Override
+    public void markAllDirty() {
+        datasource.execute("UPDATE " + table() + " SET FLG_DIRTY = 'Y'");
+    }
+
+    @Override
     public List<UUID> findDirtyAccountIds() {
         return datasource.query(
                 "SELECT DISTINCT COD_ACCOUNT FROM " + table() + " WHERE FLG_DIRTY = 'Y'",

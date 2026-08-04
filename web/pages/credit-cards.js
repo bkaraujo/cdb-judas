@@ -9,9 +9,11 @@
  *     account.creditLimit — o limite é da conta, não de cada cartão
  *   - rodapé Fechamento/Vencimento (também da conta)
  *
- * Período: navegação por mês (periodNav). Backend GET /api/transactions ignora
- * filtros accountId/from/to, então buscamos a lista completa uma vez e
- * particionamos por cartão + intervalo de datas no cliente.
+ * Período: navegação por mês, pelo VENCIMENTO da fatura — o ciclo vem de
+ * Domain.CreditCard.invoicePeriod (closingDay/dueDay da conta, ver Domain.Invoice), não do mês
+ * calendário. Backend GET /api/transactions ignora filtros accountId/from/to, então buscamos a
+ * lista completa uma vez e particionamos por cartão + intervalo de datas no cliente.
+ * "Ver fatura" leva para #/card-statement/{cardId} — o modal de fatura virou tela própria.
  *
  * "Novo Cartão" → redireciona para #/accounts (cartões são geridos no modal de
  * edição da conta).
@@ -58,14 +60,6 @@
     return window.Domain.Period.create(state.month, state.year);
   }
 
-  function findCard(id) {
-    for (let i = 0; i < state.groups.length; i++) {
-      const found = window.byId(state.groups[i].cards, id);
-      if (found) return found;
-    }
-    return null;
-  }
-
   function pctColor(pct) {
     return 'var(--' + window.Domain.CreditCard.barColorByUsage(pct) + ')';
   }
@@ -83,17 +77,17 @@
     });
   }
 
-  // Invoice for a single card (matched by tx.cardId) — used per row + the modal.
-  function computeInvoice(cardId) {
+  // Invoice for a single card (matched by tx.cardId) — used per row.
+  function computeInvoice(account, cardId) {
     const period = currentPeriod();
-    const b = window.Domain.CreditCard.invoicePeriod(period);
+    const b = window.Domain.CreditCard.invoicePeriod(account, period);
     const cid = String(cardId);
     const items = (state.allTx || []).filter(function (t) {
       if (String(t.cardId) !== cid) return false;
       const d = String(t.date || '').slice(0, 10);
       return d >= b.from && d <= b.to;
     });
-    const total = window.Domain.CreditCard.invoiceTotal(items, cardId, period);
+    const total = window.Domain.CreditCard.invoiceTotal(items, cardId, account, period);
     return { items: items, total: total };
   }
 
@@ -230,7 +224,7 @@
     // ── Per-card rows: last4 + fatura do cartão + Ver fatura ─
     const $rows = $('<div style="display:flex;flex-direction:column;"></div>');
     group.cards.forEach(function (c) {
-      const inv = computeInvoice(c.id);
+      const inv = computeInvoice(account, c.id);
       const used = Number(inv.total) || 0;
       const valueHtml = state.txLoading
         ? '<span style="font-size:13px;color:var(--text-muted);">…</span>'
@@ -243,11 +237,11 @@
             '•••• ' + esc(c.last4) +
           '</span>' +
           valueHtml +
-          '<button type="button" class="cc" data-act="view-invoice" data-id="' + esc(c.id) + '" ' +
-            'style="background:transparent;border:none;cursor:pointer;font-size:12px;' +
+          '<a href="#/card-statement/' + esc(c.id) + '" ' +
+            'style="text-decoration:none;font-size:12px;' +
             'font-weight:600;color:var(--accent);display:inline-flex;align-items:center;gap:4px;">' +
             'Ver fatura ' + window.icon('chevronRight', 12) +
-          '</button>' +
+          '</a>' +
         '</div>'
       );
     });
@@ -259,101 +253,10 @@
     return $card;
   }
 
-  // ── Invoice modal (por cardId) ─────────────────────────────
-  function openInvoiceModal(cardId) {
-    const card = findCard(cardId);
-    if (!card) return;
-    const inv = computeInvoice(cardId);
-    const loadingInv = state.txLoading;
-
-    const headerSummary =
-      '<div style="display:flex;justify-content:space-between;align-items:center;' +
-        'padding:12px 16px;background:var(--bg-hover);border-radius:var(--radius-sm);' +
-        'margin-bottom:14px;">' +
-        '<div>' +
-          '<p style="font-size:11px;color:var(--text-muted);font-weight:700;' +
-            'text-transform:uppercase;letter-spacing:0.04em;">Total da fatura</p>' +
-          '<p style="font-size:18px;font-weight:800;color:var(--expense);margin-top:2px;">' +
-            esc(fmt(inv.total || 0)) +
-          '</p>' +
-        '</div>' +
-        '<div style="text-align:right;font-size:12px;color:var(--text-muted);">' +
-          esc(window.monthLabel(state.month, state.year)) +
-        '</div>' +
-      '</div>';
-
-    let listHtml;
-    if (loadingInv) {
-      listHtml = '<div style="padding:20px;text-align:center;color:var(--text-muted);font-size:13px;">' +
-        'Carregando lançamentos…</div>';
-    } else if (!inv.items || !inv.items.length) {
-      listHtml = window.emptyState({
-        icon: 'creditCard',
-        title: 'Sem lançamentos neste período',
-        desc: 'Tente outro mês.'
-      });
-    } else {
-      // Group by date.
-      const byDate = {};
-      const order = [];
-      inv.items.forEach(function (t) {
-        const k = String(t.date || '').slice(0, 10);
-        if (!byDate[k]) { byDate[k] = []; order.push(k); }
-        byDate[k].push(t);
-      });
-      order.sort();
-      const rows = order.map(function (k) {
-        const dayHeader =
-          '<div style="font-size:11px;font-weight:700;color:var(--text-muted);' +
-            'text-transform:uppercase;letter-spacing:0.04em;padding:10px 16px 6px 16px;">' +
-            esc(fmtDate(k)) +
-          '</div>';
-        const rowsHtml = byDate[k].map(function (t) {
-          const amt = Number(t.amount) || 0;
-          const isExpense = (t.type === 'EXPENSE') || amt < 0;
-          const absAmt = Math.abs(amt);
-          const color = isExpense ? 'var(--expense)' : 'var(--income)';
-          return '<div style="display:flex;align-items:center;gap:12px;' +
-            'padding:10px 16px;border-bottom:1px solid var(--border-light);">' +
-            '<span style="flex:1;font-size:13px;color:var(--text-primary);' +
-              'overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-transform:uppercase;">' +
-              esc(t.description || '—') +
-            '</span>' +
-            '<span style="font-size:13px;font-weight:700;color:' + color + ';">' +
-              esc(fmt(absAmt)) +
-            '</span>' +
-          '</div>';
-        }).join('');
-        return dayHeader + rowsHtml;
-      }).join('');
-      listHtml =
-        '<div style="border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;">' +
-          rows +
-        '</div>';
-    }
-
-    const $close = window.btn({
-      variant: 'secondary', size: 'md', label: 'Fechar',
-      attrs: 'data-modal-close="1" type="button"'
-    });
-    const accountName = card.account ? (card.account.name || '') : '';
-    const m = window.modal({
-      title: 'Fatura · ' + accountName + ' · •••• ' + (card.last4 || ''),
-      body: headerSummary + listHtml,
-      footer: window.modalFooter($close),
-    });
-    m.open();
-  }
-
   // ── Event delegation ──────────────────────────────────────
   function bindRoot($root) {
     $root.on('click.cc', '[data-act=new]', function () {
       window.location.hash = '#/accounts';
-    });
-    $root.on('click.cc', '[data-act=view-invoice]', function (e) {
-      e.stopPropagation();
-      const id = $(this).attr('data-id');
-      openInvoiceModal(id);
     });
   }
 

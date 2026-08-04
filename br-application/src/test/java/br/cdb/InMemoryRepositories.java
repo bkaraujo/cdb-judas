@@ -165,6 +165,8 @@ public abstract class InMemoryRepositories {
 
         public void markDirty(UUID accountId) { dirtyAccountIds.add(accountId); }
 
+        public void markAllDirty() { data.forEach(b -> dirtyAccountIds.add(b.account().id())); }
+
         public List<UUID> findDirtyAccountIds() { return List.copyOf(dirtyAccountIds); }
 
         public void clearCache() { data.clear(); dirtyAccountIds.clear(); }

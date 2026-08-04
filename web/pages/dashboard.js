@@ -337,6 +337,7 @@
       creditCards:        creditCards,
       cbdAccounts:        cbdAccounts,
       currentMonthTxs:    currentMonthTxs,
+      allTxs:             function () { return state.data.transactions || []; },
       categoryName:       categoryName,
       txIsExpense:        txIsExpense,
       expenseByCategory:  expenseByCategory,

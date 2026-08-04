@@ -47,6 +47,19 @@ public class F002AccountResourceTest extends BaseHttpTest {
                 .extract().jsonPath().getString("id");
     }
 
+    /** Igual a {@link #createTransaction}, com data e valor livres e cartão opcional. */
+    private String createDatedTransaction(String accountId, String categoryId, String cardId, String date, String amount) {
+        String card = cardId == null ? "" : ",\"cardId\":\"%s\"".formatted(cardId);
+        String json = """
+            {"description":"Compra","amount":%s,"date":"%s","categoryId":"%s","costCenterId":"%s","status":"confirmed","type":"expense","installments":1,"editMode":"single"%s}
+            """.formatted(amount, date, categoryId, COST_CENTER_ID, card);
+        return asTestUser()
+                .body(json)
+                .when().post("/api/" + TEST_USER_ID + "/accounts/" + accountId + "/transactions")
+                .then().statusCode(201)
+                .extract().jsonPath().getString("id");
+    }
+
     private String createCard(String accountId, String last4) {
         return asTestUser()
                 .body("{\"last4\":\"%s\"}".formatted(last4))
@@ -250,6 +263,53 @@ public class F002AccountResourceTest extends BaseHttpTest {
                 .when().get("/api/" + TEST_USER_ID + "/accounts")
                 .then().statusCode(200)
                 .body("[0].currentBalance", is(-250.00f));
+    }
+
+    /**
+     * Compra de cartão não sai da conta na data da compra — sai quando a fatura vence
+     * ({@code f002.InvoiceCycle}, contrato em {@code docs/backend/invoice-cycle.md}).
+     * Conta fecha dia 20 e vence dia 5: a compra de 25/03 cai no ciclo 21/03–20/04, que vence em
+     * 05/05, então março só enxerga a transação sem cartão.
+     */
+    @Test
+    void compraDeCartaoEntraNoSaldoNoVencimentoDaFatura() {
+        String createJson = """
+            {"name":"Conta Cartão","type":"CHECKING","color":"#820AD1","active":true,
+             "creditLimit":5000.00,"closingDay":20,"dueDay":5}
+            """;
+        String accountId = asTestUser()
+                .body(createJson)
+                .when().post("/api/" + TEST_USER_ID + "/accounts")
+                .then().statusCode(201)
+                .extract().jsonPath().getString("id");
+
+        String cardId = createCard(accountId, "1234");
+        String macroId = createCategory("Casa", "EXPENSE", null);
+        String subId = createCategory("Aluguel", "EXPENSE", macroId);
+
+        createDatedTransaction(accountId, subId, null, "2026-03-10", "-50.00");
+        createDatedTransaction(accountId, subId, cardId, "2026-03-25", "-100.00");
+
+        // Março: só o débito em conta — a compra de cartão ainda não venceu.
+        asTestUser()
+                .queryParam("period", "202603")
+                .when().get("/api/" + TEST_USER_ID + "/accounts/" + accountId + "/balance")
+                .then().statusCode(200)
+                .body("balance", is(-50.00f));
+
+        // Abril: sem movimento, carrega o saldo anterior (o vencimento é 05/05).
+        asTestUser()
+                .queryParam("period", "202604")
+                .when().get("/api/" + TEST_USER_ID + "/accounts/" + accountId + "/balance")
+                .then().statusCode(200)
+                .body("balance", is(-50.00f));
+
+        // Maio: a fatura vence em 05/05 e debita a conta.
+        asTestUser()
+                .queryParam("period", "202605")
+                .when().get("/api/" + TEST_USER_ID + "/accounts/" + accountId + "/balance")
+                .then().statusCode(200)
+                .body("balance", is(-150.00f));
     }
 
     @Test

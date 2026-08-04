@@ -5,6 +5,10 @@
  * status, runningBal, categoryId? }. A coluna da esquerda usa App.StatementService.summary.
  * Coluna fixa categoria/subcategoria (largura = maior label possível) entre data e descrição.
  * Status 'balance' => linha "Saldo anterior" (sem amount, runningBal = saldo de abertura).
+ * Compra de cartão não aparece linha a linha: App.StatementService a colapsa numa linha por
+ * (cartão, vencimento) — 'FATURA · CONTA 1234', lançada na data de vencimento (mesmo mês em que o
+ * backend a debita) e clicável para #/card-statement/{cardId}. Linha de fatura é derivada: sem
+ * ações de editar/excluir, como a linha de saldo.
  */
 (function () {
   window.Pages = window.Pages || {};
@@ -236,8 +240,9 @@
           : '';
 
         // Row actions (edit/delete) resolve the full transaction from the month index by id;
-        // the "Saldo anterior" header row has none (empty cell keeps columns aligned).
-        const actionsHtml = isBalance ? '' :
+        // as linhas "Saldo anterior" e de fatura não têm nenhuma (célula vazia mantém as colunas
+        // alinhadas) — a fatura é derivada, edita-se no extrato do cartão.
+        const actionsHtml = (isBalance || tx.invoice) ? '' :
           '<button type="button" class="icon-btn" title="Editar" ' +
             'data-act="edit" data-id="' + esc(tx.id) + '" style="width:28px;height:28px;">' +
             window.icon('edit', 14) +
@@ -247,13 +252,22 @@
             window.icon('trash', 14) +
           '</button>';
 
+        // O link é um <a href> de verdade: o router é hash-based, então a navegação não precisa
+        // de handler (e o deep-link fica copiável/abrível em nova aba).
+        const descHtml = tx.invoice
+          ? '<a href="#/card-statement/' + esc(tx.cardId) + '" style="' + descStyle +
+              'color:var(--accent);text-decoration:none;">' +
+              esc(tx.description || '—') +
+            '</a>'
+          : '<span style="' + descStyle + '">' + esc(tx.description || '—') + '</span>';
+
         $card.append(
           '<div class="stm-row" data-id="' + esc(tx.id || '') + '" style="' + rowStyle + '">' +
             '<span style="font-size:12px;color:var(--text-muted);min-width:56px;">' +
               esc(fmtDate(tx.date)) +
             '</span>' +
             '<span style="' + catStyle + '">' + esc(catLbl) + '</span>' +
-            '<span style="' + descStyle + '">' + esc(tx.description || '—') + '</span>' +
+            descHtml +
             amountHtml +
             '<span style="font-size:13px;font-weight:700;color:' + window.valueColor(runningBal) + ';min-width:100px;text-align:right;">' +
               esc(fmt(runningBal)) +

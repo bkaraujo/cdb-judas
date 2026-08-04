@@ -21,6 +21,7 @@
     'accounts-payable.js',
     'statement.js',
     'credit-cards.js',
+    'card-statement.js',
     'budget.js',
     'reports.js',
     'categories.js',

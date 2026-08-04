@@ -46,7 +46,7 @@
   window.App.TagService.init         ({ repo: repos.tags,         cache: window.App.CacheStore });
   window.App.CostCenterService.init  ({ repo: repos.costCenters,  cache: window.App.CacheStore });
   window.App.ImportRuleService.init  ({ repo: repos.importRules,  cache: window.App.CacheStore });
-  window.App.TransactionService.init ({ repo: repos.transactions });
+  window.App.TransactionService.init ({ repo: repos.transactions, cache: window.App.CacheStore });
   window.App.PayableService.init     ({ repo: repos.transactions });
   window.App.BalanceService.init     ({ repo: repos.balance });
   window.App.StatementService.init   ({ txRepo: repos.transactions, balance: window.App.BalanceService, cache: window.App.CacheStore });

@@ -19,14 +19,20 @@
 
   /* Detail for one account in a period: a "Saldo anterior" row carrying the opening
      balance (previous period's closing, resolved by summary() — no balance fetch here),
-     then each transaction (all statuses) with its running balance. */
+     then each transaction (all statuses) with its running balance.
+     Compras de cartão não entram linha a linha: Domain.Invoice.collapse as troca por uma linha
+     por (cartão, vencimento), lançada na data de vencimento — o mesmo mês em que o backend as
+     debita no F002_BALANCE. Como o ciclo da fatura começa no mês anterior, a busca usa a janela
+     alargada de Domain.Invoice.fetchWindow, não os bounds do período. */
   function load(accountId, period, openingBalance) {
     const account = cache.findById('accounts', accountId);
     if (!account) return Promise.resolve([]);
     const b = window.Domain.Period.bounds(period);
-    return txRepo.listByAccount(accountId, 'dateFrom=' + b.from + '&dateTo=' + b.to)
+    const w = window.Domain.Invoice.fetchWindow([account], period);
+    return txRepo.listByAccount(accountId, 'dateFrom=' + w.from + '&dateTo=' + w.to)
       .then(function (txs) {
-        return window.Domain.StatementItem.buildRows(openingBalance, Array.isArray(txs) ? txs : [], b.from);
+        const rows = window.Domain.Invoice.collapse(Array.isArray(txs) ? txs : [], [account], period);
+        return window.Domain.StatementItem.buildRows(openingBalance, rows, b.from);
       });
   }
 

@@ -5,6 +5,7 @@ import br.cdb.feature.f000._1_application.InternalApi;
 import br.cdb.feature.f000._1_application.service.UserGuards;
 import br.cdb.feature.f001.F001Module;
 import br.cdb.feature.f002.F002Module;
+import br.cdb.feature.f002._1_application.service.BalanceService;
 import br.cdb.feature.f003.F003Module;
 import br.cdb.feature.f004.F004Module;
 import br.cdb.feature.f005.F005Module;
@@ -66,6 +67,12 @@ public class FeatureBootstrap {
         ).forEach(FeatureBootstrap::initialize);
 
         initialize(new F999Module());
+
+        // Depois de todos os módulos: os snapshots de F002_BALANCE gravados por versões anteriores
+        // podem ter sido calculados por outra regra (ex.: compra de cartão debitada na data da
+        // compra, antes de InvoiceCycle). Recomputa tudo uma vez — sem isto só uma escrita na conta
+        // corrigiria o valor.
+        Context.tryGet(BalanceService.class).recomputeAll();
     }
 
     private static void initialize(Lifecycle module) {

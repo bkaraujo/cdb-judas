@@ -68,6 +68,7 @@ O stack JSON de `br.commons` sobrevive só como resíduo: `br.cdb.core.persisten
 | `docs/backend/null-safety.md` | JSpecify `@NullMarked` + NullAway/ErrorProne |
 | `docs/backend/lombok.md` | `val` e suas exceções |
 | `docs/backend/persistence-jdbc.md` | JDBC/H2, schema = mermaid, ciclo de vida do DB de dev, colunas anuláveis, migrações one-shot |
+| `docs/backend/invoice-cycle.md` | **Ciclo de fatura de cartão** — contrato da regra duplicada backend (`f002.InvoiceCycle`) / frontend (`Domain.Invoice`); compra de cartão debita a conta no vencimento |
 | `docs/backend/quality-and-build.md` | Gate PMD/CPD, gotchas de build Java 25, verificação sem `mvn`, setup de IDE |
 | `docs/frontend/api-web.md` | Integração do frontend com a API REST |
 | `docs/architecture-backend.mermaid` | **Pacotes (backend)** — placement de classes por pacote + dependências permitidas/proibidas |

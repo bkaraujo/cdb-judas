@@ -17,10 +17,14 @@
     return d > 0 ? d : DEFAULT_DUE_DAY;
   }
 
-  /* Invoice period for a given month/year. Currently matches the calendar month
-     (consistent with the existing credit-cards.js:43 behavior). */
-  function invoicePeriod(period /*, card */) {
-    return window.Domain.Period.bounds(period);
+  /* Janela de compras da fatura que VENCE em `period` — delega o ciclo a Domain.Invoice
+     (contrato em docs/backend/invoice-cycle.md). Não é o mês-calendário: com closingDay=20 e
+     dueDay=5, a fatura que vence em 05/04 cobre 21/02–20/03. Conta sem vencimento no período
+     devolve uma janela vazia (from > to), o que zera os totais abaixo. */
+  function invoicePeriod(account, period) {
+    const dues = window.Domain.Invoice.dueDatesIn(account, period);
+    if (!dues.length) return { from: '9999-12-31', to: '0000-01-01' };
+    return window.Domain.Invoice.cycleFor(account, dues[0]);
   }
 
   function usagePct(used, limit) {
@@ -41,10 +45,11 @@
     return 'accent';
   }
 
-  /* Total invoice = sum of |amount| over EXPENSE transactions inside the period
-     posted against this card (matched by `tx.cardId`, not the account). */
-  function invoiceTotal(transactions, cardId, period) {
-    const b = invoicePeriod(period);
+  /* Total invoice = sum of |amount| over EXPENSE transactions inside the invoice cycle
+     posted against this card (matched by `tx.cardId`, not the account). O ciclo é da conta,
+     por isso ela entra na assinatura. */
+  function invoiceTotal(transactions, cardId, account, period) {
+    const b = invoicePeriod(account, period);
     const cid = String(cardId);
     return (transactions || []).reduce(function (acc, t) {
       if (String(t.cardId) !== cid) return acc;
@@ -59,7 +64,7 @@
   /* Total invoice for every card on the account combined — used for the shared
      usage bar (account.creditLimit is one limit for all of the account's cards). */
   function accountInvoiceTotal(transactions, account, period) {
-    const b = invoicePeriod(period);
+    const b = invoicePeriod(account, period);
     const aid = String(account && account.id);
     return (transactions || []).reduce(function (acc, t) {
       if (String(t.accountId) !== aid || t.cardId == null) return acc;

@@ -1,10 +1,24 @@
 /* _2_application/transaction-service.js — Transaction use cases. */
 (function () {
   let repo = null;
+  let cache = null;
 
-  function init(deps) { repo = deps.repo; return { ready: true }; }
+  function init(deps) { repo = deps.repo; cache = deps.cache; return { ready: true }; }
 
   function list(params)                    { return repo.list(params); }
+
+  /* Lançamentos do período com as compras de cartão colapsadas em uma linha por (cartão,
+     vencimento) — ver Domain.Invoice. A busca usa a janela alargada (o ciclo da fatura começa no
+     mês anterior), por isso `raw` traz mais do que o período: é o índice cru que os modais de
+     editar/excluir usam para resolver a transação por trás de uma linha. */
+  function listForPeriod(period) {
+    const accounts = cache.accounts();
+    const w = window.Domain.Invoice.fetchWindow(accounts, period);
+    return repo.list('dateFrom=' + w.from + '&dateTo=' + w.to).then(function (list) {
+      const raw = Array.isArray(list) ? list : [];
+      return { rows: window.Domain.Invoice.collapse(raw, accounts, period), raw: raw };
+    });
+  }
   function listByAccount(accountId, params){ return repo.listByAccount(accountId, params); }
   function create(data)                    { return repo.create(data); }
   function update(id, data)                { return repo.update(id, data); }
@@ -27,6 +41,7 @@
   window.App.TransactionService = {
     init: init,
     list: list,
+    listForPeriod: listForPeriod,
     listByAccount: listByAccount,
     create: create,
     update: update,
