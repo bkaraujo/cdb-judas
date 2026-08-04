@@ -1,6 +1,8 @@
 package br.cdb.core.security;
 
+import br.cdb.core.CoreModule;
 import br.cdb.core.web.HTTPSession;
+import br.commons.Logger;
 import jakarta.inject.Singleton;
 import lombok.val;
 import org.jspecify.annotations.NullMarked;
@@ -11,6 +13,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Índice das {@link HTTPSession} vivas. A sessão é criada no login e carrega tudo sobre si — as duas
@@ -28,10 +31,10 @@ import java.util.UUID;
  * um conjunto; enquanto a política for sessão única, o mapa 1:1 é o que a garante.
  *
  * <h2>Expiração</h2>
- * Sessão caduca por <b>ociosidade</b> ({@link #SESSION_IDLE_TTL_MILLIS}), com a janela renovada a
- * cada uso autenticado — {@link #rotate} (toda requisição normal, pelo token rotativo) e
- * {@link #validate} (handshake do SSE, que valida sem rotacionar). Sem isto os mapas só cresciam:
- * token de usuário que nunca mais voltou ficava válido enquanto o processo vivesse.
+ * Sessão caduca por <b>ociosidade</b> ({@value #SESSION_IDLE_KEY} em {@code application.yaml}), com a
+ * janela renovada a cada uso autenticado — {@link #rotate} (toda requisição normal, pelo token
+ * rotativo) e {@link #validate} (handshake do SSE, que valida sem rotacionar). Sem isto os mapas só
+ * cresciam: token de usuário que nunca mais voltou ficava válido enquanto o processo vivesse.
  *
  * <p>A limpeza é preguiçosa e em dois níveis, para não pagar O(n) em toda requisição: o caminho
  * quente ({@code rotate}/{@code validate}/{@code consumeEphemeral}) derruba só a entrada que
@@ -46,11 +49,20 @@ import java.util.UUID;
 @NullMarked
 public class AccessTokenStore {
 
-    /** Ociosidade tolerada antes de a sessão do navegador caducar. Renovada a cada uso. */
-    private static final long SESSION_IDLE_TTL_MILLIS = 30 * 60 * 1000L;
+    /** Chave em {@code application.yaml}; ausente, vale {@link #DEFAULT_SESSION_IDLE_MINUTES}. */
+    private static final String SESSION_IDLE_KEY = "cdb.security.session.idle-timeout-minutes";
+
+    private static final long DEFAULT_SESSION_IDLE_MINUTES = 30;
 
     /** Generoso o bastante pra uma chamada loopback, curto o bastante pra não valer a pena vazar. */
     private static final long EPHEMERAL_TTL_MILLIS = 10_000;
+
+    /**
+     * Ociosidade tolerada antes de a sessão do navegador caducar, renovada a cada uso. Lido uma vez
+     * ({@code @Singleton}) de {@value #SESSION_IDLE_KEY} — {@code CoreModule.yaml} é estático, então
+     * já está carregado quando o CDI constrói este bean.
+     */
+    private final long sessionIdleTtlMillis = readSessionIdleTtlMillis();
 
     /** Caminho quente: toda requisição autenticada chega por aqui. */
     private final Map<String, HTTPSession> byToken = new HashMap<>();
@@ -70,7 +82,7 @@ public class AccessTokenStore {
         unindex(byUser.get(userId));
 
         val session = HTTPSession.opened(userId, personId, username, generate(),
-                expiryFrom(SESSION_IDLE_TTL_MILLIS));
+                expiryFrom(sessionIdleTtlMillis));
         index(session);
         return session;
     }
@@ -81,7 +93,7 @@ public class AccessTokenStore {
         if (session == null) return Optional.empty();
 
         return Optional.of(replace(session,
-                session.rotated(generate(), expiryFrom(SESSION_IDLE_TTL_MILLIS))));
+                session.rotated(generate(), expiryFrom(sessionIdleTtlMillis))));
     }
 
     /**
@@ -93,7 +105,7 @@ public class AccessTokenStore {
         val session = liveSession(token);
         if (session == null) return Optional.empty();
 
-        return Optional.of(replace(session, session.renewed(expiryFrom(SESSION_IDLE_TTL_MILLIS))));
+        return Optional.of(replace(session, session.renewed(expiryFrom(sessionIdleTtlMillis))));
     }
 
     /**
@@ -175,6 +187,22 @@ public class AccessTokenStore {
             val cleaned = session.withoutExpiredEphemerals(now);
             if (cleaned != session) replace(session, cleaned);
         }
+    }
+
+    /**
+     * Minutos de {@value #SESSION_IDLE_KEY}, em milissegundos. Valor não-positivo cai no default e
+     * avisa: aceitá-lo faria toda sessão nascer vencida — ninguém mais conseguiria usar o sistema, e
+     * a causa (uma linha de YAML) não apareceria em lugar nenhum.
+     */
+    private static long readSessionIdleTtlMillis() {
+        val minutes = CoreModule.yaml.asLong(SESSION_IDLE_KEY, DEFAULT_SESSION_IDLE_MINUTES);
+        if (minutes <= 0) {
+            Logger.warn("%s inválido (%d): usando o padrão de %d minutos",
+                    SESSION_IDLE_KEY, minutes, DEFAULT_SESSION_IDLE_MINUTES);
+            return TimeUnit.MINUTES.toMillis(DEFAULT_SESSION_IDLE_MINUTES);
+        }
+        Logger.debug("Sessão expira por ociosidade em %d minutos", minutes);
+        return TimeUnit.MINUTES.toMillis(minutes);
     }
 
     private static long expiryFrom(long ttlMillis) {

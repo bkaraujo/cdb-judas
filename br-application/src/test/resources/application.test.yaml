@@ -15,3 +15,8 @@ cdb:
   # Porta do perfil %test do Quarkus (8081, não configurável por quarkus.http.port).
   internal:
     base-url: "http://localhost:8081"
+  security:
+    session:
+      # Folgado de propósito: a suíte compartilha o mesmo store entre os métodos de teste, e um
+      # timeout curto derrubaria a sessão no meio de um caso que demora (import de PDF).
+      idle-timeout-minutes: 60

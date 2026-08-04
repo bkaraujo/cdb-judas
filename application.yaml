@@ -13,3 +13,8 @@ cdb:
       max: 20
   internal:
     base-url: "http://localhost:8080"
+  security:
+    session:
+      # Ociosidade tolerada antes de a sessão cair. A janela é renovada a cada requisição
+      # autenticada, então só conta tempo parado. Ausente ou <= 0 => 30.
+      idle-timeout-minutes: 30

@@ -124,6 +124,7 @@ A aplicação semeia um usuário inicial no primeiro arranque (`f999`, que tamb�
 | `datasource.jdbc.url` | `DATASOURCE_JDBC_URL` | URL JDBC do H2 | `jdbc:h2:file:./database;DB_CLOSE_DELAY=-1` (dev) · `jdbc:h2:mem:cdb` (perfil `%test`) |
 | `datasource.jdbc.username` / `.password` | `DATASOURCE_JDBC_USERNAME` / `_PASSWORD` | Credenciais do banco | `sa` / vazio |
 | `quarkus.http.port` | `QUARKUS_HTTP_PORT` | Porta HTTP | `8080` |
+| `cdb.security.session.idle-timeout-minutes` | — | Ociosidade tolerada antes de a sessão cair. A janela é renovada a cada requisição autenticada, então só conta tempo parado; valor ausente ou `<= 0` cai no padrão (com aviso no log) | `30` |
 | — | `APP_LOGLEVEL_ROOT` | Nível do logger da aplicação (`br.commons`). Também aceita `APP_LOGLEVEL_<PACOTE>` para nível por pacote | `INFO` |
 | `storage.json.path` | `STORAGE_JSON_PATH` | **Vestigial.** Diretório do stack JSON, que não persiste mais nenhum agregado (tudo migrou para JDBC); só o bean `Storage` sobrevive, sem consumidores | `/data` (container) |
 
