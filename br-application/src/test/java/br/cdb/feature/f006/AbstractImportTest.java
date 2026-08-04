@@ -31,7 +31,8 @@ abstract class AbstractImportTest extends BaseHttpTest {
 
     /** Sem o {@code contentType(JSON)} padrão de {@link #asTestUser()}: o multipart define o seu próprio. */
     protected RequestSpecification asMultipartUser() {
-        return RestAssured.given().header(HTTPRequest.TOKEN_HEADER, tokenStore.persistent(TEST_USER_ID));
+        return RestAssured.given().header(HTTPRequest.TOKEN_HEADER,
+                tokenStore.open(TEST_USER_ID, TEST_USER_ID, TEST_USERNAME).token());
     }
 
     protected String path(String suffix) {

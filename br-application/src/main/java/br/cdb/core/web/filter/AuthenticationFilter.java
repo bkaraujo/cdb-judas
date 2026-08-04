@@ -1,11 +1,10 @@
 package br.cdb.core.web.filter;
 
-import br.cdb.core.persistence.repository.UserRepository;
 import br.cdb.core.security.AccessTokenStore;
 import br.cdb.core.web.HTTPRequest;
+import br.cdb.core.web.HTTPSession;
 import br.cdb.core.web.security.AuthenticatedUser;
 import br.commons.Logger;
-import br.commons.framework.cdi.Context;
 import br.commons.framework.logger.MDC;
 import jakarta.annotation.Priority;
 import jakarta.inject.Inject;
@@ -22,6 +21,11 @@ import static br.cdb.core.web.HTTPRequest.TOKEN_HEADER;
  * Valida o token de acesso (header {@value HTTPRequest#TOKEN_HEADER}),
  * popula o {@link HTTPRequest#user()} e — fora do stream — rotaciona o token, guardando o próximo em
  * {@link #NEXT_TOKEN_PROPERTY} para o {@link AuthTokenResponseFilter} emitir na resposta.
+ *
+ * <p>A identidade sai inteira da {@link HTTPSession}, montada no login: {@code personId} e
+ * {@code username} vêm de lá, sem reconsultar {@code UserRepository} a cada requisição só para ir de
+ * {@code userId} a {@code personId}. Corolário: usuário apagado no meio de uma sessão continua
+ * autenticado até ela caducar — quem quiser derrubá-lo na hora precisa revogar a sessão.
  */
 @Provider
 @Priority(Priorities.AUTHENTICATION)
@@ -32,16 +36,6 @@ public class AuthenticationFilter implements ContainerRequestFilter {
 
     @Inject
     AccessTokenStore tokenStore;
-
-    /**
-     * Resolvido por chamada, nunca em campo: filtros {@code @Provider} são construídos na montagem do
-     * deployment JAX-RS, antes do {@code StartupEvent} — resolver {@code UserRepository} (e, por trás
-     * dele, o {@code DataSource}) na construção quebraria o boot. Adiar para o primeiro uso garante
-     * que {@code CoreModule} já publicou os dois no {@code Context}.
-     */
-    private static UserRepository userRepository() {
-        return Context.get(UserRepository.class);
-    }
 
     @Override
     public void filter(ContainerRequestContext request) {
@@ -55,45 +49,36 @@ public class AuthenticationFilter implements ContainerRequestFilter {
             // fica aberta indefinidamente e o ContainerResponseFilter que limparia o MDC só roda no
             // fechamento do stream. Não empurra X-REQUEST-USER pra não vazar pra próxima requisição
             // que reaproveitar a mesma thread (CurrentUserContext já resolve a autorização em si).
-            tokenStore.validate(token).ifPresent(userId -> authenticateStream(userId, request));
+            tokenStore.validate(token).ifPresent(AuthenticationFilter::authenticateStream);
             return;
         }
 
-        val ephemeralPersonId = tokenStore.consumeEphemeral(token);
-        if (ephemeralPersonId.isPresent()) {
+        val ephemeral = tokenStore.consumeEphemeral(token);
+        if (ephemeral.isPresent()) {
             // Chamada HTTP interna fatia→fatia (InternalApi, f000): já é a PESSOA, sem rotação —
             // token de uso único, não existe "próximo" pra devolver ao chamador.
-            HTTPRequest.put(HTTPRequest.X_REQUEST_USER, new AuthenticatedUser(ephemeralPersonId.get(), "internal"));
+            HTTPRequest.put(HTTPRequest.X_REQUEST_USER,
+                    new AuthenticatedUser(ephemeral.get().personId(), "internal"));
             return;
         }
 
-        val result = tokenStore.rotate(token);
-        if (result.isPresent()) {
-            authenticate(result.get().userId(), request);
-            request.setProperty(NEXT_TOKEN_PROPERTY, result.get().nextToken());
+        val session = tokenStore.rotate(token);
+        if (session.isPresent()) {
+            authenticate(session.get());
+            request.setProperty(NEXT_TOKEN_PROPERTY, session.get().token());
         } else {
             Logger.debug("AUTHN %s %s => invalid or expired token", request.getMethod(), HTTPRequest.path(request));
         }
     }
 
-    private void authenticateStream(String userId, ContainerRequestContext request) {
-        val user = userRepository().findById(userId).orElse(null);
-        if (user == null || user.personId() == null) {
-            Logger.debug("AUTHN %s %s => token references unknown user '%s'", request.getMethod(), HTTPRequest.path(request), userId);
-            return;
-        }
-        // Identidade exposta às features é a PESSOA — todas as tabelas de dados fazem chave com ela.
-        HTTPRequest.put(HTTPRequest.X_REQUEST_USER, new AuthenticatedUser(user.personId(), user.username()));
+    /** Identidade exposta às features é a PESSOA — todas as tabelas de dados fazem chave com ela. */
+    private static void authenticateStream(HTTPSession session) {
+        HTTPRequest.put(HTTPRequest.X_REQUEST_USER,
+                new AuthenticatedUser(session.personId(), session.username()));
     }
 
-    private void authenticate(String userId, ContainerRequestContext request) {
-        val user = userRepository().findById(userId).orElse(null);
-        if (user == null || user.personId() == null) {
-            Logger.debug("AUTHN %s %s => token references unknown user '%s'", request.getMethod(), HTTPRequest.path(request), userId);
-            return;
-        }
-
-        HTTPRequest.put(HTTPRequest.X_REQUEST_USER, new AuthenticatedUser(user.personId(), user.username()));
-        MDC.push(HTTPRequest.X_REQUEST_USER, user.username());
+    private static void authenticate(HTTPSession session) {
+        authenticateStream(session);
+        MDC.push(HTTPRequest.X_REQUEST_USER, session.username());
     }
 }

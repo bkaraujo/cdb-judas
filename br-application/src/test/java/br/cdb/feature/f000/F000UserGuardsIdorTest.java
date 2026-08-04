@@ -33,7 +33,8 @@ class F000UserGuardsIdorTest extends BaseHttpTest {
 
     private RequestSpecification asOtherUser() {
         return RestAssured.given()
-                .header(HTTPRequest.TOKEN_HEADER, tokenStore.persistent(OTHER_USER_ID))
+                .header(HTTPRequest.TOKEN_HEADER,
+                        tokenStore.open(OTHER_USER_ID, OTHER_USER_ID, "other-user").token())
                 .contentType(ContentType.JSON);
     }
 

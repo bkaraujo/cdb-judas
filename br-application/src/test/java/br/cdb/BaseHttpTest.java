@@ -200,8 +200,9 @@ public abstract class BaseHttpTest {
      * capturado de uma resposta anterior quebraria a segunda chamada em diante.
      */
     protected RequestSpecification asTestUser() {
+        val session = tokenStore.open(TEST_USER_ID, TEST_USER_ID, TEST_USERNAME);
         return RestAssured.given()
-                .header(HTTPRequest.TOKEN_HEADER, tokenStore.persistent(TEST_USER_ID))
+                .header(HTTPRequest.TOKEN_HEADER, session.token())
                 .contentType(ContentType.JSON);
     }
 

@@ -45,11 +45,13 @@ public class LoginResource {
             return Response.status(Response.Status.UNAUTHORIZED).build();
         }
 
-        // Token continua atado ao userId (login/credencial); a rota do cliente usa o personId.
-        val token = tokenStore.persistent(user.id());
+        // A sessão nasce aqui, com as duas identidades: o token se amarra ao userId (login/credencial),
+        // a rota do cliente usa o personId. Daqui pra frente o filtro não precisa reconsultar o banco
+        // para ir de uma à outra — a sessão carrega as duas.
+        val session = tokenStore.open(user.id(), personId, user.username());
         Logger.debug("LOGIN => '%s' (person %s) issued token", request.username(), personId);
         return Response.ok()
-                .header(TOKEN_HEADER, token)
+                .header(TOKEN_HEADER, session.token())
                 .header(USER_ID_HEADER, personId)
                 .build();
     }
