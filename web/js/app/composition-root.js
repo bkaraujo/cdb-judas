@@ -30,6 +30,7 @@
     baseUrl: baseUrl,
     authStore: window.Infra.AuthStore,
     bus: window.App.EventBus,
+    enqueue: http.enqueue, // handshake do stream na mesma fila do token rotativo
   });
 
   window.App.CacheStore.init({ bus: window.App.EventBus });

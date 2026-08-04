@@ -5,6 +5,8 @@
  * broadcasts `cbd:change` via the application event bus.
  */
 (function () {
+  const HANDSHAKE_TIMEOUT_MS = 10000;
+
   // Stream lives under the user namespace: /api/{uuid}/stream.
   function streamPath(uid) { return '/' + uid + '/stream'; }
 
@@ -79,6 +81,10 @@
     const baseUrl  = (opts && opts.baseUrl) || '/api';
     const auth     = opts.authStore;
     const bus      = opts.bus;
+    // Fila do http-client: o handshake do stream entra nela para não pegar um token que outra
+    // requisição já está consumindo. Só o fetch é enfileirado (resolve nos headers); a leitura do
+    // corpo roda fora, senão o stream — que nunca termina — travaria a fila.
+    const enqueue  = (opts && opts.enqueue) || function (fn) { return Promise.resolve().then(fn); };
 
     let ctrl = null;
     let connecting = false;
@@ -103,33 +109,45 @@
 
     async function connect() {
       if (connecting) return;
-      const t = auth.get();
-      const uid = auth.userId();
-      if (!t || !uid) return;
+      if (!auth.get() || !auth.userId()) return;
 
       connecting = true;
       ctrl = new AbortController();
 
       try {
-        const res = await fetch(baseUrl + streamPath(uid), {
-          method: 'GET',
-          headers: {
-            'X-Access-Token': t,
-            'Accept': 'text/event-stream',
-          },
-          signal: ctrl.signal,
-          cache: 'no-store',
+        // Token lido DENTRO da fila: só aqui é garantido que nenhuma outra requisição está em voo
+        // com ele. `uid` idem, para não montar a URL com um usuário já deslogado.
+        const res = await enqueue(function () {
+          const t = auth.get();
+          const uid = auth.userId();
+          if (!t || !uid) return null;
+          const handshake = fetch(baseUrl + streamPath(uid), {
+            method: 'GET',
+            headers: {
+              'X-Access-Token': t,
+              'Accept': 'text/event-stream',
+            },
+            signal: ctrl.signal,
+            cache: 'no-store',
+          });
+          // Teto para a fila: se o servidor segurar a conexão sem mandar headers, a fila (e com ela
+          // toda a UI) ficaria travada. O fetch continua vivo — só deixa de bloquear a fila.
+          return Promise.race([
+            handshake,
+            new Promise(function (_, reject) {
+              setTimeout(function () { reject(new Error('SSE handshake timeout')); }, HANDSHAKE_TIMEOUT_MS);
+            }),
+          ]);
         });
 
+        if (!res) { connecting = false; return; }
+
         if (!res.ok || !res.body) {
-          // Only clear if no rotated token (from a concurrent non-SSE request, pattern 004)
-          // has already superseded `t` since this connection opened — a stale 401 for `t`
-          // must not blow away a session that's since moved on.
-          if (res.status === 401 && auth.get() === t) {
-            auth.clear();
-            connecting = false;
-            return;
-          }
+          // 401 aqui NÃO derruba a sessão. O token é rotativo (pattern 004 em web/CLAUDE.md):
+          // qualquer requisição concorrente invalida o que este stream usou, então um 401 no canal
+          // SSE nunca é prova de que a sessão morreu — limpar aqui deslogava o usuário no meio de
+          // uma navegação. Quem decide isso é o 401 do http-client, autoridade única; aqui só se
+          // tenta de novo com backoff, e `auth.get()` vazio (linha do retry) encerra sozinho.
           throw new Error('SSE HTTP ' + res.status);
         }
 

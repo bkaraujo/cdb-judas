@@ -170,6 +170,13 @@
         delete: function (p)    { return request('DELETE', p); },
       },
       setUnauthorizedHandler: function (fn) { onUnauthorized = fn || function () {}; },
+
+      /* Exposto SÓ para o handshake do SSE (sse-client). Sem isto o `fetch` do stream lê o token
+       * fora da fila e pode sair com o mesmo valor que uma requisição já em voo está consumindo —
+       * o servidor rotaciona, o token do stream morre e volta 401 (pattern 004 em web/CLAUDE.md).
+       * O SSE deve enfileirar APENAS o fetch: ele resolve quando chegam os headers, não quando o
+       * corpo termina — enfileirar a leitura do corpo travaria a fila para sempre. */
+      enqueue: enqueue,
     };
   }
 
