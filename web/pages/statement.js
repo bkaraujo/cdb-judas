@@ -254,12 +254,13 @@
 
         // O link é um <a href> de verdade: o router é hash-based, então a navegação não precisa
         // de handler (e o deep-link fica copiável/abrível em nova aba).
+        const descText = window.Domain.Transaction.describe(tx) || '—';
         const descHtml = tx.invoice
           ? '<a href="#/card-statement/' + esc(tx.cardId) + '" style="' + descStyle +
               'color:var(--accent);text-decoration:none;">' +
-              esc(tx.description || '—') +
+              esc(descText) +
             '</a>'
-          : '<span style="' + descStyle + '">' + esc(tx.description || '—') + '</span>';
+          : '<span style="' + descStyle + '">' + esc(descText) + '</span>';
 
         $card.append(
           '<div class="stm-row" data-id="' + esc(tx.id || '') + '" style="' + rowStyle + '">' +

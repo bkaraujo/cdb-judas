@@ -63,11 +63,12 @@
       return;
     }
 
-    // Grouped: scope choice.
+    // Grouped: scope choice. Nomeia a parcela — escolher "este e seguintes" sem saber qual das N
+    // está em jogo é decidir no escuro.
     const bodyHtml =
       '<p style="font-size:13px;color:var(--text-secondary);line-height:1.5;">' +
-        'Este lançamento faz parte de um grupo de parcelas. ' +
-        'Como deseja excluí-lo?' +
+        '<strong>' + window.esc(window.Domain.Transaction.describe(tx) || 'Lançamento') + '</strong>' +
+        ' faz parte de um grupo de parcelas. Como deseja excluí-lo?' +
       '</p>';
     const $only = window.btn({
       variant: 'secondary', size: 'md', label: 'Apenas este',

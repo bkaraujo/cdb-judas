@@ -26,7 +26,7 @@
           '</span>' +
           '<div style="flex:1;min-width:0;">' +
             '<p style="font-size:12px;font-weight:600;color:var(--text-primary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-transform:uppercase;">' +
-              ctx.esc(t.description || '—') +
+              ctx.esc(window.Domain.Transaction.describe(t) || '—') +
             '</p>' +
             '<p style="font-size:11px;color:var(--text-muted);">' + ctx.esc(cat) + (dateTxt ? ' · ' + ctx.esc(dateTxt) : '') + '</p>' +
           '</div>' +

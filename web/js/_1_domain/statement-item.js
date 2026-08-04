@@ -50,6 +50,9 @@
           // Propagados para a view montar o link da fatura (statement.js) e resolver o cartão.
           cardId: t.cardId != null ? t.cardId : null,
           invoice: t.invoice === true,
+          // Parcela: alimenta Domain.Transaction.describe na linha do extrato.
+          installmentNumber: t.installmentNumber != null ? t.installmentNumber : null,
+          totalInstallments: t.totalInstallments != null ? t.totalInstallments : null,
         });
       });
     return rows;

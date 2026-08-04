@@ -43,6 +43,20 @@
     return String(srcAccountId) !== String(dstAccountId);
   }
 
+  /* Descrição para EXIBIÇÃO: acrescenta "(n de N)" quando o lançamento é parcela de uma compra
+     parcelada. O sufixo é só visual — a descrição persistida continua limpa de propósito, porque
+     f006.GroupSignature deriva o groupId do hash da descrição normalizada: gravar o sufixo faria
+     o re-import do mesmo extrato calcular outro id e duplicar a compra em vez de reconhecê-la.
+     Lançamento à vista tem totalInstallments = 1 (default do backend), então não recebe sufixo. */
+  function describe(t) {
+    if (!t) return '';
+    const base = t.description || '';
+    const total = +t.totalInstallments || 0;
+    const number = +t.installmentNumber || 0;
+    if (total <= 1 || number <= 0) return base;
+    return base + ' (' + number + ' de ' + total + ')';
+  }
+
   function isToday(t, now) {
     const ref = now || new Date();
     const d = new Date(t.date);
@@ -66,6 +80,7 @@
     isTransfer: isTransfer,
     signedAmount: signedAmount,
     statusBadgeVariant: statusBadgeVariant,
+    describe: describe,
     isValidTransfer: isValidTransfer,
     isToday: isToday,
     isInPeriod: isInPeriod,
