@@ -126,6 +126,7 @@ public abstract class RequestMapper {
                 draft.installmentTotal(),
                 draft.groupId(),
                 draft.status(),
+                draft.type(),
                 row.duplicate(),
                 row.categoryId(),
                 row.costCenterId(),
@@ -135,7 +136,7 @@ public abstract class RequestMapper {
     static InvoiceConfirmCommand.Row toInvoiceRow(StatementConfirmRequest.Row row) {
         return new InvoiceConfirmCommand.Row(
                 row.description(), row.amount(), row.date(), row.originalDate(),
-                row.installmentNumber(), row.installmentTotal(), row.categoryId(), row.costCenterId(),
+                row.installmentNumber(), row.installmentTotal(), row.transactionType(), row.categoryId(), row.costCenterId(),
                 Objects.requireNonNull(row.cardId()));
     }
 }

@@ -13,8 +13,9 @@ import java.util.UUID;
  * charge rows (one per à-vista charge, {@code N} per parcelado charge) and the registered credit cards
  * present on the statement, offered for per-row pick. {@code date} and {@code originalDate} are
  * absolute ISO {@code yyyy-MM-dd}; installment fields are null for à-vista rows; {@code status} is
- * {@code CONFIRMED} or {@code SCHEDULED}; {@code duplicate} flags a row already imported on its
- * suggested card.
+ * {@code CONFIRMED} or {@code SCHEDULED}; {@code type} is {@code EXPENSE} for a charge, {@code INCOME}
+ * for a card credit/estorno — echo it back on confirm, {@code amount} stays positive either way;
+ * {@code duplicate} flags a row already imported on its suggested card.
  */
 @NullMarked
 public record ImportPreviewResponse(
@@ -35,6 +36,7 @@ public record ImportPreviewResponse(
             @Nullable Integer installmentTotal,
             @Nullable UUID groupId,
             Transaction.Status status,
+            Transaction.Type type,
             boolean duplicate,
             @Nullable UUID categoryId,
             @Nullable UUID costCenterId,

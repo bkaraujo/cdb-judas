@@ -325,6 +325,7 @@
           originalDate: src.originalDate,
           installmentNumber: src.installmentNumber,
           installmentTotal: src.installmentTotal,
+          transactionType: src.type,
           categoryId: categoryId,
           costCenterId: costCenterId,
           cardId: cardId,

@@ -65,7 +65,8 @@ public class StatementImportService {
                 }
 
                 yield switch (capable.getFirst().parse(text)) {
-                    case MonetaryDocument.Invoice(var issuer, var period, var statement) -> invoiceProcessor.preview(personId, issuer, period, statement);
+                    case MonetaryDocument.Invoice(var issuer, var period, var statement, var printedTotals) ->
+                            invoiceProcessor.preview(personId, issuer, period, statement, printedTotals);
                     case MonetaryDocument.Statement(var issuer, var statement) -> statementProcessor.preview(personId, issuer, statement, accountId);
                 };
             }

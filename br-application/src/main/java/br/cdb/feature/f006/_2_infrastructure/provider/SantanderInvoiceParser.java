@@ -11,6 +11,7 @@ import java.time.MonthDay;
 import java.time.YearMonth;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.regex.Pattern;
 
 /**
@@ -72,7 +73,7 @@ public class SantanderInvoiceParser implements StatementParser {
             lastDate = emitLine(line, trimmed, last4, lastDate, lines);
         }
 
-        return new MonetaryDocument.Invoice("Santander", period(text), List.copyOf(lines));
+        return new MonetaryDocument.Invoice("Santander", period(text), List.copyOf(lines), Map.of());
     }
 
     /**

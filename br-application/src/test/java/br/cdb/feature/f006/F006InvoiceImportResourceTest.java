@@ -28,6 +28,7 @@ class F006InvoiceImportResourceTest extends AbstractImportTest {
 
     private static final String BTG_ABRIL = "/faturas/fatura-btg-abril.txt";
     private static final String BTG_MAIO = "/faturas/fatura-btg-maio.txt";
+    private static final String BTG_FEV25 = "/faturas/fatura-btg-fev25.txt";
     private static final String SANTANDER_ABRIL = "/faturas/fatura-santander-abril.txt";
     private static final String SANTANDER_MAIO = "/faturas/fatura-santander-maio.txt";
 
@@ -97,7 +98,8 @@ class F006InvoiceImportResourceTest extends AbstractImportTest {
         val json = previewFixture(BTG_MAIO);
         val parcelas = rowsWithDescription(json, "Amazonmktplc Megabytem");
 
-        assertEquals(List.of("0020", "9822"), json.getList("rows.last4").stream().distinct().toList());
+        // "5115" (só crédito) aparece antes de "0020"/"9822" na fatura, então entra primeiro na lista.
+        assertEquals(List.of("5115", "0020", "9822"), json.getList("rows.last4").stream().distinct().toList());
         // Mesma compra de abril, agora cobrada como 10/10: data original e valor intactos.
         assertEquals(10, parcelas.size());
         assertTrue(parcelas.stream().allMatch(r -> "2025-07-15".equals(r.get("originalDate"))));
@@ -105,15 +107,91 @@ class F006InvoiceImportResourceTest extends AbstractImportTest {
     }
 
     @Test
-    void btgDescartaLinhaInternacionalEmDolarEOBlocoDeCreditos() throws IOException {
+    void btgDescartaLinhaInternacionalEmDolar() throws IOException {
         val json = previewFixture(BTG_MAIO);
 
         // Linha em US$: o valor em BRL não está na linha, então não é emitida.
         assertTrue(json.getList("rows.description", String.class).stream()
                 .noneMatch(d -> d.contains("Amazon Web Services")));
-        // O cartão do bloco "Total de créditos recebidos" (final 5115) cai inteiro.
-        assertFalse(json.getList("last4s", String.class).contains("5115"));
-        assertTrue(json.getList("rows.last4", String.class).stream().noneMatch("5115"::equals));
+    }
+
+    @Test
+    void btgLeCreditoDoBlocoComoLinhaDeReceita() throws IOException {
+        // O cartão final 5115 só tem crédito (nenhuma compra): antes do fix o bloco inteiro caía;
+        // agora cada linha vira uma entrada type=income, sem expandir em carnê.
+        val json = previewFixture(BTG_MAIO);
+
+        assertTrue(json.getList("last4s", String.class).contains("5115"));
+        val rows = rowsWithLast4(json, "5115");
+        assertEquals(8, rows.size());
+        assertTrue(rows.stream().allMatch(r -> "income".equals(str(r, "type"))));
+        assertTrue(rows.stream().allMatch(r -> r.get("installmentNumber") == null),
+                "crédito não expande em carnê, mesmo com \"De 12\" no texto da descrição");
+        val total = rows.stream().map(r -> amount(r)).reduce(BigDecimal.ZERO, BigDecimal::add);
+        assertEquals(0, total.compareTo(new BigDecimal("891.54")));
+    }
+
+    @Test
+    void btgRecuperaComprasDoCartaoQueAtravessamMobiliaDePaginaNoMaio() throws IOException {
+        // Regressão: "R$ 1.465,58" (subtotal solto após as 10 primeiras linhas) fechava o bloco do
+        // 9822 antes do fix, e o rodapé/cabeçalho repetido entre páginas nunca o reabria — as linhas
+        // seguintes (à vista + o estorno) se perdiam em silêncio. Todas aqui são à vista (1/1), então
+        // cada uma vira exatamente uma linha no preview — sem multiplicador de parcela para confundir.
+        val json = previewFixture(BTG_MAIO);
+
+        val ceopag = onlyRowWithDescription(json, "Ceopag");
+        assertEquals(0, amount(ceopag).compareTo(new BigDecimal("115.00")));
+        assertEquals("9822", ceopag.get("last4"));
+
+        val mercadoLivre = onlyRowWithDescription(json, "Mercado Livre");
+        assertEquals(0, amount(mercadoLivre).compareTo(new BigDecimal("389.90")));
+        assertEquals("expense", str(mercadoLivre, "type"));
+
+        val estorno = onlyRowWithDescription(json, "Cancelamento - Mercado Livre");
+        assertEquals(0, amount(estorno).compareTo(new BigDecimal("389.90")));
+        assertEquals("income", str(estorno, "type"));
+
+        // 3 Uber já existiam antes do fix (25/04, 30/04, 01/05); as outras 4 (10/04 ×2, 02/05, 04/05)
+        // ficavam do outro lado da quebra de página.
+        assertEquals(7, rowsWithDescription(json, "Uber").size());
+    }
+
+    @Test
+    void btgMantemBlocoDoCartaoAtravesDeQuebraDePaginaNoPdfReal() throws IOException {
+        // Fatura real de 5 páginas: as 86 linhas do cartão final 0020 atravessam uma quebra de
+        // página no meio (rodapé + cabeçalho repetido + um "R$ 6.853,81" solto que, coincidência,
+        // já bate com o total do cartão sem ter visto todas as linhas — não pode ser sentinela).
+        val rows = rowsWithLast4(previewFixture(BTG_FEV25), "0020");
+        assertEquals(86, rows.size());
+        val total = rows.stream().map(r -> amount(r)).reduce(BigDecimal.ZERO, BigDecimal::add);
+        assertEquals(0, total.compareTo(new BigDecimal("6853.81")));
+    }
+
+    @Test
+    void btgLeFaturaRealComCreditoLiquidandoNoTotalDoCartao() throws IOException {
+        // Cartão final 5115 na fatura real: a fatura cobrou 1 parcela de "Caedu (2/2)" (199,95) e
+        // 1 crédito (13,08) — a parcela do período menos o crédito fecha em 186,87, exatamente o
+        // "Total do cartão" impresso (decisão 1: reconciliar pelo que a fatura cobrou, não pela soma
+        // do carnê expandido — o preview reconstrói o carnê inteiro, então "Caedu" vira 2 linhas).
+        val json = previewFixture(BTG_FEV25);
+        val rows = rowsWithLast4(json, "5115");
+        assertEquals(3, rows.size(), "2 parcelas do carnê reconstruído (Caedu 1/2, 2/2) + 1 crédito");
+
+        val caedu = rowsWithDescription(json, "Caedu");
+        assertEquals(2, caedu.size());
+        assertTrue(caedu.stream().allMatch(r -> "expense".equals(str(r, "type"))));
+        assertTrue(caedu.stream().allMatch(r -> amount(r).compareTo(new BigDecimal("199.95")) == 0));
+        assertEquals(List.of(1, 2), ints(caedu, "installmentNumber"));
+        assertEquals(1L, caedu.stream().map(r -> r.get("groupId")).distinct().count());
+
+        val credit = onlyRowWithDescription(json, "Benefício do cartão BTG Pactual");
+        assertEquals(0, amount(credit).compareTo(new BigDecimal("13.08")));
+        assertEquals("income", str(credit, "type"));
+        assertNull(credit.get("installmentNumber"), "crédito não expande em carnê");
+
+        // A parcela do período (199,95, não a soma do carnê) menos o crédito bate com o total impresso.
+        val net = amount(caedu.getFirst()).subtract(amount(credit));
+        assertEquals(0, net.compareTo(new BigDecimal("186.87")));
     }
 
     // ── Santander ──────────────────────────────────────────────────────────────
@@ -323,9 +401,9 @@ class F006InvoiceImportResourceTest extends AbstractImportTest {
     private void confirmInvoice(List<Map<String, Object>> previewRows, UUID cardId, UUID categoryId) {
         val rows = previewRows.stream().map(r -> """
                 {"description":"%s","amount":%s,"date":"%s","originalDate":"%s",
-                 "installmentNumber":%s,"installmentTotal":%s,"categoryId":"%s","cardId":"%s"}
+                 "installmentNumber":%s,"installmentTotal":%s,"transactionType":"%s","categoryId":"%s","cardId":"%s"}
                 """.formatted(r.get("description"), amount(r), r.get("date"), r.get("originalDate"),
-                r.get("installmentNumber"), r.get("installmentTotal"), categoryId, cardId)).toList();
+                r.get("installmentNumber"), r.get("installmentTotal"), r.get("type"), categoryId, cardId)).toList();
 
         asTestUser()
                 .body("{\"type\":\"CREDIT_CARD_INVOICE\",\"rows\":[%s]}".formatted(String.join(",", rows)))

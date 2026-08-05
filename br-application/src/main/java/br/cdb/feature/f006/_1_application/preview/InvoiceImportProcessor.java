@@ -21,6 +21,7 @@ import lombok.val;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 
+import java.math.BigDecimal;
 import java.time.Clock;
 import java.time.LocalDate;
 import java.time.YearMonth;
@@ -52,7 +53,10 @@ public class InvoiceImportProcessor {
         this.clock = clock;
     }
 
-    public Result<ImportPreviewOutcome, ImportError> preview(String personId, String issuer, @Nullable YearMonth period, List<MonetaryDocumentEntry> statement) {
+    public Result<ImportPreviewOutcome, ImportError> preview(String personId, String issuer, @Nullable YearMonth period,
+                                                              List<MonetaryDocumentEntry> statement, Map<String, BigDecimal> printedTotals) {
+        reconcile(printedTotals, statement);
+
         val last4s = statement.stream().map(MonetaryDocumentEntry::last4)
                 .filter(Objects::nonNull).collect(Collectors.toSet());
 
@@ -81,6 +85,34 @@ public class InvoiceImportProcessor {
         return Result.success(new ImportPreviewOutcome.Invoice(
                 new ImportPreview(issuer, statement, cards, List.copyOf(rows)))
         );
+    }
+
+    /**
+     * Logs (never blocks) a mismatch between each card's own printed checksum and what this slice
+     * kept for it. Compares against the parser's raw {@code statement} entries — one per printed line,
+     * each carrying exactly what the invoice charged that period — not the installment-expanded
+     * drafts: a parcelado draft repeats the same amount N times (the reconstructed carnê), so summing
+     * drafts would never match the invoice's own total by design.
+     */
+    private static void reconcile(Map<String, BigDecimal> printedTotals, List<MonetaryDocumentEntry> statement) {
+        if (printedTotals.isEmpty()) {
+            return;
+        }
+        val netByCard = new HashMap<String, BigDecimal>();
+        for (val entry : statement) {
+            if (entry.last4() == null) {
+                continue;
+            }
+            val signed = entry.type() == Transaction.Type.INCOME ? entry.amount().negate() : entry.amount();
+            netByCard.merge(entry.last4(), signed, BigDecimal::add);
+        }
+        for (val printed : printedTotals.entrySet()) {
+            val computed = netByCard.getOrDefault(printed.getKey(), BigDecimal.ZERO);
+            if (computed.compareTo(printed.getValue()) != 0) {
+                Logger.warn("Invoice reconciliation mismatch for card final %s: printed=%s, computed=%s, diff=%s",
+                        printed.getKey(), printed.getValue(), computed, printed.getValue().subtract(computed));
+            }
+        }
     }
 
     public Result<ImportResult, BusinessError> confirm(UUID personId, InvoiceConfirmCommand cmd) {
@@ -196,9 +228,10 @@ public class InvoiceImportProcessor {
     ) {
         val status = YearMonth.from(row.date()).isAfter(YearMonth.from(today)) ? Transaction.Status.SCHEDULED : Transaction.Status.CONFIRMED;
         val costCenterId = row.costCenterId() != null ? row.costCenterId() : CostCenter.VARIAVEL.id();
+        val type = row.type() != null ? row.type() : Transaction.Type.EXPENSE;
         val tx = new Transaction(
                 UUID.randomUUID(), row.description(), row.amount(), row.date(),
-                accountId, status, Transaction.Type.EXPENSE, costCenterId, null,
+                accountId, status, type, costCenterId, null,
                 groupId, installmentNumber == null ? 1 : installmentNumber,
                 totalInstallments == null ? 1 : totalInstallments, null, row.cardId());
         try {

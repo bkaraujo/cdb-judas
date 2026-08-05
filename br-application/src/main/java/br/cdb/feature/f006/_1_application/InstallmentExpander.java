@@ -39,7 +39,7 @@ public class InstallmentExpander {
         if (!line.isInstallment()) {
             return List.of(new TransactionDraft(
                     line.last4(), originalDate, originalDate, line.description(), line.amount(),
-                    statusFor(originalDate, today), Transaction.Type.EXPENSE, accountId, null, null, null, line.kind()));
+                    statusFor(originalDate, today), line.type(), accountId, null, null, null, line.kind()));
         }
 
         val total = line.installmentTotal();
@@ -49,7 +49,7 @@ public class InstallmentExpander {
             val date = originalDate.plusMonths(k - 1L);
             drafts.add(new TransactionDraft(
                     line.last4(), date, originalDate, line.description(), line.amount(),
-                    statusFor(date, today), Transaction.Type.EXPENSE, accountId, groupId, k, total, line.kind()));
+                    statusFor(date, today), line.type(), accountId, groupId, k, total, line.kind()));
         }
         return List.copyOf(drafts);
     }

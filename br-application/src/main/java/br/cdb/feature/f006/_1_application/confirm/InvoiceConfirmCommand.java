@@ -1,5 +1,6 @@
 package br.cdb.feature.f006._1_application.confirm;
 
+import br.cdb.feature.f006._0_domain.model.Transaction;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 
@@ -10,8 +11,9 @@ import java.util.UUID;
 
 /**
  * Confirm a credit-card statement import: the rows the user kept. Deselected rows are simply absent.
- * {@code amount} is the POSITIVE charge value — the server applies the expense sign. Status is
- * recomputed server-side from {@code date}; no client status is trusted.
+ * {@code amount} is the POSITIVE charge/credit value — the server applies the sign from {@code type}
+ * ({@code EXPENSE} when the client omits it, matching every row before card credits were surfaced).
+ * Status is recomputed server-side from {@code date}; no client status is trusted.
  *
  * <p>A single invoice can carry charges from several cards (titular + additional cardholders), so each
  * {@link Row} names its own {@code cardId}. The persistence account (and therefore the dedup/group
@@ -28,6 +30,7 @@ public record InvoiceConfirmCommand(List<Row> rows) {
             LocalDate originalDate,
             @Nullable Integer installmentNumber,
             @Nullable Integer installmentTotal,
+            Transaction.@Nullable Type type,
             UUID categoryId,
             @Nullable UUID costCenterId,
             UUID cardId

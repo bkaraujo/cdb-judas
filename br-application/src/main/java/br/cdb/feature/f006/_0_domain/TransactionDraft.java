@@ -14,9 +14,10 @@ import java.util.UUID;
  *
  * <p>{@code date} is this installment's absolute date; {@code originalDate} is the original purchase
  * date, carried so confirm can recompute the group signature. {@code amount} is the positive BRL
- * value as parsed (the persistence sign is applied by a later slice). {@code type} is always
- * {@code EXPENSE}; {@code status} is {@code CONFIRMED} (this month or earlier) or
- * {@code SCHEDULED} (future month).
+ * value as parsed (the persistence sign is applied by a later slice). {@code type} mirrors the source
+ * line's {@link MonetaryDocumentEntry#type()} — {@code INCOME} for a card credit, {@code EXPENSE}
+ * otherwise; {@code status} is {@code CONFIRMED} (this month or earlier) or {@code SCHEDULED} (future
+ * month).
  */
 @NullMarked
 public record TransactionDraft(
