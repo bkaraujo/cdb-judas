@@ -8,7 +8,10 @@ import org.jspecify.annotations.Nullable;
 
 import java.util.UUID;
 
-/** Vocabulário de SSE de tag — reagido só por {@code f999} (único dono do dispatch SSE). */
+/** Vocabulário de eventos de tag: {@code Created}/{@code Updated} são só SSE, reagidos por
+ *  {@code f999} (único dono do dispatch); {@code Deleted} carrega a estratégia de exclusão e é
+ *  reagido também por {@code f006} ({@code F006Module}), que reatribui/desvincula o vínculo
+ *  {@code F006_TRANSACTION_TAG} — tabela cuja leitura/escrita são de {@code f006}, não daqui. */
 @NullMarked
 public interface TagEvents extends BusinessEvent {
 

@@ -23,6 +23,7 @@ public record StatementConfirmCommand(UUID accountId, List<Row> rows) {
             LocalDate date,
             Transaction.@Nullable Type type,
             UUID categoryId,
-            @Nullable UUID costCenterId
+            @Nullable UUID costCenterId,
+            List<UUID> tagIds
     ) {}
 }

@@ -3,12 +3,16 @@ package br.cdb.feature.f006;
 import br.cdb.core.persistence.Database;
 import br.cdb.feature.f004._0_domain.event.TagEvents;
 import br.cdb.feature.f006._0_domain.CreditCardProvider;
+import br.cdb.feature.f006._0_domain.repository.TransactionCategoryRepository;
 import br.cdb.feature.f006._0_domain.repository.TransactionRepository;
+import br.cdb.feature.f006._0_domain.repository.TransactionTagRepository;
 import br.cdb.feature.f006._1_application.service.StatementImportService;
 import br.cdb.feature.f006._1_application.usecase.ReadUseCases;
 import br.cdb.feature.f006._1_application.usecase.WriteUseCases;
 import br.cdb.feature.f006._2_infrastructure.MonetaryCardProvider;
+import br.cdb.feature.f006._2_infrastructure.persistence.TransactionCategoryJDBCRepository;
 import br.cdb.feature.f006._2_infrastructure.persistence.TransactionJDBCRepository;
+import br.cdb.feature.f006._2_infrastructure.persistence.TransactionTagJDBCRepository;
 import br.cdb.feature.f006._2_infrastructure.provider.BTGInvoiceParser;
 import br.cdb.feature.f006._2_infrastructure.provider.BTGStatementParser;
 import br.cdb.feature.f006._2_infrastructure.provider.SantanderInvoiceParser;
@@ -62,6 +66,22 @@ public class F006Module implements Lifecycle {
                     TMS_CREATE_AT TIMESTAMP NOT NULL,
                     TMS_UPDATED_AT TIMESTAMP NOT NULL
                 )
+                """,
+                """
+                CREATE TABLE F006_TRANSACTION_CATEGORY (
+                    COD_TRANSACTION CHAR(36) NOT NULL,
+                    COD_PERSON CHAR(36) NOT NULL,
+                    COD_CATEGORY CHAR(36) NOT NULL,
+                    PRIMARY KEY (COD_TRANSACTION, COD_PERSON)
+                )
+                """,
+                """
+                CREATE TABLE F006_TRANSACTION_TAG (
+                    COD_TRANSACTION CHAR(36) NOT NULL,
+                    COD_PERSON CHAR(36) NOT NULL,
+                    COD_TAG CHAR(36) NOT NULL,
+                    PRIMARY KEY (COD_TRANSACTION, COD_PERSON, COD_TAG)
+                )
                 """
         );
     }
@@ -73,6 +93,8 @@ public class F006Module implements Lifecycle {
         Database.initialize(model());
 
         Context.set(TransactionRepository.class, TransactionJDBCRepository::new);
+        Context.set(TransactionCategoryRepository.class, TransactionCategoryJDBCRepository::new);
+        Context.set(TransactionTagRepository.class, TransactionTagJDBCRepository::new);
         Context.set(CreditCardProvider.class, MonetaryCardProvider::new);
         Context.set(PdfTextExtractor.class, () -> new PdfBoxTextExtractor(MAX_STATEMENT_PAGES));
         Context.set(StatementImportService.class, () -> new StatementImportService(
@@ -92,7 +114,7 @@ public class F006Module implements Lifecycle {
             public MessageResult onTagDeleted(TagEvents.Deleted message) {
                 Logger.debug("Processing %s", message);
 
-                val transactions = Context.get(TransactionRepository.class);
+                val transactionTags = Context.get(TransactionTagRepository.class);
                 val tagId = message.tag().id();
                 val personId = message.tag().personId();
 
@@ -103,11 +125,11 @@ public class F006Module implements Lifecycle {
                             yield MessageResult.AVAILABLE;
                         }
 
-                        transactions.reassignTag(tagId, message.targetId(), personId);
+                        transactionTags.reassignTag(tagId, message.targetId(), personId);
                         yield MessageResult.AVAILABLE;
                     }
                     case DETACH -> {
-                        transactions.detachTag(tagId, personId);
+                        transactionTags.detachTag(tagId, personId);
                         yield MessageResult.AVAILABLE;
                     }
                     default -> {

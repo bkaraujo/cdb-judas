@@ -225,6 +225,55 @@
     if ($top.length) $top.trigger('modal:dismiss');
   });
 
+  /* ---- Tags multi-select dropdown ----
+   * <details>/<summary> nativo: abre/fecha sem JS e cresce em fluxo normal (nunca é cortado por um
+   * ancestral com overflow:scroll, ao contrário de um painel position:absolute). O rótulo do
+   * <summary> mostra só a contagem ("2 tags"/"Nenhuma tag"); cada consumidor liga seu próprio
+   * handler delegado em '[data-tag-check]' pra atualizar o próprio estado (a lista de tags
+   * marcadas por linha/transação é dona de quem chama, este helper só desenha).
+   */
+  function tagsCountLabel(count) {
+    if (!count) return 'Nenhuma tag';
+    return count + (count === 1 ? ' tag' : ' tags');
+  }
+
+  function tagsDropdownHtml(selectedIds, key) {
+    const tags = window.App.CacheStore.tags();
+    if (!tags.length) return '<span style="font-size:11px;color:var(--text-muted);">Sem tags</span>';
+    const sel = (selectedIds || []).map(String);
+    const items = tags.map(function (t) {
+      const checked = sel.indexOf(String(t.id)) !== -1 ? ' checked' : '';
+      const color = t.color || 'var(--text-muted)';
+      return '<label style="display:flex;align-items:center;gap:6px;padding:4px 6px;font-size:12px;' +
+          'cursor:pointer;white-space:nowrap;">' +
+        '<input type="checkbox" data-tag-check data-idx="' + esc(key) + '" data-tag-id="' + esc(t.id) + '"' +
+          checked + ' style="cursor:pointer;" />' +
+        '<span style="width:8px;height:8px;border-radius:50%;flex-shrink:0;background:' + esc(color) + ';"></span>' +
+        esc(t.name) +
+      '</label>';
+    }).join('');
+    return (
+      '<details data-region="tags-dropdown" data-idx="' + esc(key) + '" style="font-size:12px;">' +
+        '<summary data-region="tags-summary" style="cursor:pointer;padding:4px 8px;border:1px solid var(--border);' +
+          'border-radius:6px;display:inline-block;color:var(--text-secondary);user-select:none;">' +
+          esc(tagsCountLabel(sel.length)) +
+        '</summary>' +
+        '<div style="margin-top:6px;padding:6px;border:1px solid var(--border);border-radius:6px;' +
+          'background:var(--bg-hover);display:flex;flex-direction:column;gap:2px;min-width:140px;">' +
+          items +
+        '</div>' +
+      '</details>'
+    );
+  }
+
+  /** Atualiza o rótulo de contagem do <summary> mais próximo de um checkbox de tag alterado —
+   *  chamar depois de mutar o array de tagIds do chamador, dentro do handler de 'change'. */
+  function refreshTagsDropdownLabel($checkbox) {
+    const $summary = $checkbox.closest('details').find('> summary[data-region=tags-summary]');
+    const count = $checkbox.closest('details').find('[data-tag-check]:checked').length;
+    $summary.text(tagsCountLabel(count));
+  }
+
   /* ---- Toast ---- */
   function toast(msg, variant) {
     variant = variant || 'info'; // info | success | error | warning
@@ -247,6 +296,8 @@
     tabs: tabs,
     modal: modal,
     toast: toast,
+    tagsDropdownHtml: tagsDropdownHtml,
+    refreshTagsDropdownLabel: refreshTagsDropdownLabel,
   };
 
   // Convenience globals (used inline by pages).
@@ -260,4 +311,6 @@
   window.tabs       = tabs;
   window.modal      = modal;
   window.toast      = toast;
+  window.tagsDropdownHtml = tagsDropdownHtml;
+  window.refreshTagsDropdownLabel = refreshTagsDropdownLabel;
 })();

@@ -9,7 +9,7 @@ import java.util.UUID;
 /**
  * Publicado por {@code f005.WriteUseCase.moveCategorySubtree} antes de {@link CategoryDeleted}
  * — a subárvore antiga precisa estar re-keyada no vínculo antes de sumir. Reagido por
- * {@code TransactionOverlayListener} (f006), que re-keya {@code F005_TRANSACTION_CATEGORY} para
+ * {@code TransactionOverlayListener} (f006), que re-keya {@code F006_TRANSACTION_CATEGORY} para
  * {@code newCategoryId}. Mora em {@code f000} (não em quem publica) para respeitar a ordem de fatias.
  */
 @NullMarked

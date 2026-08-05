@@ -33,6 +33,7 @@ public record InvoiceConfirmCommand(List<Row> rows) {
             Transaction.@Nullable Type type,
             UUID categoryId,
             @Nullable UUID costCenterId,
-            UUID cardId
+            UUID cardId,
+            List<UUID> tagIds
     ) {}
 }

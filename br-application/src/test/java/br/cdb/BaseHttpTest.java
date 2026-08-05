@@ -27,16 +27,19 @@ import br.cdb.feature.f003._0_domain.repository.CreditCardRepository;
 import br.cdb.feature.f003._1_application.service.CreditCardService;
 import br.cdb.feature.f003._2_infrastructure.persistence.CreditCardJDBCRepository;
 import br.cdb.feature.f004._0_domain.repository.TagRepository;
-import br.cdb.feature.f004._0_domain.repository.TransactionTagRepository;
 import br.cdb.feature.f004._1_application.service.TagService;
-import br.cdb.feature.f004._1_application.service.TransactionTagService;
 import br.cdb.feature.f004._2_infrastructure.persistence.TagJDBCRepository;
-import br.cdb.feature.f004._2_infrastructure.persistence.TransactionTagJDBCRepository;
 import br.cdb.feature.f005._0_domain.CategoryRepository;
 import br.cdb.feature.f005._1_application.service.UserCategoryService;
 import br.cdb.feature.f005._2_infrastructure.persistence.CategoryJDBCRepository;
+import br.cdb.feature.f006._0_domain.repository.TransactionCategoryRepository;
 import br.cdb.feature.f006._0_domain.repository.TransactionRepository;
+import br.cdb.feature.f006._0_domain.repository.TransactionTagRepository;
+import br.cdb.feature.f006._1_application.service.TransactionCategoryService;
 import br.cdb.feature.f006._1_application.service.TransactionService;
+import br.cdb.feature.f006._1_application.service.TransactionTagService;
+import br.cdb.feature.f006._2_infrastructure.persistence.TransactionCategoryJDBCRepository;
+import br.cdb.feature.f006._2_infrastructure.persistence.TransactionTagJDBCRepository;
 import br.cdb.feature.f006._1_application.usecase.ReadUseCases;
 import br.cdb.feature.f006._1_application.usecase.WriteUseCases;
 import br.cdb.feature.f006._2_infrastructure.persistence.TransactionJDBCRepository;
@@ -148,9 +151,10 @@ public abstract class BaseHttpTest {
         Context.set(BalanceRepository.class, UserAccountBalanceJDBCRepository::new);
         Context.set(CostCenterRepository.class, CostCenterJDBCRepository::new);
         Context.set(TransactionRepository.class, TransactionJDBCRepository::new);
+        Context.set(TransactionCategoryRepository.class, TransactionCategoryJDBCRepository::new);
+        Context.set(TransactionTagRepository.class, TransactionTagJDBCRepository::new);
         Context.set(CreditCardRepository.class, CreditCardJDBCRepository::new);
         Context.set(TagRepository.class, TagJDBCRepository::new);
-        Context.set(TransactionTagRepository.class, TransactionTagJDBCRepository::new);
         Context.set(CategoryRepository.class, CategoryJDBCRepository::new);
         // Pessoa/preferências: os testes de unidade de f001 publicam fakes no mesmo Context global.
         // O repositório de pessoa é reancorado só quando o que está publicado não é o real — trocar
@@ -164,9 +168,10 @@ public abstract class BaseHttpTest {
         Context.remove(AccountService.class);
         Context.remove(BalanceService.class);
         Context.remove(TransactionService.class);
+        Context.remove(TransactionCategoryService.class);
+        Context.remove(TransactionTagService.class);
         Context.remove(CreditCardService.class);
         Context.remove(TagService.class);
-        Context.remove(TransactionTagService.class);
         Context.remove(UserCategoryService.class);
         // Alcançados por Context.get() estrito (não se auto-instanciam): re-registra em vez de remover.
         Context.set(CostCenterService.class, CostCenterService::new);

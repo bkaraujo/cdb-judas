@@ -23,6 +23,9 @@ import java.util.*;
  * {@link UserEvents.Created} — o listener é registrado no {@link MessageBus} aqui, antes de
  * {@code F999Module} criar o usuário {@code admin} (ordem da lista de módulos em
  * {@code FeatureBootstrap}).
+ *
+ * <p>{@code F006_TRANSACTION_CATEGORY} (DDL, leitura e escrita) é de {@code f006}
+ * ({@code TransactionCategoryRepository}) — é vínculo da transação, não da categoria.</p>
  */
 @NullMarked
 public class F005Module implements Lifecycle {
@@ -41,14 +44,6 @@ public class F005Module implements Lifecycle {
                     FLG_ACTIVE CHAR(1) NOT NULL,
                     TMS_CREATE_AT TIMESTAMP NOT NULL,
                     TMS_UPDATED_AT TIMESTAMP NOT NULL
-                )
-                """,
-                """
-                CREATE TABLE F005_TRANSACTION_CATEGORY (
-                    COD_TRANSACTION CHAR(36) NOT NULL,
-                    COD_PERSON CHAR(36) NOT NULL,
-                    COD_CATEGORY CHAR(36) NOT NULL,
-                    PRIMARY KEY (COD_TRANSACTION, COD_PERSON)
                 )
                 """
         );

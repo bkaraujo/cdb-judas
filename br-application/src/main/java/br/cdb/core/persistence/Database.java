@@ -22,8 +22,8 @@ public abstract class Database {
         return List.of(
                 "DELETE FROM F999_DELETION_QUEUE",
                 "DELETE FROM F010_IMPORT_RULE",
-                "DELETE FROM F004_TRANSACTION_TAG",
-                "DELETE FROM F005_TRANSACTION_CATEGORY",
+                "DELETE FROM F006_TRANSACTION_TAG",
+                "DELETE FROM F006_TRANSACTION_CATEGORY",
                 "DELETE FROM F006_TRANSACTION",
                 "DELETE FROM F002_BALANCE",
                 "DELETE FROM F003_CARD",

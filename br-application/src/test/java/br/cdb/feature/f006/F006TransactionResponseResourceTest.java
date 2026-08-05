@@ -21,7 +21,7 @@ public class F006TransactionResponseResourceTest extends BaseHttpTest {
 
     private long overlayCount(String transactionId) {
         return dataSource.query(
-                "SELECT COUNT(*) FROM F005_TRANSACTION_CATEGORY WHERE COD_TRANSACTION = ?",
+                "SELECT COUNT(*) FROM F006_TRANSACTION_CATEGORY WHERE COD_TRANSACTION = ?",
                 JDBCParameter.of(transactionId),
                 rs -> { rs.next().get(); return rs.getLong(1).get(); }
         );
@@ -29,7 +29,7 @@ public class F006TransactionResponseResourceTest extends BaseHttpTest {
 
     private String categoryIdOf(String transactionId) {
         return dataSource.query(
-                "SELECT COD_CATEGORY FROM F005_TRANSACTION_CATEGORY WHERE COD_TRANSACTION = ?",
+                "SELECT COD_CATEGORY FROM F006_TRANSACTION_CATEGORY WHERE COD_TRANSACTION = ?",
                 JDBCParameter.of(transactionId),
                 rs -> { rs.next().get(); return rs.getString(1).get(); }
         );
@@ -37,7 +37,7 @@ public class F006TransactionResponseResourceTest extends BaseHttpTest {
 
     private long tagLinkCount(String transactionId) {
         return dataSource.query(
-                "SELECT COUNT(*) FROM F004_TRANSACTION_TAG WHERE COD_TRANSACTION = ?",
+                "SELECT COUNT(*) FROM F006_TRANSACTION_TAG WHERE COD_TRANSACTION = ?",
                 JDBCParameter.of(transactionId),
                 rs -> { rs.next().get(); return rs.getLong(1).get(); }
         );
@@ -45,7 +45,7 @@ public class F006TransactionResponseResourceTest extends BaseHttpTest {
 
     private void linkTag(String transactionId, String tagId) {
         dataSource.execute(
-                "INSERT INTO F004_TRANSACTION_TAG (COD_TRANSACTION, COD_PERSON, COD_TAG) VALUES (?, ?, ?)",
+                "INSERT INTO F006_TRANSACTION_TAG (COD_TRANSACTION, COD_PERSON, COD_TAG) VALUES (?, ?, ?)",
                 JDBCParameter.of(transactionId, TEST_USER_ID, tagId)
         );
     }
@@ -166,7 +166,7 @@ public class F006TransactionResponseResourceTest extends BaseHttpTest {
                 .when().delete("/api/" + TEST_USER_ID + "/accounts/" + accountId + "/transactions/" + id)
                 .then().statusCode(204);
 
-        assertEquals(0, overlayCount(id), "overlay (F005_TRANSACTION_CATEGORY) limpo na exclusão unitária");
+        assertEquals(0, overlayCount(id), "overlay (F006_TRANSACTION_CATEGORY) limpo na exclusão unitária");
         assertEquals(0, tagLinkCount(id), "vínculo de tag limpo na exclusão unitária");
     }
 

@@ -20,6 +20,7 @@ import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 
 import java.math.BigDecimal;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
@@ -43,7 +44,8 @@ public abstract class RequestMapper {
                 t.installmentNumber(),
                 t.totalInstallments(),
                 t.notes(),
-                t.cardId()
+                t.cardId(),
+                t.tagIds()
         );
     }
 
@@ -137,6 +139,6 @@ public abstract class RequestMapper {
         return new InvoiceConfirmCommand.Row(
                 row.description(), row.amount(), row.date(), row.originalDate(),
                 row.installmentNumber(), row.installmentTotal(), row.transactionType(), row.categoryId(), row.costCenterId(),
-                Objects.requireNonNull(row.cardId()));
+                Objects.requireNonNull(row.cardId()), row.tagIds() != null ? row.tagIds() : List.of());
     }
 }

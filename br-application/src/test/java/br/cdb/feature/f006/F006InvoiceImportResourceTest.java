@@ -194,6 +194,53 @@ class F006InvoiceImportResourceTest extends AbstractImportTest {
         assertEquals(0, net.compareTo(new BigDecimal("186.87")));
     }
 
+    @Test
+    void confirmaLinhaDeCreditoEPersisteComoReceita() throws IOException {
+        // Round-trip completo: hoje só o JSON do preview é testado nesse caminho — o bug relatado
+        // (crédito voltando como despesa) escapava porque nenhum teste lia a transação persistida.
+        val accountId = seedAccount("Conta BTG");
+        val cardId = seedCard(accountId, "5115");
+        val categoryId = seedLeafCategory();
+
+        val credit = onlyRowWithDescription(previewFixture(BTG_FEV25), "Benefício do cartão BTG Pactual");
+        confirmInvoice(List.of(credit), cardId, categoryId);
+
+        val persisted = asTestUser()
+                .when().get(path("/accounts/transactions"))
+                .then().statusCode(200)
+                .extract().jsonPath().getList("$", Map.class).stream()
+                .filter(t -> "Benefício do cartão BTG Pactual".equals(t.get("description")))
+                .findFirst().orElseThrow(() -> new AssertionError("transação de crédito não encontrada"));
+
+        assertEquals("income", persisted.get("type"));
+    }
+
+    @Test
+    void confirmaLinhaComTagsGravaOVinculoEmF004TransactionTag() throws IOException {
+        val accountId = seedAccount("Conta BTG");
+        val cardId = seedCard(accountId, "9822");
+        val categoryId = seedLeafCategory();
+        val tagId = seedTag("Viagem");
+
+        val microsoft = onlyRowWithDescription(previewFixture(BTG_ABRIL), "Microsoft");
+        val body = """
+                {"type":"CREDIT_CARD_INVOICE","rows":[
+                  {"description":"%s","amount":%s,"date":"%s","originalDate":"%s",
+                   "installmentNumber":null,"installmentTotal":null,"transactionType":"expense",
+                   "categoryId":"%s","cardId":"%s","tagIds":["%s"]}]}
+                """.formatted(microsoft.get("description"), amount(microsoft), microsoft.get("date"), microsoft.get("originalDate"),
+                categoryId, cardId, tagId);
+
+        asTestUser().body(body).when().post(path(CONFIRM)).then().statusCode(200).body("created", is(1));
+
+        val persisted = asTestUser().when().get(path("/accounts/transactions")).then().statusCode(200)
+                .extract().jsonPath().getList("$", Map.class).stream()
+                .filter(t -> "Microsoft".equals(t.get("description")))
+                .findFirst().orElseThrow(() -> new AssertionError("transação não encontrada"));
+
+        assertEquals(List.of(tagId.toString()), persisted.get("tagIds"));
+    }
+
     // ── Santander ──────────────────────────────────────────────────────────────
 
     @Test

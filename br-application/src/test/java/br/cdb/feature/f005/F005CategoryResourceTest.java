@@ -53,7 +53,7 @@ public class F005CategoryResourceTest extends BaseHttpTest {
 
     private String categoryOf(String transactionId) {
         return dataSource.query(
-                "SELECT COD_CATEGORY FROM F005_TRANSACTION_CATEGORY WHERE COD_TRANSACTION = ?",
+                "SELECT COD_CATEGORY FROM F006_TRANSACTION_CATEGORY WHERE COD_TRANSACTION = ?",
                 JDBCParameter.of(transactionId),
                 rs -> rs.next().get() ? rs.getString("COD_CATEGORY").get() : null
         );
@@ -349,7 +349,7 @@ public class F005CategoryResourceTest extends BaseHttpTest {
         // A transferência já grava o overlay das duas pernas; aqui só reaponta a perna de saída
         // para a subcategoria customizada, para exercitar a expansão do par na exclusão da categoria.
         dataSource.execute(
-                "UPDATE F005_TRANSACTION_CATEGORY SET COD_CATEGORY = ? WHERE COD_PERSON = ? AND COD_TRANSACTION = ?",
+                "UPDATE F006_TRANSACTION_CATEGORY SET COD_CATEGORY = ? WHERE COD_PERSON = ? AND COD_TRANSACTION = ?",
                 JDBCParameter.of(subId, TEST_USER_ID, outboundId)
         );
 

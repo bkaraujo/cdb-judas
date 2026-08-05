@@ -13,11 +13,12 @@ import br.cdb.feature.f003._0_domain.model.CreditCard;
 import br.cdb.feature.f003._0_domain.repository.CreditCardRepository;
 import br.cdb.feature.f004._0_domain.model.Tag;
 import br.cdb.feature.f004._0_domain.repository.TagRepository;
-import br.cdb.feature.f004._0_domain.repository.TransactionTagRepository;
 import br.cdb.feature.f005._0_domain.Category;
 import br.cdb.feature.f005._0_domain.CategoryRepository;
 import br.cdb.feature.f006._0_domain.model.Transaction;
+import br.cdb.feature.f006._0_domain.repository.TransactionCategoryRepository;
 import br.cdb.feature.f006._0_domain.repository.TransactionRepository;
+import br.cdb.feature.f006._0_domain.repository.TransactionTagRepository;
 import br.cdb.feature.f010._0_domain.model.ImportRule;
 import br.cdb.feature.f010._0_domain.repository.ImportRuleRepository;
 import lombok.val;
@@ -50,9 +51,6 @@ public abstract class InMemoryRepositories {
 
     public static class Transactions extends BaseRepo<Transaction, UUID> implements TransactionRepository {
 
-        /** Vínculo F005_TRANSACTION_CATEGORY: transação → pessoa → categoria (tabela à parte, como no JDBC). */
-        private final Map<UUID, Map<UUID, UUID>> categories = new LinkedHashMap<>();
-
         public Transaction save(Transaction e) { data.put(e.id(), e); return e; }
 
         /** Fake não modela COD_PERSON — testes de engine não cobrem guarda implícita (isso é BaseHttpTest). */
@@ -68,6 +66,21 @@ public abstract class InMemoryRepositories {
                 }
             }
         }
+
+        public void reassignCard(UUID from, UUID to) {
+            for (var t : List.copyOf(data.values())) {
+                if (from.equals(t.cardId())) {
+                    data.put(t.id(), new Transaction(t.id(), t.description(), t.signal(), t.amount(), t.purchasedAt(),
+                            t.accountId(), t.status(), t.costCenterId(), t.paymentDate(), t.groupId(),
+                            t.installmentNumber(), t.totalInstallments(), t.notes(), t.createdAt(), t.updatedAt(), to));
+                }
+            }
+        }
+    }
+
+    /** Vínculo F006_TRANSACTION_CATEGORY: transação → pessoa → categoria (tabela à parte, como no JDBC). */
+    public static class TransactionCategories implements TransactionCategoryRepository {
+        private final Map<UUID, Map<UUID, UUID>> categories = new LinkedHashMap<>();
 
         public void saveCategory(UUID transactionId, UUID personId, @Nullable UUID categoryId) {
             if (categoryId == null) {
@@ -105,27 +118,48 @@ public abstract class InMemoryRepositories {
                             oldCategoryId.equals(current) ? newCategoryId : current));
         }
 
-        /** O vínculo de tag (F004_TRANSACTION_TAG) não é modelado neste fake. */
+        public void clearCache() { categories.clear(); }
+    }
+
+    /** Vínculo F006_TRANSACTION_TAG: transação → pessoa → tags (tabela à parte, como no JDBC). */
+    public static class TransactionTags implements TransactionTagRepository {
+        private final Map<UUID, Map<UUID, List<UUID>>> tags = new LinkedHashMap<>();
+
+        public void replaceTags(UUID transactionId, UUID personId, List<UUID> tagIds) {
+            if (tagIds.isEmpty()) {
+                tags.getOrDefault(transactionId, new LinkedHashMap<>()).remove(personId);
+                return;
+            }
+            tags.computeIfAbsent(transactionId, ignored -> new LinkedHashMap<>()).put(personId, List.copyOf(tagIds));
+        }
+
+        public Map<UUID, List<UUID>> findTagsByPerson(UUID personId) {
+            var byTransaction = new LinkedHashMap<UUID, List<UUID>>();
+            tags.forEach((transactionId, byPerson) -> {
+                var tagIds = byPerson.get(personId);
+                if (tagIds != null && !tagIds.isEmpty()) byTransaction.put(transactionId, tagIds);
+            });
+            return byTransaction;
+        }
+
+        public void deleteTagsByTransaction(UUID transactionId) { tags.remove(transactionId); }
+
         public void reassignTag(UUID oldTagId, UUID newTagId, UUID personId) {
-            // não exercido por estes testes
+            tags.values().forEach(byPerson -> byPerson.computeIfPresent(personId, (ignored, current) -> {
+                if (!current.contains(oldTagId)) return current;
+                val updated = new ArrayList<>(current);
+                updated.replaceAll(id -> oldTagId.equals(id) ? newTagId : id);
+                // dedupe: a transação já pode estar vinculada ao destino.
+                return updated.stream().distinct().toList();
+            }));
         }
 
         public void detachTag(UUID tagId, UUID personId) {
-            // não exercido por estes testes
+            tags.values().forEach(byPerson -> byPerson.computeIfPresent(personId,
+                    (ignored, current) -> current.stream().filter(id -> !tagId.equals(id)).toList()));
         }
 
-        @Override
-        public void clearCache() { data.clear(); categories.clear(); }
-
-        public void reassignCard(UUID from, UUID to) {
-            for (var t : List.copyOf(data.values())) {
-                if (from.equals(t.cardId())) {
-                    data.put(t.id(), new Transaction(t.id(), t.description(), t.signal(), t.amount(), t.purchasedAt(),
-                            t.accountId(), t.status(), t.costCenterId(), t.paymentDate(), t.groupId(),
-                            t.installmentNumber(), t.totalInstallments(), t.notes(), t.createdAt(), t.updatedAt(), to));
-                }
-            }
-        }
+        public void clearCache() { tags.clear(); }
     }
 
     public static class CostCenters extends BaseRepo<CostCenter, UUID> implements CostCenterRepository {
@@ -206,42 +240,6 @@ public abstract class InMemoryRepositories {
         public Optional<ImportRule> findByPersonAndId(UUID personId, UUID id) {
             return findById(id).filter(r -> personId.equals(r.personId()));
         }
-    }
-
-    /** Junção transação×tag por pessoa ({@code F004_TRANSACTION_TAG}). */
-    public static class TransactionTags implements TransactionTagRepository {
-        private record Link(UUID personId, UUID transactionId, UUID tagId) {}
-
-        private final List<Link> links = new ArrayList<>();
-
-        void link(UUID personId, UUID transactionId, UUID tagId) { links.add(new Link(personId, transactionId, tagId)); }
-
-        public List<UUID> findTransactionIdsByTag(UUID personId, UUID tagId) {
-            return links.stream()
-                    .filter(l -> personId.equals(l.personId()) && tagId.equals(l.tagId()))
-                    .map(Link::transactionId)
-                    .toList();
-        }
-
-        public void reassignTag(UUID oldTagId, UUID newTagId, UUID personId) {
-            val reassigned = links.stream()
-                    .filter(l -> personId.equals(l.personId()) && oldTagId.equals(l.tagId()))
-                    .map(l -> new Link(l.personId(), l.transactionId(), newTagId))
-                    .filter(l -> !links.contains(l)) // dedupe: já vinculada ao destino
-                    .toList();
-            links.removeIf(l -> personId.equals(l.personId()) && oldTagId.equals(l.tagId()));
-            links.addAll(reassigned);
-        }
-
-        public void deleteByTag(UUID personId, UUID tagId) {
-            links.removeIf(l -> personId.equals(l.personId()) && tagId.equals(l.tagId()));
-        }
-
-        public void deleteByTransaction(UUID transactionId) {
-            links.removeIf(l -> transactionId.equals(l.transactionId()));
-        }
-
-        public void clearCache() { links.clear(); }
     }
 
     /** Como o fake de tag, modela {@code COD_PERSON} — {@code personId} é campo do próprio

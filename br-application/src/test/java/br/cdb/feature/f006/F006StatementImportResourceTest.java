@@ -323,6 +323,30 @@ class F006StatementImportResourceTest extends AbstractImportTest {
     }
 
     @Test
+    void confirmaLinhaComTagsGravaOVinculoEmF004TransactionTag() throws IOException {
+        val accountId = seedAccount("Conta BTG");
+        val categoryId = seedLeafCategory();
+        val tagId = seedTag("Viagem");
+        val odontoprev = byDescription(rows(previewOf(EXTRATO)), "Odontoprev");
+
+        val body = """
+                {"type":"BANK_STATEMENT","accountId":"%s","rows":[
+                  {"description":"%s","amount":%s,"date":"%s","transactionType":"%s",
+                   "categoryId":"%s","tagIds":["%s"]}]}
+                """.formatted(accountId, odontoprev.get("description"), amount(odontoprev), odontoprev.get("date"),
+                odontoprev.get("type"), categoryId, tagId);
+
+        asTestUser().body(body).when().post(path(CONFIRM)).then().statusCode(200).body("created", is(1));
+
+        val persisted = asTestUser().when().get(path("/accounts/transactions")).then().statusCode(200)
+                .extract().jsonPath().getList("$", Map.class).stream()
+                .filter(t -> String.valueOf(t.get("description")).contains("Odontoprev"))
+                .findFirst().orElseThrow(() -> new AssertionError("transação não encontrada"));
+
+        assertEquals(List.of(tagId.toString()), persisted.get("tagIds"));
+    }
+
+    @Test
     void confirmExigeAConta() throws IOException {
         val categoryId = seedLeafCategory();
         val body = """

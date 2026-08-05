@@ -6,6 +6,7 @@ import org.jspecify.annotations.Nullable;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.List;
 import java.util.UUID;
 
 @NullMarked
@@ -24,5 +25,6 @@ public record TransactionResponse(
         @Nullable Integer installmentNumber,
         @Nullable Integer totalInstallments,
         @Nullable String notes,
-        @Nullable UUID cardId
+        @Nullable UUID cardId,
+        List<UUID> tagIds
 ) {}

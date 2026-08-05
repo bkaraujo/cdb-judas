@@ -55,6 +55,7 @@
         (existing.type === 'income'  && Number(existing.amount) < 0)
       ) : false,
       notes: isEdit ? (existing.notes || '') : '',
+      tagIds: isEdit ? (existing.tagIds || []).map(String) : [],
     };
 
     // Account options.
@@ -221,6 +222,10 @@
           '<label class="form-label" for="' + ids.status + '">Status</label>' +
           '<select id="' + ids.status + '" name="status">' + statusOpts + '</select>' +
         '</div>' +
+        '<div class="form-group">' +
+          '<label class="form-label">Tags</label>' +
+          window.tagsDropdownHtml(initial.tagIds, 'tx') +
+        '</div>' +
         '<div class="form-group full">' +
           '<label style="display:inline-flex;align-items:center;gap:8px;' + (isTransferEdit ? 'cursor:not-allowed;opacity:0.55;' : 'cursor:pointer;') +
             'font-size:13px;font-weight:500;color:var(--text-secondary);">' +
@@ -327,6 +332,15 @@
           initial.costCenterId = String(rule.costCenterId);
         }
       }
+    });
+
+    // Tags: mesma dropdown compartilhada do import (ui.js) — checkboxes fora de qualquer <select>,
+    // então o estado mora em initial.tagIds (mutado direto a cada change), não lido do DOM no submit.
+    m.$body.on('change', '[data-tag-check]', function () {
+      const tagId = String($(this).attr('data-tag-id'));
+      const current = initial.tagIds.map(String);
+      initial.tagIds = this.checked ? current.concat([tagId]) : current.filter(function (id) { return id !== tagId; });
+      window.refreshTagsDropdownLabel($(this));
     });
 
     // Account change refreshes which cards are offered (a card belongs to one account).
@@ -459,6 +473,7 @@
         type: type,
         notes: notes,
         cardId: $form.find('select[name=cardId]').val() || null,
+        tagIds: initial.tagIds,
       };
 
       $btn.prop('disabled', true);

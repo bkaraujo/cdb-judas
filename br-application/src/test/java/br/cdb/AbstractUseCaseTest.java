@@ -11,13 +11,15 @@ import br.cdb.feature.f002._1_application.service.BalanceService;
 import br.cdb.feature.f003._0_domain.repository.CreditCardRepository;
 import br.cdb.feature.f003._1_application.service.CreditCardService;
 import br.cdb.feature.f004._0_domain.repository.TagRepository;
-import br.cdb.feature.f004._0_domain.repository.TransactionTagRepository;
 import br.cdb.feature.f004._1_application.service.TagService;
-import br.cdb.feature.f004._1_application.service.TransactionTagService;
 import br.cdb.feature.f005._0_domain.CategoryRepository;
 import br.cdb.feature.f005._1_application.service.UserCategoryService;
+import br.cdb.feature.f006._0_domain.repository.TransactionCategoryRepository;
 import br.cdb.feature.f006._0_domain.repository.TransactionRepository;
+import br.cdb.feature.f006._0_domain.repository.TransactionTagRepository;
+import br.cdb.feature.f006._1_application.service.TransactionCategoryService;
 import br.cdb.feature.f006._1_application.service.TransactionService;
+import br.cdb.feature.f006._1_application.service.TransactionTagService;
 import br.cdb.feature.f010._0_domain.repository.ImportRuleRepository;
 import br.cdb.feature.f010._1_application.service.ImportRuleService;
 import br.commons.MessageBus;
@@ -33,8 +35,9 @@ public abstract class AbstractUseCaseTest {
     protected AccountRepository accountRepository() { return Context.get(AccountRepository.class); }
     protected CostCenterRepository costCenterRepository() { return Context.get(CostCenterRepository.class); }
     protected TransactionRepository transactionRepository() { return Context.get(TransactionRepository.class); }
-    protected TagRepository tagRepository() { return Context.get(TagRepository.class); }
+    protected TransactionCategoryRepository transactionCategoryRepository() { return Context.get(TransactionCategoryRepository.class); }
     protected TransactionTagRepository transactionTagRepository() { return Context.get(TransactionTagRepository.class); }
+    protected TagRepository tagRepository() { return Context.get(TagRepository.class); }
     protected CategoryRepository categoryRepository() { return Context.get(CategoryRepository.class); }
     protected PersonRepository personRepository() { return Context.get(PersonRepository.class); }
     protected ImportRuleRepository importRuleRepository() { return Context.get(ImportRuleRepository.class); }
@@ -47,8 +50,9 @@ public abstract class AbstractUseCaseTest {
         Context.remove(BalanceService.class);
         Context.remove(CostCenterService.class);
         Context.remove(TransactionService.class);
-        Context.remove(TagService.class);
+        Context.remove(TransactionCategoryService.class);
         Context.remove(TransactionTagService.class);
+        Context.remove(TagService.class);
         Context.remove(UserCategoryService.class);
         Context.remove(ImportRuleService.class);
 
@@ -57,11 +61,12 @@ public abstract class AbstractUseCaseTest {
         Context.tryGet(AccountRepository.class, InMemoryRepositories.Accounts::new).clearCache();
         Context.tryGet(TransactionRepository.class, InMemoryRepositories.Transactions::new).clearCache();
         Context.tryGet(CostCenterRepository.class, InMemoryRepositories.CostCenters::new).clearCache();
-        // TagRepository/TransactionTagRepository não estendem Repository (não têm clearCache): em vez
-        // de limpar o fake, publica-se um novo a cada teste — o que também sobrescreve o adaptador
-        // JDBC deixado por um @QuarkusTest anterior.
-        Context.set(TagRepository.class, InMemoryRepositories.Tags::new);
+        // TransactionCategoryRepository/TransactionTagRepository/TagRepository não estendem Repository
+        // (não têm clearCache): em vez de limpar o fake, publica-se um novo a cada teste — o que
+        // também sobrescreve o adaptador JDBC deixado por um @QuarkusTest anterior.
+        Context.set(TransactionCategoryRepository.class, InMemoryRepositories.TransactionCategories::new);
         Context.set(TransactionTagRepository.class, InMemoryRepositories.TransactionTags::new);
+        Context.set(TagRepository.class, InMemoryRepositories.Tags::new);
         Context.set(CategoryRepository.class, InMemoryRepositories.Categories::new);
         Context.set(PersonRepository.class, InMemoryRepositories.People::new);
         Context.set(ImportRuleRepository.class, InMemoryRepositories.ImportRules::new);

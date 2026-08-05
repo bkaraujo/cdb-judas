@@ -74,7 +74,7 @@ public class TransactionResource {
     @POST
     @Path("/{accId}/transactions")
     public RestResponse<TransactionResponse> create(@PathParam("uuid") UUID uuid, @PathParam("accId") UUID accId, @Valid TransactionRequest req) {
-        return switch (writes.createTransaction(uuid, RequestMapper.toCreateCommand(accId, req), req.categoryId())) {
+        return switch (writes.createTransaction(uuid, RequestMapper.toCreateCommand(accId, req), req.categoryId(), tagIdsOf(req))) {
             case Result.Success(var transaction) -> RestResponse.status(RestResponse.Status.CREATED, RequestMapper.toDto(transaction));
             case Result.Failure(var error) -> throw new BusinessException(error);
         };
@@ -83,7 +83,7 @@ public class TransactionResource {
     @PATCH
     @Path("/{accId}/transactions/{txId}")
     public TransactionResponse update(@PathParam("uuid") UUID uuid, @PathParam("accId") UUID accId, @PathParam("txId") UUID txId, @Valid TransactionRequest req) {
-        return switch (writes.updateTransaction(uuid, RequestMapper.toUpdateCommand(txId, accId, req), req.categoryId())) {
+        return switch (writes.updateTransaction(uuid, RequestMapper.toUpdateCommand(txId, accId, req), req.categoryId(), tagIdsOf(req))) {
             case Result.Success(var transaction) -> RequestMapper.toDto(transaction);
             case Result.Failure(var error) -> throw new BusinessException(error);
         };
@@ -107,6 +107,10 @@ public class TransactionResource {
     }
 
     // ── Helpers ────────────────────────────────────────────────────
+
+    private static List<UUID> tagIdsOf(TransactionRequest req) {
+        return req.tagIds() != null ? req.tagIds() : List.of();
+    }
 
     private List<TransactionResponse> query(UUID personId, ReadUseCases.TransactionFilter filter) {
         return switch (reads.transactions(personId, filter)) {

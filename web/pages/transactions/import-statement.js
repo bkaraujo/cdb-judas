@@ -98,11 +98,6 @@
       return '<span style="font-size:11px;color:' + color + ';">' + esc(label) + '</span>';
     }
 
-    function importCategories(keepId) {
-      const expense = flatCategories('EXPENSE', true, keepId);
-      return expense.length ? expense : flatCategories(null, true, keepId);
-    }
-
     // Import category set for a given movement type (statement rows can be income or expense).
     function importCategoriesFor(type, keepId) {
       const nature = type === 'income' ? 'INCOME' : 'EXPENSE';
@@ -110,9 +105,38 @@
       return byNature.length ? byNature : flatCategories(null, true, keepId);
     }
 
-    function categorySelectHtml(selectedId, idx, groupId, locked) {
+    function typeSelectHtml(selectedType, idx) {
+      const type = selectedType === 'income' ? 'income' : 'expense';
+      return '<select data-row-type data-idx="' + idx + '" ' +
+        'style="width:auto;font-size:12px;padding:4px 6px;">' +
+          '<option value="expense"' + (type === 'expense' ? ' selected' : '') + '>Despesa</option>' +
+          '<option value="income"' + (type === 'income' ? ' selected' : '') + '>Receita</option>' +
+        '</select>';
+    }
+
+    // Rebuilds the category <select> of a row so its options track the row's current type
+    // (income/expense); called on load and whenever the user flips the type dropdown.
+    function refreshCategoryOptions(idx, type) {
+      const $cat = m.$el.find('[data-row-category][data-idx="' + idx + '"]');
+      if (!$cat.length) return;
+      const currentId = $cat.val();
+      const cats = importCategoriesFor(type, currentId);
+      const stillValid = cats.some(function (c) { return String(c.id) === String(currentId); });
+      const selId = stillValid ? currentId : (cats[0] ? cats[0].id : '');
+      const options = cats.length
+        ? cats.map(function (c) {
+            const sel = String(c.id) === String(selId) ? ' selected' : '';
+            return '<option value="' + esc(c.id) + '"' + sel + '>' + esc(c.label) + '</option>';
+          }).join('')
+        : '<option value="">Sem categorias</option>';
+      $cat.html(options).prop('disabled', !cats.length);
+      const data = previewData || statementData;
+      if (data && data.rows && data.rows[idx]) data.rows[idx].categoryId = selId || null;
+    }
+
+    function categorySelectHtml(selectedId, idx, groupId, locked, type) {
       const groupAttr = ' data-group-id="' + esc(groupId || '') + '"';
-      const cats = importCategories(selectedId);
+      const cats = importCategoriesFor(type, selectedId);
       if (!cats.length) {
         return '<select data-row-category data-idx="' + idx + '"' + groupAttr + ' disabled>' +
           '<option value="">Sem categorias</option></select>';
@@ -197,7 +221,9 @@
               'style="width:16px;height:16px;cursor:pointer;" />' +
           '</td>' +
           '<td style="padding:8px 10px;width:90px;white-space:nowrap;color:var(--text-secondary);">' + esc(fmtIsoDate(row.date)) + '</td>' +
-          '<td style="padding:8px 10px;">' + categorySelectHtml(row.categoryId, idx, row.groupId, groupLocked) + '</td>' +
+          '<td style="padding:8px 10px;">' + typeSelectHtml(row.type, idx) + '</td>' +
+          '<td style="padding:8px 10px;">' + categorySelectHtml(row.categoryId, idx, row.groupId, groupLocked, row.type) + '</td>' +
+          '<td style="padding:8px 10px;">' + window.tagsDropdownHtml(row.tagIds, idx) + '</td>' +
           '<td style="padding:8px 10px;">' + costCenterSelectHtml(row.costCenterId, idx) + '</td>' +
           '<td style="padding:8px 10px;text-align:center;color:var(--text-secondary);">' + parcela + '</td>' +
           '<td style="padding:8px 10px;">' +
@@ -256,7 +282,9 @@
                   '<input type="checkbox" data-act="select-all" checked style="width:16px;height:16px;cursor:pointer;" />' +
                 '</th>' +
                 '<th data-sort="date" style="padding:8px 10px;width:90px;text-align:left;font-size:11px;color:var(--text-muted);cursor:pointer;">Data' + sortIcon('date') + '</th>' +
+                '<th data-sort="type" style="padding:8px 10px;text-align:left;font-size:11px;color:var(--text-muted);cursor:pointer;">Tipo' + sortIcon('type') + '</th>' +
                 '<th data-sort="categoryId" style="padding:8px 10px;text-align:left;font-size:11px;color:var(--text-muted);cursor:pointer;">Categoria' + sortIcon('categoryId') + '</th>' +
+                '<th style="padding:8px 10px;text-align:left;font-size:11px;color:var(--text-muted);">Tags</th>' +
                 '<th data-sort="costCenterId" style="padding:8px 10px;text-align:left;font-size:11px;color:var(--text-muted);cursor:pointer;">Centro de Custo' + sortIcon('costCenterId') + '</th>' +
                 '<th data-sort="installmentNumber" style="padding:8px 10px;text-align:center;font-size:11px;color:var(--text-muted);cursor:pointer;">Parcela' + sortIcon('installmentNumber') + '</th>' +
                 '<th data-sort="description" style="padding:8px 10px;text-align:left;font-size:11px;color:var(--text-muted);cursor:pointer;">Descrição' + sortIcon('description') + '</th>' +
@@ -329,6 +357,7 @@
           categoryId: categoryId,
           costCenterId: costCenterId,
           cardId: cardId,
+          tagIds: src.tagIds || [],
         });
       });
 
@@ -421,7 +450,9 @@
               'style="width:16px;height:16px;cursor:pointer;" />' +
           '</td>' +
           '<td style="padding:8px 10px;width:90px;white-space:nowrap;color:var(--text-secondary);">' + esc(fmtIsoDate(row.date)) + '</td>' +
+          '<td style="padding:8px 10px;">' + typeSelectHtml(row.type, idx) + '</td>' +
           '<td style="padding:8px 10px;">' + statementCategorySelectHtml(row.categoryId, idx, row.type) + '</td>' +
+          '<td style="padding:8px 10px;">' + window.tagsDropdownHtml(row.tagIds, idx) + '</td>' +
           '<td style="padding:8px 10px;">' + costCenterSelectHtml(row.costCenterId, idx) + '</td>' +
           '<td style="padding:8px 10px;">' +
             '<input type="text" data-row-description data-idx="' + idx + '" value="' + esc(row.description) + '" ' +
@@ -474,7 +505,9 @@
                   '<input type="checkbox" data-act="select-all" checked style="width:16px;height:16px;cursor:pointer;" />' +
                 '</th>' +
                 '<th data-sort="date" style="padding:8px 10px;width:90px;text-align:left;font-size:11px;color:var(--text-muted);cursor:pointer;">Data' + sortIcon('date') + '</th>' +
+                '<th data-sort="type" style="padding:8px 10px;text-align:left;font-size:11px;color:var(--text-muted);cursor:pointer;">Tipo' + sortIcon('type') + '</th>' +
                 '<th data-sort="categoryId" style="padding:8px 10px;text-align:left;font-size:11px;color:var(--text-muted);cursor:pointer;">Categoria' + sortIcon('categoryId') + '</th>' +
+                '<th style="padding:8px 10px;text-align:left;font-size:11px;color:var(--text-muted);">Tags</th>' +
                 '<th data-sort="costCenterId" style="padding:8px 10px;text-align:left;font-size:11px;color:var(--text-muted);cursor:pointer;">Centro de Custo' + sortIcon('costCenterId') + '</th>' +
                 '<th data-sort="description" style="padding:8px 10px;text-align:left;font-size:11px;color:var(--text-muted);cursor:pointer;">Descrição' + sortIcon('description') + '</th>' +
                 '<th data-sort="state" style="padding:8px 10px;text-align:center;font-size:11px;color:var(--text-muted);cursor:pointer;">Estado' + sortIcon('state') + '</th>' +
@@ -554,6 +587,7 @@
           transactionType: src.type,
           categoryId: categoryId,
           costCenterId: costCenterId,
+          tagIds: src.tagIds || [],
         });
       });
 
@@ -576,13 +610,14 @@
     function alignGroupFields(rows) {
       const masterByGroup = {};
       rows.forEach(function (r) {
-        if (r.groupId && r.installmentNumber === 1) masterByGroup[r.groupId] = { categoryId: r.categoryId, description: r.description };
+        if (r.groupId && r.installmentNumber === 1) masterByGroup[r.groupId] = { categoryId: r.categoryId, description: r.description, type: r.type };
       });
       rows.forEach(function (r) {
         const master = r.groupId && r.installmentNumber !== 1 ? masterByGroup[r.groupId] : null;
         if (!master) return;
         r.categoryId = master.categoryId;
         r.description = master.description;
+        r.type = master.type;
       });
     }
 
@@ -598,6 +633,9 @@
           m.$el.find('[data-row-description][data-idx="' + i + '"]').val(value);
         } else if (field === 'categoryId') {
           m.$el.find('[data-row-category][data-idx="' + i + '"]').val(value);
+        } else if (field === 'type') {
+          m.$el.find('[data-row-type][data-idx="' + i + '"]').val(value);
+          refreshCategoryOptions(i, value);
         }
       });
     }
@@ -608,10 +646,30 @@
       propagateGroupEdit(idx, 'description', this.value);
     });
 
+    m.$el.on('change', '[data-row-type]', function () {
+      const idx = Number($(this).attr('data-idx'));
+      const value = this.value;
+      const data = previewData || statementData;
+      if (data && data.rows && data.rows[idx]) data.rows[idx].type = value;
+      refreshCategoryOptions(idx, value);
+      propagateGroupEdit(idx, 'type', value);
+    });
+
     m.$el.on('change', '[data-row-category]', function () {
       const idx = Number($(this).attr('data-idx'));
       if (previewData && previewData.rows && previewData.rows[idx]) previewData.rows[idx].categoryId = this.value;
       propagateGroupEdit(idx, 'categoryId', this.value);
+    });
+
+    m.$el.on('change', '[data-tag-check]', function () {
+      const idx = Number($(this).attr('data-idx'));
+      const tagId = String($(this).attr('data-tag-id'));
+      const data = previewData || statementData;
+      if (!data || !data.rows || !data.rows[idx]) return;
+      const row = data.rows[idx];
+      const current = (row.tagIds || []).map(String);
+      row.tagIds = this.checked ? current.concat([tagId]) : current.filter(function (id) { return id !== tagId; });
+      window.refreshTagsDropdownLabel($(this));
     });
 
     m.$el.on('change', '[data-row-costcenter]', function () {
@@ -663,6 +721,10 @@
       m.$el.find('[data-row-include]').each(function () {
         const idx = Number($(this).attr('data-idx'));
         data.rows[idx].checked = this.checked;
+      });
+      m.$el.find('[data-row-type]').each(function () {
+        const idx = Number($(this).attr('data-idx'));
+        data.rows[idx].type = this.value;
       });
       m.$el.find('[data-row-category]').each(function () {
         const idx = Number($(this).attr('data-idx'));

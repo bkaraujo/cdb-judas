@@ -33,7 +33,7 @@ import java.util.stream.Collectors;
  * statements): preview (card match + installment expansion + dedup) and confirm (persistence of
  * kept rows, grouped by installment schedule). Every persisted transaction publishes
  * {@code TransactionImported} (f000) — {@code TransactionOverlayListener} (aqui mesmo em f006) grava
- * o vínculo {@code F005_TRANSACTION_CATEGORY}, mantendo o 1:1 com {@code F006_TRANSACTION}.
+ * o vínculo {@code F006_TRANSACTION_CATEGORY}, mantendo o 1:1 com {@code F006_TRANSACTION}.
  */
 @NullMarked
 public class InvoiceImportProcessor {
@@ -237,7 +237,7 @@ public class InvoiceImportProcessor {
         try {
             return switch (writes.create(tx)) {
                 case Result.Success(var saved) -> {
-                    MessageBus.submit(new TransactionImported(saved.id(), saved.accountId(), personId, row.categoryId()));
+                    MessageBus.submit(new TransactionImported(saved.id(), saved.accountId(), personId, row.categoryId(), row.tagIds()));
                     yield saved;
                 }
                 case Result.Failure(var error) -> {

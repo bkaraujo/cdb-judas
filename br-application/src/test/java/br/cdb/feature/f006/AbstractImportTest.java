@@ -117,6 +117,14 @@ abstract class AbstractImportTest extends BaseHttpTest {
                 .extract().jsonPath().getString("id"));
     }
 
+    protected UUID seedTag(String name) {
+        return UUID.fromString(asTestUser()
+                .body("{\"name\":\"%s\",\"color\":\"#00FF00\"}".formatted(name))
+                .when().post(path("/tags"))
+                .then().statusCode(201)
+                .extract().jsonPath().getString("id"));
+    }
+
     protected UUID seedCard(UUID accountId, String last4) {
         return UUID.fromString(asTestUser()
                 .body("{\"last4\":\"%s\"}".formatted(last4))

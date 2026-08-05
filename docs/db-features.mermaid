@@ -147,13 +147,6 @@ erDiagram
     }
     F000_PERSON ||--o{ F004_TAG : ""
 
-    F004_TRANSACTION_TAG {
-        CHAR(36) COD_TRANSACTION PK, FK
-        CHAR(36) COD_PERSON PK, FK
-        CHAR(36) COD_TAG PK, FK
-    }
-    F004_TAG ||--o{ F004_TRANSACTION_TAG : ""
-
 %% ── f005 — categorias ───────────────────────────────────────────────────
 
 %% Inclui as 2 categorias globais de transferência, de dono o usuário SYSTEM
@@ -171,14 +164,6 @@ erDiagram
 
     F000_PERSON ||--o{ F005_CATEGORY : ""
     SYS_TRANSACTION_NATURE ||--o{ F005_CATEGORY : ""
-
-%% Espelha F004_TRANSACTION_TAG; hoje 1:1 (cada transação tem exatamente 1 categoria)
-    F005_TRANSACTION_CATEGORY {
-        CHAR(36) COD_TRANSACTION PK, FK
-        CHAR(36) COD_PERSON PK, FK
-        CHAR(36) COD_CATEGORY FK
-    }
-    F005_CATEGORY ||--o{ F005_TRANSACTION_CATEGORY : ""
 
 %% ── f006 — lançamentos e transferências ─────────────────────────────────
 
@@ -207,8 +192,25 @@ erDiagram
     F003_CARD |o--o{ F006_TRANSACTION : ""
     F000_COST_CENTER ||--o{ F006_TRANSACTION : ""
     SYS_STATUS ||--o{ F006_TRANSACTION : ""
-    F006_TRANSACTION ||--o{ F005_TRANSACTION_CATEGORY : ""
-    F006_TRANSACTION ||--o{ F004_TRANSACTION_TAG : ""
+
+%% Vínculo transação↔categoria — dono é f006 (a transação), não f005 (a categoria em si);
+%% hoje 1:1 (cada transação tem exatamente 1 categoria)
+    F006_TRANSACTION_CATEGORY {
+        CHAR(36) COD_TRANSACTION PK, FK
+        CHAR(36) COD_PERSON PK, FK
+        CHAR(36) COD_CATEGORY FK
+    }
+    F005_CATEGORY ||--o{ F006_TRANSACTION_CATEGORY : ""
+    F006_TRANSACTION ||--o{ F006_TRANSACTION_CATEGORY : ""
+
+%% Vínculo transação↔tag — dono é f006 (a transação), não f004 (a tag em si)
+    F006_TRANSACTION_TAG {
+        CHAR(36) COD_TRANSACTION PK, FK
+        CHAR(36) COD_PERSON PK, FK
+        CHAR(36) COD_TAG PK, FK
+    }
+    F004_TAG ||--o{ F006_TRANSACTION_TAG : ""
+    F006_TRANSACTION ||--o{ F006_TRANSACTION_TAG : ""
 
 %% ── f010 — regras de nomenclatura ────────────────────────────────────────
 %% Casamento de texto (nome → conta/categoria/centro de custo) é 100% client-side; sem FK real nas

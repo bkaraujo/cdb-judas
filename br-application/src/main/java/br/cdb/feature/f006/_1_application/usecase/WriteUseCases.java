@@ -13,7 +13,9 @@ import br.cdb.feature.f006._0_domain.model.Transaction;
 import br.cdb.feature.f006._1_application.command.TransactionCommand;
 import br.cdb.feature.f006._1_application.command.TransactionScope;
 import br.cdb.feature.f006._1_application.event.TransactionEventListener;
+import br.cdb.feature.f006._1_application.service.TransactionCategoryService;
 import br.cdb.feature.f006._1_application.service.TransactionService;
+import br.cdb.feature.f006._1_application.service.TransactionTagService;
 import br.commons.MessageBus;
 import br.commons.Result;
 import br.commons.business.BusinessError;
@@ -51,6 +53,8 @@ import java.util.*;
 public class WriteUseCases {
 
     private final TransactionService service = Context.tryGet(TransactionService.class);
+    private final TransactionCategoryService categoryService = Context.tryGet(TransactionCategoryService.class);
+    private final TransactionTagService tagService = Context.tryGet(TransactionTagService.class);
     private final BalanceService balanceService = Context.tryGet(BalanceService.class);
     private final CreditCardService creditCardService = Context.tryGet(CreditCardService.class);
     private final ReadUseCases reads = Context.tryGet(ReadUseCases.class);
@@ -66,7 +70,7 @@ public class WriteUseCases {
 
     // ── Entrada da fatia: política de usuário + eventos de aplicação ───────────
 
-    public Result<Transaction, BusinessError> createTransaction(UUID personId, TransactionCommand.Create cmd, @Nullable UUID categoryId) {
+    public Result<Transaction, BusinessError> createTransaction(UUID personId, TransactionCommand.Create cmd, @Nullable UUID categoryId, List<UUID> tagIds) {
         if (guards().ownsAccountAndCard(cmd.accountId(), cmd.cardId()) instanceof Result.Failure<Void, BusinessError>(var error)) {
             return Result.failure(error);
         }
@@ -77,12 +81,13 @@ public class WriteUseCases {
             // Vincula a categoria da primeira parcela e depois a das irmãs do grupo
             saveCategory(t.id(), personId, categoryId);
             saveCategoryForGroup(t, personId, categoryId);
+            saveTags(t.id(), personId, tagIds);
             MessageBus.submit(new AccountStreamEvents.Refresh(t.accountId(), personId.toString()));
-            return t.withCategory(categoryId);
+            return t.withCategory(categoryId).withTags(tagIds);
         });
     }
 
-    public Result<Transaction, BusinessError> updateTransaction(UUID personId, TransactionCommand.Update cmd, @Nullable UUID categoryId) {
+    public Result<Transaction, BusinessError> updateTransaction(UUID personId, TransactionCommand.Update cmd, @Nullable UUID categoryId, List<UUID> tagIds) {
         if (guards().ownsAccountAndCard(cmd.accountId(), cmd.cardId()) instanceof Result.Failure<Void, BusinessError>(var error)) {
             return Result.failure(error);
         }
@@ -101,6 +106,7 @@ public class WriteUseCases {
         return upsert(cmd).map(t -> {
             val hadCategory = reads.withCategory(t, personId).categoryId() != null;
             saveCategory(t.id(), personId, categoryId);
+            saveTags(t.id(), personId, tagIds);
             val transferSiblings = reads.transferSiblingsOf(t, personId);
             // Se for grupo de parcelas (nunca transferência — pernas de transferência carregam
             // categoria por natureza da própria perna, nunca a da perna editada; ver
@@ -109,7 +115,7 @@ public class WriteUseCases {
                 saveCategoryForGroup(t, personId, categoryId);
             }
             publishAccountUpdate(personId, t.accountId(), previousAccountId, transferSiblings);
-            return t.withCategory(categoryId);
+            return t.withCategory(categoryId).withTags(tagIds);
         });
     }
 
@@ -152,7 +158,7 @@ public class WriteUseCases {
         if (validateClosing(date) instanceof Result.Failure<Void, BusinessError>(var error)) {
             return Result.failure(error);
         }
-        // F005_TRANSACTION_CATEGORY.COD_CATEGORY é NOT NULL. Cada perna recebe a categoria de sistema
+        // F006_TRANSACTION_CATEGORY.COD_CATEGORY é NOT NULL. Cada perna recebe a categoria de sistema
         // "9. Outros / Transferência" da sua natureza: a saída (EXPENSE) a de despesa, a entrada
         // (INCOME) a de receita. Cobre as duas pernas do grupo, mantendo o 1:1 com F006_TRANSACTION.
         val expenseCategoryId = reads.transferCategoryId(Transaction.Type.EXPENSE);
@@ -436,20 +442,31 @@ public class WriteUseCases {
         return Result.success(savedOut);
     }
 
-    // ── Vínculo transação↔categoria (F005_TRANSACTION_CATEGORY) ────────────────
+    // ── Vínculo transação↔categoria (F006_TRANSACTION_CATEGORY) ────────────────
     // Tabela à parte de F006_TRANSACTION: Transaction.categoryId não entra no save(Transaction).
 
     /** Upsert do vínculo; {@code categoryId} nulo apaga a linha. */
     public void saveCategory(UUID transactionId, UUID personId, @Nullable UUID categoryId) {
-        service.saveCategory(transactionId, personId, categoryId);
+        categoryService.saveCategory(transactionId, personId, categoryId);
     }
 
     public void deleteCategory(UUID transactionId) {
-        service.deleteCategoryByTransaction(transactionId);
+        categoryService.deleteCategoryByTransaction(transactionId);
     }
 
     public void reassignCategory(UUID oldCategoryId, UUID newCategoryId, UUID personId) {
-        service.reassignCategory(oldCategoryId, newCategoryId, personId);
+        categoryService.reassignCategory(oldCategoryId, newCategoryId, personId);
+    }
+
+    // ── Vínculo transação↔tag (F006_TRANSACTION_TAG) ────────────────────────────
+
+    /** Substitui todos os vínculos da transação por {@code tagIds}. */
+    public void saveTags(UUID transactionId, UUID personId, List<UUID> tagIds) {
+        tagService.replaceTags(transactionId, personId, tagIds);
+    }
+
+    public void deleteTags(UUID transactionId) {
+        tagService.deleteTagsByTransaction(transactionId);
     }
 
     /** Aplica {@code categoryId} às demais parcelas do grupo de {@code first} (no-op fora de grupo). */

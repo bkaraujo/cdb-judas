@@ -84,12 +84,12 @@ public class F002AccountResourceTest extends BaseHttpTest {
         );
     }
 
-    /** F005_TRANSACTION_CATEGORY não carrega mais COD_ACCOUNT (nativo de F006_TRANSACTION desde a fusão) — verifica pelos ids de transação em vez da conta. */
+    /** F006_TRANSACTION_CATEGORY não carrega mais COD_ACCOUNT (nativo de F006_TRANSACTION desde a fusão) — verifica pelos ids de transação em vez da conta. */
     private long overlayRowCount(String... transactionIds) {
         if (transactionIds.length == 0) return 0;
         val placeholders = String.join(", ", java.util.Collections.nCopies(transactionIds.length, "?"));
         return dataSource.query(
-                "SELECT COUNT(*) FROM F005_TRANSACTION_CATEGORY WHERE COD_TRANSACTION IN (" + placeholders + ")",
+                "SELECT COUNT(*) FROM F006_TRANSACTION_CATEGORY WHERE COD_TRANSACTION IN (" + placeholders + ")",
                 JDBCParameter.of((Object[]) transactionIds),
                 rs -> { rs.next().get(); return rs.getLong(1).get(); }
         );
@@ -355,7 +355,7 @@ public class F002AccountResourceTest extends BaseHttpTest {
                 rs -> { rs.next().get(); return rs.getString("COD_ACCOUNT").get(); }
         );
         val categoryId = dataSource.query(
-                "SELECT COD_CATEGORY FROM F005_TRANSACTION_CATEGORY WHERE COD_TRANSACTION = ?",
+                "SELECT COD_CATEGORY FROM F006_TRANSACTION_CATEGORY WHERE COD_TRANSACTION = ?",
                 JDBCParameter.of(txId),
                 rs -> { rs.next().get(); return rs.getString("COD_CATEGORY").get(); }
         );
@@ -448,7 +448,7 @@ public class F002AccountResourceTest extends BaseHttpTest {
                 .then().statusCode(201)
                 .extract().jsonPath().getString("id");
         dataSource.execute(
-                "INSERT INTO F004_TRANSACTION_TAG (COD_TRANSACTION, COD_PERSON, COD_TAG) VALUES (?, ?, ?)",
+                "INSERT INTO F006_TRANSACTION_TAG (COD_TRANSACTION, COD_PERSON, COD_TAG) VALUES (?, ?, ?)",
                 JDBCParameter.of(regularTxId, TEST_USER_ID, tagId)
         );
 
@@ -471,7 +471,7 @@ public class F002AccountResourceTest extends BaseHttpTest {
         assertEquals(0, overlayRowCount(regularTxId, outboundId), "overlay da conta A limpo");
 
         val tagLinkCount = dataSource.query(
-                "SELECT COUNT(*) FROM F004_TRANSACTION_TAG WHERE COD_TRANSACTION = ?",
+                "SELECT COUNT(*) FROM F006_TRANSACTION_TAG WHERE COD_TRANSACTION = ?",
                 JDBCParameter.of(regularTxId),
                 rs -> { rs.next().get(); return rs.getLong(1).get(); }
         );

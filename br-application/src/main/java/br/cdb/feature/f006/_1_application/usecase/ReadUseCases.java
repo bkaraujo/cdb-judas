@@ -3,7 +3,9 @@ package br.cdb.feature.f006._1_application.usecase;
 import br.cdb.feature.f000._1_application.InternalApi;
 import br.cdb.feature.f000._1_application.service.UserGuards;
 import br.cdb.feature.f006._0_domain.model.Transaction;
+import br.cdb.feature.f006._1_application.service.TransactionCategoryService;
 import br.cdb.feature.f006._1_application.service.TransactionService;
+import br.cdb.feature.f006._1_application.service.TransactionTagService;
 import br.commons.Result;
 import br.commons.business.BusinessError;
 import br.commons.framework.cdi.Context;
@@ -29,6 +31,8 @@ import java.util.*;
 public class ReadUseCases {
 
     private final TransactionService service = Context.tryGet(TransactionService.class);
+    private final TransactionCategoryService categoryService = Context.tryGet(TransactionCategoryService.class);
+    private final TransactionTagService tagService = Context.tryGet(TransactionTagService.class);
 
     /** Corpo mínimo do endpoint interno {@code GET /categories/transfer} (f005) — zero tipo
      *  cross-slice, mesma regra dos antigos ports. */
@@ -99,6 +103,7 @@ public class ReadUseCases {
         val limit = filter.limit();
 
         val categories = categoriesByPerson(personId);
+        val tags = tagsByPerson(personId);
         val filtered = transactions(personId.toString()).getOrElse(List.of()).stream()
                 .filter(t -> accountId == null || accountId.equals(t.accountId()))
                 .filter(t -> dateFrom == null || !t.date().isBefore(dateFrom))
@@ -109,7 +114,9 @@ public class ReadUseCases {
         val page = (limit != null && limit > 0 && limit < filtered.size())
                 ? filtered.subList(0, limit)
                 : filtered;
-        return page.stream().map(t -> t.withCategory(categories.get(t.id()))).toList();
+        return page.stream()
+                .map(t -> t.withCategory(categories.get(t.id())).withTags(tags.getOrDefault(t.id(), List.of())))
+                .toList();
     }
 
     /** Membros do grupo (parcelas ou pernas de transferência) da pessoa — inclui a própria origem. */
@@ -161,20 +168,27 @@ public class ReadUseCases {
         return service.findByIdAndPerson(id, personId);
     }
 
-    // ── Vínculo transação↔categoria (F005_TRANSACTION_CATEGORY) ────────────────
+    // ── Vínculo transação↔categoria (F006_TRANSACTION_CATEGORY) ────────────────
     // Tabela à parte de F006_TRANSACTION: Transaction.categoryId não vem do save/read da engine.
 
     /** {@code tx} com o vínculo de categoria já resolvido — {@code null} quando não há vínculo. */
     public Transaction withCategory(Transaction tx, UUID personId) {
-        return tx.withCategory(service.findCategory(tx.id(), personId).orElse(null));
+        return tx.withCategory(categoryService.findCategory(tx.id(), personId).orElse(null));
     }
 
     /** Categoria por transação, para resolver uma listagem inteira num único SELECT. */
     public Map<UUID, UUID> categoriesByPerson(UUID personId) {
-        return service.findCategoriesByPerson(personId);
+        return categoryService.findCategoriesByPerson(personId);
     }
 
     public List<UUID> transactionIdsByCategories(UUID personId, Collection<UUID> categoryIds) {
-        return service.findTransactionIdsByCategories(personId, categoryIds);
+        return categoryService.findTransactionIdsByCategories(personId, categoryIds);
+    }
+
+    // ── Vínculo transação↔tag (F006_TRANSACTION_TAG) ───────────────────────────
+
+    /** Tags por transação, para resolver uma listagem inteira num único SELECT. */
+    public Map<UUID, List<UUID>> tagsByPerson(UUID personId) {
+        return tagService.findTagsByPerson(personId);
     }
 }

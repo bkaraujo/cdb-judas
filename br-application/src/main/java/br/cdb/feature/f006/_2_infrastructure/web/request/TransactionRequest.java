@@ -11,6 +11,7 @@ import org.jspecify.annotations.Nullable;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.List;
 import java.util.UUID;
 
 @NullMarked
@@ -27,5 +28,6 @@ public record TransactionRequest(
         @Nullable String editMode,
         @Nullable String deleteMode,
         @Nullable @Size(max = 250) String notes,
-        @Nullable UUID cardId
+        @Nullable UUID cardId,
+        @Nullable List<UUID> tagIds
 ) {}

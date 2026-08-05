@@ -35,7 +35,7 @@ import java.util.*;
  * (checking-account extracts): preview (account selection + dedup/reconcile classification) and
  * confirm (persistence of new rows, reconciliation of matched pending/scheduled transactions). Every
  * persisted transaction publishes {@code TransactionImported} (f000) — {@code TransactionOverlayListener}
- * (aqui mesmo em f006) grava o vínculo {@code F005_TRANSACTION_CATEGORY}, mantendo o 1:1 com
+ * (aqui mesmo em f006) grava o vínculo {@code F006_TRANSACTION_CATEGORY}, mantendo o 1:1 com
  * {@code F006_TRANSACTION}.
  */
 @NullMarked
@@ -129,7 +129,7 @@ public class StatementImportProcessor {
         try {
             return switch (writes.create(tx)) {
                 case Result.Success(var saved) -> {
-                    MessageBus.submit(new TransactionImported(saved.id(), saved.accountId(), personId, row.categoryId()));
+                    MessageBus.submit(new TransactionImported(saved.id(), saved.accountId(), personId, row.categoryId(), row.tagIds()));
                     yield true;
                 }
                 case Result.Failure(var error) -> {
