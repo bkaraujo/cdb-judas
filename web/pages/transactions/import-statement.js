@@ -114,6 +114,19 @@
         '</select>';
     }
 
+    // Monta as <option>s de categoria com placeholder explícito ("Selecione") quando não há
+    // seleção válida — sem isso, o browser marca a 1ª opção como selecionada por conta própria
+    // (visualmente e em .val()), indistinguível de uma escolha real do usuário.
+    function categoryOptionsHtml(cats, selectedId) {
+      if (!cats.length) return '<option value="">Sem categorias</option>';
+      const hasSel = cats.some(function (c) { return String(c.id) === String(selectedId); });
+      const placeholder = hasSel ? '' : '<option value="" selected>Selecione</option>';
+      return placeholder + cats.map(function (c) {
+        const sel = String(c.id) === String(selectedId) ? ' selected' : '';
+        return '<option value="' + esc(c.id) + '"' + sel + '>' + esc(c.label) + '</option>';
+      }).join('');
+    }
+
     // Rebuilds the category <select> of a row so its options track the row's current type
     // (income/expense); called on load and whenever the user flips the type dropdown.
     function refreshCategoryOptions(idx, type) {
@@ -122,14 +135,8 @@
       const currentId = $cat.val();
       const cats = importCategoriesFor(type, currentId);
       const stillValid = cats.some(function (c) { return String(c.id) === String(currentId); });
-      const selId = stillValid ? currentId : (cats[0] ? cats[0].id : '');
-      const options = cats.length
-        ? cats.map(function (c) {
-            const sel = String(c.id) === String(selId) ? ' selected' : '';
-            return '<option value="' + esc(c.id) + '"' + sel + '>' + esc(c.label) + '</option>';
-          }).join('')
-        : '<option value="">Sem categorias</option>';
-      $cat.html(options).prop('disabled', !cats.length);
+      const selId = stillValid ? currentId : '';
+      $cat.html(categoryOptionsHtml(cats, selId)).prop('disabled', !cats.length);
       const data = previewData || statementData;
       if (data && data.rows && data.rows[idx]) data.rows[idx].categoryId = selId || null;
     }
@@ -137,17 +144,11 @@
     function categorySelectHtml(selectedId, idx, groupId, locked, type) {
       const groupAttr = ' data-group-id="' + esc(groupId || '') + '"';
       const cats = importCategoriesFor(type, selectedId);
-      if (!cats.length) {
-        return '<select data-row-category data-idx="' + idx + '"' + groupAttr + ' disabled>' +
-          '<option value="">Sem categorias</option></select>';
-      }
-      const options = cats.map(function (c) {
-        const sel = String(c.id) === String(selectedId) ? ' selected' : '';
-        return '<option value="' + esc(c.id) + '"' + sel + '>' + esc(c.label) + '</option>';
-      }).join('');
       const lockedAttrs = locked ? ' disabled title="Segue a categoria da 1ª parcela do grupo"' : '';
-      return '<select data-row-category data-idx="' + idx + '"' + groupAttr + lockedAttrs + ' ' +
-        'style="width:auto;font-size:12px;padding:4px 6px;' + (locked ? 'opacity:0.6;' : '') + '">' + options + '</select>';
+      return '<select data-row-category data-idx="' + idx + '"' + groupAttr + lockedAttrs +
+        (cats.length ? '' : ' disabled') + ' ' +
+        'style="width:auto;font-size:12px;padding:4px 6px;' + (locked ? 'opacity:0.6;' : '') + '">' +
+        categoryOptionsHtml(cats, selectedId) + '</select>';
     }
 
     // Mesma convenção de create-edit.js: sem valor da regra, pré-seleciona o centro "Variável"
@@ -331,6 +332,7 @@
 
       const rows = [];
       let missingCard = false;
+      let missingCategory = false;
       m.$el.find('[data-row-include]').each(function () {
         if (!this.checked) return;
         const idx = Number($(this).attr('data-idx'));
@@ -340,7 +342,8 @@
         const $costCenter = m.$el.find('[data-row-costcenter][data-idx="' + idx + '"]');
         const $desc = m.$el.find('[data-row-description][data-idx="' + idx + '"]');
         const $card = m.$el.find('[data-row-card][data-idx="' + idx + '"]');
-        const categoryId = ($cat.val() || src.categoryId) || null;
+        const categoryId = $cat.val() || null;
+        if (!categoryId) { missingCategory = true; }
         const costCenterId = ($costCenter.val() || src.costCenterId) || null;
         const description = ($desc.val() || src.description || '').trim();
         // O cartão é definido por transação — cada linha incluída precisa de um cartão.
@@ -363,6 +366,7 @@
 
       if (!rows.length) { window.toast('Selecione ao menos um lançamento', 'error'); return; }
       if (missingCard) { window.toast('Selecione o cartão de cada lançamento', 'error'); return; }
+      if (missingCategory) { window.toast('Selecione a categoria de cada lançamento', 'error'); return; }
 
       const $btn = m.$el.find('[data-act=do-confirm]').prop('disabled', true);
       window.App.TransactionService.importConfirm({ type: 'CREDIT_CARD_INVOICE', rows: rows })
@@ -412,16 +416,8 @@
 
     function statementCategorySelectHtml(selectedId, idx, type) {
       const cats = importCategoriesFor(type, selectedId);
-      if (!cats.length) {
-        return '<select data-row-category data-idx="' + idx + '" disabled>' +
-          '<option value="">Sem categorias</option></select>';
-      }
-      const options = cats.map(function (c) {
-        const sel = String(c.id) === String(selectedId) ? ' selected' : '';
-        return '<option value="' + esc(c.id) + '"' + sel + '>' + esc(c.label) + '</option>';
-      }).join('');
-      return '<select data-row-category data-idx="' + idx + '" ' +
-        'style="width:auto;font-size:12px;padding:4px 6px;">' + options + '</select>';
+      return '<select data-row-category data-idx="' + idx + '"' + (cats.length ? '' : ' disabled') + ' ' +
+        'style="width:auto;font-size:12px;padding:4px 6px;">' + categoryOptionsHtml(cats, selectedId) + '</select>';
     }
 
     function stateBadge(st) {
@@ -569,6 +565,7 @@
       if (!selectedAccountId) { window.toast('Selecione a conta de destino', 'error'); return; }
 
       const rows = [];
+      let missingCategory = false;
       m.$el.find('[data-row-include]').each(function () {
         if (!this.checked) return;
         const idx = Number($(this).attr('data-idx'));
@@ -577,7 +574,8 @@
         const $cat = m.$el.find('[data-row-category][data-idx="' + idx + '"]');
         const $costCenter = m.$el.find('[data-row-costcenter][data-idx="' + idx + '"]');
         const $desc = m.$el.find('[data-row-description][data-idx="' + idx + '"]');
-        const categoryId = ($cat.val() || src.categoryId) || null;
+        const categoryId = $cat.val() || null;
+        if (!categoryId) { missingCategory = true; }
         const costCenterId = ($costCenter.val() || src.costCenterId) || null;
         const description = ($desc.val() || src.description || '').trim();
         rows.push({
@@ -592,6 +590,7 @@
       });
 
       if (!rows.length) { window.toast('Selecione ao menos um lançamento', 'error'); return; }
+      if (missingCategory) { window.toast('Selecione a categoria de cada lançamento', 'error'); return; }
 
       const $btn = m.$el.find('[data-act=do-statement-confirm]').prop('disabled', true);
       window.App.TransactionService.importConfirm({ type: 'BANK_STATEMENT', accountId: selectedAccountId, rows: rows })

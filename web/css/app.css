@@ -105,6 +105,11 @@ input:focus, select:focus, textarea:focus {
   border-color: var(--accent);
   box-shadow: 0 0 0 3px var(--accent-light);
 }
+/* Checkbox/radio must not inherit the generic input box (padding/border/width:100% would
+ * stretch their hit box and break sibling alignment in flex rows — e.g. the tags dropdown). */
+input[type="checkbox"], input[type="radio"] {
+  width: auto; padding: 0; border: none; background: transparent;
+}
 
 button { font-family: var(--font); cursor: pointer; border: none; outline: none; background: transparent; color: inherit; }
 
@@ -238,6 +243,45 @@ button { font-family: var(--font); cursor: pointer; border: none; outline: none;
   font-size: 12px; font-weight: 600; color: var(--text-secondary);
   text-transform: uppercase; letter-spacing: 0.04em;
 }
+
+/* ───── Search dropdown (mesma pele do <select>, painel com filtro ao-vivo) ─────
+ * Usado pelo multi-select de tags (checkboxes) e pelo combobox de categoria (linhas
+ * de single-select, com um <select> nativo escondido ao lado pra manter toda leitura/
+ * escrita existente funcionando — ver `syncSearchSelect`/`searchSelectHtml` em ui.js).
+ * O painel é position:absolute sobre um <details> position:relative, então abrir/fechar
+ * nunca empurra o layout ao redor (ao contrário de crescer em fluxo).
+ */
+.search-dropdown { position: relative; }
+.search-dropdown-summary {
+  display: flex; align-items: center; justify-content: space-between; gap: 6px;
+  background: var(--bg-card); color: var(--text-primary);
+  border: 1px solid var(--border); border-radius: var(--radius-sm);
+  padding: 8px 12px; font-size: 14px; cursor: pointer; user-select: none;
+  list-style: none;
+}
+.search-dropdown-summary::-webkit-details-marker { display: none; }
+.search-dropdown-summary::marker { content: ''; }
+.search-dropdown[open] > .search-dropdown-summary {
+  border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-light);
+}
+.search-dropdown-chevron { flex-shrink: 0; color: var(--text-muted); transition: transform var(--transition); }
+.search-dropdown[open] .search-dropdown-chevron { transform: rotate(180deg); }
+.search-dropdown-panel {
+  position: absolute; top: calc(100% + 4px); left: 0; right: 0; z-index: 20;
+  display: flex; flex-direction: column; gap: 4px; max-height: 260px;
+  padding: 6px; background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: var(--radius-sm); box-shadow: 0 8px 24px rgba(0,0,0,0.25);
+}
+.search-dropdown-search { flex-shrink: 0; }
+.search-dropdown-items { display: flex; flex-direction: column; gap: 2px; overflow-y: auto; max-height: 200px; }
+.search-dropdown-row {
+  display: flex; align-items: center; gap: 6px; padding: 4px 6px;
+  font-size: 12px; cursor: pointer; white-space: nowrap; border-radius: var(--radius-sm);
+}
+.search-dropdown-row:hover { background: var(--bg-hover); }
+.search-dropdown-row.is-selected { background: var(--accent-light); color: var(--accent); font-weight: 600; }
+.search-dropdown-row-hidden { display: none !important; }
+.search-dropdown-empty { padding: 6px; font-size: 12px; color: var(--text-muted); text-align: center; }
 
 /* ───── CreditCard ───── */
 .card {

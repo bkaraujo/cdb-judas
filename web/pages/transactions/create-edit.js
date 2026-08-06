@@ -76,13 +76,20 @@
       return initial.type === 'expense' ? 'Conta de Origem' : 'Conta de Destino';
     }
 
-    function buildCatOptions(type, selectedId) {
+    // Item list backing both the hidden native <select> (mantém toda leitura/escrita existente
+    // via .val()/option[value]) e o overlay de busca (`window.searchSelectHtml`) — uma única
+    // fonte pra não deixar os dois desalinhar.
+    function buildCatItems(type, selectedId) {
       const nat = natureForType(type);
       const cats = flatCategories(nat, true, selectedId);
-      if (!cats.length) return '<option value="">Nenhuma categoria disponível</option>';
-      return cats.map(function (c) {
-        const sel = String(c.id) === String(selectedId) ? ' selected' : '';
-        return '<option value="' + esc(c.id) + '"' + sel + '>' + esc(c.label) + '</option>';
+      if (!cats.length) return [{ value: '', label: 'Nenhuma categoria disponível' }];
+      return cats.map(function (c) { return { value: String(c.id), label: c.label }; });
+    }
+
+    function buildCatOptions(items, selectedId) {
+      return items.map(function (it) {
+        const sel = it.value !== '' && String(it.value) === String(selectedId) ? ' selected' : '';
+        return '<option value="' + esc(it.value) + '"' + sel + '>' + esc(it.label) + '</option>';
       }).join('');
     }
 
@@ -209,22 +216,34 @@
               window.icon('plus', 12) + 'Nova categoria' +
             '</button>' +
           '</div>' +
-          '<select id="' + ids.category + '" name="categoryId" data-region="category-select">' +
-            buildCatOptions(type, initial.categoryId) +
-          '</select>' +
+          (function () {
+            const catItems = buildCatItems(type, initial.categoryId);
+            return '<select id="' + ids.category + '" name="categoryId" data-region="category-select" ' +
+                'style="display:none;">' +
+                buildCatOptions(catItems, initial.categoryId) +
+              '</select>' +
+              window.searchSelectHtml(catItems, initial.categoryId, ids.category + '-dd', { pairedSelectId: ids.category });
+          })() +
         '</div>' +
         '<div class="form-group">' +
-          '<label class="form-label" for="' + ids.amount + '">Valor (R$)</label>' +
-          '<input id="' + ids.amount + '" name="amount" type="text" inputmode="numeric" ' +
-            'placeholder="0,00" value="' + esc(initial.amount) + '" />' +
+          '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">' +
+            '<label class="form-label" style="margin:0;">Tags</label>' +
+            '<button type="button" data-act="new-tag" ' +
+              'style="background:none;border:none;color:var(--accent);cursor:pointer;' +
+              'font-size:11px;font-weight:600;padding:0;display:inline-flex;align-items:center;gap:3px;">' +
+              window.icon('plus', 12) + 'Nova tag' +
+            '</button>' +
+          '</div>' +
+          window.tagsDropdownHtml(initial.tagIds, 'tx', { matchSelect: true }) +
         '</div>' +
         '<div class="form-group">' +
           '<label class="form-label" for="' + ids.status + '">Status</label>' +
           '<select id="' + ids.status + '" name="status">' + statusOpts + '</select>' +
         '</div>' +
         '<div class="form-group">' +
-          '<label class="form-label">Tags</label>' +
-          window.tagsDropdownHtml(initial.tagIds, 'tx') +
+          '<label class="form-label" for="' + ids.amount + '">Valor (R$)</label>' +
+          '<input id="' + ids.amount + '" name="amount" type="text" inputmode="numeric" ' +
+            'placeholder="0,00" value="' + esc(initial.amount) + '" />' +
         '</div>' +
         '<div class="form-group full">' +
           '<label style="display:inline-flex;align-items:center;gap:8px;' + (isTransferEdit ? 'cursor:not-allowed;opacity:0.55;' : 'cursor:pointer;') +
@@ -322,6 +341,7 @@
         const $cat = m.$body.find('select[name=categoryId]');
         if ($cat.find('option[value="' + esc(rule.categoryId) + '"]').length) {
           $cat.val(String(rule.categoryId));
+          window.refreshSearchSelect(ids.category);
           initial.categoryId = String(rule.categoryId);
         }
       }
@@ -404,7 +424,18 @@
             esc(quickCategoryLabel(created)) + '</option>');
         }
         $sel.val(String(created.id));
+        window.refreshSearchSelect(ids.category);
         initial.categoryId = String(created.id);
+      });
+    });
+
+    // "+ Nova tag": quick-create a tag inline, then mark it selected.
+    m.$body.on('click', '[data-act=new-tag]', function (e) {
+      e.preventDefault();
+      openTagCreateModal(function (created) {
+        const id = String(created.id);
+        if (initial.tagIds.indexOf(id) === -1) initial.tagIds.push(id);
+        window.appendTagRow('tx', created);
       });
     });
 
@@ -577,5 +608,75 @@
 
     $form.on('submit', submit);
     m.$el.on('click', '[data-act=qcat-save]', submit);
+  }
+
+  // ── Modal: quick-create tag (nested, from the tx form) ─
+  const QTAG_DEFAULT_COLOR = '#6366F1';
+  const QTAG_DEFAULT_COLORS = [
+    '#6366F1', '#10B981', '#F43F5E', '#F59E0B',
+    '#38BDF8', '#A78BFA', '#820AD1', '#FB923C',
+  ];
+
+  // On success the created tag (with id) is handed to `onCreated` so the caller can select it.
+  function openTagCreateModal(onCreated) {
+    const uniq = Date.now();
+    const nameId = 'qtag-name-' + uniq;
+    const colorId = 'qtag-color-' + uniq;
+
+    const swatchesHtml = window.swatchesHtml(QTAG_DEFAULT_COLORS, QTAG_DEFAULT_COLOR);
+
+    const bodyHtml =
+      '<form data-form="qtag" autocomplete="off">' +
+        '<div class="form-grid">' +
+          '<div class="form-group full">' +
+            '<label class="form-label" for="' + nameId + '">Nome</label>' +
+            '<div style="display:flex;align-items:center;gap:10px;">' +
+              '<input id="' + colorId + '" name="color" type="color" value="' + esc(QTAG_DEFAULT_COLOR) + '" ' +
+                'style="width:40px;height:40px;border:1px solid var(--border);' +
+                'border-radius:50%;padding:0;background:transparent;cursor:pointer;flex-shrink:0;" />' +
+              '<input id="' + nameId + '" name="name" type="text" required placeholder="Ex: mensal, fixo..." />' +
+            '</div>' +
+            '<div data-region="swatches" style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap;">' +
+              swatchesHtml +
+            '</div>' +
+          '</div>' +
+        '</div>' +
+      '</form>';
+
+    const m = window.modal({
+      title: 'Nova Tag',
+      body: bodyHtml,
+      footer: window.saveCancelFooter({ saveAttrs: 'data-act="qtag-save" type="submit"' }),
+    });
+    m.open();
+
+    const $form = m.$body.find('form[data-form=qtag]');
+    const $color = $form.find('input[name=color]');
+    const $name  = $form.find('input[name=name]');
+
+    window.bindSwatches(m, $color);
+    setTimeout(function () { $name.trigger('focus'); }, 0);
+
+    function submit(e) {
+      if (e) e.preventDefault();
+      const name = ($name.val() || '').trim();
+      if (!name) { $name.trigger('focus'); return; }
+
+      const $btn = m.$el.find('[data-act=qtag-save]').prop('disabled', true);
+      window.App.TagService.create({
+        name: name,
+        color: $color.val() || QTAG_DEFAULT_COLOR,
+      }).then(function (created) {
+        m.close();
+        window.toast('Tag criada', 'success');
+        if (onCreated) onCreated(created);
+      }).catch(function (err) {
+        $btn.prop('disabled', false);
+        window.toast((err && err.message) || 'Falha ao criar tag', 'error');
+      });
+    }
+
+    $form.on('submit', submit);
+    m.$el.on('click', '[data-act=qtag-save]', submit);
   }
 })();

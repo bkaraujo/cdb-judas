@@ -50,6 +50,8 @@
       filterCategory: '',
       filterStatus: '',
       showFilters: false,
+      pendingScrollTop: null,
+      pendingRootScrollTop: null,
     };
   }
 
@@ -78,6 +80,16 @@
 
   // ── Fetch ─────────────────────────────────────────────────
   function loadTransactions() {
+    // render() rebuilds the whole page from scratch (`$root.empty()`), which momentarily leaves
+    // both scroll containers empty — the browser clamps scrollTop to 0 right there and it never
+    // comes back on its own once content regrows. Two containers can scroll independently
+    // depending on viewport height: the list card itself (`max-height: calc(100vh - 300px)`) and
+    // `#page`/`$root` (`.page-content`, `overflow-y:auto`) when the whole page overflows it.
+    // Capture both here; render() re-applies them once the real list is back.
+    const $listCard = state.$root && state.$root.find('[data-region=list-card]');
+    state.pendingScrollTop = ($listCard && $listCard.length) ? $listCard.scrollTop() : null;
+    state.pendingRootScrollTop = state.$root ? state.$root.scrollTop() : null;
+
     state.loading = true;
     render();
     const period = window.Domain.Period.create(state.month + 1, state.year);
@@ -228,6 +240,19 @@
     }
 
     $root.empty().append($page);
+
+    // Re-apply the scroll position(s) captured at the start of loadTransactions() — only once
+    // the real list is on screen (not the transient "Carregando…" placeholder).
+    if (!state.loading) {
+      if (state.pendingScrollTop != null) {
+        $root.find('[data-region=list-card]').scrollTop(state.pendingScrollTop);
+        state.pendingScrollTop = null;
+      }
+      if (state.pendingRootScrollTop != null) {
+        $root.scrollTop(state.pendingRootScrollTop);
+        state.pendingRootScrollTop = null;
+      }
+    }
   }
 
   function summaryCardHtml(iconName, label, value, color) {
@@ -313,7 +338,8 @@
     const list = filteredTxs();
 
     const $card = $(
-      '<div class="card" style="padding:0;overflow-y:auto;max-height:calc(100vh - 300px);min-height:200px;"></div>'
+      '<div class="card" data-region="list-card" style="padding:0;overflow-y:auto;' +
+        'max-height:calc(100vh - 300px);min-height:200px;"></div>'
     );
 
     if (state.loading) {

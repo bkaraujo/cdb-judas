@@ -36,10 +36,15 @@ public class TagService {
                 .orElseGet(() -> Result.failure(new BusinessError.NotFound("Tag not found: " + id)));
     }
 
-    public Tag create(UUID personId, String name, String color) {
+    public Result<Tag, BusinessError> create(UUID personId, String name, String color) {
+        val duplicate = repository.findAllByPerson(personId).stream()
+                .anyMatch(t -> t.name().trim().equalsIgnoreCase(name.trim()));
+        if (duplicate) {
+            return Result.failure(new BusinessError.Conflict("Já existe uma tag chamada \"" + name.trim() + "\""));
+        }
         val saved = repository.save(new Tag(UUID.randomUUID(), personId, name, color, null));
         MessageBus.submit(new TagEvents.Created(saved));
-        return saved;
+        return Result.success(saved);
     }
 
     public Result<Tag, BusinessError> update(UUID id, String name, String color) {

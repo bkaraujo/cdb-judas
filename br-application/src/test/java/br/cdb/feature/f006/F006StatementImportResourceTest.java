@@ -270,6 +270,8 @@ class F006StatementImportResourceTest extends AbstractImportTest {
     void confirmPromoveOManualPendenteSemInserirOutraLinha() throws IOException {
         val accountId = seedAccount("Conta BTG");
         val categoryId = seedLeafCategory();
+        // Categoria própria pro manual pendente, distinta da escolhida na linha do extrato — a
+        // conciliação deve substituir pela categoria escolhida, não preservar a antiga.
         val manualId = createTransaction(accountId, "Dentista", "-161.43", "2025-03-04", "pending");
 
         confirmStatement(accountId, categoryId, rows(previewOf(EXTRATO)))
@@ -277,12 +279,14 @@ class F006StatementImportResourceTest extends AbstractImportTest {
                 .body("reconciled", is(1))
                 .body("skipped", is(0));
 
-        // A conciliação não insere uma segunda linha: promove a que já existia.
+        // A conciliação não insere uma segunda linha: promove a que já existia, e aplica a
+        // categoria escolhida na linha do extrato à transação existente.
         asTestUser()
                 .when().get(path("/accounts/transactions"))
                 .then().statusCode(200)
                 .body("size()", is(2))
-                .body("find { it.id == '%s' }.status".formatted(manualId), is("confirmed"));
+                .body("find { it.id == '%s' }.status".formatted(manualId), is("confirmed"))
+                .body("find { it.id == '%s' }.categoryId".formatted(manualId), is(categoryId.toString()));
     }
 
     @Test

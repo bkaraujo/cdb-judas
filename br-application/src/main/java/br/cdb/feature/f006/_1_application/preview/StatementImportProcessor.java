@@ -103,6 +103,8 @@ public class StatementImportProcessor {
                         val target = cls.target();
                         if (target != null) {
                             writes.updateTransactionStatus(target.id(), Transaction.Status.CONFIRMED, row.date());
+                            writes.saveCategory(target.id(), personId, row.categoryId());
+                            writes.saveTags(target.id(), personId, row.tagIds());
                             reconciled++;
                         }
                     }

@@ -34,7 +34,7 @@ public class WriteUseCase {
     private final TagService service = Context.tryGet(TagService.class);
     private final ReadUseCase reads = Context.tryGet(ReadUseCase.class);
 
-    public Tag createTag(UUID personId, String name, String color) {
+    public Result<Tag, BusinessError> createTag(UUID personId, String name, String color) {
         return service.create(personId, name, color);
     }
 

@@ -71,12 +71,36 @@ class WriteUseCaseTest extends AbstractUseCaseTest {
     @Test
     @DisplayName("createTag persiste a tag da pessoa")
     void createsTag() {
-        val tag = useCase.createTag(PERSON_ID, "Mercado", "#00ff00");
+        val r = useCase.createTag(PERSON_ID, "Mercado", "#00ff00");
 
+        assertTrue(r.isSuccess());
+        val tag = ((Result.Success<Tag, BusinessError>) r).value();
         assertEquals(PERSON_ID, tag.personId());
         assertEquals("Mercado", tag.name());
         assertEquals("#00ff00", tag.color());
         assertTrue(tagRepository().findById(tag.id()).isPresent());
+    }
+
+    @Test
+    @DisplayName("createTag com nome duplicado (mesma pessoa, case-insensitive) → Conflict")
+    void createRejectsDuplicateName() {
+        seedTag(PERSON_ID, "Mercado");
+
+        val r = useCase.createTag(PERSON_ID, "  mercado  ", "#00ff00");
+
+        assertTrue(r.isFailure());
+        assertInstanceOf(BusinessError.Conflict.class, ((Result.Failure<Tag, BusinessError>) r).error());
+        assertEquals(1, tagRepository().findAllByPerson(PERSON_ID).size());
+    }
+
+    @Test
+    @DisplayName("createTag com nome repetido em outra pessoa não conflita")
+    void createAllowsSameNameForDifferentPerson() {
+        seedTag(OTHER_PERSON_ID, "Mercado");
+
+        val r = useCase.createTag(PERSON_ID, "Mercado", "#00ff00");
+
+        assertTrue(r.isSuccess());
     }
 
     @Test

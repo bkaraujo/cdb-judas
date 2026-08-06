@@ -38,7 +38,10 @@ public class TagResource {
 
     @POST
     public RestResponse<Tag> create(@PathParam("uuid") UUID uuid, @Valid TagRequest req) {
-        return RestResponse.status(RestResponse.Status.CREATED, writes.createTag(uuid, req.name(), req.color()));
+        return switch (writes.createTag(uuid, req.name(), req.color())) {
+            case Result.Success(var t) -> RestResponse.status(RestResponse.Status.CREATED, t);
+            case Result.Failure(var error) -> throw new BusinessException(error);
+        };
     }
 
     @PATCH

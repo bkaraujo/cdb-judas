@@ -237,21 +237,50 @@
     return count + (count === 1 ? ' tag' : ' tags');
   }
 
-  function tagsDropdownHtml(selectedIds, key) {
+  /** opts.matchSelect: pele igual ao <select> de categoria (usado na tela de edição de transação) —
+   *  painel abre em position:absolute (não empurra o layout) e ganha uma busca com filtro ao-vivo.
+   *  Sem a opção, mantém o visual compacto original (usado na tabela de import), que cresce em fluxo
+   *  normal de propósito — nunca é cortado por um ancestral com overflow:scroll, ao contrário de um
+   *  painel position:absolute. */
+  function tagsDropdownHtml(selectedIds, key, opts) {
     const tags = window.App.CacheStore.tags();
     if (!tags.length) return '<span style="font-size:11px;color:var(--text-muted);">Sem tags</span>';
     const sel = (selectedIds || []).map(String);
+    const matchSelect = !!(opts && opts.matchSelect);
     const items = tags.map(function (t) {
       const checked = sel.indexOf(String(t.id)) !== -1 ? ' checked' : '';
       const color = t.color || 'var(--text-muted)';
-      return '<label style="display:flex;align-items:center;gap:6px;padding:4px 6px;font-size:12px;' +
-          'cursor:pointer;white-space:nowrap;">' +
+      const labelAttrs = matchSelect
+        ? ' class="search-dropdown-row"'
+        : ' style="display:flex;align-items:center;gap:6px;padding:4px 6px;font-size:12px;' +
+            'cursor:pointer;white-space:nowrap;"';
+      return '<label' + labelAttrs + '>' +
         '<input type="checkbox" data-tag-check data-idx="' + esc(key) + '" data-tag-id="' + esc(t.id) + '"' +
           checked + ' style="cursor:pointer;" />' +
         '<span style="width:8px;height:8px;border-radius:50%;flex-shrink:0;background:' + esc(color) + ';"></span>' +
         esc(t.name) +
       '</label>';
     }).join('');
+
+    if (matchSelect) {
+      return (
+        '<details class="search-dropdown" data-region="tags-dropdown" data-idx="' + esc(key) + '">' +
+          '<summary class="search-dropdown-summary" data-region="tags-summary">' +
+            '<span data-region="tags-summary-text">' + esc(tagsCountLabel(sel.length)) + '</span>' +
+            '<span class="search-dropdown-chevron">' + window.icon('chevronDown', 14) + '</span>' +
+          '</summary>' +
+          '<div class="search-dropdown-panel">' +
+            '<input type="text" class="search-dropdown-search" data-region="search-dropdown-search" ' +
+              'placeholder="Buscar tag..." autocomplete="off" />' +
+            '<div class="search-dropdown-items" data-region="search-dropdown-items">' + items + '</div>' +
+            '<p class="search-dropdown-empty" data-region="search-dropdown-empty" style="display:none;">' +
+              'Nenhuma tag encontrada' +
+            '</p>' +
+          '</div>' +
+        '</details>'
+      );
+    }
+
     return (
       '<details data-region="tags-dropdown" data-idx="' + esc(key) + '" style="font-size:12px;">' +
         '<summary data-region="tags-summary" style="cursor:pointer;padding:4px 8px;border:1px solid var(--border);' +
@@ -269,10 +298,140 @@
   /** Atualiza o rótulo de contagem do <summary> mais próximo de um checkbox de tag alterado —
    *  chamar depois de mutar o array de tagIds do chamador, dentro do handler de 'change'. */
   function refreshTagsDropdownLabel($checkbox) {
-    const $summary = $checkbox.closest('details').find('> summary[data-region=tags-summary]');
-    const count = $checkbox.closest('details').find('[data-tag-check]:checked').length;
-    $summary.text(tagsCountLabel(count));
+    const $details = $checkbox.closest('details');
+    const $summary = $details.find('> summary[data-region=tags-summary]');
+    const count = $details.find('[data-tag-check]:checked').length;
+    const label = tagsCountLabel(count);
+    const $text = $summary.find('> [data-region=tags-summary-text]');
+    if ($text.length) $text.text(label); else $summary.text(label);
   }
+
+  /** Insere (ou marca, se já presente) uma tag recém-criada no dropdown `key` — contorna o lag
+   *  do SSE até o CacheStore atualizar (mesma razão pela qual o quick-create de categoria também
+   *  monta a option na mão em vez de esperar o cache). Só afeta o dropdown matchSelect (o único
+   *  com `[data-region=search-dropdown-items]`); quem chama ainda precisa dar push no próprio
+   *  array de ids selecionados, este helper só re-desenha. */
+  function appendTagRow(key, tag) {
+    const $items = $('[data-region=tags-dropdown][data-idx="' + esc(key) + '"] [data-region=search-dropdown-items]');
+    if (!$items.length) return;
+    const id = String(tag.id);
+    const $existing = $items.find('[data-tag-id="' + esc(id) + '"]');
+    if ($existing.length) {
+      $existing.prop('checked', true);
+      refreshTagsDropdownLabel($existing);
+      return;
+    }
+    const color = tag.color || 'var(--text-muted)';
+    const $row = $(
+      '<label class="search-dropdown-row">' +
+        '<input type="checkbox" data-tag-check data-idx="' + esc(key) + '" data-tag-id="' + esc(id) + '" checked ' +
+          'style="cursor:pointer;" />' +
+        '<span style="width:8px;height:8px;border-radius:50%;flex-shrink:0;background:' + esc(color) + ';"></span>' +
+        esc(tag.name || '') +
+      '</label>'
+    );
+    $items.append($row);
+    refreshTagsDropdownLabel($row.find('[data-tag-check]'));
+  }
+
+  /* ---- Search dropdown: filtro ao-vivo compartilhado ----
+   * Um único listener delegado cobre tanto o multi-select de tags (linhas com checkbox)
+   * quanto o combobox de categoria (linhas de single-select) — ambos desenham suas linhas
+   * com a classe `.search-dropdown-row` dentro de `.search-dropdown-panel`.
+   */
+  $(document).on('input', '.search-dropdown-search', function () {
+    const q = $(this).val().trim().toLowerCase();
+    const $panel = $(this).closest('.search-dropdown-panel');
+    let visible = 0;
+    $panel.find('.search-dropdown-row').each(function () {
+      const match = !q || $(this).text().toLowerCase().indexOf(q) !== -1;
+      $(this).toggleClass('search-dropdown-row-hidden', !match);
+      if (match) visible++;
+    });
+    $panel.find('[data-region=search-dropdown-empty]').toggle(visible === 0);
+  });
+
+  /* `<details>` fires 'toggle' on itself without bubbling (unlike almost every other DOM event),
+   * so `$(document).on('toggle', ...)` delegation never sees it — a capture-phase listener does,
+   * since capture always walks document→target regardless of the event's bubbles flag. Used to
+   * move keyboard focus into the filter box the moment a tag/category dropdown opens. */
+  document.addEventListener('toggle', function (e) {
+    const details = e.target;
+    if (!details || !details.matches || !details.matches('details.search-dropdown') || !details.open) return;
+    const input = details.querySelector('.search-dropdown-search');
+    if (input) input.focus();
+  }, true);
+
+  /** Combobox single-select (categoria): desenha um <select> nativo (escondido, mantém toda a
+   *  leitura/escrita existente por `.val()`) + este overlay com a mesma pele/filtro do dropdown
+   *  de tags. `opts.pairedSelectId` liga o overlay ao id do <select> pra `refreshSearchSelect`
+   *  re-sincronizar depois de uma mutação programática (ex.: "+ Nova categoria"). */
+  function searchSelectHtml(items, selectedValue, key, opts) {
+    opts = opts || {};
+    const rows = items.map(function (it) {
+      const isSel = it.value !== '' && String(it.value) === String(selectedValue);
+      return '<div class="search-dropdown-row' + (isSel ? ' is-selected' : '') + '" ' +
+          'data-dd-value="' + esc(it.value) + '" data-dd-label="' + esc(it.label) + '">' +
+        esc(it.label) +
+      '</div>';
+    }).join('');
+    const selected = items.filter(function (it) { return String(it.value) === String(selectedValue); })[0];
+    const summaryText = selected ? selected.label : ((items[0] && items[0].label) || '');
+    const forAttr = opts.pairedSelectId ? ' data-for="' + esc(opts.pairedSelectId) + '"' : '';
+    return (
+      '<details class="search-dropdown" data-region="search-dropdown" data-idx="' + esc(key) + '"' + forAttr + '>' +
+        '<summary class="search-dropdown-summary" data-region="search-dropdown-summary">' +
+          '<span data-region="search-dropdown-summary-text">' + esc(summaryText) + '</span>' +
+          '<span class="search-dropdown-chevron">' + window.icon('chevronDown', 14) + '</span>' +
+        '</summary>' +
+        '<div class="search-dropdown-panel">' +
+          '<input type="text" class="search-dropdown-search" data-region="search-dropdown-search" ' +
+            'placeholder="Buscar..." autocomplete="off" />' +
+          '<div class="search-dropdown-items" data-region="search-dropdown-items">' + rows + '</div>' +
+          '<p class="search-dropdown-empty" data-region="search-dropdown-empty" style="display:none;">' +
+            'Nenhum resultado' +
+          '</p>' +
+        '</div>' +
+      '</details>'
+    );
+  }
+
+  /** Re-desenha as linhas + rótulo do overlay a partir do <select> nativo pareado — chamar depois
+   *  de qualquer mutação programática do <select> (append de <option>, `.val(...)`) que não passe
+   *  por um re-render completo do HTML (que já sai sincronizado). */
+  function refreshSearchSelect(selectId) {
+    const $select = $('#' + selectId);
+    const $details = $('.search-dropdown[data-for="' + selectId + '"]');
+    if (!$select.length || !$details.length) return;
+    const value = $select.val();
+    const rows = $select.find('option').map(function () {
+      const v = this.value || '';
+      const label = $(this).text();
+      const isSel = v !== '' && String(v) === String(value);
+      return '<div class="search-dropdown-row' + (isSel ? ' is-selected' : '') + '" ' +
+          'data-dd-value="' + esc(v) + '" data-dd-label="' + esc(label) + '">' +
+        esc(label) +
+      '</div>';
+    }).get().join('');
+    $details.find('[data-region=search-dropdown-items]').html(rows);
+    $details.find('[data-region=search-dropdown-summary-text]').text($select.find('option:selected').text() || '');
+  }
+
+  /* Clique numa linha de single-select: sincroniza o <select> pareado, atualiza o rótulo/seleção
+   * visual e fecha o painel. Linhas de multi-select (tags) não têm `data-dd-value` — o próprio
+   * checkbox interno já cuida da própria mudança, então o guard abaixo as ignora. */
+  $(document).on('click', '.search-dropdown-row[data-dd-value]', function () {
+    const $row = $(this);
+    const $details = $row.closest('.search-dropdown');
+    const value = $row.attr('data-dd-value');
+    const label = $row.attr('data-dd-label');
+    $details.find('.search-dropdown-row').removeClass('is-selected');
+    $row.addClass('is-selected');
+    $details.find('[data-region=search-dropdown-summary-text]').text(label);
+    const pairedId = $details.attr('data-for');
+    if (pairedId) $('#' + pairedId).val(value).trigger('change');
+    $details.removeAttr('open');
+  });
 
   /* ---- Toast ---- */
   function toast(msg, variant) {
@@ -298,6 +457,9 @@
     toast: toast,
     tagsDropdownHtml: tagsDropdownHtml,
     refreshTagsDropdownLabel: refreshTagsDropdownLabel,
+    appendTagRow: appendTagRow,
+    searchSelectHtml: searchSelectHtml,
+    refreshSearchSelect: refreshSearchSelect,
   };
 
   // Convenience globals (used inline by pages).
@@ -313,4 +475,7 @@
   window.toast      = toast;
   window.tagsDropdownHtml = tagsDropdownHtml;
   window.refreshTagsDropdownLabel = refreshTagsDropdownLabel;
+  window.appendTagRow = appendTagRow;
+  window.searchSelectHtml = searchSelectHtml;
+  window.refreshSearchSelect = refreshSearchSelect;
 })();
