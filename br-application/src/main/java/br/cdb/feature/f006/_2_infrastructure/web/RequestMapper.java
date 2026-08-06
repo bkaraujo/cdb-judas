@@ -1,6 +1,7 @@
 package br.cdb.feature.f006._2_infrastructure.web;
 
 import br.cdb.feature.f003._0_domain.model.CreditCard;
+import br.cdb.feature.f006._0_domain.ClosedPeriod;
 import br.cdb.feature.f006._0_domain.model.Transaction;
 import br.cdb.feature.f006._1_application.command.TransactionCommand;
 import br.cdb.feature.f006._1_application.command.TransactionScope;
@@ -87,36 +88,40 @@ public abstract class RequestMapper {
 
     static Object toResponseBody(ImportUseCase.ImportPreviewView view) {
         return switch (view.outcome()) {
-            case ImportPreviewOutcome.Invoice(var preview) -> RequestMapper.toResponse(preview, view.accountNamesById());
-            case ImportPreviewOutcome.Statement(var preview) -> RequestMapper.toStatementResponse(preview);
+            case ImportPreviewOutcome.Invoice(var preview) ->
+                    RequestMapper.toResponse(preview, view.accountNamesById(), view.closedPeriod());
+            case ImportPreviewOutcome.Statement(var preview) ->
+                    RequestMapper.toStatementResponse(preview, view.closedPeriod());
         };
     }
 
-    static ImportPreviewResponse toResponse(ImportPreview preview, Map<UUID, String> accountNames) {
-        val rows = preview.rows().stream().map(RequestMapper::toRow).toList();
+    static ImportPreviewResponse toResponse(ImportPreview preview, Map<UUID, String> accountNames, ClosedPeriod closed) {
+        val rows = preview.rows().stream().map(row -> toRow(row, closed)).toList();
         val candidateCards = preview.candidateCards().stream()
                 .map(card -> toCardOption(card, accountNames)).toList();
-        return new ImportPreviewResponse("CREDIT_CARD_INVOICE", preview.issuer(), preview.last4s(), rows, candidateCards);
+        return new ImportPreviewResponse("CREDIT_CARD_INVOICE", preview.issuer(), preview.last4s(), rows, candidateCards,
+                closed.period() == null ? null : closed.label());
     }
 
-    static BankStatementPreviewResponse toStatementResponse(BankStatementPreview preview) {
+    static BankStatementPreviewResponse toStatementResponse(BankStatementPreview preview, ClosedPeriod closed) {
         val accounts = preview.candidateAccounts().stream()
                 .map(a -> new BankStatementPreviewResponse.AccountOption(a.id(), a.name()))
                 .toList();
         val rows = preview.rows().stream()
                 .map(r -> new BankStatementPreviewResponse.Row(
                         r.date().toString(), r.description(), r.amount(), r.type(),
-                        r.state().name(), r.categoryId(), r.costCenterId(), r.reconcileDescription()))
+                        r.state().name(), closed.covers(r.date()), r.categoryId(), r.costCenterId(), r.reconcileDescription()))
                 .toList();
         return new BankStatementPreviewResponse(
-                "BANK_STATEMENT", preview.issuer(), accounts, preview.selectedAccountId(), rows);
+                "BANK_STATEMENT", preview.issuer(), accounts, preview.selectedAccountId(), rows,
+                closed.period() == null ? null : closed.label());
     }
 
     private static ImportPreviewResponse.CardOption toCardOption(CreditCard card, Map<UUID, String> accountNames) {
         return new ImportPreviewResponse.CardOption(card.id(), accountNames.getOrDefault(card.accountId(), ""), card.last4());
     }
 
-    private static ImportPreviewResponse.Row toRow(PreviewRow row) {
+    private static ImportPreviewResponse.Row toRow(PreviewRow row, ClosedPeriod closed) {
         val draft = row.draft();
         return new ImportPreviewResponse.Row(
                 draft.last4(),
@@ -130,6 +135,7 @@ public abstract class RequestMapper {
                 draft.status(),
                 draft.type(),
                 row.duplicate(),
+                closed.covers(draft.date()),
                 row.categoryId(),
                 row.costCenterId(),
                 row.suggestedCardId());

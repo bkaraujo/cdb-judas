@@ -117,6 +117,14 @@ abstract class AbstractImportTest extends BaseHttpTest {
                 .extract().jsonPath().getString("id"));
     }
 
+    /** Fecha a competência {@code yyyy-MM}: a partir dela, para trás, nada pode ser importado. */
+    protected void closePeriod(String period) {
+        asTestUser()
+                .body("{\"period\":\"%s\"}".formatted(period))
+                .when().post(path("/accounts/closing"))
+                .then().statusCode(200);
+    }
+
     protected UUID seedTag(String name) {
         return UUID.fromString(asTestUser()
                 .body("{\"name\":\"%s\",\"color\":\"#00FF00\"}".formatted(name))

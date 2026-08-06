@@ -130,6 +130,32 @@ class F006InvoiceConfirmResourceTest extends AbstractImportTest {
                 .body("code", is("CARD_REQUIRED"));
     }
 
+    @Test
+    void confirmRecusaOLoteInteiroQuandoUmaLinhaCaiNoPeriodoFechado() {
+        val accountId = seedAccount("Conta");
+        val cardId = seedCard(accountId, "0020");
+        val categoryId = seedLeafCategory();
+        closePeriod("2025-07");
+
+        confirmRaw(row("Uber", "25.00", "2025-07-08", cardId, categoryId),
+                   row("Mercado", "80.00", "2025-08-08", cardId, categoryId))
+                .statusCode(422)
+                .body("code", is("CLOSED_PERIOD"));
+
+        // Recusa antes de qualquer escrita: nem a linha de agosto entrou.
+        assertEquals(0, listTransactions().size());
+    }
+
+    @Test
+    void confirmImportaAsLinhasPosterioresAoFechamento() {
+        val accountId = seedAccount("Conta");
+        val cardId = seedCard(accountId, "0020");
+        val categoryId = seedLeafCategory();
+        closePeriod("2025-07");
+
+        confirm(row("Mercado", "80.00", "2025-08-08", cardId, categoryId)).body("created", is(1));
+    }
+
     // ── helpers ────────────────────────────────────────────────────────────────
 
     private static String row(String description, String amount, String date, UUID cardId, UUID categoryId) {

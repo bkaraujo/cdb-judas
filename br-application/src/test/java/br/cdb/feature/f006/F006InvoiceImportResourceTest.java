@@ -381,6 +381,22 @@ class F006InvoiceImportResourceTest extends AbstractImportTest {
                 parcelas.stream().map(r -> str(r, "status")).toList());
     }
 
+    // ── fechamento contábil ────────────────────────────────────────────────────
+
+    @Test
+    void previewMarcaAsLinhasDentroDoPeriodoFechado() throws IOException {
+        closePeriod("2020-02");
+
+        val json = previewOf(btgInvoice(YearMonth.of(2020, 2),
+                "R$ 199,90Amazon07 Fev", "R$ 50,00Netflix (1/2)07 Fev"));
+
+        assertEquals("2020-02", json.getString("closingPeriod"));
+        // A compra à vista e a 1ª parcela caem no período fechado; a 2ª parcela, em março, não.
+        assertEquals(Boolean.TRUE, onlyRowWithDescription(json, "Amazon").get("closed"));
+        assertEquals(List.of(Boolean.TRUE, Boolean.FALSE),
+                rowsWithDescription(json, "Netflix").stream().map(r -> r.get("closed")).toList());
+    }
+
     // ── duplicatas ─────────────────────────────────────────────────────────────
 
     @Test

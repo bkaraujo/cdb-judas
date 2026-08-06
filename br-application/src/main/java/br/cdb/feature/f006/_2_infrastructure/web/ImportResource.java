@@ -88,7 +88,7 @@ public class ImportResource {
         return switch (importUseCase.confirmInvoiceImport(personId, new InvoiceConfirmCommand(rows))) {
             case Result.Success(var res) ->
                     Response.ok(new ImportConfirmResponse(res.created(), res.reconciled(), res.skipped())).build();
-            case Result.Failure(var error) -> HTTPResponse.unprocessable("CARD_NOT_FOUND", messageOf(error));
+            case Result.Failure(var error) -> failure(error, "CARD_NOT_FOUND");
         };
     }
 
@@ -104,8 +104,15 @@ public class ImportResource {
         return switch (importUseCase.confirmStatementImport(personId, new StatementConfirmCommand(req.accountId(), rows))) {
             case Result.Success(var res) ->
                     Response.ok(new ImportConfirmResponse(res.created(), res.reconciled(), res.skipped())).build();
-            case Result.Failure(var error) -> HTTPResponse.unprocessable("ACCOUNT_NOT_FOUND", messageOf(error));
+            case Result.Failure(var error) -> failure(error, "ACCOUNT_NOT_FOUND");
         };
+    }
+
+    /** Período fechado é a única regra de negócio que o confirm devolve — ganha código próprio pro
+     *  diálogo tratar; o resto é entidade não encontrada (cartão/conta). */
+    private static Response failure(BusinessError error, String notFoundCode) {
+        val code = error instanceof BusinessError.BusinessRule ? "CLOSED_PERIOD" : notFoundCode;
+        return HTTPResponse.unprocessable(code, messageOf(error));
     }
 
     private static String messageOf(BusinessError error) {

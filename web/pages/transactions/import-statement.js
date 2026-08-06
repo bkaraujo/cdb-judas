@@ -91,6 +91,21 @@
       return mm ? (mm[3] + '/' + mm[2] + '/' + mm[1]) : (iso || '');
     }
 
+    // Fechamento contábil: linha cuja data cai no período fechado (backend manda `closed` por linha e
+    // `closingPeriod` no preview) não pode virar transação — a confirmação inteira é recusada. A linha
+    // fica fora da seleção (checkbox desmarcado e travado) e ganha o ícone de aviso com a explicação
+    // no hover.
+    function closedMessage(period) {
+      return 'Período fechado' + (period ? ' até ' + period : '') +
+        ': este lançamento não pode ser importado.';
+    }
+
+    function closedWarningHtml(period) {
+      return '<span title="' + esc(closedMessage(period)) + '" ' +
+        'style="color:var(--expense);display:inline-flex;vertical-align:middle;margin-left:6px;cursor:help;">' +
+        window.icon('alertCircle', 14) + '</span>';
+    }
+
     function statusTag(status) {
       const scheduled = status === 'scheduled';
       const label = scheduled ? 'Agendado' : 'Confirmado';
@@ -209,19 +224,24 @@
       const hasParcela = row.installmentNumber != null && row.installmentTotal != null;
       const parcela = hasParcela ? esc(row.installmentNumber + '/' + row.installmentTotal) : '—';
       const dup = !!row.duplicate;
+      const closed = !!row.closed;
       const dupTag = dup
         ? ' <span style="color:var(--text-muted);font-size:11px;font-style:italic;">já importado</span>'
         : '';
-      const checked = row.checked !== undefined ? (row.checked ? 'checked' : '') : (dup ? '' : 'checked');
+      const checked = closed ? '' : (row.checked !== undefined ? (row.checked ? 'checked' : '') : (dup ? '' : 'checked'));
       const groupLocked = !!(row.groupId && row.installmentNumber != null && row.installmentNumber !== 1);
       const descLockedAttrs = groupLocked ? ' readonly title="Segue a descrição da 1ª parcela do grupo"' : '';
+      const closingPeriod = previewData && previewData.closingPeriod;
       return (
-        '<tr style="border-top:1px solid var(--border);' + (dup ? 'opacity:0.6;' : '') + '">' +
+        '<tr style="border-top:1px solid var(--border);' + (dup || closed ? 'opacity:0.6;' : '') + '">' +
           '<td style="padding:8px 10px;text-align:center;">' +
-            '<input type="checkbox" data-row-include data-idx="' + idx + '" ' + checked + ' ' +
+            '<input type="checkbox" data-row-include data-idx="' + idx + '" ' + checked +
+              (closed ? ' disabled title="' + esc(closedMessage(closingPeriod)) + '"' : '') + ' ' +
               'style="width:16px;height:16px;cursor:pointer;" />' +
           '</td>' +
-          '<td style="padding:8px 10px;width:90px;white-space:nowrap;color:var(--text-secondary);">' + esc(fmtIsoDate(row.date)) + '</td>' +
+          '<td style="padding:8px 10px;width:90px;white-space:nowrap;color:var(--text-secondary);">' +
+            esc(fmtIsoDate(row.date)) + (closed ? closedWarningHtml(closingPeriod) : '') +
+          '</td>' +
           '<td style="padding:8px 10px;">' + typeSelectHtml(row.type, idx) + '</td>' +
           '<td style="padding:8px 10px;">' + categorySelectHtml(row.categoryId, idx, row.groupId, groupLocked, row.type) + '</td>' +
           '<td style="padding:8px 10px;">' + window.tagsDropdownHtml(row.tagIds, idx) + '</td>' +
@@ -433,19 +453,24 @@
     function statementRowHtml(row, idx) {
       const st = row.state;
       const dup = st === 'DUPLICATE';
-      const checked = row.checked !== undefined ? (row.checked ? 'checked' : '') : (dup ? '' : 'checked');
+      const closed = !!row.closed;
+      const checked = closed ? '' : (row.checked !== undefined ? (row.checked ? 'checked' : '') : (dup ? '' : 'checked'));
       const amt = Number(row.amount) || 0;
       const amtColor = amt < 0 ? 'var(--expense)' : 'var(--income)';
       const note = (st === 'RECONCILE' && row.reconcileDescription)
         ? ' <span style="color:var(--text-muted);font-size:11px;font-style:italic;">↔ ' + esc(row.reconcileDescription) + '</span>'
         : '';
+      const closingPeriod = statementData && statementData.closingPeriod;
       return (
-        '<tr style="border-top:1px solid var(--border);' + (dup ? 'opacity:0.6;' : '') + '">' +
+        '<tr style="border-top:1px solid var(--border);' + (dup || closed ? 'opacity:0.6;' : '') + '">' +
           '<td style="padding:8px 10px;text-align:center;">' +
-            '<input type="checkbox" data-row-include data-idx="' + idx + '" ' + checked + ' ' +
+            '<input type="checkbox" data-row-include data-idx="' + idx + '" ' + checked +
+              (closed ? ' disabled title="' + esc(closedMessage(closingPeriod)) + '"' : '') + ' ' +
               'style="width:16px;height:16px;cursor:pointer;" />' +
           '</td>' +
-          '<td style="padding:8px 10px;width:90px;white-space:nowrap;color:var(--text-secondary);">' + esc(fmtIsoDate(row.date)) + '</td>' +
+          '<td style="padding:8px 10px;width:90px;white-space:nowrap;color:var(--text-secondary);">' +
+            esc(fmtIsoDate(row.date)) + (closed ? closedWarningHtml(closingPeriod) : '') +
+          '</td>' +
           '<td style="padding:8px 10px;">' + typeSelectHtml(row.type, idx) + '</td>' +
           '<td style="padding:8px 10px;">' + statementCategorySelectHtml(row.categoryId, idx, row.type) + '</td>' +
           '<td style="padding:8px 10px;">' + window.tagsDropdownHtml(row.tagIds, idx) + '</td>' +
@@ -707,7 +732,8 @@
 
     m.$el.on('change', '[data-act=select-all]', function () {
       const checked = this.checked;
-      m.$el.find('[data-row-include]').prop('checked', checked);
+      // Linha em período fechado tem o checkbox travado: marcar tudo nunca a inclui.
+      m.$el.find('[data-row-include]').not(':disabled').prop('checked', checked);
     });
 
     m.$el.on('click', '[data-sort]', function () {

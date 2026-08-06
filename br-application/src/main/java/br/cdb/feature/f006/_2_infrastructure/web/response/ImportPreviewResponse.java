@@ -15,7 +15,9 @@ import java.util.UUID;
  * absolute ISO {@code yyyy-MM-dd}; installment fields are null for à-vista rows; {@code status} is
  * {@code CONFIRMED} or {@code SCHEDULED}; {@code type} is {@code EXPENSE} for a charge, {@code INCOME}
  * for a card credit/estorno — echo it back on confirm, {@code amount} stays positive either way;
- * {@code duplicate} flags a row already imported on its suggested card.
+ * {@code duplicate} flags a row already imported on its suggested card. {@code closingPeriod}
+ * ({@code yyyy-MM}, null quando não há fechamento) e o {@code closed} de cada linha dizem o que a
+ * importação vai recusar por período fechado — o diálogo marca essas linhas e as deixa fora da seleção.
  */
 @NullMarked
 public record ImportPreviewResponse(
@@ -23,7 +25,8 @@ public record ImportPreviewResponse(
         String issuer,
         List<String> last4s,
         List<Row> rows,
-        List<CardOption> candidateCards) {
+        List<CardOption> candidateCards,
+        @Nullable String closingPeriod) {
 
     @NullMarked
     public record Row(
@@ -38,6 +41,7 @@ public record ImportPreviewResponse(
             Transaction.Status status,
             Transaction.Type type,
             boolean duplicate,
+            boolean closed,
             @Nullable UUID categoryId,
             @Nullable UUID costCenterId,
             @Nullable UUID suggestedCardId) {}

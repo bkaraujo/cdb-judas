@@ -6,6 +6,7 @@ import br.cdb.feature.f000._1_application.service.UserGuards;
 import br.cdb.feature.f002._0_domain.model.Account;
 import br.cdb.feature.f002._1_application.usecase.ReadUseCase;
 import br.cdb.feature.f003._0_domain.model.CreditCard;
+import br.cdb.feature.f006._0_domain.ClosedPeriod;
 import br.cdb.feature.f006._0_domain.ImportError;
 import br.cdb.feature.f006._0_domain.ImportResult;
 import br.cdb.feature.f006._1_application.confirm.InvoiceConfirmCommand;
@@ -22,6 +23,7 @@ import lombok.val;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -44,12 +46,17 @@ public class ImportUseCase {
             Context.tryGet(br.cdb.feature.f003._1_application.usecase.ReadUseCase.class);
 
     private final StatementImportService service = Context.get(StatementImportService.class);
+    private final ReadUseCases reads = Context.tryGet(ReadUseCases.class);
 
     private final UserGuards guards;
 
-    /** Preview + nomes de conta por personId (rotulam as opções de cartão na resposta). */
+    /**
+     * Preview + nomes de conta por personId (rotulam as opções de cartão na resposta) + o fechamento
+     * contábil vigente, que marca no diálogo as linhas que a importação vai recusar.
+     */
     @NullMarked
-    public record ImportPreviewView(ImportPreviewOutcome outcome, Map<UUID, String> accountNamesById) {}
+    public record ImportPreviewView(ImportPreviewOutcome outcome, Map<UUID, String> accountNamesById,
+                                    ClosedPeriod closedPeriod) {}
 
     public Result<ImportPreviewView, ImportError> importPreview(byte[] fileBytes, @Nullable String password, @Nullable UUID accountId) {
         if (accountId != null && guards.ownsAccount(accountId).isFailure()) {
@@ -57,7 +64,7 @@ public class ImportUseCase {
         }
 
         return service.preview(HTTPRequest.personId(), fileBytes, password, accountId)
-                .map(outcome -> new ImportPreviewView(outcome, accountNamesById()));
+                .map(outcome -> new ImportPreviewView(outcome, accountNamesById(), closedPeriod()));
     }
 
     public Result<ImportResult, BusinessError> confirmInvoiceImport(UUID personId, InvoiceConfirmCommand cmd) {
@@ -66,14 +73,38 @@ public class ImportUseCase {
                 return Result.failure(error);
             }
         }
-        return service.confirm(personId, cmd)
+        return validateClosing(cmd.rows().stream().map(InvoiceConfirmCommand.Row::date).toList())
+                .flatMap(ignored -> service.confirm(personId, cmd))
                 .ifSuccess(ignored -> affectedAccountIds(cmd.rows(), personId.toString())
                         .forEach(accountId -> MessageBus.submit(new AccountStreamEvents.Refresh(accountId, personId.toString()))));
     }
 
     public Result<ImportResult, BusinessError> confirmStatementImport(UUID personId, StatementConfirmCommand cmd) {
-        return guards.ownsAccount(cmd.accountId()).flatMap(ignored -> service.confirm(personId, cmd))
+        return guards.ownsAccount(cmd.accountId())
+                .flatMap(ignored -> validateClosing(cmd.rows().stream().map(StatementConfirmCommand.Row::date).toList()))
+                .flatMap(ignored -> service.confirm(personId, cmd))
                 .ifSuccess(ignored -> MessageBus.submit(new AccountStreamEvents.Refresh(cmd.accountId(), personId.toString())));
+    }
+
+    /**
+     * Política de usuário na entrada da fatia, como a de {@code WriteUseCases}: nenhuma linha do
+     * documento pode cair no período fechado. Recusa o lote inteiro <b>antes</b> de qualquer escrita —
+     * o diálogo já marca essas linhas com aviso e as deixa fora da seleção, então só chega aqui quem
+     * confirmou com um preview vencido (ou chamou a API direto).
+     */
+    private Result<Void, BusinessError> validateClosing(List<LocalDate> dates) {
+        val closed = closedPeriod();
+        for (val date : dates) {
+            if (closed.covers(date)) {
+                return Result.failure(new BusinessError.BusinessRule(
+                        "Período fechado. Lançamentos até " + closed.label() + " não podem ser importados."));
+            }
+        }
+        return Result.success();
+    }
+
+    private ClosedPeriod closedPeriod() {
+        return ClosedPeriod.of(reads.closingPeriod());
     }
 
     /** Nome da conta a que cada cartão pertence, para rotular as opções de cartão do preview. */

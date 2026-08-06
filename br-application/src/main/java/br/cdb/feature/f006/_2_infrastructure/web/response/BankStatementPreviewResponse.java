@@ -15,6 +15,9 @@ import java.util.UUID;
  * {@code "RECONCILE"}; {@code reconcileDescription} is the matched manual transaction (RECONCILE only).
  * {@code candidateAccounts} are the destination accounts; {@code selectedAccountId} is the one the
  * states were computed against (null until the user picks one when several exist).
+ * {@code closingPeriod} ({@code yyyy-MM}, null quando não há fechamento) e o {@code closed} de cada
+ * linha dizem o que a importação vai recusar por período fechado — o diálogo marca essas linhas e as
+ * deixa fora da seleção.
  */
 @NullMarked
 public record BankStatementPreviewResponse(
@@ -22,7 +25,8 @@ public record BankStatementPreviewResponse(
         String issuer,
         List<AccountOption> candidateAccounts,
         @Nullable UUID selectedAccountId,
-        List<Row> rows) {
+        List<Row> rows,
+        @Nullable String closingPeriod) {
 
     @NullMarked
     public record Row(
@@ -31,6 +35,7 @@ public record BankStatementPreviewResponse(
             BigDecimal amount,
             Transaction.Type type,
             String state,
+            boolean closed,
             @Nullable UUID categoryId,
             @Nullable UUID costCenterId,
             @Nullable String reconcileDescription

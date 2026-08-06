@@ -13,6 +13,7 @@ import java.util.UUID;
 
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
@@ -37,6 +38,14 @@ class F006StatementImportResourceTest extends AbstractImportTest {
             "06/03/2025 02h17 Crédito e Financiamento Pix recebido Caixa Economica R$ 3.000,00",
             "07/03/2025 23h59 Saldo Diário R$ 100,00",
             "08/03/2025 11h52 Contas Pagamento de fatura do cartão Fatura do cartão BTG Pactual -R$ 232,97");
+
+    /** Um movimento em março e outro em abril: com o fechamento em {@code 2025-03}, um de cada lado. */
+    private static final String EXTRATO_DOIS_MESES = String.join("\n",
+            "Extrato de conta corrente",
+            "Este é o extrato da sua conta corrente BTG Pactual",
+            "Data e hora Categoria Transação Descrição Valor",
+            "05/03/2025 10h42 Saúde Pagamento de boleto Odontoprev -R$ 161,43",
+            "06/04/2025 02h17 Crédito e Financiamento Pix recebido Caixa Economica R$ 3.000,00");
 
     // ── extrato BTG ────────────────────────────────────────────────────────────
 
@@ -243,6 +252,60 @@ class F006StatementImportResourceTest extends AbstractImportTest {
         assertEquals("Dentista", odontoprev.get("reconcileDescription"));
     }
 
+    // ── fechamento contábil ────────────────────────────────────────────────────
+
+    @Test
+    void previewMarcaAsLinhasDentroDoPeriodoFechado() throws IOException {
+        seedAccount("Conta BTG");
+        closePeriod("2025-03");
+
+        val json = previewOf(EXTRATO_DOIS_MESES);
+
+        assertEquals("2025-03", json.getString("closingPeriod"));
+        assertEquals(Boolean.TRUE, byDescription(rows(json), "Odontoprev").get("closed"));
+        assertEquals(Boolean.FALSE, byDescription(rows(json), "Caixa Economica").get("closed"));
+    }
+
+    @Test
+    void previewNaoMarcaLinhaAlgumaSemFechamento() throws IOException {
+        seedAccount("Conta BTG");
+
+        val json = previewOf(EXTRATO_DOIS_MESES);
+
+        assertNull(json.getString("closingPeriod"));
+        assertTrue(rows(json).stream().noneMatch(r -> Boolean.TRUE.equals(r.get("closed"))));
+    }
+
+    @Test
+    void confirmRecusaOLoteInteiroQuandoUmaLinhaCaiNoPeriodoFechado() throws IOException {
+        val accountId = seedAccount("Conta BTG");
+        val categoryId = seedLeafCategory();
+        val rows = rows(previewOf(EXTRATO_DOIS_MESES));
+        closePeriod("2025-03");
+
+        confirmStatementRaw(accountId, categoryId, rows)
+                .statusCode(422)
+                .body("code", is("CLOSED_PERIOD"));
+
+        // Recusa antes de qualquer escrita: nem a linha de abril entrou.
+        asTestUser()
+                .when().get(path("/accounts/transactions"))
+                .then().statusCode(200)
+                .body("size()", is(0));
+    }
+
+    @Test
+    void confirmImportaAsLinhasPosterioresAoFechamento() throws IOException {
+        val accountId = seedAccount("Conta BTG");
+        val categoryId = seedLeafCategory();
+        val abertas = rows(previewOf(EXTRATO_DOIS_MESES)).stream()
+                .filter(r -> str(r, "description").contains("Caixa Economica"))
+                .toList();
+        closePeriod("2025-03");
+
+        confirmStatement(accountId, categoryId, abertas).body("created", is(1));
+    }
+
     // ── confirm ────────────────────────────────────────────────────────────────
 
     @Test
@@ -383,6 +446,11 @@ class F006StatementImportResourceTest extends AbstractImportTest {
 
     private ValidatableResponse confirmStatement(
             UUID accountId, UUID categoryId, List<Map<String, Object>> previewRows) {
+        return confirmStatementRaw(accountId, categoryId, previewRows).statusCode(200);
+    }
+
+    private ValidatableResponse confirmStatementRaw(
+            UUID accountId, UUID categoryId, List<Map<String, Object>> previewRows) {
         val rows = previewRows.stream().map(r -> """
                 {"description":"%s","amount":%s,"date":"%s","transactionType":"%s","categoryId":"%s"}
                 """.formatted(r.get("description"), amount(r), r.get("date"), r.get("type"), categoryId)).toList();
@@ -393,7 +461,7 @@ class F006StatementImportResourceTest extends AbstractImportTest {
         return asTestUser()
                 .body(body)
                 .when().post(path(CONFIRM))
-                .then().statusCode(200);
+                .then();
     }
 
     private String createTransaction(UUID accountId, String description, String amount, String date, String status) {

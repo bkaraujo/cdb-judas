@@ -8,6 +8,7 @@ import br.cdb.feature.f000._1_application.service.UserGuards;
 import br.cdb.feature.f002._1_application.service.BalanceService;
 import br.cdb.feature.f003._0_domain.model.CreditCard;
 import br.cdb.feature.f003._1_application.service.CreditCardService;
+import br.cdb.feature.f006._0_domain.ClosedPeriod;
 import br.cdb.feature.f006._0_domain.event.TransactionEvents;
 import br.cdb.feature.f006._0_domain.model.Transaction;
 import br.cdb.feature.f006._1_application.command.TransactionCommand;
@@ -26,7 +27,6 @@ import org.jspecify.annotations.Nullable;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
-import java.time.YearMonth;
 import java.util.*;
 
 /**
@@ -190,14 +190,11 @@ public class WriteUseCases {
     /** Guarda de período fechado: busca o fechamento uma vez ({@link ReadUseCases#closingPeriod}) e
      *  valida todas as datas localmente — {@code updateTransaction} checa data antiga + nova. */
     private Result<Void, BusinessError> validateClosing(LocalDate... dates) {
-        val period = reads.closingPeriod();
-        if (period == null) return Result.success();
-
-        val closing = YearMonth.parse(period);
+        val closed = ClosedPeriod.of(reads.closingPeriod());
         for (val date : dates) {
-            if (!YearMonth.from(date).isAfter(closing)) {
+            if (closed.covers(date)) {
                 return Result.failure(new BusinessError.BusinessRule(
-                        "Período fechado. Lançamentos até " + period + " não podem ser alterados."));
+                        "Período fechado. Lançamentos até " + closed.label() + " não podem ser alterados."));
             }
         }
         return Result.success();
