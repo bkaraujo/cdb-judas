@@ -9,7 +9,6 @@ import br.cdb.feature.f006._0_domain.ImportResult;
 import br.cdb.feature.f006._0_domain.MonetaryDocumentEntry;
 import br.cdb.feature.f006._0_domain.RowState;
 import br.cdb.feature.f006._0_domain.model.Transaction;
-import br.cdb.feature.f006._1_application.GroupSignature;
 import br.cdb.feature.f006._1_application.confirm.StatementConfirmCommand;
 import br.cdb.feature.f006._1_application.usecase.ReadUseCases;
 import br.cdb.feature.f006._1_application.usecase.WriteUseCases;

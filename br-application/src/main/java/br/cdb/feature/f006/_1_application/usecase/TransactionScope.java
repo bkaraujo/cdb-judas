@@ -1,4 +1,4 @@
-package br.cdb.feature.f006._1_application.command;
+package br.cdb.feature.f006._1_application.usecase;
 
 import org.jspecify.annotations.NullMarked;
 

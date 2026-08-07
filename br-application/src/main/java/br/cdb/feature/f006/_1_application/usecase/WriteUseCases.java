@@ -6,14 +6,12 @@ import br.cdb.feature.f000._0_domain.event.TransactionsDeleted;
 import br.cdb.feature.f000._0_domain.model.CostCenter;
 import br.cdb.feature.f000._1_application.service.UserGuards;
 import br.cdb.feature.f002._1_application.service.BalanceService;
+import br.cdb.feature.f002._2_infrastructure.F002Api;
 import br.cdb.feature.f003._0_domain.model.CreditCard;
 import br.cdb.feature.f003._1_application.service.CreditCardService;
-import br.cdb.feature.f006._0_domain.ClosedPeriod;
+import br.cdb.feature.f004._2_infrastructure.F004Api;
 import br.cdb.feature.f006._0_domain.event.TransactionEvents;
 import br.cdb.feature.f006._0_domain.model.Transaction;
-import br.cdb.feature.f006._1_application.command.TransactionCommand;
-import br.cdb.feature.f006._1_application.command.TransactionScope;
-import br.cdb.feature.f006._1_application.event.TransactionEventListener;
 import br.cdb.feature.f006._1_application.service.TransactionCategoryService;
 import br.cdb.feature.f006._1_application.service.TransactionService;
 import br.cdb.feature.f006._1_application.service.TransactionTagService;
@@ -40,12 +38,15 @@ import java.util.*;
  *       {@code saveCategory}…): aceita qualquer comando bem-formado, publica só evento de domínio
  *       ({@link TransactionEvents}).</li>
  *   <li><b>Entrada da fatia</b> ({@link #createTransaction}, {@link #updateTransaction},
- *       {@link #updateTransactionStatus}, {@link #deleteTransaction}, {@link #transfer}): aplica a
+ *       {@link #updateTransactionStatus}, {@link #deleteTransaction}): aplica a
  *       política de usuário — guarda de propriedade ({@link UserGuards}) e período fechado — e
  *       publica os eventos de aplicação ({@link AccountStreamEvents.Refresh} para o SSE, cujo
  *       dispatch é de {@code f999}; {@link TransactionsDeleted} para a cascata best-effort de
  *       {@code TransactionOverlayListener}/f004).</li>
  * </ul>
+ * A entrada de <b>transferência</b> saiu daqui para {@link TransferUseCase}, que orquestra as
+ * operações de engine {@link #createTransfer}/{@link #saveTransferCategories} que continuam nesta
+ * classe.
  * É o que sobrou da antiga fronteira {@code f006._1_application.TransactionUseCase}, dissolvida aqui:
  * os {@code *Resource} chamam esta classe direto.
  */
@@ -58,10 +59,10 @@ public class WriteUseCases {
     private final BalanceService balanceService = Context.tryGet(BalanceService.class);
     private final CreditCardService creditCardService = Context.tryGet(CreditCardService.class);
     private final ReadUseCases reads = Context.tryGet(ReadUseCases.class);
-
-    public WriteUseCases() {
-        MessageBus.subscribe(new TransactionEventListener());
-    }
+    /** Cliente da API pública de f002 — o fechamento contábil é dela. */
+    private final F002Api f002 = Context.tryGet(F002Api.class);
+    /** Cliente da API pública de f004 — a posse da tag é dela. */
+    private final F004Api f004 = Context.tryGet(F004Api.class);
 
     /** Bean CDI resolvido a cada chamada: {@code @RequestScoped}, nunca guardado em campo. */
     private static UserGuards guards() {
@@ -77,6 +78,9 @@ public class WriteUseCases {
         if (validateClosing(cmd.date()) instanceof Result.Failure<Void, BusinessError>(var error)) {
             return Result.failure(error);
         }
+        if (f004.ownsTags(tagIds) instanceof Result.Failure<Void, BusinessError>(var error)) {
+            return Result.failure(error);
+        }
         return upsert(cmd).map(t -> {
             // Vincula a categoria da primeira parcela e depois a das irmãs do grupo
             saveCategory(t.id(), personId, categoryId);
@@ -89,6 +93,9 @@ public class WriteUseCases {
 
     public Result<Transaction, BusinessError> updateTransaction(UUID personId, TransactionCommand.Update cmd, @Nullable UUID categoryId, List<UUID> tagIds) {
         if (guards().ownsAccountAndCard(cmd.accountId(), cmd.cardId()) instanceof Result.Failure<Void, BusinessError>(var error)) {
+            return Result.failure(error);
+        }
+        if (f004.ownsTags(tagIds) instanceof Result.Failure<Void, BusinessError>(var error)) {
             return Result.failure(error);
         }
 
@@ -151,26 +158,6 @@ public class WriteUseCases {
         });
     }
 
-    public Result<Transaction, BusinessError> transfer(UUID personId, UUID fromAccountId, UUID toAccountId, LocalDate date, BigDecimal amount) {
-        if (guards().ownsAccounts(fromAccountId, toAccountId) instanceof Result.Failure<Void, BusinessError>(var error)) {
-            return Result.failure(error);
-        }
-        if (validateClosing(date) instanceof Result.Failure<Void, BusinessError>(var error)) {
-            return Result.failure(error);
-        }
-        // F006_TRANSACTION_CATEGORY.COD_CATEGORY é NOT NULL. Cada perna recebe a categoria de sistema
-        // "9. Outros / Transferência" da sua natureza: a saída (EXPENSE) a de despesa, a entrada
-        // (INCOME) a de receita. Cobre as duas pernas do grupo, mantendo o 1:1 com F006_TRANSACTION.
-        val expenseCategoryId = reads.transferCategoryId(Transaction.Type.EXPENSE);
-        val incomeCategoryId = reads.transferCategoryId(Transaction.Type.INCOME);
-        return createTransfer(fromAccountId, toAccountId, date, amount).map(t -> {
-            val categoryId = saveTransferCategories(t, personId, expenseCategoryId, incomeCategoryId);
-            MessageBus.submit(new AccountStreamEvents.Refresh(fromAccountId, personId.toString()));
-            MessageBus.submit(new AccountStreamEvents.Refresh(toAccountId, personId.toString()));
-            return t.withCategory(categoryId);
-        });
-    }
-
     /**
      * Publica a conta atual, a conta anterior (se mudou) e — quando a transação editada é perna de
      * transferência — a(s) conta(s) da(s) perna(s) irmã(s): {@code updateTransfer} espelha
@@ -187,10 +174,11 @@ public class WriteUseCases {
         }
     }
 
-    /** Guarda de período fechado: busca o fechamento uma vez ({@link ReadUseCases#closingPeriod}) e
-     *  valida todas as datas localmente — {@code updateTransaction} checa data antiga + nova. */
-    private Result<Void, BusinessError> validateClosing(LocalDate... dates) {
-        val closed = ClosedPeriod.of(reads.closingPeriod());
+    /** Guarda de período fechado: busca o fechamento uma vez ({@link F002Api#closingPeriod}) e
+     *  valida todas as datas localmente — {@code updateTransaction} checa data antiga + nova.
+     *  Visível ao pacote porque {@link TransferUseCase} aplica a mesma política na sua entrada. */
+    Result<Void, BusinessError> validateClosing(LocalDate... dates) {
+        val closed = f002.closingPeriod();
         for (val date : dates) {
             if (closed.covers(date)) {
                 return Result.failure(new BusinessError.BusinessRule(

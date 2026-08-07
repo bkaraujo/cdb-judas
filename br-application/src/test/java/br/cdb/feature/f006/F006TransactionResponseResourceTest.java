@@ -403,4 +403,34 @@ public class F006TransactionResponseResourceTest extends BaseHttpTest {
         assertTrue(refreshedAccountIds.contains(origem), "conta da perna editada deve receber refresh");
         assertTrue(refreshedAccountIds.contains(destino), "conta da perna irmã (espelhada) também deve receber refresh");
     }
+
+    /** Guarda de posse de tag (f004.F004Api.ownsTags): tag da própria pessoa entra, tag desconhecida
+     *  é 404 — e nada é persistido, nem a transação. */
+    @Test
+    void deveRecusarTagQueNaoEDaPessoa() {
+        UUID accountId = createAccount("#333333");
+        UUID categoryId = createLeafCategory();
+        String tagId = createTag();
+
+        String json = """
+            {"description":"Com tag","amount":-10.00,"date":"2024-04-01","categoryId":"%s","costCenterId":"d0000000-0000-0000-0000-000000000002","status":"pending","type":"expense","installments":1,"editMode":"single","tagIds":["%s"]}
+            """;
+
+        String ownId = asTestUser()
+                .body(json.formatted(categoryId, tagId))
+                .when().post("/api/" + TEST_USER_ID + "/accounts/" + accountId + "/transactions")
+                .then().statusCode(201)
+                .extract().jsonPath().getString("id");
+        assertEquals(1, tagLinkCount(ownId), "tag da própria pessoa é vinculada");
+
+        asTestUser()
+                .body(json.formatted(categoryId, UUID.randomUUID()))
+                .when().post("/api/" + TEST_USER_ID + "/accounts/" + accountId + "/transactions")
+                .then().statusCode(404);
+
+        asTestUser()
+                .when().get("/api/" + TEST_USER_ID + "/accounts/" + accountId + "/transactions")
+                .then().statusCode(200)
+                .body("size()", is(1));
+    }
 }

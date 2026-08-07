@@ -1,7 +1,8 @@
-package br.cdb.feature.f006._2_infrastructure.provider;
+package br.cdb.feature.f006._2_infrastructure.provider.btg_pactual;
 
 import br.cdb.feature.f006._0_domain.*;
-import br.cdb.feature.f006._0_domain.model.Transaction;
+import br.cdb.feature.f006._2_infrastructure.provider.BankStatements;
+import br.cdb.feature.f006._2_infrastructure.provider.DocumentText;
 import br.commons.Logger;
 import br.commons.tools.Strings;
 import lombok.val;
@@ -11,11 +12,7 @@ import org.jspecify.annotations.Nullable;
 import java.math.BigDecimal;
 import java.time.MonthDay;
 import java.time.YearMonth;
-import java.util.ArrayList;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 

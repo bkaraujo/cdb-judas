@@ -2,18 +2,14 @@ package br.cdb.feature.f006._2_infrastructure.persistence;
 
 import br.cdb.feature.f006._0_domain.repository.TransactionTagRepository;
 import br.commons.Result;
+import br.commons.framework.cdi.Context;
 import br.commons.framework.persistence.jdbc.DataSource;
 import br.commons.framework.persistence.jdbc.primitives.JDBCParameter;
 import br.commons.framework.persistence.jdbc.primitives.JDBCResultSet;
-import br.commons.framework.cdi.Context;
 import lombok.val;
 import org.jspecify.annotations.NullMarked;
 
-import java.util.ArrayList;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 
 /**
  * Adaptador JDBC (H2) da porta {@link TransactionTagRepository}; tabela {@code F006_TRANSACTION_TAG}.

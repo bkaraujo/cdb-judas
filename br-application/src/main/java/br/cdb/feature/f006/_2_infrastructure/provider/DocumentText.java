@@ -10,27 +10,27 @@ import org.jspecify.annotations.NullMarked;
  * signatures, so the detection logic stays in the parsers while the boilerplate is factored out here.
  */
 @NullMarked
-final class DocumentText {
+public final class DocumentText {
 
     private final String upper;
     private final String digits;
 
-    DocumentText(String raw) {
+    public DocumentText(String raw) {
         this.upper = Strings.upper(raw);
         this.digits = raw.replaceAll("\\D", "");
     }
 
     /** {@code needle} must already be uppercase. */
-    boolean has(String needle) {
+    public boolean has(String needle) {
         return upper.contains(needle);
     }
 
-    boolean hasCnpj(String cnpjDigits) {
+    public boolean hasCnpj(String cnpjDigits) {
         return digits.contains(cnpjDigits);
     }
 
     /** Bank-name fallback: mine present and the other absent (a bank name alone can be a counterparty). */
-    boolean nameOnly(String mine, String other) {
+    public boolean nameOnly(String mine, String other) {
         return upper.contains(mine) && !upper.contains(other);
     }
 }

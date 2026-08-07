@@ -38,11 +38,12 @@ import br.cdb.feature.f006._0_domain.repository.TransactionTagRepository;
 import br.cdb.feature.f006._1_application.service.TransactionCategoryService;
 import br.cdb.feature.f006._1_application.service.TransactionService;
 import br.cdb.feature.f006._1_application.service.TransactionTagService;
-import br.cdb.feature.f006._2_infrastructure.persistence.TransactionCategoryJDBCRepository;
-import br.cdb.feature.f006._2_infrastructure.persistence.TransactionTagJDBCRepository;
 import br.cdb.feature.f006._1_application.usecase.ReadUseCases;
+import br.cdb.feature.f006._1_application.usecase.TransferUseCase;
 import br.cdb.feature.f006._1_application.usecase.WriteUseCases;
+import br.cdb.feature.f006._2_infrastructure.persistence.TransactionCategoryJDBCRepository;
 import br.cdb.feature.f006._2_infrastructure.persistence.TransactionJDBCRepository;
+import br.cdb.feature.f006._2_infrastructure.persistence.TransactionTagJDBCRepository;
 import br.commons.Result;
 import br.commons.chrono.Time;
 import br.commons.framework.cdi.Context;
@@ -180,6 +181,7 @@ public abstract class BaseHttpTest {
         Context.remove(ReadUseCase.class);
         Context.remove(WriteUseCases.class);
         Context.remove(ReadUseCases.class);
+        Context.remove(TransferUseCase.class);
         Context.remove(br.cdb.feature.f000._1_application.usecase.ReadUseCase.class);
         Context.remove(br.cdb.feature.f000._1_application.usecase.WriteUseCase.class);
         // FQN: nome simples colide com o par de f002.

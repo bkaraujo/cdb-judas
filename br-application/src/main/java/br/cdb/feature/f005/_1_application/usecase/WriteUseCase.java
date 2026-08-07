@@ -7,12 +7,12 @@ import br.cdb.feature.f000._0_domain.event.AccountStreamEvents;
 import br.cdb.feature.f000._0_domain.event.CategoryDeleted;
 import br.cdb.feature.f000._0_domain.event.CategoryReassigned;
 import br.cdb.feature.f000._0_domain.event.TransactionsDeleted;
-import br.cdb.feature.f000._1_application.InternalApi;
 import br.cdb.feature.f005._0_domain.Category;
 import br.cdb.feature.f005._1_application.service.UserCategoryService;
 import br.cdb.feature.f006._0_domain.model.Transaction;
 import br.cdb.feature.f006._1_application.usecase.ReadUseCases;
 import br.cdb.feature.f006._1_application.usecase.WriteUseCases;
+import br.cdb.feature.f006._2_infrastructure.F006Api;
 import br.commons.MessageBus;
 import br.commons.Result;
 import br.commons.business.BusinessError;
@@ -40,9 +40,8 @@ import java.util.stream.Collectors;
  * {@link TransactionsDeleted} em vez de chamar o vínculo de categoria (f006) ou de tag (f004)
  * diretamente (best-effort, reagido por f006/f004).
  *
- * <p>{@link InternalApi} é bean CDI publicado no {@code Context} por {@code f999.FeatureBootstrap} e
- * resolvido <b>por chamada</b> — a leitura cross-slice das transações vinculadas é HTTP real contra
- * o endpoint público de f006.
+ * <p>A leitura cross-slice das transações vinculadas é HTTP real contra o endpoint público de f006,
+ * via {@link F006Api} — o cliente tipado que a fatia dona publica sobre {@code f000.InternalApi}.
  *
  * <p>Nota: o nome simples coincide com o {@code WriteUseCase} de {@code f002}/{@code f003}/{@code f004}
  * — quem precisa de mais de um referencia os demais pelo nome completo.
@@ -55,10 +54,8 @@ public class WriteUseCase {
     private final ReadUseCases transactionReads = Context.tryGet(ReadUseCases.class);
     private final WriteUseCases transactionWrites = Context.tryGet(WriteUseCases.class);
 
-    /** Bean CDI publicado no {@code Context} por {@code f999.FeatureBootstrap}; resolvido por chamada. */
-    private static InternalApi internalApi() {
-        return Context.get(InternalApi.class);
-    }
+    /** Cliente da API pública de f006 — as transações vinculadas são dela. */
+    private final F006Api f006 = Context.tryGet(F006Api.class);
 
     public Result<Category, BusinessError> createCategory(UUID personId, String name, Transaction.Type nature, @Nullable UUID parentId) {
         if (parentId != null
@@ -112,11 +109,9 @@ public class WriteUseCase {
     }
 
     /** IDs das transações da pessoa vinculadas a qualquer categoria de {@code categoryIds} —
-     *  leitura cross-slice síncrona via {@link InternalApi} (endpoint público de f006). */
+     *  leitura cross-slice síncrona via {@link F006Api} (endpoint público de f006). */
     private List<UUID> transactionIdsByCategories(List<UUID> categoryIds) {
-        if (categoryIds.isEmpty()) return List.of();
-        val qs = categoryIds.stream().map(UUID::toString).collect(Collectors.joining(","));
-        return List.of(internalApi().get("/accounts/transactions/by-category?categoryIds=" + qs, UUID[].class));
+        return f006.transactionIdsByCategories(categoryIds);
     }
 
     // CPD-OFF

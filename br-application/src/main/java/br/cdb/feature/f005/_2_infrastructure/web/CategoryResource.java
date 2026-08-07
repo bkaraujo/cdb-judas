@@ -41,9 +41,10 @@ public class CategoryResource {
         return reads.categories(uuid).stream().map(CategoryResponse::from).toList();
     }
 
-    /** Endpoint interno (consumido via {@code InternalApi} por {@code f006.ReadUseCases} ao
-     *  criar transferência) — público como qualquer outro em {@code /api/{uuid}/…}, guardado pelo
-     *  mesmo {@code OwnershipFilter}, nunca chamado pelo frontend. */
+    /** Endpoint interno (consumido pelo cliente {@code F005Api} da própria fatia, sobre
+     *  {@code InternalApi}, por {@code f006.TransferUseCase} ao criar transferência) — público como
+     *  qualquer outro em {@code /api/{uuid}/…}, guardado pelo mesmo {@code OwnershipFilter}, nunca
+     *  chamado pelo frontend. */
     @GET
     @Path("/transfer")
     public TransferCategoryResponse transferCategory(@PathParam("uuid") UUID uuid, @QueryParam("nature") String nature) {

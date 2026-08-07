@@ -1,9 +1,10 @@
-package br.cdb.feature.f006._2_infrastructure.provider;
+package br.cdb.feature.f006._2_infrastructure.provider.santander;
 
 import br.cdb.feature.f006._0_domain.Amounts;
 import br.cdb.feature.f006._0_domain.MonetaryDocument;
 import br.cdb.feature.f006._0_domain.MonetaryDocumentEntry;
 import br.cdb.feature.f006._0_domain.StatementParser;
+import br.cdb.feature.f006._2_infrastructure.provider.DocumentText;
 import br.commons.Logger;
 import br.commons.chrono.Dates;
 import br.commons.tools.Strings;
@@ -67,7 +68,7 @@ public class SantanderStatementParser implements StatementParser {
     }
 
     /** Santander stamps "Extrato Consolidado Inteligente"; its extrato carries no CNPJ. */
-    static boolean looksLikeStatement(DocumentText text) {
+    public static boolean looksLikeStatement(DocumentText text) {
         return text.has(STATEMENT_MARKER);
     }
 

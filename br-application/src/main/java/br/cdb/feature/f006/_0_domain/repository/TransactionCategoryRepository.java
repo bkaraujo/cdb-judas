@@ -3,11 +3,7 @@ package br.cdb.feature.f006._0_domain.repository;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
 
 /**
  * Porta do vínculo transação↔categoria ({@code F006_TRANSACTION_CATEGORY}) — tabela à parte de

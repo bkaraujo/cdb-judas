@@ -1,12 +1,14 @@
 package br.cdb.feature.f006._1_application.usecase;
 
 import br.cdb.core.web.HTTPRequest;
+import br.cdb.feature.f000._0_domain.ClosedPeriod;
 import br.cdb.feature.f000._0_domain.event.AccountStreamEvents;
 import br.cdb.feature.f000._1_application.service.UserGuards;
 import br.cdb.feature.f002._0_domain.model.Account;
 import br.cdb.feature.f002._1_application.usecase.ReadUseCase;
+import br.cdb.feature.f002._2_infrastructure.F002Api;
 import br.cdb.feature.f003._0_domain.model.CreditCard;
-import br.cdb.feature.f006._0_domain.ClosedPeriod;
+import br.cdb.feature.f004._2_infrastructure.F004Api;
 import br.cdb.feature.f006._0_domain.ImportError;
 import br.cdb.feature.f006._0_domain.ImportResult;
 import br.cdb.feature.f006._1_application.confirm.InvoiceConfirmCommand;
@@ -27,6 +29,7 @@ import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -46,7 +49,10 @@ public class ImportUseCase {
             Context.tryGet(br.cdb.feature.f003._1_application.usecase.ReadUseCase.class);
 
     private final StatementImportService service = Context.get(StatementImportService.class);
-    private final ReadUseCases reads = Context.tryGet(ReadUseCases.class);
+    /** Cliente da API pública de f002 — o fechamento contábil é dela. */
+    private final F002Api f002 = Context.tryGet(F002Api.class);
+    /** Cliente da API pública de f004 — a posse da tag é dela. */
+    private final F004Api f004 = Context.tryGet(F004Api.class);
 
     private final UserGuards guards;
 
@@ -64,7 +70,7 @@ public class ImportUseCase {
         }
 
         return service.preview(HTTPRequest.personId(), fileBytes, password, accountId)
-                .map(outcome -> new ImportPreviewView(outcome, accountNamesById(), closedPeriod()));
+                .map(outcome -> new ImportPreviewView(outcome, accountNamesById(), f002.closingPeriod()));
     }
 
     public Result<ImportResult, BusinessError> confirmInvoiceImport(UUID personId, InvoiceConfirmCommand cmd) {
@@ -74,6 +80,7 @@ public class ImportUseCase {
             }
         }
         return validateClosing(cmd.rows().stream().map(InvoiceConfirmCommand.Row::date).toList())
+                .flatMap(ignored -> f004.ownsTags(tagIdsOf(cmd.rows().stream().map(InvoiceConfirmCommand.Row::tagIds).toList())))
                 .flatMap(ignored -> service.confirm(personId, cmd))
                 .ifSuccess(ignored -> affectedAccountIds(cmd.rows(), personId.toString())
                         .forEach(accountId -> MessageBus.submit(new AccountStreamEvents.Refresh(accountId, personId.toString()))));
@@ -82,6 +89,7 @@ public class ImportUseCase {
     public Result<ImportResult, BusinessError> confirmStatementImport(UUID personId, StatementConfirmCommand cmd) {
         return guards.ownsAccount(cmd.accountId())
                 .flatMap(ignored -> validateClosing(cmd.rows().stream().map(StatementConfirmCommand.Row::date).toList()))
+                .flatMap(ignored -> f004.ownsTags(tagIdsOf(cmd.rows().stream().map(StatementConfirmCommand.Row::tagIds).toList())))
                 .flatMap(ignored -> service.confirm(personId, cmd))
                 .ifSuccess(ignored -> MessageBus.submit(new AccountStreamEvents.Refresh(cmd.accountId(), personId.toString())));
     }
@@ -93,7 +101,7 @@ public class ImportUseCase {
      * confirmou com um preview vencido (ou chamou a API direto).
      */
     private Result<Void, BusinessError> validateClosing(List<LocalDate> dates) {
-        val closed = closedPeriod();
+        val closed = f002.closingPeriod();
         for (val date : dates) {
             if (closed.covers(date)) {
                 return Result.failure(new BusinessError.BusinessRule(
@@ -103,8 +111,9 @@ public class ImportUseCase {
         return Result.success();
     }
 
-    private ClosedPeriod closedPeriod() {
-        return ClosedPeriod.of(reads.closingPeriod());
+    /** Tags distintas de todas as linhas confirmadas — uma guarda de posse só para o lote inteiro. */
+    private static Set<UUID> tagIdsOf(List<List<UUID>> rowTagIds) {
+        return rowTagIds.stream().flatMap(List::stream).collect(Collectors.toSet());
     }
 
     /** Nome da conta a que cada cartão pertence, para rotular as opções de cartão do preview. */

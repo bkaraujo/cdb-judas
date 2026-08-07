@@ -1,6 +1,5 @@
 package br.cdb.feature.f006._1_application.usecase;
 
-import br.cdb.feature.f000._1_application.InternalApi;
 import br.cdb.feature.f000._1_application.service.UserGuards;
 import br.cdb.feature.f006._0_domain.model.Transaction;
 import br.cdb.feature.f006._1_application.service.TransactionCategoryService;
@@ -21,11 +20,15 @@ import java.util.*;
  * como as demais classes ex-contexto ({@code Context.tryGet(ReadUseCases.class)}, nunca {@code @Inject}).
  *
  * <p>A guarda de propriedade (anti-IDOR) da listagem vive aqui, não mais numa camada de fronteira
- * acima: {@link UserGuards} e {@link InternalApi} são beans CDI resolvidos pelo {@code Context}
- * (publicados por {@code F006Module} no {@code StartupEvent}) e alcançados <b>sob demanda</b> —
- * {@code UserGuards} é {@code @RequestScoped}, então só pode ser tocado dentro de uma requisição.
- * As consultas por {@code personId} têm, além disso, a <b>guarda implícita</b> do
+ * acima: {@link UserGuards} é bean CDI resolvido pelo {@code Context} (publicado por
+ * {@code F006Module} no {@code StartupEvent}) e alcançado <b>sob demanda</b> — é
+ * {@code @RequestScoped}, então só pode ser tocado dentro de uma requisição. As consultas por
+ * {@code personId} têm, além disso, a <b>guarda implícita</b> do
  * {@code F006_TRANSACTION.COD_PERSON} no WHERE.
+ *
+ * <p>Leitura cross-slice não mora mais aqui: fechamento contábil vem de {@code f002.F002Api} e
+ * categoria de transferência de {@code f005.F005Api}, os clientes tipados que cada fatia dona
+ * publica sobre {@code f000.InternalApi}.
  */
 @NullMarked
 public class ReadUseCases {
@@ -34,23 +37,9 @@ public class ReadUseCases {
     private final TransactionCategoryService categoryService = Context.tryGet(TransactionCategoryService.class);
     private final TransactionTagService tagService = Context.tryGet(TransactionTagService.class);
 
-    /** Corpo mínimo do endpoint interno {@code GET /categories/transfer} (f005) — zero tipo
-     *  cross-slice, mesma regra dos antigos ports. */
-    @NullMarked
-    private record TransferCategoryDto(UUID id) {}
-
-    /** Corpo mínimo do endpoint público {@code GET /accounts/closing} (f002) — zero tipo
-     *  cross-slice, mesma regra dos antigos ports. */
-    @NullMarked
-    private record ClosingDto(@Nullable String period) {}
-
     /** Bean CDI resolvido a cada chamada: {@code @RequestScoped}, nunca guardado em campo. */
     private static UserGuards guards() {
         return Context.get(UserGuards.class);
-    }
-
-    private static InternalApi internalApi() {
-        return Context.get(InternalApi.class);
     }
 
     /** Filtro da listagem HTTP; campos nulos não filtram. {@code limit} ≤ 0 também não pagina. */
@@ -141,18 +130,6 @@ public class ReadUseCases {
         val hasExpense = group.stream().anyMatch(x -> x.type() == Transaction.Type.EXPENSE);
         if (!hasIncome || !hasExpense) return List.of();
         return group.stream().filter(x -> !x.id().equals(t.id())).toList();
-    }
-
-    // ── Leitura cross-slice síncrona (InternalApi, HTTP real contra a fatia dona) ───────
-
-    /** Categoria de sistema de transferência da natureza pedida — endpoint público de f005. */
-    public UUID transferCategoryId(Transaction.Type nature) {
-        return internalApi().get("/categories/transfer?nature=" + nature.name(), TransferCategoryDto.class).id();
-    }
-
-    /** Período de fechamento vigente ({@code yyyy-MM}) ou {@code null} — endpoint público de f002. */
-    public @Nullable String closingPeriod() {
-        return internalApi().get("/accounts/closing", ClosingDto.class).period();
     }
 
     public Result<List<Transaction>, BusinessError> pending() {

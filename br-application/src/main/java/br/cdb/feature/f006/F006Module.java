@@ -1,8 +1,10 @@
 package br.cdb.feature.f006;
 
 import br.cdb.core.persistence.Database;
+import br.cdb.feature.f002._1_application.service.BalanceService;
 import br.cdb.feature.f004._0_domain.event.TagEvents;
 import br.cdb.feature.f006._0_domain.CreditCardProvider;
+import br.cdb.feature.f006._0_domain.event.TransactionEvents;
 import br.cdb.feature.f006._0_domain.repository.TransactionCategoryRepository;
 import br.cdb.feature.f006._0_domain.repository.TransactionRepository;
 import br.cdb.feature.f006._0_domain.repository.TransactionTagRepository;
@@ -13,10 +15,10 @@ import br.cdb.feature.f006._2_infrastructure.MonetaryCardProvider;
 import br.cdb.feature.f006._2_infrastructure.persistence.TransactionCategoryJDBCRepository;
 import br.cdb.feature.f006._2_infrastructure.persistence.TransactionJDBCRepository;
 import br.cdb.feature.f006._2_infrastructure.persistence.TransactionTagJDBCRepository;
-import br.cdb.feature.f006._2_infrastructure.provider.BTGInvoiceParser;
-import br.cdb.feature.f006._2_infrastructure.provider.BTGStatementParser;
-import br.cdb.feature.f006._2_infrastructure.provider.SantanderInvoiceParser;
-import br.cdb.feature.f006._2_infrastructure.provider.SantanderStatementParser;
+import br.cdb.feature.f006._2_infrastructure.provider.btg_pactual.BTGInvoiceParser;
+import br.cdb.feature.f006._2_infrastructure.provider.btg_pactual.BTGStatementParser;
+import br.cdb.feature.f006._2_infrastructure.provider.santander.SantanderInvoiceParser;
+import br.cdb.feature.f006._2_infrastructure.provider.santander.SantanderStatementParser;
 import br.commons.Logger;
 import br.commons.MessageBus;
 import br.commons.Result;
@@ -106,7 +108,8 @@ public class F006Module implements Lifecycle {
                         new SantanderStatementParser(),
                         new SantanderInvoiceParser()
                 ),
-                MAX_STATEMENT_FILE_BYTES));
+                MAX_STATEMENT_FILE_BYTES)
+        );
 
         MessageBus.subscribe(new Object(){
 
@@ -137,6 +140,33 @@ public class F006Module implements Lifecycle {
                         yield MessageResult.AVAILABLE;
                     }
                 };
+            }
+        });
+
+
+        MessageBus.subscribe(new Object(){
+
+            private final BalanceService service = Context.tryGet(BalanceService.class);
+
+            @MessageListener
+            public MessageResult onTransaction(TransactionEvents.Created message) {
+                Logger.debug("Processing %s", message);
+                service.recalculate(message.transaction().accountId());
+                return MessageResult.CONSUMED;
+            }
+
+            @MessageListener
+            public MessageResult onTransaction(TransactionEvents.Updated message) {
+                Logger.debug("Processing %s", message);
+                service.recalculate(message.transaction().accountId());
+                return MessageResult.CONSUMED;
+            }
+
+            @MessageListener
+            public MessageResult onTransaction(TransactionEvents.Deleted message) {
+                Logger.debug("Processing %s", message);
+                service.recalculate(message.transaction().accountId());
+                return MessageResult.CONSUMED;
             }
         });
 

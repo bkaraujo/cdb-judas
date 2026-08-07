@@ -1,6 +1,8 @@
-package br.cdb.feature.f006._2_infrastructure.provider;
+package br.cdb.feature.f006._2_infrastructure.provider.santander;
 
 import br.cdb.feature.f006._0_domain.*;
+import br.cdb.feature.f006._2_infrastructure.provider.BankStatements;
+import br.cdb.feature.f006._2_infrastructure.provider.DocumentText;
 import br.commons.Logger;
 import br.commons.tools.Strings;
 import lombok.val;

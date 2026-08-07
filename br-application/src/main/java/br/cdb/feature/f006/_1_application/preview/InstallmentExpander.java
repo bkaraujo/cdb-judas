@@ -1,4 +1,4 @@
-package br.cdb.feature.f006._1_application;
+package br.cdb.feature.f006._1_application.preview;
 
 import br.cdb.feature.f006._0_domain.MonetaryDocumentEntry;
 import br.cdb.feature.f006._0_domain.TransactionDraft;

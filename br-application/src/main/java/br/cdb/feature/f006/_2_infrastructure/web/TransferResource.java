@@ -1,7 +1,7 @@
 package br.cdb.feature.f006._2_infrastructure.web;
 
 import br.cdb.core.web.HTTPRequest;
-import br.cdb.feature.f006._1_application.usecase.WriteUseCases;
+import br.cdb.feature.f006._1_application.usecase.TransferUseCase;
 import br.cdb.feature.f006._2_infrastructure.web.request.TransferRequest;
 import br.cdb.feature.f006._2_infrastructure.web.response.TransactionResponse;
 import br.commons.Result;
@@ -23,13 +23,13 @@ import java.util.UUID;
 @Produces(MediaType.APPLICATION_JSON)
 public class TransferResource {
 
-    private final WriteUseCases writes = Context.tryGet(WriteUseCases.class);
+    private final TransferUseCase transfers = Context.tryGet(TransferUseCase.class);
 
     @POST
     @Path("/transactions/transfer")
     public RestResponse<TransactionResponse> transfer(@Valid TransferRequest req) {
         val personId = UUID.fromString(HTTPRequest.personId());
-        return switch (writes.transfer(personId, req.fromAccountId(), req.toAccountId(), req.date(), req.amount())) {
+        return switch (transfers.transfer(personId, req.fromAccountId(), req.toAccountId(), req.date(), req.amount())) {
             case Result.Success(var transaction) ->
                     RestResponse.status(RestResponse.Status.CREATED, RequestMapper.toDto(transaction));
             case Result.Failure(var error) -> throw new BusinessException(error);

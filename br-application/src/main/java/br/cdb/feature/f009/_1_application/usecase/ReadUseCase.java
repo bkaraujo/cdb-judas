@@ -1,6 +1,6 @@
 package br.cdb.feature.f009._1_application.usecase;
 
-import br.cdb.feature.f000._1_application.InternalApi;
+import br.cdb.feature.f006._2_infrastructure.F006Api;
 import br.commons.Result;
 import br.commons.business.BusinessError;
 import br.commons.framework.cdi.Context;
@@ -8,7 +8,6 @@ import lombok.Builder;
 import lombok.val;
 import org.jspecify.annotations.NullMarked;
 
-import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
@@ -16,8 +15,9 @@ import java.util.List;
 /**
  * Toda a leitura do dashboard da fatia {@code f009} — agregação mensal (receitas/despesas/líquido +
  * histórico semanal) sobre as transações de {@code f006}, lidas por HTTP real via
- * {@link InternalApi}. Context-wired ({@code Context.tryGet(ReadUseCase.class)}, nunca
- * {@code @Inject}); o {@code DashboardResource} lê <b>só</b> daqui.
+ * {@link F006Api}, o cliente que a fatia dona publica sobre {@code f000.InternalApi}. Context-wired
+ * ({@code Context.tryGet(ReadUseCase.class)}, nunca {@code @Inject}); o {@code DashboardResource}
+ * lê <b>só</b> daqui.
  *
  * <p><b>Sem {@code WriteUseCase}</b>, ao contrário de {@code f001}–{@code f006}: a fatia é
  * somente-leitura — não tem porta, repositório nem mutação própria, então o par teria um lado vazio.
@@ -29,16 +29,8 @@ import java.util.List;
 @NullMarked
 public class ReadUseCase {
 
-    /** Bean CDI publicado no {@code Context} por {@code f999.FeatureBootstrap}; resolvido por chamada. */
-    private static InternalApi internalApi() {
-        return Context.get(InternalApi.class);
-    }
-
-    /** Corpo mínimo do endpoint público {@code GET /accounts/transactions} (f006) — zero tipo
-     *  cross-slice, mesma regra dos antigos ports. {@code type} vem lowercase ("income"/"expense",
-     *  ver {@code JsonStorageConfig.transactionEnumModule}). */
-    @NullMarked
-    private record TransactionDto(LocalDate date, BigDecimal amount, String type) {}
+    /** Cliente da API pública de f006 — as transações são dela. */
+    private final F006Api f006 = Context.tryGet(F006Api.class);
 
     public Result<MonthlyResult, BusinessError> getMonthlyResult(int month, int year) {
         val start = LocalDate.of(year, month, 1);
@@ -46,9 +38,7 @@ public class ReadUseCase {
 
         // Filtro já aplicado no servidor (status/dateFrom/dateTo são suportados pelo endpoint público
         // de f006) — evita trazer o histórico inteiro só pra descartar a maior parte aqui.
-        val confirmedThisMonth = List.of(internalApi().get(
-                "/accounts/transactions?status=CONFIRMED&dateFrom=" + start + "&dateTo=" + end,
-                TransactionDto[].class));
+        val confirmedThisMonth = f006.transactions("CONFIRMED", start, end);
 
         val incomes = sumWhere(confirmedThisMonth, "income");
         val expenses = sumWhere(confirmedThisMonth, "expense");
@@ -79,7 +69,7 @@ public class ReadUseCase {
     /** {@code amount} no DTO vem assinado (negativo pra despesa, espelhando o que o cliente
      *  submeteu) — soma em magnitude, igual ao {@code incomes}/{@code expenses} sempre positivos
      *  de antes da fase 6. */
-    private static double sumWhere(List<TransactionDto> transactions, String type) {
+    private static double sumWhere(List<F006Api.TransactionView> transactions, String type) {
         return transactions.stream()
                 .filter(t -> type.equals(t.type()))
                 .mapToDouble(t -> Math.abs(t.amount().doubleValue()))

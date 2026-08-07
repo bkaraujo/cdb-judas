@@ -5,11 +5,7 @@ import br.commons.framework.cdi.Context;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
 
 /** Context-wired, sem CDI ({@code Context.tryGet(TransactionCategoryService.class)}) — usado direto
  *  por {@code WriteUseCases}/{@code ReadUseCases}. */

@@ -1,9 +1,10 @@
-package br.cdb.feature.f006._2_infrastructure.provider;
+package br.cdb.feature.f006._2_infrastructure.provider.btg_pactual;
 
 import br.cdb.feature.f006._0_domain.Amounts;
 import br.cdb.feature.f006._0_domain.MonetaryDocument;
 import br.cdb.feature.f006._0_domain.MonetaryDocumentEntry;
 import br.cdb.feature.f006._0_domain.StatementParser;
+import br.cdb.feature.f006._2_infrastructure.provider.DocumentText;
 import br.commons.Logger;
 import br.commons.tools.Strings;
 import lombok.val;
@@ -48,7 +49,7 @@ public class BTGStatementParser implements StatementParser {
 
     /** BTG's own checking-account header, its Saldo Diário/Data e hora columns, or its account CNPJ —
      *  each identifies the extrato on its own (the card-issuer CNPJ does not, and is left to the invoice). */
-    static boolean looksLikeStatement(DocumentText text) {
+    public static boolean looksLikeStatement(DocumentText text) {
         return text.has("EXTRATO DA SUA CONTA CORRENTE BTG PACTUAL")
                 || (text.has("SALDO DIÁRIO") && text.has("DATA E HORA"))
                 || text.hasCnpj(ACCOUNT_CNPJ);

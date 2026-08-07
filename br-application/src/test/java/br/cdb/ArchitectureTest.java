@@ -14,6 +14,7 @@ import jakarta.ws.rs.Path;
 import lombok.val;
 import org.jspecify.annotations.NullMarked;
 
+import java.util.Optional;
 import java.util.regex.Pattern;
 
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.classes;
@@ -74,9 +75,9 @@ class ArchitectureTest {
 
     @ArchTest
     static final ArchRule application_must_not_access_infrastructure =
-            noClasses().that().resideInAPackage(".._1_application..")
-                    .should().accessClassesThat().resideInAPackage(".._2_infrastructure..")
-                    .because("serviços de aplicação devem depender de abstrações de domínio (_0_domain), não de implementações de infraestrutura");
+            classes().that().resideInAPackage(".._1_application..")
+                    .should(notAccessInfrastructureExceptSliceApiClients())
+                    .because("serviços de aplicação devem depender de abstrações de domínio (_0_domain), não de implementações de infraestrutura; o cliente FNNNApi da API pública de outra fatia é a exceção nomeada — ver isSliceApiClient");
 
 
     static final ArchRule feature_slices_depend_only_on_earlier_ones =
@@ -183,6 +184,56 @@ class ArchitectureTest {
         };
     }
 
+    private static final Pattern SLICE_API_CLIENT = Pattern.compile("F\\d{3}Api");
+
+    /**
+     * Cliente tipado da API pública de uma fatia: {@code fNNN._2_infrastructure.FNNNApi}, publicado
+     * pela própria fatia dona do endpoint (ex.: {@code f005.F005Api} para
+     * {@code GET /categories/transfer}). É o quarto mecanismo cross-slice, ao lado de evento,
+     * {@code f000.InternalApi} cru e adapter em {@code f999}: por dentro continua sendo HTTP real
+     * via {@code InternalApi} — o consumidor só troca "montar path + DTO por conta própria" por um
+     * método tipado, sem alcançar serviço, repositório ou modelo da fatia dona. Exceção deliberada
+     * a {@code feature_slices_must_not_depend_on_sibling_slices} e a
+     * {@code application_must_not_access_infrastructure} (o cliente mora em {@code _2_infrastructure}
+     * porque é adaptador de saída, mas quem o consome é {@code _1_application}).
+     *
+     * <p>Vale também para os tipos aninhados nele ({@code F006Api.TransactionView}): a projeção que o
+     * cliente devolve é parte do contrato publicado, e é justamente o que evita o consumidor tocar o
+     * modelo de domínio da fatia dona.
+     */
+    private static boolean isSliceApiClient(JavaClass clazz) {
+        if (!("." + clazz.getPackageName() + ".").contains("._2_infrastructure.")) {
+            return false;
+        }
+        var current = Optional.of(clazz);
+        while (current.isPresent()) {
+            if (SLICE_API_CLIENT.matcher(current.get().getSimpleName()).matches()) {
+                return true;
+            }
+            current = current.get().getEnclosingClass();
+        }
+        return false;
+    }
+
+    private static ArchCondition<JavaClass> notAccessInfrastructureExceptSliceApiClients() {
+        return new ArchCondition<>("não acessar .._2_infrastructure.. (exceto o cliente FNNNApi da API pública de uma fatia)") {
+            @Override
+            public void check(JavaClass origin, ConditionEvents events) {
+                for (val dependency : origin.getDirectDependenciesFromSelf()) {
+                    val target = dependency.getTargetClass();
+                    if (!("." + target.getPackageName() + ".").contains("._2_infrastructure.")) {
+                        continue;
+                    }
+                    if (isSliceApiClient(target)) {
+                        continue; // ver javadoc de isSliceApiClient
+                    }
+                    events.add(SimpleConditionEvent.violated(dependency,
+                            "_1_application depende de _2_infrastructure: " + dependency.getDescription()));
+                }
+            }
+        };
+    }
+
     private static ArchCondition<JavaClass> notDependOnSiblingFeatureSlices() {
         return new ArchCondition<>("não depender de fatia fNNN irmã (nem f000 nem f999 na origem)") {
             @Override
@@ -202,6 +253,9 @@ class ArchitectureTest {
                     }
                     if (isDissolvedContextRemnant(target)) {
                         continue; // exceção temporária desde a fase 2 — ver javadoc da regra e de isDissolvedContextRemnant
+                    }
+                    if (isSliceApiClient(target)) {
+                        continue; // cliente da API pública da fatia dona — ver javadoc de isSliceApiClient
                     }
                     events.add(SimpleConditionEvent.violated(dependency,
                             "f%03d depende de f%03d (fatia irmã): %s"

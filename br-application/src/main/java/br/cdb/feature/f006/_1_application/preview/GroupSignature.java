@@ -1,4 +1,4 @@
-package br.cdb.feature.f006._1_application;
+package br.cdb.feature.f006._1_application.preview;
 
 import br.commons.tools.Strings;
 import lombok.val;

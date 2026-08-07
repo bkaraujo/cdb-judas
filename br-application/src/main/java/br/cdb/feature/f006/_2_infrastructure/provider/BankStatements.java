@@ -1,5 +1,7 @@
 package br.cdb.feature.f006._2_infrastructure.provider;
 
+import br.cdb.feature.f006._2_infrastructure.provider.btg_pactual.BTGStatementParser;
+import br.cdb.feature.f006._2_infrastructure.provider.santander.SantanderStatementParser;
 import org.jspecify.annotations.NullMarked;
 
 /**
@@ -10,12 +12,12 @@ import org.jspecify.annotations.NullMarked;
  * to live in {@code DocumentTypeDetector}, now expressed without duplicating the markers.
  */
 @NullMarked
-final class BankStatements {
+public final class BankStatements {
 
     private BankStatements() {
     }
 
-    static boolean isAny(DocumentText text) {
+    public static boolean isAny(DocumentText text) {
         return BTGStatementParser.looksLikeStatement(text)
                 || SantanderStatementParser.looksLikeStatement(text);
     }
