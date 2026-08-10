@@ -14,7 +14,7 @@ flowchart LR
 %% br-context-monetary/br-context-people já tinham antes da dissolução dos contextos (fase 2),
 %% preservada dentro de fNNN.
 
-    subgraph feature["br.cdb.feature.fNNN  (f000–f006, f009, f999)"]
+    subgraph feature["br.cdb.feature.fNNN  (f000–f007, f009, f010, f999)"]
         F2["_2_infrastructure<br>*Resource (borda HTTP — só tradução de formato)<br>*Request / *Response (DTOs da API)<br>*JDBCRepository (adaptador da porta _0, feature nativa)<br>FNNNModule (CDI)"]
         F1["_1_application<br>*Service · *UseCase (orquestra tudo)<br>commands · @MessageListener (best-effort)<br>usecase/service — engines ex-contexto, Registry-wired<br>(f002 accounts/balance, f003 cards, f006 transactions,<br>f000 cost center/person)"]
         F0["_0_domain<br>modelos/overlays · *Repository (PORTAS)<br>eventos de domínio da feature<br>model/repository/event — remanescente ex-contexto"]

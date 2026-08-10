@@ -7,14 +7,9 @@
  * pelo listener de overlay da própria fatia (assinado em {@code F006Module.initialize()}, limpa
  * {@code F006_TRANSACTION_CATEGORY}/{@code F006_TRANSACTION_TAG}) e por {@code f004} (tags, purga
  * vínculos); cobre também as exclusões em cascata disparadas por outras fatias (conta/tag/
- * categoria), que nunca tocam essas tabelas direto.
- *
- * <p>Fundida aqui na fase 6 de {@code .claude/plan.md}: a antiga fatia {@code f007} (importação de
- * extrato/fatura, preview→confirm, parsers BTG e Santander) — {@code /api/{uuid}/accounts/transactions
- * /import/preview} + {@code .../import/confirm}. Consolida o que antes era {@code finance.accounts
- * .statement} (parsing de PDF) e {@code finance.accounts.transactions.importer} (orquestração,
- * casamento de cartão, sugestão de categoria, expansão de parcelas) — path preservado, só o pacote
- * mudou (número da fatia não é mais parte da rota).
+ * categoria), que nunca tocam essas tabelas direto. O mesmo listener reage a {@code TransactionImported}
+ * (publicado por {@code f007}, a importação de extrato/fatura — fatia própria desde
+ * {@code .claude/plan.md}) e a {@code CategoryReassigned}.
  */
 @NullMarked
 package br.cdb.feature.f006;

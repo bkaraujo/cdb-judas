@@ -1,7 +1,7 @@
 package br.cdb.feature;
 
+import br.cdb.core.web.HTTPApi;
 import br.cdb.feature.f000.F000Module;
-import br.cdb.feature.f000._1_application.InternalApi;
 import br.cdb.feature.f000._1_application.service.UserGuards;
 import br.cdb.feature.f001.F001Module;
 import br.cdb.feature.f002.F002Module;
@@ -10,6 +10,7 @@ import br.cdb.feature.f003.F003Module;
 import br.cdb.feature.f004.F004Module;
 import br.cdb.feature.f005.F005Module;
 import br.cdb.feature.f006.F006Module;
+import br.cdb.feature.f007.F007Module;
 import br.cdb.feature.f009.F009Module;
 import br.cdb.feature.f010.F010Module;
 import br.cdb.feature.f999.F999Module;
@@ -38,7 +39,7 @@ import java.util.List;
  * <p>Os dois beans CDI que as engines Context-wired precisam entram no {@link Context} antes de
  * qualquer módulo: {@link UserGuards} (guarda anti-IDOR, {@code @RequestScoped} — o que se registra é
  * o client proxy, então cada chamada resolve a instância da requisição corrente) e
- * {@link InternalApi} (leitura cross-slice). Nenhum dos dois toca porta de repositório ao ser
+ * {@link HTTPApi} (leitura cross-slice). Nenhum dos dois toca porta de repositório ao ser
  * construído — quem toca (ex.: {@code UserService}, que resolve {@code PersonRepository}/
  * {@code UserRepository} em campo) fica fora daqui e é montado pelo próprio módulo que o usa.
  *
@@ -49,9 +50,9 @@ import java.util.List;
 @ApplicationScoped
 public class FeatureBootstrap {
 
-    void onStart(@Observes @Priority(1) StartupEvent ev, UserGuards guards, InternalApi internalApi) {
+    void onStart(@Observes @Priority(1) StartupEvent ev, UserGuards guards, HTTPApi httpApi) {
         Context.set(UserGuards.class, () -> guards);
-        Context.set(InternalApi.class, () -> internalApi);
+        Context.set(HTTPApi.class, () -> httpApi);
 
         initialize(new F000Module());
 
@@ -62,6 +63,7 @@ public class FeatureBootstrap {
                 new F004Module(),
                 new F005Module(),
                 new F006Module(),
+                new F007Module(),
                 new F009Module(),
                 new F010Module()
         ).forEach(FeatureBootstrap::initialize);

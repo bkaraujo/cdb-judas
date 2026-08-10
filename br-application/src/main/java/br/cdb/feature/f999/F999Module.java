@@ -3,9 +3,11 @@ package br.cdb.feature.f999;
 import br.cdb.core.persistence.Database;
 import br.cdb.feature.f000._1_application.service.UserService;
 import br.cdb.feature.f002._0_domain.DeletionQueue;
+import br.cdb.feature.f007._0_domain.TransactionWriter;
 import br.cdb.feature.f999._0_domain.DeletionQueueRepository;
 import br.cdb.feature.f999._1_application.DeletionQueueService;
 import br.cdb.feature.f999._2_infrastructure.adapter.DeletionQueueAdapter;
+import br.cdb.feature.f999._2_infrastructure.adapter.TransactionWriterAdapter;
 import br.cdb.feature.f999._2_infrastructure.persistence.DeletionQueueJDBCRepository;
 import br.commons.Logger;
 import br.commons.Result;
@@ -59,6 +61,10 @@ public class F999Module implements Lifecycle {
         // Depois do service: o adapter o resolve em campo. Publicado aqui (composition root) porque
         // quem consome a porta é f002.WriteUseCase, Context-wired — não há injeção CDI no caminho.
         Context.set(DeletionQueue.class, DeletionQueueAdapter::new);
+        // Único ponto que conhece f006 e f007 ao mesmo tempo — contrato de escrita da importação (D3
+        // de .claude/plan.md). Resolvida por chamada pelo consumidor, nunca em campo: este Context.set
+        // é eager e roda depois de F007Module.
+        Context.set(TransactionWriter.class, TransactionWriterAdapter::new);
 
         // Montado só aqui (não no FeatureBootstrap): resolve PersonRepository/UserRepository em campo,
         // então só pode ser construído depois de f000 registrar suas portas.
