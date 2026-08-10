@@ -1,4 +1,4 @@
-package br.cdb.feature.f002._2_infrastructure;
+package br.cdb.feature.f002;
 
 import br.cdb.feature.f000._0_domain.ClosedPeriod;
 import br.cdb.feature.f000._1_application.InternalApi;

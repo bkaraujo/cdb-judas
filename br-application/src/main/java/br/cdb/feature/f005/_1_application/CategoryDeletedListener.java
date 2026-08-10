@@ -14,8 +14,8 @@ import org.jspecify.annotations.NullMarked;
 
 /**
  * Apaga as linhas {@code PERSON_CATEGORY} da subárvore já validada e (no MOVE) reatribuída —
- * best-effort, nunca falha o request que originou a exclusão. Assinado no startup (padrão
- * {@code TransactionOverlayListener}).
+ * best-effort, nunca falha o request que originou a exclusão. Assinado no startup (mesmo padrão do
+ * listener de overlay de {@code f006}, assinado em {@code F006Module.initialize()}).
  */
 @NullMarked
 @Singleton

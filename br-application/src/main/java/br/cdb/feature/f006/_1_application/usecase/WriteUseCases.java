@@ -5,11 +5,11 @@ import br.cdb.feature.f000._0_domain.event.AccountStreamEvents;
 import br.cdb.feature.f000._0_domain.event.TransactionsDeleted;
 import br.cdb.feature.f000._0_domain.model.CostCenter;
 import br.cdb.feature.f000._1_application.service.UserGuards;
+import br.cdb.feature.f002.F002Api;
 import br.cdb.feature.f002._1_application.service.BalanceService;
-import br.cdb.feature.f002._2_infrastructure.F002Api;
 import br.cdb.feature.f003._0_domain.model.CreditCard;
 import br.cdb.feature.f003._1_application.service.CreditCardService;
-import br.cdb.feature.f004._2_infrastructure.F004Api;
+import br.cdb.feature.f004.F004Api;
 import br.cdb.feature.f006._0_domain.event.TransactionEvents;
 import br.cdb.feature.f006._0_domain.model.Transaction;
 import br.cdb.feature.f006._1_application.service.TransactionCategoryService;
@@ -41,8 +41,8 @@ import java.util.*;
  *       {@link #updateTransactionStatus}, {@link #deleteTransaction}): aplica a
  *       política de usuário — guarda de propriedade ({@link UserGuards}) e período fechado — e
  *       publica os eventos de aplicação ({@link AccountStreamEvents.Refresh} para o SSE, cujo
- *       dispatch é de {@code f999}; {@link TransactionsDeleted} para a cascata best-effort de
- *       {@code TransactionOverlayListener}/f004).</li>
+ *       dispatch é de {@code f999}; {@link TransactionsDeleted} para a cascata best-effort do
+ *       listener de overlay ({@code F006Module})/f004).</li>
  * </ul>
  * A entrada de <b>transferência</b> saiu daqui para {@link TransferUseCase}, que orquestra as
  * operações de engine {@link #createTransfer}/{@link #saveTransferCategories} que continuam nesta

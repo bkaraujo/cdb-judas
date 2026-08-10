@@ -29,7 +29,7 @@ import java.util.stream.Collectors;
  * Processes {@link br.cdb.feature.f006._0_domain.MonetaryDocument.Invoice} documents (credit-card
  * statements): preview (card match + installment expansion + dedup) and confirm (persistence of
  * kept rows, grouped by installment schedule). Every persisted transaction publishes
- * {@code TransactionImported} (f000) — {@code TransactionOverlayListener} (aqui mesmo em f006) grava
+ * {@code TransactionImported} (f000) — o listener de overlay (aqui mesmo em f006, {@code F006Module}) grava
  * o vínculo {@code F006_TRANSACTION_CATEGORY}, mantendo o 1:1 com {@code F006_TRANSACTION}.
  */
 @NullMarked

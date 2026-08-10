@@ -33,8 +33,8 @@ import java.util.*;
  * Processes {@link br.cdb.feature.f006._0_domain.MonetaryDocument.Statement} documents
  * (checking-account extracts): preview (account selection + dedup/reconcile classification) and
  * confirm (persistence of new rows, reconciliation of matched pending/scheduled transactions). Every
- * persisted transaction publishes {@code TransactionImported} (f000) — {@code TransactionOverlayListener}
- * (aqui mesmo em f006) grava o vínculo {@code F006_TRANSACTION_CATEGORY}, mantendo o 1:1 com
+ * persisted transaction publishes {@code TransactionImported} (f000) — o listener de overlay
+ * (aqui mesmo em f006, {@code F006Module}) grava o vínculo {@code F006_TRANSACTION_CATEGORY}, mantendo o 1:1 com
  * {@code F006_TRANSACTION}.
  */
 @NullMarked

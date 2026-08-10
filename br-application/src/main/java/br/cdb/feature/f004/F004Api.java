@@ -1,4 +1,4 @@
-package br.cdb.feature.f004._2_infrastructure;
+package br.cdb.feature.f004;
 
 import br.cdb.feature.f000._1_application.InternalApi;
 import br.cdb.feature.f004._2_infrastructure.web.TagResource;

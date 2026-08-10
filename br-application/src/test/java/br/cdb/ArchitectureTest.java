@@ -75,9 +75,9 @@ class ArchitectureTest {
 
     @ArchTest
     static final ArchRule application_must_not_access_infrastructure =
-            classes().that().resideInAPackage(".._1_application..")
-                    .should(notAccessInfrastructureExceptSliceApiClients())
-                    .because("serviços de aplicação devem depender de abstrações de domínio (_0_domain), não de implementações de infraestrutura; o cliente FNNNApi da API pública de outra fatia é a exceção nomeada — ver isSliceApiClient");
+            noClasses().that().resideInAPackage(".._1_application..")
+                    .should().dependOnClassesThat().resideInAPackage(".._2_infrastructure..")
+                    .because("serviços de aplicação devem depender de abstrações de domínio (_0_domain), não de implementações de infraestrutura; sem exceção desde que o cliente FNNNApi da API pública de uma fatia passou a morar na raiz da fatia — ver isSliceApiClient");
 
 
     static final ArchRule feature_slices_depend_only_on_earlier_ones =
@@ -184,54 +184,41 @@ class ArchitectureTest {
         };
     }
 
-    private static final Pattern SLICE_API_CLIENT = Pattern.compile("F\\d{3}Api");
+    private static final Pattern SLICE_ROOT_PACKAGE = Pattern.compile(".*\\.feature\\.f(\\d{3})");
 
     /**
-     * Cliente tipado da API pública de uma fatia: {@code fNNN._2_infrastructure.FNNNApi}, publicado
-     * pela própria fatia dona do endpoint (ex.: {@code f005.F005Api} para
-     * {@code GET /categories/transfer}). É o quarto mecanismo cross-slice, ao lado de evento,
-     * {@code f000.InternalApi} cru e adapter em {@code f999}: por dentro continua sendo HTTP real
-     * via {@code InternalApi} — o consumidor só troca "montar path + DTO por conta própria" por um
-     * método tipado, sem alcançar serviço, repositório ou modelo da fatia dona. Exceção deliberada
-     * a {@code feature_slices_must_not_depend_on_sibling_slices} e a
-     * {@code application_must_not_access_infrastructure} (o cliente mora em {@code _2_infrastructure}
-     * porque é adaptador de saída, mas quem o consome é {@code _1_application}).
+     * Cliente tipado da API pública de uma fatia: {@code fNNN.FNNNApi}, publicado pela própria fatia
+     * dona do endpoint (ex.: {@code f005.F005Api} para {@code GET /categories/transfer}). É o quarto
+     * mecanismo cross-slice, ao lado de evento, {@code f000.InternalApi} cru e adapter em
+     * {@code f999}: por dentro continua sendo HTTP real via {@code InternalApi} — o consumidor só
+     * troca "montar path + DTO por conta própria" por um método tipado, sem alcançar serviço,
+     * repositório ou modelo da fatia dona. Exceção deliberada a
+     * {@code feature_slices_must_not_depend_on_sibling_slices}.
+     *
+     * <p>Mora na <b>raiz da fatia</b>, ao lado do {@code FNNNModule} — nem {@code _1_application} nem
+     * {@code _2_infrastructure}: é contrato publicado para fora, não camada interna. É o que dispensou
+     * a antiga exceção a {@code application_must_not_access_infrastructure}, de quando o cliente vivia
+     * em {@code _2_infrastructure} e era consumido por {@code _1_application}. O número no nome tem de
+     * casar com o da fatia: só a dona publica o cliente da própria API.
      *
      * <p>Vale também para os tipos aninhados nele ({@code F006Api.TransactionView}): a projeção que o
      * cliente devolve é parte do contrato publicado, e é justamente o que evita o consumidor tocar o
      * modelo de domínio da fatia dona.
      */
     private static boolean isSliceApiClient(JavaClass clazz) {
-        if (!("." + clazz.getPackageName() + ".").contains("._2_infrastructure.")) {
-            return false;
+        val slice = SLICE_ROOT_PACKAGE.matcher(clazz.getPackageName());
+        if (!slice.matches()) {
+            return false; // fora da raiz de uma fatia fNNN — subpacote _0/_1/_2 não publica contrato
         }
+        val expected = "F" + slice.group(1) + "Api";
         var current = Optional.of(clazz);
         while (current.isPresent()) {
-            if (SLICE_API_CLIENT.matcher(current.get().getSimpleName()).matches()) {
+            if (expected.equals(current.get().getSimpleName())) {
                 return true;
             }
             current = current.get().getEnclosingClass();
         }
         return false;
-    }
-
-    private static ArchCondition<JavaClass> notAccessInfrastructureExceptSliceApiClients() {
-        return new ArchCondition<>("não acessar .._2_infrastructure.. (exceto o cliente FNNNApi da API pública de uma fatia)") {
-            @Override
-            public void check(JavaClass origin, ConditionEvents events) {
-                for (val dependency : origin.getDirectDependenciesFromSelf()) {
-                    val target = dependency.getTargetClass();
-                    if (!("." + target.getPackageName() + ".").contains("._2_infrastructure.")) {
-                        continue;
-                    }
-                    if (isSliceApiClient(target)) {
-                        continue; // ver javadoc de isSliceApiClient
-                    }
-                    events.add(SimpleConditionEvent.violated(dependency,
-                            "_1_application depende de _2_infrastructure: " + dependency.getDescription()));
-                }
-            }
-        };
     }
 
     private static ArchCondition<JavaClass> notDependOnSiblingFeatureSlices() {

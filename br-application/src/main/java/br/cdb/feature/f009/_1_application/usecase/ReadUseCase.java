@@ -1,6 +1,6 @@
 package br.cdb.feature.f009._1_application.usecase;
 
-import br.cdb.feature.f006._2_infrastructure.F006Api;
+import br.cdb.feature.f006.F006Api;
 import br.commons.Result;
 import br.commons.business.BusinessError;
 import br.commons.framework.cdi.Context;

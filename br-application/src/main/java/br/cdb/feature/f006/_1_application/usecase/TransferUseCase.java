@@ -2,7 +2,7 @@ package br.cdb.feature.f006._1_application.usecase;
 
 import br.cdb.feature.f000._0_domain.event.AccountStreamEvents;
 import br.cdb.feature.f000._1_application.service.UserGuards;
-import br.cdb.feature.f005._2_infrastructure.F005Api;
+import br.cdb.feature.f005.F005Api;
 import br.cdb.feature.f006._0_domain.model.Transaction;
 import br.commons.MessageBus;
 import br.commons.Result;

@@ -1,6 +1,9 @@
 package br.cdb.feature.f006;
 
 import br.cdb.core.persistence.Database;
+import br.cdb.feature.f000._0_domain.event.CategoryReassigned;
+import br.cdb.feature.f000._0_domain.event.TransactionImported;
+import br.cdb.feature.f000._0_domain.event.TransactionsDeleted;
 import br.cdb.feature.f002._1_application.service.BalanceService;
 import br.cdb.feature.f004._0_domain.event.TagEvents;
 import br.cdb.feature.f006._0_domain.CreditCardProvider;
@@ -143,6 +146,51 @@ public class F006Module implements Lifecycle {
             }
         });
 
+
+        MessageBus.subscribe(new Object(){
+
+            /**
+             * Dono dos vínculos {@code F006_TRANSACTION_CATEGORY}/{@code F006_TRANSACTION_TAG}
+             * reagindo a eventos de fatias vizinhas — best-effort, nunca falha por si só o request
+             * que originou o evento (mas propaga exceção, ver {@code MessageBus#submit}, revertendo a
+             * transação do publicador se o próprio save/reassign/delete falhar). A reação à
+             * exclusão/merge da própria {@code Tag} (MOVE/DETACH) é a assinatura acima.
+             */
+            private static WriteUseCases writes() {
+                return Context.tryGet(WriteUseCases.class);
+            }
+
+            /** Limpa os vínculos das transações apagadas, qualquer que seja o publicador (o próprio
+             *  {@code WriteUseCases#deleteTransaction} ou uma exclusão em cascata de outra fatia, ex.: conta). */
+            @MessageListener
+            public MessageResult onTransactionsDeleted(TransactionsDeleted message) {
+                Logger.debug("Processing %s", message);
+                message.transactionIds().forEach(id -> {
+                    writes().deleteCategory(id);
+                    writes().deleteTags(id);
+                });
+                return MessageResult.CONSUMED;
+            }
+
+            /** Grava os vínculos de uma transação importada ({@code InvoiceImportProcessor}/
+             *  {@code StatementImportProcessor}) — mantém o 1:1 com {@code F006_TRANSACTION}. */
+            @MessageListener
+            public MessageResult onTransactionImported(TransactionImported message) {
+                Logger.debug("Processing %s", message);
+                writes().saveCategory(message.transactionId(), message.personId(), message.categoryId());
+                writes().saveTags(message.transactionId(), message.personId(), message.tagIds());
+                return MessageResult.CONSUMED;
+            }
+
+            /** Re-keya o vínculo da subárvore de categoria apagada (estratégia MOVE, f005) antes da subárvore sumir. */
+            @MessageListener
+            public MessageResult onCategoryReassigned(CategoryReassigned message) {
+                Logger.debug("Processing %s", message);
+                message.oldCategoryIds().forEach(oldId ->
+                        writes().reassignCategory(oldId, message.newCategoryId(), message.personId()));
+                return MessageResult.CONSUMED;
+            }
+        });
 
         MessageBus.subscribe(new Object(){
 

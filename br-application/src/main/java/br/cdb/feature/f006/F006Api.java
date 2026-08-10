@@ -1,4 +1,4 @@
-package br.cdb.feature.f006._2_infrastructure;
+package br.cdb.feature.f006;
 
 import br.cdb.feature.f000._1_application.InternalApi;
 import br.cdb.feature.f006._2_infrastructure.web.TransactionResource;

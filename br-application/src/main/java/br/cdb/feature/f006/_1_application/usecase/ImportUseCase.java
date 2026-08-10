@@ -4,11 +4,11 @@ import br.cdb.core.web.HTTPRequest;
 import br.cdb.feature.f000._0_domain.ClosedPeriod;
 import br.cdb.feature.f000._0_domain.event.AccountStreamEvents;
 import br.cdb.feature.f000._1_application.service.UserGuards;
+import br.cdb.feature.f002.F002Api;
 import br.cdb.feature.f002._0_domain.model.Account;
 import br.cdb.feature.f002._1_application.usecase.ReadUseCase;
-import br.cdb.feature.f002._2_infrastructure.F002Api;
 import br.cdb.feature.f003._0_domain.model.CreditCard;
-import br.cdb.feature.f004._2_infrastructure.F004Api;
+import br.cdb.feature.f004.F004Api;
 import br.cdb.feature.f006._0_domain.ImportError;
 import br.cdb.feature.f006._0_domain.ImportResult;
 import br.cdb.feature.f006._1_application.confirm.InvoiceConfirmCommand;
@@ -26,11 +26,7 @@ import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 
 import java.time.LocalDate;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
-import java.util.UUID;
+import java.util.*;
 import java.util.stream.Collectors;
 
 /**
