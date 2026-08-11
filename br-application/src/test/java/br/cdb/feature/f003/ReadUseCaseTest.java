@@ -52,7 +52,7 @@ class ReadUseCaseTest extends AbstractUseCaseTest {
             public Result<Void, BusinessError> ownsAccount(UUID accountId) {
                 return owns
                         ? Result.success()
-                        : Result.failure(new BusinessError.NotFound("Account not found: " + accountId));
+                        : Result.failure(new BusinessError.NotFound("Account not found: %s", accountId));
             }
         });
     }

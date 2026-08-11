@@ -149,10 +149,10 @@ public class WriteUseCase {
     private Result<Void, BusinessError> validateAccountMoveTarget(UUID sourceId, UUID targetId, UUID personId) {
         return reads.findAccount(targetId, personId.toString()).flatMap(target -> {
             if (target.id().equals(sourceId)) {
-                return Result.failure(new BusinessError.BusinessRule("Target account must be different from source: " + targetId));
+                return Result.failure(new BusinessError.BusinessRule("Target account must be different from source: %s", targetId));
             }
             if (!target.active()) {
-                return Result.failure(new BusinessError.BusinessRule("Target account is inactive: " + targetId));
+                return Result.failure(new BusinessError.BusinessRule("Target account is inactive: %s", targetId));
             }
             return Result.success();
         });
@@ -197,7 +197,7 @@ public class WriteUseCase {
 
     private Result<List<UUID>, BusinessError> deleteBlock(Account account) {
         if (!transactionService.findByAccount(account.id()).isEmpty()) {
-            return Result.failure(new BusinessError.Conflict("Account has linked transactions and cannot be deleted: " + account.id()));
+            return Result.failure(new BusinessError.Conflict("Account has linked transactions and cannot be deleted: %s", account.id()));
         }
         creditCardService.findByAccount(account.id()).forEach(c -> creditCardService.deleteById(c.id()));
         balanceService.findByAccount(account.id()).forEach(balanceService::deleteById);
@@ -208,11 +208,11 @@ public class WriteUseCase {
         return service.findById(targetId).flatMap(target -> {
             if (target.id().equals(account.id())) {
                 return Result.<List<UUID>>failure(
-                        new BusinessError.BusinessRule("Target account must be different from source: " + targetId));
+                        new BusinessError.BusinessRule("Target account must be different from source: %s", targetId));
             }
             if (!target.active()) {
                 return Result.<List<UUID>>failure(
-                        new BusinessError.BusinessRule("Target account is inactive: " + targetId));
+                        new BusinessError.BusinessRule("Target account is inactive: %s", targetId));
             }
 
             val movedIds = transactionService.findByAccount(account.id()).stream().map(Transaction::id).toList();
@@ -244,7 +244,7 @@ public class WriteUseCase {
                                                   @Nullable Integer closingDay, @Nullable Integer dueDay) {
         val typeName = Strings.upper(type);
         val valid = Arrays.stream(Account.Type.values()).anyMatch(t -> t.name().equals(typeName));
-        if (!valid) return Result.failure(new BusinessError.Validation("Unknown account type: " + type));
+        if (!valid) return Result.failure(new BusinessError.Validation("Unknown account type: %s", type));
         return Result.success(new Account(accountId, name, Account.Type.valueOf(typeName), active, personId, color,
                 creditLimit, overdraftLimit, closingDay, dueDay, null, null));
     }

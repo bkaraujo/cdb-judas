@@ -50,7 +50,7 @@ public class UserCategoryService {
     public Result<Category, BusinessError> findById(UUID id) {
         return repo.findById(id)
                 .<Result<Category, BusinessError>>map(Result::success)
-                .orElseGet(() -> Result.failure(new BusinessError.NotFound("Category not found: " + id)));
+                .orElseGet(() -> Result.failure(new BusinessError.NotFound("Category not found: %s", id)));
     }
 
     public Result<Void, BusinessError> validateNotMacroCategory(UUID categoryId) {
@@ -74,7 +74,7 @@ public class UserCategoryService {
                     }
                     return Result.success();
                 })
-                .orElseGet(() -> Result.failure(new BusinessError.NotFound("Category not found: " + parentId)));
+                .orElseGet(() -> Result.failure(new BusinessError.NotFound("Category not found: %s", parentId)));
     }
 
     public Result<Void, BusinessError> validateUniqueName(UUID personId, String nature, String name, @Nullable UUID parentId, @Nullable UUID excludeId) {
@@ -85,7 +85,7 @@ public class UserCategoryService {
                 .findFirst();
 
         if (optional.isPresent()) {
-            return Result.failure(new BusinessError.BusinessRule("Já existe uma categoria com o nome '" + name + "' neste nível"));
+            return Result.failure(new BusinessError.BusinessRule("Já existe uma categoria com o nome '%s' neste nível", name));
         }
         return Result.success();
     }
@@ -134,7 +134,7 @@ public class UserCategoryService {
     public Result<List<UUID>, BusinessError> subtreeIds(UUID id, UUID personId) {
         val all = repo.findAllByPerson(personId);
         val root = all.stream().filter(c -> c.id().equals(id)).findFirst();
-        if (root.isEmpty()) return Result.failure(new BusinessError.NotFound("Category not found: " + id));
+        if (root.isEmpty()) return Result.failure(new BusinessError.NotFound("Category not found: %s", id));
         if (root.get().isSystem()) {
             return Result.failure(new BusinessError.BusinessRule("Categoria de sistema não pode ser excluída"));
         }
@@ -150,11 +150,11 @@ public class UserCategoryService {
     public Result<List<UUID>, BusinessError> validateMoveTarget(UUID id, UUID targetId, UUID personId) {
         val all = repo.findAllByPerson(personId);
         val rootOpt = all.stream().filter(c -> c.id().equals(id)).findFirst();
-        if (rootOpt.isEmpty()) return Result.failure(new BusinessError.NotFound("Category not found: " + id));
+        if (rootOpt.isEmpty()) return Result.failure(new BusinessError.NotFound("Category not found: %s", id));
         val root = rootOpt.get();
 
         val targetOpt = all.stream().filter(c -> c.id().equals(targetId)).findFirst();
-        if (targetOpt.isEmpty()) return Result.failure(new BusinessError.NotFound("Category not found: " + targetId));
+        if (targetOpt.isEmpty()) return Result.failure(new BusinessError.NotFound("Category not found: %s", targetId));
         val target = targetOpt.get();
 
         if (target.parentId() == null) {

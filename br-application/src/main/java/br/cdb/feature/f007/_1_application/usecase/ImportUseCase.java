@@ -94,8 +94,7 @@ public class ImportUseCase {
         val closed = f002.closingPeriod();
         for (val date : dates) {
             if (closed.covers(date)) {
-                return Result.failure(new BusinessError.BusinessRule(
-                        "Período fechado. Lançamentos até " + closed.label() + " não podem ser importados."));
+                return Result.failure(new BusinessError.BusinessRule("Período fechado. Lançamentos até %s não podem ser importados.", closed.label()));
             }
         }
         return Result.success();

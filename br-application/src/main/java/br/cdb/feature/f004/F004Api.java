@@ -77,7 +77,7 @@ public class F004Api {
         val owned = tags().stream().map(TagView::id).collect(Collectors.toUnmodifiableSet());
         for (val tagId : tagIds) {
             if (!owned.contains(tagId)) {
-                return Result.failure(new BusinessError.NotFound("Tag not found: " + tagId));
+                return Result.failure(new BusinessError.NotFound("Tag not found: %s", tagId));
             }
         }
         return Result.success();

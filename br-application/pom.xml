@@ -24,7 +24,15 @@
         <dependency><groupId>io.quarkus</groupId><artifactId>quarkus-smallrye-openapi</artifactId></dependency>
         <dependency><groupId>io.quarkus</groupId><artifactId>quarkus-smallrye-health</artifactId></dependency>
         <dependency><groupId>io.quarkus</groupId><artifactId>quarkus-elytron-security-common</artifactId></dependency>
-        <dependency><groupId>io.quarkus</groupId><artifactId>quarkus-scheduler</artifactId></dependency>
+        <!-- quarkus-scheduler declara o bridge SLF4J do JBoss direto (por causa do cron-utils):
+             exclusão aqui, no ponto de declaração — o resto vem por quarkus-core, excluído no
+             dependencyManagement de br-parent (ver comentário lá). -->
+        <dependency>
+            <groupId>io.quarkus</groupId><artifactId>quarkus-scheduler</artifactId>
+            <exclusions>
+                <exclusion><groupId>org.jboss.slf4j</groupId><artifactId>slf4j-jboss-logmanager</artifactId></exclusion>
+            </exclusions>
+        </dependency>
 
         <dependency><groupId>com.fasterxml.jackson.dataformat</groupId><artifactId>jackson-dataformat-yaml</artifactId></dependency>
         <dependency><groupId>com.h2database</groupId><artifactId>h2</artifactId><scope>runtime</scope></dependency>

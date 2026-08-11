@@ -181,8 +181,7 @@ public class WriteUseCases {
         val closed = f002.closingPeriod();
         for (val date : dates) {
             if (closed.covers(date)) {
-                return Result.failure(new BusinessError.BusinessRule(
-                        "Período fechado. Lançamentos até " + closed.label() + " não podem ser alterados."));
+                return Result.failure(new BusinessError.BusinessRule("Período fechado. Lançamentos até %s não podem ser alterados.", closed.label()));
             }
         }
         return Result.success();
@@ -518,7 +517,7 @@ public class WriteUseCases {
 
     private static Result<Void, BusinessError> validateCardOwner(UUID accountId, CreditCard creditCard) {
         if (!accountId.equals(creditCard.accountId())) {
-            return Result.failure(new BusinessError.BusinessRule("CreditCard does not belong to account: " + creditCard.id()));
+            return Result.failure(new BusinessError.BusinessRule("CreditCard does not belong to account: %s", creditCard.id()));
         }
         return Result.success();
     }

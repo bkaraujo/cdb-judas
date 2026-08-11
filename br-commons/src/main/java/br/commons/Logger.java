@@ -32,6 +32,14 @@ public abstract class Logger {
     static {
         level(LogLevel.INFO);
 
+        // Precisa vir ANTES de JULBridgeHandler.install(): instalar o handler chama
+        // LogManager.getLogManager(), e o bloco estático de java.util.logging.LogManager lê
+        // java.util.logging.manager UMA vez, na inicialização da classe. Quem inicializa o JUL
+        // primeiro decide a implementação para sempre — se sobrar a default, o LogManager do
+        // JBoss (exigido pelo Quarkus) não entra mais e o JBossLoggerFinder só consegue reclamar:
+        // "The LogManager accessed before the java.util.logging.manager system property was set".
+        installJBossLogManager();
+
         JULBridgeHandler.install();
 
         // Configure JBoss Logging (used by Hibernate) to use SLF4J
@@ -60,6 +68,33 @@ public abstract class Logger {
                 }
             }
         });
+    }
+
+    /** Propriedade que o {@code java.util.logging.LogManager} lê para escolher a implementação. */
+    private static final String JUL_MANAGER_PROPERTY = "java.util.logging.manager";
+
+    /** Nome literal de propósito: referenciar a classe aqui carregaria — e inicializaria — o JUL. */
+    private static final String JBOSS_LOG_MANAGER = "org.jboss.logmanager.LogManager";
+
+    /**
+     * Elege o LogManager do JBoss como implementação do JUL, quando ele está no classpath e ninguém
+     * escolheu outra na linha de comando ({@code -Djava.util.logging.manager=...}, como faz o
+     * {@code quarkus:dev} e o fork do surefire).
+     *
+     * <p>{@code Class.forName} com {@code initialize=false} apenas carrega: inicializar a subclasse
+     * inicializaria {@code java.util.logging.LogManager} (a superclasse) e o JUL travaria na
+     * implementação default — exatamente o que este método existe para evitar. Sem a checagem de
+     * presença, apontar a propriedade para uma classe ausente faria o JUL falhar em carregá-la.
+     */
+    private static void installJBossLogManager() {
+        if (System.getProperty(JUL_MANAGER_PROPERTY) != null) return;
+
+        try {
+            Class.forName(JBOSS_LOG_MANAGER, false, Logger.class.getClassLoader());
+            System.setProperty(JUL_MANAGER_PROPERTY, JBOSS_LOG_MANAGER);
+        } catch (ClassNotFoundException | LinkageError e) {
+            // Sem jboss-logmanager no classpath: o JUL segue com a implementação default.
+        }
     }
 
     private static LogLevel level = LogLevel.INFO;

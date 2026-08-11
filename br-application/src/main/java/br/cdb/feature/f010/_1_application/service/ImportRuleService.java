@@ -37,7 +37,7 @@ public class ImportRuleService {
     public Result<ImportRule, BusinessError> find(UUID personId, UUID id) {
         return repository.findByPersonAndId(personId, id)
                 .<Result<ImportRule, BusinessError>>map(Result::success)
-                .orElseGet(() -> Result.failure(new BusinessError.NotFound("Regra não encontrada: " + id)));
+                .orElseGet(() -> Result.failure(new BusinessError.NotFound("Regra não encontrada: %s", id)));
     }
 
     public Result<ImportRule, BusinessError> create(
@@ -77,7 +77,7 @@ public class ImportRuleService {
             if (excludeId != null && excludeId.equals(other.id())) continue;
             val otherNormalized = normalize(other.name());
             if (normalized.contains(otherNormalized) || otherNormalized.contains(normalized)) {
-                return new BusinessError.Conflict("Padrão ambíguo com a regra existente '" + other.name() + "'");
+                return new BusinessError.Conflict("Padrão ambíguo com a regra existente '%s'", other.name());
             }
         }
         return null;

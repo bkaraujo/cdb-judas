@@ -6,22 +6,31 @@ import org.jspecify.annotations.NullMarked;
 public sealed interface BusinessError {
     
     @NullMarked
-    record NotFound(String message) implements BusinessError {}
+    record NotFound(String message) implements BusinessError {
+        public NotFound(String message, Object ... args) {
+            this(String.format(message, args));
+        }
+    }
     
     @NullMarked
-    record BusinessRule(String message) implements BusinessError {}
+    record BusinessRule(String message) implements BusinessError {
+        public BusinessRule(String message, Object ... args) {
+            this(String.format(message, args));
+        }
+    }
 
     @NullMarked
     record Validation(String message) implements BusinessError {
-
         public Validation(String message, Object ... args) {
             this(String.format(message, args));
         }
-
     }
 
     @NullMarked
     record Conflict(String message) implements BusinessError {
+        public Conflict(String message, Object ... args) {
+            this(String.format(message, args));
+        }
     }
 
 }

@@ -67,6 +67,24 @@
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
+            <!-- O provider SLF4J do projeto é br.commons.framework.logger.bridge.SLF4JServiceProvider
+                 (registrado em br-application/src/main/resources/META-INF/services). O JBoss traz o
+                 seu (org.jboss.slf4j:slf4j-jboss-logmanager) por baixo de quarkus-core — dois
+                 providers no classpath significam o aviso "Class path contains multiple SLF4J
+                 providers" e binding decidido pela ordem do classpath, não por escolha nossa.
+                 Exclusão declarada aqui vale para toda resolução transitiva de quarkus-core, ou
+                 seja, para qualquer extensão Quarkus que um módulo filho declare. Extensão que
+                 declara o bridge diretamente (quarkus-scheduler, quarkus-junit) precisa da exclusão
+                 no próprio ponto de declaração — confira com
+                 `mvn dependency:tree -Dincludes=org.jboss.slf4j` ao adicionar extensão nova. -->
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-core</artifactId>
+                <version>${quarkus.platform.version}</version>
+                <exclusions>
+                    <exclusion><groupId>org.jboss.slf4j</groupId><artifactId>slf4j-jboss-logmanager</artifactId></exclusion>
+                </exclusions>
+            </dependency>
         </dependencies>
     </dependencyManagement>
 
@@ -77,7 +95,13 @@
         <dependency><groupId>org.projectlombok</groupId><artifactId>lombok</artifactId><version>${dependency.runtime.lombok}</version><scope>provided</scope></dependency>
 
         <!-- Testes -->
-        <dependency><groupId>io.quarkus</groupId><artifactId>quarkus-junit</artifactId><scope>test</scope></dependency>
+        <!-- Exclusão do bridge SLF4J do JBoss: ver comentário no dependencyManagement acima. -->
+        <dependency>
+            <groupId>io.quarkus</groupId><artifactId>quarkus-junit</artifactId><scope>test</scope>
+            <exclusions>
+                <exclusion><groupId>org.jboss.slf4j</groupId><artifactId>slf4j-jboss-logmanager</artifactId></exclusion>
+            </exclusions>
+        </dependency>
         <dependency><groupId>org.junit.jupiter</groupId><artifactId>junit-jupiter-params</artifactId><scope>test</scope></dependency>
         <dependency><groupId>com.tngtech.archunit</groupId><artifactId>archunit-junit5</artifactId><version>${dependency.test.archunit}</version><scope>test</scope></dependency>
         <dependency><groupId>org.mockito</groupId><artifactId>mockito-core</artifactId><version>${dependency.test.mockito}</version><scope>test</scope></dependency>

@@ -141,7 +141,7 @@ public class InvoiceImportProcessor {
         for (val cardId : cmd.rows().stream().map(InvoiceConfirmCommand.Row::cardId).distinct().toList()) {
             val accountId = accountByCardId.get(cardId);
             if (accountId == null) {
-                return new Result.Failure<>(new BusinessError.NotFound("CreditCard not found: " + cardId));
+                return new Result.Failure<>(new BusinessError.NotFound("CreditCard not found: %s", cardId));
             }
             accountByCard.put(cardId, accountId);
         }

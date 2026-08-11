@@ -67,11 +67,11 @@ public final class Deletions {
         try {
             strategy = DeletionStrategy.valueOf(raw.trim().toUpperCase(Locale.ROOT));
         } catch (IllegalArgumentException ex) {
-            return Result.failure(new BusinessError.Validation("Estratégia de exclusão inválida: " + raw));
+            return Result.failure(new BusinessError.Validation("Estratégia de exclusão inválida: %s", raw));
         }
 
         if (!allowed.contains(strategy)) {
-            return Result.failure(new BusinessError.Validation("Estratégia de exclusão não suportada para este recurso: " + strategy));
+            return Result.failure(new BusinessError.Validation("Estratégia de exclusão não suportada para este recurso: %s", strategy));
         }
         if (strategy == DeletionStrategy.MOVE && targetId == null) {
             return Result.failure(new BusinessError.Validation("Estratégia MOVE requer targetId"));
