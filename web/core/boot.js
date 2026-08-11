@@ -29,7 +29,9 @@
     'feature/transactions.api.js',
     'feature/statement.js',
     'feature/credit-cards.js',
-    'feature/accounts-payable.js'
+    'feature/accounts-payable.js',
+    'feature/import-statement.js',
+    'feature/import-statement.api.js'
   ].forEach(inject);
 
   // ── LEGADO: barrels por camada, encolhem a cada fatia migrada (ver .claude/frontend-refactor.md) ──

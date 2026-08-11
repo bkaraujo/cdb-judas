@@ -3,7 +3,8 @@
  * card-statement (editor/exclusão/marcar-pago de uma linha — V1), credit-cards, statement,
  * accounts-payable, dashboard (leitura de transações no lugar do repositório cru — V2/V3/V5/V8).
  * accounts-payable também escreve (uma conta a pagar/receber É uma transação com status
- * pendente/agendado/confirmado) — create/update/remove/patchStatus expostos pelo mesmo motivo. */
+ * pendente/agendado/confirmado) — create/update/remove/patchStatus expostos pelo mesmo motivo.
+ * import-statement usa importPreview/importConfirm (fecha o lado transactions do V10/V11). */
 (function () {
   window.TransactionsApi = {
     list:           function (params) { return window.App.TransactionService.list(params); },
@@ -15,5 +16,7 @@
     openEditor:     function (opts) { return window.transactionActions.openFormModal(opts); },
     openDeleteFlow: function (tx, opts) { return window.transactionActions.openDeleteModal(tx, opts); },
     markPaid:       function (tx, opts) { return window.transactionActions.markPaid(tx, opts); },
+    importPreview:  function (file, password, accountId) { return window.App.TransactionService.importPreview(file, password, accountId); },
+    importConfirm:  function (payload) { return window.App.TransactionService.importConfirm(payload); },
   };
 })();

@@ -5,8 +5,7 @@
  * kernel (core/kernel/_0_domain/transaction.js) — statement/credit-cards/accounts-payable
  * precisam da forma pura pra renderizar linha de extrato/fatura/conta a pagar.
  *
- * Ainda depende de window.importStatementModal (fatia import-statement, legada) no botão
- * "Importar" — vira TransactionsApi/ImportStatementApi quando import-statement migrar. */
+ * Botão "Importar" abre a fatia import-statement via ImportStatementApi.open (fatia irmã). */
 
 /* application — Transaction use cases. */
 (function () {
@@ -1227,7 +1226,7 @@
   function bindRoot($root) {
     $root.on('click.tx', '[data-act=new]', function () { openFormModal(null); });
     $root.on('click.tx', '[data-act=import]', function () {
-      window.importStatementModal({ onImported: function () { return loadTransactions(); } });
+      window.ImportStatementApi.open({ onImported: function () { return loadTransactions(); } });
     });
 
     $root.on('click.tx', '[data-act=toggle-filters]', function () {

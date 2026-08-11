@@ -1,15 +1,15 @@
-/* pages/transactions/import-statement.js — Diálogos de importação de extrato/fatura em PDF.
- *
- * Modal único que cobre dois fluxos, detectados automaticamente pelo backend a partir do PDF:
+/* feature/import-statement.js — fatia Importação de extrato/fatura em PDF. Um arquivo por fatia:
+ * modal único que cobre dois fluxos, detectados automaticamente pelo backend a partir do PDF:
  *   - CREDIT_CARD_INVOICE: fatura de cartão (Santander/BTG) → escolhe cartão de destino.
  *   - BANK_STATEMENT: extrato de conta corrente (BTG) → escolhe conta + estado (novo/concilia/duplicado).
  *
- * Uso:
- *   window.importStatementModal({ onImported: function () { return loadTransactions(); } });
- *
- * O backend faz preview (TransactionService.importPreview) e confirmação
- * (TransactionService.importConfirm). PDFs protegidos pedem senha sob demanda
+ * Sem domain/application próprios: lê/escreve transações via TransactionsApi.{importPreview,
+ * importConfirm} (fecha o lado transactions do V10/V11), regras de nomenclatura via
+ * ImportRulesApi.{listCached,match} (fecha V11). PDFs protegidos pedem senha sob demanda
  * (códigos PASSWORD_REQUIRED / WRONG_PASSWORD).
+ *
+ * Uso (consumido por feature/transactions.js via ImportStatementApi.open, ver import-statement.api.js):
+ *   window.ImportStatementApi.open({ onImported: function () { return loadTransactions(); } });
  */
 (function () {
   window.importStatementModal = function (opts) {
@@ -245,10 +245,10 @@
     // fixa por importação, fatura casa por cartão) antes da linha ser renderizada. Roda antes de
     // alignGroupFields() na fatura, pra a propagação de parcelas herdar o resultado da 1ª parcela.
     function applyImportRules(rows) {
-      const rules = window.App.ImportRuleService.listCached();
+      const rules = window.ImportRulesApi.listCached();
       if (!rules.length) return;
       rows.forEach(function (row) {
-        const rule = window.Domain.ImportRuleMatcher.match(row.description, rules);
+        const rule = window.ImportRulesApi.match(row.description, rules);
         if (!rule) return;
         row.description = rule.name;
         if (rule.categoryId) row.categoryId = rule.categoryId;
@@ -496,7 +496,7 @@
       if (missingCategory) { window.toast('Selecione a categoria de cada lançamento', 'error'); return; }
 
       const $btn = m.$el.find('[data-act=do-confirm]').prop('disabled', true);
-      window.App.TransactionService.importConfirm({ type: 'CREDIT_CARD_INVOICE', rows: rows })
+      window.TransactionsApi.importConfirm({ type: 'CREDIT_CARD_INVOICE', rows: rows })
         .then(function (res) {
           const created = (res && res.created) || 0;
           const skipped = (res && res.skipped) || 0;
@@ -680,7 +680,7 @@
     // Re-runs the preview against the chosen account so duplicate/reconcile states refresh.
     function refreshStatementPreview() {
       if (!selectedFile) return;
-      window.App.TransactionService.importPreview(selectedFile, lastPassword, selectedAccountId)
+      window.TransactionsApi.importPreview(selectedFile, lastPassword, selectedAccountId)
         .then(function (preview) {
           if (preview && preview.documentType === 'BANK_STATEMENT') {
             applyImportRules((preview && preview.rows) || []);
@@ -725,7 +725,7 @@
       if (missingCategory) { window.toast('Selecione a categoria de cada lançamento', 'error'); return; }
 
       const $btn = m.$el.find('[data-act=do-statement-confirm]').prop('disabled', true);
-      window.App.TransactionService.importConfirm({ type: 'BANK_STATEMENT', accountId: selectedAccountId, rows: rows })
+      window.TransactionsApi.importConfirm({ type: 'BANK_STATEMENT', accountId: selectedAccountId, rows: rows })
         .then(function (res) {
           showConfirmSummary((res && res.created) || 0, (res && res.skipped) || 0, (res && res.reconciled) || 0);
           return onImported();
@@ -858,7 +858,7 @@
       lastPassword = password || null;
       const $btn = $(this).prop('disabled', true);
 
-      window.App.TransactionService.importPreview(selectedFile, lastPassword, null)
+      window.TransactionsApi.importPreview(selectedFile, lastPassword, null)
         .then(function (preview) { routePreview(preview); })
         .catch(function (err) {
           $btn.prop('disabled', false);
