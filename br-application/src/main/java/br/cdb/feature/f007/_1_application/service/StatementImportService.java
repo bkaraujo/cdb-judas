@@ -16,6 +16,8 @@ import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 
 import java.time.Clock;
+import java.time.LocalDate;
+import java.time.YearMonth;
 import java.time.ZoneId;
 import java.util.List;
 import java.util.UUID;
@@ -55,8 +57,9 @@ public class StatementImportService {
         Logger.trace("Processing %s bytes", fileBytes.length);
         return switch (extractor.extract(fileBytes, password)) {
 
-            case Result.Success(var text) -> {
-                if (text == null) yield new Result.Failure<>(new ImportError.NoTextLayer());
+            case Result.Success(var doc) -> {
+                if (doc == null) yield new Result.Failure<>(new ImportError.NoTextLayer());
+                val text = doc.text();
                 Logger.verbose("Extracted %s characters", text.length());
 
                 val capable = parsers.stream().filter(parser -> parser.parseable(text)).toList();
@@ -66,7 +69,7 @@ public class StatementImportService {
 
                 yield switch (capable.getFirst().parse(text)) {
                     case MonetaryDocument.Invoice(var issuer, var period, var statement, var printedTotals) ->
-                            invoiceProcessor.preview(personId, issuer, period, statement, printedTotals);
+                            invoiceProcessor.preview(personId, issuer, effectivePeriod(period, doc.createdAt()), statement, printedTotals);
                     case MonetaryDocument.Statement(var issuer, var statement) -> statementProcessor.preview(personId, issuer, statement, accountId);
                 };
             }
@@ -78,6 +81,17 @@ public class StatementImportService {
                 case ExtractionFailure.TooManyPages(int pages, int maxPages) -> new ImportError.TooManyPages(pages, maxPages);
             });
         };
+    }
+
+    /**
+     * O período impresso da fatura vence; quando o parser não achou nenhum (template antigo que não
+     * imprime ano em lugar nenhum), cai pro {@code CreationDate} do próprio PDF — ainda um sinal real
+     * por documento, ao contrário do "hoje" que {@link InvoiceImportProcessor} usa como último
+     * recurso se isto também faltar.
+     */
+    private static @Nullable YearMonth effectivePeriod(@Nullable YearMonth printed, @Nullable LocalDate createdAt) {
+        if (printed != null) return printed;
+        return createdAt != null ? YearMonth.from(createdAt) : null;
     }
 
     public Result<ImportResult, BusinessError> confirm(UUID personId, InvoiceConfirmCommand cmd) {

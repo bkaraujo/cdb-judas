@@ -11,6 +11,7 @@ import lombok.val;
 
 import java.io.IOException;
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -64,6 +65,12 @@ abstract class AbstractImportTest extends BaseHttpTest {
     /** Preview de um fixture anonimizado ({@code /faturas/…}, {@code /extratos/…}). */
     protected JsonPath previewFixture(String resource) throws IOException {
         return preview(fixturePdf(resource)).statusCode(200).extract().jsonPath();
+    }
+
+    /** Preview de um texto de documento sintético com {@code CreationDate} carimbado no PDF —
+     *  exercita a âncora de fallback quando o texto impresso não carrega ano nenhum. */
+    protected JsonPath previewOf(String documentText, LocalDate createdAt) throws IOException {
+        return preview(PdfFixtures.withText(documentText, createdAt)).statusCode(200).extract().jsonPath();
     }
 
     protected static byte[] fixturePdf(String resource) throws IOException {

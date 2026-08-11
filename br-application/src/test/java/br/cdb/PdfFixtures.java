@@ -19,6 +19,9 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
+import java.time.LocalDate;
+import java.time.ZoneId;
+import java.util.GregorianCalendar;
 import java.util.Objects;
 
 /**
@@ -54,6 +57,21 @@ public final class PdfFixtures {
                 writePage(doc, lines, i, Math.min(i + LINES_PER_PAGE, lines.length));
             }
             if (doc.getNumberOfPages() == 0) doc.addPage(new PDPage(pageSize()));
+            return bytes(doc);
+        }
+    }
+
+    /** Como {@link #withText(String)}, mas carimba o próprio {@code /CreationDate} do PDF — usado pra
+     *  exercitar a âncora de fallback de faturas cujo texto impresso não carrega ano nenhum. */
+    public static byte[] withText(String text, LocalDate createdAt) throws IOException {
+        try (PDDocument doc = new PDDocument()) {
+            String[] lines = text.split("\\R", -1);
+            for (int i = 0; i < lines.length; i += LINES_PER_PAGE) {
+                writePage(doc, lines, i, Math.min(i + LINES_PER_PAGE, lines.length));
+            }
+            if (doc.getNumberOfPages() == 0) doc.addPage(new PDPage(pageSize()));
+            doc.getDocumentInformation().setCreationDate(
+                    GregorianCalendar.from(createdAt.atStartOfDay(ZoneId.systemDefault())));
             return bytes(doc);
         }
     }

@@ -370,6 +370,21 @@ class F007InvoiceImportResourceTest extends AbstractImportTest {
     }
 
     @Test
+    void ancoraNoCreationDateDoPdfQuandoAFaturaNaoImprimeAnoNenhum() throws IOException {
+        // Regressão: fatura BTG de template antigo (ex.: "Fatura Jan_25.pdf" real) que só imprime
+        // "Fatura de Janeiro" — nenhum ano em todo o documento. O único sinal de data é o CreationDate
+        // do próprio PDF, não o dia do upload.
+        val createdAt = LocalDate.now().minusYears(1).withMonth(1).withDayOfMonth(7);
+        val json = previewOf(btgInvoiceNoYear("R$ 50,00Presente16 Dez", "R$ 199,90Amazon01 Jan"), createdAt);
+
+        val dezembro = onlyRowWithDescription(json, "Presente");
+        val janeiro = onlyRowWithDescription(json, "Amazon");
+
+        assertEquals((createdAt.getYear() - 1) + "-12-16", dezembro.get("date"));
+        assertEquals(createdAt.getYear() + "-01-01", janeiro.get("date"));
+    }
+
+    @Test
     void statusSeparaAParcelaDoMesCorrenteDasFuturas() throws IOException {
         // Período = mês corrente: a 1ª parcela cai neste mês (confirmada), as três seguintes no futuro.
         val period = YearMonth.now();
@@ -449,6 +464,18 @@ class F007InvoiceImportResourceTest extends AbstractImportTest {
                 "BTG Pactual S.A",
                 "CNPJ 30.306.294/0001-45",
                 "Fatura de %s de %d".formatted(MONTHS[period.getMonthValue() - 1], period.getYear()),
+                "Lançamentos do cartão físico | Fulano | Final 0020 Total do cartão: R$ 0,00",
+                "Total de compras e despesas");
+        return header + "\n" + String.join("\n", chargeLines) + "\nR$ 0,00";
+    }
+
+    /** Fatura BTG de template antigo cujo cabeçalho não imprime ano nenhum — casamento de
+     *  BTGInvoiceParser#FATURA_PERIOD falha, forçando o fallback por CreationDate do PDF. */
+    private static String btgInvoiceNoYear(String... chargeLines) {
+        val header = String.join("\n",
+                "BTG Pactual S.A",
+                "CNPJ 30.306.294/0001-45",
+                "Fatura de Janeiro",
                 "Lançamentos do cartão físico | Fulano | Final 0020 Total do cartão: R$ 0,00",
                 "Total de compras e despesas");
         return header + "\n" + String.join("\n", chargeLines) + "\nR$ 0,00";

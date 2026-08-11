@@ -12,9 +12,16 @@ public sealed interface BusinessError {
     record BusinessRule(String message) implements BusinessError {}
 
     @NullMarked
-    record Validation(String message) implements BusinessError {}
+    record Validation(String message) implements BusinessError {
+
+        public Validation(String message, Object ... args) {
+            this(String.format(message, args));
+        }
+
+    }
 
     @NullMarked
-    record Conflict(String message) implements BusinessError {}
+    record Conflict(String message) implements BusinessError {
+    }
 
 }

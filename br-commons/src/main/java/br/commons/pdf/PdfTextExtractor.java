@@ -11,5 +11,5 @@ import org.jspecify.annotations.Nullable;
 @NullMarked
 public interface PdfTextExtractor {
 
-    Result<String, ExtractionFailure> extract(byte[] bytes, @Nullable String password);
+    Result<ExtractedDocument, ExtractionFailure> extract(byte[] bytes, @Nullable String password);
 }

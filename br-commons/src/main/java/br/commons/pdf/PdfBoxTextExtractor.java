@@ -10,6 +10,7 @@ import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 
 import java.io.IOException;
+import java.time.LocalDate;
 
 /**
  * Sole owner of the Apache PDFBox dependency. Turns PDF bytes into text, mapping
@@ -26,7 +27,7 @@ public final class PdfBoxTextExtractor implements PdfTextExtractor {
     }
 
     @Override
-    public Result<String, ExtractionFailure> extract(byte[] bytes, @Nullable String password) {
+    public Result<ExtractedDocument, ExtractionFailure> extract(byte[] bytes, @Nullable String password) {
         val hasPassword = password != null && !password.isBlank();
         try (PDDocument document = open(bytes, password, hasPassword)) {
             val pages = document.getNumberOfPages();
@@ -37,7 +38,7 @@ public final class PdfBoxTextExtractor implements PdfTextExtractor {
             if (text.isBlank()) {
                 return new Result.Failure<>(new ExtractionFailure.NoTextLayer());
             }
-            return Result.success(text);
+            return Result.success(new ExtractedDocument(text, creationDate(document)));
         } catch (InvalidPasswordException e) {
             return new Result.Failure<>(hasPassword
                     ? new ExtractionFailure.WrongPassword()
@@ -46,6 +47,15 @@ public final class PdfBoxTextExtractor implements PdfTextExtractor {
             // Corrupt / not-a-PDF / otherwise unreadable → no usable text layer.
             return new Result.Failure<>(new ExtractionFailure.NoTextLayer());
         }
+    }
+
+    /** The PDF's own {@code /CreationDate}, read in its own recorded offset — never the server's zone. */
+    private static @Nullable LocalDate creationDate(PDDocument document) {
+        val calendar = document.getDocumentInformation().getCreationDate();
+        if (calendar == null) {
+            return null;
+        }
+        return calendar.toInstant().atZone(calendar.getTimeZone().toZoneId()).toLocalDate();
     }
 
     private static PDDocument open(byte[] bytes, @Nullable String password, boolean hasPassword) throws IOException {
