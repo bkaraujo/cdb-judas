@@ -4,7 +4,6 @@
   const base = 'core/_1_domain/';
   const files = [
     'budget.js',
-    'payable.js',
     'balance-sheet.js',
     'dashboard-aggregations.js'
   ];

@@ -15,7 +15,6 @@
     'dashboard/balance-sheet.js',
     'dashboard.js',
     'transactions/import-statement.js',
-    'accounts-payable.js',
     'budget.js'
   ];
   files.forEach(function (path) {

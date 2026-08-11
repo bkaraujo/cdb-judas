@@ -1,3 +1,127 @@
+/* feature/accounts-payable.js — fatia A Pagar/Receber, vista filtrada sobre transactions (sem
+ * recurso backend próprio — A Pagar/Receber É uma transação pendente/agendada). Um arquivo por
+ * fatia: domain → application → infrastructure/primary, cada bloco abaixo é um IIFE
+ * independente (comentário original de cada arquivo preservado como separador de seção). Sem
+ * secondary própria: lê e escreve via TransactionsApi (fatia irmã) — fecha V5. */
+
+/* domain — Payable / Receivable rules. Pure. */
+(function () {
+  const TYPES  = { PAYABLE: 'PAYABLE', RECEIVABLE: 'RECEIVABLE' };
+  const STATUS = {
+    PENDING:   'pending',
+    SCHEDULED: 'scheduled',
+    CONFIRMED: 'confirmed',
+    CANCELLED: 'cancelled',
+  };
+
+  function normalize(raw) {
+    if (!raw) return null;
+    return {
+      id:         raw.id,
+      name:       raw.name || raw.description || '',
+      amount:     +raw.amount || 0,
+      due:        raw.due || raw.date || null,
+      status:     String(raw.status || STATUS.PENDING).toLowerCase(),
+      categoryId: raw.categoryId,
+      accountId:  raw.accountId,
+      type:       String(raw.type || TYPES.PAYABLE).toUpperCase(),
+    };
+  }
+
+  function isReceivable(p) { return !!p && p.type === TYPES.RECEIVABLE; }
+  function isPayable(p)    { return !!p && p.type === TYPES.PAYABLE; }
+  function isActive(p)     { return !!p && p.status !== STATUS.CANCELLED; }
+
+  /* Transaction nature derived from payable type. */
+  function natureOf(typeOrPayable) {
+    const t = typeof typeOrPayable === 'string' ? typeOrPayable : (typeOrPayable && typeOrPayable.type);
+    return String(t || '').toUpperCase() === TYPES.RECEIVABLE ? 'income' : 'expense';
+  }
+
+  /* Filter list by due date inside a Period. */
+  function inPeriod(items, period) {
+    return (items || []).filter(function (p) {
+      if (!p.due) return false;
+      return window.Domain.Period.containsDate(period, p.due);
+    });
+  }
+
+  function periodTotals(items, period) {
+    const inP = inPeriod(items, period);
+    let payable = 0, receivable = 0;
+    for (let i = 0; i < inP.length; i++) {
+      const p = inP[i];
+      if (!isActive(p)) continue;
+      const v = Math.abs(p.amount);
+      if (isReceivable(p)) receivable += v; else payable += v;
+    }
+    return { payable: payable, receivable: receivable, result: receivable - payable };
+  }
+
+  function statusBadgeVariant(status) {
+    const s = String(status || '').toLowerCase();
+    if (s === STATUS.CONFIRMED) return 'income';
+    if (s === STATUS.SCHEDULED) return 'warning';
+    if (s === STATUS.CANCELLED) return 'muted';
+    return 'expense';
+  }
+
+  window.Domain = window.Domain || {};
+  window.Domain.Payable = {
+    TYPES: TYPES,
+    STATUS: STATUS,
+    normalize: normalize,
+    isReceivable: isReceivable,
+    isPayable: isPayable,
+    isActive: isActive,
+    natureOf: natureOf,
+    inPeriod: inPeriod,
+    periodTotals: periodTotals,
+    statusBadgeVariant: statusBadgeVariant,
+  };
+})();
+
+/* _2_application/payable-service.js — "A Pagar / A Receber" como filtro de transações pendentes.
+ * Não há recurso de payables: A Pagar = despesas pendentes; A Receber = receitas pendentes. */
+(function () {
+  let txRepo = null;
+
+  function init(deps) { txRepo = deps.repo; return { ready: true }; }
+
+  // Adapta a transação ao formato consumido pela tela (Domain.Payable): due, amount positivo, type label.
+  function adapt(label) {
+    return function (txs) {
+      return (Array.isArray(txs) ? txs : []).map(function (t) {
+        return {
+          id: t.id,
+          description: t.description,
+          due: t.date,
+          amount: Math.abs(+t.amount || 0),
+          accountId: t.accountId,
+          categoryId: t.categoryId,
+          status: t.status,
+          type: label,
+        };
+      });
+    };
+  }
+
+  function listPayable()    { return txRepo.list('status=pending&type=expense').then(adapt('PAYABLE')); }
+  function listReceivable() { return txRepo.list('status=pending&type=income').then(adapt('RECEIVABLE')); }
+
+  function periodTotals(items, period) { return window.Domain.Payable.periodTotals(items, period); }
+  function inPeriod(items, period)     { return window.Domain.Payable.inPeriod(items, period); }
+
+  window.App = window.App || {};
+  window.App.PayableService = {
+    init: init,
+    listPayable: listPayable,
+    listReceivable: listReceivable,
+    periodTotals: periodTotals,
+    inPeriod: inPeriod,
+  };
+})();
+
 /* pages/accounts-payable.js — A Pagar e Receber.
  * Lists from API.accountsPayable (listPayable + listReceivable), filters by period (month/year on `due`).
  * Summary card (3-col), tabs (pagar/receber), card-list rows with status dot + badge + amount + actions.
@@ -417,8 +541,8 @@
 
       const $btn = m.$el.find('[data-act=save]').prop('disabled', true);
       const p = isEdit
-        ? window.App.TransactionService.update(existing.id, payload)
-        : window.App.TransactionService.create(payload);
+        ? window.TransactionsApi.update(existing.id, payload)
+        : window.TransactionsApi.create(payload);
 
       p.then(function () {
         m.close();
@@ -440,7 +564,7 @@
       title: 'Excluir Conta',
       body: window.modalText('Excluir <strong>' + esc(item.name || 'conta') + '</strong>? Esta ação não pode ser desfeita.'),
       onConfirm: function (m, reEnable) {
-        window.App.TransactionService.remove(item.accountId, item.id).then(function () {
+        window.TransactionsApi.remove(item.accountId, item.id).then(function () {
           m.close();
           window.toast('Conta excluída', 'success');
           return loadData();
@@ -455,7 +579,7 @@
   // ── Mark as paid ──────────────────────────────────────────
   function markPaid(item) {
     const today = new Date().toISOString().slice(0, 10);
-    window.App.TransactionService.patchStatus(item.accountId, item.id, 'confirmed', today).then(function () {
+    window.TransactionsApi.patchStatus(item.accountId, item.id, 'confirmed', today).then(function () {
       window.toast('Conta confirmada', 'success');
       return loadData();
     }).catch(function (err) {
