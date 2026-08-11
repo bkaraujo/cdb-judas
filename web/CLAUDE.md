@@ -72,3 +72,15 @@ o `localStorage` é apenas **cache espelho** para boot sem flash.
 + No login, `applyServer` reconcilia: **o servidor vence**; se o `theme` do servidor é nulo, o valor do cliente é ensinado de volta via `PATCH`.
 + `theme.js` e `sidebar.js` leem/gravam via `preferences-service`, nunca `localStorage` cru.
 + Local-only (não sincronizado): última tela, grupos da sidebar, ajustes do dashboard.
+
+### 007 — Seleção de Categoria/Tag
+
+Ver `docs/frontend/category-tag-pickers.md`. Regras:
+
++ Categoria: `window.categoryPickerHtml(...)` (`pickers.js`) — encapsula `<select>` escondido + `searchSelectHtml`.
++ Tag: `window.tagsDropdownHtml(tagIds, key, { matchSelect: true })` — estado no array JS do chamador.
++ Elegibilidade: sempre via `flatCategories(nature, excludeRoots, keepId)` — sem exceção.
++ Placeholder: `<option value="" selected>Selecione</option>` explícito quando não há seleção válida.
++ Quick-create: inserir opção na mão (`refreshSearchSelect` / `appendTagRow`), não esperar SSE.
++ Dentro de `overflow:scroll`: passar `floating: true` — o painel é ancorado em `position:fixed`.
++ Exceções: seletor de categoria-pai, alvos de MOVE do `linkedDeleteDialog`.

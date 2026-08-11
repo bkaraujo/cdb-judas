@@ -7,6 +7,7 @@
     'format.js',
     'ui.js',
     'helpers.js',
+    'pickers.js',
     'delete-dialog.js',
     'closing-dialog.js',
     'theme.js',

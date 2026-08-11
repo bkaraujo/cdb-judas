@@ -73,6 +73,7 @@ O stack JSON de `br.commons` sobrevive só como resíduo: `br.cdb.core.persisten
 | `docs/backend/invoice-cycle.md` | **Ciclo de fatura de cartão** — contrato da regra duplicada backend (`f002.InvoiceCycle`) / frontend (`Domain.Invoice`); compra de cartão debita a conta no vencimento |
 | `docs/backend/quality-and-build.md` | Gate PMD/CPD, gotchas de build Java 25, verificação sem `mvn`, setup de IDE |
 | `docs/frontend/api-web.md` | Integração do frontend com a API REST |
+| `docs/frontend/category-tag-pickers.md` | **Padrão de seleção de Categoria/Tag** — fonte de dados, elegibilidade, widgets (categoria combobox / tag multi-select), placeholder, quick-create, ancoragem, exceções, matriz de conformidade |
 | `docs/architecture-backend.mermaid` | **Pacotes (backend)** — placement de classes por pacote + dependências permitidas/proibidas |
 | `docs/architecture-backend-classes.mermaid` | **Classes (backend)** — VSA + Hexagonal materializados numa fatia exemplar (transactions/monetary) |
 | `docs/architecture-backend-activity.mermaid` | **Atividade (backend)** — fluxo de uma requisição mutadora: filtros → Resource → Facade → UseCase → Result |
