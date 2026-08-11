@@ -270,9 +270,12 @@ button { font-family: var(--font); cursor: pointer; border: none; outline: none;
 /* ───── Search dropdown (mesma pele do <select>, painel com filtro ao-vivo) ─────
  * Usado pelo multi-select de tags (checkboxes) e pelo combobox de categoria (linhas
  * de single-select, com um <select> nativo escondido ao lado pra manter toda leitura/
- * escrita existente funcionando — ver `syncSearchSelect`/`searchSelectHtml` em ui.js).
+ * escrita existente funcionando — ver `refreshSearchSelect`/`searchSelectHtml` em ui.js).
  * O painel é position:absolute sobre um <details> position:relative, então abrir/fechar
  * nunca empurra o layout ao redor (ao contrário de crescer em fluxo).
+ * `.is-floating` (opção `floating`) troca pra position:fixed com left/top/width escritos
+ * inline pelo JS: dentro de um ancestral com overflow:scroll — a tabela de import — um
+ * painel absoluto seria recortado.
  */
 .search-dropdown { position: relative; }
 .search-dropdown-summary {
@@ -284,6 +287,17 @@ button { font-family: var(--font); cursor: pointer; border: none; outline: none;
 }
 .search-dropdown-summary::-webkit-details-marker { display: none; }
 .search-dropdown-summary::marker { content: ''; }
+/* Densidade de linha de tabela (import): mesma pele, do tamanho dos <select> vizinhos. O rótulo
+   de categoria é encadeado ("Pai / Filho") e estouraria a coluna — corta com reticências. */
+.search-dropdown-summary-sm {
+  padding: 4px 6px; font-size: 12px; border-radius: var(--radius-sm);
+  max-width: 200px; min-width: 90px;
+}
+/* min-width:0 é o que permite o item flex encolher abaixo do conteúdo — sem isso não há reticências. */
+.search-dropdown-summary-sm > [data-region$="-summary-text"] {
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0;
+}
+.search-dropdown-summary[data-disabled] { pointer-events: none; opacity: 0.6; }
 .search-dropdown[open] > .search-dropdown-summary {
   border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-light);
 }
@@ -295,6 +309,8 @@ button { font-family: var(--font); cursor: pointer; border: none; outline: none;
   padding: 6px; background: var(--bg-card); border: 1px solid var(--border);
   border-radius: var(--radius-sm); box-shadow: 0 8px 24px rgba(0,0,0,0.25);
 }
+/* left/top/width vêm inline do JS (positionFloatingPanel); z-index acima do modal (:1000). */
+.search-dropdown-panel.is-floating { position: fixed; right: auto; z-index: 1100; }
 .search-dropdown-search { flex-shrink: 0; }
 .search-dropdown-items { display: flex; flex-direction: column; gap: 2px; overflow-y: auto; max-height: 200px; }
 .search-dropdown-row {

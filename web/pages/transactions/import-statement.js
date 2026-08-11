@@ -114,10 +114,22 @@
     }
 
     // Import category set for a given movement type (statement rows can be income or expense).
+    // Memoizado por tipo dentro do passe de render: flatCategories monta o rótulo encadeado de
+    // cada categoria e ordena com localeCompare — rodar isso por linha, numa fatura com centenas
+    // de linhas, é o custo dominante do preview. keepId (categoria inativa da linha) só é raro,
+    // então o cache serve quem não precisa dele e os demais recalculam.
+    let catCache = {};
+
     function importCategoriesFor(type, keepId) {
-      const nature = type === 'income' ? 'INCOME' : 'EXPENSE';
+      const key = type === 'income' ? 'income' : 'expense';
+      const cached = catCache[key];
+      const covered = cached && (!keepId || cached.some(function (c) { return String(c.id) === String(keepId); }));
+      if (covered) return cached;
+      const nature = key === 'income' ? 'INCOME' : 'EXPENSE';
       const byNature = flatCategories(nature, true, keepId);
-      return byNature.length ? byNature : flatCategories(null, true, keepId);
+      const list = byNature.length ? byNature : flatCategories(null, true, keepId);
+      if (!keepId) catCache[key] = list;
+      return list;
     }
 
     function typeSelectHtml(selectedType, idx) {
@@ -129,16 +141,22 @@
         '</select>';
     }
 
-    // Monta as <option>s de categoria com placeholder explícito ("Selecione") quando não há
-    // seleção válida — sem isso, o browser marca a 1ª opção como selecionada por conta própria
-    // (visualmente e em .val()), indistinguível de uma escolha real do usuário.
-    function categoryOptionsHtml(cats, selectedId) {
-      if (!cats.length) return '<option value="">Sem categorias</option>';
+    // Lista de opções da linha com placeholder explícito ("Selecione") quando não há seleção
+    // válida — sem isso, o browser marca a 1ª opção como selecionada por conta própria (visualmente
+    // e em .val()), indistinguível de uma escolha real do usuário. Uma lista só, consumida pelo
+    // <select> nativo e pelo combobox por cima dele, pra os dois nunca divergirem.
+    function categoryItems(cats, selectedId) {
+      if (!cats.length) return [{ value: '', label: 'Sem categorias' }];
+      const items = cats.map(function (c) { return { value: c.id, label: c.label }; });
       const hasSel = cats.some(function (c) { return String(c.id) === String(selectedId); });
-      const placeholder = hasSel ? '' : '<option value="" selected>Selecione</option>';
-      return placeholder + cats.map(function (c) {
-        const sel = String(c.id) === String(selectedId) ? ' selected' : '';
-        return '<option value="' + esc(c.id) + '"' + sel + '>' + esc(c.label) + '</option>';
+      return hasSel ? items : [{ value: '', label: 'Selecione' }].concat(items);
+    }
+
+    function categoryOptionsHtml(cats, selectedId) {
+      const target = String(selectedId == null ? '' : selectedId);
+      return categoryItems(cats, selectedId).map(function (it) {
+        const sel = String(it.value) === target ? ' selected' : '';
+        return '<option value="' + esc(it.value) + '"' + sel + '>' + esc(it.label) + '</option>';
       }).join('');
     }
 
@@ -152,18 +170,39 @@
       const stillValid = cats.some(function (c) { return String(c.id) === String(currentId); });
       const selId = stillValid ? currentId : '';
       $cat.html(categoryOptionsHtml(cats, selId)).prop('disabled', !cats.length);
+      window.refreshSearchSelect(catSelectId(idx));
       const data = previewData || statementData;
       if (data && data.rows && data.rows[idx]) data.rows[idx].categoryId = selId || null;
     }
 
+    // O <select> nativo continua sendo a fonte da verdade da linha (é o que confirmImport, o
+    // save-antes-do-sort e propagateGroupEdit leem/escrevem); some da tela e ganha o combobox com
+    // busca por cima — a mesma pele da tela de edição de lançamento. `lazy`: as linhas do painel
+    // só são montadas ao abrir, senão uma fatura de centenas de linhas dobraria o DOM de opções.
+    // `floating`: a tabela vive dentro de um container overflow:scroll, que recortaria um painel
+    // position:absolute.
+    function catSelectId(idx) {
+      return 'imp-cat-' + uniq + '-' + idx;
+    }
+
+    function categoryComboHtml(cats, selectedId, idx, extraSelectAttrs, locked) {
+      const id = catSelectId(idx);
+      const title = locked ? 'Segue a categoria da 1ª parcela do grupo' : '';
+      return '<select id="' + id + '" data-row-category data-idx="' + idx + '"' + extraSelectAttrs +
+          (cats.length ? '' : ' disabled') + ' style="display:none;">' +
+          categoryOptionsHtml(cats, selectedId) +
+        '</select>' +
+        window.searchSelectHtml(categoryItems(cats, selectedId), selectedId, id + '-dd', {
+          pairedSelectId: id, lazy: true, floating: true, compact: true,
+          disabled: locked || !cats.length, title: title
+        });
+    }
+
     function categorySelectHtml(selectedId, idx, groupId, locked, type) {
       const groupAttr = ' data-group-id="' + esc(groupId || '') + '"';
-      const cats = importCategoriesFor(type, selectedId);
       const lockedAttrs = locked ? ' disabled title="Segue a categoria da 1ª parcela do grupo"' : '';
-      return '<select data-row-category data-idx="' + idx + '"' + groupAttr + lockedAttrs +
-        (cats.length ? '' : ' disabled') + ' ' +
-        'style="width:auto;font-size:12px;padding:4px 6px;' + (locked ? 'opacity:0.6;' : '') + '">' +
-        categoryOptionsHtml(cats, selectedId) + '</select>';
+      return categoryComboHtml(importCategoriesFor(type, selectedId), selectedId, idx,
+        groupAttr + lockedAttrs, locked);
     }
 
     // Mesma convenção de create-edit.js: sem valor da regra, pré-seleciona o centro "Variável"
@@ -244,7 +283,7 @@
           '</td>' +
           '<td style="padding:8px 10px;">' + typeSelectHtml(row.type, idx) + '</td>' +
           '<td style="padding:8px 10px;">' + categorySelectHtml(row.categoryId, idx, row.groupId, groupLocked, row.type) + '</td>' +
-          '<td style="padding:8px 10px;">' + window.tagsDropdownHtml(row.tagIds, idx) + '</td>' +
+          '<td style="padding:8px 10px;">' + window.tagsDropdownHtml(row.tagIds, idx, { matchSelect: true, floating: true, compact: true }) + '</td>' +
           '<td style="padding:8px 10px;">' + costCenterSelectHtml(row.costCenterId, idx) + '</td>' +
           '<td style="padding:8px 10px;text-align:center;color:var(--text-secondary);">' + parcela + '</td>' +
           '<td style="padding:8px 10px;">' +
@@ -263,6 +302,7 @@
 
     function showPreview(preview) {
       previewData = preview;
+      catCache = {};
       const issuer = (preview && preview.issuer) || 'UNKNOWN';
       const label = issuer === 'SANTANDER' ? 'Santander'
                   : issuer === 'BTG' ? 'BTG Pactual'
@@ -435,9 +475,7 @@
     }
 
     function statementCategorySelectHtml(selectedId, idx, type) {
-      const cats = importCategoriesFor(type, selectedId);
-      return '<select data-row-category data-idx="' + idx + '"' + (cats.length ? '' : ' disabled') + ' ' +
-        'style="width:auto;font-size:12px;padding:4px 6px;">' + categoryOptionsHtml(cats, selectedId) + '</select>';
+      return categoryComboHtml(importCategoriesFor(type, selectedId), selectedId, idx, '', false);
     }
 
     function stateBadge(st) {
@@ -473,7 +511,7 @@
           '</td>' +
           '<td style="padding:8px 10px;">' + typeSelectHtml(row.type, idx) + '</td>' +
           '<td style="padding:8px 10px;">' + statementCategorySelectHtml(row.categoryId, idx, row.type) + '</td>' +
-          '<td style="padding:8px 10px;">' + window.tagsDropdownHtml(row.tagIds, idx) + '</td>' +
+          '<td style="padding:8px 10px;">' + window.tagsDropdownHtml(row.tagIds, idx, { matchSelect: true, floating: true, compact: true }) + '</td>' +
           '<td style="padding:8px 10px;">' + costCenterSelectHtml(row.costCenterId, idx) + '</td>' +
           '<td style="padding:8px 10px;">' +
             '<input type="text" data-row-description data-idx="' + idx + '" value="' + esc(row.description) + '" ' +
@@ -490,6 +528,7 @@
 
     function showStatementPreview(preview) {
       statementData = preview;
+      catCache = {};
       const issuer = (preview && preview.issuer) || 'UNKNOWN';
       const issuerLabel = issuer === 'SANTANDER' ? 'Santander'
                         : issuer === 'BTG' ? 'BTG Pactual'
@@ -657,6 +696,7 @@
           m.$el.find('[data-row-description][data-idx="' + i + '"]').val(value);
         } else if (field === 'categoryId') {
           m.$el.find('[data-row-category][data-idx="' + i + '"]').val(value);
+          window.refreshSearchSelect(catSelectId(i)); // o combobox por cima mostra o rótulo, não o valor
         } else if (field === 'type') {
           m.$el.find('[data-row-type][data-idx="' + i + '"]').val(value);
           refreshCategoryOptions(i, value);
