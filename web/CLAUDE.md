@@ -89,37 +89,59 @@ Ver `docs/frontend/category-tag-pickers.md`. Regras:
 
 ### 008 — Fatias de Feature (Vertical Slice físico)
 
-Espelha, sem bundler, o mesmo conceito de `br.cdb.feature.fNNN` do backend: cada domínio é uma
-pasta auto-contida em `web/js/feature/<slice>/`, com as 3 camadas do padrão 002 dentro
-(`_0_domain`/`_1_application`/`_2_infrastructure/{primary,secondary}`), mais um
-`<slice>.barrel.js` na raiz (equivalente ao `FNNNModule` — só sequencia os próprios arquivos,
-`domain → application → secondary → primary`).
+Espelha, sem bundler, o mesmo conceito de `br.cdb.feature.fNNN` do backend, adaptado à realidade
+de Vanilla JS sem módulos: kernel e composition-root ficam em `web/core/` (renomeado de
+`web/js/`); cada fatia de feature vira **um único arquivo** `web/feature/<slice>.js`, sobe pra
+fora de `core/`, direto em `web/` — sem subpasta, sem barrel próprio. Dentro do arquivo, os
+blocos (domain → application → infrastructure/secondary → infrastructure/primary) continuam
+como IIFEs independentes concatenados na mesma ordem que um barrel garantiria, cada bloco com o
+comentário do arquivo original preservado como separador de seção.
 
-+ **`web/js/kernel/`** — equivalente ao `f000`: as 3 camadas de código transversal (usado por 3+
-  domínios não relacionados — `http-client`, `sse-client`, `cache-store`, `ui`, `format`,
-  `pickers`, `router`, `sidebar`, etc). Todas as fatias podem depender do kernel; o kernel não
-  depende de nenhuma fatia.
-+ **`web/js/composition-root/`** — equivalente ao `f999`: único lugar que faz o wiring de DI
+```
+web/
+├── core/                    equivalente a f000 (kernel) + f999 (composition-root)
+│   ├── boot.js               único <script> referenciado por index.html
+│   ├── kernel/                _0_domain/_1_application/_2_infrastructure/{primary,secondary}
+│   │   └── kernel.barrel.js   sequencia os arquivos do kernel (equivalente ao F000Module)
+│   ├── composition-root/      wiring de DI, shell, login-modal, bootstrap
+│   │   └── composition-root.barrel.js
+│   └── _1_domain/, _2_application/, _3_infrastructure/   legado, encolhe a cada fatia migrada
+├── feature/                  cada fatia é 1 arquivo, sem subpasta
+│   ├── cost-centers.js
+│   ├── tags.js
+│   ├── categories.js
+│   ├── settings.js
+│   ├── import-rules.js
+│   ├── reports.js
+│   └── accounts.js
+└── pages/                    legado, encolhe a cada fatia migrada
+```
+
++ **`web/core/kernel/`** — equivalente ao `f000`: código transversal (usado por 3+ domínios não
+  relacionados — `http-client`, `sse-client`, `cache-store`, `ui`, `format`, `pickers`, `router`,
+  `sidebar`, etc), organizado nas 3 camadas do padrão 002. Todas as fatias podem depender do
+  kernel; o kernel não depende de nenhuma fatia.
++ **`web/core/composition-root/`** — equivalente ao `f999`: único lugar que faz o wiring de DI
   (`composition-root.js`, injeta `Infra.*Repository` em `App.*Service`) e conhece mais de uma
   fatia ao mesmo tempo. Roda por último no boot.
-+ **Regra**: uma fatia nunca referencia `window.*` definido por outra fatia, a menos que venha do
-  kernel ou de um `<slice>.api.js` na raiz da fatia dona (mecanismo público explícito,
-  equivalente ao `FNNNApi` — só existe nas fatias com consumidor cross-slice comprovado).
-  Enforced heuristicamente por `node web/tools/check-slices.js` (regex, não AST — roda manual
-  antes de cada commit de fase, não trava CI).
-+ **`web/js/boot.js`** — único `<script>` referenciado por `index.html`; injeta
-  `kernel.barrel.js` → fatias migradas → barrels legados por camada (`js/_1_domain.js` etc.,
-  encolhem a cada fatia migrada) → `composition-root.barrel.js`.
++ **Regra**: uma fatia (`web/feature/<slice>.js`) nunca referencia `window.*` definido por outra
+  fatia, a menos que venha do kernel ou de um `web/feature/<slice>.api.js` (mecanismo público
+  explícito, equivalente ao `FNNNApi` — só existe nas fatias com consumidor cross-slice
+  comprovado). Enforced heuristicamente por `node web/tools/check-slices.js` (regex, não AST —
+  roda manual antes de cada commit de fase, não trava CI).
++ **`web/core/boot.js`** — único `<script>` referenciado por `index.html`; injeta
+  `kernel/kernel.barrel.js` → cada `feature/<slice>.js` (injeção direta, sem barrel — um arquivo
+  só) → barrels legados por camada (`core/_1_domain.js` etc., encolhem a cada fatia migrada) →
+  `composition-root/composition-root.barrel.js`.
 + **Vocabulário puro sobe pro kernel, mesmo quando a fatia "dona" existe**: `Domain.Category` e
-  `Domain.Tag` vivem em `kernel/_0_domain` (não em `feature/categories`/`feature/tags`) porque os
-  widgets genéricos de picker do padrão 007 (`flatCategories`, `categoryPickerHtml`,
+  `Domain.Tag` vivem em `core/kernel/_0_domain` (não em `feature/categories.js`/`feature/tags.js`)
+  porque os widgets genéricos de picker do padrão 007 (`flatCategories`, `categoryPickerHtml`,
   `tagsDropdownHtml`) — usados por toda fatia — dependem da forma pura desses modelos. Mesmo
-  critério que já valia para `money.js`/`period.js`. O *serviço*/CRUD continua na fatia
-  (`_1_application`/`_2_infrastructure`).
+  critério que já valia para `money.js`/`period.js`. O *serviço*/CRUD continua na fatia.
 + **Kernel precisando de uma ação de fatia** (ex.: quick-create de categoria/tag a partir de um
-  picker do kernel): kernel expõe um slot vazio (`window.configureQuickCreate(kind, provider)`
-  em `pickers.js`; mesmo padrão para `Sidebar.configureClosing`), e `composition-root.js` injeta
-  o provider real depois que a fatia carregou — kernel nunca referencia `App.<Slice>Service` por
-  nome.
+  picker do kernel, ou o botão de fechamento contábil na sidebar): kernel expõe um slot vazio
+  (`window.configureQuickCreate(kind, provider)` em `pickers.js`; `Sidebar.configureClosing(...)`)
+  e `composition-root.js` injeta o provider real depois que a fatia carregou — kernel nunca
+  referencia `App.<Slice>Service`/função de outra fatia por nome.
 + Migração em andamento, fatia por fatia — estado atual e roadmap das fatias com coupling
   cruzado (ainda não migradas) em `.claude/frontend-refactor.md` (local, gitignored).
