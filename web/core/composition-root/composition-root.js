@@ -56,7 +56,7 @@
   // TransactionsApi (contrato público), nunca o repositório cru de outra fatia.
   window.App.PayableService.init     ({ repo: window.TransactionsApi });
   window.App.BalanceService.init     ({ repo: repos.balance });
-  window.App.StatementService.init   ({ txRepo: window.TransactionsApi, balance: window.App.BalanceService, cache: window.App.CacheStore });
+  window.App.StatementService.init   ({ txRepo: window.TransactionsApi, balance: window.AccountsApi, cache: window.App.CacheStore });
   window.App.BudgetService.init      ({ repo: repos.budget });
   window.App.CreditCardService.init  ({ txRepo: window.TransactionsApi, cache: window.App.CacheStore });
   window.App.ClosingService.init     ({ repo: repos.closing });

@@ -16,7 +16,6 @@
     'dashboard.js',
     'transactions/import-statement.js',
     'accounts-payable.js',
-    'statement.js',
     'credit-cards.js',
     'card-statement.js',
     'budget.js'

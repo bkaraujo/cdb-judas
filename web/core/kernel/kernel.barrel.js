@@ -11,6 +11,10 @@
  * critério que já valia para money.js: vocabulário puro e sem dependência sobe pro kernel; o
  * o serviço/CRUD de categorias/tags continua nas próprias fatias (_1_application/_2_infrastructure).
  *
+ * transaction.js (movido de feature/transactions.js) e statement-item.js (nunca teve fatia
+ * própria): mesmo critério — statement/credit-cards/accounts-payable precisam de Transaction.
+ * describe/statusBadgeVariant e StatementItem.buildRows pra montar linha de extrato/fatura.
+ *
  * account.js (movido de feature/accounts.js) e invoice.js (nunca teve fatia própria): pure
  * vocabulary do "cluster financeiro" — transactions/credit-cards/statement/dashboard precisam de
  * Domain.Account.{currentBalance,hasCards} e Domain.Invoice.{collapse,fetchWindow,dueDate} pra
@@ -30,7 +34,9 @@
     'category.js',
     'tag.js',
     'account.js',
-    'invoice.js'
+    'invoice.js',
+    'transaction.js',
+    'statement-item.js'
   ];
 
   const applicationBase = 'core/kernel/_1_application/';

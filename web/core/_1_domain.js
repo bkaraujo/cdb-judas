@@ -6,7 +6,6 @@
     'credit-card.js',
     'budget.js',
     'payable.js',
-    'statement-item.js',
     'balance-sheet.js',
     'dashboard-aggregations.js'
   ];

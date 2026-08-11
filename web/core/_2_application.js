@@ -4,7 +4,6 @@
   const base = 'core/_2_application/';
   const files = [
     'payable-service.js',
-    'statement-service.js',
     'budget-service.js',
     'credit-card-service.js',
     'dashboard-service.js'
