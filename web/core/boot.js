@@ -22,7 +22,10 @@
     'feature/categories.js',
     'feature/settings.js',
     'feature/import-rules.js',
-    'feature/accounts.js'
+    'feature/import-rules.api.js',
+    'feature/accounts.js',
+    'feature/transactions.js',
+    'feature/transactions.api.js'
   ].forEach(inject);
 
   // ── LEGADO: barrels por camada, encolhem a cada fatia migrada (ver .claude/frontend-refactor.md) ──

@@ -6,7 +6,6 @@
 
   const secondaryBase = 'core/_3_infrastructure/secondary/';
   const secondaryFiles = [
-    'transaction-repository.js',
     'budget-repository.js',
     'dashboard-repository.js'
   ];

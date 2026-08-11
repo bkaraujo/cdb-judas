@@ -3,11 +3,7 @@
 (function () {
   const base = 'core/_1_domain/';
   const files = [
-    'invoice.js',
     'credit-card.js',
-    'transaction.js',
-    'category.js',
-    'tag.js',
     'budget.js',
     'payable.js',
     'statement-item.js',

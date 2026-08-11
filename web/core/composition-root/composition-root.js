@@ -52,11 +52,13 @@
   window.App.CostCenterService.init  ({ repo: repos.costCenters,  cache: window.App.CacheStore });
   window.App.ImportRuleService.init  ({ repo: repos.importRules,  cache: window.App.CacheStore });
   window.App.TransactionService.init ({ repo: repos.transactions, cache: window.App.CacheStore });
-  window.App.PayableService.init     ({ repo: repos.transactions });
+  // Payable/Statement/CreditCard/Dashboard leem transações mas não são donas da fatia — recebem
+  // TransactionsApi (contrato público), nunca o repositório cru de outra fatia.
+  window.App.PayableService.init     ({ repo: window.TransactionsApi });
   window.App.BalanceService.init     ({ repo: repos.balance });
-  window.App.StatementService.init   ({ txRepo: repos.transactions, balance: window.App.BalanceService, cache: window.App.CacheStore });
+  window.App.StatementService.init   ({ txRepo: window.TransactionsApi, balance: window.App.BalanceService, cache: window.App.CacheStore });
   window.App.BudgetService.init      ({ repo: repos.budget });
-  window.App.CreditCardService.init  ({ txRepo: repos.transactions, cache: window.App.CacheStore });
+  window.App.CreditCardService.init  ({ txRepo: window.TransactionsApi, cache: window.App.CacheStore });
   window.App.ClosingService.init     ({ repo: repos.closing });
   // Fechamento contábil é da fatia accounts — kernel (sidebar.js) não pode referenciar
   // App.ClosingService/closingDialog por nome (fatia irmã).
@@ -64,7 +66,7 @@
     get:        function ()     { return window.App.ClosingService.get(); },
     openDialog: function (opts) { return window.closingDialog(opts); },
   });
-  window.App.DashboardService.init   ({ repo: repos.dashboard, txRepo: repos.transactions });
+  window.App.DashboardService.init   ({ repo: repos.dashboard, txRepo: window.TransactionsApi });
   const loginUrl = baseUrl.replace(/\/api\/?$/, '') + '/login';
   function loginFn(username, password) {
     return fetch(loginUrl, {

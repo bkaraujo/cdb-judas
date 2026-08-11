@@ -9,7 +9,12 @@
  * categoryPickerHtml, tagsDropdownHtml, tagFlagHtml — padrão 007 do CLAUDE.md, usados por toda
  * fatia) dependem da forma pura desses modelos (labelChain/isRoot/resolve, sem I/O). Mesmo
  * critério que já valia para money.js: vocabulário puro e sem dependência sobe pro kernel; o
- * o serviço/CRUD de categorias/tags continua nas próprias fatias (_1_application/_2_infrastructure). */
+ * o serviço/CRUD de categorias/tags continua nas próprias fatias (_1_application/_2_infrastructure).
+ *
+ * account.js (movido de feature/accounts.js) e invoice.js (nunca teve fatia própria): pure
+ * vocabulary do "cluster financeiro" — transactions/credit-cards/statement/dashboard precisam de
+ * Domain.Account.{currentBalance,hasCards} e Domain.Invoice.{collapse,fetchWindow,dueDate} pra
+ * montar linha de extrato/fatura. invoice.js depende de account.js (hasCards) — account antes. */
 (function () {
   function inject(base, path) {
     const s = document.createElement('script');
@@ -23,7 +28,9 @@
     'period.js',
     'money.js',
     'category.js',
-    'tag.js'
+    'tag.js',
+    'account.js',
+    'invoice.js'
   ];
 
   const applicationBase = 'core/kernel/_1_application/';

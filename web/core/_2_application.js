@@ -3,7 +3,6 @@
 (function () {
   const base = 'core/_2_application/';
   const files = [
-    'transaction-service.js',
     'payable-service.js',
     'statement-service.js',
     'budget-service.js',
