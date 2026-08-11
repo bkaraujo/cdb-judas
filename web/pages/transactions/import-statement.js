@@ -346,7 +346,10 @@
           '</td>' +
           '<td style="padding:8px 10px;">' + typeSelectHtml(row.type, idx) + '</td>' +
           '<td style="padding:8px 10px;">' + categorySelectHtml(row.categoryId, idx, row.groupId, groupLocked, row.type) + '</td>' +
-          '<td style="padding:8px 10px;">' + window.tagsDropdownHtml(row.tagIds, idx, { floating: true, compact: true }) + '</td>' +
+          '<td style="padding:8px 10px;">' + window.tagsDropdownHtml(row.tagIds, idx, {
+            floating: true, compact: true, disabled: groupLocked,
+            title: groupLocked ? 'Segue as tags da 1ª parcela do grupo' : ''
+          }) + '</td>' +
           '<td style="padding:8px 10px;">' + costCenterSelectHtml(row.costCenterId, idx) + '</td>' +
           '<td style="padding:8px 10px;text-align:center;color:var(--text-secondary);">' + parcela + '</td>' +
           '<td style="padding:8px 10px;">' +
@@ -738,7 +741,9 @@
     function alignGroupFields(rows) {
       const masterByGroup = {};
       rows.forEach(function (r) {
-        if (r.groupId && r.installmentNumber === 1) masterByGroup[r.groupId] = { categoryId: r.categoryId, description: r.description, type: r.type };
+        if (r.groupId && r.installmentNumber === 1) {
+          masterByGroup[r.groupId] = { categoryId: r.categoryId, description: r.description, type: r.type, tagIds: (r.tagIds || []).slice() };
+        }
       });
       rows.forEach(function (r) {
         const master = r.groupId && r.installmentNumber !== 1 ? masterByGroup[r.groupId] : null;
@@ -746,6 +751,7 @@
         r.categoryId = master.categoryId;
         r.description = master.description;
         r.type = master.type;
+        r.tagIds = master.tagIds.slice();
       });
     }
 
@@ -765,6 +771,13 @@
         } else if (field === 'type') {
           m.$el.find('[data-row-type][data-idx="' + i + '"]').val(value);
           refreshCategoryOptions(i, value);
+        } else if (field === 'tagIds') {
+          const ids = (value || []).map(String);
+          const $checks = m.$el.find('[data-region=tags-dropdown][data-idx="' + i + '"] [data-tag-check]');
+          $checks.each(function () {
+            $(this).prop('checked', ids.indexOf(String($(this).attr('data-tag-id'))) !== -1);
+          });
+          if ($checks.length) window.refreshTagsDropdownLabel($checks.first());
         }
       });
     }
@@ -799,6 +812,7 @@
       const current = (row.tagIds || []).map(String);
       row.tagIds = this.checked ? current.concat([tagId]) : current.filter(function (id) { return id !== tagId; });
       window.refreshTagsDropdownLabel($(this));
+      propagateGroupEdit(idx, 'tagIds', row.tagIds);
     });
 
     m.$el.on('change', '[data-row-costcenter]', function () {

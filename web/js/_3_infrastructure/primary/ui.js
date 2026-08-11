@@ -256,21 +256,25 @@
     const tags = window.App.CacheStore.tags();
     if (!tags.length) return '<span style="font-size:11px;color:var(--text-muted);">Sem tags</span>';
     const sel = (selectedIds || []).map(String);
+    const locked = !!(opts && opts.disabled);
+    const disabledAttr = locked ? ' disabled' : '';
     const items = tags.map(function (t) {
       const color = t.color || 'var(--text-muted)';
       const checked = sel.indexOf(String(t.id)) !== -1 ? ' checked' : '';
       return '<label class="search-dropdown-row">' +
         '<input type="checkbox" data-tag-check data-idx="' + esc(key) + '" data-tag-id="' + esc(t.id) + '"' +
-          checked + ' style="cursor:pointer;" />' +
+          checked + disabledAttr + ' style="cursor:pointer;" />' +
         '<span style="width:8px;height:8px;border-radius:50%;flex-shrink:0;background:' + esc(color) + ';"></span>' +
         esc(t.name) +
       '</label>';
     }).join('');
+    const titleAttr = (opts && opts.title) ? ' title="' + esc(opts.title) + '"' : '';
+    const summaryDisabledAttr = locked ? ' data-disabled="1"' : '';
 
     return (
       '<details class="search-dropdown" data-region="tags-dropdown" data-idx="' + esc(key) + '"' +
           floatingAttr(opts) + '>' +
-        '<summary class="' + summaryClass(opts) + '" data-region="tags-summary">' +
+        '<summary class="' + summaryClass(opts) + '" data-region="tags-summary"' + titleAttr + summaryDisabledAttr + '>' +
           '<span data-region="tags-summary-text">' + esc(tagsCountLabel(sel.length)) + '</span>' +
           '<span class="search-dropdown-chevron">' + window.icon('chevronDown', 14) + '</span>' +
         '</summary>' +
