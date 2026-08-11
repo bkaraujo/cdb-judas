@@ -292,6 +292,7 @@
             esc(tx.date ? fmtDate(tx.date) : '') +
           '</span>' +
           '<span style="' + catStyle + '">' + esc(catLbl) + '</span>' +
+          window.tagFlagHtml(tx.tagIds) +
           '<span style="' + descStyle + '">' +
             esc(window.Domain.Transaction.describe(tx) || '—') +
           '</span>' +

@@ -268,6 +268,7 @@
               esc(fmtDate(tx.date)) +
             '</span>' +
             '<span style="' + catStyle + '">' + esc(catLbl) + '</span>' +
+            window.tagFlagHtml(tx.tagIds) +
             descHtml +
             amountHtml +
             '<span style="font-size:13px;font-weight:700;color:' + window.valueColor(runningBal) + ';min-width:100px;text-align:right;">' +

@@ -446,6 +446,7 @@
           '</span>' +
           '<span style="' + accStyle + '">' + esc(accName) + '</span>' +
           '<span style="' + catStyle + '">' + esc(catLbl) + '</span>' +
+          window.tagFlagHtml(tx.tagIds) +
           descHtml +
           '<span class="badge badge-' + esc(STATUS_BADGE[stKey] || 'muted') + '" ' +
           'style="flex-shrink:0;">' + esc(STATUS_LABEL[stKey] || stKey) + '</span>' +

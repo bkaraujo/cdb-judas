@@ -334,6 +334,74 @@
     refreshTagsDropdownLabel($row.find('[data-tag-check]'));
   }
 
+  /* ---- Indicador de tags da linha (extrato, fatura, lançamentos) ----
+   * Célula de largura fixa: com tags vira um ícone que abre o painel no hover; sem tags fica
+   * vazia, mas ocupando o mesmo espaço — senão as colunas dançam entre linhas com e sem tag.
+   * Resolve contra o catálogo em cache (nenhuma requisição): id órfão não conta, então uma tag
+   * apagada com DETACH não deixa um ícone que abre um painel vazio.
+   */
+  const TAG_FLAG_WIDTH = 16;
+
+  function resolvedTags(tagIds) {
+    return window.Domain.Tag.resolve(tagIds, window.App.CacheStore.tags());
+  }
+
+  function tagFlagHtml(tagIds) {
+    const cell = 'display:inline-flex;align-items:center;justify-content:center;' +
+      'width:' + TAG_FLAG_WIDTH + 'px;flex-shrink:0;';
+    const tags = resolvedTags(tagIds);
+    if (!tags.length) return '<span style="' + cell + '"></span>';
+    const ids = tags.map(function (t) { return String(t.id); }).join(',');
+    return '<span class="tag-flag" style="' + cell + '" data-tag-ids="' + esc(ids) + '" ' +
+      'aria-label="' + esc(tagsCountLabel(tags.length)) + '">' +
+      window.icon('tag', 13) +
+    '</span>';
+  }
+
+  /* Painel do indicador: position:fixed ancorado no ícone, e não um filho position:absolute, porque
+     toda linha de lançamento mora dentro de um card com overflow:auto — um painel absoluto seria
+     recortado na primeira e na última linha. O preço é que ele não acompanha rolagem: por isso o
+     listener de scroll em captura o fecha. */
+  let $tagPopover = null;
+
+  function hideTagPopover() {
+    if (!$tagPopover) return; // guard: o listener de scroll dispara o tempo todo
+    $tagPopover.remove();
+    $tagPopover = null;
+  }
+
+  function showTagPopover($flag) {
+    hideTagPopover();
+    const ids = String($flag.attr('data-tag-ids') || '').split(',').filter(Boolean);
+    const tags = resolvedTags(ids);
+    if (!tags.length) return;
+
+    const rows = tags.map(function (t) {
+      const color = t.color || 'var(--text-muted)';
+      return '<tr>' +
+        '<td><span class="tag-pop-dot" style="background:' + esc(color) + ';"></span></td>' +
+        '<td>' + esc('#' + (t.name || '')) + '</td>' +
+      '</tr>';
+    }).join('');
+    const $pop = $tagPopover = $('<div id="tag-popover"><table>' + rows + '</table></div>').appendTo('body');
+
+    // Preferência à esquerda do ícone (a direita da linha é ocupada por valor/saldo/ações);
+    // sem espaço, vai pra direita. Clamp vertical pra não vazar da viewport.
+    const r = $flag[0].getBoundingClientRect();
+    const w = $pop.outerWidth();
+    const h = $pop.outerHeight();
+    const gap = 8;
+    const left = (r.left - gap - w >= 4) ? (r.left - gap - w) : Math.min(r.right + gap, window.innerWidth - w - 4);
+    const top = Math.max(4, Math.min(r.top + r.height / 2 - h / 2, window.innerHeight - h - 4));
+    $pop.css({ left: Math.max(4, left) + 'px', top: top + 'px' });
+  }
+
+  $(document)
+    .on('mouseenter.tagflag', '.tag-flag', function () { showTagPopover($(this)); })
+    .on('mouseleave.tagflag', '.tag-flag', hideTagPopover);
+  // Captura: a rolagem que importa é a do card interno, que não borbulha até o document.
+  document.addEventListener('scroll', hideTagPopover, true);
+
   /* ---- Search dropdown: filtro ao-vivo compartilhado ----
    * Um único listener delegado cobre tanto o multi-select de tags (linhas com checkbox)
    * quanto o combobox de categoria (linhas de single-select) — ambos desenham suas linhas
@@ -458,6 +526,7 @@
     tagsDropdownHtml: tagsDropdownHtml,
     refreshTagsDropdownLabel: refreshTagsDropdownLabel,
     appendTagRow: appendTagRow,
+    tagFlagHtml: tagFlagHtml,
     searchSelectHtml: searchSelectHtml,
     refreshSearchSelect: refreshSearchSelect,
   };
@@ -476,6 +545,7 @@
   window.tagsDropdownHtml = tagsDropdownHtml;
   window.refreshTagsDropdownLabel = refreshTagsDropdownLabel;
   window.appendTagRow = appendTagRow;
+  window.tagFlagHtml = tagFlagHtml;
   window.searchSelectHtml = searchSelectHtml;
   window.refreshSearchSelect = refreshSearchSelect;
 })();

@@ -53,6 +53,8 @@
           // Parcela: alimenta Domain.Transaction.describe na linha do extrato.
           installmentNumber: t.installmentNumber != null ? t.installmentNumber : null,
           totalInstallments: t.totalInstallments != null ? t.totalInstallments : null,
+          // Vínculos de tag: alimentam o indicador de tags da linha (UI.tagFlagHtml).
+          tagIds: Array.isArray(t.tagIds) ? t.tagIds : [],
         });
       });
     return rows;
