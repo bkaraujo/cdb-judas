@@ -1,5 +1,12 @@
 /* _3_infrastructure/primary/pickers.js — Shared picker UI components and related modals. */
 (function () {
+  // Quick-create (category/tag) precisa criar via o serviço da fatia dona — mas kernel não pode
+  // referenciar App.CategoryService/App.TagService por nome (violaria a regra de fatia). Mesmo
+  // padrão do Sidebar.configureClosing: kernel expõe um slot vazio, composition-root injeta o
+  // provider real depois que a fatia carregou.
+  const quickCreateProviders = { category: null, tag: null };
+  function configureQuickCreate(kind, provider) { quickCreateProviders[kind] = provider; }
+
   // Label for a freshly-created category not yet in the cache (SSE lag).
   function quickCategoryLabel(cat) {
     const name = cat.name || cat.description || '';
@@ -84,7 +91,7 @@
       const effectiveNature = fixedNature || $form.find('select[name=nature]').val() || 'EXPENSE';
 
       const $btn = m.$el.find('[data-act=qcat-save]').prop('disabled', true);
-      window.App.CategoryService.create({
+      quickCreateProviders.category.create({
         name: name,
         nature: effectiveNature,
         parentId: parentId,
@@ -154,7 +161,7 @@
       if (!name) { $name.trigger('focus'); return; }
 
       const $btn = m.$el.find('[data-act=qtag-save]').prop('disabled', true);
-      window.App.TagService.create({
+      quickCreateProviders.tag.create({
         name: name,
         color: $color.val() || QTAG_DEFAULT_COLOR,
       }).then(function (created) {
@@ -218,5 +225,6 @@
   window.quickCategoryLabel = quickCategoryLabel;
   window.openCategoryCreateModal = openCategoryCreateModal;
   window.openTagCreateModal = openTagCreateModal;
+  window.configureQuickCreate = configureQuickCreate;
   window.categoryPickerHtml = categoryPickerHtml;
 })();

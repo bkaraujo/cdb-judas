@@ -3,18 +3,7 @@
 (function () {
   const base = 'js/_2_application/';
   const files = [
-    'event-bus.js',
-    'cache-store.js',
-    'period-service.js',
-    'preferences-service.js',
-    'system-service.js',
-    'self-service.js',
-    'session-service.js',
     'account-service.js',
-    'category-service.js',
-    'tag-service.js',
-    'cost-center-service.js',
-    'import-rule-service.js',
     'transaction-service.js',
     'payable-service.js',
     'balance-service.js',

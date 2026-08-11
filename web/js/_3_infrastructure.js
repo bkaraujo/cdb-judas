@@ -3,38 +3,17 @@
 (function () {
   const primaryBase = 'js/_3_infrastructure/primary/';
   const primaryFiles = [
-    'icons.js',
-    'format.js',
-    'ui.js',
-    'helpers.js',
-    'pickers.js',
-    'delete-dialog.js',
-    'closing-dialog.js',
-    'theme.js',
-    'sidebar.data.js',
-    'sidebar.js',
-
-    'router.js'
+    'closing-dialog.js'
   ];
 
   const secondaryBase = 'js/_3_infrastructure/secondary/';
   const secondaryFiles = [
-    'storage.js',
-    'auth-store.js',
-    'http-client.js',
-    'self-repository.js',
     'account-repository.js',
-    'category-repository.js',
-    'tag-repository.js',
-    'cost-center-repository.js',
-    'import-rule-repository.js',
     'transaction-repository.js',
     'balance-repository.js',
     'budget-repository.js',
     'closing-repository.js',
-    'dashboard-repository.js',
-    'registry-bootstrap.js',
-    'sse-client.js'
+    'dashboard-repository.js'
   ];
 
   function inject(base, path) {

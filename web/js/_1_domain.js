@@ -3,16 +3,12 @@
 (function () {
   const base = 'js/_1_domain/';
   const files = [
-    'period.js',
-    'money.js',
     'account.js',
     'invoice.js',
     'credit-card.js',
     'transaction.js',
     'category.js',
     'tag.js',
-    'cost-center.js',
-    'import-rule-matcher.js',
     'budget.js',
     'payable.js',
     'statement-item.js',

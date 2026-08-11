@@ -1,0 +1,7 @@
+{
+  "name": "cdb-finance-web",
+  "private": true,
+  "scripts": {
+    "check:slices": "node tools/check-slices.js"
+  }
+}

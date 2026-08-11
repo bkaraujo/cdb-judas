@@ -23,13 +23,7 @@
     'credit-cards.js',
     'card-statement.js',
     'budget.js',
-    'reports.js',
-    'categories.js',
-    'cost-centers.js',
-    'accounts.js',
-    'tags.js',
-    'import-rules.js',
-    'settings.js'
+    'accounts.js'
   ];
   files.forEach(function (path) {
     const s = document.createElement('script');

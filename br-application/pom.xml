@@ -41,6 +41,27 @@
     </dependencies>
 
     <build>
+        <resources>
+            <resource>
+                <directory>src/main/resources</directory>
+                <filtering>true</filtering>
+            </resource>
+            <!-- SPA vanilla (sem etapa de build): copiada verbatim para o classpath. Quarkus serve
+                 conteúdo estático de META-INF/resources automaticamente (convenção servlet).
+                 Ancorado em maven.multiModuleProjectDirectory (raiz do repo) porque web/ vive lá,
+                 não dentro deste módulo — um <directory>web</directory> relativo resolveria contra
+                 o basedir deste pom e não acharia nada. -->
+            <resource>
+                <directory>${maven.multiModuleProjectDirectory}/web</directory>
+                <targetPath>META-INF/resources</targetPath>
+                <filtering>false</filtering>
+                <excludes>
+                    <exclude>CLAUDE.md</exclude>
+                    <exclude>package.json</exclude>
+                    <exclude>tools/**</exclude>
+                </excludes>
+            </resource>
+        </resources>
         <plugins>
             <!-- CoreModule lê o YAML pelo caminho em cdb.application.yaml (default: ./application.yaml,
                  relativo ao CWD). O fork do surefire roda em br-application/, onde não existe o arquivo

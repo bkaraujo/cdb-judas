@@ -45,6 +45,10 @@
   window.App.AccountService.init     ({ repo: repos.accounts,     cache: window.App.CacheStore });
   window.App.CategoryService.init    ({ repo: repos.categories,   cache: window.App.CacheStore });
   window.App.TagService.init         ({ repo: repos.tags,         cache: window.App.CacheStore });
+  // Quick-create do kernel (pickers.js) não pode referenciar App.CategoryService/App.TagService
+  // por nome (fatia irmã) — composition-root é quem conhece os dois lados.
+  window.configureQuickCreate('category', { create: function (payload) { return window.App.CategoryService.create(payload); } });
+  window.configureQuickCreate('tag',      { create: function (payload) { return window.App.TagService.create(payload); } });
   window.App.CostCenterService.init  ({ repo: repos.costCenters,  cache: window.App.CacheStore });
   window.App.ImportRuleService.init  ({ repo: repos.importRules,  cache: window.App.CacheStore });
   window.App.TransactionService.init ({ repo: repos.transactions, cache: window.App.CacheStore });
