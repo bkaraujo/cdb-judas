@@ -5,7 +5,6 @@
   const files = [
     'payable-service.js',
     'budget-service.js',
-    'credit-card-service.js',
     'dashboard-service.js'
   ];
   files.forEach(function (path) {

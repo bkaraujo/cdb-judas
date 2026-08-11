@@ -16,8 +16,6 @@
     'dashboard.js',
     'transactions/import-statement.js',
     'accounts-payable.js',
-    'credit-cards.js',
-    'card-statement.js',
     'budget.js'
   ];
   files.forEach(function (path) {
