@@ -285,16 +285,20 @@
 
   function renderAdvancedFilters() {
     const accs = accountsList();
-    const cats = flatCategories(null);
+    // excludeRoots: true — raiz nunca casa contra tx.categoryId (só subcategoria é atribuível a um
+    // lançamento), então oferecê-la no filtro só rende opção morta que nunca filtra nada.
+    const catFieldHtml = window.categoryPickerHtml({
+      items: flatCategories(null, true, state.filterCategory),
+      selectedId: state.filterCategory,
+      selectId: 'tx-filter-category',
+      selectAttrs: ' data-act="filter-category"',
+      placeholder: 'Todas',
+      alwaysPlaceholder: true,
+    });
 
     const accOpts = '<option value="">Todas</option>' + accs.map(function (a) {
       const sel = String(a.id) === String(state.filterAccount) ? ' selected' : '';
       return '<option value="' + esc(a.id) + '"' + sel + '>' + esc(a.name) + '</option>';
-    }).join('');
-
-    const catOpts = '<option value="">Todas</option>' + cats.map(function (c) {
-      const sel = String(c.id) === String(state.filterCategory) ? ' selected' : '';
-      return '<option value="' + esc(c.id) + '"' + sel + '>' + esc(c.label) + '</option>';
     }).join('');
 
     const stOpts = ['', 'confirmed', 'pending', 'scheduled', 'planed'].map(function (st) {
@@ -314,7 +318,7 @@
           '</div>' +
           '<div class="form-group">' +
             '<label class="form-label">Categoria</label>' +
-            '<select data-act="filter-category">' + catOpts + '</select>' +
+            catFieldHtml +
           '</div>' +
           '<div class="form-group">' +
             '<label class="form-label">Status</label>' +

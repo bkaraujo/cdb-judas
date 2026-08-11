@@ -278,13 +278,22 @@
 
     function natureForType(t) { return t === 'RECEIVABLE' ? 'INCOME' : 'EXPENSE'; }
 
-    function buildCatOptions(t, selectedId) {
-      const cats = flatCategories(natureForType(t), true);
-      if (!cats.length) return '<option value="">Nenhuma categoria disponível</option>';
-      return cats.map(function (c) {
-        const sel = String(c.id) === String(selectedId) ? ' selected' : '';
-        return '<option value="' + esc(c.id) + '"' + sel + '>' + esc(c.label) + '</option>';
-      }).join('');
+    // keepId: mantém a categoria já gravada na lista mesmo se foi inativada depois — sem isso, editar
+    // um item com categoria inativa perdia a categoria em silêncio (só reaparecia no próximo save).
+    function buildCatItems(t, keepId) {
+      const cats = flatCategories(natureForType(t), true, keepId);
+      if (!cats.length) return [{ value: '', label: 'Nenhuma categoria disponível' }];
+      return cats.map(function (c) { return { value: String(c.id), label: c.label }; });
+    }
+
+    function categoryFieldHtml(t, selectedId, keepId) {
+      return window.categoryPickerHtml({
+        items: buildCatItems(t, keepId),
+        selectedId: selectedId,
+        selectId: ids.category,
+        selectAttrs: ' name="categoryId" data-region="category-select"',
+        placeholder: 'Selecione',
+      });
     }
 
     const accOpts = accs.length
@@ -339,9 +348,9 @@
           '</div>' +
           '<div class="form-group">' +
             '<label class="form-label" for="' + ids.category + '">Categoria</label>' +
-            '<select id="' + ids.category + '" name="categoryId" data-region="category-select">' +
-              buildCatOptions(initial.type, initial.categoryId) +
-            '</select>' +
+            '<div data-region="category-select-wrap">' +
+              categoryFieldHtml(initial.type, initial.categoryId, initial.categoryId) +
+            '</div>' +
           '</div>' +
           '<div class="form-group">' +
             '<label class="form-label" for="' + ids.account + '">Conta</label>' +
@@ -373,8 +382,8 @@
       $row.empty();
       $row.append(typeBtnHtml('PAYABLE',    '↓ A Pagar',   'expense', t === 'PAYABLE'));
       $row.append(typeBtnHtml('RECEIVABLE', '↑ A Receber', 'income',  t === 'RECEIVABLE'));
-      const $cat = m.$body.find('[data-region=category-select]');
-      $cat.html(buildCatOptions(t, $cat.val()));
+      // Categoria não sobrevive à troca de tipo (nature muda) — sem keepId, sempre reseta ao placeholder.
+      m.$body.find('[data-region=category-select-wrap]').html(categoryFieldHtml(t, '', null));
     });
 
     function submit(e) {

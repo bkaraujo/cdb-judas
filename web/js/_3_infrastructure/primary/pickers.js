@@ -10,29 +10,43 @@
     return name;
   }
 
-  // Nature is fixed by the originating transaction type. On success the created
-  // category (with id) is handed to `onCreated` so the caller can select it.
+  // Nature is normally fixed by the originating transaction type. When `nature` is null (quick-create
+  // not tied to a single row, e.g. import preview header) the modal exposes Tipo as an editable
+  // dropdown instead of the disabled label, defaulting to Despesa.
   function openCategoryCreateModal(nature, onCreated) {
     const uniq = Date.now();
     const nameId = 'qcat-name-' + uniq;
     const parentSelId = 'qcat-parent-' + uniq;
-    const natureLabel = nature === 'INCOME' ? 'Receita' : 'Despesa';
+    const natureSelId = 'qcat-nature-' + uniq;
+    const fixedNature = (nature === 'INCOME' || nature === 'EXPENSE') ? nature : null;
+    const natureLabel = function (n) { return n === 'INCOME' ? 'Receita' : 'Despesa'; };
 
-    const roots = window.App.CacheStore.categories().filter(function (c) {
-      return String(c.nature || '').toUpperCase() === nature && !c.parentId;
-    }).slice().sort(window.sortByName);
+    function rootsFor(n) {
+      return window.App.CacheStore.categories().filter(function (c) {
+        return String(c.nature || '').toUpperCase() === n && !c.parentId;
+      }).slice().sort(window.sortByName);
+    }
 
-    const parentOpts = '<option value="">— Nenhuma (categoria raiz) —</option>' +
-      roots.map(function (p) {
-        return '<option value="' + esc(p.id) + '">' + esc(p.name) + '</option>';
-      }).join('');
+    function parentOptsFor(n) {
+      return '<option value="">— Nenhuma (categoria raiz) —</option>' +
+        rootsFor(n).map(function (p) {
+          return '<option value="' + esc(p.id) + '">' + esc(p.name) + '</option>';
+        }).join('');
+    }
+
+    const tipoFieldHtml = fixedNature
+      ? '<input type="text" value="' + esc(natureLabel(fixedNature)) + '" disabled />'
+      : '<select id="' + natureSelId + '" name="nature">' +
+          '<option value="EXPENSE">Despesa</option>' +
+          '<option value="INCOME">Receita</option>' +
+        '</select>';
 
     const bodyHtml =
       '<form data-form="qcat" autocomplete="off">' +
         '<div class="form-grid">' +
           '<div class="form-group full">' +
             '<label class="form-label">Tipo</label>' +
-            '<input type="text" value="' + esc(natureLabel) + '" disabled />' +
+            tipoFieldHtml +
           '</div>' +
           '<div class="form-group full">' +
             '<label class="form-label" for="' + nameId + '">Nome</label>' +
@@ -41,7 +55,7 @@
           '</div>' +
           '<div class="form-group full">' +
             '<label class="form-label" for="' + parentSelId + '">Categoria Pai (opcional)</label>' +
-            '<select id="' + parentSelId + '" name="parentId">' + parentOpts + '</select>' +
+            '<select id="' + parentSelId + '" name="parentId">' + parentOptsFor(fixedNature || 'EXPENSE') + '</select>' +
           '</div>' +
         '</div>' +
       '</form>';
@@ -56,16 +70,23 @@
     const $form = m.$body.find('form[data-form=qcat]');
     $form.find('input[name=name]').trigger('focus');
 
+    if (!fixedNature) {
+      $form.find('select[name=nature]').on('change', function () {
+        $form.find('select[name=parentId]').html(parentOptsFor(this.value));
+      });
+    }
+
     function submit(e) {
       if (e) e.preventDefault();
       const name = ($form.find('input[name=name]').val() || '').trim();
       if (!name) { $form.find('input[name=name]').trigger('focus'); return; }
       const parentId = $form.find('select[name=parentId]').val() || null;
+      const effectiveNature = fixedNature || $form.find('select[name=nature]').val() || 'EXPENSE';
 
       const $btn = m.$el.find('[data-act=qcat-save]').prop('disabled', true);
       window.App.CategoryService.create({
         name: name,
-        nature: nature,
+        nature: effectiveNature,
         parentId: parentId,
       }).then(function (created) {
         m.close();
@@ -157,13 +178,17 @@
     var selectId = opts.selectId || '';
     var selectAttrs = opts.selectAttrs || '';
     var placeholder = opts.placeholder || 'Selecione';
+    // alwaysPlaceholder: campo opcional onde "sem categoria" é uma escolha legítima, não só o estado
+    // de "nada selecionado ainda" — o placeholder some da lista quando true, senão o usuário não
+    // consegue voltar a limpar a seleção pelo próprio picker (ex.: regra de nomenclatura, filtro).
+    var alwaysPlaceholder = !!opts.alwaysPlaceholder;
 
     // Build item list with placeholder when no valid selection
     var hasSel = items.some(function (it) { return String(it.value || it.id) === selectedId && selectedId !== ''; });
     var ddItems;
     if (!items.length) {
       ddItems = [{ value: '', label: 'Sem categorias' }];
-    } else if (hasSel) {
+    } else if (hasSel && !alwaysPlaceholder) {
       ddItems = items.map(function (it) { return { value: String(it.value || it.id), label: it.label }; });
     } else {
       ddItems = [{ value: '', label: placeholder }].concat(

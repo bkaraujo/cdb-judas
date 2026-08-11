@@ -49,18 +49,6 @@
 
   function findById(id) { return window.byId(state.items, id); }
 
-  function categoryOptions(selectedId) {
-    const expenseCats = window.Domain.Category.filterByNature(
-      window.App.CacheStore.categories(), 'EXPENSE'
-    ).slice().sort(window.sortByName);
-    let html = '<option value="">— Selecione —</option>';
-    expenseCats.forEach(function (c) {
-      const sel = String(c.id) === String(selectedId) ? ' selected' : '';
-      html += '<option value="' + esc(c.id) + '"' + sel + '>' + esc(c.name) + '</option>';
-    });
-    return html;
-  }
-
   function categoryName(id) {
     const c = window.App.CacheStore.findById('categories', id);
     return c ? c.name : null;
@@ -251,6 +239,17 @@
     const uid = 'bd-' + Date.now();
     const amountInitial = initBudgeted > 0 ? window.maskCurrency(initBudgeted) : '';
 
+    // keepId: em edição, categoria já gravada continua na lista mesmo se foi inativada depois —
+    // o campo fica disabled (categoria não muda pós-criação), mas não pode sumir da tela.
+    const categoryFieldHtml = window.categoryPickerHtml({
+      items: flatCategories('EXPENSE', true, initCategoryId),
+      selectedId: initCategoryId,
+      selectId: uid + '-cat',
+      selectAttrs: ' name="categoryId"' + (isEdit ? ' disabled' : ''),
+      placeholder: '— Selecione —',
+      disabled: isEdit,
+    });
+
     const colorSwatches = PALETTE.map(function (c) {
       const active = c === initColor;
       return (
@@ -279,9 +278,7 @@
         '<div class="form-grid">' +
           '<div class="form-group full">' +
             '<label class="form-label" for="' + uid + '-cat">Categoria</label>' +
-            '<select id="' + uid + '-cat" name="categoryId"' + (isEdit ? ' disabled' : '') + '>' +
-              categoryOptions(initCategoryId) +
-            '</select>' +
+            categoryFieldHtml +
           '</div>' +
           '<div class="form-group full">' +
             '<label class="form-label" for="' + uid + '-amt">Valor orçado (R$)</label>' +

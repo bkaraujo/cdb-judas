@@ -144,7 +144,14 @@
     };
 
     const accountOptions = optionsHtml(window.accountsList(), initial.accountId, function (a) { return a.name; });
-    const categoryOptions = optionsHtml(window.flatCategories(null, true, initial.categoryId), initial.categoryId, function (c) { return c.label; });
+    const categoryFieldHtml = window.categoryPickerHtml({
+      items: window.flatCategories(null, true, initial.categoryId),
+      selectedId: initial.categoryId,
+      selectId: ids.category,
+      selectAttrs: ' name="categoryId"',
+      placeholder: '— Nenhuma —',
+      alwaysPlaceholder: true,
+    });
     const costCenterOptions = optionsHtml(window.App.CacheStore.costCenters(), initial.costCenterId, function (c) { return c.description || c.name || ''; });
 
     const bodyHtml =
@@ -161,7 +168,7 @@
           '</div>' +
           '<div class="form-group full">' +
             '<label class="form-label" for="' + ids.category + '">Categoria (opcional)</label>' +
-            '<select id="' + ids.category + '" name="categoryId">' + categoryOptions + '</select>' +
+            categoryFieldHtml +
           '</div>' +
           '<div class="form-group full">' +
             '<label class="form-label" for="' + ids.costCenter + '">Centro de custo (opcional)</label>' +

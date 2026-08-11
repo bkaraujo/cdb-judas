@@ -248,24 +248,18 @@
     return 'search-dropdown-summary' + ((opts && opts.compact) ? ' search-dropdown-summary-sm' : '');
   }
 
-  /** opts.matchSelect: pele igual ao <select> de categoria (usado na tela de edição de transação) —
+  /** Pele igual ao <select> de categoria (padrão único desde 007 — ver docs/frontend/category-tag-pickers.md):
    *  painel abre fora do fluxo (não empurra o layout) e ganha uma busca com filtro ao-vivo.
    *  opts.floating/opts.compact: ver searchSelectHtml — dentro de um ancestral com overflow:scroll
-   *  (a tabela de import), `floating` é obrigatório, senão o painel absoluto é recortado.
-   *  Sem matchSelect, mantém o visual compacto original, que cresce em fluxo normal. */
+   *  (a tabela de import), `floating` é obrigatório, senão o painel absoluto é recortado. */
   function tagsDropdownHtml(selectedIds, key, opts) {
     const tags = window.App.CacheStore.tags();
     if (!tags.length) return '<span style="font-size:11px;color:var(--text-muted);">Sem tags</span>';
     const sel = (selectedIds || []).map(String);
-    const matchSelect = !!(opts && opts.matchSelect);
     const items = tags.map(function (t) {
-      const checked = sel.indexOf(String(t.id)) !== -1 ? ' checked' : '';
       const color = t.color || 'var(--text-muted)';
-      const labelAttrs = matchSelect
-        ? ' class="search-dropdown-row"'
-        : ' style="display:flex;align-items:center;gap:6px;padding:4px 6px;font-size:12px;' +
-            'cursor:pointer;white-space:nowrap;"';
-      return '<label' + labelAttrs + '>' +
+      const checked = sel.indexOf(String(t.id)) !== -1 ? ' checked' : '';
+      return '<label class="search-dropdown-row">' +
         '<input type="checkbox" data-tag-check data-idx="' + esc(key) + '" data-tag-id="' + esc(t.id) + '"' +
           checked + ' style="cursor:pointer;" />' +
         '<span style="width:8px;height:8px;border-radius:50%;flex-shrink:0;background:' + esc(color) + ';"></span>' +
@@ -273,35 +267,20 @@
       '</label>';
     }).join('');
 
-    if (matchSelect) {
-      return (
-        '<details class="search-dropdown" data-region="tags-dropdown" data-idx="' + esc(key) + '"' +
-            floatingAttr(opts) + '>' +
-          '<summary class="' + summaryClass(opts) + '" data-region="tags-summary">' +
-            '<span data-region="tags-summary-text">' + esc(tagsCountLabel(sel.length)) + '</span>' +
-            '<span class="search-dropdown-chevron">' + window.icon('chevronDown', 14) + '</span>' +
-          '</summary>' +
-          '<div class="search-dropdown-panel">' +
-            '<input type="text" class="search-dropdown-search" data-region="search-dropdown-search" ' +
-              'placeholder="Buscar tag..." autocomplete="off" />' +
-            '<div class="search-dropdown-items" data-region="search-dropdown-items">' + items + '</div>' +
-            '<p class="search-dropdown-empty" data-region="search-dropdown-empty" style="display:none;">' +
-              'Nenhuma tag encontrada' +
-            '</p>' +
-          '</div>' +
-        '</details>'
-      );
-    }
-
     return (
-      '<details data-region="tags-dropdown" data-idx="' + esc(key) + '" style="font-size:12px;">' +
-        '<summary data-region="tags-summary" style="cursor:pointer;padding:4px 8px;border:1px solid var(--border);' +
-          'border-radius:6px;display:inline-block;color:var(--text-secondary);user-select:none;">' +
-          esc(tagsCountLabel(sel.length)) +
+      '<details class="search-dropdown" data-region="tags-dropdown" data-idx="' + esc(key) + '"' +
+          floatingAttr(opts) + '>' +
+        '<summary class="' + summaryClass(opts) + '" data-region="tags-summary">' +
+          '<span data-region="tags-summary-text">' + esc(tagsCountLabel(sel.length)) + '</span>' +
+          '<span class="search-dropdown-chevron">' + window.icon('chevronDown', 14) + '</span>' +
         '</summary>' +
-        '<div style="margin-top:6px;padding:6px;border:1px solid var(--border);border-radius:6px;' +
-          'background:var(--bg-hover);display:flex;flex-direction:column;gap:2px;min-width:140px;">' +
-          items +
+        '<div class="search-dropdown-panel">' +
+          '<input type="text" class="search-dropdown-search" data-region="search-dropdown-search" ' +
+            'placeholder="Buscar tag..." autocomplete="off" />' +
+          '<div class="search-dropdown-items" data-region="search-dropdown-items">' + items + '</div>' +
+          '<p class="search-dropdown-empty" data-region="search-dropdown-empty" style="display:none;">' +
+            'Nenhuma tag encontrada' +
+          '</p>' +
         '</div>' +
       '</details>'
     );
@@ -320,8 +299,7 @@
 
   /** Insere (ou marca, se já presente) uma tag recém-criada no dropdown `key` — contorna o lag
    *  do SSE até o CacheStore atualizar (mesma razão pela qual o quick-create de categoria também
-   *  monta a option na mão em vez de esperar o cache). Só afeta o dropdown matchSelect (o único
-   *  com `[data-region=search-dropdown-items]`); quem chama ainda precisa dar push no próprio
+   *  monta a option na mão em vez de esperar o cache). Quem chama ainda precisa dar push no próprio
    *  array de ids selecionados, este helper só re-desenha. */
   function appendTagRow(key, tag) {
     const $items = $('[data-region=tags-dropdown][data-idx="' + esc(key) + '"] [data-region=search-dropdown-items]');

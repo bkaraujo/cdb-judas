@@ -132,6 +132,18 @@
       return list;
     }
 
+    // Quick-create no cabeçalho do preview (categoria/tag) não é por linha — pra a criação ficar
+    // elegível em todas as linhas na hora, sem esperar o round-trip do SSE, entra direto no cache
+    // com a mesma forma que sse-client.applyUpsert usaria (dedupe por id: quando o evento real
+    // chegar, só substitui a mesma entrada, sem duplicar).
+    function upsertLocalCache(key, item) {
+      window.CBD = window.CBD || {};
+      const list = Array.isArray(window.CBD[key]) ? window.CBD[key].slice() : [];
+      const idx = list.findIndex(function (x) { return String(x.id) === String(item.id); });
+      if (idx >= 0) list[idx] = item; else list.push(item);
+      window.CBD[key] = list;
+    }
+
     function typeSelectHtml(selectedType, idx) {
       const type = selectedType === 'income' ? 'income' : 'expense';
       return '<select data-row-type data-idx="' + idx + '" ' +
@@ -188,14 +200,18 @@
     function categoryComboHtml(cats, selectedId, idx, extraSelectAttrs, locked) {
       const id = catSelectId(idx);
       const title = locked ? 'Segue a categoria da 1ª parcela do grupo' : '';
-      return '<select id="' + id + '" data-row-category data-idx="' + idx + '"' + extraSelectAttrs +
-          (cats.length ? '' : ' disabled') + ' style="display:none;">' +
-          categoryOptionsHtml(cats, selectedId) +
-        '</select>' +
-        window.searchSelectHtml(categoryItems(cats, selectedId), selectedId, id + '-dd', {
-          pairedSelectId: id, lazy: true, floating: true, compact: true,
-          disabled: locked || !cats.length, title: title
-        });
+      return window.categoryPickerHtml({
+        items: cats.map(function (c) { return { value: c.id, label: c.label }; }),
+        selectedId: selectedId,
+        selectId: id,
+        selectAttrs: ' data-row-category data-idx="' + idx + '"' + extraSelectAttrs +
+          (cats.length ? '' : ' disabled'),
+        lazy: true,
+        floating: true,
+        compact: true,
+        disabled: locked || !cats.length,
+        title: title,
+      });
     }
 
     function categorySelectHtml(selectedId, idx, groupId, locked, type) {
@@ -237,6 +253,53 @@
         row.description = rule.name;
         if (rule.categoryId) row.categoryId = rule.categoryId;
         if (rule.costCenterId) row.costCenterId = rule.costCenterId;
+      });
+    }
+
+    // Botões "+ Nova categoria" / "+ Nova tag" no cabeçalho do preview (não por linha): a fatura
+    // inteira compartilha os dois catálogos, e um par só evita repetir o botão em cada linha.
+    function quickCreateButtonsHtml() {
+      return '<div style="display:flex;gap:16px;flex-shrink:0;">' +
+        '<button type="button" data-act="new-category" ' +
+          'style="background:none;border:none;color:var(--accent);cursor:pointer;' +
+          'font-size:12px;font-weight:600;padding:0;display:inline-flex;align-items:center;gap:3px;">' +
+          window.icon('plus', 12) + 'Nova categoria' +
+        '</button>' +
+        '<button type="button" data-act="new-tag" ' +
+          'style="background:none;border:none;color:var(--accent);cursor:pointer;' +
+          'font-size:12px;font-weight:600;padding:0;display:inline-flex;align-items:center;gap:3px;">' +
+          window.icon('plus', 12) + 'Nova tag' +
+        '</button>' +
+      '</div>';
+    }
+
+    // Lê de volta pro `data.rows` os campos que só são relidos do DOM no confirm/na ordenação —
+    // precisa rodar antes de qualquer re-render (sort ou quick-create), senão a edição em curso
+    // na tela se perde no rebuild da tabela.
+    function syncRowsFromDom(data) {
+      m.$el.find('[data-row-include]').each(function () {
+        const idx = Number($(this).attr('data-idx'));
+        data.rows[idx].checked = this.checked;
+      });
+      m.$el.find('[data-row-type]').each(function () {
+        const idx = Number($(this).attr('data-idx'));
+        data.rows[idx].type = this.value;
+      });
+      m.$el.find('[data-row-category]').each(function () {
+        const idx = Number($(this).attr('data-idx'));
+        data.rows[idx].categoryId = this.value;
+      });
+      m.$el.find('[data-row-costcenter]').each(function () {
+        const idx = Number($(this).attr('data-idx'));
+        data.rows[idx].costCenterId = this.value;
+      });
+      m.$el.find('[data-row-description]').each(function () {
+        const idx = Number($(this).attr('data-idx'));
+        data.rows[idx].description = this.value;
+      });
+      m.$el.find('[data-row-card]').each(function () {
+        const idx = Number($(this).attr('data-idx'));
+        data.rows[idx].cardId = this.value;
       });
     }
 
@@ -283,7 +346,7 @@
           '</td>' +
           '<td style="padding:8px 10px;">' + typeSelectHtml(row.type, idx) + '</td>' +
           '<td style="padding:8px 10px;">' + categorySelectHtml(row.categoryId, idx, row.groupId, groupLocked, row.type) + '</td>' +
-          '<td style="padding:8px 10px;">' + window.tagsDropdownHtml(row.tagIds, idx, { matchSelect: true, floating: true, compact: true }) + '</td>' +
+          '<td style="padding:8px 10px;">' + window.tagsDropdownHtml(row.tagIds, idx, { floating: true, compact: true }) + '</td>' +
           '<td style="padding:8px 10px;">' + costCenterSelectHtml(row.costCenterId, idx) + '</td>' +
           '<td style="padding:8px 10px;text-align:center;color:var(--text-secondary);">' + parcela + '</td>' +
           '<td style="padding:8px 10px;">' +
@@ -361,11 +424,12 @@
       m.$body.html(
         '<div style="display:flex;align-items:center;gap:12px;padding:8px 0;">' +
           '<span style="color:var(--income);display:flex;">' + window.icon('check', 22) + '</span>' +
-          '<div>' +
+          '<div style="flex:1;">' +
             '<p style="font-size:13px;color:var(--text-muted);">Banco detectado</p>' +
             '<p style="font-size:18px;font-weight:800;">' + esc(label) + '</p>' +
             cardsLine +
           '</div>' +
+          quickCreateButtonsHtml() +
         '</div>' +
         noCardsWarning +
         tableHtml +
@@ -511,7 +575,7 @@
           '</td>' +
           '<td style="padding:8px 10px;">' + typeSelectHtml(row.type, idx) + '</td>' +
           '<td style="padding:8px 10px;">' + statementCategorySelectHtml(row.categoryId, idx, row.type) + '</td>' +
-          '<td style="padding:8px 10px;">' + window.tagsDropdownHtml(row.tagIds, idx, { matchSelect: true, floating: true, compact: true }) + '</td>' +
+          '<td style="padding:8px 10px;">' + window.tagsDropdownHtml(row.tagIds, idx, { floating: true, compact: true }) + '</td>' +
           '<td style="padding:8px 10px;">' + costCenterSelectHtml(row.costCenterId, idx) + '</td>' +
           '<td style="padding:8px 10px;">' +
             '<input type="text" data-row-description data-idx="' + idx + '" value="' + esc(row.description) + '" ' +
@@ -581,10 +645,11 @@
       m.$body.html(
         '<div style="display:flex;align-items:center;gap:12px;padding:8px 0;">' +
           '<span style="color:var(--income);display:flex;">' + window.icon('check', 22) + '</span>' +
-          '<div>' +
+          '<div style="flex:1;">' +
             '<p style="font-size:13px;color:var(--text-muted);">Extrato detectado</p>' +
             '<p style="font-size:18px;font-weight:800;">' + esc(issuerLabel) + '</p>' +
           '</div>' +
+          quickCreateButtonsHtml() +
         '</div>' +
         accSelectorHtml +
         tableHtml +
@@ -741,6 +806,32 @@
       if (previewData && previewData.rows && previewData.rows[idx]) previewData.rows[idx].costCenterId = this.value;
     });
 
+    // Quick-create no topo: sem linha de origem, o Tipo (Despesa/Receita) fica editável no modal
+    // (`nature: null`). O re-render inteiro reaproveita o mesmo caminho da ordenação (sort handler).
+    function reRenderPreview() {
+      const data = previewData || statementData;
+      if (!data) return;
+      syncRowsFromDom(data);
+      if (statementData) showStatementPreview(data); else showPreview(data);
+    }
+
+    m.$el.on('click', '[data-act=new-category]', function (e) {
+      e.preventDefault();
+      window.openCategoryCreateModal(null, function (created) {
+        upsertLocalCache('categories', created);
+        catCache = {};
+        reRenderPreview();
+      });
+    });
+
+    m.$el.on('click', '[data-act=new-tag]', function (e) {
+      e.preventDefault();
+      window.openTagCreateModal(function (created) {
+        upsertLocalCache('tags', created);
+        reRenderPreview();
+      });
+    });
+
     m.$el.on('click', '[data-act=toggle-password]', function () { revealPassword(''); });
 
     m.$el.on('click', '[data-act=do-confirm]', function () { confirmImport(); });
@@ -783,30 +874,7 @@
       const renderFn = isStatement ? showStatementPreview : showPreview;
 
       // Save current states before sorting
-      m.$el.find('[data-row-include]').each(function () {
-        const idx = Number($(this).attr('data-idx'));
-        data.rows[idx].checked = this.checked;
-      });
-      m.$el.find('[data-row-type]').each(function () {
-        const idx = Number($(this).attr('data-idx'));
-        data.rows[idx].type = this.value;
-      });
-      m.$el.find('[data-row-category]').each(function () {
-        const idx = Number($(this).attr('data-idx'));
-        data.rows[idx].categoryId = this.value;
-      });
-      m.$el.find('[data-row-costcenter]').each(function () {
-        const idx = Number($(this).attr('data-idx'));
-        data.rows[idx].costCenterId = this.value;
-      });
-      m.$el.find('[data-row-description]').each(function () {
-        const idx = Number($(this).attr('data-idx'));
-        data.rows[idx].description = this.value;
-      });
-      m.$el.find('[data-row-card]').each(function () {
-        const idx = Number($(this).attr('data-idx'));
-        data.rows[idx].cardId = this.value;
-      });
+      syncRowsFromDom(data);
 
       if (sortCol === col) {
         sortAsc = !sortAsc;

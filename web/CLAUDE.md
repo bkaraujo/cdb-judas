@@ -78,7 +78,7 @@ o `localStorage` é apenas **cache espelho** para boot sem flash.
 Ver `docs/frontend/category-tag-pickers.md`. Regras:
 
 + Categoria: `window.categoryPickerHtml(...)` (`pickers.js`) — encapsula `<select>` escondido + `searchSelectHtml`.
-+ Tag: `window.tagsDropdownHtml(tagIds, key, { matchSelect: true })` — estado no array JS do chamador.
++ Tag: `window.tagsDropdownHtml(tagIds, key)` — estado no array JS do chamador.
 + Elegibilidade: sempre via `flatCategories(nature, excludeRoots, keepId)` — sem exceção.
 + Placeholder: `<option value="" selected>Selecione</option>` explícito quando não há seleção válida.
 + Quick-create: inserir opção na mão (`refreshSearchSelect` / `appendTagRow`), não esperar SSE.

@@ -229,7 +229,7 @@
               window.icon('plus', 12) + 'Nova tag' +
             '</button>' +
           '</div>' +
-          window.tagsDropdownHtml(initial.tagIds, 'tx', { matchSelect: true }) +
+          window.tagsDropdownHtml(initial.tagIds, 'tx') +
         '</div>' +
         '<div class="form-group">' +
           '<label class="form-label" for="' + ids.status + '">Status</label>' +
