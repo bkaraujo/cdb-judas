@@ -132,11 +132,11 @@ A aplicação semeia um usuário inicial no primeiro arranque (`f999`, que tamb�
 
 ## 📚 Documentação
 
-A documentação técnica está em [`docs/`](docs/) e nos `CLAUDE.md` de cada módulo:
+A documentação técnica completa mora na **WikiJS** (migrada de `docs/`/`CLAUDE.md` em 2026-08-12):
 
-- **[Guia Central](CLAUDE.md)** — decomposição funcional + índice de toda a documentação.
-- **Por módulo:** [`br-parent`](br-parent/CLAUDE.md) · [`br-commons`](br-commons/src/main/java/CLAUDE.md) · [`br-context-people`](br-context-people/src/main/java/CLAUDE.md) · [`br-context-monetary`](br-context-monetary/src/main/java/CLAUDE.md) · [`br-application`](br-application/src/main/java/CLAUDE.md) · [`web`](web/CLAUDE.md)
-- **Backend:** [Arquitetura Hexagonal](docs/backend/hexagonal-architecture.md) · [Padrão Result](docs/backend/result-pattern.md) · [Null-Safety](docs/backend/null-safety.md) · [Lombok](docs/backend/lombok.md) · [Persistência JDBC/H2](docs/backend/persistence-jdbc.md) · [Qualidade & Build](docs/backend/quality-and-build.md)
-- **Frontend:** [API Web](docs/frontend/api-web.md)
-- **Arquitetura (diagramas):** `docs/architecture-backend*.mermaid` (pacotes, classes, atividade) e `docs/architecture-frontend*.mermaid`.
-- **Schema do banco:** diagramas Mermaid em [`docs/`](docs/) (`db-ctx-people`, `db-ctx-monetary`, `db-features`) — fonte da verdade; o DDL em `Database` conforma ao diagrama, nunca o inverso.
+- **[Backend](http://localhost:3000/pt-br/secular/profissao/projetos/judas/backend)** — arquitetura (VSA + Hexagonal), módulos Maven, fatias `fNNN`, Result, Lombok, Null-Safety, persistência JDBC/H2, qualidade & build, testes, diagramas.
+- **[Frontend](http://localhost:3000/pt-br/secular/profissao/projetos/judas/frontend)** — padrões 001–009, contratos de API (request/response JSON), diagramas.
+- **[Regras de Negócio](http://localhost:3000/pt-br/secular/profissao/projetos/judas/regras-negocio)** — funcionalidades, domínio, ciclo de fatura de cartão, fechamento de período.
+- **[Índice do projeto](http://localhost:3000/pt-br/secular/profissao/projetos/judas)** — overview, tecnologias, como executar.
+
+O `CLAUDE.md` (raiz) mantém um apontador mínimo para essas páginas. Endpoints por fatia (sempre atual): [`br/cdb/feature/package-info.java`](br-application/src/main/java/br/cdb/feature/package-info.java).
