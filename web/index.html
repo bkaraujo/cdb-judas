@@ -8,8 +8,8 @@
   <script>
     (function () {
       try {
-        var raw = localStorage.getItem('cbd-preferences');
-        var t = raw ? JSON.parse(raw).theme : null;
+        const raw = localStorage.getItem('cbd-preferences');
+        let t = raw ? JSON.parse(raw).theme : null;
         if (!t) t = localStorage.getItem('cbd-theme'); /* legacy single-key layout */
         if (t) document.documentElement.setAttribute('data-theme', t);
       } catch (e) { /* storage unavailable */ }
@@ -22,7 +22,7 @@
   <div id="app"></div>
 
   <!-- jQuery 4 beta (stable 4.x not yet released). TODO: swap to GA when available. -->
-  <script src="https://code.jquery.com/jquery-4.0.0.js"></script>
+  <script src="https://code.jquery.com/jquery-4.0.0.min.js"></script>
 
   <!-- API base URL: same-origin '/api' quando servido pelo Spring Boot (localhost:8080);
        absoluto p/ localhost:8080 quando aberto direto do disco via file:// (cross-origin). -->
