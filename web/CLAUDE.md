@@ -103,18 +103,23 @@ web/
 │   ├── boot.js               único <script> referenciado por index.html
 │   ├── kernel/                _0_domain/_1_application/_2_infrastructure/{primary,secondary}
 │   │   └── kernel.barrel.js   sequencia os arquivos do kernel (equivalente ao F000Module)
-│   ├── composition-root/      wiring de DI, shell, login-modal, bootstrap
-│   │   └── composition-root.barrel.js
-│   └── _1_domain/, _2_application/, _3_infrastructure/   legado, encolhe a cada fatia migrada
-├── feature/                  cada fatia é 1 arquivo, sem subpasta
-│   ├── cost-centers.js
-│   ├── tags.js
-│   ├── categories.js
-│   ├── settings.js
-│   ├── import-rules.js
-│   ├── reports.js
-│   └── accounts.js
-└── pages/                    legado, encolhe a cada fatia migrada
+│   └── composition-root/      wiring de DI, shell, login-modal, bootstrap
+│       └── composition-root.barrel.js
+└── feature/                  cada fatia é 1 arquivo, sem subpasta
+    ├── cost-centers.js
+    ├── tags.js
+    ├── categories.js, categories.api.js
+    ├── settings.js
+    ├── import-rules.js, import-rules.api.js
+    ├── reports.js
+    ├── accounts.js, accounts.api.js
+    ├── transactions.js, transactions.api.js
+    ├── statement.js
+    ├── credit-cards.js, credit-cards.api.js
+    ├── accounts-payable.js, accounts-payable.api.js
+    ├── import-statement.js, import-statement.api.js
+    ├── budget.js, budget.api.js
+    └── dashboard.js
 ```
 
 + **`web/core/kernel/`** — equivalente ao `f000`: código transversal (usado por 3+ domínios não
@@ -128,11 +133,10 @@ web/
   fatia, a menos que venha do kernel ou de um `web/feature/<slice>.api.js` (mecanismo público
   explícito, equivalente ao `FNNNApi` — só existe nas fatias com consumidor cross-slice
   comprovado). Enforced heuristicamente por `node web/tools/check-slices.js` (regex, não AST —
-  roda manual antes de cada commit de fase, não trava CI).
+  roda manual antes de cada commit, não trava CI).
 + **`web/core/boot.js`** — único `<script>` referenciado por `index.html`; injeta
   `kernel/kernel.barrel.js` → cada `feature/<slice>.js` (injeção direta, sem barrel — um arquivo
-  só) → barrels legados por camada (`core/_1_domain.js` etc., encolhem a cada fatia migrada) →
-  `composition-root/composition-root.barrel.js`.
+  só) → `composition-root/composition-root.barrel.js`.
 + **Vocabulário puro sobe pro kernel, mesmo quando a fatia "dona" existe**: `Domain.Category` e
   `Domain.Tag` vivem em `core/kernel/_0_domain` (não em `feature/categories.js`/`feature/tags.js`)
   porque os widgets genéricos de picker do padrão 007 (`flatCategories`, `categoryPickerHtml`,
@@ -143,5 +147,8 @@ web/
   (`window.configureQuickCreate(kind, provider)` em `pickers.js`; `Sidebar.configureClosing(...)`)
   e `composition-root.js` injeta o provider real depois que a fatia carregou — kernel nunca
   referencia `App.<Slice>Service`/função de outra fatia por nome.
-+ Migração em andamento, fatia por fatia — estado atual e roadmap das fatias com coupling
-  cruzado (ainda não migradas) em `.claude/frontend-refactor.md` (local, gitignored).
++ Migração concluída, fatia por fatia — as 14 fatias (`cost-centers`, `tags`, `categories`,
+  `settings`, `import-rules`, `reports`, `accounts`, `transactions`, `statement`,
+  `credit-cards`, `accounts-payable`, `import-statement`, `budget`, `dashboard`) vivem em
+  `web/feature/`; `web/pages/` e os barrels legados por camada (`core/_1_domain.js` etc.) não
+  existem mais. Histórico em `.claude/frontend-refactor.md` (local, gitignored).

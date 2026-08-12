@@ -7,11 +7,10 @@
  * web/core/composition-root/** é isento (é o único lugar autorizado a conhecer duas fatias ao
  * mesmo tempo, equivalente ao f999).
  *
- * web/pages/** e os barrels legados por camada (web/core/_1_domain.js etc) ficam de fora da
- * varredura — ainda não migrados para feature/, isentos até entrarem lá
- * (ver .claude/frontend-refactor.md).
+ * Migração fatia-por-fatia concluída (ver .claude/frontend-refactor.md) — web/pages/ e os
+ * barrels legados por camada não existem mais, toda a árvore varrida está em feature/.
  *
- * Roda manual antes de cada commit de fase: `node web/tools/check-slices.js`.
+ * Roda manual antes de cada commit: `node web/tools/check-slices.js`.
  * Falsos positivos/negativos existem (string literal, comentário) — não é um parser real.
  */
 'use strict';
