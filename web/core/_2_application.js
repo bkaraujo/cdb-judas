@@ -3,7 +3,6 @@
 (function () {
   const base = 'core/_2_application/';
   const files = [
-    'budget-service.js',
     'dashboard-service.js'
   ];
   files.forEach(function (path) {

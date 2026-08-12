@@ -1,3 +1,115 @@
+/* feature/budget.js — fatia Metas/Orçamento. Um arquivo por fatia: domain (regras puras de item
+ * de orçamento) → infrastructure/secondary (BudgetRepository, adapter HTTP /budget) →
+ * application (BudgetService) → infrastructure/primary (página), cada bloco abaixo é um IIFE
+ * independente (comentário original de cada arquivo preservado como separador de seção).
+ * Standalone: sem consumidor cross-slice, sem coupling com nenhuma fatia irmã. */
+/* _1_domain/budget.js — Budget item rules. Pure. */
+(function () {
+  function normalize(raw) {
+    if (!raw) return null;
+    const budgeted = +(raw.budgeted != null ? raw.budgeted : (raw.budget != null ? raw.budget : raw.target)) || 0;
+    const spent    = +(raw.spent != null ? raw.spent : raw.actual) || 0;
+    return {
+      id:         raw.id,
+      categoryId: raw.categoryId,
+      name:       raw.name || '',
+      budgeted:   budgeted,
+      spent:      spent,
+      month:      raw.month,
+      year:       raw.year,
+      color:      raw.color || null,
+      icon:       raw.icon || null,
+    };
+  }
+
+  /* Consumption percent, clamped to [0, 100]. */
+  function consumptionPct(spent, budgeted) {
+    const b = +budgeted || 0;
+    if (b <= 0) return 0;
+    return Math.min(100, Math.max(0, (Math.abs(+spent || 0) / b) * 100));
+  }
+
+  function isOverBudget(spent, budgeted) {
+    const b = +budgeted || 0;
+    return b > 0 && Math.abs(+spent || 0) > b;
+  }
+
+  /* Returns { value, over } where `value` is the remaining (positive) or
+     the over-spent amount (positive) and `over` flags which one. */
+  function remainingOrOver(spent, budgeted) {
+    const b = +budgeted || 0;
+    const s = Math.abs(+spent || 0);
+    if (s > b) return { value: s - b, over: true };
+    return { value: b - s, over: false };
+  }
+
+  /* Bar color tokens by consumption percent. Mirrors STYLE.md §11. */
+  function barColor(pct) {
+    if (pct >= 80) return 'expense';
+    if (pct >= 60) return 'warning';
+    return 'accent';
+  }
+
+  function overspendCount(items) {
+    return (items || []).reduce(function (acc, b) {
+      return acc + (isOverBudget(b.spent, b.budgeted) ? 1 : 0);
+    }, 0);
+  }
+
+  window.Domain = window.Domain || {};
+  window.Domain.Budget = {
+    normalize: normalize,
+    consumptionPct: consumptionPct,
+    isOverBudget: isOverBudget,
+    remainingOrOver: remainingOrOver,
+    barColor: barColor,
+    overspendCount: overspendCount,
+  };
+})();
+/* _3_infrastructure/secondary/budget-repository.js — HTTP adapter for /budget. */
+(function () {
+  function create(http) {
+    return {
+      list:   function (month, year) { return http.get('/budget?month=' + month + '&year=' + year); },
+      create: function (data)        { return http.post('/budget', data); },
+      update: function (id, data)    { return http.patch('/budget/' + id, data); },
+      remove: function (id)          { return http.delete('/budget/' + id); },
+    };
+  }
+  window.Infra = window.Infra || {};
+  window.Infra.BudgetRepository = { create: create };
+})();
+/* _2_application/budget-service.js — Budget use cases. */
+(function () {
+  let repo = null;
+
+  function init(deps) { repo = deps.repo; return { ready: true }; }
+
+  function loadPeriod(period) {
+    return repo.list(period.month, period.year);
+  }
+
+  function save(id, data) { return repo.update(id, data); }
+  function create(data)   { return repo.create(data); }
+  function remove(id)     { return repo.remove(id); }
+
+  function summary(items) {
+    return {
+      total:        (items || []).length,
+      overspending: window.Domain.Budget.overspendCount(items),
+    };
+  }
+
+  window.App = window.App || {};
+  window.App.BudgetService = {
+    init: init,
+    loadPeriod: loadPeriod,
+    save: save,
+    create: create,
+    remove: remove,
+    summary: summary,
+  };
+})();
 /* pages/budget.js — Metas / Orçamento (lista de metas + CRUD modal). */
 (function () {
   window.Pages = window.Pages || {};

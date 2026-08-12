@@ -13,8 +13,7 @@
     'dashboard/expense-goals.js',
     'dashboard/recent-postings.js',
     'dashboard/balance-sheet.js',
-    'dashboard.js',
-    'budget.js'
+    'dashboard.js'
   ];
   files.forEach(function (path) {
     const s = document.createElement('script');
