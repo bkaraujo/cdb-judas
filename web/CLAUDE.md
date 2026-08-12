@@ -182,9 +182,11 @@ característica de zero dependência npm do projeto.
 + **Nunca referenciado** por `web/index.html` nem `core/boot.js` — página isolada, só dev.
 + **Adicionar cobertura a uma fatia nova**: criar `web/test/feature/<slice>.test.js` (ou
   `test/kernel/<module>.test.js`), somar uma linha `<script src="...">` no fim de
-  `web/test/index.html`. Nenhuma outra mudança de harness é necessária. Cobertura atual:
-  kernel completo (`account`, `transaction`, `money`, `period`, `category`, `tag`,
-  `invoice`, `statement-item`) + `feature/{budget,accounts-payable,accounts,transactions,
-  credit-cards,categories}` — restam `cost-centers`, `tags`, `settings` (sem domain
-  própria), `import-rules`, `statement`, `import-statement`, `dashboard` pra rodadas
-  seguintes, mesmo espírito incremental da migração do padrão 008.
+  `web/test/index.html`. Nenhuma outra mudança de harness é necessária.
++ **Cobertura completa**: kernel inteiro (`account`, `transaction`, `money`, `period`,
+  `category`, `tag`, `invoice`, `statement-item`) + todas as 12 fatias com superfície
+  testável (`budget`, `accounts-payable`, `accounts`, `transactions`, `credit-cards`,
+  `categories`, `cost-centers`, `tags`, `import-rules`, `statement`, `dashboard`). Fora do
+  escopo, de propósito: `settings`/`reports` (sem `Domain`/`App.*Service` próprio, só
+  DOM+kernel) e `import-statement` (100% modal/DOM, zero função pura ou serviço com porta
+  injetada — nada que caiba no critério "o que testar" acima).
