@@ -1,7 +1,7 @@
 package br.cdb.feature.f001;
 
-import br.cdb.feature.f001._0_domain.Preferences;
-import br.cdb.feature.f001._0_domain.Profile;
+import br.cdb.feature.f001._0_domain.model.Preferences;
+import br.cdb.feature.f001._0_domain.model.Profile;
 import br.cdb.feature.f001._1_application.usecase.ReadUseCase;
 import br.commons.Result;
 import br.commons.business.BusinessError;

@@ -1,5 +1,6 @@
-package br.cdb.feature.f007._0_domain;
+package br.cdb.feature.f007._1_application;
 
+import br.cdb.feature.f007._0_domain.model.MonetaryDocument;
 import br.commons.tools.Parser;
 import org.jspecify.annotations.NullMarked;
 

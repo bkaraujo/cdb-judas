@@ -1,6 +1,6 @@
 package br.cdb.feature.f007._1_application.preview;
 
-import br.cdb.feature.f007._0_domain.TransactionDraft;
+import br.cdb.feature.f007._0_domain.model.TransactionDraft;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 

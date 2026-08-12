@@ -1,5 +1,6 @@
-package br.cdb.feature.f007._0_domain;
+package br.cdb.feature.f007._0_domain.model;
 
+import br.cdb.feature.f007._1_application.StatementParser;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 

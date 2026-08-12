@@ -3,7 +3,7 @@ package br.cdb.feature.f999;
 import br.cdb.core.persistence.Database;
 import br.cdb.feature.f000._1_application.service.UserService;
 import br.cdb.feature.f002._0_domain.DeletionQueue;
-import br.cdb.feature.f007._0_domain.TransactionWriter;
+import br.cdb.feature.f007._1_application.TransactionWriter;
 import br.cdb.feature.f999._0_domain.DeletionQueueRepository;
 import br.cdb.feature.f999._1_application.DeletionQueueService;
 import br.cdb.feature.f999._2_infrastructure.adapter.DeletionQueueAdapter;

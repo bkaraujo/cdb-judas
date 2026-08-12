@@ -1,7 +1,7 @@
 package br.cdb.feature.f007._1_application.preview;
 
 import br.cdb.feature.f003.F003Api;
-import br.cdb.feature.f007._0_domain.MonetaryDocumentEntry;
+import br.cdb.feature.f007._0_domain.model.MonetaryDocumentEntry;
 import org.jspecify.annotations.NullMarked;
 
 import java.util.List;

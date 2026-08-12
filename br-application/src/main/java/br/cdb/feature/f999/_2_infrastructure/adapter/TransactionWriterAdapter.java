@@ -2,8 +2,8 @@ package br.cdb.feature.f999._2_infrastructure.adapter;
 
 import br.cdb.feature.f006._0_domain.model.Transaction;
 import br.cdb.feature.f006._1_application.usecase.WriteUseCases;
-import br.cdb.feature.f007._0_domain.ImportedTransaction;
-import br.cdb.feature.f007._0_domain.TransactionWriter;
+import br.cdb.feature.f007._0_domain.model.ImportedTransaction;
+import br.cdb.feature.f007._1_application.TransactionWriter;
 import br.commons.Result;
 import br.commons.business.BusinessError;
 import br.commons.framework.cdi.Context;

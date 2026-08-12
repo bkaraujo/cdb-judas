@@ -1,4 +1,4 @@
-package br.cdb.feature.f001._1_application;
+package br.cdb.feature.f001._1_application.usecase;
 
 import br.cdb.feature.f001._0_domain.model.Preferences;
 import org.jspecify.annotations.NullMarked;

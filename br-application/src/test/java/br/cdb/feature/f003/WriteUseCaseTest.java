@@ -4,7 +4,7 @@ import br.cdb.AbstractUseCaseTest;
 import br.cdb.feature.f000._0_domain.TransactionPolicy;
 import br.cdb.feature.f002._0_domain.model.Account;
 import br.cdb.feature.f003._0_domain.model.CreditCard;
-import br.cdb.feature.f003._1_application.command.CreditCardCommand;
+import br.cdb.feature.f003._1_application.usecase.CreditCardCommand;
 import br.cdb.feature.f003._1_application.usecase.ReadUseCase;
 import br.cdb.feature.f003._1_application.usecase.WriteUseCase;
 import br.cdb.feature.f006._0_domain.model.Transaction;

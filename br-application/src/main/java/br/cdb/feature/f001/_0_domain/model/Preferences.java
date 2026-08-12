@@ -1,7 +1,7 @@
-package br.cdb.feature.f001._0_domain;
+package br.cdb.feature.f001._0_domain.model;
 
 import br.cdb.feature.f000._1_application.service.UserGuards;
-import br.cdb.feature.f001._1_application.PreferencesPatch;
+import br.cdb.feature.f001._1_application.usecase.PreferencesPatch;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 

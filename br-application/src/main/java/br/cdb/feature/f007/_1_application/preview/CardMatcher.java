@@ -1,7 +1,7 @@
 package br.cdb.feature.f007._1_application.preview;
 
 import br.cdb.feature.f003.F003Api;
-import br.cdb.feature.f007._0_domain.CardMatch;
+import br.cdb.feature.f007._1_application.CardMatch;
 import lombok.val;
 import org.jspecify.annotations.NullMarked;
 

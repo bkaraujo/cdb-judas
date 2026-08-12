@@ -1,8 +1,8 @@
 package br.cdb.feature.f001._1_application.service;
 
-import br.cdb.feature.f001._0_domain.PreferencesRepository;
-import br.cdb.feature.f001._0_domain.Profile;
-import br.cdb.feature.f001._1_application.PreferencesPatch;
+import br.cdb.feature.f001._0_domain.model.Profile;
+import br.cdb.feature.f001._0_domain.repository.PreferencesRepository;
+import br.cdb.feature.f001._1_application.usecase.PreferencesPatch;
 import br.commons.Result;
 import br.commons.business.BusinessError;
 import br.commons.framework.cdi.Context;

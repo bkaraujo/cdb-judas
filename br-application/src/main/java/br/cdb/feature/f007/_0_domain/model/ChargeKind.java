@@ -1,4 +1,4 @@
-package br.cdb.feature.f007._0_domain;
+package br.cdb.feature.f007._0_domain.model;
 
 /**
  * Classification of a kept credit-card statement charge. Payment-received and summary lines are

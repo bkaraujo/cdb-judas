@@ -1,7 +1,7 @@
 package br.cdb.feature.f005;
 
 import br.cdb.AbstractUseCaseTest;
-import br.cdb.feature.f005._0_domain.Category;
+import br.cdb.feature.f005._0_domain.model.Category;
 import br.cdb.feature.f005._1_application.usecase.ReadUseCase;
 import br.cdb.feature.f005._1_application.usecase.WriteUseCase;
 import br.cdb.feature.f006._0_domain.model.Transaction;

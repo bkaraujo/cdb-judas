@@ -2,7 +2,7 @@ package br.cdb.feature.f007._2_infrastructure;
 
 import br.cdb.feature.f002.F002Api;
 import br.cdb.feature.f003.F003Api;
-import br.cdb.feature.f007._0_domain.CreditCardProvider;
+import br.cdb.feature.f007._1_application.CreditCardProvider;
 import br.commons.framework.cdi.Context;
 import org.jspecify.annotations.NullMarked;
 

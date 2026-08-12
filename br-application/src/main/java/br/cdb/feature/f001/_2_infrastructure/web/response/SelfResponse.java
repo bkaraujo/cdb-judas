@@ -1,6 +1,6 @@
 package br.cdb.feature.f001._2_infrastructure.web.response;
 
-import br.cdb.feature.f001._0_domain.Preferences;
+import br.cdb.feature.f001._0_domain.model.Preferences;
 import br.cdb.feature.f001._2_infrastructure.web.SelfView;
 import lombok.val;
 import org.jspecify.annotations.NullMarked;

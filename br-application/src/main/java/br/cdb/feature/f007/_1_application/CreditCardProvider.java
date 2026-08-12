@@ -1,4 +1,4 @@
-package br.cdb.feature.f007._0_domain;
+package br.cdb.feature.f007._1_application;
 
 import br.cdb.feature.f003.F003Api;
 import br.cdb.feature.f007._1_application.service.StatementImportService;

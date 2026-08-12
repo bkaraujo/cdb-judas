@@ -12,7 +12,7 @@ import br.cdb.feature.f003._0_domain.repository.CreditCardRepository;
 import br.cdb.feature.f003._1_application.service.CreditCardService;
 import br.cdb.feature.f004._0_domain.repository.TagRepository;
 import br.cdb.feature.f004._1_application.service.TagService;
-import br.cdb.feature.f005._0_domain.CategoryRepository;
+import br.cdb.feature.f005._0_domain.repository.CategoryRepository;
 import br.cdb.feature.f005._1_application.service.UserCategoryService;
 import br.cdb.feature.f006._0_domain.repository.TransactionCategoryRepository;
 import br.cdb.feature.f006._0_domain.repository.TransactionRepository;

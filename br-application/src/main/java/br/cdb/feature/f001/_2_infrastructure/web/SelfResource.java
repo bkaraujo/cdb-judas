@@ -2,8 +2,8 @@ package br.cdb.feature.f001._2_infrastructure.web;
 
 import br.cdb.core.persistence.repository.UserRepository;
 import br.cdb.core.web.HTTPRequest;
-import br.cdb.feature.f001._0_domain.Profile;
-import br.cdb.feature.f001._1_application.PreferencesPatch;
+import br.cdb.feature.f001._0_domain.model.Profile;
+import br.cdb.feature.f001._1_application.usecase.PreferencesPatch;
 import br.cdb.feature.f001._1_application.usecase.ReadUseCase;
 import br.cdb.feature.f001._1_application.usecase.WriteUseCase;
 import br.cdb.feature.f001._2_infrastructure.web.request.UpdateMeRequest;

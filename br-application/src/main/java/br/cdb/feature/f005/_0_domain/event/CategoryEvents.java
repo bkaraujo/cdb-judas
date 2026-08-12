@@ -1,6 +1,6 @@
 package br.cdb.feature.f005._0_domain.event;
 
-import br.cdb.feature.f005._0_domain.Category;
+import br.cdb.feature.f005._0_domain.model.Category;
 import br.commons.business.BusinessEvent;
 import org.jspecify.annotations.NullMarked;
 

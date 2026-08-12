@@ -1,4 +1,4 @@
-package br.cdb.feature.f005._0_domain;
+package br.cdb.feature.f005._0_domain.repository;
 
 import br.cdb.feature.f005._0_domain.model.Category;
 import br.cdb.feature.f006._0_domain.model.Transaction;

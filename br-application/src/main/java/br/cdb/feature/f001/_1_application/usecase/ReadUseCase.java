@@ -1,6 +1,6 @@
 package br.cdb.feature.f001._1_application.usecase;
 
-import br.cdb.feature.f001._0_domain.Profile;
+import br.cdb.feature.f001._0_domain.model.Profile;
 import br.cdb.feature.f001._1_application.service.ProfileService;
 import br.commons.Result;
 import br.commons.business.BusinessError;

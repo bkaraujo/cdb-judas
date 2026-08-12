@@ -1,7 +1,7 @@
 package br.cdb.feature.f005._2_infrastructure.persistence;
 
-import br.cdb.feature.f005._0_domain.Category;
-import br.cdb.feature.f005._0_domain.CategoryRepository;
+import br.cdb.feature.f005._0_domain.model.Category;
+import br.cdb.feature.f005._0_domain.repository.CategoryRepository;
 import br.cdb.feature.f006._0_domain.model.Transaction;
 import br.commons.chrono.Time;
 import br.commons.framework.persistence.jdbc.JDBCRepository;

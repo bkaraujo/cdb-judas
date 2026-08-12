@@ -1,6 +1,6 @@
 package br.cdb.feature.f005._2_infrastructure.web.response;
 
-import br.cdb.feature.f005._0_domain.Category;
+import br.cdb.feature.f005._0_domain.model.Category;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 

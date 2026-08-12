@@ -5,7 +5,8 @@ import br.cdb.feature.f000._0_domain.model.CostCenter;
 import br.cdb.feature.f002.F002Api;
 import br.cdb.feature.f006.F006Api;
 import br.cdb.feature.f006._0_domain.model.Transaction;
-import br.cdb.feature.f007._0_domain.*;
+import br.cdb.feature.f007._0_domain.model.*;
+import br.cdb.feature.f007._1_application.TransactionWriter;
 import br.cdb.feature.f007._1_application.confirm.StatementConfirmCommand;
 import br.commons.Logger;
 import br.commons.MessageBus;
@@ -24,7 +25,7 @@ import java.time.temporal.ChronoUnit;
 import java.util.*;
 
 /**
- * Processes {@link br.cdb.feature.f007._0_domain.MonetaryDocument.Statement} documents
+ * Processes {@link MonetaryDocument.Statement} documents
  * (checking-account extracts): preview (account selection + dedup/reconcile classification) and
  * confirm (persistence of new rows, reconciliation of matched pending/scheduled transactions). Toda
  * leitura cross-slice (contas, histórico) é via {@link F002Api}/{@link F006Api} (D1 de

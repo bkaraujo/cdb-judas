@@ -1,4 +1,4 @@
-package br.cdb.feature.f003._1_application.command;
+package br.cdb.feature.f003._1_application.usecase;
 
 import br.cdb.feature.f000._0_domain.TransactionPolicy;
 import org.jspecify.annotations.NullMarked;

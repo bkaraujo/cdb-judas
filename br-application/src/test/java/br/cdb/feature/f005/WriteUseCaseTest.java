@@ -4,7 +4,7 @@ import br.cdb.AbstractUseCaseTest;
 import br.cdb.feature.f000._0_domain.DeletionStrategy;
 import br.cdb.feature.f000._0_domain.event.CategoryDeleted;
 import br.cdb.feature.f000._0_domain.event.CategoryReassigned;
-import br.cdb.feature.f005._0_domain.Category;
+import br.cdb.feature.f005._0_domain.model.Category;
 import br.cdb.feature.f005._1_application.usecase.ReadUseCase;
 import br.cdb.feature.f005._1_application.usecase.WriteUseCase;
 import br.cdb.feature.f006._0_domain.model.Transaction;

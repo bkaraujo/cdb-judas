@@ -1,5 +1,6 @@
-package br.cdb.feature.f007._0_domain;
+package br.cdb.feature.f007._1_application;
 
+import br.cdb.feature.f007._0_domain.model.ImportedTransaction;
 import br.commons.Result;
 import br.commons.business.BusinessError;
 import org.jspecify.annotations.NullMarked;

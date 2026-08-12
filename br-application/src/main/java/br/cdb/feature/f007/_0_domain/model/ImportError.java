@@ -1,4 +1,4 @@
-package br.cdb.feature.f007._0_domain;
+package br.cdb.feature.f007._0_domain.model;
 
 import org.jspecify.annotations.NullMarked;
 

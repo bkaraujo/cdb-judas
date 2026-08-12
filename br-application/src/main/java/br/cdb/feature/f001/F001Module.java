@@ -1,7 +1,7 @@
 package br.cdb.feature.f001;
 
 import br.cdb.core.persistence.Database;
-import br.cdb.feature.f001._0_domain.PreferencesRepository;
+import br.cdb.feature.f001._0_domain.repository.PreferencesRepository;
 import br.cdb.feature.f001._2_infrastructure.persistence.PreferencesJDBCRepository;
 import br.commons.Logger;
 import br.commons.Result;

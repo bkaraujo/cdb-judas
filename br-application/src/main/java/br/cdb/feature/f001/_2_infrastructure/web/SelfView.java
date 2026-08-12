@@ -1,6 +1,6 @@
 package br.cdb.feature.f001._2_infrastructure.web;
 
-import br.cdb.feature.f001._0_domain.Profile;
+import br.cdb.feature.f001._0_domain.model.Profile;
 import org.jspecify.annotations.NullMarked;
 
 /**

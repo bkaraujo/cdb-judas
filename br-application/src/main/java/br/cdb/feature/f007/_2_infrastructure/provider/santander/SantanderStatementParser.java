@@ -1,9 +1,9 @@
 package br.cdb.feature.f007._2_infrastructure.provider.santander;
 
-import br.cdb.feature.f007._0_domain.Amounts;
-import br.cdb.feature.f007._0_domain.MonetaryDocument;
-import br.cdb.feature.f007._0_domain.MonetaryDocumentEntry;
-import br.cdb.feature.f007._0_domain.StatementParser;
+import br.cdb.feature.f007._0_domain.model.MonetaryDocument;
+import br.cdb.feature.f007._0_domain.model.MonetaryDocumentEntry;
+import br.cdb.feature.f007._1_application.StatementParser;
+import br.cdb.feature.f007._2_infrastructure.provider.Amounts;
 import br.cdb.feature.f007._2_infrastructure.provider.DocumentText;
 import br.commons.Logger;
 import br.commons.chrono.Dates;

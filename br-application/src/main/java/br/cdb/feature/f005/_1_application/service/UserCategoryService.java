@@ -1,8 +1,8 @@
 package br.cdb.feature.f005._1_application.service;
 
-import br.cdb.feature.f005._0_domain.Category;
-import br.cdb.feature.f005._0_domain.CategoryRepository;
 import br.cdb.feature.f005._0_domain.event.CategoryEvents;
+import br.cdb.feature.f005._0_domain.model.Category;
+import br.cdb.feature.f005._0_domain.repository.CategoryRepository;
 import br.cdb.feature.f006._0_domain.model.Transaction;
 import br.commons.MessageBus;
 import br.commons.Result;

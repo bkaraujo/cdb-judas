@@ -12,7 +12,7 @@ import br.cdb.feature.f000._1_application.service.PersonService;
 import br.cdb.feature.f000._2_infrastructure.persistence.CachingPersonRepository;
 import br.cdb.feature.f000._2_infrastructure.persistence.CostCenterJDBCRepository;
 import br.cdb.feature.f000._2_infrastructure.persistence.PersonJDBCRepository;
-import br.cdb.feature.f001._0_domain.PreferencesRepository;
+import br.cdb.feature.f001._0_domain.repository.PreferencesRepository;
 import br.cdb.feature.f001._1_application.service.ProfileService;
 import br.cdb.feature.f001._2_infrastructure.persistence.PreferencesJDBCRepository;
 import br.cdb.feature.f002._0_domain.repository.AccountRepository;
@@ -29,7 +29,7 @@ import br.cdb.feature.f003._2_infrastructure.persistence.CreditCardJDBCRepositor
 import br.cdb.feature.f004._0_domain.repository.TagRepository;
 import br.cdb.feature.f004._1_application.service.TagService;
 import br.cdb.feature.f004._2_infrastructure.persistence.TagJDBCRepository;
-import br.cdb.feature.f005._0_domain.CategoryRepository;
+import br.cdb.feature.f005._0_domain.repository.CategoryRepository;
 import br.cdb.feature.f005._1_application.service.UserCategoryService;
 import br.cdb.feature.f005._2_infrastructure.persistence.CategoryJDBCRepository;
 import br.cdb.feature.f006._0_domain.repository.TransactionCategoryRepository;

@@ -1,6 +1,10 @@
 package br.cdb.feature.f007._1_application.service;
 
-import br.cdb.feature.f007._0_domain.*;
+import br.cdb.feature.f007._0_domain.model.ImportError;
+import br.cdb.feature.f007._0_domain.model.ImportResult;
+import br.cdb.feature.f007._0_domain.model.MonetaryDocument;
+import br.cdb.feature.f007._1_application.CreditCardProvider;
+import br.cdb.feature.f007._1_application.StatementParser;
 import br.cdb.feature.f007._1_application.confirm.InvoiceConfirmCommand;
 import br.cdb.feature.f007._1_application.confirm.StatementConfirmCommand;
 import br.cdb.feature.f007._1_application.preview.ImportPreviewOutcome;

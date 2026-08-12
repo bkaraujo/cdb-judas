@@ -1,4 +1,4 @@
-package br.cdb.feature.f005._0_domain;
+package br.cdb.feature.f005._0_domain.model;
 
 import br.cdb.feature.f006._0_domain.model.Transaction;
 import org.jspecify.annotations.NullMarked;

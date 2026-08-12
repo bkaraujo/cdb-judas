@@ -13,7 +13,6 @@ import br.cdb.feature.f002._1_application.service.AccountService;
 import br.cdb.feature.f002._1_application.service.BalanceService;
 import br.cdb.feature.f003._0_domain.event.CreditCardEvents;
 import br.cdb.feature.f003._0_domain.model.CreditCard;
-import br.cdb.feature.f003._1_application.command.CreditCardCommand;
 import br.cdb.feature.f003._1_application.service.CreditCardService;
 import br.cdb.feature.f006._0_domain.model.Transaction;
 import br.cdb.feature.f006._1_application.service.TransactionService;

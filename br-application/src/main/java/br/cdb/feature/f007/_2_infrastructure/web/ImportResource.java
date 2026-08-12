@@ -2,7 +2,7 @@ package br.cdb.feature.f007._2_infrastructure.web;
 
 import br.cdb.core.web.HTTPRequest;
 import br.cdb.core.web.HTTPResponse;
-import br.cdb.feature.f007._0_domain.ImportError;
+import br.cdb.feature.f007._0_domain.model.ImportError;
 import br.cdb.feature.f007._1_application.confirm.InvoiceConfirmCommand;
 import br.cdb.feature.f007._1_application.confirm.StatementConfirmCommand;
 import br.cdb.feature.f007._1_application.usecase.ImportUseCase;

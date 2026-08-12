@@ -5,7 +5,9 @@ import br.cdb.feature.f000._0_domain.model.CostCenter;
 import br.cdb.feature.f003.F003Api;
 import br.cdb.feature.f006.F006Api;
 import br.cdb.feature.f006._0_domain.model.Transaction;
-import br.cdb.feature.f007._0_domain.*;
+import br.cdb.feature.f007._0_domain.model.*;
+import br.cdb.feature.f007._1_application.CreditCardProvider;
+import br.cdb.feature.f007._1_application.TransactionWriter;
 import br.cdb.feature.f007._1_application.confirm.InvoiceConfirmCommand;
 import br.commons.Logger;
 import br.commons.MessageBus;
@@ -25,7 +27,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 /**
- * Processes {@link br.cdb.feature.f007._0_domain.MonetaryDocument.Invoice} documents (credit-card
+ * Processes {@link MonetaryDocument.Invoice} documents (credit-card
  * statements): preview (card match + installment expansion + dedup) and confirm (persistence of
  * kept rows, grouped by installment schedule). Toda leitura cross-slice do histórico é via
  * {@link F006Api} (D1 de {@code .claude/plan.md}); toda escrita é via a porta
@@ -56,7 +58,7 @@ public class InvoiceImportProcessor {
     }
 
     public Result<ImportPreviewOutcome, ImportError> preview(String personId, String issuer, @Nullable YearMonth period,
-                                                              List<MonetaryDocumentEntry> statement, Map<String, BigDecimal> printedTotals) {
+                                                             List<MonetaryDocumentEntry> statement, Map<String, BigDecimal> printedTotals) {
         reconcile(printedTotals, statement);
 
         val last4s = statement.stream().map(MonetaryDocumentEntry::last4)
