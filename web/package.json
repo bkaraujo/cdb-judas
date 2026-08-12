@@ -2,6 +2,10 @@
   "name": "cdb-finance-web",
   "private": true,
   "scripts": {
-    "check:slices": "node tools/check-slices.js"
+    "check:slices": "node tools/check-slices.js",
+    "test": "node tools/run-test-harness.js"
+  },
+  "devDependencies": {
+    "puppeteer-core": "^25.5.0"
   }
 }

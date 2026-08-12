@@ -21,3 +21,7 @@ data/
 # H2 file DB (dev) — nunca versionar
 *.mv.db
 *.trace.db
+# ================================
+#           Frontend
+# ================================
+web/node_modules
