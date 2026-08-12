@@ -182,7 +182,9 @@ característica de zero dependência npm do projeto.
 + **Nunca referenciado** por `web/index.html` nem `core/boot.js` — página isolada, só dev.
 + **Adicionar cobertura a uma fatia nova**: criar `web/test/feature/<slice>.test.js` (ou
   `test/kernel/<module>.test.js`), somar uma linha `<script src="...">` no fim de
-  `web/test/index.html`. Nenhuma outra mudança de harness é necessária. Cobertura atual
-  (rodada inicial, ver `.claude/plans/` histórico): `kernel/account`, `kernel/transaction`,
-  `feature/budget`, `feature/accounts-payable` — os demais módulos/fatias com função pura
-  ficam pra rodadas seguintes, mesmo espírito incremental da migração do padrão 008.
+  `web/test/index.html`. Nenhuma outra mudança de harness é necessária. Cobertura atual:
+  kernel completo (`account`, `transaction`, `money`, `period`, `category`, `tag`,
+  `invoice`, `statement-item`) + `feature/{budget,accounts-payable,accounts,transactions,
+  credit-cards,categories}` — restam `cost-centers`, `tags`, `settings` (sem domain
+  própria), `import-rules`, `statement`, `import-statement`, `dashboard` pra rodadas
+  seguintes, mesmo espírito incremental da migração do padrão 008.
