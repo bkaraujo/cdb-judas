@@ -2,9 +2,7 @@
  * Files keep their IIFE + window.App.* globals. */
 (function () {
   const base = 'core/_2_application/';
-  const files = [
-    'dashboard-service.js'
-  ];
+  const files = [];
   files.forEach(function (path) {
     const s = document.createElement('script');
     s.src = base + path;

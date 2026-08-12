@@ -1,3 +1,512 @@
+/* feature/dashboard.js — fatia Dashboard (resultado mensal, painéis de visão geral). Última
+ * fatia a migrar: lê de quase todas as outras. Um arquivo por fatia: domain (balance-sheet,
+ * dashboard-aggregations) → infrastructure/secondary (DashboardRepository) → application
+ * (DashboardService) → infrastructure/primary (10 painéis + página), cada bloco abaixo é um
+ * IIFE independente (comentário original de cada arquivo preservado como separador de seção).
+ * Sem domain própria de payable/budget/cartão: lê via AccountsPayableApi (fecha V6),
+ * CreditCardsApi (fecha V7), TransactionsApi (V8, já fechado no composition-root), AccountsApi
+ * e CategoriesApi (onChange, refresh). BudgetApi (novo — expense-goals.js não estava no
+ * roadmap original, achado ao migrar). */
+/* _1_domain/balance-sheet.js — balance sheet computation. Pure. */
+(function () {
+  // No account type is a liability post-card-remodel (cards are no longer accounts) —
+  // everything sits on the ATIVO side until the model grows a real liability account type.
+  function compute(accounts) {
+    let assets = 0;
+    (accounts || []).forEach(function (a) {
+      assets += window.Domain.Account.currentBalance(a);
+    });
+    return { assets: assets, liabilities: 0, equity: assets };
+  }
+
+  window.Domain = window.Domain || {};
+  window.Domain.BalanceSheet = { compute: compute };
+})();
+/* _1_domain/dashboard-aggregations.js — pure analytics for dashboard panels. */
+(function () {
+  function txIsExpense(t, categoryNature) {
+    if (!t) return false;
+    if (t.type) {
+      const s = String(t.type).toLowerCase();
+      if (s === 'expense') return true;
+      if (s === 'income' || s === 'revenue') return false;
+    }
+    if (categoryNature) return String(categoryNature).toUpperCase() === 'EXPENSE';
+    return (+t.amount || 0) < 0;
+  }
+
+  function categoryNameFor(t, categories) {
+    if (!t || t.categoryId == null) return 'Sem categoria';
+    const c = window.Domain.Category.byId(categories, t.categoryId);
+    return c ? c.name : 'Sem categoria';
+  }
+
+  function categoryNatureFor(t, categories) {
+    if (!t || t.categoryId == null) return null;
+    const c = window.Domain.Category.byId(categories, t.categoryId);
+    return c ? c.nature : null;
+  }
+
+  /* Sum |amount| per category name across expense transactions. */
+  function expenseByCategory(transactions, categories) {
+    const out = {};
+    (transactions || []).forEach(function (t) {
+      const nature = categoryNatureFor(t, categories);
+      if (!txIsExpense(t, nature)) return;
+      const name = categoryNameFor(t, categories);
+      out[name] = (out[name] || 0) + Math.abs(+t.amount || 0);
+    });
+    const arr = Object.keys(out).map(function (k) { return { name: k, value: out[k] }; });
+    arr.sort(function (a, b) { return b.value - a.value; });
+    return arr;
+  }
+
+  function topN(items, n) {
+    return (items || []).slice(0, n || 5);
+  }
+
+  /* Monthly receitas/despesas series over the last `monthsBack` months. */
+  function monthlySeries(transactions, monthsBack, now) {
+    const m = monthsBack || 4;
+    const ref = now || new Date();
+    const buckets = [];
+    for (let i = m - 1; i >= 0; i--) {
+      const d = new Date(ref.getFullYear(), ref.getMonth() - i, 1);
+      buckets.push({ month: d.getMonth() + 1, year: d.getFullYear(), receitas: 0, despesas: 0 });
+    }
+    (transactions || []).forEach(function (t) {
+      const d = new Date(t.date);
+      const idx = buckets.findIndex(function (b) {
+        return b.month === d.getMonth() + 1 && b.year === d.getFullYear();
+      });
+      if (idx < 0) return;
+      const v = Math.abs(+t.amount || 0);
+      if (txIsExpense(t)) buckets[idx].despesas += v;
+      else                buckets[idx].receitas += v;
+    });
+    return buckets;
+  }
+
+  /* Filter & sort upcoming active payables by due/date ascending. */
+  function upcomingPayables(payables) {
+    return (payables || [])
+      .filter(window.AccountsPayableApi.isActive)
+      .slice()
+      .sort(function (a, b) {
+        const da = new Date(a.due || a.date || 0).getTime();
+        const db = new Date(b.due || b.date || 0).getTime();
+        return da - db;
+      });
+  }
+
+  window.Domain = window.Domain || {};
+  window.Domain.DashboardAggregations = {
+    txIsExpense: txIsExpense,
+    categoryNameFor: categoryNameFor,
+    categoryNatureFor: categoryNatureFor,
+    expenseByCategory: expenseByCategory,
+    topN: topN,
+    monthlySeries: monthlySeries,
+    upcomingPayables: upcomingPayables,
+  };
+})();
+/* _3_infrastructure/secondary/dashboard-repository.js — HTTP adapter for /dashboard endpoints. */
+(function () {
+  function create(http) {
+    return {
+      getMonthlyResult: function (month, year) {
+        return http.get('/dashboard?month=' + month + '&year=' + year);
+      },
+      getRecentTransactions: function (limit) {
+        return http.get('/accounts/transactions?limit=' + (limit || 5) + '&sort=date,desc');
+      },
+    };
+  }
+  window.Infra = window.Infra || {};
+  window.Infra.DashboardRepository = { create: create };
+})();
+/* _2_application/dashboard-service.js — dashboard data orchestration. */
+(function () {
+  let repo = null;
+  let txRepo = null;
+
+  function init(deps) {
+    repo        = deps.repo;
+    txRepo      = deps.txRepo;
+    return { ready: true };
+  }
+
+  // A Pagar/Receber derivam de transações pendentes (sem recurso de payables).
+  function adaptPending(label) {
+    return function (txs) {
+      return (Array.isArray(txs) ? txs : []).map(function (t) {
+        return {
+          id: t.id, description: t.description, due: t.date,
+          amount: Math.abs(+t.amount || 0), accountId: t.accountId,
+          categoryId: t.categoryId, status: t.status, type: label,
+        };
+      });
+    };
+  }
+
+  function monthlyResult(period) {
+    return repo.getMonthlyResult(period.month, period.year);
+  }
+
+  function recentTransactions(limit) {
+    return repo.getRecentTransactions(limit);
+  }
+
+  /* Loads everything dashboard panels need in parallel. */
+  function loadAll(period) {
+    const b = window.Domain.Period.bounds(period);
+    return Promise.all([
+      txRepo.list('from=' + b.from + '&to=' + b.to),
+      txRepo.list('status=pending&type=expense').then(adaptPending('PAYABLE')),
+      txRepo.list('status=pending&type=income').then(adaptPending('RECEIVABLE')),
+    ]).then(function (arr) {
+      return {
+        transactions: Array.isArray(arr[0]) ? arr[0] : [],
+        payables:     Array.isArray(arr[1]) ? arr[1] : [],
+        receivables:  Array.isArray(arr[2]) ? arr[2] : [],
+      };
+    });
+  }
+
+  window.App = window.App || {};
+  window.App.DashboardService = {
+    init: init,
+    monthlyResult: monthlyResult,
+    recentTransactions: recentTransactions,
+    loadAll: loadAll,
+  };
+})();
+/* pages/dashboard/cash-balances.js — Painel: Saldos de Caixa */
+(function () {
+  window.DashboardPanels = window.DashboardPanels || {};
+
+  window.DashboardPanels['cash-balances'] = function (p, ctx) {
+    var accs = ctx.cashAccounts();
+    var total = accs.reduce(function (s, a) { return s + window.Domain.Account.currentBalance(a); }, 0);
+    var rows = accs.map(function (a, i) {
+      var color = ctx.pickColor(i, a.color);
+      var bal = window.Domain.Account.currentBalance(a);
+      return (
+        '<div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-top:1px solid var(--border-light);">' +
+          '<div style="display:flex;align-items:center;gap:8px;min-width:0;">' +
+            '<span style="width:8px;height:8px;border-radius:50%;background:' + ctx.esc(color) + ';flex-shrink:0;"></span>' +
+            '<span style="font-size:12px;color:var(--text-secondary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + ctx.esc(a.name) + '</span>' +
+          '</div>' +
+          '<span style="font-size:13px;font-weight:700;color:' + window.valueColor(bal) + ';">' + ctx.esc(ctx.v(bal)) + '</span>' +
+        '</div>'
+      );
+    }).join('');
+    if (!accs.length) {
+      rows = '<div style="font-size:12px;color:var(--text-muted);text-align:center;padding:12px 0;">Sem contas cadastradas.</div>';
+    }
+    var body =
+      '<div style="margin-bottom:12px;">' +
+        '<p style="font-size:11px;color:var(--text-muted);font-weight:600;text-transform:uppercase;letter-spacing:0.04em;">Total</p>' +
+        '<p style="font-size:24px;font-weight:800;margin-top:2px;color:' + window.valueColor(total) + ';">' +
+          ctx.esc(ctx.v(total)) +
+        '</p>' +
+      '</div>' + rows;
+    return ctx.panelWrap({ title: 'Saldos de Caixa', icon: p.icon, body: body });
+  };
+})();
+/* pages/dashboard/month-result.js — Painel: Resultado do Mês */
+(function () {
+  window.DashboardPanels = window.DashboardPanels || {};
+
+  window.DashboardPanels['month-result'] = function (p, ctx) {
+    var txs = ctx.currentMonthTxs();
+    var inc = 0, exp = 0;
+    txs.forEach(function (t) {
+      var a = Math.abs(+t.amount || 0);
+      if (ctx.txIsExpense(t)) exp += a; else inc += a;
+    });
+    var res = inc - exp;
+    var rows = [
+      { label: 'Receitas', value: inc, color: 'var(--income)' },
+      { label: 'Despesas', value: exp, color: 'var(--expense)' },
+      { label: 'Resultado', value: res, color: res >= 0 ? 'var(--income)' : 'var(--expense)', bold: true },
+    ];
+    var body = '<div style="display:flex;flex-direction:column;gap:10px;">';
+    rows.forEach(function (r) {
+      body +=
+        '<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border-light);">' +
+          '<span style="font-size:13px;color:var(--text-secondary);font-weight:' + (r.bold ? 700 : 400) + ';">' + ctx.esc(r.label) + '</span>' +
+          '<span style="font-size:14px;font-weight:700;color:' + r.color + ';">' + ctx.esc(ctx.v(r.value)) + '</span>' +
+        '</div>';
+    });
+    var series = ctx.monthlySeries(4);
+    body += '<div style="height:80px;margin-top:4px;">' + ctx.miniLineChart(series, 80) + '</div>';
+    body += '</div>';
+    return ctx.panelWrap({ title: 'Resultado do Mês', icon: p.icon, body: body });
+  };
+})();
+/* pages/dashboard/expenses-by-category.js — Painel: Despesas por Categoria */
+(function () {
+  window.DashboardPanels = window.DashboardPanels || {};
+
+  window.DashboardPanels['expenses-cat'] = function (p, ctx) {
+    var data = ctx.expenseByCategory().slice(0, 5);
+    return ctx.panelWrap({ title: 'Despesas por Categoria', icon: p.icon, body: ctx.categoryBars(data) });
+  };
+})();
+/* pages/dashboard/revenues-by-category.js — Painel: Receitas por Categoria */
+(function () {
+  window.DashboardPanels = window.DashboardPanels || {};
+
+  window.DashboardPanels['revenues-cat'] = function (p, ctx) {
+    var SERIES_PALETTE = ctx.SERIES_PALETTE;
+    var map = {};
+    ctx.currentMonthTxs().forEach(function (t) {
+      if (ctx.txIsExpense(t)) return;
+      var n = ctx.categoryName(t.categoryId);
+      map[n] = (map[n] || 0) + Math.abs(+t.amount || 0);
+    });
+    var list = Object.keys(map).map(function (k, i) {
+      return { name: k, amount: map[k], color: SERIES_PALETTE[i % SERIES_PALETTE.length] };
+    });
+    list.sort(function (a, b) { return b.amount - a.amount; });
+    return ctx.panelWrap({ title: 'Receitas por Categoria', icon: p.icon, body: ctx.categoryBars(window.Domain.DashboardAggregations.topN(list, 5)) });
+  };
+})();
+/* pages/dashboard/accounts-payable.js — Painéis: Contas a Pagar / Contas a Receber */
+(function () {
+  window.DashboardPanels = window.DashboardPanels || {};
+
+  function renderListaPayable(p, ctx, kind) {
+    var isExp = kind === 'expense';
+    var src = ctx.upcomingPayables(kind).slice(0, 6);
+    var bodyEl;
+    if (!src.length) {
+      bodyEl = window.emptyState({
+        icon: isExp ? 'calendar' : 'arrowUp',
+        title: isExp ? 'Sem contas a pagar' : 'Sem contas a receber',
+        desc: 'Tudo em dia.',
+      });
+    } else {
+      var color = isExp ? 'var(--expense)' : 'var(--income)';
+      var html = '<div style="display:flex;flex-direction:column;gap:0;">';
+      src.forEach(function (b) {
+        var due = b.due || b.date;
+        var dueTxt = '';
+        try { dueTxt = window.fmtDate(due); } catch (e) {}
+        html +=
+          '<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border-light);">' +
+            '<div style="min-width:0;">' +
+              '<p style="font-size:12px;font-weight:600;color:var(--text-primary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-transform:uppercase;">' +
+                ctx.esc(b.description || b.name || '—') +
+              '</p>' +
+              '<p style="font-size:11px;color:var(--text-muted);">' + ctx.esc(dueTxt) + '</p>' +
+            '</div>' +
+            '<span style="font-size:13px;font-weight:700;color:' + color + ';flex-shrink:0;margin-left:10px;">' +
+              ctx.esc(ctx.v(Math.abs(+b.amount || 0))) +
+            '</span>' +
+          '</div>';
+      });
+      html += '</div>';
+      bodyEl = html;
+    }
+    var action = window.badge(String(ctx.upcomingPayables(kind).length), isExp ? 'expense' : 'income');
+    return ctx.panelWrap({
+      title: isExp ? 'Contas a Pagar' : 'Contas a Receber',
+      icon: isExp ? 'calendar' : 'arrowUp',
+      action: action,
+      body: bodyEl,
+    });
+  }
+
+  window.DashboardPanels['accounts-payable'] = function (p, ctx) {
+    return renderListaPayable(p, ctx, 'expense');
+  };
+
+  window.DashboardPanels['accounts-receivable'] = function (p, ctx) {
+    return renderListaPayable(p, ctx, 'income');
+  };
+})();
+/* pages/dashboard/credit-cards.js — Painel: Cartões de Crédito */
+(function () {
+  window.DashboardPanels = window.DashboardPanels || {};
+
+  window.DashboardPanels['credit-cards'] = function (p, ctx) {
+    var accounts = ctx.creditCards(); // accounts with at least one card
+    if (!accounts.length) {
+      return ctx.panelWrap({
+        title: 'Cartões de Crédito', icon: p.icon,
+        body: window.emptyState({ icon: 'creditCard', title: 'Sem cartões', desc: 'Cadastre um cartão para visualizar aqui.' }),
+      });
+    }
+    var period = window.Domain.Period.currentMonth();
+    var html = '';
+    accounts.forEach(function (a, i) {
+      var limit = a.creditLimit || 0;
+      // Invoice total = every card on the account combined, matched by tx.cardId.
+      // Usa a lista inteira (não currentMonthTxs): o ciclo da fatura que vence neste mês começa
+      // no mês anterior — ver Domain.Invoice.
+      var used = window.CreditCardsApi.accountInvoiceTotal(ctx.allTxs(), a, period);
+      var pct = window.CreditCardsApi.usagePct(used, limit);
+      var color = ctx.pickColor(i + 4, a.color);
+      var barColor = 'var(--' + window.CreditCardsApi.barColorByUsage(pct) + ')';
+      html +=
+        '<div style="margin-bottom:12px;">' +
+          '<div style="display:flex;justify-content:space-between;margin-bottom:6px;">' +
+            '<div style="display:flex;align-items:center;gap:6px;min-width:0;">' +
+              '<span style="width:10px;height:10px;border-radius:2px;background:' + ctx.esc(color) + ';flex-shrink:0;"></span>' +
+              '<span style="font-size:12px;font-weight:600;color:var(--text-primary);">' + ctx.esc(a.name) + '</span>' +
+            '</div>' +
+            '<span style="font-size:12px;color:var(--expense);font-weight:700;">' + ctx.esc(ctx.v(used)) + '</span>' +
+          '</div>' +
+          '<div style="height:6px;background:var(--bg-hover);border-radius:3px;overflow:hidden;margin-bottom:4px;">' +
+            '<div style="height:100%;border-radius:3px;width:' + pct + '%;background:' + barColor + ';transition:width 0.5s ease;"></div>' +
+          '</div>' +
+          '<div style="display:flex;justify-content:space-between;font-size:11px;color:var(--text-muted);">' +
+            '<span>' + (limit > 0 ? pct.toFixed(0) + '% usado' : 'Sem limite') + '</span>' +
+            '<span>Limite: ' + ctx.esc(limit > 0 ? ctx.v(limit) : '—') + '</span>' +
+          '</div>' +
+        '</div>';
+    });
+    return ctx.panelWrap({ title: 'Cartões de Crédito', icon: p.icon, body: html });
+  };
+})();
+/* pages/dashboard/cash-flow.js — Painel: Fluxo de Caixa */
+(function () {
+  window.DashboardPanels = window.DashboardPanels || {};
+
+  window.DashboardPanels['cash-flow'] = function (p, ctx) {
+    var series = ctx.monthlySeries(6);
+    var body =
+      '<div style="display:flex;gap:16px;margin-bottom:10px;font-size:12px;">' +
+        '<span style="display:flex;align-items:center;gap:4px;color:var(--text-secondary);">' +
+          '<span style="width:14px;height:3px;border-radius:2px;background:var(--income);display:inline-block;"></span>Receitas' +
+        '</span>' +
+        '<span style="display:flex;align-items:center;gap:4px;color:var(--text-secondary);">' +
+          '<span style="width:14px;height:3px;border-radius:2px;background:var(--expense);display:inline-block;"></span>Despesas' +
+        '</span>' +
+      '</div>' +
+      '<div style="height:110px;">' + ctx.miniLineChart(series, 110) + '</div>';
+    return ctx.panelWrap({ title: 'Fluxo de Caixa', icon: p.icon, body: body });
+  };
+})();
+/* pages/dashboard/expense-goals.js — Painel: Metas de Despesa */
+(function () {
+  window.DashboardPanels = window.DashboardPanels || {};
+
+  window.DashboardPanels['expense-goals'] = function (p, ctx) {
+    var now = new Date();
+    var $card = ctx.panelWrap({
+      title: 'Metas de Despesa', icon: p.icon,
+      body: '<div style="font-size:12px;color:var(--text-muted);text-align:center;padding:20px 0;">Carregando…</div>',
+    });
+    window.BudgetApi.loadPeriod(window.Domain.Period.create(now.getMonth() + 1, now.getFullYear())).then(function (list) {
+      var data = (Array.isArray(list) ? list : []).filter(function (g) {
+        return g && (g.budgeted || g.budget || g.target);
+      });
+      var $body = $card.find('div').last();
+      if (!data.length) {
+        $body.html(window.emptyState({ icon: 'target', title: 'Sem metas', desc: 'Configure metas em Metas / Orçamento.' }));
+        return;
+      }
+      var html = '<div style="display:flex;flex-direction:column;gap:10px;">';
+      data.slice(0, 6).forEach(function (g) {
+        var name = g.name || g.categoryName || ctx.categoryName(g.categoryId) || 'Categoria';
+        var budgeted = +(g.budgeted || g.budget || g.target || 0);
+        var spent = +(g.spent || g.actual || 0);
+        var pct = window.BudgetApi.consumptionPct(spent, budgeted);
+        var over = window.BudgetApi.isOverBudget(spent, budgeted);
+        var barColor = over ? 'var(--expense)' : pct > 80 ? 'var(--warning)' : 'var(--income)';
+        html +=
+          '<div>' +
+            '<div style="display:flex;justify-content:space-between;margin-bottom:4px;font-size:12px;">' +
+              '<span style="color:var(--text-secondary);">' + ctx.esc(name) + '</span>' +
+              '<span style="font-weight:700;color:' + (over ? 'var(--expense)' : 'var(--text-primary)') + ';">' +
+                ctx.esc(ctx.v(spent)) + ' / ' + ctx.esc(ctx.v(budgeted)) +
+              '</span>' +
+            '</div>' +
+            '<div style="height:6px;background:var(--bg-hover);border-radius:3px;overflow:hidden;">' +
+              '<div style="height:100%;border-radius:3px;width:' + pct + '%;background:' + barColor + ';transition:width 0.5s ease;"></div>' +
+            '</div>' +
+          '</div>';
+      });
+      html += '</div>';
+      $body.html(html);
+    }).catch(function () {
+      var $body = $card.find('div').last();
+      $body.html(window.emptyState({ icon: 'target', title: 'Em breve', desc: 'Endpoint de metas indisponível.' }));
+    });
+    return $card;
+  };
+})();
+/* pages/dashboard/recent-postings.js — Painel: Últimos Lançamentos */
+(function () {
+  window.DashboardPanels = window.DashboardPanels || {};
+
+  window.DashboardPanels['recent-postings'] = function (p, ctx) {
+    var txs = (ctx.state.data.transactions || []).slice(0, 7);
+    if (!txs.length) {
+      return ctx.panelWrap({
+        title: 'Últimos Lançamentos', icon: p.icon,
+        body: window.emptyState({ icon: 'list', title: 'Sem lançamentos', desc: 'Nenhum movimento ainda.' }),
+      });
+    }
+    var html = '';
+    txs.forEach(function (t) {
+      var isExp = ctx.txIsExpense(t);
+      var color = isExp ? 'var(--expense)' : 'var(--income)';
+      var amt   = Math.abs(+t.amount || 0);
+      var dateTxt = '';
+      try { dateTxt = window.fmtDate(t.date); } catch (e) {}
+      var cat = ctx.categoryName(t.categoryId);
+      html +=
+        '<div style="display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid var(--border-light);">' +
+          '<span style="width:28px;height:28px;border-radius:6px;background:' + (isExp ? 'var(--expense-light)' : 'var(--income-light)') +
+            ';color:' + color + ';display:flex;align-items:center;justify-content:center;flex-shrink:0;">' +
+            window.icon(isExp ? 'arrowDown' : 'arrowUp', 14) +
+          '</span>' +
+          '<div style="flex:1;min-width:0;">' +
+            '<p style="font-size:12px;font-weight:600;color:var(--text-primary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-transform:uppercase;">' +
+              ctx.esc(window.Domain.Transaction.describe(t) || '—') +
+            '</p>' +
+            '<p style="font-size:11px;color:var(--text-muted);">' + ctx.esc(cat) + (dateTxt ? ' · ' + ctx.esc(dateTxt) : '') + '</p>' +
+          '</div>' +
+          '<span style="font-size:12px;font-weight:700;color:' + color + ';flex-shrink:0;">' +
+            ctx.esc(ctx.v(amt)) +
+          '</span>' +
+        '</div>';
+    });
+    var action = $(
+      '<button class="btn btn-ghost btn-sm" data-act="goto-tx" type="button">' +
+        '<span>Ver todos</span>' +
+      '</button>'
+    );
+    return ctx.panelWrap({ title: 'Últimos Lançamentos', icon: p.icon, action: action, body: html });
+  };
+})();
+/* pages/dashboard/balance-sheet.js — Painel: Balanço Patrimonial */
+(function () {
+  window.DashboardPanels = window.DashboardPanels || {};
+
+  window.DashboardPanels['balance-sheet'] = function (p, ctx) {
+    var sheet = window.Domain.BalanceSheet.compute(ctx.cbdAccounts());
+    var rows = [
+      { label: 'Ativo Total',     value: sheet.assets,      color: 'var(--income)' },
+      { label: 'Passivo Total',   value: sheet.liabilities,    color: 'var(--expense)' },
+      { label: 'Patrimônio Líq.', value: sheet.equity, color: 'var(--accent)', bold: true },
+    ];
+    var body = '<div style="display:flex;flex-direction:column;gap:8px;">';
+    rows.forEach(function (r) {
+      body +=
+        '<div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border-light);">' +
+          '<span style="font-size:13px;color:var(--text-secondary);font-weight:' + (r.bold ? 700 : 400) + ';">' + ctx.esc(r.label) + '</span>' +
+          '<span style="font-size:14px;font-weight:700;color:' + r.color + ';">' + ctx.esc(ctx.v(r.value)) + '</span>' +
+        '</div>';
+    });
+    body += '</div>';
+    return ctx.panelWrap({ title: 'Balanço Patrimonial', icon: p.icon, body: body });
+  };
+})();
 /* pages/dashboard.js — Visão Geral (painéis configuráveis + drag-reorder + modal personalizar). */
 (function () {
   window.Pages = window.Pages || {};
@@ -123,9 +632,9 @@
   // only transactions/payables/receivables are fetched here.
   function loadAll() {
     const jobs = [
-      window.App.TransactionService.list('limit=500&sort=date,desc').catch(function () { return []; }),
-      window.App.PayableService.listPayable().catch(function () { return []; }),
-      window.App.PayableService.listReceivable().catch(function () { return []; }),
+      window.TransactionsApi.list('limit=500&sort=date,desc').catch(function () { return []; }),
+      window.AccountsPayableApi.listPayable().catch(function () { return []; }),
+      window.AccountsPayableApi.listReceivable().catch(function () { return []; }),
     ];
     return Promise.all(jobs).then(function (arr) {
       state.data.transactions = Array.isArray(arr[0]) ? arr[0] : [];
@@ -137,7 +646,7 @@
 
   // ── Data derivations ─────────────────────────────────────────
   function cashAccounts()   { return cbdAccounts(); }
-  function creditCards()    { return window.App.CreditCardService.accountsWithCards(); }
+  function creditCards()    { return window.CreditCardsApi.accountsWithCards(); }
 
   function currentMonthTxs() {
     const p = window.Domain.Period.currentMonth();
@@ -681,8 +1190,8 @@
         window.toast((err && err.message) || 'Falha ao carregar dashboard');
       });
       // Several panels depend on cadastro state — re-render on any change.
-      state.unsubscribeAcc = window.App.AccountService.onChange(function () { render(); });
-      state.unsubscribeCat = window.App.CategoryService.onChange(function () { render(); });
+      state.unsubscribeAcc = window.AccountsApi.onChange(function () { render(); });
+      state.unsubscribeCat = window.CategoriesApi.onChange(function () { render(); });
     },
     unmount: function () {
       if (state && state.$root) {

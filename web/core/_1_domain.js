@@ -2,10 +2,7 @@
  * Files keep their IIFE + window.Domain.* globals. */
 (function () {
   const base = 'core/_1_domain/';
-  const files = [
-    'balance-sheet.js',
-    'dashboard-aggregations.js'
-  ];
+  const files = [];
   files.forEach(function (path) {
     const s = document.createElement('script');
     s.src = base + path;

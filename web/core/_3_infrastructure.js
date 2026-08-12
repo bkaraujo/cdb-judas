@@ -5,9 +5,7 @@
   const primaryFiles = [];
 
   const secondaryBase = 'core/_3_infrastructure/secondary/';
-  const secondaryFiles = [
-    'dashboard-repository.js'
-  ];
+  const secondaryFiles = [];
 
   function inject(base, path) {
     const s = document.createElement('script');

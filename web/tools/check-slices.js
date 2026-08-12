@@ -61,6 +61,10 @@ function layerOf(relPath) {
   return 'root'; // kernel.barrel.js, composition-root.barrel.js, feature/<slice>.js flat, *.api.js
 }
 
+// Browser globals, não símbolos de fatia — `window.location.hash = ...`, `window.history.*` etc
+// aparecem em múltiplos arquivos independentes e não são ownership real de ninguém.
+const BROWSER_GLOBALS = new Set(['location', 'history', 'document', 'navigator', 'console', 'localStorage', 'sessionStorage']);
+
 const scanned = [];
 for (const root of SCAN_ROOTS) walk(root, scanned);
 
@@ -85,6 +89,7 @@ for (const f of relFiles) {
       const top = m[1];
       const sub = m[2] || '';
       const symbol = top + sub;
+      if (BROWSER_GLOBALS.has(top)) continue;
       // Namespace guard: `window.App = window.App || {};` — not a real ownership claim.
       const guardRe = new RegExp('window\\.' + top.replace(/\$/g, '\\$') + '\\s*=\\s*window\\.' + top.replace(/\$/g, '\\$') + '\\s*\\|\\|');
       if (guardRe.test(line)) continue;
@@ -112,6 +117,7 @@ for (const f of relFiles) {
       const top = m[1];
       const sub = m[2] || '';
       const symbol = top + sub;
+      if (BROWSER_GLOBALS.has(top)) continue;
       const owner = defs.get(symbol) || defs.get(top); // fall back to top-level owner
       if (!owner) continue;
       if (owner.rel === f.rel) continue; // own file

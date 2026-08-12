@@ -20,6 +20,7 @@
     'feature/cost-centers.js',
     'feature/tags.js',
     'feature/categories.js',
+    'feature/categories.api.js',
     'feature/settings.js',
     'feature/import-rules.js',
     'feature/import-rules.api.js',
@@ -29,10 +30,14 @@
     'feature/transactions.api.js',
     'feature/statement.js',
     'feature/credit-cards.js',
+    'feature/credit-cards.api.js',
     'feature/accounts-payable.js',
+    'feature/accounts-payable.api.js',
     'feature/import-statement.js',
     'feature/import-statement.api.js',
-    'feature/budget.js'
+    'feature/budget.js',
+    'feature/budget.api.js',
+    'feature/dashboard.js'
   ].forEach(inject);
 
   // ── LEGADO: barrels por camada, encolhem a cada fatia migrada (ver .claude/frontend-refactor.md) ──

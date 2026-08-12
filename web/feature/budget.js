@@ -2,7 +2,8 @@
  * de orçamento) → infrastructure/secondary (BudgetRepository, adapter HTTP /budget) →
  * application (BudgetService) → infrastructure/primary (página), cada bloco abaixo é um IIFE
  * independente (comentário original de cada arquivo preservado como separador de seção).
- * Standalone: sem consumidor cross-slice, sem coupling com nenhuma fatia irmã. */
+ * Consumida por dashboard (painel de metas de despesa) via budget.api.js — achado ao migrar
+ * dashboard, não fazia parte do roadmap original. */
 /* _1_domain/budget.js — Budget item rules. Pure. */
 (function () {
   function normalize(raw) {
