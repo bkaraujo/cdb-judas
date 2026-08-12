@@ -152,3 +152,37 @@ web/
   `credit-cards`, `accounts-payable`, `import-statement`, `budget`, `dashboard`) vivem em
   `web/feature/`; `web/pages/` e os barrels legados por camada (`core/_1_domain.js` etc.) não
   existem mais. Histórico em `.claude/frontend-refactor.md` (local, gitignored).
+
+### 009 — Testes de Frontend (QUnit)
+
+Testes do frontend usam **QUnit via CDN** (`code.jquery.com/qunit/`, mesma convenção de
+CDN já usada pro jQuery em `index.html`) — sem `npm install`, sem bundler, preservando a
+característica de zero dependência npm do projeto.
+
++ **Onde vivem**: `web/test/`, espelhando a divisão `core/kernel/` vs `feature/` — um
+  arquivo de teste por arquivo-fonte (`feature/budget.js` → `test/feature/budget.test.js`,
+  `core/kernel/_0_domain/account.js` → `test/kernel/account.test.js`).
++ **Harness**: `web/test/index.html` é a única página que carrega os testes — replica a
+  coreografia de `core/boot.js` (kernel → as 14 fatias, mesma ordem), **sem** carregar
+  `composition-root` (que faz o wiring de DI/HTTP real e renderiza a SPA de verdade). Um
+  único harness carrega tudo sempre — sem mecanismo de harness por fatia, mesma filosofia
+  de "carrega tudo sempre" que `boot.js` já usa em produção.
++ **O que testar** (mesmo critério de `docs/backend/testing.md`, adaptado ao frontend):
+  funções puras de `window.Domain.*` e o contrato público de `App.*Service`/`*.api.js` —
+  **nunca** um helper privado de IIFE nunca exportado a um `window.*`, e **nunca** código
+  de renderização/DOM (sem JSDOM neste projeto — fora de escopo).
++ **Repositório fake em vez de HTTP real**: serviços com DI por `init(deps)` (ex.:
+  `App.BudgetService`, `App.PayableService`) são testados injetando um objeto plano com
+  métodos stub retornando `Promise.resolve(...)` — nunca uma chamada HTTP real, nunca
+  `http-client.js` de verdade (este projeto nem usa jQuery ajax, tudo é `fetch`).
++ **Como rodar**: abrir `web/test/index.html` num browser (arquivo estático — funciona via
+  `file://` ou servido pelo backend em `/test/index.html` durante `quarkus:dev`; **nunca**
+  em produção, excluído do jar em `br-application/pom.xml`, `test/**`). O resumo de
+  pass/fail aparece em `#qunit-testresult`.
++ **Nunca referenciado** por `web/index.html` nem `core/boot.js` — página isolada, só dev.
++ **Adicionar cobertura a uma fatia nova**: criar `web/test/feature/<slice>.test.js` (ou
+  `test/kernel/<module>.test.js`), somar uma linha `<script src="...">` no fim de
+  `web/test/index.html`. Nenhuma outra mudança de harness é necessária. Cobertura atual
+  (rodada inicial, ver `.claude/plans/` histórico): `kernel/account`, `kernel/transaction`,
+  `feature/budget`, `feature/accounts-payable` — os demais módulos/fatias com função pura
+  ficam pra rodadas seguintes, mesmo espírito incremental da migração do padrão 008.

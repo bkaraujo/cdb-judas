@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>CDB Finance — Test Harness (QUnit)</title>
+  <!-- Dev-only. Nunca referenciado por web/index.html nem core/boot.js.
+       Excluído do jar de produção (br-application/pom.xml, test/**). -->
+  <link rel="stylesheet" href="https://code.jquery.com/qunit/qunit-2.24.1.css">
+</head>
+<body>
+  <div id="qunit"></div>
+  <div id="qunit-fixture"></div>
+
+  <script src="https://code.jquery.com/jquery-4.0.0.slim.min.js"></script>
+  <script src="https://code.jquery.com/qunit/qunit-2.24.1.js"></script>
+
+  <script>
+    (function () {
+      function inject(src) {
+        const s = document.createElement('script');
+        s.src = src;
+        s.async = false;
+        document.head.appendChild(s);
+      }
+      // Mesma lista/ordem de core/kernel/kernel.barrel.js + core/boot.js, com '../' porque
+      // este harness vive um nível abaixo de web/. Não carrega core/composition-root/** —
+      // é quem faz o wiring de DI real (HTTP de verdade, renderiza a SPA em #app); testes
+      // injetam repo fake em vez disso.
+      [
+        'core/kernel/_0_domain/period.js', 'core/kernel/_0_domain/money.js',
+        'core/kernel/_0_domain/category.js', 'core/kernel/_0_domain/tag.js',
+        'core/kernel/_0_domain/account.js', 'core/kernel/_0_domain/invoice.js',
+        'core/kernel/_0_domain/transaction.js', 'core/kernel/_0_domain/statement-item.js',
+        'core/kernel/_1_application/event-bus.js', 'core/kernel/_1_application/cache-store.js',
+        'core/kernel/_1_application/period-service.js', 'core/kernel/_1_application/preferences-service.js',
+        'core/kernel/_1_application/system-service.js', 'core/kernel/_1_application/self-service.js',
+        'core/kernel/_1_application/session-service.js',
+        'core/kernel/_2_infrastructure/secondary/storage.js', 'core/kernel/_2_infrastructure/secondary/auth-store.js',
+        'core/kernel/_2_infrastructure/secondary/http-client.js', 'core/kernel/_2_infrastructure/secondary/self-repository.js',
+        'core/kernel/_2_infrastructure/secondary/registry-bootstrap.js', 'core/kernel/_2_infrastructure/secondary/sse-client.js',
+        'core/kernel/_2_infrastructure/primary/icons.js', 'core/kernel/_2_infrastructure/primary/format.js',
+        'core/kernel/_2_infrastructure/primary/ui.js', 'core/kernel/_2_infrastructure/primary/helpers.js',
+        'core/kernel/_2_infrastructure/primary/pickers.js', 'core/kernel/_2_infrastructure/primary/delete-dialog.js',
+        'core/kernel/_2_infrastructure/primary/theme.js', 'core/kernel/_2_infrastructure/primary/sidebar.data.js',
+        'core/kernel/_2_infrastructure/primary/sidebar.js', 'core/kernel/_2_infrastructure/primary/router.js',
+        'feature/reports.js', 'feature/cost-centers.js', 'feature/tags.js',
+        'feature/categories.js', 'feature/categories.api.js', 'feature/settings.js',
+        'feature/import-rules.js', 'feature/import-rules.api.js',
+        'feature/accounts.js', 'feature/accounts.api.js',
+        'feature/transactions.js', 'feature/transactions.api.js',
+        'feature/statement.js',
+        'feature/credit-cards.js', 'feature/credit-cards.api.js',
+        'feature/accounts-payable.js', 'feature/accounts-payable.api.js',
+        'feature/import-statement.js', 'feature/import-statement.api.js',
+        'feature/budget.js', 'feature/budget.api.js',
+        'feature/dashboard.js'
+      ].forEach(function (p) { inject('../' + p); });
+    })();
+  </script>
+
+  <!-- Testes: uma linha por arquivo-fonte coberto (ver web/CLAUDE.md padrão 009 pra somar mais). -->
+  <script src="kernel/account.test.js"></script>
+  <script src="kernel/transaction.test.js"></script>
+  <script src="feature/budget.test.js"></script>
+  <script src="feature/accounts-payable.test.js"></script>
+</body>
+</html>

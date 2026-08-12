@@ -59,6 +59,7 @@
                     <exclude>CLAUDE.md</exclude>
                     <exclude>package.json</exclude>
                     <exclude>tools/**</exclude>
+                    <exclude>test/**</exclude>
                 </excludes>
             </resource>
         </resources>

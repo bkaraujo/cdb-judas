@@ -1,6 +1,6 @@
 package br.cdb.feature.f001._1_application;
 
-import br.cdb.feature.f001._0_domain.Preferences;
+import br.cdb.feature.f001._0_domain.model.Preferences;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 
