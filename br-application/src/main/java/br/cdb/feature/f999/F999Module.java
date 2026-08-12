@@ -75,7 +75,7 @@ public class F999Module implements Lifecycle {
                     val userPassword = userName.toCharArray();
                     Context.get(DataSource.class).transaction(_ -> {
                         switch (service.createUser(userName, Strings.EMPTY, userPassword)) {
-                            case Result.Failure(var error) -> Logger.warn(error.toString());
+                            case Result.Failure(var error) -> Logger.warn(() -> error.toString());
                             case Result.Success(var _) -> Logger.info("Usuário criado com sucesso");
                         }
 

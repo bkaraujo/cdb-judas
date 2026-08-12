@@ -302,8 +302,17 @@ public abstract class Logger {
     }
 
     public static void fatal(String message, Object... args) {
+        fatal(() -> message.formatted(Meta.evaluate(args)));
+    }
+
+    /**
+     * Como {@link #fatal(String, Object...)}, mas sem formatação — a mensagem já vem pronta. É o que
+     * as pontes e o {@link #stackTrace} usam: texto de terceiro (ou uma stack trace) passado pela
+     * sobrecarga varargs seria reinterpretado como format string e um {@code %} qualquer lançaria.
+     */
+    public static void fatal(Supplier<String> messageSupplier) {
         forwarder.fatal(() -> {
-            val local = new StringBuilder(message.formatted(Meta.evaluate(args)));
+            val local = new StringBuilder(messageSupplier.get());
             local.append("\n");
 
             val stackTrace = Meta.stackFrame();
@@ -315,7 +324,7 @@ public abstract class Logger {
         });
     }
 
-    private static final Map<LogLevel, Consumer<String>> SINKS = Map.of(
+    private static final Map<LogLevel, Consumer<Supplier<String>>> SINKS = Map.of(
             LogLevel.VERBOSE, Logger::verbose,
             LogLevel.TRACE, Logger::trace,
             LogLevel.DEBUG, Logger::debug,
@@ -335,7 +344,8 @@ public abstract class Logger {
         if (sink == null) {
             throw new IllegalStateException("Unexpected value: " + level);
         }
-        sink.accept(message.toString());
+        val rendered = message.toString();
+        sink.accept(() -> rendered);
     }
 
     // Internal methods for SLF4J bridge to specify caller class
@@ -371,10 +381,19 @@ public abstract class Logger {
         return externalCaller.get();
     }
 
-    private static void withCaller(Supplier<String> caller, Supplier<String> message, Consumer<String> consumer) {
+    /**
+     * O sink recebe o {@link Supplier}, nunca a {@code String} já renderizada: com {@code
+     * Consumer<String>} as referências {@code Logger::debug} resolviam para a sobrecarga varargs, que
+     * faz {@code message.formatted(...)} — a mensagem de terceiro virava format string e qualquer
+     * {@code %} nela lançava {@code IllegalFormatException} dentro de quem logou. Foi assim que o
+     * {@code Loopback interface: … 0:0:0:0:0:0:0:1%lo} do {@code io.netty.util.NetUtil} derrubava o
+     * boot inteiro com {@code APP_LOGLEVEL_ROOT=VERBOSE}. De quebra, a mensagem só é renderizada se o
+     * nível deixar passar.
+     */
+    private static void withCaller(Supplier<String> caller, Supplier<String> message, Consumer<Supplier<String>> sink) {
         try {
             externalCaller.set(caller.get());
-            consumer.accept(message.get());
+            sink.accept(message);
         } finally {
             externalCaller.remove();
         }

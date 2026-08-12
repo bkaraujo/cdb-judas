@@ -43,7 +43,7 @@ public sealed interface Result<T, E> permits Result.Success, Result.Failure {
         return switch (this) {
             case Success<T, E>(T v) -> v;
             case Failure<T, E>(E e) -> {
-                Logger.fatal(e.toString());
+                Logger.fatal(() -> e.toString());
                 throw new RuntimeException("Result is a failure: " + e);
             }
         };

@@ -31,13 +31,25 @@ class SLF4JBridge extends LegacyAbstractLogger {
 
         val messageSupplier = new LogMessageSupplier(messagePattern, arguments, marker, throwable);
 
-        // Use WithCaller methods to preserve caller class name
+        // Falha ao logar nunca pode subir para quem logou: aqui o chamador é biblioteca de terceiro,
+        // muitas vezes um <clinit> (io.netty.util.NetUtil), onde uma exceção vira
+        // ExceptionInInitializerError e derruba a aplicação inteira.
+        try {
+            dispatch(level, messageSupplier);
+        } catch (RuntimeException e) {
+            // Último recurso: o canal de log é justamente o que falhou, então vai direto no stderr.
+            System.err.printf("Falha ao encaminhar log de '%s': %s%n", loggerName, e);
+        }
+    }
+
+    /** Use WithCaller methods to preserve caller class name. */
+    private void dispatch(Level level, Supplier<String> message) {
         switch (level) {
-            case TRACE -> Logger.traceWithCaller(() -> loggerName, messageSupplier);
-            case DEBUG -> Logger.debugWithCaller(() -> loggerName, messageSupplier);
-            case INFO -> Logger.infoWithCaller(() -> loggerName, messageSupplier);
-            case WARN -> Logger.warnWithCaller(() -> loggerName, messageSupplier);
-            case ERROR -> Logger.errorWithCaller(() -> loggerName, messageSupplier);
+            case TRACE -> Logger.traceWithCaller(() -> loggerName, message);
+            case DEBUG -> Logger.debugWithCaller(() -> loggerName, message);
+            case INFO -> Logger.infoWithCaller(() -> loggerName, message);
+            case WARN -> Logger.warnWithCaller(() -> loggerName, message);
+            case ERROR -> Logger.errorWithCaller(() -> loggerName, message);
         }
     }
 

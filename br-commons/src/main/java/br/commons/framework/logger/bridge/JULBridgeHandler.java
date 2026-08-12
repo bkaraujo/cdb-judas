@@ -46,7 +46,16 @@ public class JULBridgeHandler extends Handler {
         val callerClass = new CallerSupplier(record);
         val message = new LogMessageSupplier(record);
 
-        val julLevelValue = record.getLevel().intValue();
+        // Falha ao logar nunca pode subir para quem logou — ver o mesmo cuidado em SLF4JBridge.
+        try {
+            dispatch(record.getLevel().intValue(), callerClass, message);
+        } catch (RuntimeException e) {
+            // O canal de log é justamente o que falhou, então o aviso vai direto no stderr.
+            System.err.printf("Falha ao encaminhar log de '%s': %s%n", record.getLoggerName(), e);
+        }
+    }
+
+    private static void dispatch(int julLevelValue, Supplier<String> callerClass, Supplier<String> message) {
         if (julLevelValue <= TRACE_LEVEL_THRESHOLD) { Logger.traceWithCaller(callerClass, message); }
         else if (julLevelValue <= DEBUG_LEVEL_THRESHOLD) { Logger.debugWithCaller(callerClass, message); }
         else if (julLevelValue <= INFO_LEVEL_THRESHOLD) { Logger.infoWithCaller(callerClass, message); }

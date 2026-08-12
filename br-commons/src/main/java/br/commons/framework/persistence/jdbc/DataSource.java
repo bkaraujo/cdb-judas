@@ -125,7 +125,7 @@ public class DataSource {
     private <T> T readOnly(Function<JDBCTransaction, Result<T, String>> work) {
         return switch (begin()) {
             case Result.Failure(var error) -> {
-                Logger.fatal(error);
+                Logger.fatal(() -> error);
                 throw new RuntimeException("Unreachable");
             }
             case Result.Success(var transaction) -> {
@@ -149,7 +149,7 @@ public class DataSource {
     private <T> T mutating(Function<JDBCTransaction, Result<T, String>> work) {
         return switch (begin()) {
             case Result.Failure(var error) -> {
-                Logger.fatal(error);
+                Logger.fatal(() -> error);
                 throw new RuntimeException("Unreachable");
             }
             case Result.Success(var transaction) -> {
@@ -171,7 +171,7 @@ public class DataSource {
                 } catch (RuntimeException ex) {
                     transaction.markRollbackOnly();
                     transaction.rollback();
-                    Logger.fatal(ex.toString());
+                    Logger.fatal(() -> ex.toString());
                     throw new RuntimeException("Unreachable");
                 } finally { transaction.close(); }
             }

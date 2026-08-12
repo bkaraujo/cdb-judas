@@ -39,9 +39,9 @@ public class GenericExceptionMapper implements ExceptionMapper<Exception> {
 
         val message = Strings.orEmpty(ex.getMessage());
         if (!message.contains("favicon.ico"))
-            Logger.error(message);
+            Logger.error(() -> message);
         val cause = ex.getCause();
-        if (cause != null) { Logger.error(Strings.orEmpty(cause.getMessage())); }
+        if (cause != null) { Logger.error(() -> Strings.orEmpty(cause.getMessage())); }
 
         val pd = ProblemDetail.of(Response.Status.INTERNAL_SERVER_ERROR, instance, "Erro interno");
         return Response.status(pd.status()).entity(pd).build();
