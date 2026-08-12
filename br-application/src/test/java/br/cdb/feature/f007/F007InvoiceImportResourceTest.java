@@ -31,6 +31,7 @@ class F007InvoiceImportResourceTest extends AbstractImportTest {
     private static final String BTG_FEV25 = "/faturas/fatura-btg-fev25.txt";
     private static final String SANTANDER_ABRIL = "/faturas/fatura-santander-abril.txt";
     private static final String SANTANDER_MAIO = "/faturas/fatura-santander-maio.txt";
+    private static final String SAMS_CLUB_AGOSTO = "/faturas/fatura-sams-club-agosto.txt";
 
     // ── BTG ────────────────────────────────────────────────────────────────────
 
@@ -318,6 +319,74 @@ class F007InvoiceImportResourceTest extends AbstractImportTest {
                 .allMatch(r -> amount(r).compareTo(new BigDecimal("231.79")) == 0));
     }
 
+    // ── Sam's Club ─────────────────────────────────────────────────────────────
+
+    @Test
+    void samsClubLeODocumentoComoFaturaEOCartaoDoTitular() throws IOException {
+        preview(fixturePdf(SAMS_CLUB_AGOSTO)).statusCode(200)
+                .body("documentType", is("CREDIT_CARD_INVOICE"))
+                .body("issuer", is("Sam's Club"))
+                .body("last4s", contains("4321"));
+    }
+
+    @Test
+    void samsClubAncoraOAnoDaCompraNoVencimentoImpresso() throws IOException {
+        val compra = onlyRowWithDescription(previewFixture(SAMS_CLUB_AGOSTO), "SAMS 4953 ACS AGUAS CLARA");
+
+        // Vencimento 12/08/2026 → período agosto/2026; a linha imprime só "01/07".
+        assertEquals("2026-07-01", compra.get("date"));
+        assertEquals(compra.get("date"), compra.get("originalDate"), "à-vista: data == data original");
+        assertEquals(0, amount(compra).compareTo(new BigDecimal("740.79")));
+        assertEquals("4321", compra.get("last4"));
+        assertNull(compra.get("installmentNumber"));
+    }
+
+    @Test
+    void samsClubDescartaBoletoSaldoAnteriorETotais() throws IOException {
+        // O boleto no topo repete o mesmo PAN e o mesmo valor da fatura; nada dele entra.
+        val rows = rows(previewFixture(SAMS_CLUB_AGOSTO));
+
+        assertEquals(1, rows.size());
+        assertTrue(rows.stream().noneMatch(r -> str(r, "description").contains("SALDO FATURA ANTERIOR")));
+        assertTrue(rows.stream().noneMatch(r -> str(r, "description").contains("TOTAL DA FATURA")));
+    }
+
+    @Test
+    void samsClubExpandeALinhaParcelada() throws IOException {
+        val parcelas = rowsWithDescription(
+                previewOf(samsClubInvoice("12/08/2026", "01/07 SUPERMERCADO EXEMPLO 03/10 150,00")),
+                "SUPERMERCADO EXEMPLO");
+
+        assertEquals(10, parcelas.size());
+        assertEquals(List.of(1, 2, 3, 4, 5, 6, 7, 8, 9, 10), ints(parcelas, "installmentNumber"));
+        assertTrue(parcelas.stream().allMatch(r -> "2026-07-01".equals(r.get("originalDate"))));
+        assertTrue(parcelas.stream().allMatch(r -> amount(r).compareTo(new BigDecimal("150.00")) == 0));
+        assertEquals(1L, parcelas.stream().map(r -> r.get("groupId")).distinct().count());
+    }
+
+    @Test
+    void samsClubDescartaPagamentosEEstornos() throws IOException {
+        // O sinal negativo aparece dos dois lados do valor conforme a linha; nenhuma das duas entra.
+        val json = previewOf(samsClubInvoice("12/08/2026",
+                "07/07 PAGAMENTO EFETUADO -740,79",
+                "08/07 ESTORNO COMPRA 50,00-",
+                "09/07 COMPRA MANTIDA 10,00"));
+
+        assertEquals(List.of("COMPRA MANTIDA"), json.getList("rows.description", String.class));
+    }
+
+    @Test
+    void samsClubTrocaDeCartaoNaLinhaDoPortadorAdicional() throws IOException {
+        val json = previewOf(samsClubInvoice("12/08/2026",
+                "FULANO DE TAL 544824******4321",
+                "01/07 COMPRA DO TITULAR 10,00",
+                "BELTRANO DE TAL 544824******8888",
+                "10/07 COMPRA DO ADICIONAL 20,00"));
+
+        assertEquals(List.of("4321", "8888"), json.getList("rows.last4"));
+        assertEquals(List.of("4321", "8888"), json.getList("last4s"));
+    }
+
     // ── casamento de cartão ────────────────────────────────────────────────────
 
     @Test
@@ -479,6 +548,22 @@ class F007InvoiceImportResourceTest extends AbstractImportTest {
                 "Lançamentos do cartão físico | Fulano | Final 0020 Total do cartão: R$ 0,00",
                 "Total de compras e despesas");
         return header + "\n" + String.join("\n", chargeLines) + "\nR$ 0,00";
+    }
+
+    /**
+     * Fatura Sam's Club mínima: a manchete da marca (detecção), o cartão do titular, o vencimento
+     * {@code dd/MM/yyyy} impresso sob "VENCIMENTO" (ancora o ano das compras) e a seção de lançamentos.
+     */
+    private static String samsClubInvoice(String vencimento, String... chargeLines) {
+        val header = String.join("\n",
+                "FATURA MENSAL CARTÃO SAM'S CLUB GOLD MASTERCARD TITULAR: FULANO DE TAL",
+                "CARTÃO: 544824******4321",
+                "TOTAL DA SUA FATURA VENCIMENTO LIMITE DE CRÉDITO",
+                "R$ 1.000,00 " + vencimento + " R$ 950,00",
+                "LANÇAMENTOS NO BRASIL",
+                "DATA DESCRIÇÃO  VALOR R$",
+                "SALDO FATURA ANTERIOR 0,00");
+        return header + "\n" + String.join("\n", chargeLines) + "\nTOTAL DA FATURA R$ 1.000,00";
     }
 
     /** O {@code "15 Ago"} que o BTG imprime no fim da linha de lançamento. */

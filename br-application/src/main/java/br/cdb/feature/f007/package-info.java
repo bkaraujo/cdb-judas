@@ -1,7 +1,7 @@
 /**
  * Importação de extrato/fatura ({@code /api/{uuid}/accounts/transactions/import/*}).
  *
- * <p>Parsers BTG/Santander, preview→confirm, expansão de parcelas, casamento de cartão, dedup por
+ * <p>Parsers BTG/Santander/Sam's Club, preview→confirm, expansão de parcelas, casamento de cartão, dedup por
  * assinatura de grupo determinística ({@code GroupSignature}) e reconciliação de lançamentos manuais.
  * {@code ImportUseCase} é o único {@code *UseCase} de fronteira (fluxo único, não CRUD — sem par CQRS).
  *

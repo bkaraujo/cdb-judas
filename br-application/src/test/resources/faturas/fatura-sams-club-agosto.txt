@@ -1,0 +1,108 @@
+FATURA MENSAL CARTÃO SAM'S CLUB GOLD MASTERCARD TITULAR: FULANO DE TAL
+CARTÃO: 544824******4321
+30000 003704 001208 260007 000671 629784
+368-9 36890.00101 95722.965134 17001.000300 4 00000000000000
+Nome do Pagador/CPF/CNPJ/Endereço
+FULANO DE TAL  CPF: 000.000.000 - 00
+RUA EXEMPLO 1 - BAIRRO EXEMPLO
+BRASILIA - DF - CEP: 70000-000
+RECIBO DO PAGADOR
+Nosso Número Nr Documento Data de Vencimento Valor do Documento (=) Valor Pago
+09/57229651317-9 544824******4321 12/08/2026 R$ 740,79
+Nome do Beneficiário/CNPJ/CPF/Endereço
+BANCO CSF S.A. CNPJ: 08.357.240/0001-50 - Av. Doutora Ruth Cardoso, 4.777 - 2º andar - Jd. Universidade Pinheiros - São Paulo - SP - CEP 05477-903
+Agência/Código do Beneficiário Autenticação Mecânica
+0001-8/0010003-0
+PAGUE NA LOJA USANDO O CÓDIGO ABAIXO
+09/57229651317-9
+00070006716297
+368-9 36890.00101 95722.965134 17001.000300 4 00000000000000
+Pague com o
+PIX e libere seu
+limite em
+instantes
+Antes de confirmar o
+pagamento, verifique se o
+beneficiário do pagamento
+é o Banco CSF S.A.
+Local de Pagamento Data de Vencimento
+Pague sua fatura em qualquer banco, mesmo após a data de vencimento. Dê preferência  para o pagamento  até a data de vencimento para não
+gerar encargos e/ou rescisão contratual. Em caso de atraso, os encargos serão cobrados na próxima fatura. 12/08/2026
+Nome do Beneficiário/CNPJ/CPF/Endereço Agência/Código do Beneficiário
+BANCO CSF S.A. CNPJ: 08.357.240/0001-50 - Av. Dra. Ruth Cardoso, 4.777 - 2º andar - Jd. Universidade Pinheiros - São Paulo - SP - CEP 05477-903 0001-8/0010003-0
+Data do Documento Nr do Documento Espécie DOC Aceite Data Processamento Nosso Número
+01/08/2026 544824******4321 OU N 01/08/2026  09/57229651317-9
+Uso do Banco Carteira Espécie Quantidade Valor (=) Valor do Documento
+09 R$ R$ 740,79
+Informações de responsabilidade do beneficiário (-) Desconto/Abatimento
+EM CASO DE PAGAMENTO INFERIOR AO VALOR TOTAL DA FATURA OU PAGAMENTO APÓS O VENCIMENTO, O CLIENTE DEVERÁ
+ARCAR COM AS TAXAS E ENCARGOS APONTADOS NESTA FATURA. OS ENCARGOS INCIDENTES SERÃO APLICADOS SOBRE O VALOR
+EM ATRASO E/OU SOBRE A DIFERENÇA ENTRE O VALOR TOTAL E O VALOR PAGO E SERÃO DEMONSTRADOS EM SUA PROXIMA
+FATURA. DADOS INCORRETOS DIGITADOS QUE IMPOSSIBILITEM A IDENTIFICAÇÃO DO PAGAMENTO SÃO DE RESPONSABILIDADE
+EXCLUSIVA DO CLIENTE.
+(+) Juros/Multa
+(=) Valor Pago
+Nome do Pagador/CPF/CNPJ/Endereço/Cidade/UF/CEP 01001451  Lote: 0001 -BB__S_SMC2131V
+FULANO DE TAL  CPF: 000.000.000 - 00
+RUA EXEMPLO 1 - BAIRRO EXEMPLO
+BRASILIA - DF - CEP: 70000-000
+FICHA DE COMPENSAÇÃO
+AUTENTICAÇÃO MECÂNICA
+TIPOS PERÍODO ATUAL (12/07/2026 A 11/08/2026)
+Taxa A.M. Taxa A.A. CET A.M. CET A.A.
+Juros rotativo 19,49% 747,19% 20,42% 830,02%
+Juros remuneratórios 19,49% 747,19% 23,47% 1.155,50%
+Juros remuneratórios de
+parcelamento de fatura* 16,49% 524,40% 17,33% 580,79%
+Saque à vista 15,99% 492,99% 17,05% 561,19%
+Multa 2,00% Mora 1,00% -
+TIPOS PRÓXIMO PERÍODO (12/08/2026 A 11/09/2026)
+Taxa A.M. Taxa A.A. CET A.M. CET A.A.
+Juros rotativo 20,49% 836,29% 24,49% 1.285,39%
+Juros remuneratórios 20,49% 836,29% 24,49% 1.285,39%
+Juros remuneratórios de
+parcelamento de fatura* 17,49% 591,85% 18,37% 656,68%
+Saque à vista 16,99% 557,33% 18,06% 633,46%
+Multa R$ 14,82 Mora R$ 7,41
+TOTAL DA SUA FATURA VENCIMENTO LIMITE DE CRÉDITO
+R$ 740,79 12/08/2026 R$ 950,00
+OUTRAS ALTERNATIVAS DE PAGAMENTO DA FATURA
+PARCELE FÁCIL
+Não Elegível
+PAGAMENTO MÍNIMO
+R$ 37,04
+Encargos totais de R$ 141,56, serão cobrados no próximo mês
+Pagamento mínimo: é um valor para pagamento das despesas até o vencimento, para não gerar inadimplência. O seu cálculo dependerá das transações que compõem o saldo da fatura. Para compras à vista e
+parceladas, seguros, encargos e tarifas, é considerado 5% do valor; para produtos (Parcele, Parcelamento Automático e Empréstimo Pessoal), é considerado 100% do valor para o cálculo.
+ENCARGOS FINANCEIROS
+LANÇAMENTOS NO BRASIL
+DATA DESCRIÇÃO  VALOR R$
+SALDO FATURA ANTERIOR 0,00
+FULANO DE TAL 544824******4321
+01/07 SAMS 4953 ACS AGUAS CLARA 740,79
+TOTAL DA FATURA R$ 740,79
+RESUMO DA FATURA EM R$
+Total da fatura anterior: R$ 0,00
+(+) Pagamentos efetuados/créditos: R$ 0,00
+(-) Lançamentos atuais/débitos: R$ 740,79
+TOTAL DA FATURA ATUAL:  R$ 740,79
+PREVISÃO PARA FECHAMENTO DA PRÓXIMA FATURA 01/09/2026
+SALDOS FUTUROS
+Total de parcelas a pagar: R$ 0,00
+Total de despesas parceladas a vencer na próxima fatura: R$ 0,00
+Total de parcelas a vencer da anuidade: R$ 0,00
+Caso deseje antecipar o pagamento das parcelas a vencer, reduzindo proporcionalmente os seus encargos,
+basta realizar a simulação no aplicativo ou nos canais de atendimento.
+RESUMO DAS DESPESAS NO EXTERIOR
+Saldo em dólar (US$): US$ 0,00
+Saldo convertido em reais (R$): R$ 0,00
+Conforme circular nº 3918 de 2020 do Banco Central, o cálculo para a conversão do dólar em reais
+será no dia da compra, dessa forma não haverá mais a cobrança da variação cambial. Será aplicada a
+taxa de 7% à cotação do dólar utilizada na conversão da transação.
+LIMITES EM R$
+Limite de crédito: R$ 950,00
+O Banco CSF S.A. declara a quitação dos débitos referentes a 2025, não abrangendo valores
+remanescentes de rotativo, parcelas a vencer de parcelamentos ou financiamento, nem
+compras em divergência ou questionadas judicialmente. Este documento substitui as quitações
+mensais dos débitos de 2025 e dos anos anteriores, comprovando o cumprimento de
+obrigações-Lei 12.007/2009.

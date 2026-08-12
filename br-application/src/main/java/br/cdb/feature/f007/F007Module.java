@@ -4,6 +4,7 @@ import br.cdb.feature.f007._1_application.service.StatementImportService;
 import br.cdb.feature.f007._2_infrastructure.MonetaryCardProvider;
 import br.cdb.feature.f007._2_infrastructure.provider.btg_pactual.BTGInvoiceParser;
 import br.cdb.feature.f007._2_infrastructure.provider.btg_pactual.BTGStatementParser;
+import br.cdb.feature.f007._2_infrastructure.provider.sams_club.SamsClubInvoiceParser;
 import br.cdb.feature.f007._2_infrastructure.provider.santander.SantanderInvoiceParser;
 import br.cdb.feature.f007._2_infrastructure.provider.santander.SantanderStatementParser;
 import br.commons.Logger;
@@ -41,7 +42,8 @@ public class F007Module implements Lifecycle {
                         new BTGStatementParser(),
                         new BTGInvoiceParser(),
                         new SantanderStatementParser(),
-                        new SantanderInvoiceParser()
+                        new SantanderInvoiceParser(),
+                        new SamsClubInvoiceParser()
                 ),
                 MAX_STATEMENT_FILE_BYTES)
         );
