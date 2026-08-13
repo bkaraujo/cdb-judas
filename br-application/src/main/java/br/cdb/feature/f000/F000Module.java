@@ -67,7 +67,7 @@ public class F000Module implements Lifecycle {
                 )
                 """,
                 """
-                CREATE TABLE F000_USER (
+                CREATE TABLE SYS_USER (
                     ID CHAR(36) PRIMARY KEY,
                     COD_PERSON CHAR(36) NOT NULL,
                     TXT_USERNAME VARCHAR(120) NOT NULL,
@@ -77,7 +77,7 @@ public class F000Module implements Lifecycle {
                 )
                 """,
                 """
-                CREATE TABLE F000_USER_CREDENTIAL (
+                CREATE TABLE SYS_USER_CREDENTIAL (
                     ID CHAR(36) PRIMARY KEY,
                     COD_USER CHAR(36) NOT NULL,
                     TXT_PASSWORD VARCHAR(255) NOT NULL,

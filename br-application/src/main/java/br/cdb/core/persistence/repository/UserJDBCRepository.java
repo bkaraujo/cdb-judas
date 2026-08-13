@@ -19,8 +19,8 @@ import java.util.Optional;
 import java.util.UUID;
 
 /**
- * Adaptador JDBC (H2) da porta {@link UserRepository}: tabela {@code F000_USER} (identidade) e
- * {@code F000_USER_CREDENTIAL} (histórico de senhas), ligadas a {@code F000_PERSON} via
+ * Adaptador JDBC (H2) da porta {@link UserRepository}: tabela {@code SYS_USER} (identidade) e
+ * {@code SYS_USER_CREDENTIAL} (histórico de senhas), ligadas a {@code F000_PERSON} via
  * {@code COD_PERSON}. Preferências são uma feature à parte ({@code PreferencesJDBCRepository}).
  *
  * <p>A {@code F000_PERSON} é criada a montante pelo contexto people ({@code UserService} →
@@ -37,7 +37,7 @@ public final class UserJDBCRepository implements UserRepository {
     public Optional<User> findByUsername(String username) {
         return dataSource.query(
                 "SELECT U.ID, U.TXT_USERNAME, U.FLG_ACTIVE, U.TMS_CREATE_AT, U.TMS_UPDATED_AT, U.COD_PERSON, P.TXT_NAME"
-                        + " FROM F000_USER U JOIN F000_PERSON P ON P.ID = U.COD_PERSON"
+                        + " FROM SYS_USER U JOIN F000_PERSON P ON P.ID = U.COD_PERSON"
                         + " WHERE U.TXT_USERNAME = ?",
                 JDBCParameter.of(username),
                 this::toUsers
@@ -48,7 +48,7 @@ public final class UserJDBCRepository implements UserRepository {
     public Optional<User> findById(String id) {
         return dataSource.query(
                 "SELECT U.ID, U.TXT_USERNAME, U.FLG_ACTIVE, U.TMS_CREATE_AT, U.TMS_UPDATED_AT, U.COD_PERSON, P.TXT_NAME"
-                        + " FROM F000_USER U JOIN F000_PERSON P ON P.ID = U.COD_PERSON"
+                        + " FROM SYS_USER U JOIN F000_PERSON P ON P.ID = U.COD_PERSON"
                         + " WHERE U.ID = ?",
                 JDBCParameter.of(id),
                 this::toUsers
@@ -59,7 +59,7 @@ public final class UserJDBCRepository implements UserRepository {
     public Optional<User> findByPersonId(String personId) {
         return dataSource.query(
                 "SELECT U.ID, U.TXT_USERNAME, U.FLG_ACTIVE, U.TMS_CREATE_AT, U.TMS_UPDATED_AT, U.COD_PERSON, P.TXT_NAME"
-                        + " FROM F000_USER U JOIN F000_PERSON P ON P.ID = U.COD_PERSON"
+                        + " FROM SYS_USER U JOIN F000_PERSON P ON P.ID = U.COD_PERSON"
                         + " WHERE U.COD_PERSON = ?",
                 JDBCParameter.of(personId),
                 this::toUsers
@@ -82,7 +82,7 @@ public final class UserJDBCRepository implements UserRepository {
 
             if (existingPersonId == null) {
                 tx.execute(
-                        "INSERT INTO F000_USER (ID, TXT_USERNAME, COD_PERSON, FLG_ACTIVE, TMS_CREATE_AT, TMS_UPDATED_AT)"
+                        "INSERT INTO SYS_USER (ID, TXT_USERNAME, COD_PERSON, FLG_ACTIVE, TMS_CREATE_AT, TMS_UPDATED_AT)"
                                 + " VALUES (?, ?, ?, ?, ?, ?)",
                         JDBCParameter.of(
                                 user.id(),
@@ -95,7 +95,7 @@ public final class UserJDBCRepository implements UserRepository {
                 ).get();
             } else {
                 tx.execute(
-                        "UPDATE F000_USER SET TXT_USERNAME = ?, COD_PERSON = ?, FLG_ACTIVE = ?, TMS_UPDATED_AT = ? WHERE ID = ?",
+                        "UPDATE SYS_USER SET TXT_USERNAME = ?, COD_PERSON = ?, FLG_ACTIVE = ?, TMS_UPDATED_AT = ? WHERE ID = ?",
                         JDBCParameter.of(
                                 user.username(),
                                 personId,
@@ -107,7 +107,7 @@ public final class UserJDBCRepository implements UserRepository {
             }
 
             tx.execute(
-                    "INSERT INTO F000_USER_CREDENTIAL (ID, COD_USER, TXT_PASSWORD, TMS_CREATE_AT) VALUES (?, ?, ?, ?)",
+                    "INSERT INTO SYS_USER_CREDENTIAL (ID, COD_USER, TXT_PASSWORD, TMS_CREATE_AT) VALUES (?, ?, ?, ?)",
                     JDBCParameter.of(
                             UUID.randomUUID().toString(),
                             user.id(),
@@ -127,7 +127,7 @@ public final class UserJDBCRepository implements UserRepository {
     @Nullable
     private String findPersonId(JDBCTransaction tx, String userId) {
         val results = tx.query(
-                "SELECT COD_PERSON FROM F000_USER WHERE ID = ?",
+                "SELECT COD_PERSON FROM SYS_USER WHERE ID = ?",
                 JDBCParameter.of(userId),
                 rs -> {
                     val list = new ArrayList<String>();
@@ -161,7 +161,7 @@ public final class UserJDBCRepository implements UserRepository {
 
     private String findLatestPassword(String userId) {
         val results = dataSource.query(
-                "SELECT TXT_PASSWORD FROM F000_USER_CREDENTIAL WHERE COD_USER = ? ORDER BY TMS_CREATE_AT DESC LIMIT 1",
+                "SELECT TXT_PASSWORD FROM SYS_USER_CREDENTIAL WHERE COD_USER = ? ORDER BY TMS_CREATE_AT DESC LIMIT 1",
                 JDBCParameter.of(userId),
                 rs -> {
                     val list = new ArrayList<String>();

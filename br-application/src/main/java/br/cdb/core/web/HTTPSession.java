@@ -14,7 +14,7 @@ import java.util.Map;
  *
  * <h2>As duas identidades</h2>
  * <ul>
- *   <li>{@code userId} — identidade de <b>login</b> ({@code F000_USER}); é a ela que o token se
+ *   <li>{@code userId} — identidade de <b>login</b> ({@code SYS_USER}); é a ela que o token se
  *       amarra e por ela que a sessão única é garantida (logar de novo derruba a anterior).</li>
  *   <li>{@code personId} — identidade de <b>negócio</b> ({@code F000_PERSON}); é a chave de todas
  *       as tabelas de dados e o {@code {uuid}} das rotas. É o que as features enxergam, via
