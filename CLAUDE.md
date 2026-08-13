@@ -8,10 +8,10 @@ Gestor de finanças pessoais. Backend **Java 25 + Quarkus** (JVM mode); frontend
 
 | Assunto | Página na wiki |
 |---|---|
-| Arquitetura backend (VSA+Hexagonal, módulos Maven, fatias `fNNN` f000–f999, Result, Lombok, Null-Safety, JDBC/H2, qualidade & build, testes, diagramas de pacote/classe/atividade, schema do banco) | `secular/profissao/projetos/judas/backend` |
-| Arquitetura frontend (padrões 001–009, fatias físicas `web/feature/*`, contratos de API request/response JSON, seleção de categoria/tag, testes QUnit, diagramas) | `secular/profissao/projetos/judas/frontend` |
-| Regras de negócio (funcionalidades, contas, cartões, ciclo de fatura, transações, categorização, importação de extrato/fatura, fechamento de período) | `secular/profissao/projetos/judas/regras-negocio` |
-| Índice/overview do projeto | `secular/profissao/projetos/judas` |
+| Arquitetura backend (VSA+Hexagonal, módulos Maven, fatias `fNNN` f000–f999, Result, Lombok, Null-Safety, JDBC/H2, qualidade & build, testes, diagramas de pacote/classe/atividade, schema do banco) | `secular/profissao/bkraujo/judas/backend` |
+| Arquitetura frontend (padrões 001–009, fatias físicas `web/feature/*`, contratos de API request/response JSON, seleção de categoria/tag, testes QUnit, diagramas) | `secular/profissao/bkraujo/judas/frontend` |
+| Regras de negócio (funcionalidades, contas, cartões, ciclo de fatura, transações, categorização, importação de extrato/fatura, fechamento de período) | `secular/profissao/bkraujo/judas/regras-negocio` |
+| Índice/overview do projeto | `secular/profissao/bkraujo/judas` |
 
 Use a skill `wikijs` para ler/atualizar essas páginas (GraphQL API ou UI em `http://localhost:3000`). **Ao editar código, atualize a página correspondente na wiki** — não recrie `docs/` local.
 
