@@ -47,7 +47,8 @@
           status: t.status,
           runningBal: running,
           categoryId: t.categoryId,
-          // Propagados para a view montar o link da fatura (statement.js) e resolver o cartão.
+          // Propagados para a view: `invoice` marca a linha derivada de cartões (statement.js
+          // esconde as ações e linka #/credit-cards); `cardId` resolve o cartão da compra.
           cardId: t.cardId != null ? t.cardId : null,
           invoice: t.invoice === true,
           // Parcela: alimenta Domain.Transaction.describe na linha do extrato.

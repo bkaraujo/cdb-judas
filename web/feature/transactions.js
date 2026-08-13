@@ -16,16 +16,17 @@
 
   function list(params)                    { return repo.list(params); }
 
-  /* Lançamentos do período com as compras de cartão colapsadas em uma linha por (cartão,
-     vencimento) — ver Domain.Invoice. A busca usa a janela alargada (o ciclo da fatura começa no
-     mês anterior), por isso `raw` traz mais do que o período: é o índice cru que os modais de
-     editar/excluir usam para resolver a transação por trás de uma linha. */
+  /* Lançamentos do período com as compras de cartão colapsadas em UMA linha 'Cartões de crédito'
+     por vencimento (collapse + mergeCards — ver Domain.Invoice). A busca usa a janela alargada (o
+     ciclo da fatura começa no mês anterior), por isso `raw` traz mais do que o período: é o índice
+     cru que os modais de editar/excluir usam para resolver a transação por trás de uma linha. */
   function listForPeriod(period) {
     const accounts = cache.accounts();
     const w = window.Domain.Invoice.fetchWindow(accounts, period);
     return repo.list('dateFrom=' + w.from + '&dateTo=' + w.to).then(function (list) {
       const raw = Array.isArray(list) ? list : [];
-      return { rows: window.Domain.Invoice.collapse(raw, accounts, period), raw: raw };
+      const rows = window.Domain.Invoice.collapse(raw, accounts, period);
+      return { rows: window.Domain.Invoice.mergeCards(rows, accounts), raw: raw };
     });
   }
   function listByAccount(accountId, params){ return repo.listByAccount(accountId, params); }
@@ -759,12 +760,13 @@
  * Card da lista no leiaute de linha do Extrato de Contas: data | conta (coluna fixa) |
  * categoria (coluna fixa) | descrição | badge de status | valor | ações.
  *
- * Compra de cartão não aparece linha a linha: App.TransactionService.listForPeriod a colapsa numa
- * linha por (cartão, vencimento) — 'FATURA · CONTA 1234', lançada na data de vencimento e clicável
- * para #/card-statement/{cardId} (ver Domain.Invoice). Consequências:
- *   - a linha de fatura é derivada: sem editar/excluir/confirmar;
- *   - os filtros de CATEGORIA e STATUS a escondem — uma fatura agrega lançamentos de várias
- *     categorias e não tem status próprio, então nenhum valor único a representa;
+ * Compra de cartão não aparece linha a linha nem cartão a cartão: App.TransactionService
+ * .listForPeriod colapsa as compras em fatura (Domain.Invoice.collapse) e funde as faturas da mesma
+ * conta numa linha só (Domain.Invoice.mergeCards) — 'Cartões <conta>', uma por (conta, vencimento),
+ * lançada na data de vencimento e clicável para #/credit-cards. Consequências:
+ *   - a linha de cartões é derivada: sem editar/excluir/confirmar;
+ *   - os filtros de CATEGORIA e STATUS a escondem — ela agrega lançamentos de várias categorias e
+ *     não tem status próprio, então nenhum valor único a representa;
  *   - conta, tipo e busca funcionam normalmente (a busca casa o rótulo);
  *   - os cards de resumo passam a somar a fatura no mês do vencimento.
  * `state.raw` guarda as transações cruas da janela buscada — é delas que os modais de
@@ -869,8 +871,9 @@
     const catMap = categoryById();
     const s = (state.search || '').toLowerCase();
     return state.transactions.filter(function (tx) {
-      // Fatura agrega várias categorias e não tem status próprio: filtrar por um desses valores
-      // a exclui em vez de fingir que ela tem um.
+      // A linha de cartões agrega várias categorias e não tem status próprio: filtrar por um
+      // desses valores a exclui em vez de fingir que ela tem um. (Conta ela tem — é uma linha por
+      // conta —, então o filtro de conta funciona normalmente.)
       if (tx.invoice && (state.filterCategory || state.filterStatus)) return false;
       const cat = catMap[tx.categoryId];
       const catLbl = cat ? categoryLabel(cat).toLowerCase() : '';
@@ -1175,7 +1178,7 @@
             window.icon('check', 14) +
           '</button>'
         : '';
-      // Linha de fatura é derivada — edita-se cada compra no extrato do cartão.
+      // Linha de cartões é derivada — edita-se cada compra no extrato do cartão.
       const actionsHtml = tx.invoice ? '' :
         markPaidHtml +
         '<button type="button" class="icon-btn" title="Editar" ' +
@@ -1191,7 +1194,7 @@
       // handler (e o deep-link fica copiável/abrível em nova aba).
       const descText = window.Domain.Transaction.describe(tx) || '—';
       const descHtml = tx.invoice
-        ? '<a href="#/card-statement/' + esc(tx.cardId) + '" style="' + descStyle +
+        ? '<a href="#/credit-cards" style="' + descStyle +
             'color:var(--accent);text-decoration:none;">' +
             esc(descText) +
           '</a>'

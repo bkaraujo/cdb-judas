@@ -26,10 +26,12 @@
   /* Detail for one account in a period: a "Saldo anterior" row carrying the opening
      balance (previous period's closing, resolved by summary() — no balance fetch here),
      then each transaction (all statuses) with its running balance.
-     Compras de cartão não entram linha a linha: Domain.Invoice.collapse as troca por uma linha
-     por (cartão, vencimento), lançada na data de vencimento — o mesmo mês em que o backend as
-     debita no F002_BALANCE. Como o ciclo da fatura começa no mês anterior, a busca usa a janela
-     alargada de Domain.Invoice.fetchWindow, não os bounds do período. */
+     Compras de cartão não entram linha a linha nem cartão a cartão: Domain.Invoice.collapse as
+     troca por uma linha por (cartão, vencimento) e Domain.Invoice.mergeCards funde os cartões da
+     conta numa linha 'Cartões de crédito' por vencimento — a mesma linha da tela de Lançamentos,
+     lançada na data de vencimento, o mesmo mês em que o backend as debita no F002_BALANCE. Como o
+     ciclo da fatura começa no mês anterior, a busca usa a janela alargada de
+     Domain.Invoice.fetchWindow, não os bounds do período. */
   function load(accountId, period, openingBalance) {
     const account = cache.findById('accounts', accountId);
     if (!account) return Promise.resolve([]);
@@ -38,7 +40,7 @@
     return txRepo.listByAccount(accountId, 'dateFrom=' + w.from + '&dateTo=' + w.to)
       .then(function (txs) {
         const rows = window.Domain.Invoice.collapse(Array.isArray(txs) ? txs : [], [account], period);
-        return window.Domain.StatementItem.buildRows(openingBalance, rows, b.from);
+        return window.Domain.StatementItem.buildRows(openingBalance, window.Domain.Invoice.mergeCards(rows), b.from);
       });
   }
 
@@ -87,9 +89,9 @@
  * status, runningBal, categoryId? }. A coluna da esquerda usa App.StatementService.summary.
  * Coluna fixa categoria/subcategoria (largura = maior label possível) entre data e descrição.
  * Status 'balance' => linha "Saldo anterior" (sem amount, runningBal = saldo de abertura).
- * Compra de cartão não aparece linha a linha: App.StatementService a colapsa numa linha por
- * (cartão, vencimento) — 'FATURA · CONTA 1234', lançada na data de vencimento (mesmo mês em que o
- * backend a debita) e clicável para #/card-statement/{cardId}. Linha de fatura é derivada: sem
+ * Compra de cartão não aparece linha a linha nem cartão a cartão: App.StatementService a colapsa
+ * numa linha por (conta, vencimento) — 'Cartões de crédito', lançada na data de vencimento (mesmo
+ * mês em que o backend a debita) e clicável para #/credit-cards. Linha de cartões é derivada: sem
  * ações de editar/excluir, como a linha de saldo.
  */
 (function () {
@@ -338,7 +340,7 @@
         // de handler (e o deep-link fica copiável/abrível em nova aba).
         const descText = window.Domain.Transaction.describe(tx) || '—';
         const descHtml = tx.invoice
-          ? '<a href="#/card-statement/' + esc(tx.cardId) + '" style="' + descStyle +
+          ? '<a href="#/credit-cards" style="' + descStyle +
               'color:var(--accent);text-decoration:none;">' +
               esc(descText) +
             '</a>'

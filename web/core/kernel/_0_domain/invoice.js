@@ -1,5 +1,9 @@
 /* _1_domain/invoice.js — ciclo de fatura de cartão + colapso das compras numa linha só. Pure.
  *
+ * Dois níveis de colapso, aplicados em sequência pelas telas de Lançamentos e Extrato de Contas:
+ * `collapse` = uma linha por (cartão, vencimento); `mergeCards` = funde os cartões da mesma conta
+ * numa linha 'Cartões de crédito' por (conta, vencimento).
+ *
  * O ciclo é da CONTA, não do cartão (closingDay/dueDay são colunas de F002_ACCOUNT, compartilhadas
  * por todos os cartões dela). Regra — contrato em docs/backend/invoice-cycle.md, espelhada no
  * backend por f002._0_domain.model.InvoiceCycle; mudou aqui, muda lá:
@@ -13,6 +17,7 @@
 (function () {
   const DEFAULT_CLOSING_DAY = 1;
   const DEFAULT_DUE_DAY = 10;
+  const CARDS_LABEL = 'Cartões de crédito';
 
   function pad2(n) { return n < 10 ? '0' + n : '' + n; }
   function day(dateLike) { return String(dateLike || '').slice(0, 10); }
@@ -102,6 +107,13 @@
     return 'FATURA · ' + ((account && account.name) || '—') + ' ' + ((card && card.last4) || '????');
   }
 
+  /* Rótulo da linha agregada de cartões. Com o nome da conta ('Cartões Nubank') nas telas que
+     misturam contas — Lançamentos; genérico onde a conta já é o recorte da tela (Extrato de
+     Contas), que chama mergeCards sem a lista de contas. */
+  function cardsLabel(accountName) {
+    return accountName ? 'Cartões ' + accountName : CARDS_LABEL;
+  }
+
   function today() {
     const d = new Date();
     return d.getFullYear() + '-' + pad2(d.getMonth() + 1) + '-' + pad2(d.getDate());
@@ -157,15 +169,62 @@
     return rows;
   }
 
+  /* Funde as linhas de fatura de `collapse` numa única linha por (CONTA, vencimento), sem cartão
+     próprio, que aponta pra tela #/credit-cards. `accounts` (opcional) só nomeia a linha — ver
+     cardsLabel. A tela de Lançamentos e o
+     Extrato de Contas são visões consolidadas: nelas a fatura de cada cartão é ruído (o detalhe
+     por cartão está no Extrato do Cartão). A conta continua no row — é ela que paga a fatura, e o
+     filtro de conta dos Lançamentos casa por `accountId`. Dois vencimentos distintos no mês (ou
+     duas contas) continuam sendo duas linhas: uma linha só teria de escolher uma das datas.
+     Rows não-fatura passam intactas, na ordem de entrada. */
+  function mergeCards(rows, accounts) {
+    const nameById = {};
+    (accounts || []).forEach(function (a) { nameById[String(a.id)] = a.name; });
+
+    const out = [];
+    const merged = {};
+    (rows || []).forEach(function (r) {
+      if (!r || !r.invoice) { out.push(r); return; }
+      const due = day(r.date);
+      const key = String(r.accountId) + '|' + due;
+      if (!merged[key]) {
+        merged[key] = {
+          id: 'cards:' + r.accountId + ':' + due,
+          invoice: true,
+          cards: true,          // agrega os cartões da conta: sem cardId próprio
+          cardId: null,
+          accountId: r.accountId,
+          date: due,
+          description: cardsLabel(nameById[String(r.accountId)]),
+          amount: 0,
+          type: 'expense',
+          // Status vem da data (due <= hoje), igual pra toda linha de fatura do mesmo vencimento.
+          status: r.status,
+          categoryId: null,
+        };
+        out.push(merged[key]);
+      }
+      merged[key].amount += (+r.amount || 0);
+    });
+
+    Object.keys(merged).forEach(function (k) {
+      if (merged[k].amount > 0) merged[k].type = 'income';
+    });
+    return out;
+  }
+
   window.Domain = window.Domain || {};
   window.Domain.Invoice = {
     DEFAULT_CLOSING_DAY: DEFAULT_CLOSING_DAY,
     DEFAULT_DUE_DAY:     DEFAULT_DUE_DAY,
+    CARDS_LABEL:         CARDS_LABEL,
     dueDate:             dueDate,
     cycleFor:            cycleFor,
     dueDatesIn:          dueDatesIn,
     fetchWindow:         fetchWindow,
     label:               label,
+    cardsLabel:          cardsLabel,
     collapse:            collapse,
+    mergeCards:          mergeCards,
   };
 })();

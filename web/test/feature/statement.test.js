@@ -36,6 +36,33 @@
       });
     });
 
+    QUnit.test('load funde as compras dos cartões da conta numa linha "Cartões de crédito" no vencimento', function (assert) {
+      const cardAccount = {
+        id: 1, name: 'Conta', balance: 0, closingDay: 20, dueDay: 5,
+        cards: [{ id: 9, last4: '1234', accountId: 1 }, { id: 10, last4: '5678', accountId: 1 }],
+      };
+      window.App.StatementService.init({
+        txRepo: { listByAccount: function () {
+          return Promise.resolve([
+            { id: 1, cardId: 9,  date: '2026-03-10', amount: -50, status: 'confirmed' }, // vence 05/04
+            { id: 2, cardId: 10, date: '2026-03-11', amount: -30, status: 'confirmed' }, // outro cartão, mesma fatura
+          ]);
+        } },
+        balance: this.fakeBalance,
+        cache: {
+          accounts: function () { return [cardAccount]; },
+          findById: function (type, id) { return type === 'accounts' && id === 1 ? cardAccount : null; },
+        },
+      });
+      return window.App.StatementService.load(1, window.Domain.Period.create(4, 2026), 100).then(function (rows) {
+        assert.strictEqual(rows.length, 2, '1 header + 1 linha de cartões (os 2 cartões fundidos)');
+        assert.strictEqual(rows[1].description, 'Cartões de crédito', 'aqui a conta já é o recorte da tela');
+        assert.strictEqual(rows[1].date, '2026-04-05', 'lançada na data de vencimento');
+        assert.strictEqual(rows[1].amount, -80, 'soma dos dois cartões');
+        assert.true(rows[1].invoice, 'linha derivada: sem ações, linka #/credit-cards');
+      });
+    });
+
     QUnit.test('load devolve lista vazia se a conta não existe no cache', function (assert) {
       return window.App.StatementService.load(999, window.Domain.Period.create(3, 2026), 0).then(function (rows) {
         assert.deepEqual(rows, []);

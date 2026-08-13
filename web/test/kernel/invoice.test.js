@@ -52,6 +52,37 @@
       assert.strictEqual(passthrough.id, 102, 'transação sem cartão dentro do período passa intacta');
     });
 
+    QUnit.test('mergeCards funde as faturas dos cartões da mesma conta numa linha só', function (assert) {
+      const rows = [
+        { id: 'invoice:9:2026-04-05',  invoice: true, cardId: 9,  accountId: 1, date: '2026-04-05', amount: -80, type: 'expense', status: 'scheduled' },
+        { id: 'invoice:10:2026-04-05', invoice: true, cardId: 10, accountId: 1, date: '2026-04-05', amount: -20, type: 'expense', status: 'scheduled' },
+        { id: 102, cardId: null, accountId: 1, date: '2026-04-10', amount: -20, type: 'expense' },
+      ];
+      const merged = window.Domain.Invoice.mergeCards(rows, [ACCOUNT]);
+
+      assert.strictEqual(merged.length, 2, '2 faturas viram 1 linha + a transação sem cartão');
+      const cardsRow = merged[0];
+      assert.strictEqual(cardsRow.description, 'Cartões Conta', 'rótulo leva o nome da conta');
+      assert.true(cardsRow.cards, 'linha marcada como agregada');
+      assert.strictEqual(cardsRow.amount, -100, 'soma das faturas dos dois cartões');
+      assert.strictEqual(cardsRow.date, '2026-04-05', 'data da linha continua o vencimento');
+      assert.strictEqual(cardsRow.cardId, null, 'sem cartão: aponta pra tela de Cartões de Crédito');
+      assert.strictEqual(cardsRow.accountId, 1, 'conta preservada — o filtro de conta casa por ela');
+      assert.strictEqual(cardsRow.status, 'scheduled', 'status da fatura (derivado da data) preservado');
+      assert.strictEqual(merged[1].id, 102, 'transação sem cartão passa intacta');
+    });
+
+    QUnit.test('mergeCards separa contas e vencimentos, e sem a lista de contas usa o rótulo genérico', function (assert) {
+      const merged = window.Domain.Invoice.mergeCards([
+        { id: 'a', invoice: true, cardId: 9,  accountId: 1, date: '2026-04-05', amount: -80, type: 'expense', status: 'confirmed' },
+        { id: 'b', invoice: true, cardId: 10, accountId: 2, date: '2026-04-05', amount: -50, type: 'expense', status: 'confirmed' },
+        { id: 'c', invoice: true, cardId: 11, accountId: 1, date: '2026-04-15', amount: 30,  type: 'income',  status: 'scheduled' },
+      ]);
+      assert.strictEqual(merged.length, 3, 'outra conta ou outro vencimento = outra linha');
+      assert.strictEqual(merged[0].description, 'Cartões de crédito', 'sem contas: rótulo genérico (Extrato de Contas)');
+      assert.strictEqual(merged[2].type, 'income', 'crédito líquido deixa de ser despesa');
+    });
+
     QUnit.test('collapse ignora compra de cartão cujo vencimento cai fora do período', function (assert) {
       const period = window.Domain.Period.create(3, 2026); // Março — vencimento (05/04) é no mês seguinte
       const txs = [{ id: 100, cardId: 9, accountId: 1, date: '2026-03-15', amount: -50, type: 'expense' }];

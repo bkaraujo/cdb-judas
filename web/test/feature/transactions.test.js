@@ -63,5 +63,29 @@
         assert.true(Array.isArray(out.raw));
       });
     });
+
+    QUnit.test('listForPeriod entrega uma linha "Cartões <conta>" por conta, com as compras cruas em raw', function (assert) {
+      const account = {
+        id: 1, name: 'Nubank', closingDay: 20, dueDay: 5,
+        cards: [{ id: 9, last4: '1234', accountId: 1 }, { id: 10, last4: '5678', accountId: 1 }],
+      };
+      window.App.TransactionService.init({
+        repo: Object.assign({}, this.fakeRepo, {
+          list: function () {
+            return Promise.resolve([
+              { id: 1, cardId: 9,  accountId: 1, date: '2026-03-10', amount: -50, type: 'expense' },
+              { id: 2, cardId: 10, accountId: 1, date: '2026-03-11', amount: -30, type: 'expense' },
+            ]);
+          },
+        }),
+        cache: { accounts: function () { return [account]; } },
+      });
+      return window.App.TransactionService.listForPeriod(window.Domain.Period.create(4, 2026)).then(function (out) {
+        assert.strictEqual(out.rows.length, 1, 'os dois cartões da conta viram uma linha só');
+        assert.strictEqual(out.rows[0].description, 'Cartões Nubank');
+        assert.strictEqual(out.rows[0].amount, -80);
+        assert.strictEqual(out.raw.length, 2, 'raw mantém as compras cruas pros modais de editar/excluir');
+      });
+    });
   });
 })();
