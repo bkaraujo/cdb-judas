@@ -254,11 +254,7 @@
       accounts: [],
       $root: null,
     };
-  }
-
-  // Accounts live in the App.CacheStore (hydrated at login, SSE-refreshed).
-  function syncFromCache() {
-    state.accounts = window.App.CacheStore.accounts().slice();
+    return state;
   }
 
   // ── Helpers ───────────────────────────────────────────────
@@ -773,24 +769,12 @@
   }
 
   // ── Lifecycle ─────────────────────────────────────────────
-  window.Pages['accounts'] = {
-    mount: function ($root) {
-      resetState();
-      state.$root = $root;
-      bindRoot($root);
-      syncFromCache();
-      render();
-      state.unsubscribe = window.App.AccountService.onChange(function () {
-        syncFromCache();
-        render();
-      });
-    },
-    unmount: function () {
-      if (state && state.$root) {
-        state.$root.off('.accs');
-      }
-      if (state && state.unsubscribe) state.unsubscribe();
-      state = null;
-    }
-  };
+  window.Pages['accounts'] = window.cachePage({
+    ns: '.accs',
+    collection: 'accounts',
+    event: 'ACCOUNT',
+    state: resetState,
+    render: render,
+    bind: bindRoot,
+  });
 })();

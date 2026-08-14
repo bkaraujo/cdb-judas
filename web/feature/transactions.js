@@ -773,6 +773,7 @@
       pendingScrollTop: null,
       pendingRootScrollTop: null,
     };
+    return state;
   }
 
   // ── Helpers ───────────────────────────────────────────────
@@ -1168,21 +1169,13 @@
   // grupo Movimentações) compartilham leiaute/estado/filtros — só muda o título e o filtro extra
   // de totalInstallments > 1 (ver installmentsOnly em resetState/filteredTxs).
   function createPage(cfg) {
-    return {
-      mount: function ($root) {
-        resetState(cfg);
-        state.$root = $root;
-        bindRoot($root);
-        render();
-        loadTransactions();
-      },
-      unmount: function () {
-        if (state && state.$root) {
-          state.$root.off('.tx');
-        }
-        state = null;
-      }
-    };
+    return window.page({
+      ns: '.tx',
+      state: function () { return resetState(cfg); },
+      render: render,
+      bind: bindRoot,
+      onMount: loadTransactions,
+    });
   }
 
   window.Pages['transactions'] = createPage({ title: 'Lançamentos', installmentsOnly: false });

@@ -132,6 +132,7 @@
       month: p.month - 1,      // 0-based
       year: p.year,
     };
+    return state;
   }
 
 
@@ -482,19 +483,11 @@
   }
 
   // ── Lifecycle ───────────────────────────────────────────
-  window.Pages['budget'] = {
-    mount: function ($root) {
-      resetState();
-      state.$root = $root;
-      bindRoot($root);
-      render();
-      loadBudget();
-    },
-    unmount: function () {
-      if (state && state.$root) {
-        state.$root.off('.bd');
-      }
-      state = null;
-    },
-  };
+  window.Pages['budget'] = window.page({
+    ns: '.bd',
+    state: resetState,
+    render: render,
+    bind: bindRoot,
+    onMount: loadBudget,
+  });
 })();

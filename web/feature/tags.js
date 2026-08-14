@@ -52,14 +52,8 @@
       tags: [],
       $root: null,
     };
+    return state;
   }
-
-  // Tags live in the App.CacheStore (hydrated at login, kept fresh via SSE).
-  // Pages must read from cache only — never refetch the list here.
-  function syncFromCache() {
-    state.tags = window.App.CacheStore.tags().slice();
-  }
-
 
   function findTag(id) { return window.byId(state.tags, id); }
 
@@ -251,24 +245,12 @@
   }
 
   // ── Lifecycle ─────────────────────────────────────────────
-  window.Pages['tags'] = {
-    mount: function ($root) {
-      resetState();
-      state.$root = $root;
-      bindRoot($root);
-      syncFromCache();
-      render();
-      state.unsubscribe = window.App.TagService.onChange(function () {
-        syncFromCache();
-        render();
-      });
-    },
-    unmount: function () {
-      if (state && state.$root) {
-        state.$root.off('.tags');
-      }
-      if (state && state.unsubscribe) state.unsubscribe();
-      state = null;
-    }
-  };
+  window.Pages['tags'] = window.cachePage({
+    ns: '.tags',
+    collection: 'tags',
+    event: 'TAG',
+    state: resetState,
+    render: render,
+    bind: bindRoot,
+  });
 })();

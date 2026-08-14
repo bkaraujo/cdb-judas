@@ -141,6 +141,7 @@
       month: p.month - 1,
       year: p.year,
     };
+    return state;
   }
 
   // ── Helpers ───────────────────────────────────────────────
@@ -541,20 +542,12 @@
   }
 
   // ── Lifecycle ─────────────────────────────────────────────
-  window.Pages['accounts-payable'] = {
-    mount: function ($root) {
-      resetState();
-      state.$root = $root;
-      bindRoot($root);
-      render();
-      loadData();
-    },
-    unmount: function () {
-      if (state && state.$root) {
-        state.$root.off('.ap');
-      }
-      $(document).off('click.ap-outside');
-      state = null;
-    }
-  };
+  window.Pages['accounts-payable'] = window.page({
+    ns: '.ap',
+    state: resetState,
+    render: render,
+    bind: bindRoot,
+    onMount: loadData,
+    onUnmount: function () { $(document).off('click.ap-outside'); },
+  });
 })();

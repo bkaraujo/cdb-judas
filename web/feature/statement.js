@@ -111,6 +111,7 @@
       txIndex: [], // lançamentos do mês (todas as contas) — para editar/excluir e detectar transferências
       loading: false,
     };
+    return state;
   }
 
   // ── Helpers ───────────────────────────────────────────────
@@ -326,26 +327,22 @@
     });
   }
 
-  // ── Lifecycle ─────────────────────────────────────────────
-  window.Pages['statement'] = {
-    mount: function ($root) {
-      resetState();
-      state.$root = $root;
-      bindRoot($root);
-
-      // Default-select first checking account if available.
-      const accs = checkingAccounts();
-      if (accs.length > 0) {
-        state.accountId = String(accs[0].id);
-      }
-      render();
-      reloadPeriod();
-    },
-    unmount: function () {
-      if (state && state.$root) {
-        state.$root.off('.stm');
-      }
-      state = null;
+  // Default-select first checking account if available.
+  function resetStateWithDefaultAccount() {
+    resetState();
+    const accs = checkingAccounts();
+    if (accs.length > 0) {
+      state.accountId = String(accs[0].id);
     }
-  };
+    return state;
+  }
+
+  // ── Lifecycle ─────────────────────────────────────────────
+  window.Pages['statement'] = window.page({
+    ns: '.stm',
+    state: resetStateWithDefaultAccount,
+    render: render,
+    bind: bindRoot,
+    onMount: reloadPeriod,
+  });
 })();

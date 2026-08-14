@@ -40,6 +40,7 @@ window.CDB_MANIFEST = {
       'pickers.js',
       'delete-dialog.js',
       'statement-row.js',
+      'page.js',
       'theme.js',
       'sidebar.data.js',
       'sidebar.js',

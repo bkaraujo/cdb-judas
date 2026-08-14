@@ -193,6 +193,7 @@
       allTx: [],
       txLoading: true,
     };
+    return state;
   }
 
   // Cards live in App.CacheStore (hydrated at login, SSE-refreshed), grouped by
@@ -407,25 +408,15 @@
   }
 
   // ── Lifecycle ─────────────────────────────────────────────
-  window.Pages['credit-cards'] = {
-    mount: function ($root) {
-      resetState();
-      state.$root = $root;
-      bindRoot($root);
-      syncGroupsFromCache();
-      render();
-      loadAllTx();
-      state.unsubscribe = window.AccountsApi.onChange(function () {
-        syncGroupsFromCache();
-        render();
-      });
-    },
-    unmount: function () {
-      if (state && state.$root) state.$root.off('.cc');
-      if (state && state.unsubscribe) state.unsubscribe();
-      state = null;
-    }
-  };
+  window.Pages['credit-cards'] = window.cachePage({
+    ns: '.cc',
+    sync: syncGroupsFromCache,
+    onChange: window.AccountsApi.onChange,
+    state: resetState,
+    render: render,
+    bind: bindRoot,
+    onMount: loadAllTx,
+  });
 })();
 
 /* pages/card-statement.js — Extrato do Cartão (#/card-statement/{cardId}).
@@ -463,6 +454,17 @@
       txIndex: [],  // transações cruas do ciclo — resolve editar/excluir
       loading: false,
     };
+    return state;
+  }
+
+  // Sem cartão no path (ou cartão inexistente): cai no primeiro disponível.
+  function resetStateWithFallback(cardId) {
+    resetState(cardId);
+    if (!selectedCard()) {
+      const list = cards();
+      state.cardId = list.length ? String(list[0].id) : null;
+    }
+    return state;
   }
 
   // ── Helpers ───────────────────────────────────────────────
@@ -688,25 +690,11 @@
   }
 
   // ── Lifecycle ─────────────────────────────────────────────
-  window.Pages['card-statement'] = {
-    mount: function ($root, cardId) {
-      resetState(cardId);
-      state.$root = $root;
-      bindRoot($root);
-
-      // Sem cartão no path (ou cartão inexistente): cai no primeiro disponível.
-      if (!selectedCard()) {
-        const list = cards();
-        state.cardId = list.length ? String(list[0].id) : null;
-      }
-      render();
-      reloadPeriod();
-    },
-    unmount: function () {
-      if (state && state.$root) {
-        state.$root.off('.cst');
-      }
-      state = null;
-    }
-  };
+  window.Pages['card-statement'] = window.page({
+    ns: '.cst',
+    state: resetStateWithFallback,
+    render: render,
+    bind: bindRoot,
+    onMount: reloadPeriod,
+  });
 })();

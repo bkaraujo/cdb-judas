@@ -78,11 +78,7 @@
       expanded: {},
       $root: null,
     };
-  }
-
-  // Categories live in the App.CacheStore (hydrated at login, SSE-refreshed).
-  function syncFromCache() {
-    state.categories = window.App.CacheStore.categories().slice();
+    return state;
   }
 
   // ── Toast (transient div bottom-right) ────────────────────
@@ -485,24 +481,12 @@
   }
 
   // ── Lifecycle ─────────────────────────────────────────────
-  window.Pages['categories'] = {
-    mount: function ($root) {
-      resetState();
-      state.$root = $root;
-      bindRoot($root);
-      syncFromCache();
-      render();
-      state.unsubscribe = window.App.CategoryService.onChange(function () {
-        syncFromCache();
-        render();
-      });
-    },
-    unmount: function () {
-      if (state && state.$root) {
-        state.$root.off('.cats');
-      }
-      if (state && state.unsubscribe) state.unsubscribe();
-      state = null;
-    }
-  };
+  window.Pages['categories'] = window.cachePage({
+    ns: '.cats',
+    collection: 'categories',
+    event: 'CATEGORY',
+    state: resetState,
+    render: render,
+    bind: bindRoot,
+  });
 })();

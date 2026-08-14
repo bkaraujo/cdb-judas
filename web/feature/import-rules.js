@@ -95,6 +95,7 @@
       rules: [],
       $root: null,
     };
+    return state;
   }
 
   function findRule(id) { return window.byId(state.rules, id); }
@@ -306,19 +307,11 @@
   }
 
   // ── Lifecycle ─────────────────────────────────────────────
-  window.Pages['import-rules'] = {
-    mount: function ($root) {
-      resetState();
-      state.$root = $root;
-      bindRoot($root);
-      render();
-      loadRules();
-    },
-    unmount: function () {
-      if (state && state.$root) {
-        state.$root.off('.import-rules');
-      }
-      state = null;
-    }
-  };
+  window.Pages['import-rules'] = window.page({
+    ns: '.import-rules',
+    state: resetState,
+    render: render,
+    bind: bindRoot,
+    onMount: loadRules,
+  });
 })();

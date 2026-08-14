@@ -73,11 +73,7 @@
       costCenters: [],
       $root: null,
     };
-  }
-
-  // Cost centers live in the App.CacheStore (hydrated at login from the global catalog).
-  function syncFromCache() {
-    state.costCenters = window.App.CacheStore.costCenters().slice();
+    return state;
   }
 
   function sortByDescription(a, b) {
@@ -141,15 +137,13 @@
   }
 
   // ── Lifecycle ─────────────────────────────────────────────
-  window.Pages['cost-centers'] = {
-    mount: function ($root) {
-      resetState();
-      state.$root = $root;
-      syncFromCache();
-      render();
-    },
-    unmount: function () {
-      state = null;
-    }
-  };
+  // CostCenterService.onChange já existia mas nunca tinha sido conectado aqui — a tela não
+  // reagia a mudanças de outras origens (ex. quick-create em import-rules). cachePage conecta.
+  window.Pages['cost-centers'] = window.cachePage({
+    ns: '.cost-centers',
+    collection: 'costCenters',
+    event: 'COST_CENTER',
+    state: resetState,
+    render: render,
+  });
 })();
