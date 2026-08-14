@@ -679,6 +679,7 @@ button { font-family: var(--font); cursor: pointer; border: none; outline: none;
 .panel-body--scroll { overflow: auto; max-height: 340px; }
 
 /* ───── Statement row cells (statement-row.js) ───── */
+.stm-row { display: flex; align-items: center; gap: 16px; padding: 11px 20px; transition: background var(--transition); }
 .stm-row.is-header { background: var(--bg-hover); }
 .stm-row:not(.is-last) { border-bottom: 1px solid var(--border-light); }
 .stm-cell-index { font-size: 12px; color: var(--text-muted); min-width: 24px; text-align: left; }
