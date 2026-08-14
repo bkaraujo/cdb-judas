@@ -51,7 +51,7 @@ public class F000Module implements Lifecycle {
                 """
                 CREATE TABLE SYS_TRANSACTION_NATURE (
                     ID VARCHAR(20) PRIMARY KEY,
-                    TXT_DESCRIPTION VARCHAR(50) NOT NULL
+                    TXT_DESCRIPTION VARCHAR(10) NOT NULL
                 )
                 """,
                 "INSERT INTO SYS_TRANSACTION_NATURE (ID, TXT_DESCRIPTION) VALUES ('EXPENSE', 'Despesa')",
@@ -87,15 +87,17 @@ public class F000Module implements Lifecycle {
                 """
                 CREATE TABLE F000_PREFERENCES (
                     COD_PERSON CHAR(36) NOT NULL,
-                    TXT_KEY VARCHAR(50) NOT NULL,
-                    TXT_VALUE VARCHAR(255),
-                    PRIMARY KEY (COD_PERSON, TXT_KEY)
+                    TXT_PREFERENCE VARCHAR(20) NOT NULL,
+                    TXT_VALUE VARCHAR(60),
+                    TMS_CREATE_AT TIMESTAMP NOT NULL,
+                    TMS_UPDATED_AT TIMESTAMP NOT NULL,
+                    PRIMARY KEY (COD_PERSON, TXT_PREFERENCE)
                 )
                 """,
                 """
                 CREATE TABLE F000_COST_CENTER (
                     ID CHAR(36) PRIMARY KEY,
-                    TXT_DESCRIPTION VARCHAR(255) NOT NULL,
+                    TXT_DESCRIPTION VARCHAR(50) NOT NULL,
                     FLG_ACTIVE CHAR(1) NOT NULL
                 )
                 """,

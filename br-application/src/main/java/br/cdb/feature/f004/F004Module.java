@@ -30,7 +30,9 @@ public class F004Module implements Lifecycle {
                     COD_PERSON CHAR(36) NOT NULL,
                     TXT_DESCRIPTION VARCHAR(255) NOT NULL,
                     TXT_COLOR VARCHAR(20) NOT NULL,
-                    TMS_CREATE_AT TIMESTAMP NOT NULL
+                    FLG_ACTIVE CHAR(1) NOT NULL,
+                    TMS_CREATE_AT TIMESTAMP NOT NULL,
+                    TMS_UPDATED_AT TIMESTAMP NOT NULL
                 )
                 """
         );

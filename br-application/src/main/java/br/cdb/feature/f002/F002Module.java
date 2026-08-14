@@ -42,9 +42,12 @@ public class F002Module implements Lifecycle {
                     ID CHAR(36) PRIMARY KEY,
                     COD_PERSON CHAR(36) NOT NULL,
                     COD_ACCOUNT CHAR(36) NOT NULL,
-                    NUM_PERIOD INT NOT NULL,
+                    NUM_PERIOD NUMERIC(6) NOT NULL,
                     DEC_BALANCE DECIMAL(19, 2) NOT NULL,
-                    FLG_DIRTY CHAR(1) NOT NULL
+                    FLG_DIRTY CHAR(1) NOT NULL,
+                    TMS_CREATE_AT TIMESTAMP NOT NULL,
+                    TMS_UPDATED_AT TIMESTAMP NOT NULL,
+                    CONSTRAINT UK_F002_BALANCE_ACCOUNT_PERIOD UNIQUE (COD_ACCOUNT, NUM_PERIOD)
                 )
                 """
         );

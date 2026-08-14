@@ -4,6 +4,7 @@ import br.cdb.feature.f002._0_domain.model.Balance;
 import br.cdb.feature.f002._0_domain.repository.AccountRepository;
 import br.cdb.feature.f002._0_domain.repository.BalanceRepository;
 import br.commons.Result;
+import br.commons.chrono.Time;
 import br.commons.framework.cdi.Context;
 import br.commons.framework.persistence.jdbc.JDBCRepository;
 import br.commons.framework.persistence.jdbc.primitives.JDBCParameter;
@@ -12,6 +13,7 @@ import lombok.val;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 
+import java.sql.Timestamp;
 import java.time.YearMonth;
 import java.util.*;
 
@@ -61,15 +63,16 @@ public final class UserAccountBalanceJDBCRepository extends JDBCRepository<Balan
                     rs -> rs.next().get()
             ).get();
 
+            val now = Timestamp.valueOf(Time.now());
             if (exists) {
                 tx.execute(
-                        "UPDATE " + table() + " SET DEC_BALANCE = ?, FLG_DIRTY = 'N' WHERE COD_ACCOUNT = ? AND NUM_PERIOD = ?",
-                        JDBCParameter.of(entity.value(), accountId, numPeriod)
+                        "UPDATE " + table() + " SET DEC_BALANCE = ?, FLG_DIRTY = 'N', TMS_UPDATED_AT = ? WHERE COD_ACCOUNT = ? AND NUM_PERIOD = ?",
+                        JDBCParameter.of(entity.value(), now, accountId, numPeriod)
                 ).get();
             } else {
                 tx.execute(
-                        "INSERT INTO " + table() + " (ID, COD_PERSON, COD_ACCOUNT, NUM_PERIOD, DEC_BALANCE, FLG_DIRTY) VALUES (?, ?, ?, ?, ?, 'N')",
-                        JDBCParameter.of(UUID.randomUUID().toString(), codPerson, accountId, numPeriod, entity.value())
+                        "INSERT INTO " + table() + " (ID, COD_PERSON, COD_ACCOUNT, NUM_PERIOD, DEC_BALANCE, FLG_DIRTY, TMS_CREATE_AT, TMS_UPDATED_AT) VALUES (?, ?, ?, ?, ?, 'N', ?, ?)",
+                        JDBCParameter.of(UUID.randomUUID().toString(), codPerson, accountId, numPeriod, entity.value(), now, now)
                 ).get();
             }
 
@@ -125,12 +128,15 @@ public final class UserAccountBalanceJDBCRepository extends JDBCRepository<Balan
 
     @Override
     protected Map<String, @Nullable Object> values(Balance entity) {
+        val now = Timestamp.valueOf(Time.now());
         val values = new LinkedHashMap<String, @Nullable Object>();
         values.put("COD_PERSON", findPersonIdForAccount(entity.account().id()));
         values.put("COD_ACCOUNT", entity.account().id().toString());
         values.put("NUM_PERIOD", toNumPeriod(entity.period()));
         values.put("DEC_BALANCE", entity.value());
         values.put("FLG_DIRTY", "N");
+        values.put("TMS_CREATE_AT", now);
+        values.put("TMS_UPDATED_AT", now);
         return values;
     }
 

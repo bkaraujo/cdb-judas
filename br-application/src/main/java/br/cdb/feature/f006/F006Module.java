@@ -43,7 +43,7 @@ public class F006Module implements Lifecycle {
                     ID CHAR(36) PRIMARY KEY,
                     COD_PERSON CHAR(36),
                     TXT_DESCRIPTION VARCHAR(255) NOT NULL,
-                    NUM_SIGNAL INT NOT NULL,
+                    NUM_SIGNAL NUMERIC(1) NOT NULL,
                     DEC_AMOUNT DECIMAL(19, 2) NOT NULL,
                     TMS_PURCHASE TIMESTAMP NOT NULL,
                     COD_ACCOUNT CHAR(36) NOT NULL,

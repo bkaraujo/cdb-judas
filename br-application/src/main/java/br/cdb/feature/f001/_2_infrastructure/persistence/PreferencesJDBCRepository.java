@@ -3,6 +3,7 @@ package br.cdb.feature.f001._2_infrastructure.persistence;
 import br.cdb.feature.f001._0_domain.model.Preferences;
 import br.cdb.feature.f001._0_domain.repository.PreferencesRepository;
 import br.commons.Result;
+import br.commons.chrono.Time;
 import br.commons.framework.cdi.Context;
 import br.commons.framework.persistence.jdbc.DataSource;
 import br.commons.framework.persistence.jdbc.JDBCTransaction;
@@ -11,6 +12,7 @@ import lombok.val;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 
+import java.sql.Timestamp;
 import java.util.HashMap;
 
 /**
@@ -26,12 +28,12 @@ public final class PreferencesJDBCRepository implements PreferencesRepository {
     @Override
     public Preferences findByPersonId(String personId) {
         val map = dataSource.query(
-                "SELECT TXT_KEY, TXT_VALUE FROM F000_PREFERENCES WHERE COD_PERSON = ?",
+                "SELECT TXT_PREFERENCE, TXT_VALUE FROM F000_PREFERENCES WHERE COD_PERSON = ?",
                 JDBCParameter.of(personId),
                 rs -> {
                     val m = new HashMap<String, String>();
                     while (rs.next().get()) {
-                        val k = rs.getString("TXT_KEY").get();
+                        val k = rs.getString("TXT_PREFERENCE").get();
                         val v = rs.getString("TXT_VALUE").get();
                         m.put(k, v);
                     }
@@ -60,20 +62,21 @@ public final class PreferencesJDBCRepository implements PreferencesRepository {
 
     private void upsertPref(JDBCTransaction tx, String personId, String key, @Nullable String value) {
         val exists = tx.query(
-                "SELECT TXT_VALUE FROM F000_PREFERENCES WHERE COD_PERSON = ? AND TXT_KEY = ?",
+                "SELECT TXT_VALUE FROM F000_PREFERENCES WHERE COD_PERSON = ? AND TXT_PREFERENCE = ?",
                 JDBCParameter.of(personId, key),
                 rs -> rs.next().get()
         ).get();
 
+        val now = Timestamp.valueOf(Time.now());
         if (exists) {
             tx.execute(
-                    "UPDATE F000_PREFERENCES SET TXT_VALUE = ? WHERE COD_PERSON = ? AND TXT_KEY = ?",
-                    JDBCParameter.of(value, personId, key)
+                    "UPDATE F000_PREFERENCES SET TXT_VALUE = ?, TMS_UPDATED_AT = ? WHERE COD_PERSON = ? AND TXT_PREFERENCE = ?",
+                    JDBCParameter.of(value, now, personId, key)
             ).get();
         } else {
             tx.execute(
-                    "INSERT INTO F000_PREFERENCES (COD_PERSON, TXT_KEY, TXT_VALUE) VALUES (?, ?, ?)",
-                    JDBCParameter.of(personId, key, value)
+                    "INSERT INTO F000_PREFERENCES (COD_PERSON, TXT_PREFERENCE, TXT_VALUE, TMS_CREATE_AT, TMS_UPDATED_AT) VALUES (?, ?, ?, ?, ?)",
+                    JDBCParameter.of(personId, key, value, now, now)
             ).get();
         }
     }

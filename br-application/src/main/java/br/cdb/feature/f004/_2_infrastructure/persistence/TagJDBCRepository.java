@@ -46,20 +46,28 @@ public final class TagJDBCRepository extends JDBCRepository<Tag> implements TagR
         deleteById(id.toString());
     }
 
-    /** {@code F004_TAG} não tem TMS_UPDATED_AT; update só altera descrição/cor. */
+    /** Update só altera descrição/cor/{@code TMS_UPDATED_AT}; dono e data de criação são imutáveis. */
     @Override
     protected Set<String> updateImmutableColumns() {
         return Set.of("COD_PERSON", "TMS_CREATE_AT");
     }
 
+    /**
+     * {@code FLG_ACTIVE} existe no schema (ver diagrama ER) mas não no domínio: a tag não tem
+     * ciclo de vida próprio — some por exclusão, não por desativação. Gravado sempre {@code 'Y'}
+     * até que exista uma regra de negócio que o mova.
+     */
     @Override
     protected Map<String, @Nullable Object> values(Tag entity) {
+        val now = Timestamp.valueOf(Time.now());
         val values = new LinkedHashMap<String, @Nullable Object>();
         values.put("ID", entity.id().toString());
         values.put("COD_PERSON", entity.personId().toString());
         values.put("TXT_DESCRIPTION", entity.name());
         values.put("TXT_COLOR", entity.color());
-        values.put("TMS_CREATE_AT", Timestamp.valueOf(Time.now()));
+        values.put("FLG_ACTIVE", "Y");
+        values.put("TMS_CREATE_AT", now);
+        values.put("TMS_UPDATED_AT", now);
         return values;
     }
 
