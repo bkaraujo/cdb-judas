@@ -1,8 +1,10 @@
 /* core/manifest.js — lista única de arquivos do frontend (kernel + fatias), fonte de verdade
- * para core/kernel/kernel.barrel.js, core/boot.js e test/index.html — os três só carregavam
- * cópias manuais desta lista, que já haviam divergido (test/index.html não injetava
- * feature/card-statement.js). Caminhos são relativos a web/; cada consumidor aplica seu próprio
- * prefixo de base (kernel.barrel.js prefixa por camada, test/index.html prefixa '../'). */
+ * para core/boot.js e test/index.html — os dois só carregavam cópias manuais desta lista, que já
+ * haviam divergido (test/index.html não injetava feature/card-statement.js). Caminhos são
+ * relativos a web/; cada consumidor aplica seu próprio prefixo de base (por camada pro kernel,
+ * '../' pro test harness, que vive um nível abaixo de web/). Os dois injetam TUDO — kernel e
+ * fatias — numa única lista achatada, nunca em dois níveis de <script> dinâmico (ver comentário
+ * em core/boot.js: um segundo nível quebraria a ordem de execução). */
 window.CDB_MANIFEST = {
   kernel: {
     domain: [
