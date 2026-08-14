@@ -560,6 +560,13 @@ button { font-family: var(--font); cursor: pointer; border: none; outline: none;
 .split-left { display: flex; flex-direction: column; gap: 12px; overflow-y: auto; }
 .split-right { padding: 0; overflow-y: auto; }
 
+/* ───── Import table (preview de fatura/extrato) ───── */
+.import-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.import-table th, .import-table td { padding: 8px 10px; }
+.import-table th { font-size: 11px; color: var(--text-muted); }
+.import-table-head-row { position: sticky; top: 0; background: var(--bg-hover); }
+.import-table tbody tr { border-top: 1px solid var(--border); }
+
 /* ───── Chips ───── */
 .chip-group { display: flex; flex-wrap: wrap; gap: 8px; }
 .chip {

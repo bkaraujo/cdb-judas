@@ -321,182 +321,349 @@
         'style="width:auto;font-size:12px;padding:4px 6px;">' + options + '</select>';
     }
 
-    function previewRowHtml(row, idx) {
-      const cardSelected = row.cardId !== undefined ? row.cardId : row.suggestedCardId;
-      const hasParcela = row.installmentNumber != null && row.installmentTotal != null;
-      const parcela = hasParcela ? esc(row.installmentNumber + '/' + row.installmentTotal) : '—';
-      const dup = !!row.duplicate;
-      const closed = !!row.closed;
-      const dupTag = dup
-        ? ' <span style="color:var(--text-muted);font-size:11px;font-style:italic;">já importado</span>'
-        : '';
-      const checked = closed ? '' : (row.checked !== undefined ? (row.checked ? 'checked' : '') : (dup ? '' : 'checked'));
-      const groupLocked = !!(row.groupId && row.installmentNumber != null && row.installmentNumber !== 1);
-      const descLockedAttrs = groupLocked ? ' readonly title="Segue a descrição da 1ª parcela do grupo"' : '';
-      const closingPeriod = previewData && previewData.closingPeriod;
-      return (
-        '<tr style="border-top:1px solid var(--border);' + (dup || closed ? 'opacity:0.6;' : '') + '">' +
-          '<td style="padding:8px 10px;text-align:center;">' +
-            '<input type="checkbox" data-row-include data-idx="' + idx + '" ' + checked +
-              (closed ? ' disabled title="' + esc(closedMessage(closingPeriod)) + '"' : '') + ' ' +
-              'style="width:16px;height:16px;cursor:pointer;" />' +
-          '</td>' +
-          '<td style="padding:8px 10px;width:90px;white-space:nowrap;color:var(--text-secondary);">' +
-            esc(fmtIsoDate(row.date)) + (closed ? closedWarningHtml(closingPeriod) : '') +
-          '</td>' +
-          '<td style="padding:8px 10px;">' + typeSelectHtml(row.type, idx) + '</td>' +
-          '<td style="padding:8px 10px;">' + categorySelectHtml(row.categoryId, idx, row.groupId, groupLocked, row.type) + '</td>' +
-          '<td style="padding:8px 10px;">' + window.tagsDropdownHtml(row.tagIds, idx, {
-            floating: true, compact: true, disabled: groupLocked,
-            title: groupLocked ? 'Segue as tags da 1ª parcela do grupo' : ''
-          }) + '</td>' +
-          '<td style="padding:8px 10px;">' + costCenterSelectHtml(row.costCenterId, idx) + '</td>' +
-          '<td style="padding:8px 10px;text-align:center;color:var(--text-secondary);">' + parcela + '</td>' +
-          '<td style="padding:8px 10px;">' +
-            '<input type="text" data-row-description data-idx="' + idx + '" data-group-id="' + esc(row.groupId || '') + '" value="' + esc(row.description) + '"' + descLockedAttrs + ' ' +
-              'style="width:100%;font-size:12px;padding:4px 6px;border:1px solid transparent;background:transparent;color:inherit;outline:none;text-transform:uppercase;' + (groupLocked ? 'opacity:0.6;' : '') + '" ' +
-              'onfocus="this.style.border=\'1px solid var(--border)\';this.style.background=\'var(--bg-card)\'" ' +
-              'onblur="this.style.border=\'1px solid transparent\';this.style.background=\'transparent\'" />' +
-            dupTag +
-          '</td>' +
-          '<td style="padding:8px 10px;">' + cardSelectHtml(cardSelected, idx) + '</td>' +
-          '<td style="padding:8px 10px;text-align:center;white-space:nowrap;">' + statusTag(row.status) + '</td>' +
-          '<td style="padding:8px 10px;text-align:right;font-weight:700;white-space:nowrap;">' + esc(fmt(row.amount)) + '</td>' +
-        '</tr>'
-      );
+    // ── Tabela de preview table-driven ──────────────────────────
+    // CREDIT_CARD_INVOICE (fatura) e BANK_STATEMENT (extrato) renderizam a mesma grade de campos,
+    // com pequenas diferenças (parcela/cartão/status só na fatura, estado só no extrato, cor do
+    // valor só no extrato). Cada coluna é definida uma vez; consertar um campo aqui vale pros dois
+    // fluxos, sem precisar lembrar de replicar a mudança numa 2ª função quase-idêntica.
+    function isDuplicateRow(kind, row) {
+      return kind === 'CREDIT_CARD_INVOICE' ? !!row.duplicate : row.state === 'DUPLICATE';
     }
 
-    function showPreview(preview) {
-      previewData = preview;
-      catCache = {};
-      const issuer = (preview && preview.issuer) || 'UNKNOWN';
-      const label = issuer === 'SANTANDER' ? 'Santander'
-                  : issuer === 'BTG' ? 'BTG Pactual'
-                  : issuer;
-      const last4s = (preview && preview.last4s) || [];
-      const rows = (preview && preview.rows) || [];
-      alignGroupFields(rows);
+    function isGroupLocked(row) {
+      return !!(row.groupId && row.installmentNumber != null && row.installmentNumber !== 1);
+    }
 
-      const candidateCards = (preview && preview.candidateCards) || [];
-      cardCandidates = candidateCards;
+    function rowCheckedAttr(kind, row) {
+      if (row.closed) return '';
+      if (row.checked !== undefined) return row.checked ? 'checked' : '';
+      return isDuplicateRow(kind, row) ? '' : 'checked';
+    }
 
-      const cardsLine = last4s.length
-        ? '<p style="font-size:12px;color:var(--text-muted);margin-top:2px;">' +
-            'Cartões: ' + esc(last4s.map(function (l) { return '•••• ' + l; }).join('  ')) +
-          '</p>'
-        : '';
-
-      // Sem cartão padrão: o cartão é escolhido por linha. Se nenhum cartão da fatura está cadastrado,
-      // não há como atribuir os lançamentos — avisa o usuário.
-      const noCardsWarning = (!candidateCards.length && rows.length)
-        ? '<p style="font-size:12px;color:var(--expense);margin-top:12px;">' +
-            'Nenhum cartão cadastrado corresponde aos 4 últimos dígitos desta fatura. ' +
-            'Cadastre o cartão para importar os lançamentos.' +
-          '</p>'
-        : '';
-
-      function sortIcon(col) {
-        if (sortCol !== col) return '';
-        return sortAsc ? ' ↑' : ' ↓';
+    function descriptionSuffix(kind, row) {
+      if (kind === 'CREDIT_CARD_INVOICE') {
+        return row.duplicate
+          ? ' <span style="color:var(--text-muted);font-size:11px;font-style:italic;">já importado</span>'
+          : '';
       }
+      return (row.state === 'RECONCILE' && row.reconcileDescription)
+        ? ' <span style="color:var(--text-muted);font-size:11px;font-style:italic;">↔ ' + esc(row.reconcileDescription) + '</span>'
+        : '';
+    }
 
-      const tableRows = rows.map(previewRowHtml).join('');
-      const tableHtml = rows.length
-        ? '<div style="flex:1;overflow-y:scroll;min-height:0;border:1px solid var(--border);border-radius:var(--radius-sm);margin-top:12px;">' +
-            '<table style="width:100%;border-collapse:collapse;font-size:13px;">' +
-              '<thead><tr style="position:sticky;top:0;background:var(--bg-hover);">' +
-                '<th style="padding:8px 10px;width:34px;text-align:center;">' +
-                  '<input type="checkbox" data-act="select-all" checked style="width:16px;height:16px;cursor:pointer;" />' +
-                '</th>' +
-                '<th data-sort="date" style="padding:8px 10px;width:90px;text-align:left;font-size:11px;color:var(--text-muted);cursor:pointer;">Data' + sortIcon('date') + '</th>' +
-                '<th data-sort="type" style="padding:8px 10px;text-align:left;font-size:11px;color:var(--text-muted);cursor:pointer;">Tipo' + sortIcon('type') + '</th>' +
-                '<th data-sort="categoryId" style="padding:8px 10px;text-align:left;font-size:11px;color:var(--text-muted);cursor:pointer;">Categoria' + sortIcon('categoryId') + '</th>' +
-                '<th style="padding:8px 10px;text-align:left;font-size:11px;color:var(--text-muted);">Tags</th>' +
-                '<th data-sort="costCenterId" style="padding:8px 10px;text-align:left;font-size:11px;color:var(--text-muted);cursor:pointer;">Centro de Custo' + sortIcon('costCenterId') + '</th>' +
-                '<th data-sort="installmentNumber" style="padding:8px 10px;text-align:center;font-size:11px;color:var(--text-muted);cursor:pointer;">Parcela' + sortIcon('installmentNumber') + '</th>' +
-                '<th data-sort="description" style="padding:8px 10px;text-align:left;font-size:11px;color:var(--text-muted);cursor:pointer;">Descrição' + sortIcon('description') + '</th>' +
-                '<th data-sort="suggestedCardId" style="padding:8px 10px;text-align:left;font-size:11px;color:var(--text-muted);cursor:pointer;">Cartão' + sortIcon('suggestedCardId') + '</th>' +
-                '<th data-sort="status" style="padding:8px 10px;text-align:center;font-size:11px;color:var(--text-muted);cursor:pointer;">Status' + sortIcon('status') + '</th>' +
-                '<th data-sort="amount" style="padding:8px 10px;text-align:right;font-size:11px;color:var(--text-muted);cursor:pointer;">Valor' + sortIcon('amount') + '</th>' +
-              '</tr></thead>' +
-              '<tbody>' + tableRows + '</tbody>' +
-            '</table>' +
-          '</div>'
-        : '<p style="font-size:13px;color:var(--text-muted);margin-top:12px;">Nenhum lançamento encontrado na fatura.</p>';
+    function amountCellHtml(kind, row) {
+      if (kind === 'BANK_STATEMENT') {
+        const amt = Number(row.amount) || 0;
+        const color = amt < 0 ? 'var(--expense)' : 'var(--income)';
+        return '<span style="color:' + color + ';">' + esc(fmt(amt)) + '</span>';
+      }
+      return esc(fmt(row.amount));
+    }
+
+    function colInclude() {
+      return {
+        label: '', sortable: false, align: 'center', width: '34px',
+        thHtml: '<input type="checkbox" data-act="select-all" checked style="width:16px;height:16px;cursor:pointer;" />',
+        cell: function (row, idx, ctx) {
+          const closed = !!row.closed;
+          const closingPeriod = ctx.data && ctx.data.closingPeriod;
+          return '<input type="checkbox" data-row-include data-idx="' + idx + '" ' + rowCheckedAttr(ctx.kind, row) +
+            (closed ? ' disabled title="' + esc(closedMessage(closingPeriod)) + '"' : '') + ' ' +
+            'style="width:16px;height:16px;cursor:pointer;" />';
+        },
+      };
+    }
+    function colDate() {
+      return {
+        key: 'date', label: 'Data', sortable: true, align: 'left', width: '90px', tdWidth: true,
+        tdExtra: 'white-space:nowrap;color:var(--text-secondary);',
+        cell: function (row, idx, ctx) {
+          const closingPeriod = ctx.data && ctx.data.closingPeriod;
+          return esc(fmtIsoDate(row.date)) + (row.closed ? closedWarningHtml(closingPeriod) : '');
+        },
+      };
+    }
+    function colType() {
+      return {
+        key: 'type', label: 'Tipo', sortable: true, align: 'left', width: '',
+        cell: function (row, idx) { return typeSelectHtml(row.type, idx); },
+      };
+    }
+    function colCategory() {
+      return {
+        key: 'categoryId', label: 'Categoria', sortable: true, align: 'left', width: '',
+        cell: function (row, idx) {
+          return categorySelectHtml(row.categoryId, idx, row.groupId, isGroupLocked(row), row.type);
+        },
+      };
+    }
+    function colTags() {
+      return {
+        key: null, label: 'Tags', sortable: false, align: 'left', width: '',
+        cell: function (row, idx) {
+          const locked = isGroupLocked(row);
+          return window.tagsDropdownHtml(row.tagIds, idx, {
+            floating: true, compact: true, disabled: locked,
+            title: locked ? 'Segue as tags da 1ª parcela do grupo' : ''
+          });
+        },
+      };
+    }
+    function colCostCenter() {
+      return {
+        key: 'costCenterId', label: 'Centro de Custo', sortable: true, align: 'left', width: '',
+        cell: function (row, idx) { return costCenterSelectHtml(row.costCenterId, idx); },
+      };
+    }
+    function colInstallment() {
+      return {
+        key: 'installmentNumber', label: 'Parcela', sortable: true, align: 'center', width: '',
+        tdExtra: 'color:var(--text-secondary);',
+        cell: function (row) {
+          const has = row.installmentNumber != null && row.installmentTotal != null;
+          return has ? esc(row.installmentNumber + '/' + row.installmentTotal) : '—';
+        },
+      };
+    }
+    function colDescription() {
+      return {
+        key: 'description', label: 'Descrição', sortable: true, align: 'left', width: '',
+        cell: function (row, idx, ctx) {
+          const locked = isGroupLocked(row);
+          const descLockedAttrs = locked ? ' readonly title="Segue a descrição da 1ª parcela do grupo"' : '';
+          return '<input type="text" data-row-description data-idx="' + idx + '" data-group-id="' + esc(row.groupId || '') + '" value="' + esc(row.description) + '"' + descLockedAttrs + ' ' +
+              'style="width:100%;font-size:12px;padding:4px 6px;border:1px solid transparent;background:transparent;color:inherit;outline:none;text-transform:uppercase;' + (locked ? 'opacity:0.6;' : '') + '" ' +
+              'onfocus="this.style.border=\'1px solid var(--border)\';this.style.background=\'var(--bg-card)\'" ' +
+              'onblur="this.style.border=\'1px solid transparent\';this.style.background=\'transparent\'" />' +
+            descriptionSuffix(ctx.kind, row);
+        },
+      };
+    }
+    function colCard() {
+      return {
+        key: 'suggestedCardId', label: 'Cartão', sortable: true, align: 'left', width: '',
+        cell: function (row, idx) {
+          const cardSelected = row.cardId !== undefined ? row.cardId : row.suggestedCardId;
+          return cardSelectHtml(cardSelected, idx);
+        },
+      };
+    }
+    function colStatus() {
+      return {
+        key: 'status', label: 'Status', sortable: true, align: 'center', width: '',
+        tdExtra: 'white-space:nowrap;',
+        cell: function (row) { return statusTag(row.status); },
+      };
+    }
+    function colState() {
+      return {
+        key: 'state', label: 'Estado', sortable: true, align: 'center', width: '',
+        tdExtra: 'white-space:nowrap;',
+        cell: function (row) { return stateBadge(row.state); },
+      };
+    }
+    function colAmount() {
+      return {
+        key: 'amount', label: 'Valor', sortable: true, align: 'right', width: '',
+        tdExtra: 'font-weight:700;white-space:nowrap;',
+        cell: function (row, idx, ctx) { return amountCellHtml(ctx.kind, row); },
+      };
+    }
+
+    const COLUMNS = {
+      CREDIT_CARD_INVOICE: [
+        colInclude(), colDate(), colType(), colCategory(), colTags(), colCostCenter(),
+        colInstallment(), colDescription(), colCard(), colStatus(), colAmount(),
+      ],
+      BANK_STATEMENT: [
+        colInclude(), colDate(), colType(), colCategory(), colTags(), colCostCenter(),
+        colDescription(), colState(), colAmount(),
+      ],
+    };
+
+    function sortIcon(col) {
+      if (sortCol !== col) return '';
+      return sortAsc ? ' ↑' : ' ↓';
+    }
+
+    function theadCellHtml(col) {
+      if (col.thHtml) {
+        return '<th style="' + (col.width ? 'width:' + col.width + ';' : '') + 'text-align:' + col.align + ';">' + col.thHtml + '</th>';
+      }
+      const sortAttr = col.sortable ? ' data-sort="' + col.key + '"' : '';
+      const cursor = col.sortable ? 'cursor:pointer;' : '';
+      const widthStyle = col.width ? 'width:' + col.width + ';' : '';
+      const icon = col.sortable ? sortIcon(col.key) : '';
+      return '<th' + sortAttr + ' style="' + widthStyle + 'text-align:' + col.align + ';' + cursor + '">' + esc(col.label) + icon + '</th>';
+    }
+
+    function tdCellHtml(col, row, idx, ctx) {
+      const widthStyle = (col.tdWidth && col.width) ? 'width:' + col.width + ';' : '';
+      return '<td style="' + widthStyle + 'text-align:' + col.align + ';' + (col.tdExtra || '') + '">' + col.cell(row, idx, ctx) + '</td>';
+    }
+
+    function renderPreviewTable(kind, data) {
+      const rows = (data && data.rows) || [];
+      if (!rows.length) {
+        return '<p style="font-size:13px;color:var(--text-muted);margin-top:12px;">' +
+          (kind === 'CREDIT_CARD_INVOICE' ? 'Nenhum lançamento encontrado na fatura.' : 'Nenhum lançamento encontrado no extrato.') +
+          '</p>';
+      }
+      const cols = COLUMNS[kind];
+      const ctx = { kind: kind, data: data };
+      const theadRow = cols.map(theadCellHtml).join('');
+      const tbodyRows = rows.map(function (row, idx) {
+        const cls = (isDuplicateRow(kind, row) || row.closed) ? ' style="opacity:0.6;"' : '';
+        return '<tr' + cls + '>' + cols.map(function (col) { return tdCellHtml(col, row, idx, ctx); }).join('') + '</tr>';
+      }).join('');
+      return '<div style="flex:1;overflow-y:scroll;min-height:0;border:1px solid var(--border);border-radius:var(--radius-sm);margin-top:12px;">' +
+          '<table class="import-table">' +
+            '<thead><tr class="import-table-head-row">' + theadRow + '</tr></thead>' +
+            '<tbody>' + tbodyRows + '</tbody>' +
+          '</table>' +
+        '</div>';
+    }
+
+    // ── Preview orchestration ────────────────────────────────────
+    function renderPreview(kind, data) {
+      if (kind === 'CREDIT_CARD_INVOICE') previewData = data; else statementData = data;
+      catCache = {};
+      const rows = (data && data.rows) || [];
+      const issuer = (data && data.issuer) || 'UNKNOWN';
+      const issuerLabel = issuer === 'SANTANDER' ? 'Santander' : issuer === 'BTG' ? 'BTG Pactual' : issuer;
+
+      let bannerTitle, bannerExtra, belowBanner, confirmAct, footerMsg;
+
+      if (kind === 'CREDIT_CARD_INVOICE') {
+        alignGroupFields(rows);
+        const candidateCards = (data && data.candidateCards) || [];
+        cardCandidates = candidateCards;
+        const last4s = (data && data.last4s) || [];
+        bannerTitle = 'Banco detectado';
+        bannerExtra = last4s.length
+          ? '<p style="font-size:12px;color:var(--text-muted);margin-top:2px;">' +
+              'Cartões: ' + esc(last4s.map(function (l) { return '•••• ' + l; }).join('  ')) +
+            '</p>'
+          : '';
+        // Sem cartão padrão: o cartão é escolhido por linha. Se nenhum cartão da fatura está
+        // cadastrado, não há como atribuir os lançamentos — avisa o usuário.
+        belowBanner = (!candidateCards.length && rows.length)
+          ? '<p style="font-size:12px;color:var(--expense);margin-top:12px;">' +
+              'Nenhum cartão cadastrado corresponde aos 4 últimos dígitos desta fatura. ' +
+              'Cadastre o cartão para importar os lançamentos.' +
+            '</p>'
+          : '';
+        confirmAct = 'do-confirm';
+        footerMsg = rows.length + ' lançamento(s) encontrado(s). Revise, ajuste as categorias e o cartão de cada linha e confirme a importação.';
+      } else {
+        const accounts = (data && data.candidateAccounts) || [];
+        // Backend só resolve selectedAccountId quando inequívoco (accountId explícito ou única
+        // conta ativa). Sem isso, não há dado algum ligando o issuer detectado a uma conta — não
+        // adivinhar, forçar escolha.
+        selectedAccountId = (data && data.selectedAccountId) || selectedAccountId || null;
+        bannerTitle = 'Extrato detectado';
+        bannerExtra = '';
+        const accOptions = (selectedAccountId ? '' : '<option value="" selected>Selecione a conta</option>') +
+          accounts.map(function (a) {
+            const sel = String(a.id) === String(selectedAccountId) ? ' selected' : '';
+            return '<option value="' + esc(a.id) + '"' + sel + '>' + esc(a.name) + '</option>';
+          }).join('');
+        belowBanner = accounts.length
+          ? '<div class="form-group" style="margin-top:12px;">' +
+              '<label class="form-label" for="' + cardSelectId + '">Conta de destino</label>' +
+              '<select id="' + cardSelectId + '" data-region="account-select">' + accOptions + '</select>' +
+            '</div>'
+          : '<p style="font-size:12px;color:var(--expense);margin-top:12px;">Nenhuma conta disponível para importação.</p>';
+        confirmAct = 'do-statement-confirm';
+        footerMsg = rows.length + ' lançamento(s) encontrado(s). Escolha a conta, revise os estados e confirme a importação.';
+      }
 
       m.$body.html(
         '<div style="display:flex;align-items:center;gap:12px;padding:8px 0;">' +
           '<span style="color:var(--income);display:flex;">' + window.icon('check', 22) + '</span>' +
           '<div style="flex:1;">' +
-            '<p style="font-size:13px;color:var(--text-muted);">Banco detectado</p>' +
-            '<p style="font-size:18px;font-weight:800;">' + esc(label) + '</p>' +
-            cardsLine +
+            '<p style="font-size:13px;color:var(--text-muted);">' + esc(bannerTitle) + '</p>' +
+            '<p style="font-size:18px;font-weight:800;">' + esc(issuerLabel) + '</p>' +
+            bannerExtra +
           '</div>' +
           quickCreateButtonsHtml() +
         '</div>' +
-        noCardsWarning +
-        tableHtml +
-        '<p style="font-size:12px;color:var(--text-muted);margin-top:10px;">' +
-          esc(rows.length + ' lançamento(s) encontrado(s). Revise, ajuste as categorias e o cartão de cada linha e confirme a importação.') +
-        '</p>'
+        belowBanner +
+        renderPreviewTable(kind, data) +
+        '<p style="font-size:12px;color:var(--text-muted);margin-top:10px;">' + esc(footerMsg) + '</p>'
       );
+
+      if (kind === 'BANK_STATEMENT') {
+        m.$el.find('[data-region=account-select]').on('change', function () {
+          selectedAccountId = this.value || null;
+          refreshStatementPreview();
+        });
+      }
 
       // Swap the upload action for a confirm action (only when there are rows to import).
       m.$el.find('[data-act=do-import]').hide();
       const $foot = m.$el.find('.modal-footer');
-      $foot.find('[data-act=do-confirm]').remove();
+      $foot.find('[data-act=do-confirm],[data-act=do-statement-confirm]').remove();
       if (rows.length) {
         $foot.append(window.btn({
           variant: 'primary', size: 'md', icon: 'check', label: 'Confirmar importação',
-          attrs: 'data-act="do-confirm" type="button"'
+          attrs: 'data-act="' + confirmAct + '" type="button"'
         }));
       }
     }
 
-    function confirmImport() {
-      const preview = previewData;
-      if (!preview) return;
-
+    // Coleta as linhas marcadas do DOM (fonte de verdade em edição), comum aos dois fluxos —
+    // só a fatura exige cardId por linha e carrega os campos de parcela.
+    function collectRows(kind) {
+      const src = kind === 'CREDIT_CARD_INVOICE' ? previewData : statementData;
       const rows = [];
       let missingCard = false;
       let missingCategory = false;
       m.$el.find('[data-row-include]').each(function () {
         if (!this.checked) return;
         const idx = Number($(this).attr('data-idx'));
-        const src = preview.rows && preview.rows[idx];
-        if (!src) return;
+        const s = src && src.rows && src.rows[idx];
+        if (!s) return;
         const $cat = m.$el.find('[data-row-category][data-idx="' + idx + '"]');
         const $costCenter = m.$el.find('[data-row-costcenter][data-idx="' + idx + '"]');
         const $desc = m.$el.find('[data-row-description][data-idx="' + idx + '"]');
-        const $card = m.$el.find('[data-row-card][data-idx="' + idx + '"]');
         const categoryId = $cat.val() || null;
         if (!categoryId) { missingCategory = true; }
-        const costCenterId = ($costCenter.val() || src.costCenterId) || null;
-        const description = ($desc.val() || src.description || '').trim();
-        // O cartão é definido por transação — cada linha incluída precisa de um cartão.
-        const cardId = $card.length ? ($card.val() || null) : null;
-        if (!cardId) { missingCard = true; }
-        rows.push({
+        const costCenterId = ($costCenter.val() || s.costCenterId) || null;
+        const description = ($desc.val() || s.description || '').trim();
+        const row = {
           description: description,
-          amount: src.amount,
-          date: src.date,
-          originalDate: src.originalDate,
-          installmentNumber: src.installmentNumber,
-          installmentTotal: src.installmentTotal,
-          transactionType: src.type,
+          amount: s.amount,
+          date: s.date,
+          transactionType: s.type,
           categoryId: categoryId,
           costCenterId: costCenterId,
-          cardId: cardId,
-          tagIds: src.tagIds || [],
-        });
+          tagIds: s.tagIds || [],
+        };
+        if (kind === 'CREDIT_CARD_INVOICE') {
+          // O cartão é definido por transação — cada linha incluída precisa de um cartão.
+          const $card = m.$el.find('[data-row-card][data-idx="' + idx + '"]');
+          const cardId = $card.length ? ($card.val() || null) : null;
+          if (!cardId) { missingCard = true; }
+          row.originalDate = s.originalDate;
+          row.installmentNumber = s.installmentNumber;
+          row.installmentTotal = s.installmentTotal;
+          row.cardId = cardId;
+        }
+        rows.push(row);
       });
+      return { rows: rows, missingCard: missingCard, missingCategory: missingCategory };
+    }
 
-      if (!rows.length) { window.toast('Selecione ao menos um lançamento', 'error'); return; }
-      if (missingCard) { window.toast('Selecione o cartão de cada lançamento', 'error'); return; }
-      if (missingCategory) { window.toast('Selecione a categoria de cada lançamento', 'error'); return; }
+    function confirmImport() {
+      if (!previewData) return;
+      const collected = collectRows('CREDIT_CARD_INVOICE');
+      if (!collected.rows.length) { window.toast('Selecione ao menos um lançamento', 'error'); return; }
+      if (collected.missingCard) { window.toast('Selecione o cartão de cada lançamento', 'error'); return; }
+      if (collected.missingCategory) { window.toast('Selecione a categoria de cada lançamento', 'error'); return; }
 
       const $btn = m.$el.find('[data-act=do-confirm]');
-      window.runMutation(window.TransactionsApi.importConfirm({ type: 'CREDIT_CARD_INVOICE', rows: rows }), {
+      window.runMutation(window.TransactionsApi.importConfirm({ type: 'CREDIT_CARD_INVOICE', rows: collected.rows }), {
         $btn: $btn,
         failure: 'Falha ao confirmar a importação',
         onDone: function (res) {
@@ -533,15 +700,8 @@
     // ── Bank statement (extrato) preview ───────────────────────
     function routePreview(preview) {
       applyImportRules((preview && preview.rows) || []);
-      if (preview && preview.documentType === 'BANK_STATEMENT') {
-        showStatementPreview(preview);
-      } else {
-        showPreview(preview);
-      }
-    }
-
-    function statementCategorySelectHtml(selectedId, idx, type) {
-      return categoryComboHtml(importCategoriesFor(type, selectedId), selectedId, idx, '', false);
+      const kind = (preview && preview.documentType === 'BANK_STATEMENT') ? 'BANK_STATEMENT' : 'CREDIT_CARD_INVOICE';
+      renderPreview(kind, preview);
     }
 
     function stateBadge(st) {
@@ -554,128 +714,6 @@
       return '<span class="badge badge-income">novo</span>';
     }
 
-    function statementRowHtml(row, idx) {
-      const st = row.state;
-      const dup = st === 'DUPLICATE';
-      const closed = !!row.closed;
-      const checked = closed ? '' : (row.checked !== undefined ? (row.checked ? 'checked' : '') : (dup ? '' : 'checked'));
-      const amt = Number(row.amount) || 0;
-      const amtColor = amt < 0 ? 'var(--expense)' : 'var(--income)';
-      const note = (st === 'RECONCILE' && row.reconcileDescription)
-        ? ' <span style="color:var(--text-muted);font-size:11px;font-style:italic;">↔ ' + esc(row.reconcileDescription) + '</span>'
-        : '';
-      const closingPeriod = statementData && statementData.closingPeriod;
-      return (
-        '<tr style="border-top:1px solid var(--border);' + (dup || closed ? 'opacity:0.6;' : '') + '">' +
-          '<td style="padding:8px 10px;text-align:center;">' +
-            '<input type="checkbox" data-row-include data-idx="' + idx + '" ' + checked +
-              (closed ? ' disabled title="' + esc(closedMessage(closingPeriod)) + '"' : '') + ' ' +
-              'style="width:16px;height:16px;cursor:pointer;" />' +
-          '</td>' +
-          '<td style="padding:8px 10px;width:90px;white-space:nowrap;color:var(--text-secondary);">' +
-            esc(fmtIsoDate(row.date)) + (closed ? closedWarningHtml(closingPeriod) : '') +
-          '</td>' +
-          '<td style="padding:8px 10px;">' + typeSelectHtml(row.type, idx) + '</td>' +
-          '<td style="padding:8px 10px;">' + statementCategorySelectHtml(row.categoryId, idx, row.type) + '</td>' +
-          '<td style="padding:8px 10px;">' + window.tagsDropdownHtml(row.tagIds, idx, { floating: true, compact: true }) + '</td>' +
-          '<td style="padding:8px 10px;">' + costCenterSelectHtml(row.costCenterId, idx) + '</td>' +
-          '<td style="padding:8px 10px;">' +
-            '<input type="text" data-row-description data-idx="' + idx + '" value="' + esc(row.description) + '" ' +
-              'style="width:100%;font-size:12px;padding:4px 6px;border:1px solid transparent;background:transparent;color:inherit;outline:none;text-transform:uppercase;" ' +
-              'onfocus="this.style.border=\'1px solid var(--border)\';this.style.background=\'var(--bg-card)\'" ' +
-              'onblur="this.style.border=\'1px solid transparent\';this.style.background=\'transparent\'" />' +
-            note +
-          '</td>' +
-          '<td style="padding:8px 10px;text-align:center;white-space:nowrap;">' + stateBadge(st) + '</td>' +
-          '<td style="padding:8px 10px;text-align:right;font-weight:700;white-space:nowrap;color:' + amtColor + ';">' + esc(fmt(amt)) + '</td>' +
-        '</tr>'
-      );
-    }
-
-    function showStatementPreview(preview) {
-      statementData = preview;
-      catCache = {};
-      const issuer = (preview && preview.issuer) || 'UNKNOWN';
-      const issuerLabel = issuer === 'SANTANDER' ? 'Santander'
-                        : issuer === 'BTG' ? 'BTG Pactual'
-                        : issuer;
-      const accounts = (preview && preview.candidateAccounts) || [];
-      // Backend só resolve selectedAccountId quando inequívoco (accountId explícito ou única conta ativa).
-      // Sem isso, não há dado algum ligando o issuer detectado a uma conta — não adivinhar, forçar escolha.
-      selectedAccountId = (preview && preview.selectedAccountId) || selectedAccountId || null;
-      const rows = (preview && preview.rows) || [];
-
-      const accOptions = (selectedAccountId ? '' : '<option value="" selected>Selecione a conta</option>') +
-        accounts.map(function (a) {
-          const sel = String(a.id) === String(selectedAccountId) ? ' selected' : '';
-          return '<option value="' + esc(a.id) + '"' + sel + '>' + esc(a.name) + '</option>';
-        }).join('');
-      const accSelectorHtml = accounts.length
-        ? '<div class="form-group" style="margin-top:12px;">' +
-            '<label class="form-label" for="' + cardSelectId + '">Conta de destino</label>' +
-            '<select id="' + cardSelectId + '" data-region="account-select">' + accOptions + '</select>' +
-          '</div>'
-        : '<p style="font-size:12px;color:var(--expense);margin-top:12px;">Nenhuma conta disponível para importação.</p>';
-
-      function sortIcon(col) {
-        if (sortCol !== col) return '';
-        return sortAsc ? ' ↑' : ' ↓';
-      }
-
-      const tableRows = rows.map(statementRowHtml).join('');
-      const tableHtml = rows.length
-        ? '<div style="flex:1;overflow-y:scroll;min-height:0;border:1px solid var(--border);border-radius:var(--radius-sm);margin-top:12px;">' +
-            '<table style="width:100%;border-collapse:collapse;font-size:13px;">' +
-              '<thead><tr style="position:sticky;top:0;background:var(--bg-hover);">' +
-                '<th style="padding:8px 10px;width:34px;text-align:center;">' +
-                  '<input type="checkbox" data-act="select-all" checked style="width:16px;height:16px;cursor:pointer;" />' +
-                '</th>' +
-                '<th data-sort="date" style="padding:8px 10px;width:90px;text-align:left;font-size:11px;color:var(--text-muted);cursor:pointer;">Data' + sortIcon('date') + '</th>' +
-                '<th data-sort="type" style="padding:8px 10px;text-align:left;font-size:11px;color:var(--text-muted);cursor:pointer;">Tipo' + sortIcon('type') + '</th>' +
-                '<th data-sort="categoryId" style="padding:8px 10px;text-align:left;font-size:11px;color:var(--text-muted);cursor:pointer;">Categoria' + sortIcon('categoryId') + '</th>' +
-                '<th style="padding:8px 10px;text-align:left;font-size:11px;color:var(--text-muted);">Tags</th>' +
-                '<th data-sort="costCenterId" style="padding:8px 10px;text-align:left;font-size:11px;color:var(--text-muted);cursor:pointer;">Centro de Custo' + sortIcon('costCenterId') + '</th>' +
-                '<th data-sort="description" style="padding:8px 10px;text-align:left;font-size:11px;color:var(--text-muted);cursor:pointer;">Descrição' + sortIcon('description') + '</th>' +
-                '<th data-sort="state" style="padding:8px 10px;text-align:center;font-size:11px;color:var(--text-muted);cursor:pointer;">Estado' + sortIcon('state') + '</th>' +
-                '<th data-sort="amount" style="padding:8px 10px;text-align:right;font-size:11px;color:var(--text-muted);cursor:pointer;">Valor' + sortIcon('amount') + '</th>' +
-              '</tr></thead>' +
-              '<tbody>' + tableRows + '</tbody>' +
-            '</table>' +
-          '</div>'
-        : '<p style="font-size:13px;color:var(--text-muted);margin-top:12px;">Nenhum lançamento encontrado no extrato.</p>';
-
-      m.$body.html(
-        '<div style="display:flex;align-items:center;gap:12px;padding:8px 0;">' +
-          '<span style="color:var(--income);display:flex;">' + window.icon('check', 22) + '</span>' +
-          '<div style="flex:1;">' +
-            '<p style="font-size:13px;color:var(--text-muted);">Extrato detectado</p>' +
-            '<p style="font-size:18px;font-weight:800;">' + esc(issuerLabel) + '</p>' +
-          '</div>' +
-          quickCreateButtonsHtml() +
-        '</div>' +
-        accSelectorHtml +
-        tableHtml +
-        '<p style="font-size:12px;color:var(--text-muted);margin-top:10px;">' +
-          esc(rows.length + ' lançamento(s) encontrado(s). Escolha a conta, revise os estados e confirme a importação.') +
-        '</p>'
-      );
-
-      m.$el.find('[data-region=account-select]').on('change', function () {
-        selectedAccountId = this.value || null;
-        refreshStatementPreview();
-      });
-
-      m.$el.find('[data-act=do-import]').hide();
-      const $foot = m.$el.find('.modal-footer');
-      $foot.find('[data-act=do-statement-confirm]').remove();
-      if (rows.length) {
-        $foot.append(window.btn({
-          variant: 'primary', size: 'md', icon: 'check', label: 'Confirmar importação',
-          attrs: 'data-act="do-statement-confirm" type="button"'
-        }));
-      }
-    }
-
     // Re-runs the preview against the chosen account so duplicate/reconcile states refresh.
     function refreshStatementPreview() {
       if (!selectedFile) return;
@@ -684,7 +722,7 @@
         onDone: function (preview) {
           if (preview && preview.documentType === 'BANK_STATEMENT') {
             applyImportRules((preview && preview.rows) || []);
-            showStatementPreview(preview);
+            renderPreview('BANK_STATEMENT', preview);
           }
         },
       });
@@ -693,37 +731,12 @@
     function confirmStatementImport() {
       if (!statementData) return;
       if (!selectedAccountId) { window.toast('Selecione a conta de destino', 'error'); return; }
-
-      const rows = [];
-      let missingCategory = false;
-      m.$el.find('[data-row-include]').each(function () {
-        if (!this.checked) return;
-        const idx = Number($(this).attr('data-idx'));
-        const src = statementData.rows && statementData.rows[idx];
-        if (!src) return;
-        const $cat = m.$el.find('[data-row-category][data-idx="' + idx + '"]');
-        const $costCenter = m.$el.find('[data-row-costcenter][data-idx="' + idx + '"]');
-        const $desc = m.$el.find('[data-row-description][data-idx="' + idx + '"]');
-        const categoryId = $cat.val() || null;
-        if (!categoryId) { missingCategory = true; }
-        const costCenterId = ($costCenter.val() || src.costCenterId) || null;
-        const description = ($desc.val() || src.description || '').trim();
-        rows.push({
-          description: description,
-          amount: src.amount,
-          date: src.date,
-          transactionType: src.type,
-          categoryId: categoryId,
-          costCenterId: costCenterId,
-          tagIds: src.tagIds || [],
-        });
-      });
-
-      if (!rows.length) { window.toast('Selecione ao menos um lançamento', 'error'); return; }
-      if (missingCategory) { window.toast('Selecione a categoria de cada lançamento', 'error'); return; }
+      const collected = collectRows('BANK_STATEMENT');
+      if (!collected.rows.length) { window.toast('Selecione ao menos um lançamento', 'error'); return; }
+      if (collected.missingCategory) { window.toast('Selecione a categoria de cada lançamento', 'error'); return; }
 
       const $btn = m.$el.find('[data-act=do-statement-confirm]');
-      window.runMutation(window.TransactionsApi.importConfirm({ type: 'BANK_STATEMENT', accountId: selectedAccountId, rows: rows }), {
+      window.runMutation(window.TransactionsApi.importConfirm({ type: 'BANK_STATEMENT', accountId: selectedAccountId, rows: collected.rows }), {
         $btn: $btn,
         failure: 'Falha ao confirmar a importação',
         onDone: function (res) {
@@ -823,7 +836,7 @@
       const data = previewData || statementData;
       if (!data) return;
       syncRowsFromDom(data);
-      if (statementData) showStatementPreview(data); else showPreview(data);
+      renderPreview(statementData ? 'BANK_STATEMENT' : 'CREDIT_CARD_INVOICE', data);
     }
 
     m.$el.on('click', '[data-act=new-category]', function (e) {
@@ -883,7 +896,7 @@
       const col = $(this).attr('data-sort');
       const isStatement = !!statementData;
       const data = isStatement ? statementData : previewData;
-      const renderFn = isStatement ? showStatementPreview : showPreview;
+      const kind = isStatement ? 'BANK_STATEMENT' : 'CREDIT_CARD_INVOICE';
 
       // Save current states before sorting
       syncRowsFromDom(data);
@@ -908,7 +921,7 @@
         return 0;
       });
 
-      renderFn(data);
+      renderPreview(kind, data);
     });
 
     return m;
