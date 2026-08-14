@@ -14,7 +14,7 @@
     const $root = state.$root;
     if (!$root) return;
 
-    const $header = $('<div class="page-header"><h1>Configurações</h1></div>');
+    const $header = window.pageHeader({ title: 'Configurações' });
     const $tabs = window.tabs(
       [{ id: 'perfil', label: 'Perfil' }, { id: 'aparencia', label: 'Aparência' }],
       state.tab,

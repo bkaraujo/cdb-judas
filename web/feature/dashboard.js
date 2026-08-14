@@ -884,27 +884,20 @@
     $root.empty();
 
     // Page header
-    const $header = $(
-      '<div class="page-header">' +
-        '<h1>Visão Geral</h1>' +
-        '<div class="page-header-actions" data-region="actions"></div>' +
-      '</div>'
-    );
-    const $actions = $header.find('[data-region=actions]');
-    $actions.append(
-      $('<button class="icon-btn" data-act="toggle-hide" type="button" title="' +
-        (state.hideValues ? 'Mostrar valores' : 'Ocultar valores') +
-        '" style="width:34px;height:34px;">' +
-        window.icon(state.hideValues ? 'eyeOff' : 'eye', 16) +
-        '</button>')
-    );
-    $actions.append(
-      window.btn({
-        variant: 'secondary', size: 'sm', icon: 'settings', label: 'Personalizar',
-        attrs: 'data-act="customize"',
-      })
-    );
-
+    const $header = window.pageHeader({
+      title: 'Visão Geral',
+      actions: [
+        $('<button class="icon-btn" data-act="toggle-hide" type="button" title="' +
+          (state.hideValues ? 'Mostrar valores' : 'Ocultar valores') +
+          '" style="width:34px;height:34px;">' +
+          window.icon(state.hideValues ? 'eyeOff' : 'eye', 16) +
+          '</button>'),
+        window.btn({
+          variant: 'secondary', size: 'sm', icon: 'settings', label: 'Personalizar',
+          attrs: 'data-act="customize"',
+        })
+      ]
+    });
 
     $root.append($header);
 

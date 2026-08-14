@@ -189,29 +189,16 @@
     const $page = $('<div class="fade-in"></div>');
 
     // ── Page header ──
-    const $header = $(
-      '<div class="page-header">' +
-        '<h1>A Pagar e Receber</h1>' +
-        '<div class="page-header-actions" data-region="head-actions"></div>' +
-      '</div>'
-    );
-    const $headRight = $header.find('[data-region=head-actions]');
-
-    const $periodNav = window.periodNav({
-      month: state.month + 1,
-      year: state.year,
-      onPrev: function () { window.shiftMonth(state, -1, false); render(); },
-      onNext: function () { window.shiftMonth(state, +1, false); render(); },
-      onChange: function (m, y) { window.App.PeriodService.set(m, y); state.month = m - 1; state.year = y; render(); },
+    const $header = window.pageHeader({
+      title: 'A Pagar e Receber',
+      nav: window.periodNav({
+        month: state.month + 1,
+        year: state.year,
+        onPrev: function () { window.shiftMonth(state, -1, false); render(); },
+        onNext: function () { window.shiftMonth(state, +1, false); render(); },
+        onChange: function (m, y) { window.App.PeriodService.set(m, y); state.month = m - 1; state.year = y; render(); },
+      })
     });
-    $headRight.append($periodNav);
-
-    // $headRight.append(
-    //   window.btn({
-    //     variant: 'primary', size: 'md', icon: 'plus', label: 'Nova Conta',
-    //     attrs: 'data-act="new"'
-    //   })
-    // );
 
     $page.append($header);
 

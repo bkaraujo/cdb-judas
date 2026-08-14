@@ -74,18 +74,13 @@
     const $root = state.$root;
     if (!$root) return;
 
-    const $header = $(
-      '<div class="page-header">' +
-        '<h1>Tags</h1>' +
-        '<div class="page-header-actions" data-region="actions"></div>' +
-      '</div>'
-    );
-    $header.find('[data-region=actions]').append(
-      window.btn({
+    const $header = window.pageHeader({
+      title: 'Tags',
+      actions: window.btn({
         variant: 'primary', size: 'md', icon: 'plus', label: 'Nova Tag',
         attrs: 'data-act="new"'
       })
-    );
+    });
 
     let $body;
     if (!state.tags.length) {

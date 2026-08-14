@@ -137,18 +137,13 @@
     });
 
     // Page header
-    const $header = $(
-      '<div class="page-header">' +
-        '<h1>Categorias</h1>' +
-        '<div class="page-header-actions" data-region="actions"></div>' +
-      '</div>'
-    );
-    $header.find('[data-region=actions]').append(
-      window.btn({
+    const $header = window.pageHeader({
+      title: 'Categorias',
+      actions: window.btn({
         variant: 'primary', size: 'md', icon: 'plus', label: 'Nova Categoria',
         attrs: 'data-act="new"'
       })
-    );
+    });
 
     // Type sidebar (left)
     const $typeNav = $(

@@ -134,18 +134,13 @@
     const $root = state.$root;
     if (!$root) return;
 
-    const $header = $(
-      '<div class="page-header">' +
-        '<h1>Regras de Nomenclatura</h1>' +
-        '<div class="page-header-actions" data-region="actions"></div>' +
-      '</div>'
-    );
-    $header.find('[data-region=actions]').append(
-      window.btn({
+    const $header = window.pageHeader({
+      title: 'Regras de Nomenclatura',
+      actions: window.btn({
         variant: 'primary', size: 'md', icon: 'plus', label: 'Nova Regra',
         attrs: 'data-act="new"'
       })
-    );
+    });
 
     let $body;
     if (!state.rules.length) {

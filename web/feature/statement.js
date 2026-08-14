@@ -202,20 +202,16 @@
     const $page = $('<div class="fade-in"></div>');
 
     // Header — sticky at top so it stays visible while the card content scrolls.
-    const $header = $(
-      '<div class="page-header">' +
-        '<h1>Extrato de Contas</h1>' +
-        '<div class="page-header-actions" data-region="head-actions"></div>' +
-      '</div>'
-    );
-    const $periodNav = window.periodNav({
-      month: state.month,
-      year: state.year,
-      onPrev: function () { window.shiftMonth(state, -1, true); reloadPeriod(); },
-      onNext: function () { window.shiftMonth(state, +1, true); reloadPeriod(); },
-      onChange: function (m, y) { window.App.PeriodService.set(m, y); state.month = m; state.year = y; reloadPeriod(); },
+    const $header = window.pageHeader({
+      title: 'Extrato de Contas',
+      nav: window.periodNav({
+        month: state.month,
+        year: state.year,
+        onPrev: function () { window.shiftMonth(state, -1, true); reloadPeriod(); },
+        onNext: function () { window.shiftMonth(state, +1, true); reloadPeriod(); },
+        onChange: function (m, y) { window.App.PeriodService.set(m, y); state.month = m; state.year = y; reloadPeriod(); },
+      })
     });
-    $header.find('[data-region=head-actions]').append($periodNav);
 
     const $sticky = $(
       '<div style="position:sticky;top:0;z-index:5;background:var(--bg-base);"></div>'

@@ -191,26 +191,20 @@
     $root.empty();
 
     // Header
-    const $header = $(
-      '<div class="page-header">' +
-        '<h1>Metas / Orçamento</h1>' +
-        '<div class="page-header-actions" data-region="actions"></div>' +
-      '</div>'
-    );
-    const $actions = $header.find('[data-region=actions]');
-
-    const $pnav = window.periodNav({
-      month: state.month + 1,
-      year: state.year,
-      onPrev: function () { shiftMonth(-1); loadBudget(); },
-      onNext: function () { shiftMonth(+1); loadBudget(); },
-      onChange: function (m, y) { window.App.PeriodService.set(m, y); state.month = m - 1; state.year = y; loadBudget(); },
+    const $header = window.pageHeader({
+      title: 'Metas / Orçamento',
+      actions: window.btn({
+        variant: 'primary', size: 'md', icon: 'plus', label: 'Nova Meta',
+        attrs: 'data-act="new"',
+      }),
+      nav: window.periodNav({
+        month: state.month + 1,
+        year: state.year,
+        onPrev: function () { shiftMonth(-1); loadBudget(); },
+        onNext: function () { shiftMonth(+1); loadBudget(); },
+        onChange: function (m, y) { window.App.PeriodService.set(m, y); state.month = m - 1; state.year = y; loadBudget(); },
+      })
     });
-    $actions.append($pnav);
-    $actions.append(window.btn({
-      variant: 'primary', size: 'md', icon: 'plus', label: 'Nova Meta',
-      attrs: 'data-act="new"',
-    }));
     $root.append($header);
 
     // Summary cards

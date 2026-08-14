@@ -29,6 +29,7 @@
     'feature/statement.js',
     'feature/credit-cards.js',
     'feature/credit-cards.api.js',
+    'feature/card-statement.js',
     'feature/accounts-payable.js',
     'feature/accounts-payable.api.js',
     'feature/import-statement.js',

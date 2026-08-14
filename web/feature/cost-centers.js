@@ -91,11 +91,7 @@
     const $root = state.$root;
     if (!$root) return;
 
-    const $header = $(
-      '<div class="page-header">' +
-        '<h1>Centros de Custo</h1>' +
-      '</div>'
-    );
+    const $header = window.pageHeader({ title: 'Centros de Custo' });
 
     let $body;
     if (!state.costCenters.length) {
