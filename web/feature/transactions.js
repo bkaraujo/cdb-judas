@@ -909,44 +909,47 @@
       '<div class="page-header">' +
         '<h1>Lançamentos</h1>' +
         '<div class="page-header-actions" data-region="head-actions"></div>' +
+        '<div class="page-header-actions" data-region="head-nav"></div>' +
       '</div>'
     );
     const $headRight = $header.find('[data-region=head-actions]');
 
-    // period nav
-    const $periodNav = window.periodNav({
-      month: state.month + 1,
-      year: state.year,
-      onPrev: function () { window.shiftMonth(state, -1, false); loadTransactions(); },
-      onNext: function () { window.shiftMonth(state, +1, false); loadTransactions(); },
-      onChange: function (m, y) { window.App.PeriodService.set(m, y); state.month = m - 1; state.year = y; loadTransactions(); },
-    });
-    $headRight.append($periodNav);
 
     // Filter toggle
     $headRight.append(
-      window.btn({
-        variant: state.showFilters ? 'primary' : 'secondary',
-        size: 'md', icon: 'filter',
-        label: 'Filtros',
-        attrs: 'data-act="toggle-filters"'
-      })
+        window.btn({
+          variant: state.showFilters ? 'primary' : 'secondary',
+          size: 'md', icon: 'filter',
+          label: 'Filtros',
+          attrs: 'data-act="toggle-filters"'
+        })
     );
 
     // Importar
     $headRight.append(
-      window.btn({
-        variant: 'secondary', size: 'md', icon: 'download', label: 'Importar',
-        attrs: 'data-act="import"'
-      })
+        window.btn({
+          variant: 'secondary', size: 'md', icon: 'download', label: 'Importar',
+          attrs: 'data-act="import"'
+        })
     );
 
     // Novo Lançamento
     $headRight.append(
-      window.btn({
-        variant: 'primary', size: 'md', icon: 'plus', label: 'Novo Lançamento',
-        attrs: 'data-act="new"'
-      })
+        window.btn({
+          variant: 'primary', size: 'md', icon: 'plus', label: 'Novo Lançamento',
+          attrs: 'data-act="new"'
+        })
+    );
+
+    // period nav
+    $header.find('[data-region=head-nav]').append(
+        window.periodNav({
+          month: state.month + 1,
+          year: state.year,
+          onPrev: function () { window.shiftMonth(state, -1, false); loadTransactions(); },
+          onNext: function () { window.shiftMonth(state, +1, false); loadTransactions(); },
+          onChange: function (m, y) { window.App.PeriodService.set(m, y); state.month = m - 1; state.year = y; loadTransactions(); },
+        })
     );
 
     $page.append($header);

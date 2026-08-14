@@ -28,12 +28,12 @@ public final class PreferencesJDBCRepository implements PreferencesRepository {
     @Override
     public Preferences findByPersonId(String personId) {
         val map = dataSource.query(
-                "SELECT TXT_PREFERENCE, TXT_VALUE FROM F000_PREFERENCES WHERE COD_PERSON = ?",
+                "SELECT TXT_KEY, TXT_VALUE FROM F000_PREFERENCES WHERE COD_PERSON = ?",
                 JDBCParameter.of(personId),
                 rs -> {
                     val m = new HashMap<String, String>();
                     while (rs.next().get()) {
-                        val k = rs.getString("TXT_PREFERENCE").get();
+                        val k = rs.getString("TXT_KEY").get();
                         val v = rs.getString("TXT_VALUE").get();
                         m.put(k, v);
                     }
@@ -62,7 +62,7 @@ public final class PreferencesJDBCRepository implements PreferencesRepository {
 
     private void upsertPref(JDBCTransaction tx, String personId, String key, @Nullable String value) {
         val exists = tx.query(
-                "SELECT TXT_VALUE FROM F000_PREFERENCES WHERE COD_PERSON = ? AND TXT_PREFERENCE = ?",
+                "SELECT TXT_VALUE FROM F000_PREFERENCES WHERE COD_PERSON = ? AND TXT_KEY = ?",
                 JDBCParameter.of(personId, key),
                 rs -> rs.next().get()
         ).get();
@@ -70,12 +70,12 @@ public final class PreferencesJDBCRepository implements PreferencesRepository {
         val now = Timestamp.valueOf(Time.now());
         if (exists) {
             tx.execute(
-                    "UPDATE F000_PREFERENCES SET TXT_VALUE = ?, TMS_UPDATED_AT = ? WHERE COD_PERSON = ? AND TXT_PREFERENCE = ?",
+                    "UPDATE F000_PREFERENCES SET TXT_VALUE = ?, TMS_UPDATED_AT = ? WHERE COD_PERSON = ? AND TXT_KEY = ?",
                     JDBCParameter.of(value, now, personId, key)
             ).get();
         } else {
             tx.execute(
-                    "INSERT INTO F000_PREFERENCES (COD_PERSON, TXT_PREFERENCE, TXT_VALUE, TMS_CREATE_AT, TMS_UPDATED_AT) VALUES (?, ?, ?, ?, ?)",
+                    "INSERT INTO F000_PREFERENCES (COD_PERSON, TXT_KEY, TXT_VALUE, TMS_CREATE_AT, TMS_UPDATED_AT) VALUES (?, ?, ?, ?, ?)",
                     JDBCParameter.of(personId, key, value, now, now)
             ).get();
         }

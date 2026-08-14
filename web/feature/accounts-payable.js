@@ -206,12 +206,12 @@
     });
     $headRight.append($periodNav);
 
-    $headRight.append(
-      window.btn({
-        variant: 'primary', size: 'md', icon: 'plus', label: 'Nova Conta',
-        attrs: 'data-act="new"'
-      })
-    );
+    // $headRight.append(
+    //   window.btn({
+    //     variant: 'primary', size: 'md', icon: 'plus', label: 'Nova Conta',
+    //     attrs: 'data-act="new"'
+    //   })
+    // );
 
     $page.append($header);
 

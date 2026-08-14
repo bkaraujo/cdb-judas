@@ -26,7 +26,7 @@ public class ClosingJDBCRepository implements ClosingRepository {
     public Optional<YearMonth> find() {
         val personId = HTTPRequest.personId();
         val results = dataSource.query(
-                "SELECT TXT_VALUE FROM F000_PREFERENCES WHERE COD_PERSON = ? AND TXT_PREFERENCE = ?",
+                "SELECT TXT_VALUE FROM F000_PREFERENCES WHERE COD_PERSON = ? AND TXT_KEY = ?",
                 JDBCParameter.of (
                         personId,
                         KEY
@@ -48,10 +48,10 @@ public class ClosingJDBCRepository implements ClosingRepository {
     public void save(YearMonth ym) {
         val personId = HTTPRequest.personId();
         // Check + write na mesma transação: evita janela de corrida entre SELECT e INSERT/UPDATE
-        // quando vários writers concorrem na mesma chave (COD_PERSON, TXT_PREFERENCE) em ambiente multi-tenant.
+        // quando vários writers concorrem na mesma chave (COD_PERSON, TXT_KEY) em ambiente multi-tenant.
         dataSource.transaction(tx -> {
             val exists = tx.query(
-                    "SELECT TXT_VALUE FROM F000_PREFERENCES WHERE COD_PERSON = ? AND TXT_PREFERENCE = ?",
+                    "SELECT TXT_VALUE FROM F000_PREFERENCES WHERE COD_PERSON = ? AND TXT_KEY = ?",
                     JDBCParameter.of(personId, KEY),
                     rs -> rs.next().get()
             ).get();
@@ -59,12 +59,12 @@ public class ClosingJDBCRepository implements ClosingRepository {
             val now = Timestamp.valueOf(Time.now());
             if (exists) {
                 tx.execute(
-                        "UPDATE F000_PREFERENCES SET TXT_VALUE = ?, TMS_UPDATED_AT = ? WHERE COD_PERSON = ? AND TXT_PREFERENCE = ?",
+                        "UPDATE F000_PREFERENCES SET TXT_VALUE = ?, TMS_UPDATED_AT = ? WHERE COD_PERSON = ? AND TXT_KEY = ?",
                         JDBCParameter.of(ym.toString(), now, personId, KEY)
                 ).get();
             } else {
                 tx.execute(
-                        "INSERT INTO F000_PREFERENCES (COD_PERSON, TXT_PREFERENCE, TXT_VALUE, TMS_CREATE_AT, TMS_UPDATED_AT) VALUES (?, ?, ?, ?, ?)",
+                        "INSERT INTO F000_PREFERENCES (COD_PERSON, TXT_KEY, TXT_VALUE, TMS_CREATE_AT, TMS_UPDATED_AT) VALUES (?, ?, ?, ?, ?)",
                         JDBCParameter.of(personId, KEY, ym.toString(), now, now)
                 ).get();
             }
@@ -76,7 +76,7 @@ public class ClosingJDBCRepository implements ClosingRepository {
     public void clear() {
         val personId = HTTPRequest.personId();
         dataSource.execute(
-                "DELETE FROM F000_PREFERENCES WHERE COD_PERSON = ? AND TXT_PREFERENCE = ?",
+                "DELETE FROM F000_PREFERENCES WHERE COD_PERSON = ? AND TXT_KEY = ?",
                 JDBCParameter.of (
                         personId,
                         KEY

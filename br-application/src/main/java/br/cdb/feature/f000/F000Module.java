@@ -87,11 +87,11 @@ public class F000Module implements Lifecycle {
                 """
                 CREATE TABLE F000_PREFERENCES (
                     COD_PERSON CHAR(36) NOT NULL,
-                    TXT_PREFERENCE VARCHAR(20) NOT NULL,
+                    TXT_KEY VARCHAR(20) NOT NULL,
                     TXT_VALUE VARCHAR(60),
                     TMS_CREATE_AT TIMESTAMP NOT NULL,
                     TMS_UPDATED_AT TIMESTAMP NOT NULL,
-                    PRIMARY KEY (COD_PERSON, TXT_PREFERENCE)
+                    PRIMARY KEY (COD_PERSON, TXT_KEY)
                 )
                 """,
                 """

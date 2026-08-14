@@ -281,10 +281,10 @@
       onChange: function (m, y) { window.App.PeriodService.set(m, y); state.month = m; state.year = y; render(); },
     });
     $actions.append($periodNav);
-    $actions.append(window.btn({
-      variant: 'primary', size: 'md', icon: 'plus', label: 'Novo Cartão',
-      attrs: 'data-act="new"'
-    }));
+    // $actions.append(window.btn({
+    //   variant: 'primary', size: 'md', icon: 'plus', label: 'Novo Cartão',
+    //   attrs: 'data-act="new"'
+    // }));
     $page.append($header);
 
     // Body
