@@ -213,21 +213,16 @@
       })
     });
 
-    const $sticky = $(
-      '<div style="position:sticky;top:0;z-index:5;background:var(--bg-base);"></div>'
-    );
+    const $sticky = $('<div class="stm-sticky-header"></div>');
     $sticky.append($header);
     $page.append($sticky);
 
     // Grid 280px / 1fr — bounded height so the right card scrolls its own content
     // instead of the whole page.
-    const $grid = $(
-      '<div style="display:grid;grid-template-columns:280px 1fr;gap:16px;' +
-        'height:calc(100vh - 160px);min-height:280px;"></div>'
-    );
+    const $grid = $('<div class="split-view"></div>');
 
     // Left column: accounts list (own scrollbar so it doesn't stretch the grid row)
-    const $left = $('<div style="display:flex;flex-direction:column;gap:12px;overflow-y:auto;"></div>');
+    const $left = $('<div class="split-left"></div>');
     const accs = checkingAccounts();
     if (accs.length === 0) {
       $left.append(
@@ -250,7 +245,7 @@
     $grid.append($left);
 
     // Right column: statement card — scrolls its own content, header/left column stay put.
-    const $card = $('<div class="card" style="padding:0;overflow-y:auto;"></div>');
+    const $card = $('<div class="card split-right"></div>');
 
     if (!state.accountId) {
       $card.append(window.emptyState({
@@ -268,76 +263,17 @@
       }));
     } else {
       const items = state.items;
-      // Fixed category column: width of the widest possible category label so
-      // every description starts at the same x, regardless of each row's category.
-      const catMap = window.categoryById();
-      const catLens = window.flatCategories().map(function (c) { return c.label.length; });
-      const catColCh = (catLens.length ? Math.max.apply(null, catLens) : 12) + 1;
       items.forEach(function (tx, i) {
-        const isLast = i === items.length - 1;
-        const isBalance = window.Domain.StatementItem.isBalanceHeader(tx);
-        const cat = isBalance ? null : catMap[tx.categoryId];
-        const catLbl = cat ? window.categoryLabel(cat) : '';
-        const amt = Number(tx.amount) || 0;
-        const amtColor = window.valueColor(amt);
-        const dotColor =
-          tx.status === 'confirmed' ? 'var(--income)' :
-          isBalance ? 'var(--text-muted)' : 'var(--warning)';
-        const runningBal = window.Domain.StatementItem.runningBalance(tx);
-
-        const rowStyle =
-          'display:flex;align-items:center;gap:16px;padding:11px 20px;' +
-          (isLast ? '' : 'border-bottom:1px solid var(--border-light);') +
-          'background:' + (isBalance ? 'var(--bg-hover)' : 'transparent') + ';' +
-          'transition:background var(--transition);';
-
-        const descStyle =
-          'flex:1;font-size:13px;font-weight:' + (isBalance ? '700' : '500') + ';' +
-          'color:' + (isBalance ? 'var(--text-secondary)' : 'var(--text-primary)') + ';' +
-          'overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-transform:uppercase;';
-
-        const catStyle =
-          'flex:0 0 ' + catColCh + 'ch;width:' + catColCh + 'ch;' +
-          'font-size:12px;color:var(--text-muted);' +
-          'overflow:hidden;text-overflow:ellipsis;white-space:nowrap;';
-
-        const amountHtml = (!isBalance && amt !== 0)
-          ? '<span style="font-size:13px;font-weight:700;color:' + amtColor + ';">' +
-              esc(fmt(amt)) +
-            '</span>'
-          : '';
-
-        // Row actions (edit/delete) resolve the full transaction from the month index by id;
-        // as linhas "Saldo anterior" e de fatura não têm nenhuma (célula vazia mantém as colunas
-        // alinhadas) — a fatura é derivada, edita-se no extrato do cartão.
-        const actionsHtml = (isBalance || tx.invoice) ? '' : window.rowActionsHtml(tx.id);
-
-        // O link é um <a href> de verdade: o router é hash-based, então a navegação não precisa
-        // de handler (e o deep-link fica copiável/abrível em nova aba).
-        const descText = window.Domain.Transaction.describe(tx) || '—';
-        const descHtml = tx.invoice
-          ? '<a href="#/credit-cards" style="' + descStyle +
-              'color:var(--accent);text-decoration:none;">' +
-              esc(descText) +
-            '</a>'
-          : '<span style="' + descStyle + '">' + esc(descText) + '</span>';
-
-        $card.append(
-          '<div class="stm-row" data-id="' + esc(tx.id || '') + '" style="' + rowStyle + '">' +
-            '<span style="font-size:12px;color:var(--text-muted);min-width:56px;">' +
-              esc(fmtDate(tx.date)) +
-            '</span>' +
-            '<span style="' + catStyle + '">' + esc(catLbl) + '</span>' +
-            window.tagFlagHtml(tx.tagIds) +
-            descHtml +
-            amountHtml +
-            '<span style="font-size:13px;font-weight:700;color:' + window.valueColor(runningBal) + ';min-width:100px;text-align:right;">' +
-              esc(fmt(runningBal)) +
-            '</span>' +
-            '<div style="width:8px;height:8px;border-radius:50%;flex-shrink:0;background:' + dotColor + ';"></div>' +
-            '<div class="stm-row-actions">' + actionsHtml + '</div>' +
-          '</div>'
-        );
+        $card.append(window.statementRowHtml(tx, {
+          isLast: i === items.length - 1,
+          showBalance: true,
+          status: 'dot',
+          invoiceLink: true,
+          // Row actions (edit/delete) resolve the full transaction from the month index by id;
+          // as linhas "Saldo anterior" e de fatura não têm nenhuma (célula vazia mantém as
+          // colunas alinhadas) — a fatura é derivada, edita-se no extrato do cartão.
+          actions: function (row) { return row.invoice ? '' : window.rowActionsHtml(row.id); },
+        }));
       });
     }
 
@@ -351,7 +287,7 @@
       }).length;
       $page.append(
         '<div style="text-align:right;padding:12px 4px 0;font-size:12px;color:var(--text-muted);">' +
-          esc(txCount + (txCount === 1 ? ' transação exibida' : ' transações exibidas')) +
+          esc(window.rowCountLabel(txCount)) +
         '</div>'
       );
     }

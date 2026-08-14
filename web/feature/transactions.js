@@ -1058,19 +1058,9 @@
       return $card;
     }
 
-    const catMap = categoryById();
     const accs = window.App.CacheStore.accounts();
     const accMap = {};
     accs.forEach(function (a) { accMap[String(a.id)] = a; });
-
-    // Fixed category column: width of the widest possible category label so
-    // every description starts at the same x, regardless of each row's category.
-    const catLens = window.flatCategories().map(function (c) { return c.label.length; });
-    const catColCh = (catLens.length ? Math.max.apply(null, catLens) : 12) + 1;
-
-    // Fixed account column, same idea (widest account name).
-    const accLens = accs.map(function (a) { return (a.name || '').length; });
-    const accColCh = (accLens.length ? Math.max.apply(null, accLens) : 10) + 1;
 
     // Sort by date desc.
     const sorted = list.slice().sort(function (a, b) {
@@ -1078,78 +1068,30 @@
     });
 
     sorted.forEach(function (tx, i) {
-      const isLast = i === sorted.length - 1;
-      const cat = catMap[tx.categoryId];
-      const catLbl = cat ? categoryLabel(cat) : '';
       const acc = accMap[String(tx.accountId)];
-      const accName = acc ? acc.name : '—';
-      const amt = Number(tx.amount) || 0;
-      const amtColor =
-        tx.type === 'income' ? 'var(--income)' :
-        tx.type === 'transfer' ? 'var(--text-secondary)' :
-        'var(--expense)';
       const stKey = tx.status || 'confirmed';
 
-      const rowStyle =
-        'display:flex;align-items:center;gap:16px;padding:11px 20px;' +
-        (isLast ? '' : 'border-bottom:1px solid var(--border-light);') +
-        'transition:background var(--transition);';
-
-      const descStyle =
-        'flex:1;font-size:13px;font-weight:500;color:var(--text-primary);' +
-        'overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-transform:uppercase;';
-
-      const catStyle =
-        'flex:0 0 ' + catColCh + 'ch;width:' + catColCh + 'ch;' +
-        'font-size:12px;color:var(--text-muted);' +
-        'overflow:hidden;text-overflow:ellipsis;white-space:nowrap;';
-
-      const accStyle =
-        'flex:0 0 ' + accColCh + 'ch;width:' + accColCh + 'ch;' +
-        'font-size:12px;color:var(--text-muted);text-align:left;' +
-        'overflow:hidden;text-overflow:ellipsis;white-space:nowrap;';
-
-      // Row actions; mark-paid only for non-confirmed rows.
-      const markPaidHtml = stKey !== 'confirmed'
-        ? '<button type="button" class="icon-btn" title="Confirmar" ' +
-            'data-act="mark-paid" data-id="' + esc(tx.id) + '" ' +
-            'style="width:28px;height:28px;color:var(--income);">' +
-            window.icon('check', 14) +
-          '</button>'
-        : '';
-      // Linha de cartões é derivada — edita-se cada compra no extrato do cartão.
-      const actionsHtml = tx.invoice ? '' : window.rowActionsHtml(tx.id, { extra: markPaidHtml });
-
-      // O link é um <a href> de verdade: o router é hash-based, então a navegação não precisa de
-      // handler (e o deep-link fica copiável/abrível em nova aba).
-      const descText = window.Domain.Transaction.describe(tx) || '—';
-      const descHtml = tx.invoice
-        ? '<a href="#/credit-cards" style="' + descStyle +
-            'color:var(--accent);text-decoration:none;">' +
-            esc(descText) +
-          '</a>'
-        : '<span style="' + descStyle + '">' + esc(descText) + '</span>';
-
-      $card.append(
-        '<div class="stm-row" data-row="tx" data-id="' + esc(tx.id) + '" style="' + rowStyle + '">' +
-          '<span style="font-size:12px;color:var(--text-muted);min-width:24px;text-align:left;">' +
-            esc(i + 1) +
-          '</span>' +
-          '<span style="font-size:12px;color:var(--text-muted);min-width:56px;">' +
-            esc(fmtDate(tx.date)) +
-          '</span>' +
-          '<span style="' + accStyle + '">' + esc(accName) + '</span>' +
-          '<span style="' + catStyle + '">' + esc(catLbl) + '</span>' +
-          window.tagFlagHtml(tx.tagIds) +
-          descHtml +
-          '<span class="badge badge-' + esc(window.Domain.Transaction.statusBadgeVariant(stKey)) + '" ' +
-          'style="flex-shrink:0;">' + esc(window.Domain.Transaction.statusLabel(stKey)) + '</span>' +
-          '<span style="font-size:13px;font-weight:700;color:' + amtColor + ';min-width:100px;text-align:right;">' +
-            esc(fmt(amt)) +
-          '</span>' +
-          '<div style="display:flex;align-items:center;justify-content:flex-end;gap:2px;width:40px;flex-shrink:0;">' + actionsHtml + '</div>' +
-        '</div>'
-      );
+      $card.append(window.statementRowHtml(tx, {
+        index: i + 1,
+        isLast: i === sorted.length - 1,
+        showAccount: true,
+        accountName: acc ? acc.name : '—',
+        status: 'badge',
+        invoiceLink: true,
+        // Row actions; mark-paid só pra não-confirmadas. Linha de cartão é derivada —
+        // edita-se cada compra no extrato do cartão.
+        actions: function (row) {
+          if (row.invoice) return '';
+          const markPaidHtml = stKey !== 'confirmed'
+            ? '<button type="button" class="icon-btn" title="Confirmar" ' +
+                'data-act="mark-paid" data-id="' + esc(row.id) + '" ' +
+                'style="width:28px;height:28px;color:var(--income);">' +
+                window.icon('check', 14) +
+              '</button>'
+            : '';
+          return window.rowActionsHtml(row.id, { extra: markPaidHtml });
+        },
+      }));
     });
 
     return $card;

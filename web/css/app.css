@@ -551,6 +551,15 @@ button { font-family: var(--font); cursor: pointer; border: none; outline: none;
 }
 .stm-row:hover .stm-row-actions { opacity: 1; pointer-events: auto; }
 
+/* ───── Statement/card-statement screen shell — sticky header + 280px/1fr split ───── */
+.stm-sticky-header { position: sticky; top: 0; z-index: 5; background: var(--bg-base); }
+.split-view {
+  display: grid; grid-template-columns: 280px 1fr; gap: 16px;
+  height: calc(100vh - 160px); min-height: 280px;
+}
+.split-left { display: flex; flex-direction: column; gap: 12px; overflow-y: auto; }
+.split-right { padding: 0; overflow-y: auto; }
+
 /* ───── Chips ───── */
 .chip-group { display: flex; flex-wrap: wrap; gap: 8px; }
 .chip {

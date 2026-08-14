@@ -1,10 +1,10 @@
 /* feature/credit-cards.js — fatia Cartões de Crédito (mesma f003 do backend, extraída de
  * accounts por ter crescido — cartão é entidade filha da conta, não conta em si): domain →
- * application → infrastructure/primary (tela Cartões), cada bloco abaixo é um IIFE independente
- * (comentário original de cada arquivo preservado como separador de seção). A tela Extrato do
- * Cartão vive em feature/card-statement.js (mesma fatia, lê Domain.CreditCard e
- * App.CreditCardService daqui). Sem secondary própria: lê via TransactionsApi (fatia irmã) —
- * fecha V1/V2. */
+ * application → infrastructure/primary (tela Cartões + tela Extrato do Cartão, fundidas num
+ * arquivo só — .claude/plan.md Fase 2.1 — porque check-slices deriva a fatia do NOME DO ARQUIVO
+ * e as duas sempre foram a mesma fatia f003), cada bloco abaixo é um IIFE independente
+ * (comentário original de cada arquivo preservado como separador de seção). Sem secondary
+ * própria: lê via TransactionsApi (fatia irmã) — fecha V1/V2. */
 
 /* domain — credit card rules (uses Account + Period). Pure. */
 (function () {
@@ -423,6 +423,289 @@
     unmount: function () {
       if (state && state.$root) state.$root.off('.cc');
       if (state && state.unsubscribe) state.unsubscribe();
+      state = null;
+    }
+  };
+})();
+
+/* pages/card-statement.js — Extrato do Cartão (#/card-statement/{cardId}).
+ * Mesmo leiaute do Extrato de Contas (pages/statement.js): .split-view (280px lista de cartões à
+ * esquerda + card de lançamentos com acumulado à direita), linhas .stm-row com as mesmas colunas
+ * (data | categoria | descrição | valor | acumulado | dot de status | ações) — window.statementRowHtml.
+ *
+ * Duas diferenças de conteúdo, ambas por ser fatura e não conta:
+ *   - o período navegado é o do VENCIMENTO: o ciclo de compras vem de Domain.Invoice.cycleFor e
+ *     começa no mês anterior (com closingDay=20/dueDay=5, a fatura que vence em 05/04 cobre
+ *     21/02–20/03);
+ *   - a linha-cabeçalho é "Fatura anterior" — traz o total do ciclo anterior na coluna de saldo,
+ *     mas o acumulado do ciclo atual recomeça em 0, então a última linha é o total da fatura.
+ *
+ * Fora do sidebar: chega-se aqui pelo link da linha de fatura (Lançamentos/Extrato de Contas) ou
+ * pelo "Ver fatura" da tela de Cartões. Mesma fatia f003 do bloco acima — lê Domain.CreditCard e
+ * App.CreditCardService dele diretamente (mesmo arquivo).
+ */
+(function () {
+  window.Pages = window.Pages || {};
+
+  let state = null;
+
+  function resetState(cardId) {
+    const p = window.App.PeriodService.get(); // { month: 1-12, year }
+    state = {
+      $root: null,
+      cardId: cardId ? String(cardId) : null,
+      month: p.month, // 1-12
+      year: p.year,
+      items: [],
+      totals: {},   // cardId -> total da fatura do período (coluna da esquerda)
+      cycle: null,  // { from, to } do cartão selecionado
+      dueDate: null,
+      txIndex: [],  // transações cruas do ciclo — resolve editar/excluir
+      loading: false,
+    };
+  }
+
+  // ── Helpers ───────────────────────────────────────────────
+
+  function cards() {
+    return window.App.CreditCardService.listFromCache().slice().sort(function (a, b) {
+      const byAccount = window.sortByName(a.account, b.account);
+      return byAccount !== 0 ? byAccount : String(a.last4).localeCompare(String(b.last4));
+    });
+  }
+
+  function selectedCard() {
+    return window.byId(cards(), state.cardId);
+  }
+
+  function currentPeriod() {
+    return window.Domain.Period.create(state.month, state.year);
+  }
+
+  function findFullTx(id) {
+    return window.byId(state.txIndex, id);
+  }
+
+  // ── Fetch ─────────────────────────────────────────────────
+
+  /* Fatura do cartão selecionado: ciclo atual (linhas + acumulado) e o total do ciclo anterior,
+     que vira a linha-cabeçalho "Fatura anterior". */
+  function loadInvoice() {
+    const card = selectedCard();
+    if (!card) {
+      state.items = [];
+      state.loading = false;
+      render();
+      return Promise.resolve();
+    }
+    state.loading = true;
+    render();
+
+    const period = currentPeriod();
+    const previous = window.Domain.Period.shift(period, -1);
+    return Promise.all([
+      window.App.CreditCardService.invoiceFor(card, card.account, period),
+      window.App.CreditCardService.invoiceFor(card, card.account, previous),
+    ]).then(function (res) {
+      const invoice = res[0];
+      const openingLabel = invoice.cycle ? invoice.cycle.from : null;
+      state.cycle = invoice.cycle;
+      state.dueDate = invoice.dueDate;
+      state.txIndex = invoice.transactions;
+      state.items = window.Domain.StatementItem.buildRows(0, invoice.transactions, openingLabel, {
+        headerLabel: 'Fatura anterior',
+        headerBalance: -Math.abs(res[1].total || 0),
+        startBalance: 0,
+      });
+      state.loading = false;
+      render();
+    }).catch(function (err) {
+      state.items = [];
+      state.loading = false;
+      render();
+      window.toast((err && err.message) || 'Falha ao carregar a fatura', 'error');
+    });
+  }
+
+  /* Totais de todos os cartões no período — alimenta a coluna da esquerda (paralelo ao panorama
+     por conta do Extrato de Contas). Uma requisição por cartão, como o extrato faz por conta. */
+  function loadTotals() {
+    const list = cards();
+    if (!list.length) return Promise.resolve();
+    return Promise.all(list.map(function (c) {
+      return window.App.CreditCardService.invoiceFor(c, c.account, currentPeriod())
+        .then(function (inv) { return { id: c.id, total: inv.total || 0 }; })
+        .catch(function () { return { id: c.id, total: 0 }; });
+    })).then(function (res) {
+      const map = {};
+      res.forEach(function (r) { map[String(r.id)] = r.total; });
+      state.totals = map;
+      render();
+    });
+  }
+
+  function reloadPeriod() {
+    return Promise.all([loadTotals(), loadInvoice()]);
+  }
+
+  // ── Render ────────────────────────────────────────────────
+  function render() {
+    const $root = state.$root;
+    if (!$root) return;
+
+    const $page = $('<div class="fade-in"></div>');
+    const card = selectedCard();
+
+    // Header — sticky, igual ao extrato de contas.
+    const cycleLabel = state.cycle
+      ? 'Compras de ' + fmtDate(state.cycle.from) + ' a ' + fmtDate(state.cycle.to) +
+        (state.dueDate ? ' · vence ' + fmtDate(state.dueDate) : '')
+      : '';
+    const $header = window.pageHeader({
+      title: 'Extrato do Cartão',
+      subtitle: cycleLabel || undefined,
+      nav: window.periodNav({
+        month: state.month,
+        year: state.year,
+        onPrev: function () { window.shiftMonth(state, -1, true); reloadPeriod(); },
+        onNext: function () { window.shiftMonth(state, +1, true); reloadPeriod(); },
+        onChange: function (m, y) { window.App.PeriodService.set(m, y); state.month = m; state.year = y; reloadPeriod(); },
+      })
+    });
+
+    const $sticky = $('<div class="stm-sticky-header"></div>');
+    $sticky.append($header);
+    $page.append($sticky);
+
+    const $grid = $('<div class="split-view"></div>');
+
+    // Left column: cards list (mesmo botão da lista de contas do extrato).
+    const $left = $('<div class="split-left"></div>');
+    const list = cards();
+    if (list.length === 0) {
+      $left.append(
+        '<div style="font-size:13px;color:var(--text-muted);padding:14px 16px;' +
+        'background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);">' +
+          'Nenhum cartão cadastrado.' +
+        '</div>'
+      );
+    } else {
+      list.forEach(function (c) {
+        const active = String(c.id) === String(state.cardId);
+        const total = state.totals[String(c.id)] || 0;
+        $left.append(window.selectorButtonHtml({
+          id: c.id, active: active,
+          title: ((c.account && c.account.name) || '—') + ' •••• ' + c.last4,
+          value: fmt(total), valueColor: total > 0 ? 'var(--expense)' : 'var(--text-muted)',
+          cls: 'cst', act: 'select-card',
+        }));
+      });
+    }
+    $grid.append($left);
+
+    // Right column: invoice card.
+    const $card = $('<div class="card split-right"></div>');
+
+    if (!card) {
+      $card.append(window.emptyState({
+        icon: 'creditCard',
+        title: 'Selecione um cartão',
+        desc: 'Escolha um cartão à esquerda para visualizar a fatura.'
+      }));
+    } else if (state.loading) {
+      $card.append(window.emptyState({ icon: 'creditCard', title: 'Carregando…' }));
+    } else if (state.items.length <= 1) {
+      $card.append(window.emptyState({
+        icon: 'creditCard',
+        title: 'Sem lançamentos nesta fatura',
+        desc: 'Tente outro mês ou selecione outro cartão.'
+      }));
+    } else {
+      renderRows($card);
+    }
+
+    $grid.append($card);
+    $page.append($grid);
+
+    if (card && !state.loading) {
+      const txCount = state.items.filter(function (it) {
+        return !window.Domain.StatementItem.isBalanceHeader(it);
+      }).length;
+      $page.append(
+        '<div style="text-align:right;padding:12px 4px 0;font-size:12px;color:var(--text-muted);">' +
+          esc(window.rowCountLabel(txCount)) +
+        '</div>'
+      );
+    }
+
+    $root.empty().append($page);
+  }
+
+  /* Linha idêntica à do extrato de conta — a coluna de saldo carrega o acumulado da fatura. */
+  function renderRows($card) {
+    const items = state.items;
+    items.forEach(function (tx, i) {
+      $card.append(window.statementRowHtml(tx, {
+        isLast: i === items.length - 1,
+        showBalance: true,
+        status: 'dot',
+        actions: function (row) { return window.rowActionsHtml(row.id); },
+      }));
+    });
+  }
+
+  // ── Event delegation ──────────────────────────────────────
+  function bindRoot($root) {
+    $root.on('click.cst', '[data-act=back]', function () {
+      window.location.hash = '#/credit-cards';
+    });
+
+    // Trocar de cartão reescreve a rota: o hash é o estado da tela (deep-link compartilhável).
+    $root.on('click.cst', '[data-act=select-card]', function () {
+      const id = $(this).attr('data-id');
+      if (id && String(id) !== String(state.cardId)) {
+        window.location.hash = '#/card-statement/' + id;
+      }
+    });
+
+    $root.on('click.cst', '[data-act=edit]', function (e) {
+      e.stopPropagation();
+      const tx = findFullTx($(this).attr('data-id'));
+      if (!tx) { window.toast('Lançamento indisponível — recarregue o período', 'error'); return; }
+      window.TransactionsApi.openEditor({
+        existing: tx,
+        list: state.txIndex,
+        defaultDate: state.cycle ? state.cycle.to : null,
+        onSaved: reloadPeriod,
+      });
+    });
+    $root.on('click.cst', '[data-act=trash]', function (e) {
+      e.stopPropagation();
+      const tx = findFullTx($(this).attr('data-id'));
+      if (!tx) { window.toast('Lançamento indisponível — recarregue o período', 'error'); return; }
+      window.TransactionsApi.openDeleteFlow(tx, { list: state.txIndex, onDone: reloadPeriod });
+    });
+  }
+
+  // ── Lifecycle ─────────────────────────────────────────────
+  window.Pages['card-statement'] = {
+    mount: function ($root, cardId) {
+      resetState(cardId);
+      state.$root = $root;
+      bindRoot($root);
+
+      // Sem cartão no path (ou cartão inexistente): cai no primeiro disponível.
+      if (!selectedCard()) {
+        const list = cards();
+        state.cardId = list.length ? String(list[0].id) : null;
+      }
+      render();
+      reloadPeriod();
+    },
+    unmount: function () {
+      if (state && state.$root) {
+        state.$root.off('.cst');
+      }
       state = null;
     }
   };
