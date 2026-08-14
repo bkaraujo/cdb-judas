@@ -8,6 +8,7 @@
   const SCREENS = {
     'dashboard':        'Visão Geral',
     'transactions':     'Lançamentos',
+    'installments':     'Parcelamentos',
     'accounts-payable': 'A Pagar e Receber',
     'statement':        'Extrato de Contas',
     'credit-cards':     'Cartões de Crédito',

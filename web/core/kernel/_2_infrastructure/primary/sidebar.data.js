@@ -7,6 +7,7 @@ window.SIDEBAR_NAV = [
    "id": "movements", "label": "Movimentações", "icon": "layers",
     "children": [
       {"id": "transactions",     "label": "Lançamentos",       "icon": "list" },
+      {"id": "installments",     "label": "Parcelamentos",     "icon": "repeat" },
       {"id": "accounts-payable", "label": "A pagar e receber", "icon": "calendar" }
     ]
   },

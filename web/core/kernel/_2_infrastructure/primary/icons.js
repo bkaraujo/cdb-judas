@@ -44,6 +44,7 @@ window.ICONS = {
   pieChart:    'M21.21 15.89A10 10 0 118 2.83M22 12A10 10 0 0012 2v10z',
   lock:        'M5 11h14a2 2 0 012 2v7a2 2 0 01-2 2H5a2 2 0 01-2-2v-7a2 2 0 012-2z M8 11V7a4 4 0 018 0v4',
   unlock:      'M5 11h14a2 2 0 012 2v7a2 2 0 01-2 2H5a2 2 0 01-2-2v-7a2 2 0 012-2z M8 11V7a4 4 0 017.9-1',
+  repeat:      'M17 1l4 4-4 4M3 11V9a4 4 0 014-4h14M7 23l-4-4 4-4M21 13v2a4 4 0 01-4 4H3',
 };
 
 window.icon = function (name, size, strokeWidth) {

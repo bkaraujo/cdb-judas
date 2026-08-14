@@ -29,6 +29,33 @@
       return { rows: window.Domain.Invoice.mergeCards(rows, accounts), raw: raw };
     });
   }
+  /* Compras parceladas do período (tela Parcelamentos): mesma janela alargada de listForPeriod
+     (o ciclo da fatura começa no mês anterior), mas SEM collapse — uma compra de cartão parcelada
+     é feita de N transações (uma por parcela, mesmo groupId), e é exatamente essa quebra que o
+     collapse esconde na tela Lançamentos por trás da linha agregada 'Cartões de crédito'. Aqui
+     cada parcela aparece como linha própria.
+     Parcela de cartão é reposicionada pro mês de VENCIMENTO da fatura (mesma âncora de exibição
+     usada em toda a tela de cartão — Domain.Invoice.dueDate, ver card-statement.js) em vez do mês
+     da compra em si: uma compra feita nos últimos dias do ciclo já pertence à fatura que fecha (e
+     vence) no mês seguinte. `rows` traz cópias com a data ajustada só para exibição/ordenação;
+     `raw` mantém a data original da compra — é dela que os modais de editar/excluir partem. */
+  function listInstallmentsForPeriod(period) {
+    const accounts = cache.accounts();
+    const w = window.Domain.Invoice.fetchWindow(accounts, period);
+    const bounds = window.Domain.Period.bounds(period);
+    const cardIndex = {};
+    accounts.forEach(function (a) {
+      (a.cards || []).forEach(function (c) { cardIndex[String(c.id)] = a; });
+    });
+    return repo.list('dateFrom=' + w.from + '&dateTo=' + w.to).then(function (list) {
+      const raw = Array.isArray(list) ? list : [];
+      const rows = raw.map(function (t) {
+        const acc = t.cardId != null ? cardIndex[String(t.cardId)] : null;
+        return acc ? Object.assign({}, t, { date: window.Domain.Invoice.dueDate(acc, t.date) }) : t;
+      }).filter(function (t) { return t.date >= bounds.from && t.date <= bounds.to; });
+      return { rows: rows, raw: raw };
+    });
+  }
   function listByAccount(accountId, params){ return repo.listByAccount(accountId, params); }
   function create(data)                    { return repo.create(data); }
   function update(id, data)                { return repo.update(id, data); }
@@ -52,6 +79,7 @@
     init: init,
     list: list,
     listForPeriod: listForPeriod,
+    listInstallmentsForPeriod: listInstallmentsForPeriod,
     listByAccount: listByAccount,
     create: create,
     update: update,
@@ -794,11 +822,13 @@
   // ── State ─────────────────────────────────────────────────
   let state = null;
 
-  function resetState() {
+  function resetState(cfg) {
     const p = window.App.PeriodService.get(); // { month: 1-12, year }
     state = {
       $root: null,
       loading: true,
+      title: cfg.title,
+      installmentsOnly: !!cfg.installmentsOnly, // tela "Parcelamentos": só compras com totalInstallments > 1
       transactions: [],         // linhas exibidas (compras de cartão já colapsadas em fatura)
       raw: [],                  // transações cruas da janela — resolve editar/excluir por id
       month: p.month - 1,       // 0-11
@@ -852,7 +882,10 @@
     state.loading = true;
     render();
     const period = window.Domain.Period.create(state.month + 1, state.year);
-    return window.App.TransactionService.listForPeriod(period).then(function (res) {
+    const fetchPeriod = state.installmentsOnly
+      ? window.App.TransactionService.listInstallmentsForPeriod
+      : window.App.TransactionService.listForPeriod;
+    return fetchPeriod(period).then(function (res) {
       state.transactions = res.rows;
       state.raw = res.raw;
       state.loading = false;
@@ -876,6 +909,13 @@
       // conta —, então o filtro de conta funciona normalmente.)
       if (tx.invoice && (state.filterCategory || state.filterStatus)) return false;
       const cat = catMap[tx.categoryId];
+      // As duas pernas de uma transferência reaproveitam os campos de parcela (groupId +
+      // installmentNumber 1/2 de totalInstallments 2 — ver WriteUseCases.createTransfer) só pra se
+      // referenciarem uma à outra; não são parcela de compra nenhuma. Elas sempre caem na categoria
+      // de sistema "Transferência" (cat.isSystem — mesmo sinal que categories.js usa pra proteger a
+      // categoria de edição/exclusão), então esse é o jeito de não confundir as duas coisas sem
+      // depender do id fixo da categoria.
+      if (state.installmentsOnly && (!(+tx.totalInstallments > 1) || (cat && cat.isSystem))) return false;
       const catLbl = cat ? categoryLabel(cat).toLowerCase() : '';
       const matchSearch = !s ||
         (tx.description || '').toLowerCase().indexOf(s) >= 0 ||
@@ -906,7 +946,7 @@
 
     // ── Page header ──
     const $header = window.pageHeader({
-      title: 'Lançamentos',
+      title: state.title,
       actions: [
         // Filter toggle
         window.btn({
@@ -1098,9 +1138,11 @@
     }
     if (list.length === 0) {
       $card.append(window.emptyState({
-        icon: 'list',
-        title: 'Nenhum lançamento encontrado',
-        desc: 'Ajuste os filtros ou crie um novo lançamento.'
+        icon: state.installmentsOnly ? 'repeat' : 'list',
+        title: state.installmentsOnly ? 'Nenhuma compra parcelada encontrada' : 'Nenhum lançamento encontrado',
+        desc: state.installmentsOnly
+          ? 'Ajuste os filtros ou importe uma fatura com compras parceladas.'
+          : 'Ajuste os filtros ou crie um novo lançamento.'
       }));
       return $card;
     }
@@ -1278,19 +1320,27 @@
   }
 
   // ── Lifecycle ─────────────────────────────────────────────
-  window.Pages['transactions'] = {
-    mount: function ($root) {
-      resetState();
-      state.$root = $root;
-      bindRoot($root);
-      render();
-      loadTransactions();
-    },
-    unmount: function () {
-      if (state && state.$root) {
-        state.$root.off('.tx');
+  // Fábrica de página: 'transactions' (Lançamentos) e 'installments' (Parcelamentos, dentro do
+  // grupo Movimentações) compartilham leiaute/estado/filtros — só muda o título e o filtro extra
+  // de totalInstallments > 1 (ver installmentsOnly em resetState/filteredTxs).
+  function createPage(cfg) {
+    return {
+      mount: function ($root) {
+        resetState(cfg);
+        state.$root = $root;
+        bindRoot($root);
+        render();
+        loadTransactions();
+      },
+      unmount: function () {
+        if (state && state.$root) {
+          state.$root.off('.tx');
+        }
+        state = null;
       }
-      state = null;
-    }
-  };
+    };
+  }
+
+  window.Pages['transactions'] = createPage({ title: 'Lançamentos', installmentsOnly: false });
+  window.Pages['installments'] = createPage({ title: 'Parcelamentos', installmentsOnly: true });
 })();
