@@ -1,0 +1,25 @@
+# Contexto de build do Docker é a RAIZ do repositório (ver docker-compose.yaml).
+# Sem estas exclusões, ~30 MB de node_modules e o alvo do Maven viajam para o
+# daemon a cada build — e o COPY web/ do Dockerfile.frontend levaria as
+# dependências de desenvolvimento do harness de teste para dentro do nginx.
+
+# Dependências de desenvolvimento do harness QUnit (puppeteer-core & cia.)
+web/node_modules/
+
+# Saída de build
+target/
+*/target/
+
+# Banco de desenvolvimento local (H2)
+database.mv.db
+database.trace.db
+data/
+
+# Metadados de ferramenta
+.git/
+.github/
+.githooks/
+.idea/
+.mvn/repository/
+.claude/
+.ignored/

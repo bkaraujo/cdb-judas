@@ -14,15 +14,14 @@ COPY .mvn ./.mvn
 COPY pom.xml .
 
 # Reactor multi-módulo (pom.xml raiz é só o agregador — packaging=pom, <modules>
-# aponta pra estes 5 diretórios). br-application depende de br-parent/br-commons/
-# br-context-people/br-context-monetary; todos precisam estar no contexto pro
-# `mvn package` resolver via reactor (sem precisar de `mvn install` prévio).
+# aponta pra estes 3 diretórios). br-application depende de br-parent/br-commons;
+# ambos precisam estar no contexto pro `mvn package` resolver via reactor (sem
+# precisar de `mvn install` prévio). Os antigos br-context-people/br-context-monetary
+# foram dissolvidos na fase 2 e não existem mais — copiá-los quebrava o build aqui.
 # web/ entra porque o pom de br-application copia esse diretório pro classpath
 # (META-INF/resources) — é o que faz o Quarkus servir a SPA como estático.
 COPY br-parent ./br-parent
 COPY br-commons ./br-commons
-COPY br-context-people ./br-context-people
-COPY br-context-monetary ./br-context-monetary
 COPY br-application ./br-application
 COPY web ./web
 
@@ -63,6 +62,12 @@ RUN mkdir -p /data
 # fast-jar preserva a estrutura de diretórios (app/ lib/ quarkus/ + quarkus-run.jar);
 # não é um único jar copiável como o repackaged do Spring Boot.
 COPY --from=builder /app/br-application/target/quarkus-app/ ./
+
+# Configuração da aplicação (cdb.*): CoreModule lê `application.yaml` do DIRETÓRIO DE
+# TRABALHO (não do classpath), caminho sobrescrevível por -Dcdb.application.yaml. Sem
+# este arquivo em /app o boot morre em `Missing [cdb.datasource] in application.yaml`
+# (Logger.fatal → exit 99). Vem do contexto de build, não da stage anterior.
+COPY application.yaml ./application.yaml
 
 EXPOSE 8080
 

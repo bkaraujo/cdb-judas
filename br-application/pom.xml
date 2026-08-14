@@ -58,6 +58,11 @@
                 <excludes>
                     <exclude>CLAUDE.md</exclude>
                     <exclude>package.json</exclude>
+                    <exclude>package-lock.json</exclude>
+                    <!-- Dependências de desenvolvimento do harness de teste (puppeteer-core &
+                         cia., ~30 MB). Sem esta exclusão elas iam parar dentro da fast-jar e
+                         ficavam servidas publicamente em /node_modules/**. -->
+                    <exclude>node_modules/**</exclude>
                     <exclude>tools/**</exclude>
                     <exclude>test/**</exclude>
                 </excludes>

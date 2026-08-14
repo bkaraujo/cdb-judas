@@ -2,8 +2,10 @@
 
 # ============================================================================
 # Frontend estático servido por nginx.
-# O frontend é HTML/CSS/JS vanilla + jQuery (CDN), sem etapa de build, então
-# uma única stage basta: copiamos os arquivos e a config do nginx.
+# O frontend é HTML/CSS/JS vanilla + jQuery vendorizado (web/vendor/, sem CDN),
+# sem etapa de build, então uma única stage basta: copiamos os arquivos e a
+# config do nginx. O que não deve entrar (web/node_modules, ~30 MB do harness de
+# teste) fica de fora pelo .dockerignore da raiz.
 #
 # IMPORTANTE: o contexto de build é a RAIZ do repositório (.), logo todos os
 # caminhos de COPY são relativos à raiz, não a este diretório.
@@ -15,8 +17,8 @@ ARG APP_VERSION=0.1.0
 LABEL org.opencontainers.image.title="cdb-judas-frontend" \
       org.opencontainers.image.version="${APP_VERSION}"
 
-# Site estático: index.html + css/ + js/ + pages/. Mesma fonte que o backend
-# empacota via <resource> do pom (web/ → META-INF/resources).
+# Site estático: index.html + css/ + core/ + feature/ + vendor/. Mesma fonte que
+# o backend empacota via <resource> do pom (web/ → META-INF/resources).
 COPY web/ /usr/share/nginx/html/
 
 # Config do server: serve o estático e faz proxy reverso das rotas do backend.

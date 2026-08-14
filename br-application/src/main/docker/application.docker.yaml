@@ -1,0 +1,24 @@
+# Configuração da aplicação dentro do container — montada por cima de
+# /app/application.yaml pelo docker-compose.
+#
+# Única diferença para o application.yaml da raiz: o H2 grava em /data, que é o
+# volume montado do host. Com o caminho relativo padrão (./database) o arquivo
+# nasceria em /app e sumiria a cada recriação do container.
+cdb:
+  application:
+    version: 1.0.0
+  datasource:
+    jdbc:
+      driver: "org.h2.Driver"
+      url: "jdbc:h2:file:/data/database;DB_CLOSE_DELAY=-1"
+      username: "sa"
+      password: ""
+    validation-query: SELECT 1
+    pool:
+      min: 5
+      max: 20
+  internal:
+    base-url: "http://localhost:8080"
+  security:
+    session:
+      idle-timeout-minutes: 30
