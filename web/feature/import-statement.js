@@ -495,18 +495,17 @@
       if (missingCard) { window.toast('Selecione o cartão de cada lançamento', 'error'); return; }
       if (missingCategory) { window.toast('Selecione a categoria de cada lançamento', 'error'); return; }
 
-      const $btn = m.$el.find('[data-act=do-confirm]').prop('disabled', true);
-      window.TransactionsApi.importConfirm({ type: 'CREDIT_CARD_INVOICE', rows: rows })
-        .then(function (res) {
+      const $btn = m.$el.find('[data-act=do-confirm]');
+      window.runMutation(window.TransactionsApi.importConfirm({ type: 'CREDIT_CARD_INVOICE', rows: rows }), {
+        $btn: $btn,
+        failure: 'Falha ao confirmar a importação',
+        onDone: function (res) {
           const created = (res && res.created) || 0;
           const skipped = (res && res.skipped) || 0;
           showConfirmSummary(created, skipped);
           return onImported();
-        })
-        .catch(function (err) {
-          $btn.prop('disabled', false);
-          window.toast((err && err.message) || 'Falha ao confirmar a importação', 'error');
-        });
+        },
+      });
     }
 
     function showConfirmSummary(created, skipped, reconciled) {
@@ -680,16 +679,15 @@
     // Re-runs the preview against the chosen account so duplicate/reconcile states refresh.
     function refreshStatementPreview() {
       if (!selectedFile) return;
-      window.TransactionsApi.importPreview(selectedFile, lastPassword, selectedAccountId)
-        .then(function (preview) {
+      window.runMutation(window.TransactionsApi.importPreview(selectedFile, lastPassword, selectedAccountId), {
+        failure: 'Falha ao atualizar o preview',
+        onDone: function (preview) {
           if (preview && preview.documentType === 'BANK_STATEMENT') {
             applyImportRules((preview && preview.rows) || []);
             showStatementPreview(preview);
           }
-        })
-        .catch(function (err) {
-          window.toast((err && err.message) || 'Falha ao atualizar o preview', 'error');
-        });
+        },
+      });
     }
 
     function confirmStatementImport() {
@@ -724,16 +722,15 @@
       if (!rows.length) { window.toast('Selecione ao menos um lançamento', 'error'); return; }
       if (missingCategory) { window.toast('Selecione a categoria de cada lançamento', 'error'); return; }
 
-      const $btn = m.$el.find('[data-act=do-statement-confirm]').prop('disabled', true);
-      window.TransactionsApi.importConfirm({ type: 'BANK_STATEMENT', accountId: selectedAccountId, rows: rows })
-        .then(function (res) {
+      const $btn = m.$el.find('[data-act=do-statement-confirm]');
+      window.runMutation(window.TransactionsApi.importConfirm({ type: 'BANK_STATEMENT', accountId: selectedAccountId, rows: rows }), {
+        $btn: $btn,
+        failure: 'Falha ao confirmar a importação',
+        onDone: function (res) {
           showConfirmSummary((res && res.created) || 0, (res && res.skipped) || 0, (res && res.reconciled) || 0);
           return onImported();
-        })
-        .catch(function (err) {
-          $btn.prop('disabled', false);
-          window.toast((err && err.message) || 'Falha ao confirmar a importação', 'error');
-        });
+        },
+      });
     }
 
     // Parcelamento: as demais parcelas do grupo seguem a categoria/descrição da 1ª (campos travados);
@@ -856,23 +853,24 @@
       if (!selectedFile) { window.toast('Selecione um arquivo PDF', 'error'); return; }
       const password = ($pwd.val() || '').trim();
       lastPassword = password || null;
-      const $btn = $(this).prop('disabled', true);
+      const $btn = $(this);
 
-      window.TransactionsApi.importPreview(selectedFile, lastPassword, null)
-        .then(function (preview) { routePreview(preview); })
-        .catch(function (err) {
-          $btn.prop('disabled', false);
+      window.runMutation(window.TransactionsApi.importPreview(selectedFile, lastPassword, null), {
+        $btn: $btn,
+        failure: 'Falha ao importar a fatura',
+        onDone: function (preview) { routePreview(preview); },
+        onError: function (err) {
           const code = err && err.code;
           if (code === 'PASSWORD_REQUIRED') {
             revealPassword('Este PDF está protegido. Informe a senha para continuar.');
-            return;
+            return true;
           }
           if (code === 'WRONG_PASSWORD') {
             revealPassword('Senha incorreta. Verifique e tente novamente.');
-            return;
+            return true;
           }
-          window.toast((err && err.message) || 'Falha ao importar a fatura', 'error');
-        });
+        },
+      });
     });
 
     m.$el.on('change', '[data-act=select-all]', function () {

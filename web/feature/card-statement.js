@@ -134,10 +134,6 @@
     const $header = window.pageHeader({
       title: 'Extrato do Cartão',
       subtitle: cycleLabel || undefined,
-      actions: window.btn({
-        variant: 'secondary', size: 'md', icon: 'creditCard', label: 'Cartões',
-        attrs: 'data-act="back"'
-      }),
       nav: window.periodNav({
         month: state.month,
         year: state.year,
@@ -170,21 +166,12 @@
       list.forEach(function (c) {
         const active = String(c.id) === String(state.cardId);
         const total = state.totals[String(c.id)] || 0;
-        const btnStyle =
-          'padding:14px 16px;border-radius:var(--radius);text-align:left;' +
-          'background:' + (active ? 'var(--accent-light)' : 'var(--bg-card)') + ';' +
-          'border:1px solid ' + (active ? 'var(--accent)' : 'var(--border)') + ';' +
-          'color:' + (active ? 'var(--accent)' : 'var(--text-primary)') + ';' +
-          'cursor:pointer;font-weight:' + (active ? '700' : '400') + ';font-size:13px;' +
-          'transition:all var(--transition);display:flex;flex-direction:column;gap:4px;';
-        $left.append(
-          '<button type="button" class="cst" data-act="select-card" ' +
-            'data-id="' + esc(c.id) + '" style="' + btnStyle + '">' +
-            '<span>' + esc((c.account && c.account.name) || '—') + ' •••• ' + esc(c.last4) + '</span>' +
-            '<span style="font-size:11px;color:' + (total > 0 ? 'var(--expense)' : 'var(--text-muted)') + ';' +
-              'font-weight:' + (active ? '700' : '500') + ';">' + esc(fmt(total)) + '</span>' +
-          '</button>'
-        );
+        $left.append(window.selectorButtonHtml({
+          id: c.id, active: active,
+          title: ((c.account && c.account.name) || '—') + ' •••• ' + c.last4,
+          value: fmt(total), valueColor: total > 0 ? 'var(--expense)' : 'var(--text-muted)',
+          cls: 'cst', act: 'select-card',
+        }));
       });
     }
     $grid.append($left);
@@ -267,15 +254,7 @@
           '</span>'
         : '';
 
-      const actionsHtml = isHeader ? '' :
-        '<button type="button" class="icon-btn" title="Editar" ' +
-          'data-act="edit" data-id="' + esc(tx.id) + '" style="width:28px;height:28px;">' +
-          window.icon('edit', 14) +
-        '</button>' +
-        '<button type="button" class="icon-btn" title="Excluir" ' +
-          'data-act="trash" data-id="' + esc(tx.id) + '" style="width:28px;height:28px;color:var(--expense);">' +
-          window.icon('trash', 14) +
-        '</button>';
+      const actionsHtml = isHeader ? '' : window.rowActionsHtml(tx.id);
 
       $card.append(
         '<div class="stm-row" data-id="' + esc(tx.id || '') + '" style="' + rowStyle + '">' +

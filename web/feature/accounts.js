@@ -203,32 +203,26 @@
     renderNav();
 
     m.$el.on('click', '[data-act=closing-save]', function () {
-      const $b = $(this).prop('disabled', true);
+      const $b = $(this);
       const period = window.Domain.Period.yyyyDashMm(sel);
-      window.App.ClosingService.set(period)
-        .then(function () {
-          m.close();
-          window.toast('Fechamento definido', 'success');
-          if (opts.onChange) opts.onChange(period);
-        })
-        .catch(function (err) {
-          $b.prop('disabled', false);
-          window.toast(err && err.message ? err.message : 'Falha ao salvar fechamento', 'error');
-        });
+      window.runMutation(window.App.ClosingService.set(period), {
+        $btn: $b,
+        modal: m,
+        success: 'Fechamento definido',
+        failure: 'Falha ao salvar fechamento',
+        onDone: function () { if (opts.onChange) opts.onChange(period); },
+      });
     });
 
     m.$el.on('click', '[data-act=closing-clear]', function () {
-      const $b = $(this).prop('disabled', true);
-      window.App.ClosingService.clear()
-        .then(function () {
-          m.close();
-          window.toast('Fechamento removido', 'success');
-          if (opts.onChange) opts.onChange(null);
-        })
-        .catch(function (err) {
-          $b.prop('disabled', false);
-          window.toast(err && err.message ? err.message : 'Falha ao salvar fechamento', 'error');
-        });
+      const $b = $(this);
+      window.runMutation(window.App.ClosingService.clear(), {
+        $btn: $b,
+        modal: m,
+        success: 'Fechamento removido',
+        failure: 'Falha ao salvar fechamento',
+        onDone: function () { if (opts.onChange) opts.onChange(null); },
+      });
     });
 
     return m;
@@ -251,11 +245,6 @@
     CHECKING: 'Conta Corrente',
     INVESTMENT: 'Investimento',
   };
-
-  const DEFAULT_COLORS = [
-    '#6366F1', '#10B981', '#F43F5E', '#F59E0B',
-    '#38BDF8', '#A78BFA', '#820AD1', '#1C2951'
-  ];
 
   // ── State ─────────────────────────────────────────────────
   let state = null;
@@ -280,10 +269,6 @@
 
   function iconForType(type) {
     return type === 'INVESTMENT' ? 'trendingUp' : 'building';
-  }
-
-  function maskInitial(n) {
-    return window.maskCurrency(n);
   }
 
   // Optional numeric fields (Limites e Fatura): blank input → null payload.
@@ -445,10 +430,10 @@
     const initial = {
       name: isEdit ? (existing.name || '') : '',
       type: isEdit ? (existing.type || 'CHECKING') : 'CHECKING',
-      color: isEdit ? (existing.color || '#6366F1') : '#6366F1',
+      color: isEdit ? (existing.color || window.PALETTE.swatches[0]) : window.PALETTE.swatches[0],
       active: isEdit ? (existing.active !== false) : true,
-      creditLimit: isEdit && existing.creditLimit ? maskInitial(existing.creditLimit) : '',
-      overdraftLimit: isEdit && existing.overdraftLimit ? maskInitial(existing.overdraftLimit) : '',
+      creditLimit: isEdit && existing.creditLimit ? window.maskCurrency(existing.creditLimit) : '',
+      overdraftLimit: isEdit && existing.overdraftLimit ? window.maskCurrency(existing.overdraftLimit) : '',
       closingDay: isEdit && existing.closingDay ? String(existing.closingDay) : '',
       dueDay: isEdit && existing.dueDay ? String(existing.dueDay) : '',
     };
@@ -465,8 +450,6 @@
       const sel = p[0] === initial.type ? ' selected' : '';
       return '<option value="' + esc(p[0]) + '"' + sel + '>' + esc(p[1]) + '</option>';
     }).join('');
-
-    const swatchesHtml = window.swatchesHtml(DEFAULT_COLORS, initial.color);
 
     function cardsRegionHtml() {
       if (!isEdit) {
@@ -506,18 +489,10 @@
       '<form data-form="acc" autocomplete="off">' +
         '<div class="form-grid">' +
           '<div class="form-group full">' +
-            '<label class="form-label" for="' + ids.name + '">Nome</label>' +
-            '<div style="display:flex;align-items:center;gap:10px;">' +
-              '<input id="' + ids.color + '" name="color" type="color" ' +
-                'value="' + esc(initial.color) + '" ' +
-                'style="width:40px;height:40px;border:1px solid var(--border);' +
-                'border-radius:50%;padding:0;background:transparent;cursor:pointer;flex-shrink:0;" />' +
-              '<input id="' + ids.name + '" name="name" type="text" required ' +
-                'placeholder="Ex: Itaú, Nubank..." value="' + esc(initial.name) + '" />' +
-            '</div>' +
-            '<div data-region="swatches" style="display:flex;gap:6px;margin-top:6px;flex-wrap:wrap;">' +
-              swatchesHtml +
-            '</div>' +
+            window.colorNameFieldHtml({
+              colorId: ids.color, nameId: ids.name, color: initial.color, nameValue: initial.name,
+              placeholder: 'Ex: Itaú, Nubank...', swatchMarginTop: '6px',
+            }) +
           '</div>' +
 
           '<div class="form-group">' +
@@ -571,12 +546,34 @@
         '</div>' +
       '</form>';
 
-    const m = window.modal({
+    const m = window.formModal({
       title: isEdit ? 'Editar Conta' : 'Nova Conta',
+      formName: 'acc',
       body: bodyHtml,
-      footer: window.saveCancelFooter(),
+      onSubmit: function ($form) {
+        const name = ($form.find('input[name=name]').val() || '').trim();
+        if (!name) {
+          $form.find('input[name=name]').trigger('focus');
+          return null;
+        }
+        const payload = {
+          name: name,
+          type: $form.find('select[name=type]').val(),
+          color: $form.find('input[name=color]').val() || window.PALETTE.swatches[0],
+          active: $form.find('input[name=active]').is(':checked'),
+          creditLimit: parseOptionalCurrency($form.find('input[name=creditLimit]').val()),
+          overdraftLimit: parseOptionalCurrency($form.find('input[name=overdraftLimit]').val()),
+          closingDay: parseOptionalDay($form.find('input[name=closingDay]').val()),
+          dueDay: parseOptionalDay($form.find('input[name=dueDay]').val()),
+        };
+        return isEdit
+          ? window.App.AccountService.update(existing.id, payload)
+          : window.App.AccountService.create(payload);
+      },
+      success: function () { return isEdit ? 'Conta atualizada' : 'Conta criada'; },
+      failure: 'Falha ao salvar conta',
+      // SSE UPSERT will refresh CacheStore → AccountService.onChange → re-render.
     });
-    m.open();
 
     const $form = m.$body.find('form[data-form=acc]');
     const $color = $form.find('input[name=color]');
@@ -602,33 +599,34 @@
         window.toast('Informe os 4 dígitos do cartão', 'error');
         return;
       }
-      const $btn = $(this).prop('disabled', true);
-      window.App.AccountService.addCard(existing.id, { last4: last4 }).then(function (card) {
-        cards.push(card);
-        renderCardsBody();
-        window.toast('Cartão adicionado', 'success');
-      }).catch(function (err) {
-        $btn.prop('disabled', false);
-        window.toast((err && err.message) || 'Falha ao adicionar cartão', 'error');
+      const $btn = $(this);
+      window.runMutation(window.App.AccountService.addCard(existing.id, { last4: last4 }), {
+        $btn: $btn,
+        success: 'Cartão adicionado',
+        failure: 'Falha ao adicionar cartão',
+        onDone: function (card) { cards.push(card); renderCardsBody(); },
       });
     });
 
     function doRemoveCard(cardId, opts, dialogModal, dialogReEnable) {
       const $chip = m.$body.find('[data-card-id="' + cardId + '"]');
       $chip.css('opacity', '0.5');
-      window.App.AccountService.removeCard(existing.id, cardId, opts).then(function () {
-        cards = cards.filter(function (c) { return String(c.id) !== String(cardId); });
-        renderCardsBody();
-        if (dialogModal) dialogModal.close();
-        window.toast('Cartão removido', 'success');
-      }).catch(function (err) {
-        $chip.css('opacity', '1');
-        if (!opts && err && err.status === 409 && err.code === 'LINKED_TRANSACTIONS') {
-          openLinkedCardDialog(cardId, err.count);
-          return;
-        }
-        if (dialogReEnable) dialogReEnable();
-        window.toast((err && err.message) || 'Falha ao remover cartão', 'error');
+      window.runMutation(window.App.AccountService.removeCard(existing.id, cardId, opts), {
+        modal: dialogModal,
+        success: 'Cartão removido',
+        failure: 'Falha ao remover cartão',
+        onDone: function () {
+          cards = cards.filter(function (c) { return String(c.id) !== String(cardId); });
+          renderCardsBody();
+        },
+        onError: function (err) {
+          $chip.css('opacity', '1');
+          if (!opts && err && err.status === 409 && err.code === 'LINKED_TRANSACTIONS') {
+            openLinkedCardDialog(cardId, err.count);
+            return true;
+          }
+          if (dialogReEnable) dialogReEnable();
+        },
       });
     }
 
@@ -646,26 +644,26 @@
         },
         {
           value: 'DELETE', label: 'Excluir transações', danger: true,
-          hint: 'Apaga o cartão e ' + count + ' transaç' + (count === 1 ? 'ão vinculada' : 'ões vinculadas') + '.',
+          hint: 'Apaga o cartão e ' + window.pluralTransactions(count) + '.',
         },
         { value: 'INATIVAR', label: 'Inativar cartão', hint: 'Some de novos lançamentos; o histórico é mantido.' },
       ];
 
       window.linkedDeleteDialog({
         title: 'Cartão com transações vinculadas',
-        intro: 'O cartão <strong>•••• ' + esc(card.last4) + '</strong> tem ' + count + ' transaç' +
-          (count === 1 ? 'ão vinculada' : 'ões vinculadas') + '. Escolha o que fazer:',
+        intro: 'O cartão <strong>•••• ' + esc(card.last4) + '</strong> tem ' + window.pluralTransactions(count) + '. Escolha o que fazer:',
         options: options,
         onConfirm: function (choice, m2, reEnable) {
           if (choice.strategy === 'INATIVAR') {
-            window.App.AccountService.setCardActive(existing.id, cardId, false).then(function (updated) {
-              cards = cards.map(function (c) { return String(c.id) === String(updated.id) ? updated : c; });
-              renderCardsBody();
-              m2.close();
-              window.toast('Cartão inativado', 'success');
-            }).catch(function (err) {
-              reEnable();
-              window.toast((err && err.message) || 'Falha ao inativar cartão', 'error');
+            window.runMutation(window.App.AccountService.setCardActive(existing.id, cardId, false), {
+              modal: m2,
+              success: 'Cartão inativado',
+              failure: 'Falha ao inativar cartão',
+              onDone: function (updated) {
+                cards = cards.map(function (c) { return String(c.id) === String(updated.id) ? updated : c; });
+                renderCardsBody();
+              },
+              onError: function () { reEnable(); },
             });
             return;
           }
@@ -685,12 +683,13 @@
     m.$el.on('click', '[data-act=reactivate-card]', function () {
       if (!isEdit) return;
       const cardId = $(this).attr('data-id');
-      window.App.AccountService.setCardActive(existing.id, cardId, true).then(function (updated) {
-        cards = cards.map(function (c) { return String(c.id) === String(updated.id) ? updated : c; });
-        renderCardsBody();
-        window.toast('Cartão reativado', 'success');
-      }).catch(function (err) {
-        window.toast((err && err.message) || 'Falha ao reativar cartão', 'error');
+      window.runMutation(window.App.AccountService.setCardActive(existing.id, cardId, true), {
+        success: 'Cartão reativado',
+        failure: 'Falha ao reativar cartão',
+        onDone: function (updated) {
+          cards = cards.map(function (c) { return String(c.id) === String(updated.id) ? updated : c; });
+          renderCardsBody();
+        },
       });
     });
 
@@ -701,117 +700,55 @@
       }
     });
 
-    function submit(e) {
-      if (e) e.preventDefault();
-      const name = ($form.find('input[name=name]').val() || '').trim();
-      if (!name) {
-        $form.find('input[name=name]').trigger('focus');
-        return;
-      }
-      const payload = {
-        name: name,
-        type: $form.find('select[name=type]').val(),
-        color: $color.val() || '#6366F1',
-        active: $form.find('input[name=active]').is(':checked'),
-        creditLimit: parseOptionalCurrency($limit.val()),
-        overdraftLimit: parseOptionalCurrency($overdraft.val()),
-        closingDay: parseOptionalDay($form.find('input[name=closingDay]').val()),
-        dueDay: parseOptionalDay($form.find('input[name=dueDay]').val()),
-      };
-
-      const $btn = m.$el.find('[data-act=save]');
-      $btn.prop('disabled', true);
-
-      const p = isEdit
-        ? window.App.AccountService.update(existing.id, payload)
-        : window.App.AccountService.create(payload);
-
-      p.then(function () {
-        m.close();
-        window.toast(isEdit ? 'Conta atualizada' : 'Conta criada', 'success');
-        // SSE UPSERT will refresh CacheStore → AccountService.onChange → re-render.
-      }).catch(function (err) {
-        $btn.prop('disabled', false);
-        window.toast(err && err.message ? err.message : 'Falha ao salvar conta');
-      });
-    }
-
-    $form.on('submit', submit);
-    m.$el.on('click', '[data-act=save]', submit);
   }
 
   // ── Modal: confirm delete ─────────────────────────────────
   function openDeleteModal(target) {
-    window.confirmModal({
+    window.deleteWithLinkedFallback({
       title: 'Excluir Conta',
       body: '<p style="font-size:13px;color:var(--text-secondary);line-height:1.5;">' +
         'Tem certeza que deseja excluir a conta <strong>' + esc(target.name) + '</strong>? ' +
         'Esta ação não pode ser desfeita.</p>',
-      onConfirm: function (m, reEnable) {
-        window.App.AccountService.remove(target.id).then(function () {
-          m.close();
-          window.toast('Conta excluída', 'success');
-          // SSE DELETE will refresh CacheStore → AccountService.onChange → re-render.
-        }).catch(function (err) {
-          if (err && err.status === 409 && err.code === 'LINKED_TRANSACTIONS') {
-            m.close();
-            openLinkedAccountDialog(target, err.count);
-            return;
-          }
-          reEnable();
-          window.toast(err && err.message ? err.message : 'Falha ao excluir conta', 'error');
-        });
-      },
-    });
-  }
-
-  function openLinkedAccountDialog(target, count) {
-    const otherActive = state.accounts.filter(function (a) {
-      return String(a.id) !== String(target.id) && a.active !== false;
-    });
-    const options = [
-      {
-        value: 'MOVE', label: 'Mover para outra conta',
-        hint: 'Transações e cartões desta conta passam para a conta escolhida.',
-        choices: otherActive.map(function (a) { return { value: a.id, label: a.name }; }),
-      },
-      {
-        value: 'DELETE', label: 'Excluir transações', danger: true,
-        hint: 'Apaga a conta e ' + count + ' transaç' + (count === 1 ? 'ão vinculada' : 'ões vinculadas') + '.',
-      },
-      { value: 'INATIVAR', label: 'Inativar conta', hint: 'Some do lançamento de novas transações; o histórico é mantido.' },
-    ];
-
-    window.linkedDeleteDialog({
-      title: 'Conta com transações vinculadas',
-      intro: 'A conta <strong>' + esc(target.name) + '</strong> tem ' + count + ' transaç' +
-        (count === 1 ? 'ão vinculada' : 'ões vinculadas') + '. Escolha o que fazer:',
-      options: options,
-      onConfirm: function (choice, m, reEnable) {
-        if (choice.strategy === 'INATIVAR') {
-          const payload = {
-            name: target.name, type: target.type, color: target.color, active: false,
-            creditLimit: target.creditLimit || null,
-            overdraftLimit: target.overdraftLimit || null,
-            closingDay: target.closingDay || null,
-            dueDay: target.dueDay || null,
-          };
-          window.App.AccountService.update(target.id, payload).then(function () {
-            m.close();
-            window.toast('Conta inativada', 'success');
-          }).catch(function (err) {
-            reEnable();
-            window.toast((err && err.message) || 'Falha ao inativar conta', 'error');
+      remove: function () { return window.App.AccountService.remove(target.id); },
+      success: 'Conta excluída',
+      failure: 'Falha ao excluir conta',
+      // SSE DELETE will refresh CacheStore → AccountService.onChange → re-render.
+      linked: {
+        title: 'Conta com transações vinculadas',
+        intro: function (count) {
+          return 'A conta <strong>' + esc(target.name) + '</strong> tem ' + window.pluralTransactions(count) + '. Escolha o que fazer:';
+        },
+        options: function (count) {
+          const otherActive = state.accounts.filter(function (a) {
+            return String(a.id) !== String(target.id) && a.active !== false;
           });
-          return;
-        }
-        window.App.AccountService.remove(target.id, { strategy: choice.strategy, targetId: choice.targetId }).then(function () {
-          m.close();
-          window.toast('Conta excluída', 'success');
-        }).catch(function (err) {
-          reEnable();
-          window.toast((err && err.message) || 'Falha ao excluir conta', 'error');
-        });
+          return [
+            {
+              value: 'MOVE', label: 'Mover para outra conta',
+              hint: 'Transações e cartões desta conta passam para a conta escolhida.',
+              choices: otherActive.map(function (a) { return { value: a.id, label: a.name }; }),
+            },
+            {
+              value: 'DELETE', label: 'Excluir transações', danger: true,
+              hint: 'Apaga a conta e ' + window.pluralTransactions(count) + '.',
+            },
+            { value: 'INATIVAR', label: 'Inativar conta', hint: 'Some do lançamento de novas transações; o histórico é mantido.' },
+          ];
+        },
+        dispatch: function (choice) {
+          if (choice.strategy === 'INATIVAR') {
+            return window.App.AccountService.update(target.id, {
+              name: target.name, type: target.type, color: target.color, active: false,
+              creditLimit: target.creditLimit || null,
+              overdraftLimit: target.overdraftLimit || null,
+              closingDay: target.closingDay || null,
+              dueDay: target.dueDay || null,
+            });
+          }
+          return window.App.AccountService.remove(target.id, { strategy: choice.strategy, targetId: choice.targetId });
+        },
+        success: function (choice) { return choice.strategy === 'INATIVAR' ? 'Conta inativada' : 'Conta excluída'; },
+        failure: 'Falha ao excluir conta',
       },
     });
   }

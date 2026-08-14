@@ -13,31 +13,7 @@
 
   inject('core/kernel/kernel.barrel.js');
 
-  [
-    'feature/reports.js',
-    'feature/cost-centers.js',
-    'feature/tags.js',
-    'feature/categories.js',
-    'feature/categories.api.js',
-    'feature/settings.js',
-    'feature/import-rules.js',
-    'feature/import-rules.api.js',
-    'feature/accounts.js',
-    'feature/accounts.api.js',
-    'feature/transactions.js',
-    'feature/transactions.api.js',
-    'feature/statement.js',
-    'feature/credit-cards.js',
-    'feature/credit-cards.api.js',
-    'feature/card-statement.js',
-    'feature/accounts-payable.js',
-    'feature/accounts-payable.api.js',
-    'feature/import-statement.js',
-    'feature/import-statement.api.js',
-    'feature/budget.js',
-    'feature/budget.api.js',
-    'feature/dashboard.js'
-  ].forEach(inject);
+  window.CDB_MANIFEST.feature.forEach(inject);
 
   inject('core/composition-root/composition-root.barrel.js');
 })();

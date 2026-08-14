@@ -241,22 +241,10 @@
         const active = String(a.id) === String(state.accountId);
         const sum = state.summary[String(a.id)];
         const bal = sum ? (Number(sum.closingBalance) || 0) : window.Domain.Account.currentBalance(a);
-        const btnStyle =
-          'padding:14px 16px;border-radius:var(--radius);text-align:left;' +
-          'background:' + (active ? 'var(--accent-light)' : 'var(--bg-card)') + ';' +
-          'border:1px solid ' + (active ? 'var(--accent)' : 'var(--border)') + ';' +
-          'color:' + (active ? 'var(--accent)' : 'var(--text-primary)') + ';' +
-          'cursor:pointer;font-weight:' + (active ? '700' : '400') + ';font-size:13px;' +
-          'transition:all var(--transition);display:flex;flex-direction:column;gap:4px;';
-        const balColor = window.valueColor(bal);
-        $left.append(
-          '<button type="button" class="stm" data-act="select-account" ' +
-            'data-id="' + esc(a.id) + '" style="' + btnStyle + '">' +
-            '<span>' + esc(a.name) + '</span>' +
-            '<span style="font-size:11px;color:' + balColor + ';font-weight:' +
-              (active ? '700' : '500') + ';">' + esc(fmt(bal)) + '</span>' +
-          '</button>'
-        );
+        $left.append(window.selectorButtonHtml({
+          id: a.id, active: active, title: a.name, value: fmt(bal), valueColor: window.valueColor(bal),
+          cls: 'stm', act: 'select-account',
+        }));
       });
     }
     $grid.append($left);
@@ -322,15 +310,7 @@
         // Row actions (edit/delete) resolve the full transaction from the month index by id;
         // as linhas "Saldo anterior" e de fatura não têm nenhuma (célula vazia mantém as colunas
         // alinhadas) — a fatura é derivada, edita-se no extrato do cartão.
-        const actionsHtml = (isBalance || tx.invoice) ? '' :
-          '<button type="button" class="icon-btn" title="Editar" ' +
-            'data-act="edit" data-id="' + esc(tx.id) + '" style="width:28px;height:28px;">' +
-            window.icon('edit', 14) +
-          '</button>' +
-          '<button type="button" class="icon-btn" title="Excluir" ' +
-            'data-act="trash" data-id="' + esc(tx.id) + '" style="width:28px;height:28px;color:var(--expense);">' +
-            window.icon('trash', 14) +
-          '</button>';
+        const actionsHtml = (isBalance || tx.invoice) ? '' : window.rowActionsHtml(tx.id);
 
         // O link é um <a href> de verdade: o router é hash-based, então a navegação não precisa
         // de handler (e o deep-link fica copiável/abrível em nova aba).

@@ -58,13 +58,7 @@
     return { payable: payable, receivable: receivable, result: receivable - payable };
   }
 
-  function statusBadgeVariant(status) {
-    const s = String(status || '').toLowerCase();
-    if (s === STATUS.CONFIRMED) return 'income';
-    if (s === STATUS.SCHEDULED) return 'warning';
-    if (s === STATUS.CANCELLED) return 'muted';
-    return 'expense';
-  }
+  const statusBadgeVariant = window.Domain.Transaction.statusBadgeVariant;
 
   window.Domain = window.Domain || {};
   window.Domain.Payable = {
@@ -101,6 +95,9 @@
           categoryId: t.categoryId,
           status: t.status,
           type: label,
+          groupId: t.groupId,
+          totalInstallments: t.totalInstallments,
+          installmentNumber: t.installmentNumber,
         };
       });
     };
@@ -211,16 +208,7 @@
     const resultColor      = result >= 0 ? 'var(--income)' : 'var(--expense)';
 
     function col(label, value, color) {
-      return (
-        '<div style="flex:1;">' +
-          '<p style="font-size:11px;color:var(--text-muted);font-weight:600;letter-spacing:0.04em;text-transform:uppercase;">' +
-            esc(label) +
-          '</p>' +
-          '<p style="font-size:20px;font-weight:800;color:' + color + ';margin-top:4px;">' +
-            esc(fmt(value)) +
-          '</p>' +
-        '</div>'
-      );
+      return window.statCardHtml({ label: label, value: fmt(value), color: color, bare: true });
     }
     const $summary = $(
       '<div class="card" style="padding:16px 20px;margin-bottom:16px;display:flex;gap:32px;align-items:center;">' +
@@ -278,13 +266,8 @@
 
     sorted.forEach(function (item) {
       const st = String(item.status || 'pending').toLowerCase();
-      // pending → expense dot/badge; scheduled → warning; confirmed → income.
-      const dotColor   = st === 'scheduled' ? 'var(--warning)'
-                     : st === 'confirmed' ? 'var(--income)'
-                     : 'var(--expense)';
-      const badgeColor = st === 'scheduled' ? 'warning'
-                     : st === 'confirmed' ? 'income'
-                     : 'expense';
+      const badgeColor = window.Domain.Payable.statusBadgeVariant(st);
+      const dotColor   = 'var(--' + badgeColor + ')';
       const badgeLabel = st === 'scheduled' ? 'Agendado'
                      : st === 'confirmed' ? 'Confirmado'
                      : 'Pendente';
@@ -382,24 +365,13 @@
       status: isEdit ? (existing.status || 'pending') : 'pending',
     };
 
-    const accs = accountsList().filter(function (a) {
-      return a.active !== false || (isEdit && String(a.id) === initial.accountId);
-    });
-    if (!initial.accountId && accs.length) initial.accountId = String(accs[0].id);
-
     function natureForType(t) { return t === 'RECEIVABLE' ? 'INCOME' : 'EXPENSE'; }
 
     // keepId: mantém a categoria já gravada na lista mesmo se foi inativada depois — sem isso, editar
     // um item com categoria inativa perdia a categoria em silêncio (só reaparecia no próximo save).
-    function buildCatItems(t, keepId) {
-      const cats = flatCategories(natureForType(t), true, keepId);
-      if (!cats.length) return [{ value: '', label: 'Nenhuma categoria disponível' }];
-      return cats.map(function (c) { return { value: String(c.id), label: c.label }; });
-    }
-
     function categoryFieldHtml(t, selectedId, keepId) {
       return window.categoryPickerHtml({
-        items: buildCatItems(t, keepId),
+        items: window.categoryItemsFor(natureForType(t), keepId),
         selectedId: selectedId,
         selectId: ids.category,
         selectAttrs: ' name="categoryId" data-region="category-select"',
@@ -407,12 +379,7 @@
       });
     }
 
-    const accOpts = accs.length
-      ? accs.map(function (a) {
-          const sel = String(a.id) === initial.accountId ? ' selected' : '';
-          return '<option value="' + esc(a.id) + '"' + sel + '>' + esc(a.name) + '</option>';
-        }).join('')
-      : '<option value="">Nenhuma conta disponível</option>';
+    const accOpts = window.accountOptionsHtml(initial.accountId, { keepId: isEdit ? initial.accountId : null });
 
     const statusOpts = [
       ['pending',   'Pendente'],
@@ -423,22 +390,15 @@
       return '<option value="' + esc(p[0]) + '"' + sel + '>' + esc(p[1]) + '</option>';
     }).join('');
 
-    function typeBtnHtml(val, label, color, active) {
-      return '<button type="button" data-act="set-form-type" data-type="' + esc(val) + '" ' +
-        'style="flex:1;padding:8px;border-radius:var(--radius-sm);font-size:13px;font-weight:600;' +
-        'border:1px solid ' + (active ? 'var(--' + color + ')' : 'var(--border)') + ';' +
-        'background:' + (active ? 'var(--' + color + '-light)' : 'transparent') + ';' +
-        'color:' + (active ? 'var(--' + color + ')' : 'var(--text-secondary)') + ';' +
-        'cursor:pointer;transition:all var(--transition);">' +
-        esc(label) +
-      '</button>';
-    }
+    const TYPE_OPTIONS = [
+      { value: 'PAYABLE',    label: '↓ A Pagar',   color: 'expense' },
+      { value: 'RECEIVABLE', label: '↑ A Receber',  color: 'income' },
+    ];
 
     const bodyHtml =
       '<form data-form="ap" autocomplete="off">' +
         '<div data-region="type-row" style="display:flex;gap:8px;margin-bottom:16px;">' +
-          typeBtnHtml('PAYABLE',    '↓ A Pagar',   'expense', initial.type === 'PAYABLE') +
-          typeBtnHtml('RECEIVABLE', '↑ A Receber', 'income',  initial.type === 'RECEIVABLE') +
+          window.typeToggleHtml(TYPE_OPTIONS, initial.type) +
         '</div>' +
         '<input type="hidden" name="type" value="' + esc(initial.type) + '" />' +
         '<div class="form-grid">' +
@@ -474,12 +434,46 @@
         '</div>' +
       '</form>';
 
-    const m = window.modal({
+    const m = window.formModal({
       title: isEdit ? 'Editar Conta' : 'Nova Conta',
+      formName: 'ap',
       body: bodyHtml,
-      footer: window.saveCancelFooter(),
+      onSubmit: function ($form) {
+        const $amount = $form.find('input[name=amount]');
+        const name = ($form.find('input[name=name]').val() || '').trim();
+        if (!name) { $form.find('input[name=name]').trigger('focus'); return null; }
+        const amtRaw = $amount.val();
+        const amt = window.parseCurrency(amtRaw);
+        if (!isFinite(amt) || amt <= 0) { $amount.trigger('focus'); return null; }
+        const type = $form.find('input[name=type]').val();
+        const due = $form.find('input[name=due]').val();
+        const categoryId = $form.find('select[name=categoryId]').val();
+        const accountId  = $form.find('select[name=accountId]').val();
+        const status     = $form.find('select[name=status]').val();
+
+        if (!accountId)  { window.toast('Selecione uma conta', 'error'); return null; }
+        if (!categoryId) { window.toast('Selecione uma categoria', 'error'); return null; }
+
+        // Persist as a transaction (payables are transactions with status pending/scheduled/confirmed).
+        const txType = window.Domain.Payable.natureOf(type);
+        const signed = window.Domain.Transaction.signedAmount(txType, amt);
+        const payload = {
+          description: name,
+          amount: Number(signed.toFixed(2)),
+          date: due,
+          categoryId: categoryId,
+          accountId: accountId,
+          status: status,
+          type: txType,
+        };
+        return isEdit
+          ? window.TransactionsApi.update(existing.id, payload)
+          : window.TransactionsApi.create(payload);
+      },
+      success: function () { return isEdit ? 'Conta atualizada' : 'Conta criada'; },
+      failure: 'Falha ao salvar conta',
+      onDone: loadData,
     });
-    m.open();
 
     const $form = m.$body.find('form[data-form=ap]');
     const $amount = $form.find('input[name=amount]');
@@ -489,89 +483,20 @@
       e.preventDefault();
       const t = $(this).attr('data-type');
       $form.find('input[name=type]').val(t);
-      const $row = m.$body.find('[data-region=type-row]');
-      $row.empty();
-      $row.append(typeBtnHtml('PAYABLE',    '↓ A Pagar',   'expense', t === 'PAYABLE'));
-      $row.append(typeBtnHtml('RECEIVABLE', '↑ A Receber', 'income',  t === 'RECEIVABLE'));
+      m.$body.find('[data-region=type-row]').html(window.typeToggleHtml(TYPE_OPTIONS, t));
       // Categoria não sobrevive à troca de tipo (nature muda) — sem keepId, sempre reseta ao placeholder.
       m.$body.find('[data-region=category-select-wrap]').html(categoryFieldHtml(t, '', null));
     });
-
-    function submit(e) {
-      if (e) e.preventDefault();
-      const name = ($form.find('input[name=name]').val() || '').trim();
-      if (!name) { $form.find('input[name=name]').trigger('focus'); return; }
-      const amtRaw = $form.find('input[name=amount]').val();
-      const amt = window.parseCurrency(amtRaw);
-      if (!isFinite(amt) || amt <= 0) { $amount.trigger('focus'); return; }
-      const type = $form.find('input[name=type]').val();
-      const due = $form.find('input[name=due]').val();
-      const categoryId = $form.find('select[name=categoryId]').val();
-      const accountId  = $form.find('select[name=accountId]').val();
-      const status     = $form.find('select[name=status]').val();
-
-      if (!accountId)  { window.toast('Selecione uma conta', 'error'); return; }
-      if (!categoryId) { window.toast('Selecione uma categoria', 'error'); return; }
-
-      // Persist as a transaction (payables are transactions with status pending/scheduled/confirmed).
-      const txType = window.Domain.Payable.natureOf(type);
-      const signed = window.Domain.Transaction.signedAmount(txType, amt);
-      const payload = {
-        description: name,
-        amount: Number(signed.toFixed(2)),
-        date: due,
-        categoryId: categoryId,
-        accountId: accountId,
-        status: status,
-        type: txType,
-      };
-
-      const $btn = m.$el.find('[data-act=save]').prop('disabled', true);
-      const p = isEdit
-        ? window.TransactionsApi.update(existing.id, payload)
-        : window.TransactionsApi.create(payload);
-
-      p.then(function () {
-        m.close();
-        window.toast(isEdit ? 'Conta atualizada' : 'Conta criada', 'success');
-        return loadData();
-      }).catch(function (err) {
-        $btn.prop('disabled', false);
-        window.toast((err && err.message) || 'Falha ao salvar conta', 'error');
-      });
-    }
-
-    $form.on('submit', submit);
-    m.$el.on('click', '[data-act=save]', submit);
   }
 
-  // ── Delete ────────────────────────────────────────────────
+  // Delete/mark-paid delegam para TransactionsApi (contrato público da fatia irmã transactions)
+  // — ganha de brinde o escopo de parcelas (SINGLE/FUTURE/ALL) no delete.
   function openDeleteModal(item) {
-    window.confirmModal({
-      title: 'Excluir Conta',
-      body: window.modalText('Excluir <strong>' + esc(item.name || 'conta') + '</strong>? Esta ação não pode ser desfeita.'),
-      onConfirm: function (m, reEnable) {
-        window.TransactionsApi.remove(item.accountId, item.id).then(function () {
-          m.close();
-          window.toast('Conta excluída', 'success');
-          return loadData();
-        }).catch(function (err) {
-          reEnable();
-          window.toast((err && err.message) || 'Falha ao excluir', 'error');
-        });
-      },
-    });
+    window.TransactionsApi.openDeleteFlow(item, { onDone: loadData });
   }
 
-  // ── Mark as paid ──────────────────────────────────────────
   function markPaid(item) {
-    const today = new Date().toISOString().slice(0, 10);
-    window.TransactionsApi.patchStatus(item.accountId, item.id, 'confirmed', today).then(function () {
-      window.toast('Conta confirmada', 'success');
-      return loadData();
-    }).catch(function (err) {
-      window.toast((err && err.message) || 'Falha ao confirmar', 'error');
-    });
+    window.TransactionsApi.markPaid(item, { onDone: loadData });
   }
 
   // ── Menu toggle / outside-click close ─────────────────────

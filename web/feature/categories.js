@@ -110,13 +110,7 @@
   function findCategory(id) { return window.byId(state.categories, id); }
 
   function reactivateBtn(id) {
-    return $(
-      '<button type="button" class="icon-btn" title="Reativar" ' +
-        'data-act="reactivate" data-id="' + esc(id) + '" ' +
-        'style="width:28px;height:28px;color:var(--text-secondary);">' +
-        window.icon('eye', 14) +
-      '</button>'
-    );
+    return window.rowActionBtn('eye', 'Reativar', id, { act: 'reactivate' });
   }
 
   // ── Render ────────────────────────────────────────────────
@@ -350,13 +344,29 @@
         '</div>' +
       '</form>';
 
-    const m = window.modal({
+    const m = window.formModal({
       title: isEdit ? 'Editar Categoria' : 'Nova Categoria',
+      formName: 'cat',
       body: bodyHtml,
-      footer: window.saveCancelFooter(),
-    });
+      onSubmit: function ($form) {
+        const newName = ($form.find('input[name=name]').val() || '').trim();
+        if (!newName) {
+          $form.find('input[name=name]').trigger('focus');
+          return null;
+        }
+        const newParent = $form.find('select[name=parentId]').val() || null;
+        const newNature = isEdit
+          ? existing.nature
+          : (m.$el.find('input[name="' + natureName + '"]:checked').val() || initialNature);
 
-    m.open();
+        return isEdit
+          ? window.App.CategoryService.update(existing.id, { name: newName, parentId: newParent || null })
+          : window.App.CategoryService.create({ name: newName, nature: newNature, parentId: newParent || null });
+      },
+      success: function () { return isEdit ? 'Categoria atualizada' : 'Categoria criada'; },
+      failure: 'Falha ao salvar categoria',
+      // SSE UPSERT will refresh CacheStore → CategoryService.onChange → re-render.
+    });
 
     const $form = m.$body.find('form[data-form=cat]');
 
@@ -369,51 +379,6 @@
         $parentSelect.html(parentOptionsHtml(this.value));
       });
     }
-
-    // Wire save (form submit + button click)
-    function submit(e) {
-      if (e) e.preventDefault();
-      const newName = ($form.find('input[name=name]').val() || '').trim();
-      if (!newName) {
-        $form.find('input[name=name]').trigger('focus');
-        return;
-      }
-      const newParent = $form.find('select[name=parentId]').val() || null;
-      const newNature = isEdit
-        ? existing.nature
-        : (m.$el.find('input[name="' + natureName + '"]:checked').val() || initialNature);
-
-      // Disable button during request
-      const $btn = m.$el.find('[data-act=save]');
-      $btn.prop('disabled', true);
-
-      let p;
-      if (isEdit) {
-        p = window.App.CategoryService.update(existing.id, {
-          name: newName,
-          parentId: newParent || null,
-        });
-      } else {
-        p = window.App.CategoryService.create({
-          name: newName,
-          nature: newNature,
-          parentId: newParent || null,
-        });
-      }
-
-      p.then(function () {
-        m.close();
-        window.toast(isEdit ? 'Categoria atualizada' : 'Categoria criada', 'success');
-        // SSE UPSERT will refresh CacheStore → CategoryService.onChange → re-render.
-      }).catch(function (err) {
-        $btn.prop('disabled', false);
-        window.toast(err && err.message ? err.message : 'Falha ao salvar categoria');
-      });
-    }
-
-    $form.on('submit', submit);
-    // Footer button is OUTSIDE the form (it lives in modal-footer), wire click → submit.
-    m.$el.on('click', '[data-act=save]', submit);
   }
 
   // ── Modal: confirm delete ─────────────────────────────────
@@ -425,89 +390,59 @@
 
   function openDeleteModal(target) {
     const nameHtml = '<strong>' + esc(target.name) + '</strong>';
-    window.confirmModal({
+    window.deleteWithLinkedFallback({
       title: 'Excluir Categoria',
       body: window.modalText('Tem certeza que deseja excluir a categoria ' + nameHtml + '? Esta ação não pode ser desfeita.'),
-      onConfirm: function (m, reEnable) {
-        window.App.CategoryService.remove(target.id).then(function () {
-          m.close();
-          window.toast('Categoria excluída', 'success');
-          // SSE DELETE will refresh CacheStore → CategoryService.onChange → re-render.
-        }).catch(function (err) {
-          if (err && err.status === 409 && err.code === 'LINKED_TRANSACTIONS') {
-            m.close();
-            openLinkedCategoryDialog(target, err.count);
-            return;
-          }
-          reEnable();
-          window.toast(err && err.message ? err.message : 'Falha ao excluir categoria', 'error');
-        });
-      },
-    });
-  }
-
-  function openLinkedCategoryDialog(target, count) {
-    const excluded = subtreeIds(target);
-    const hasChildren = !target.parentId && childrenOf(target.id).length > 0;
-    const eligibleTargets = state.categories.filter(function (c) {
-      return !!c.parentId
-        && c.nature === target.nature
-        && excluded.indexOf(c.id) === -1
-        && window.Domain.Category.isEffectivelyActive(state.categories, c.id);
-    });
-
-    const options = [
-      {
-        value: 'MOVE', label: 'Mover para outra subcategoria',
-        hint: 'As transações' + (hasChildren ? ' desta categoria e das subcategorias' : '') + ' passam para a categoria escolhida.',
-        choices: eligibleTargets.map(function (c) { return { value: c.id, label: window.App.CategoryService.labelChain(c.id) }; }),
-      },
-      {
-        value: 'DELETE', label: 'Excluir transações', danger: true,
-        hint: 'Apaga a categoria' + (hasChildren ? ' (e subcategorias)' : '') + ' e ' + count +
-          ' transaç' + (count === 1 ? 'ão vinculada' : 'ões vinculadas') + '.',
-      },
-      { value: 'INATIVAR', label: 'Inativar categoria', hint: 'Some dos lançamentos novos; o histórico é mantido.' },
-    ];
-
-    window.linkedDeleteDialog({
-      title: 'Categoria com transações vinculadas',
-      intro: 'A categoria <strong>' + esc(target.name) + '</strong>' +
-        (hasChildren ? ' (e suas subcategorias)' : '') + ' tem ' + count + ' transaç' +
-        (count === 1 ? 'ão vinculada' : 'ões vinculadas') + '. Escolha o que fazer:',
-      options: options,
-      onConfirm: function (choice, m, reEnable) {
-        if (choice.strategy === 'INATIVAR') {
-          window.App.CategoryService.update(target.id, {
-            name: target.name, parentId: target.parentId || null, active: false,
-          }).then(function () {
-            m.close();
-            window.toast('Categoria inativada', 'success');
-          }).catch(function (err) {
-            reEnable();
-            window.toast((err && err.message) || 'Falha ao inativar categoria', 'error');
+      remove: function () { return window.App.CategoryService.remove(target.id); },
+      success: 'Categoria excluída',
+      failure: 'Falha ao excluir categoria',
+      // SSE DELETE will refresh CacheStore → CategoryService.onChange → re-render.
+      linked: {
+        title: 'Categoria com transações vinculadas',
+        intro: function (count) {
+          const hasChildren = !target.parentId && childrenOf(target.id).length > 0;
+          return 'A categoria <strong>' + esc(target.name) + '</strong>' +
+            (hasChildren ? ' (e suas subcategorias)' : '') + ' tem ' + window.pluralTransactions(count) + '. Escolha o que fazer:';
+        },
+        options: function (count) {
+          const excluded = subtreeIds(target);
+          const hasChildren = !target.parentId && childrenOf(target.id).length > 0;
+          const eligibleTargets = state.categories.filter(function (c) {
+            return !!c.parentId
+              && c.nature === target.nature
+              && excluded.indexOf(c.id) === -1
+              && window.Domain.Category.isEffectivelyActive(state.categories, c.id);
           });
-          return;
-        }
-        window.App.CategoryService.remove(target.id, { strategy: choice.strategy, targetId: choice.targetId }).then(function () {
-          m.close();
-          window.toast('Categoria excluída', 'success');
-        }).catch(function (err) {
-          reEnable();
-          window.toast((err && err.message) || 'Falha ao excluir categoria', 'error');
-        });
+          return [
+            {
+              value: 'MOVE', label: 'Mover para outra subcategoria',
+              hint: 'As transações' + (hasChildren ? ' desta categoria e das subcategorias' : '') + ' passam para a categoria escolhida.',
+              choices: eligibleTargets.map(function (c) { return { value: c.id, label: window.App.CategoryService.labelChain(c.id) }; }),
+            },
+            {
+              value: 'DELETE', label: 'Excluir transações', danger: true,
+              hint: 'Apaga a categoria' + (hasChildren ? ' (e subcategorias)' : '') + ' e ' + window.pluralTransactions(count) + '.',
+            },
+            { value: 'INATIVAR', label: 'Inativar categoria', hint: 'Some dos lançamentos novos; o histórico é mantido.' },
+          ];
+        },
+        dispatch: function (choice) {
+          if (choice.strategy === 'INATIVAR') {
+            return window.App.CategoryService.update(target.id, { name: target.name, parentId: target.parentId || null, active: false });
+          }
+          return window.App.CategoryService.remove(target.id, { strategy: choice.strategy, targetId: choice.targetId });
+        },
+        success: function (choice) { return choice.strategy === 'INATIVAR' ? 'Categoria inativada' : 'Categoria excluída'; },
+        failure: 'Falha ao excluir categoria',
       },
     });
   }
 
   function reactivateCategory(cat) {
-    window.App.CategoryService.update(cat.id, {
-      name: cat.name, parentId: cat.parentId || null, active: true,
-    }).then(function () {
-      window.toast('Categoria reativada', 'success');
-    }).catch(function (err) {
-      window.toast((err && err.message) || 'Falha ao reativar categoria', 'error');
-    });
+    window.runMutation(
+      window.App.CategoryService.update(cat.id, { name: cat.name, parentId: cat.parentId || null, active: true }),
+      { success: 'Categoria reativada', failure: 'Falha ao reativar categoria' }
+    );
   }
 
   // ── Event delegation on $root ─────────────────────────────

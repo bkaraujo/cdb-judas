@@ -136,19 +136,6 @@
     return { ready: true };
   }
 
-  // A Pagar/Receber derivam de transações pendentes (sem recurso de payables).
-  function adaptPending(label) {
-    return function (txs) {
-      return (Array.isArray(txs) ? txs : []).map(function (t) {
-        return {
-          id: t.id, description: t.description, due: t.date,
-          amount: Math.abs(+t.amount || 0), accountId: t.accountId,
-          categoryId: t.categoryId, status: t.status, type: label,
-        };
-      });
-    };
-  }
-
   function monthlyResult(period) {
     return repo.getMonthlyResult(period.month, period.year);
   }
@@ -157,28 +144,11 @@
     return repo.getRecentTransactions(limit);
   }
 
-  /* Loads everything dashboard panels need in parallel. */
-  function loadAll(period) {
-    const b = window.Domain.Period.bounds(period);
-    return Promise.all([
-      txRepo.list('from=' + b.from + '&to=' + b.to),
-      txRepo.list('status=pending&type=expense').then(adaptPending('PAYABLE')),
-      txRepo.list('status=pending&type=income').then(adaptPending('RECEIVABLE')),
-    ]).then(function (arr) {
-      return {
-        transactions: Array.isArray(arr[0]) ? arr[0] : [],
-        payables:     Array.isArray(arr[1]) ? arr[1] : [],
-        receivables:  Array.isArray(arr[2]) ? arr[2] : [],
-      };
-    });
-  }
-
   window.App = window.App || {};
   window.App.DashboardService = {
     init: init,
     monthlyResult: monthlyResult,
     recentTransactions: recentTransactions,
-    loadAll: loadAll,
   };
 })();
 /* pages/dashboard/cash-balances.js — Painel: Saldos de Caixa */
@@ -359,9 +329,7 @@
             '</div>' +
             '<span style="font-size:12px;color:var(--expense);font-weight:700;">' + ctx.esc(ctx.v(used)) + '</span>' +
           '</div>' +
-          '<div style="height:6px;background:var(--bg-hover);border-radius:3px;overflow:hidden;margin-bottom:4px;">' +
-            '<div style="height:100%;border-radius:3px;width:' + pct + '%;background:' + barColor + ';transition:width 0.5s ease;"></div>' +
-          '</div>' +
+          window.progressBarHtml(pct, barColor, { size: 'sm', marginBottom: '4px' }) +
           '<div style="display:flex;justify-content:space-between;font-size:11px;color:var(--text-muted);">' +
             '<span>' + (limit > 0 ? pct.toFixed(0) + '% usado' : 'Sem limite') + '</span>' +
             '<span>Limite: ' + ctx.esc(limit > 0 ? ctx.v(limit) : '—') + '</span>' +
@@ -425,9 +393,7 @@
                 ctx.esc(ctx.v(spent)) + ' / ' + ctx.esc(ctx.v(budgeted)) +
               '</span>' +
             '</div>' +
-            '<div style="height:6px;background:var(--bg-hover);border-radius:3px;overflow:hidden;">' +
-              '<div style="height:100%;border-radius:3px;width:' + pct + '%;background:' + barColor + ';transition:width 0.5s ease;"></div>' +
-            '</div>' +
+            window.progressBarHtml(pct, barColor, { size: 'sm' }) +
           '</div>';
       });
       html += '</div>';
@@ -569,10 +535,7 @@
   }
 
   // Color palette for accounts / categories that don't carry one.
-  const SERIES_PALETTE = [
-    '#6366F1', '#38BDF8', '#F59E0B', '#10B981',
-    '#F43F5E', '#A78BFA', '#820AD1', '#1C2951'
-  ];
+  const SERIES_PALETTE = window.PALETTE.series;
   function pickColor(i, fallback) {
     return fallback || SERIES_PALETTE[i % SERIES_PALETTE.length];
   }
@@ -763,9 +726,7 @@
             '<span style="font-size:12px;color:var(--text-secondary);">' + esc(d.name) + '</span>' +
             '<span style="font-size:12px;font-weight:700;color:' + esc(d.color) + ';">' + esc(v(d.amount)) + '</span>' +
           '</div>' +
-          '<div style="height:6px;background:var(--bg-hover);border-radius:3px;overflow:hidden;">' +
-            '<div style="height:100%;border-radius:3px;width:' + pct + '%;background:' + esc(d.color) + ';transition:width 0.5s ease;"></div>' +
-          '</div>' +
+          window.progressBarHtml(pct, esc(d.color), { size: 'sm' }) +
         '</div>';
     });
     html += '</div>';

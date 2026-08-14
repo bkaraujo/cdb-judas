@@ -11,8 +11,6 @@
   const DEFAULT_CLOSING_DAY = 1;
   const DEFAULT_DUE_DAY     = 10;
 
-  function pad2(n) { return n < 10 ? '0' + n : '' + n; }
-
   /* Closing/due day are configured once per account (MON_ACCOUNT_LIMIT) and
      shared by every card on it — so these read from the account, not the card. */
   function closingDay(account) {
@@ -46,11 +44,9 @@
     return Math.max(0, (+limit || 0) - Math.abs(+used || 0));
   }
 
-  /* Bar color tokens by usage percent. Mirrors STYLE.md §11. */
+  /* Bar color tokens by usage percent. Mirrors STYLE.md §11 (kernel-shared threshold). */
   function barColorByUsage(pct) {
-    if (pct >= 80) return 'expense';
-    if (pct >= 60) return 'warning';
-    return 'accent';
+    return window.thresholdColorToken(pct);
   }
 
   /* Total invoice = sum of |amount| over EXPENSE transactions inside the invoice cycle
@@ -361,10 +357,7 @@
         'text-transform:uppercase;letter-spacing:0.04em;">Limite da conta</span>' +
         '<span style="font-size:12px;font-weight:700;color:var(--text-primary);">' + esc(fmt(limit)) + '</span>' +
         '</div>' +
-        '<div style="height:8px;background:var(--bg-hover);border-radius:4px;overflow:hidden;">' +
-        '<div style="height:100%;border-radius:4px;width:' + pct.toFixed(1) + '%;' +
-        'background:' + barColor + ';transition:width 0.5s ease;"></div>' +
-        '</div>' +
+        window.progressBarHtml(pct.toFixed(1), barColor) +
         '<div style="display:flex;justify-content:space-between;margin-top:6px;' +
         'font-size:12px;color:var(--text-muted);">' +
         '<span>' + esc(pct.toFixed(0)) + '% utilizado</span>' +

@@ -32,15 +32,166 @@
     return $el;
   }
 
-  /* ---- Row Action Button ---- */
-  function rowActionBtn(iconName, title, id, danger) {
-    const color = danger ? 'var(--expense)' : 'var(--text-secondary)';
+  /* ---- Row Action Button ----
+   * `opts` accepts { danger, size, iconSize, act } — `act` defaults to `iconName` (data-act), but
+   * some rows dispatch a different action than the icon shown (e.g. icon 'eye' / act 'reactivate').
+   * A plain boolean 4th arg is still accepted as shorthand for { danger: bool } (existing callers). */
+  function rowActionBtn(iconName, title, id, opts) {
+    if (opts === true || opts === false || opts == null) opts = { danger: !!opts };
+    const size = opts.size || 28;
+    const iconSize = opts.iconSize || 14;
+    const color = opts.danger ? 'var(--expense)' : 'var(--text-secondary)';
+    const act = opts.act || iconName;
     return $(
       '<button type="button" class="icon-btn" title="' + esc(title) + '" ' +
-        'data-act="' + esc(iconName) + '" data-id="' + esc(id) + '" ' +
-        'style="width:28px;height:28px;color:' + color + ';">' +
-        window.icon(iconName, 14) +
+        'data-act="' + esc(act) + '" data-id="' + esc(id) + '" ' +
+        'style="width:' + size + 'px;height:' + size + 'px;color:' + color + ';">' +
+        window.icon(iconName, iconSize) +
       '</button>'
+    );
+  }
+
+  // String twin of rowActionBtn, for rows built as HTML strings (statement/transactions rows)
+  // rather than jQuery chains. `extra` is raw HTML prepended before edit/trash (e.g. a
+  // mark-paid button that only shows for some rows).
+  function rowActionsHtml(id, opts) {
+    opts = opts || {};
+    function btnHtml(iconName, title, act, danger) {
+      const size = opts.size || 28;
+      const iconSize = opts.iconSize || 14;
+      const color = danger ? 'var(--expense)' : 'var(--text-secondary)';
+      return '<button type="button" class="icon-btn" title="' + esc(title) + '" ' +
+        'data-act="' + esc(act) + '" data-id="' + esc(id) + '" ' +
+        'style="width:' + size + 'px;height:' + size + 'px;color:' + color + ';">' +
+        window.icon(iconName, iconSize) +
+      '</button>';
+    }
+    return (opts.extra || '') +
+      (opts.edit !== false ? btnHtml('edit', 'Editar', 'edit', false) : '') +
+      (opts.trash !== false ? btnHtml('trash', 'Excluir', 'trash', true) : '');
+  }
+
+  /* ---- Threshold color token ----
+   * Usage-percent → CSS variable token, shared by CreditCard.barColorByUsage and Budget.barColor
+   * (both were the exact same 80/60 threshold, defined twice). */
+  function thresholdColorToken(pct) {
+    if (pct >= 80) return 'expense';
+    if (pct >= 60) return 'warning';
+    return 'accent';
+  }
+
+  /* ---- Progress bar ----
+   * `color` is a resolved CSS color (e.g. 'var(--expense)'), not a bare token — callers that only
+   * have a percent should resolve it via thresholdColorToken first. `opts.size` 'sm' (6px/3px,
+   * dashboard panels) vs the default 'md' (8px/4px, credit-cards/budget). */
+  function progressBarHtml(pct, color, opts) {
+    opts = opts || {};
+    const sm = opts.size === 'sm';
+    const h = sm ? 6 : 8;
+    const r = sm ? 3 : 4;
+    const mb = opts.marginBottom ? 'margin-bottom:' + opts.marginBottom + ';' : '';
+    return (
+      '<div style="height:' + h + 'px;background:var(--bg-hover);border-radius:' + r + 'px;overflow:hidden;' + mb + '">' +
+        '<div style="height:100%;border-radius:' + r + 'px;width:' + pct + '%;' +
+          'background:' + color + ';transition:width 0.5s ease;"></div>' +
+      '</div>'
+    );
+  }
+
+  /* ---- Stat card ----
+   * The label/value(/sub) block repeated by budget's summary cards, transactions' summary row,
+   * and accounts-payable's 3-col divided card. `opts.icon` switches to the icon-chip card layout
+   * (transactions); `opts.bare` skips the .card wrapper entirely, returning just the inner block
+   * (accounts-payable composes 3 of these inside one shared card, divided by vertical rules). */
+  function statCardHtml(opts) {
+    opts = opts || {};
+    const color = opts.color || 'var(--text-primary)';
+    const hasIcon = !!opts.icon;
+    const labelHtml =
+      '<p style="font-size:11px;color:var(--text-muted);font-weight:600;letter-spacing:0.04em;' +
+        (hasIcon ? '' : 'text-transform:uppercase;') + '">' + esc(opts.label || '') + '</p>';
+    const valueHtml =
+      '<p style="font-size:' + (hasIcon ? '18px' : '20px') + ';font-weight:800;color:' + color + ';' +
+        'margin-top:' + (hasIcon ? '2px' : '4px') + ';">' + esc(opts.value != null ? opts.value : '') + '</p>';
+    const subHtml = opts.sub
+      ? '<p style="font-size:12px;color:var(--text-muted);margin-top:4px;">' + esc(opts.sub) + '</p>'
+      : '';
+    const body = '<div' + (hasIcon ? '' : ' style="flex:1;"') + '>' + labelHtml + valueHtml + subHtml + '</div>';
+    if (opts.bare) return body;
+    if (hasIcon) {
+      return '<div class="card" style="padding:14px 18px;display:flex;align-items:center;gap:12px;">' +
+        '<span style="color:' + color + ';display:flex;">' + window.icon(opts.icon, 20) + '</span>' + body + '</div>';
+    }
+    return '<div class="card" style="padding:16px 20px;">' + body + '</div>';
+  }
+
+  /* ---- Type toggle (expense/income[/transfer]) ----
+   * `options`: [{value,label,color}]; `activeValue` picks which is highlighted. `opts.disabled`
+   * greys out and locks every button (transactions locks the type while editing a transfer leg);
+   * `opts.act` overrides the data-act (default 'set-form-type'). Returns the concatenated <button>
+   * HTML — works both interpolated into a template and passed straight to `$row.append(...)`. */
+  function typeToggleHtml(options, activeValue, opts) {
+    opts = opts || {};
+    const disabled = !!opts.disabled;
+    return (options || []).map(function (o) {
+      const active = o.value === activeValue;
+      return '<button type="button" data-act="' + esc(opts.act || 'set-form-type') + '" ' +
+        'data-type="' + esc(o.value) + '" ' +
+        (disabled ? 'disabled title="' + esc(opts.disabledTitle || '') + '" ' : '') +
+        'style="flex:1;padding:8px;border-radius:var(--radius-sm);font-size:13px;font-weight:600;' +
+        'border:1px solid ' + (active ? 'var(--' + o.color + ')' : 'var(--border)') + ';' +
+        'background:' + (active ? 'var(--' + o.color + '-light)' : 'transparent') + ';' +
+        'color:' + (active ? 'var(--' + o.color + ')' : 'var(--text-secondary)') + ';' +
+        'opacity:' + (disabled ? '0.55' : '1') + ';' +
+        'cursor:' + (disabled ? 'not-allowed' : 'pointer') + ';transition:all var(--transition);">' +
+        esc(o.label) +
+      '</button>';
+    }).join('');
+  }
+
+  /* ---- Selector button (extrato de contas / extrato do cartão, coluna esquerda) ----
+   *   opts: { id, active, title, value, valueColor, cls ('stm'|'cst'), act }
+   * `cls`/`act` differ per screen (statement.js data-act="select-account" vs card-statement.js
+   * data-act="select-card") — same visual skin, different dispatch. */
+  function selectorButtonHtml(opts) {
+    opts = opts || {};
+    const active = !!opts.active;
+    const style =
+      'padding:14px 16px;border-radius:var(--radius);text-align:left;' +
+      'background:' + (active ? 'var(--accent-light)' : 'var(--bg-card)') + ';' +
+      'border:1px solid ' + (active ? 'var(--accent)' : 'var(--border)') + ';' +
+      'color:' + (active ? 'var(--accent)' : 'var(--text-primary)') + ';' +
+      'cursor:pointer;font-weight:' + (active ? '700' : '400') + ';font-size:13px;' +
+      'transition:all var(--transition);display:flex;flex-direction:column;gap:4px;';
+    return '<button type="button" class="' + esc(opts.cls || 'stm') + '" ' +
+      'data-act="' + esc(opts.act || 'select-account') + '" data-id="' + esc(opts.id) + '" style="' + style + '">' +
+      '<span>' + esc(opts.title) + '</span>' +
+      '<span style="font-size:11px;color:' + (opts.valueColor || 'var(--text-muted)') + ';font-weight:' +
+        (active ? '700' : '500') + ';">' + esc(opts.value) + '</span>' +
+    '</button>';
+  }
+
+  /* ---- Color + name field (round color swatch + text input + swatch grid) ----
+   * Byte-identical block in accounts/tags/pickers.openTagCreateModal's create/edit forms.
+   *   opts: { colorId, nameId, color, nameValue, placeholder, swatches (default PALETTE.swatches),
+   *           swatchMarginTop }
+   * Returns the "Nome" label + field + swatch grid — caller wraps in its own
+   * <div class="form-group full">. */
+  function colorNameFieldHtml(opts) {
+    opts = opts || {};
+    const swatches = window.swatchesHtml(opts.swatches || window.PALETTE.swatches, opts.color);
+    return (
+      '<label class="form-label" for="' + esc(opts.nameId) + '">Nome</label>' +
+      '<div style="display:flex;align-items:center;gap:10px;">' +
+        '<input id="' + esc(opts.colorId) + '" name="color" type="color" value="' + esc(opts.color) + '" ' +
+          'style="width:40px;height:40px;border:1px solid var(--border);border-radius:50%;padding:0;' +
+          'background:transparent;cursor:pointer;flex-shrink:0;" />' +
+        '<input id="' + esc(opts.nameId) + '" name="name" type="text" required ' +
+          'placeholder="' + esc(opts.placeholder || '') + '" value="' + esc(opts.nameValue || '') + '" />' +
+      '</div>' +
+      '<div data-region="swatches" style="display:flex;gap:6px;margin-top:' + (opts.swatchMarginTop || '8px') + ';flex-wrap:wrap;">' +
+        swatches +
+      '</div>'
     );
   }
 
@@ -641,6 +792,7 @@
     btn: btn,
     iconBtn: iconBtn,
     rowActionBtn: rowActionBtn,
+    rowActionsHtml: rowActionsHtml,
     badge: badge,
     card: card,
     emptyState: emptyState,
@@ -655,12 +807,19 @@
     tagFlagHtml: tagFlagHtml,
     searchSelectHtml: searchSelectHtml,
     refreshSearchSelect: refreshSearchSelect,
+    thresholdColorToken: thresholdColorToken,
+    progressBarHtml: progressBarHtml,
+    statCardHtml: statCardHtml,
+    typeToggleHtml: typeToggleHtml,
+    selectorButtonHtml: selectorButtonHtml,
+    colorNameFieldHtml: colorNameFieldHtml,
   };
 
   // Convenience globals (used inline by pages).
   window.btn          = btn;
   window.iconBtn      = iconBtn;
   window.rowActionBtn = rowActionBtn;
+  window.rowActionsHtml = rowActionsHtml;
   window.badge        = badge;
   window.card       = card;
   window.emptyState = emptyState;
@@ -675,4 +834,10 @@
   window.tagFlagHtml = tagFlagHtml;
   window.searchSelectHtml = searchSelectHtml;
   window.refreshSearchSelect = refreshSearchSelect;
+  window.thresholdColorToken = thresholdColorToken;
+  window.progressBarHtml = progressBarHtml;
+  window.statCardHtml = statCardHtml;
+  window.typeToggleHtml = typeToggleHtml;
+  window.selectorButtonHtml = selectorButtonHtml;
+  window.colorNameFieldHtml = colorNameFieldHtml;
 })();

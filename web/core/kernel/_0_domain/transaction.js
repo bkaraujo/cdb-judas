@@ -43,6 +43,20 @@
     return 'expense'; // pending or unknown
   }
 
+  const STATUS_LABEL = {
+    confirmed: 'Confirmado',
+    pending:   'Pendente',
+    scheduled: 'Agendado',
+    planed:    'Planejado',
+    balance:   'Saldo',
+    cancelled: 'Cancelado',
+  };
+
+  function statusLabel(status) {
+    const s = String(status || '').toLowerCase();
+    return STATUS_LABEL[s] || status;
+  }
+
   /* Transfer rule: source account differs from destination. */
   function isValidTransfer(srcAccountId, dstAccountId) {
     if (srcAccountId == null || dstAccountId == null) return false;
@@ -86,6 +100,7 @@
     isTransfer: isTransfer,
     signedAmount: signedAmount,
     statusBadgeVariant: statusBadgeVariant,
+    statusLabel: statusLabel,
     describe: describe,
     isValidTransfer: isValidTransfer,
     isToday: isToday,

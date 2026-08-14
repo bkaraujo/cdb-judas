@@ -194,15 +194,6 @@
   }
 
   // ── Modal: create / edit ──────────────────────────────────
-  function optionsHtml(items, selectedId, labelFn) {
-    const options = ['<option value="">— Nenhuma —</option>'];
-    items.forEach(function (it) {
-      const sel = String(it.id) === String(selectedId) ? ' selected' : '';
-      options.push('<option value="' + esc(it.id) + '"' + sel + '>' + esc(labelFn(it)) + '</option>');
-    });
-    return options.join('');
-  }
-
   function openFormModal(existing) {
     const isEdit = !!existing;
     const uniq = Date.now();
@@ -219,7 +210,7 @@
       costCenterId: isEdit ? (existing.costCenterId || '') : '',
     };
 
-    const accountOptions = optionsHtml(window.accountsList(), initial.accountId, function (a) { return a.name; });
+    const accountOptions = window.accountOptionsHtml(initial.accountId, { includeEmpty: true, emptyLabel: '— Nenhuma —', activeOnly: false });
     const categoryFieldHtml = window.categoryPickerHtml({
       items: window.flatCategories(null, true, initial.categoryId),
       selectedId: initial.categoryId,
@@ -228,7 +219,9 @@
       placeholder: '— Nenhuma —',
       alwaysPlaceholder: true,
     });
-    const costCenterOptions = optionsHtml(window.App.CacheStore.costCenters(), initial.costCenterId, function (c) { return c.description || c.name || ''; });
+    const costCenterOptions = window.optionsHtml(window.App.CacheStore.costCenters(), initial.costCenterId, {
+      labelOf: function (c) { return c.description || c.name || ''; },
+    });
 
     const bodyHtml =
       '<form data-form="rule" autocomplete="off">' +
@@ -253,48 +246,29 @@
         '</div>' +
       '</form>';
 
-    const m = window.modal({
+    window.formModal({
       title: isEdit ? 'Editar Regra' : 'Nova Regra',
+      formName: 'rule',
       body: bodyHtml,
-      footer: window.saveCancelFooter(),
+      autofocus: 'input[name=name]',
+      onSubmit: function ($form) {
+        const $name = $form.find('input[name=name]');
+        const name = ($name.val() || '').trim();
+        if (name.length < 3) { $name.trigger('focus'); return null; }
+        const payload = {
+          name: name,
+          accountId: $form.find('select[name=accountId]').val() || null,
+          categoryId: $form.find('select[name=categoryId]').val() || null,
+          costCenterId: $form.find('select[name=costCenterId]').val() || null,
+        };
+        return isEdit
+          ? window.App.ImportRuleService.update(existing.id, payload)
+          : window.App.ImportRuleService.create(payload);
+      },
+      success: function () { return isEdit ? 'Regra atualizada' : 'Regra criada'; },
+      failure: 'Falha ao salvar regra',
+      onDone: loadRules,
     });
-    m.open();
-
-    const $form = m.$body.find('form[data-form=rule]');
-    const $name = $form.find('input[name=name]');
-
-    setTimeout(function () { $name.trigger('focus'); }, 0);
-
-    function submit(e) {
-      if (e) e.preventDefault();
-      const name = ($name.val() || '').trim();
-      if (name.length < 3) { $name.trigger('focus'); return; }
-      const payload = {
-        name: name,
-        accountId: $form.find('select[name=accountId]').val() || null,
-        categoryId: $form.find('select[name=categoryId]').val() || null,
-        costCenterId: $form.find('select[name=costCenterId]').val() || null,
-      };
-
-      const $btn = m.$el.find('[data-act=save]');
-      $btn.prop('disabled', true);
-
-      const p = isEdit
-        ? window.App.ImportRuleService.update(existing.id, payload)
-        : window.App.ImportRuleService.create(payload);
-
-      p.then(function () {
-        m.close();
-        window.toast(isEdit ? 'Regra atualizada' : 'Regra criada', 'success');
-        return loadRules();
-      }).catch(function (err) {
-        $btn.prop('disabled', false);
-        window.toast(err && err.message ? err.message : 'Falha ao salvar regra', 'error');
-      });
-    }
-
-    $form.on('submit', submit);
-    m.$el.on('click', '[data-act=save]', submit);
   }
 
   // ── Modal: confirm delete ─────────────────────────────────
@@ -304,13 +278,9 @@
       body: window.modalText('Tem certeza que deseja excluir a regra <strong>' + esc(target.name) +
         '</strong>? Esta ação não pode ser desfeita.'),
       onConfirm: function (m, reEnable) {
-        window.App.ImportRuleService.remove(target.id).then(function () {
-          m.close();
-          window.toast('Regra removida', 'success');
-          return loadRules();
-        }).catch(function (err) {
-          reEnable();
-          window.toast(err && err.message ? err.message : 'Falha ao excluir regra', 'error');
+        window.runMutation(window.App.ImportRuleService.remove(target.id), {
+          modal: m, success: 'Regra removida', failure: 'Falha ao excluir regra',
+          onDone: loadRules, onError: reEnable,
         });
       },
     });

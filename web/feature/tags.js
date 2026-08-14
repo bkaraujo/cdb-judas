@@ -45,12 +45,6 @@
 (function () {
   window.Pages = window.Pages || {};
 
-  const DEFAULT_COLOR = '#6366F1';
-  const DEFAULT_COLORS = [
-    '#6366F1', '#10B981', '#F43F5E', '#F59E0B',
-    '#38BDF8', '#A78BFA', '#820AD1', '#FB923C'
-  ];
-
   let state = null;
 
   function resetState() {
@@ -128,8 +122,8 @@
     );
 
     $chip.find('[data-region=row-actions]')
-      .append(chipActionBtn('edit',  'Editar',  t.id))
-      .append(chipActionBtn('trash', 'Excluir', t.id, true));
+      .append(window.rowActionBtn('edit',  'Editar',  t.id, { size: 22, iconSize: 12 }))
+      .append(window.rowActionBtn('trash', 'Excluir', t.id, { size: 22, iconSize: 12, danger: true }));
 
     // Hover reveals actions; if colored, tint border/background.
     $chip.on('mouseenter', function () {
@@ -154,17 +148,6 @@
     return $chip;
   }
 
-  function chipActionBtn(iconName, title, id, danger) {
-    const color = danger ? 'var(--expense)' : 'var(--text-secondary)';
-    return $(
-      '<button type="button" class="icon-btn" title="' + esc(title) + '" ' +
-        'data-act="' + esc(iconName) + '" data-id="' + esc(id) + '" ' +
-        'style="width:22px;height:22px;color:' + color + ';">' +
-        window.icon(iconName, 12) +
-      '</button>'
-    );
-  }
-
   // ── Modal: create / edit ──────────────────────────────────
   function openFormModal(existing) {
     const isEdit = !!existing;
@@ -175,125 +158,75 @@
     };
     const initial = {
       name: isEdit ? (existing.name || '') : '',
-      color: isEdit ? (existing.color || DEFAULT_COLOR) : DEFAULT_COLOR,
+      color: isEdit ? (existing.color || window.PALETTE.swatches[0]) : window.PALETTE.swatches[0],
     };
-
-    const swatchesHtml = window.swatchesHtml(DEFAULT_COLORS, initial.color);
 
     const bodyHtml =
       '<form data-form="tag" autocomplete="off">' +
         '<div class="form-grid">' +
           '<div class="form-group full">' +
-            '<label class="form-label" for="' + ids.name + '">Nome</label>' +
-            '<div style="display:flex;align-items:center;gap:10px;">' +
-              '<input id="' + ids.color + '" name="color" type="color" ' +
-                'value="' + esc(initial.color) + '" ' +
-                'style="width:40px;height:40px;border:1px solid var(--border);' +
-                'border-radius:50%;padding:0;background:transparent;cursor:pointer;flex-shrink:0;" />' +
-              '<input id="' + ids.name + '" name="name" type="text" required ' +
-                'placeholder="Ex: mensal, fixo..." value="' + esc(initial.name) + '" />' +
-            '</div>' +
-            '<div data-region="swatches" style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap;">' +
-              swatchesHtml +
-            '</div>' +
+            window.colorNameFieldHtml({
+              colorId: ids.color, nameId: ids.name, color: initial.color,
+              nameValue: initial.name, placeholder: 'Ex: mensal, fixo...',
+            }) +
           '</div>' +
         '</div>' +
       '</form>';
 
-    const m = window.modal({
+    const m = window.formModal({
       title: isEdit ? 'Editar Tag' : 'Nova Tag',
+      formName: 'tag',
       body: bodyHtml,
-      footer: window.saveCancelFooter(),
+      autofocus: 'input[name=name]',
+      onSubmit: function ($form) {
+        const $name = $form.find('input[name=name]');
+        const name = ($name.val() || '').trim();
+        if (!name) { $name.trigger('focus'); return null; }
+        const payload = { name: name, color: $form.find('input[name=color]').val() || window.PALETTE.swatches[0] };
+        return isEdit
+          ? window.App.TagService.update(existing.id, payload)
+          : window.App.TagService.create(payload);
+      },
+      success: function () { return isEdit ? 'Tag atualizada' : 'Tag criada'; },
+      failure: 'Falha ao salvar tag',
+      // SSE UPSERT will refresh CacheStore → TagService.onChange → re-render.
     });
-    m.open();
 
-    const $form = m.$body.find('form[data-form=tag]');
-    const $color = $form.find('input[name=color]');
-    const $name  = $form.find('input[name=name]');
-
-    window.bindSwatches(m, $color);
-
-    setTimeout(function () { $name.trigger('focus'); }, 0);
-
-    function submit(e) {
-      if (e) e.preventDefault();
-      const name = ($name.val() || '').trim();
-      if (!name) { $name.trigger('focus'); return; }
-      const payload = {
-        name: name,
-        color: $color.val() || DEFAULT_COLOR,
-      };
-
-      const $btn = m.$el.find('[data-act=save]');
-      $btn.prop('disabled', true);
-
-      const p = isEdit
-        ? window.App.TagService.update(existing.id, payload)
-        : window.App.TagService.create(payload);
-
-      p.then(function () {
-        m.close();
-        window.toast(isEdit ? 'Tag atualizada' : 'Tag criada', 'success');
-        // SSE UPSERT will refresh CacheStore → TagService.onChange → re-render.
-      }).catch(function (err) {
-        $btn.prop('disabled', false);
-        window.toast(err && err.message ? err.message : 'Falha ao salvar tag', 'error');
-      });
-    }
-
-    $form.on('submit', submit);
-    m.$el.on('click', '[data-act=save]', submit);
+    window.bindSwatches(m, m.$body.find('input[name=color]'));
   }
 
   // ── Modal: confirm delete ─────────────────────────────────
   function openDeleteModal(target) {
     const nameHtml = '<strong>#' + esc(target.name) + '</strong>';
-    window.confirmModal({
+    window.deleteWithLinkedFallback({
       title: 'Excluir Tag',
       body: window.modalText('Tem certeza que deseja excluir a tag ' + nameHtml +
         '? As transações vinculadas permanecem — apenas perdem a marcação. Esta ação não pode ser desfeita.'),
-      onConfirm: function (m, reEnable) {
-        window.App.TagService.remove(target.id).then(function () {
-          m.close();
-          window.toast('Tag removida', 'success');
-          // SSE DELETE will refresh CacheStore → TagService.onChange → re-render.
-        }).catch(function (err) {
-          if (err && err.status === 409 && err.code === 'LINKED_TRANSACTIONS') {
-            m.close();
-            openLinkedTagDialog(target, err.count);
-            return;
-          }
-          reEnable();
-          window.toast(err && err.message ? err.message : 'Falha ao excluir tag', 'error');
-        });
-      },
-    });
-  }
-
-  function openLinkedTagDialog(target, count) {
-    const otherTags = state.tags.filter(function (t) { return String(t.id) !== String(target.id); });
-    const options = [
-      {
-        value: 'MOVE', label: 'Mover para outra tag',
-        hint: 'As transações desta tag passam a usar a tag escolhida.',
-        choices: otherTags.map(function (t) { return { value: t.id, label: '#' + t.name }; }),
-      },
-      { value: 'DETACH', label: 'Apenas desvincular', hint: 'Remove só a marcação; as transações permanecem intactas.' },
-    ];
-
-    window.linkedDeleteDialog({
-      title: 'Tag com transações vinculadas',
-      intro: 'A tag <strong>#' + esc(target.name) + '</strong> tem ' + count + ' transaç' +
-        (count === 1 ? 'ão vinculada' : 'ões vinculadas') + '. Escolha o que fazer:',
-      options: options,
-      onConfirm: function (choice, m, reEnable) {
-        window.App.TagService.remove(target.id, { strategy: choice.strategy, targetId: choice.targetId }).then(function () {
-          m.close();
-          window.toast('Tag removida', 'success');
-        }).catch(function (err) {
-          reEnable();
-          window.toast((err && err.message) || 'Falha ao excluir tag', 'error');
-        });
+      remove: function () { return window.App.TagService.remove(target.id); },
+      success: 'Tag removida',
+      failure: 'Falha ao excluir tag',
+      // SSE DELETE will refresh CacheStore → TagService.onChange → re-render.
+      linked: {
+        title: 'Tag com transações vinculadas',
+        intro: function (count) {
+          return 'A tag <strong>#' + esc(target.name) + '</strong> tem ' + window.pluralTransactions(count) + '. Escolha o que fazer:';
+        },
+        options: function () {
+          const otherTags = state.tags.filter(function (t) { return String(t.id) !== String(target.id); });
+          return [
+            {
+              value: 'MOVE', label: 'Mover para outra tag',
+              hint: 'As transações desta tag passam a usar a tag escolhida.',
+              choices: otherTags.map(function (t) { return { value: t.id, label: '#' + t.name }; }),
+            },
+            { value: 'DETACH', label: 'Apenas desvincular', hint: 'Remove só a marcação; as transações permanecem intactas.' },
+          ];
+        },
+        dispatch: function (choice) {
+          return window.App.TagService.remove(target.id, { strategy: choice.strategy, targetId: choice.targetId });
+        },
+        success: 'Tag removida',
+        failure: 'Falha ao excluir tag',
       },
     });
   }

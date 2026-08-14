@@ -44,11 +44,9 @@
     return { value: b - s, over: false };
   }
 
-  /* Bar color tokens by consumption percent. Mirrors STYLE.md §11. */
+  /* Bar color tokens by consumption percent. Mirrors STYLE.md §11 (kernel-shared threshold). */
   function barColor(pct) {
-    if (pct >= 80) return 'expense';
-    if (pct >= 60) return 'warning';
-    return 'accent';
+    return window.thresholdColorToken(pct);
   }
 
   function overspendCount(items) {
@@ -115,13 +113,6 @@
 (function () {
   window.Pages = window.Pages || {};
 
-  // Color palette for new budgets / fallback.
-  const PALETTE = [
-    '#6366F1', '#38BDF8', '#F59E0B', '#10B981',
-    '#F43F5E', '#A78BFA', '#FB923C', '#34D399',
-    '#820AD1', '#1C2951'
-  ];
-
   // Icon options for the modal (uses inline ICONS set from icons.js).
   const ICON_CHOICES = [
     'list', 'tag', 'creditCard', 'building', 'briefcase',
@@ -149,7 +140,7 @@
   function shiftMonth(delta) { window.shiftMonth(state, delta, false); }
 
   function colorFor(item, idx) {
-    return item.color || PALETTE[idx % PALETTE.length];
+    return item.color || window.PALETTE.swatches[idx % window.PALETTE.swatches.length];
   }
 
   function iconFor(item) {
@@ -220,14 +211,16 @@
 
     const summaryHtml =
       '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:20px;">' +
-        summaryCard('Orçamento Total', window.fmt(totalBudgeted), 'var(--text-primary)') +
-        summaryCard('Total Gasto', window.fmt(totalSpent),
-          totalSpent > totalBudgeted && totalBudgeted > 0 ? 'var(--expense)' : 'var(--text-primary)',
-          totalBudgeted > 0 ? pctTotal.toFixed(0) + '% do orçamento' : '—'
-        ) +
-        summaryCard('Categorias Estouradas', String(overCount),
-          overCount > 0 ? 'var(--expense)' : 'var(--income)'
-        ) +
+        window.statCardHtml({ label: 'Orçamento Total', value: window.fmt(totalBudgeted), color: 'var(--text-primary)' }) +
+        window.statCardHtml({
+          label: 'Total Gasto', value: window.fmt(totalSpent),
+          color: totalSpent > totalBudgeted && totalBudgeted > 0 ? 'var(--expense)' : 'var(--text-primary)',
+          sub: totalBudgeted > 0 ? pctTotal.toFixed(0) + '% do orçamento' : '—',
+        }) +
+        window.statCardHtml({
+          label: 'Categorias Estouradas', value: String(overCount),
+          color: overCount > 0 ? 'var(--expense)' : 'var(--income)',
+        }) +
       '</div>';
     $root.append(summaryHtml);
 
@@ -250,20 +243,6 @@
       $list.append(renderRow(it, idx));
     });
     $root.append($list);
-  }
-
-  function summaryCard(label, value, valueColor, sub) {
-    return (
-      '<div class="card" style="padding:16px 20px;">' +
-        '<p style="font-size:11px;color:var(--text-muted);font-weight:600;text-transform:uppercase;letter-spacing:0.04em;margin-bottom:8px;">' +
-          esc(label) +
-        '</p>' +
-        '<p style="font-size:22px;font-weight:800;color:' + valueColor + ';">' + esc(value) + '</p>' +
-        (sub
-          ? '<p style="font-size:12px;color:var(--text-muted);margin-top:4px;">' + esc(sub) + '</p>'
-          : '') +
-      '</div>'
-    );
   }
 
   function renderRow(item, idx) {
@@ -307,12 +286,7 @@
     $card.append(headHtml);
 
     // Progress bar
-    const barHtml =
-      '<div style="height:8px;background:var(--bg-hover);border-radius:4px;overflow:hidden;">' +
-        '<div style="height:100%;border-radius:4px;width:' + pct + '%;' +
-          'background:' + barColor + ';transition:width 0.5s ease;"></div>' +
-      '</div>';
-    $card.append(barHtml);
+    $card.append(window.progressBarHtml(pct, barColor));
 
     // Footer line
     const footerHtml =
@@ -340,7 +314,7 @@
     const isEdit = !!existing;
     const initBudgeted = isEdit ? +(existing.budgeted || existing.budget || existing.target || 0) : 0;
     const initCategoryId = isEdit ? (existing.categoryId || '') : '';
-    const initColor = isEdit ? (existing.color || PALETTE[0]) : PALETTE[0];
+    const initColor = isEdit ? (existing.color || window.PALETTE.swatches[0]) : window.PALETTE.swatches[0];
     const initIcon  = isEdit ? iconFor(existing) : 'target';
 
     const uid = 'bd-' + Date.now();
@@ -357,7 +331,7 @@
       disabled: isEdit,
     });
 
-    const colorSwatches = PALETTE.map(function (c) {
+    const colorSwatches = window.PALETTE.swatches.map(function (c) {
       const active = c === initColor;
       return (
         '<button type="button" data-color-pick="' + esc(c) + '" ' +
@@ -409,12 +383,40 @@
         '</div>' +
       '</form>';
 
-    const m = window.modal({
+    const m = window.formModal({
       title: isEdit ? 'Editar Meta' : 'Nova Meta',
+      formName: 'bd',
       body: bodyHtml,
-      footer: window.saveCancelFooter({ saveAttrs: 'data-act="save" type="button"' }),
+      footer: { saveAttrs: 'data-act="save" type="button"' },
+      onSubmit: function ($form) {
+        const categoryId = $form.find('select[name=categoryId]').val() || '';
+        const amountRaw = $form.find('input[name=budgeted]').val() || '';
+        const color = $form.find('input[name=color]').val() || window.PALETTE.swatches[0];
+        const iconName = $form.find('input[name=icon]').val() || 'target';
+        const budgeted = window.parseCurrency(amountRaw);
+
+        if (!isEdit && !categoryId) {
+          window.toast('Selecione uma categoria');
+          $form.find('select[name=categoryId]').trigger('focus');
+          return null;
+        }
+        if (!isFinite(budgeted) || budgeted <= 0) {
+          window.toast('Informe um valor válido');
+          $form.find('input[name=budgeted]').trigger('focus');
+          return null;
+        }
+
+        const payload = { budgeted: budgeted, color: color, icon: iconName };
+        if (isEdit) return window.App.BudgetService.save(existing.id, payload);
+        payload.categoryId = categoryId;
+        payload.month = state.month + 1;
+        payload.year = state.year;
+        return window.App.BudgetService.create(payload);
+      },
+      success: function () { return isEdit ? 'Meta atualizada' : 'Meta criada'; },
+      failure: 'Falha ao salvar meta',
+      onDone: loadBudget,
     });
-    m.open();
 
     // Bind currency mask
     window.bindCurrencyMask(m.$body.find('input[name=budgeted]'));
@@ -443,55 +445,6 @@
       });
     });
 
-    function submit(e) {
-      if (e) e.preventDefault();
-      const $form = m.$body.find('form[data-form=bd]');
-      const categoryId = $form.find('select[name=categoryId]').val() || '';
-      const amountRaw = $form.find('input[name=budgeted]').val() || '';
-      const color = $form.find('input[name=color]').val() || PALETTE[0];
-      const iconName = $form.find('input[name=icon]').val() || 'target';
-      const budgeted = window.parseCurrency(amountRaw);
-
-      if (!isEdit && !categoryId) {
-        window.toast('Selecione uma categoria');
-        $form.find('select[name=categoryId]').trigger('focus');
-        return;
-      }
-      if (!isFinite(budgeted) || budgeted <= 0) {
-        window.toast('Informe um valor válido');
-        $form.find('input[name=budgeted]').trigger('focus');
-        return;
-      }
-
-      const $btn = m.$el.find('[data-act=save]').prop('disabled', true);
-
-      const payload = {
-        budgeted: budgeted,
-        color: color,
-        icon: iconName,
-      };
-      let p;
-      if (isEdit) {
-        p = window.App.BudgetService.save(existing.id, payload);
-      } else {
-        payload.categoryId = categoryId;
-        payload.month = state.month + 1;
-        payload.year = state.year;
-        p = window.App.BudgetService.create(payload);
-      }
-
-      p.then(function () {
-        m.close();
-        window.toast(isEdit ? 'Meta atualizada' : 'Meta criada', 'success');
-        return loadBudget();
-      }).catch(function (err) {
-        $btn.prop('disabled', false);
-        window.toast((err && err.message) || 'Falha ao salvar meta');
-      });
-    }
-
-    m.$body.find('form[data-form=bd]').on('submit', submit);
-    m.$el.on('click', '[data-act=save]', submit);
   }
 
   // ── Modal: confirm delete ───────────────────────────────
@@ -501,13 +454,9 @@
       title: 'Excluir Meta',
       body: window.modalText('Tem certeza que deseja excluir a meta <strong>' + esc(name) + '</strong>? Esta ação não pode ser desfeita.'),
       onConfirm: function (m, reEnable) {
-        window.App.BudgetService.remove(target.id).then(function () {
-          m.close();
-          window.toast('Meta excluída', 'success');
-          return loadBudget();
-        }).catch(function (err) {
-          reEnable();
-          window.toast((err && err.message) || 'Falha ao excluir meta');
+        window.runMutation(window.App.BudgetService.remove(target.id), {
+          modal: m, success: 'Meta excluída', failure: 'Falha ao excluir meta',
+          onDone: loadBudget, onError: reEnable,
         });
       },
     });

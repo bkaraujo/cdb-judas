@@ -96,16 +96,5 @@
           assert.strictEqual(r[0].limit, 7);
         });
     });
-
-    QUnit.test('loadAll busca em paralelo e adapta pendências pro formato payable/receivable', function (assert) {
-      return window.App.DashboardService.loadAll(window.Domain.Period.create(3, 2026)).then(function (out) {
-        assert.strictEqual(out.transactions.length, 1);
-        assert.strictEqual(out.payables.length, 1);
-        assert.strictEqual(out.payables[0].type, 'PAYABLE');
-        assert.strictEqual(out.payables[0].due, '2026-03-05', 'date do repo vira due');
-        assert.strictEqual(out.payables[0].amount, 1200, 'amount sempre positivo');
-        assert.deepEqual(out.receivables, []);
-      });
-    });
   });
 })();

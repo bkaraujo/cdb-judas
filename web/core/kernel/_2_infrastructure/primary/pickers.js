@@ -67,115 +67,70 @@
         '</div>' +
       '</form>';
 
-    const m = window.modal({
+    const m = window.formModal({
       title: 'Nova Categoria',
+      formName: 'qcat',
       body: bodyHtml,
-      footer: window.saveCancelFooter({ saveAttrs: 'data-act="qcat-save" type="submit"' }),
+      autofocus: 'input[name=name]',
+      onSubmit: function ($form) {
+        const name = ($form.find('input[name=name]').val() || '').trim();
+        if (!name) { $form.find('input[name=name]').trigger('focus'); return null; }
+        const parentId = $form.find('select[name=parentId]').val() || null;
+        const effectiveNature = fixedNature || $form.find('select[name=nature]').val() || 'EXPENSE';
+        return quickCreateProviders.category.create({ name: name, nature: effectiveNature, parentId: parentId });
+      },
+      success: 'Categoria criada',
+      failure: 'Falha ao criar categoria',
+      onDone: function (created) { if (onCreated) onCreated(created); },
     });
-    m.open();
 
     const $form = m.$body.find('form[data-form=qcat]');
-    $form.find('input[name=name]').trigger('focus');
 
     if (!fixedNature) {
       $form.find('select[name=nature]').on('change', function () {
         $form.find('select[name=parentId]').html(parentOptsFor(this.value));
       });
     }
-
-    function submit(e) {
-      if (e) e.preventDefault();
-      const name = ($form.find('input[name=name]').val() || '').trim();
-      if (!name) { $form.find('input[name=name]').trigger('focus'); return; }
-      const parentId = $form.find('select[name=parentId]').val() || null;
-      const effectiveNature = fixedNature || $form.find('select[name=nature]').val() || 'EXPENSE';
-
-      const $btn = m.$el.find('[data-act=qcat-save]').prop('disabled', true);
-      quickCreateProviders.category.create({
-        name: name,
-        nature: effectiveNature,
-        parentId: parentId,
-      }).then(function (created) {
-        m.close();
-        window.toast('Categoria criada', 'success');
-        if (onCreated) onCreated(created);
-      }).catch(function (err) {
-        $btn.prop('disabled', false);
-        window.toast((err && err.message) || 'Falha ao criar categoria', 'error');
-      });
-    }
-
-    $form.on('submit', submit);
-    m.$el.on('click', '[data-act=qcat-save]', submit);
   }
-
-  const QTAG_DEFAULT_COLOR = '#6366F1';
-  const QTAG_DEFAULT_COLORS = [
-    '#6366F1', '#10B981', '#F43F5E', '#F59E0B',
-    '#38BDF8', '#A78BFA', '#820AD1', '#FB923C',
-  ];
 
   // On success the created tag (with id) is handed to `onCreated` so the caller can select it.
   function openTagCreateModal(onCreated) {
     const uniq = Date.now();
     const nameId = 'qtag-name-' + uniq;
     const colorId = 'qtag-color-' + uniq;
-
-    const swatchesHtml = window.swatchesHtml(QTAG_DEFAULT_COLORS, QTAG_DEFAULT_COLOR);
+    const defaultColor = window.PALETTE.swatches[0];
 
     const bodyHtml =
       '<form data-form="qtag" autocomplete="off">' +
         '<div class="form-grid">' +
           '<div class="form-group full">' +
-            '<label class="form-label" for="' + nameId + '">Nome</label>' +
-            '<div style="display:flex;align-items:center;gap:10px;">' +
-              '<input id="' + colorId + '" name="color" type="color" value="' + esc(QTAG_DEFAULT_COLOR) + '" ' +
-                'style="width:40px;height:40px;border:1px solid var(--border);' +
-                'border-radius:50%;padding:0;background:transparent;cursor:pointer;flex-shrink:0;" />' +
-              '<input id="' + nameId + '" name="name" type="text" required placeholder="Ex: mensal, fixo..." />' +
-            '</div>' +
-            '<div data-region="swatches" style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap;">' +
-              swatchesHtml +
-            '</div>' +
+            window.colorNameFieldHtml({
+              colorId: colorId, nameId: nameId, color: defaultColor, placeholder: 'Ex: mensal, fixo...',
+            }) +
           '</div>' +
         '</div>' +
       '</form>';
 
-    const m = window.modal({
+    const m = window.formModal({
       title: 'Nova Tag',
+      formName: 'qtag',
       body: bodyHtml,
-      footer: window.saveCancelFooter({ saveAttrs: 'data-act="qtag-save" type="submit"' }),
+      autofocus: 'input[name=name]',
+      onSubmit: function ($form) {
+        const $name = $form.find('input[name=name]');
+        const name = ($name.val() || '').trim();
+        if (!name) { $name.trigger('focus'); return null; }
+        return quickCreateProviders.tag.create({
+          name: name,
+          color: $form.find('input[name=color]').val() || defaultColor,
+        });
+      },
+      success: 'Tag criada',
+      failure: 'Falha ao criar tag',
+      onDone: function (created) { if (onCreated) onCreated(created); },
     });
-    m.open();
 
-    const $form = m.$body.find('form[data-form=qtag]');
-    const $color = $form.find('input[name=color]');
-    const $name  = $form.find('input[name=name]');
-
-    window.bindSwatches(m, $color);
-    setTimeout(function () { $name.trigger('focus'); }, 0);
-
-    function submit(e) {
-      if (e) e.preventDefault();
-      const name = ($name.val() || '').trim();
-      if (!name) { $name.trigger('focus'); return; }
-
-      const $btn = m.$el.find('[data-act=qtag-save]').prop('disabled', true);
-      quickCreateProviders.tag.create({
-        name: name,
-        color: $color.val() || QTAG_DEFAULT_COLOR,
-      }).then(function (created) {
-        m.close();
-        window.toast('Tag criada', 'success');
-        if (onCreated) onCreated(created);
-      }).catch(function (err) {
-        $btn.prop('disabled', false);
-        window.toast((err && err.message) || 'Falha ao criar tag', 'error');
-      });
-    }
-
-    $form.on('submit', submit);
-    m.$el.on('click', '[data-act=qtag-save]', submit);
+    window.bindSwatches(m, m.$body.find('input[name=color]'));
   }
 
   function categoryPickerHtml(opts) {
@@ -222,9 +177,78 @@
       });
   }
 
+  /* ---- <option> builders ----
+   * Shared across the form modals that dropdown-select an account/category/cost-center. */
+
+  // Generic "— placeholder — + items" <option> list, keyed by `.id` (labelOf defaults to
+  // name/description). Used where a field is optional (no valid default to fall back to).
+  function optionsHtml(items, selectedId, opts) {
+    opts = opts || {};
+    const labelOf = opts.labelOf || function (it) { return it.name || it.description || ''; };
+    const out = ['<option value="">' + esc(opts.placeholder || '— Nenhuma —') + '</option>'];
+    (items || []).forEach(function (it) {
+      const sel = String(it.id) === String(selectedId) ? ' selected' : '';
+      out.push('<option value="' + esc(it.id) + '"' + sel + '>' + esc(labelOf(it)) + '</option>');
+    });
+    return out.join('');
+  }
+
+  // Account <option> list. Defaults to active-only (kept accounts: `opts.keepId`, typically the
+  // account already saved on the record being edited, so it survives even if inactivated since).
+  // `opts.items` overrides the source list entirely (e.g. import preview's server-picked candidates).
+  // `opts.includeEmpty` prepends a placeholder (`opts.emptyLabel`, default '— Selecione —').
+  function accountOptionsHtml(selectedId, opts) {
+    opts = opts || {};
+    const keepId = opts.keepId != null ? String(opts.keepId) : null;
+    const items = opts.items || window.accountsList().filter(function (a) {
+      return opts.activeOnly === false || a.active !== false ||
+        String(a.id) === keepId || String(a.id) === String(selectedId);
+    });
+    const empty = opts.includeEmpty
+      ? '<option value="">' + esc(opts.emptyLabel || '— Selecione —') + '</option>'
+      : '';
+    if (!items.length) return empty || '<option value="">Nenhuma conta disponível</option>';
+    return empty + items.map(function (a) {
+      const sel = String(a.id) === String(selectedId) ? ' selected' : '';
+      return '<option value="' + esc(a.id) + '"' + sel + '>' + esc(a.name) + '</option>';
+    }).join('');
+  }
+
+  // Cost-center <option> list with the "Variável" fallback: when nothing is selected yet, the
+  // cost center whose description/name matches /vari/i is pre-selected (mirrors the backend's own
+  // fallback when a transaction/import row arrives without a costCenterId).
+  function costCenterOptionsHtml(selectedId) {
+    const ccs = window.App.CacheStore.costCenters();
+    if (!ccs.length) return '<option value="">Nenhum centro de custo</option>';
+    const variavel = ccs.filter(function (c) { return /vari/i.test(c.description || c.name || ''); })[0];
+    const target = selectedId || (variavel && variavel.id) || '';
+    return ccs.map(function (c) {
+      const label = c.description || c.name || '';
+      const sel = String(c.id) === String(target) ? ' selected' : '';
+      return '<option value="' + esc(c.id) + '"' + sel + '>' + esc(label) + '</option>';
+    }).join('');
+  }
+
+  // The `flatCategories → [{value,label}]` shape shared by every category dropdown that isn't
+  // built through categoryPickerHtml directly: falls back to a single disabled-looking placeholder
+  // item when the nature has no categories at all.
+  function categoryItemsFor(nature, keepId) {
+    const cats = window.flatCategories(nature, true, keepId);
+    if (!cats.length) return [{ value: '', label: 'Nenhuma categoria disponível' }];
+    return cats.map(function (c) { return { value: String(c.id), label: c.label }; });
+  }
+
   window.quickCategoryLabel = quickCategoryLabel;
   window.openCategoryCreateModal = openCategoryCreateModal;
   window.openTagCreateModal = openTagCreateModal;
   window.configureQuickCreate = configureQuickCreate;
   window.categoryPickerHtml = categoryPickerHtml;
+  window.optionsHtml = optionsHtml;
+  window.accountOptionsHtml = accountOptionsHtml;
+  window.costCenterOptionsHtml = costCenterOptionsHtml;
+  window.categoryItemsFor = categoryItemsFor;
+  window.PALETTE = {
+    swatches: ['#6366F1', '#10B981', '#F43F5E', '#F59E0B', '#38BDF8', '#A78BFA', '#820AD1', '#1C2951'],
+    series:   ['#6366F1', '#38BDF8', '#F59E0B', '#10B981', '#F43F5E', '#A78BFA', '#820AD1', '#1C2951'],
+  };
 })();

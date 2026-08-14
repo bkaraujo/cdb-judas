@@ -107,5 +107,74 @@
     return m;
   }
 
+  // 'N transações vinculadas' / '1 transação vinculada' — montado à mão em 5 lugares antes disto.
+  function pluralTransactions(count) {
+    return count + (count === 1 ? ' transação vinculada' : ' transações vinculadas');
+  }
+
+  /* window.deleteWithLinkedFallback — o fluxo completo de confirm→remove→(409 LINKED_TRANSACTIONS
+   * ?)→linkedDeleteDialog, repetido em accounts/tags/categories. `opts.remove()` é a chamada de
+   * exclusão simples (sem opts); em caso de 409 o dialog `opts.linked` assume:
+   *   opts: {
+   *     title, body,                         // confirmModal
+   *     remove: fn() => Promise,
+   *     success, failure,                    // toast do caminho feliz (string ou fn(result))
+   *     onDone: fn(result),
+   *     linked: {
+   *       title,
+   *       intro: fn(count) => html,
+   *       options: fn(count) => [{value,label,hint,choices,danger}],  // ver linkedDeleteDialog
+   *       dispatch: fn({strategy,targetId}) => Promise,   // decide remove-with-strategy vs. INATIVAR etc.
+   *       success: fn({strategy,targetId}) => string,
+   *       failure,
+   *     },
+   *   }
+   * Retorna o modal de confirmação (mesmo contrato de confirmModal). */
+  function deleteWithLinkedFallback(opts) {
+    opts = opts || {};
+    return window.confirmModal({
+      title: opts.title,
+      body: opts.body,
+      onConfirm: function (m, reEnable) {
+        opts.remove().then(function (result) {
+          m.close();
+          const msg = typeof opts.success === 'function' ? opts.success(result) : opts.success;
+          if (msg) window.toast(msg, 'success');
+          if (opts.onDone) opts.onDone(result);
+        }).catch(function (err) {
+          if (err && err.status === 409 && err.code === 'LINKED_TRANSACTIONS') {
+            m.close();
+            openLinkedFallbackDialog(opts.linked, err.count, opts.onDone);
+            return;
+          }
+          reEnable();
+          window.toast((err && err.message) || opts.failure || 'Falha ao excluir', 'error');
+        });
+      },
+    });
+  }
+
+  function openLinkedFallbackDialog(linked, count, onDone) {
+    linked = linked || {};
+    return linkedDeleteDialog({
+      title: linked.title,
+      intro: linked.intro ? linked.intro(count) : undefined,
+      options: linked.options ? linked.options(count) : [],
+      onConfirm: function (choice, m, reEnable) {
+        linked.dispatch(choice).then(function (result) {
+          m.close();
+          const msg = typeof linked.success === 'function' ? linked.success(choice, result) : linked.success;
+          if (msg) window.toast(msg, 'success');
+          if (onDone) onDone(result);
+        }).catch(function (err) {
+          reEnable();
+          window.toast((err && err.message) || linked.failure || 'Falha ao excluir', 'error');
+        });
+      },
+    });
+  }
+
   window.linkedDeleteDialog = linkedDeleteDialog;
+  window.pluralTransactions = pluralTransactions;
+  window.deleteWithLinkedFallback = deleteWithLinkedFallback;
 })();

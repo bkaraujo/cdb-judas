@@ -112,7 +112,7 @@
   function renderRow(cc) {
     const description = cc.description || '';
     const name = cc.name || '';
-    const subtitle = (name && description && name !== description) ? description : '';
+    const subtitle = window.Domain.CostCenter.displaySubtitle(cc);
     const title = name || description;
 
     const avatarHtml =

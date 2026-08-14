@@ -206,19 +206,11 @@
     // via .val()/option[value]) e o overlay de busca (`window.searchSelectHtml`) — uma única
     // fonte pra não deixar os dois desalinhar.
     function buildCatItems(type, selectedId) {
-      const nat = natureForType(type);
-      const cats = flatCategories(nat, true, selectedId);
-      if (!cats.length) return [{ value: '', label: 'Nenhuma categoria disponível' }];
-      return cats.map(function (c) { return { value: String(c.id), label: c.label }; });
+      return window.categoryItemsFor(natureForType(type), selectedId);
     }
 
     function buildAccountOpts(selectedId, includeEmpty) {
-      if (!accs.length) return '<option value="">Nenhuma conta disponível</option>';
-      const empty = includeEmpty ? '<option value="">— Selecione —</option>' : '';
-      return empty + accs.map(function (a) {
-        const sel = String(a.id) === String(selectedId) ? ' selected' : '';
-        return '<option value="' + esc(a.id) + '"' + sel + '>' + esc(a.name) + '</option>';
-      }).join('');
+      return window.accountOptionsHtml(selectedId, { keepId: isEdit ? initial.accountId : null, includeEmpty: includeEmpty });
     }
 
     // Card select is optional and only relevant when the chosen account has
@@ -246,15 +238,7 @@
     }
 
     function buildCostCenterOpts(selectedId) {
-      const ccs = window.App.CacheStore.costCenters();
-      if (!ccs.length) return '<option value="">Nenhum centro de custo</option>';
-      const variavel = ccs.filter(function (c) { return /vari/i.test(c.description || c.name || ''); })[0];
-      const target = selectedId || (variavel && variavel.id) || '';
-      return ccs.map(function (c) {
-        const label = c.description || c.name || '';
-        const sel = String(c.id) === String(target) ? ' selected' : '';
-        return '<option value="' + esc(c.id) + '"' + sel + '>' + esc(label) + '</option>';
-      }).join('');
+      return window.costCenterOptionsHtml(selectedId);
     }
 
     const accOpts = buildAccountOpts(initial.accountId, false);
@@ -268,18 +252,12 @@
       return '<option value="' + esc(p[0]) + '"' + sel + '>' + esc(p[1]) + '</option>';
     }).join('');
 
-    function typeBtnHtml(val, label, color, active, disabled) {
-      return '<button type="button" data-act="set-form-type" data-type="' + esc(val) + '" ' +
-        (disabled ? 'disabled title="Tipo não pode ser alterado ao editar uma perna de transferência" ' : '') +
-        'style="flex:1;padding:8px;border-radius:var(--radius-sm);font-size:13px;font-weight:600;' +
-        'border:1px solid ' + (active ? 'var(--' + color + ')' : 'var(--border)') + ';' +
-        'background:' + (active ? 'var(--' + color + '-light)' : 'transparent') + ';' +
-        'color:' + (active ? 'var(--' + color + ')' : 'var(--text-secondary)') + ';' +
-        'opacity:' + (disabled ? '0.55' : '1') + ';' +
-        'cursor:' + (disabled ? 'not-allowed' : 'pointer') + ';transition:all var(--transition);">' +
-        esc(label) +
-      '</button>';
-    }
+    const TX_TYPE_OPTIONS = [
+      { value: 'expense',  label: '↓ Despesa',       color: 'expense' },
+      { value: 'income',   label: '↑ Receita',       color: 'income' },
+      { value: 'transfer', label: '⇄ Transferência', color: 'accent' },
+    ];
+    const TX_TYPE_DISABLED_TITLE = 'Tipo não pode ser alterado ao editar uma perna de transferência';
 
     function buildGridHtml(type) {
       if (type === 'transfer') {
@@ -401,9 +379,7 @@
             '</div>'
           : '') +
         '<div data-region="type-row" style="display:flex;gap:8px;margin-bottom:16px;">' +
-          typeBtnHtml('expense',  '↓ Despesa',       'expense',  initial.type === 'expense', isTransferEdit) +
-          typeBtnHtml('income',   '↑ Receita',       'income',   initial.type === 'income',  isTransferEdit) +
-          typeBtnHtml('transfer', '⇄ Transferência', 'accent',   initial.type === 'transfer', isTransferEdit) +
+          window.typeToggleHtml(TX_TYPE_OPTIONS, initial.type, { disabled: isTransferEdit, disabledTitle: TX_TYPE_DISABLED_TITLE }) +
         '</div>' +
         '<input type="hidden" name="type" value="' + esc(initial.type) + '" />' +
         '<div class="form-grid" data-region="grid">' +
@@ -411,12 +387,21 @@
         '</div>' +
       '</form>';
 
-    const m = window.modal({
+    let submittedType = initial.type;
+    const m = window.formModal({
       title: isEdit ? 'Editar Lançamento' : 'Novo Lançamento',
+      formName: 'tx',
       body: bodyHtml,
-      footer: window.saveCancelFooter(),
+      onSubmit: function ($form) { return submit($form); },
+      success: function () {
+        if (submittedType === 'transfer') return isEdit ? 'Lançamento convertido em transferência' : 'Transferência registrada';
+        return isEdit ? 'Lançamento atualizado' : 'Lançamento criado';
+      },
+      failure: function () {
+        return submittedType === 'transfer' ? 'Falha ao registrar transferência' : 'Falha ao salvar lançamento';
+      },
+      onDone: onSaved,
     });
-    m.open();
 
     const $form = m.$body.find('form[data-form=tx]');
     function bindAmountMask() {
@@ -520,11 +505,9 @@
 
       $form.find('input[name=type]').val(t);
       // Repaint type row.
-      const $row = m.$body.find('[data-region=type-row]');
-      $row.empty();
-      $row.append(typeBtnHtml('expense',  '↓ Despesa',       'expense',  t === 'expense', isTransferEdit));
-      $row.append(typeBtnHtml('income',   '↑ Receita',       'income',   t === 'income',  isTransferEdit));
-      $row.append(typeBtnHtml('transfer', '⇄ Transferência', 'accent',   t === 'transfer', isTransferEdit));
+      m.$body.find('[data-region=type-row]').html(
+        window.typeToggleHtml(TX_TYPE_OPTIONS, t, { disabled: isTransferEdit, disabledTitle: TX_TYPE_DISABLED_TITLE })
+      );
       // Rebuild grid.
       m.$body.find('[data-region=grid]').html(buildGridHtml(t));
       bindAmountMask();
@@ -560,27 +543,25 @@
       });
     });
 
-    function submit(e) {
-      if (e) e.preventDefault();
+    function submit($form) {
       const type = $form.find('input[name=type]').val();
+      submittedType = type;
       const amtRaw = $form.find('input[name=amount]').val();
       const amt = window.parseCurrency(amtRaw);
       const date = $form.find('input[name=date]').val();
       const accountId = $form.find('select[name=accountId]').val();
-      const $btn = m.$el.find('[data-act=save]');
 
       if (type === 'transfer') {
         const destAccountId = $form.find('select[name=destAccountId]').val();
-        if (!accountId) { window.toast('Selecione a conta de origem', 'error'); return; }
-        if (!destAccountId) { window.toast('Selecione a conta de destino', 'error'); return; }
+        if (!accountId) { window.toast('Selecione a conta de origem', 'error'); return null; }
+        if (!destAccountId) { window.toast('Selecione a conta de destino', 'error'); return null; }
         if (!window.Domain.Transaction.isValidTransfer(accountId, destAccountId)) {
-          window.toast('Origem e destino devem ser contas diferentes', 'error'); return;
+          window.toast('Origem e destino devem ser contas diferentes', 'error'); return null;
         }
-        if (!date) { window.toast('Informe a data', 'error'); return; }
-        if (!isFinite(amt) || amt <= 0) { $form.find('input[name=amount]').trigger('focus'); return; }
+        if (!date) { window.toast('Informe a data', 'error'); return null; }
+        if (!isFinite(amt) || amt <= 0) { $form.find('input[name=amount]').trigger('focus'); return null; }
 
-        $btn.prop('disabled', true);
-        window.App.TransactionService.transfer({
+        return window.App.TransactionService.transfer({
           fromAccountId: accountId,
           toAccountId: destAccountId,
           date: date,
@@ -589,28 +570,20 @@
           // Converting an existing lançamento into a transfer: drop the original
           // so its amount isn't counted twice alongside the new transfer pair.
           if (isEdit) return window.App.TransactionService.remove(existing.accountId, existing.id);
-        }).then(function () {
-          m.close();
-          window.toast(isEdit ? 'Lançamento convertido em transferência' : 'Transferência registrada', 'success');
-          return onSaved();
-        }).catch(function (err) {
-          $btn.prop('disabled', false);
-          window.toast((err && err.message) || 'Falha ao registrar transferência', 'error');
         });
-        return;
       }
 
       const description = ($form.find('input[name=description]').val() || '').trim();
-      if (!description) { $form.find('input[name=description]').trigger('focus'); return; }
-      if (!isFinite(amt) || amt <= 0) { $form.find('input[name=amount]').trigger('focus'); return; }
+      if (!description) { $form.find('input[name=description]').trigger('focus'); return null; }
+      if (!isFinite(amt) || amt <= 0) { $form.find('input[name=amount]').trigger('focus'); return null; }
       const categoryId = $form.find('select[name=categoryId]').val();
       const costCenterId = $form.find('select[name=costCenterId]').val();
       const status = $form.find('select[name=status]').val();
       const isEstorno = $form.find('input[name=estorno]').is(':checked');
 
-      if (!accountId) { window.toast('Selecione uma conta', 'error'); return; }
-      if (!categoryId) { window.toast('Selecione uma categoria', 'error'); return; }
-      if (!costCenterId) { window.toast('Selecione o centro de custo', 'error'); return; }
+      if (!accountId) { window.toast('Selecione uma conta', 'error'); return null; }
+      if (!categoryId) { window.toast('Selecione uma categoria', 'error'); return null; }
+      if (!costCenterId) { window.toast('Selecione o centro de custo', 'error'); return null; }
 
       const signed = window.Domain.Transaction.signedAmount(type, amt) * (isEstorno ? -1 : 1);
       const notes = ($form.find('textarea[name=notes]').val() || '').trim() || null;
@@ -628,23 +601,10 @@
         tagIds: initial.tagIds,
       };
 
-      $btn.prop('disabled', true);
-      const p = isEdit
+      return isEdit
         ? window.App.TransactionService.update(existing.id, payload)
         : window.App.TransactionService.create(payload);
-
-      p.then(function () {
-        m.close();
-        window.toast(isEdit ? 'Lançamento atualizado' : 'Lançamento criado', 'success');
-        return onSaved();
-      }).catch(function (err) {
-        $btn.prop('disabled', false);
-        window.toast((err && err.message) || 'Falha ao salvar lançamento', 'error');
-      });
     }
-
-    $form.on('submit', submit);
-    m.$el.on('click', '[data-act=save]', submit);
 
     return m;
   };
@@ -702,13 +662,9 @@
         title: transfer ? 'Excluir Transferência' : 'Excluir Lançamento',
         body: window.modalText(msg),
         onConfirm: function (m, reEnable) {
-          window.App.TransactionService.remove(tx.accountId, tx.id).then(function () {
-            m.close();
-            window.toast('Lançamento excluído', 'success');
-            return onDone();
-          }).catch(function (err) {
-            reEnable();
-            window.toast((err && err.message) || 'Falha ao excluir', 'error');
+          window.runMutation(window.App.TransactionService.remove(tx.accountId, tx.id), {
+            modal: m, success: 'Lançamento excluído', failure: 'Falha ao excluir',
+            onDone: onDone, onError: reEnable,
           });
         },
       });
@@ -748,14 +704,9 @@
     m.open();
 
     function doRemove(mode) {
-      const $btns = m.$el.find('button').prop('disabled', true);
-      window.App.TransactionService.remove(tx.accountId, tx.id, mode).then(function () {
-        m.close();
-        window.toast('Lançamento(s) excluído(s)', 'success');
-        return onDone();
-      }).catch(function (err) {
-        $btns.prop('disabled', false);
-        window.toast((err && err.message) || 'Falha ao excluir', 'error');
+      window.runMutation(window.App.TransactionService.remove(tx.accountId, tx.id, mode), {
+        $btn: m.$el.find('button'), modal: m,
+        success: 'Lançamento(s) excluído(s)', failure: 'Falha ao excluir', onDone: onDone,
       });
     }
     m.$el.on('click', '[data-act=del-single]', function () { doRemove('SINGLE'); });
@@ -768,11 +719,8 @@
     opts = opts || {};
     const onDone = typeof opts.onDone === 'function' ? opts.onDone : function () { return null; };
     const today = new Date().toISOString().slice(0, 10);
-    window.App.TransactionService.patchStatus(tx.accountId, tx.id, 'confirmed', today).then(function () {
-      window.toast('Lançamento confirmado', 'success');
-      return onDone();
-    }).catch(function (err) {
-      window.toast((err && err.message) || 'Falha ao confirmar', 'error');
+    window.runMutation(window.App.TransactionService.patchStatus(tx.accountId, tx.id, 'confirmed', today), {
+      success: 'Lançamento confirmado', failure: 'Falha ao confirmar', onDone: onDone,
     });
   }
 
@@ -801,23 +749,6 @@
  * editar/excluir resolvem o lançamento por trás de uma linha. */
 (function () {
   window.Pages = window.Pages || {};
-
-  // ── Constants ─────────────────────────────────────────────
-  const STATUS_LABEL = {
-    confirmed: 'Confirmado',
-    pending: 'Pendente',
-    scheduled: 'Agendado',
-    planed: 'Planejado',
-    balance: 'Saldo'
-  };
-  // Per task spec: pending=expense, scheduled=warning, confirmed=income.
-  const STATUS_BADGE = {
-    confirmed: 'income',
-    pending: 'expense',
-    scheduled: 'warning',
-    planed: 'info',
-    balance: 'muted'
-  };
 
   // ── State ─────────────────────────────────────────────────
   let state = null;
@@ -982,9 +913,9 @@
     const resultColor = sum.result >= 0 ? 'var(--income)' : 'var(--expense)';
     const $summary = $(
       '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:18px;">' +
-        summaryCardHtml('arrowUp',   'RECEITAS',  fmt(sum.income),  'var(--income)') +
-        summaryCardHtml('arrowDown', 'DESPESAS',  fmt(sum.expense), 'var(--expense)') +
-        summaryCardHtml('trendingUp','RESULTADO', fmt(sum.result),  resultColor) +
+        window.statCardHtml({ icon: 'arrowUp',    label: 'RECEITAS',  value: fmt(sum.income),  color: 'var(--income)' }) +
+        window.statCardHtml({ icon: 'arrowDown',  label: 'DESPESAS',  value: fmt(sum.expense), color: 'var(--expense)' }) +
+        window.statCardHtml({ icon: 'trendingUp', label: 'RESULTADO', value: fmt(sum.result),  color: resultColor }) +
       '</div>'
     );
     $page.append($summary);
@@ -1041,22 +972,6 @@
     }
   }
 
-  function summaryCardHtml(iconName, label, value, color) {
-    return (
-      '<div class="card" style="padding:14px 18px;display:flex;align-items:center;gap:12px;">' +
-        '<span style="color:' + color + ';display:flex;">' + window.icon(iconName, 20) + '</span>' +
-        '<div>' +
-          '<p style="font-size:11px;color:var(--text-muted);font-weight:600;letter-spacing:0.04em;">' +
-            esc(label) +
-          '</p>' +
-          '<p style="font-size:18px;font-weight:800;color:' + color + ';margin-top:2px;">' +
-            esc(value) +
-          '</p>' +
-        '</div>' +
-      '</div>'
-    );
-  }
-
   function chipBtn(val, label) {
     const active = state.filterType === val;
     const style =
@@ -1070,7 +985,6 @@
   }
 
   function renderAdvancedFilters() {
-    const accs = accountsList();
     // excludeRoots: true — raiz nunca casa contra tx.categoryId (só subcategoria é atribuível a um
     // lançamento), então oferecê-la no filtro só rende opção morta que nunca filtra nada.
     const catFieldHtml = window.categoryPickerHtml({
@@ -1082,13 +996,10 @@
       alwaysPlaceholder: true,
     });
 
-    const accOpts = '<option value="">Todas</option>' + accs.map(function (a) {
-      const sel = String(a.id) === String(state.filterAccount) ? ' selected' : '';
-      return '<option value="' + esc(a.id) + '"' + sel + '>' + esc(a.name) + '</option>';
-    }).join('');
+    const accOpts = window.accountOptionsHtml(state.filterAccount, { includeEmpty: true, emptyLabel: 'Todas', activeOnly: false });
 
     const stOpts = ['', 'confirmed', 'pending', 'scheduled', 'planed'].map(function (st) {
-      const lbl = st === '' ? 'Todos' : (STATUS_LABEL[st] || st);
+      const lbl = st === '' ? 'Todos' : window.Domain.Transaction.statusLabel(st);
       const sel = st === state.filterStatus ? ' selected' : '';
       return '<option value="' + esc(st) + '"' + sel + '>' + esc(lbl) + '</option>';
     }).join('');
@@ -1207,16 +1118,7 @@
           '</button>'
         : '';
       // Linha de cartões é derivada — edita-se cada compra no extrato do cartão.
-      const actionsHtml = tx.invoice ? '' :
-        markPaidHtml +
-        '<button type="button" class="icon-btn" title="Editar" ' +
-          'data-act="edit" data-id="' + esc(tx.id) + '" style="width:28px;height:28px;">' +
-          window.icon('edit', 14) +
-        '</button>' +
-        '<button type="button" class="icon-btn" title="Excluir" ' +
-          'data-act="trash" data-id="' + esc(tx.id) + '" style="width:28px;height:28px;color:var(--expense);">' +
-          window.icon('trash', 14) +
-        '</button>';
+      const actionsHtml = tx.invoice ? '' : window.rowActionsHtml(tx.id, { extra: markPaidHtml });
 
       // O link é um <a href> de verdade: o router é hash-based, então a navegação não precisa de
       // handler (e o deep-link fica copiável/abrível em nova aba).
@@ -1240,8 +1142,8 @@
           '<span style="' + catStyle + '">' + esc(catLbl) + '</span>' +
           window.tagFlagHtml(tx.tagIds) +
           descHtml +
-          '<span class="badge badge-' + esc(STATUS_BADGE[stKey] || 'muted') + '" ' +
-          'style="flex-shrink:0;">' + esc(STATUS_LABEL[stKey] || stKey) + '</span>' +
+          '<span class="badge badge-' + esc(window.Domain.Transaction.statusBadgeVariant(stKey)) + '" ' +
+          'style="flex-shrink:0;">' + esc(window.Domain.Transaction.statusLabel(stKey)) + '</span>' +
           '<span style="font-size:13px;font-weight:700;color:' + amtColor + ';min-width:100px;text-align:right;">' +
             esc(fmt(amt)) +
           '</span>' +

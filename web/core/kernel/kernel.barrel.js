@@ -27,52 +27,18 @@
     document.head.appendChild(s);
   }
 
+  const m = window.CDB_MANIFEST.kernel;
   const domainBase = 'core/kernel/_0_domain/';
-  const domainFiles = [
-    'period.js',
-    'money.js',
-    'category.js',
-    'tag.js',
-    'account.js',
-    'invoice.js',
-    'transaction.js',
-    'statement-item.js'
-  ];
+  const domainFiles = m.domain;
 
   const applicationBase = 'core/kernel/_1_application/';
-  const applicationFiles = [
-    'event-bus.js',
-    'cache-store.js',
-    'period-service.js',
-    'preferences-service.js',
-    'system-service.js',
-    'self-service.js',
-    'session-service.js'
-  ];
+  const applicationFiles = m.application;
 
   const secondaryBase = 'core/kernel/_2_infrastructure/secondary/';
-  const secondaryFiles = [
-    'storage.js',
-    'auth-store.js',
-    'http-client.js',
-    'self-repository.js',
-    'registry-bootstrap.js',
-    'sse-client.js'
-  ];
+  const secondaryFiles = m.secondary;
 
   const primaryBase = 'core/kernel/_2_infrastructure/primary/';
-  const primaryFiles = [
-    'icons.js',
-    'format.js',
-    'ui.js',
-    'helpers.js',
-    'pickers.js',
-    'delete-dialog.js',
-    'theme.js',
-    'sidebar.data.js',
-    'sidebar.js',
-    'router.js'
-  ];
+  const primaryFiles = m.primary;
 
   domainFiles.forEach(function (p) { inject(domainBase, p); });
   applicationFiles.forEach(function (p) { inject(applicationBase, p); });

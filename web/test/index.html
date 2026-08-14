@@ -13,48 +13,29 @@
 
   <script src="../vendor/jquery-4.0.0.slim.min.js"></script>
   <script src="vendor/qunit-2.24.1.js"></script>
+  <script src="../core/manifest.js"></script>
 
   <script>
     (function () {
       function inject(src) {
         const s = document.createElement('script');
-        s.src = src;
+        s.src = '../' + src;
         s.async = false;
         document.head.appendChild(s);
       }
-      // Mesma lista/ordem de core/kernel/kernel.barrel.js + core/boot.js, com '../' porque
-      // este harness vive um nível abaixo de web/. Não carrega core/composition-root/** —
-      // é quem faz o wiring de DI real (HTTP de verdade, renderiza a SPA em #app); testes
-      // injetam repo fake em vez disso.
-      [
-        'core/kernel/_0_domain/period.js', 'core/kernel/_0_domain/money.js',
-        'core/kernel/_0_domain/category.js', 'core/kernel/_0_domain/tag.js',
-        'core/kernel/_0_domain/account.js', 'core/kernel/_0_domain/invoice.js',
-        'core/kernel/_0_domain/transaction.js', 'core/kernel/_0_domain/statement-item.js',
-        'core/kernel/_1_application/event-bus.js', 'core/kernel/_1_application/cache-store.js',
-        'core/kernel/_1_application/period-service.js', 'core/kernel/_1_application/preferences-service.js',
-        'core/kernel/_1_application/system-service.js', 'core/kernel/_1_application/self-service.js',
-        'core/kernel/_1_application/session-service.js',
-        'core/kernel/_2_infrastructure/secondary/storage.js', 'core/kernel/_2_infrastructure/secondary/auth-store.js',
-        'core/kernel/_2_infrastructure/secondary/http-client.js', 'core/kernel/_2_infrastructure/secondary/self-repository.js',
-        'core/kernel/_2_infrastructure/secondary/registry-bootstrap.js', 'core/kernel/_2_infrastructure/secondary/sse-client.js',
-        'core/kernel/_2_infrastructure/primary/icons.js', 'core/kernel/_2_infrastructure/primary/format.js',
-        'core/kernel/_2_infrastructure/primary/ui.js', 'core/kernel/_2_infrastructure/primary/helpers.js',
-        'core/kernel/_2_infrastructure/primary/pickers.js', 'core/kernel/_2_infrastructure/primary/delete-dialog.js',
-        'core/kernel/_2_infrastructure/primary/theme.js', 'core/kernel/_2_infrastructure/primary/sidebar.data.js',
-        'core/kernel/_2_infrastructure/primary/sidebar.js', 'core/kernel/_2_infrastructure/primary/router.js',
-        'feature/reports.js', 'feature/cost-centers.js', 'feature/tags.js',
-        'feature/categories.js', 'feature/categories.api.js', 'feature/settings.js',
-        'feature/import-rules.js', 'feature/import-rules.api.js',
-        'feature/accounts.js', 'feature/accounts.api.js',
-        'feature/transactions.js', 'feature/transactions.api.js',
-        'feature/statement.js',
-        'feature/credit-cards.js', 'feature/credit-cards.api.js',
-        'feature/accounts-payable.js', 'feature/accounts-payable.api.js',
-        'feature/import-statement.js', 'feature/import-statement.api.js',
-        'feature/budget.js', 'feature/budget.api.js',
-        'feature/dashboard.js'
-      ].forEach(function (p) { inject('../' + p); });
+      // Mesma lista/ordem de core/kernel/kernel.barrel.js + core/boot.js — lida de
+      // window.CDB_MANIFEST (core/manifest.js) em vez de cópia local, pra não divergir de novo.
+      // Este harness vive um nível abaixo de web/, daí o prefixo '../'. Não carrega
+      // core/composition-root/** — é quem faz o wiring de DI real (HTTP de verdade, renderiza a
+      // SPA em #app); testes injetam repo fake em vez disso.
+      const k = window.CDB_MANIFEST.kernel;
+      const kernelFiles = []
+        .concat(k.domain.map(function (p) { return 'core/kernel/_0_domain/' + p; }))
+        .concat(k.application.map(function (p) { return 'core/kernel/_1_application/' + p; }))
+        .concat(k.secondary.map(function (p) { return 'core/kernel/_2_infrastructure/secondary/' + p; }))
+        .concat(k.primary.map(function (p) { return 'core/kernel/_2_infrastructure/primary/' + p; }));
+
+      kernelFiles.concat(window.CDB_MANIFEST.feature).forEach(inject);
     })();
   </script>
 

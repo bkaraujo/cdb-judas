@@ -154,6 +154,71 @@
     }
   }
 
+  /* ---- Promise-mutation tail ----
+   * Replaces the disable→then(close+toast)→catch(reEnable+toast) tail repeated ~40× across
+   * every create/update/remove call. `success`/`failure` may be a string or a function of the
+   * resolved value / error (so callers needing isEdit-style wording pass a closure). `onError`
+   * runs before the default failure toast and may return truthy to suppress it (e.g. to hand off
+   * to a 409 LINKED_TRANSACTIONS dialog instead of toasting a generic failure).
+   *   opts: { $btn, modal, success, failure, onDone, onError } */
+  function runMutation(promise, opts) {
+    opts = opts || {};
+    if (opts.$btn) opts.$btn.prop('disabled', true);
+    return promise.then(function (result) {
+      if (opts.modal) opts.modal.close();
+      const msg = typeof opts.success === 'function' ? opts.success(result) : opts.success;
+      if (msg) window.toast(msg, 'success');
+      if (opts.onDone) opts.onDone(result);
+      return result;
+    }).catch(function (err) {
+      if (opts.$btn) opts.$btn.prop('disabled', false);
+      if (opts.onError && opts.onError(err)) return;
+      const msg = typeof opts.failure === 'function'
+        ? opts.failure(err)
+        : (opts.failure || (err && err.message) || 'Falha ao salvar');
+      window.toast(msg, 'error');
+    });
+  }
+
+  /* ---- Form modal ----
+   * The skeleton every create/edit form modal repeats: modal({title,body,footer:saveCancelFooter()})
+   * → open() → locate the <form>, wire both the form's own submit AND the footer's Salvar button
+   * (which lives outside the <form>, in modal-footer). `onSubmit($form, m)` returns a Promise to
+   * run through runMutation, or a falsy value to abort (validation failed — onSubmit itself is
+   * responsible for focusing the offending field).
+   *   opts: { title, formName, body, autofocus, onSubmit, success, failure, onDone, onError,
+   *           footer: opts forwarded to saveCancelFooter } */
+  function formModal(opts) {
+    opts = opts || {};
+    const m = window.modal({
+      title: opts.title,
+      body: opts.body,
+      footer: saveCancelFooter(opts.footer),
+    });
+    m.open();
+
+    const $form = m.$body.find('form[data-form=' + opts.formName + ']');
+    if (opts.autofocus) {
+      setTimeout(function () { $form.find(opts.autofocus).trigger('focus'); }, 0);
+    }
+
+    function submit(e) {
+      if (e) e.preventDefault();
+      const result = opts.onSubmit($form, m);
+      if (!result) return;
+      const $btn = m.$el.find('[data-act=save]');
+      runMutation(result, {
+        $btn: $btn, modal: m,
+        success: opts.success, failure: opts.failure,
+        onDone: opts.onDone, onError: opts.onError,
+      });
+    }
+
+    $form.on('submit', submit);
+    m.$el.on('click', '[data-act=save]', submit);
+    return m;
+  }
+
   // Expose as convenience globals (pages call window.* like window.btn/window.esc).
   window.byId            = byId;
   window.modalFooter     = modalFooter;
@@ -163,4 +228,6 @@
   window.swatchesHtml    = swatchesHtml;
   window.bindSwatches    = bindSwatches;
   window.shiftMonth      = shiftMonth;
+  window.runMutation     = runMutation;
+  window.formModal       = formModal;
 })();
