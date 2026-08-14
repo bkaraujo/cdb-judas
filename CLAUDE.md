@@ -11,6 +11,7 @@ Gestor de finanças pessoais. Backend **Java 25 + Quarkus** (JVM mode); frontend
 | Arquitetura backend (VSA+Hexagonal, módulos Maven, fatias `fNNN` f000–f999, Result, Lombok, Null-Safety, JDBC/H2, qualidade & build, testes, diagramas de pacote/classe/atividade, schema do banco) | `secular/profissao/bkraujo/judas/backend` |
 | Arquitetura frontend (padrões 001–009, fatias físicas `web/feature/*`, contratos de API request/response JSON, seleção de categoria/tag, testes QUnit, diagramas) | `secular/profissao/bkraujo/judas/frontend` |
 | Regras de negócio (funcionalidades, contas, cartões, ciclo de fatura, transações, categorização, importação de extrato/fatura, fechamento de período) | `secular/profissao/bkraujo/judas/regras-negocio` |
+| Casos de uso — **página única**: tabela tela × endpoint (UI-001…UI-095 com diagrama de atividade cada; UC-001…UC-090 com objetivo, exceções, regras, endpoint/classe) | `secular/profissao/bkraujo/judas/casos-de-uso` |
 | Índice/overview do projeto | `secular/profissao/bkraujo/judas` |
 
 Use a skill `wikijs` para ler/atualizar essas páginas (GraphQL API ou UI em `http://localhost:3000`). **Ao editar código, atualize a página correspondente na wiki** — não recrie `docs/` local.
@@ -23,6 +24,8 @@ Use a skill `wikijs` para ler/atualizar essas páginas (GraphQL API ou UI em `ht
 
 ## Esqueleto rápido (para não precisar abrir a wiki toda vez)
 
-Módulos Maven: `br-parent` · `br-commons` · `br-context-people` + `br-context-monetary` (dissolvidos na fase 2 da migração — código vive hoje dentro das fatias `fNNN`) · `br-application` (`feature`/`core`/`infra`). `web/` não é módulo Maven, é copiado para `META-INF/resources` pelo pom de `br-application`.
+Módulos Maven (três, é o que o `<modules>` da raiz lista): `br-parent` · `br-commons` · `br-application` (`feature`/`core` — **não há `br.cdb.infra`**). `br-context-people`/`br-context-monetary` foram dissolvidos na fase 2 e não existem mais nem como diretório. `web/` não é módulo Maven, é copiado para `META-INF/resources` pelo pom de `br-application`.
+
+Config de runtime mora em **`application.yaml` na raiz** (árvore `cdb.*`, lida por `CoreModule` via system property `cdb.application.yaml`); `application.properties` só cuida de `quarkus.*` — as chaves `datasource.jdbc.*`/`DATASOURCE_JDBC_URL` foram removidas de lá (a interface `DataSourceProperties` sobrou no código, sem consumidor). DDL é por fatia (`FNNNModule.model()` + `Database.initialize`), sem migrações one-shot: mudou schema, apague `database.mv.db`.
 
 Fatias existentes: `f000`–`f007`, `f009`, `f010`, `f999`. Cross-slice sempre via evento (`br.commons.MessageBus`), `f000.InternalApi`, ou adapter em `f999._2_infrastructure.adapter` — nunca import direto de fatia irmã. Detalhes completos: página **backend** acima.
