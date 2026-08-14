@@ -92,6 +92,29 @@ public class F001SelfResourceTest extends BaseHttpTest {
                 .body("preferences.language", is("pt-BR"));
     }
 
+    /** PATCH duas vezes na mesma chave força o branch UPDATE de upsertPref (a primeira chamada
+     *  cai no INSERT) — nenhum outro teste da classe repete uma chave, então esse branch nunca
+     *  era exercitado (foi assim que a coluna TMS_UPDATED_AT, ausente num banco H2 antigo em
+     *  disco, escapou do mvn verify: os testes sempre recriam o schema a partir do model() atual,
+     *  então só uma incompatibilidade real entre o UPDATE e o DDL reproduz aqui). */
+    @Test
+    void patchPreferenciaExistenteAtualizaValor() {
+        userRepository.save(new User(TEST_USER_ID, "tester", null, "hash"));
+        seedName("Tester");
+
+        asTestUser()
+                .body("{\"preferences\":{\"theme\":\"dark\"}}")
+                .when().patch("/api/me")
+                .then().statusCode(200)
+                .body("preferences.theme", is("dark"));
+
+        asTestUser()
+                .body("{\"preferences\":{\"theme\":\"light\"}}")
+                .when().patch("/api/me")
+                .then().statusCode(200)
+                .body("preferences.theme", is("light"));
+    }
+
     @Test
     void patchSemTokenRetorna401() {
         RestAssured.given()
