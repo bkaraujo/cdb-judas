@@ -32,7 +32,7 @@
       const html = window.statementRowHtml(row, { showBalance: true, status: 'dot', isLast: false });
 
       assert.ok(html.indexOf('1.000,00') >= 0, 'mostra o saldo acumulado');
-      assert.ok(html.indexOf('background:var(--bg-hover)') >= 0, 'linha de header usa fundo destacado');
+      assert.ok(html.indexOf('is-header') >= 0, 'linha de header usa a classe de fundo destacado');
       assert.ok(html.indexOf('data-id=""') >= 0, 'header sem id de transação');
     });
 
@@ -41,7 +41,7 @@
       const row = { id: 5, date: '2026-03-10', description: 'Compra', amount: -80, status: 'pending', runningBal: 920, categoryId: 9, tagIds: [] };
 
       const withBorder = window.statementRowHtml(row, { showBalance: true, status: 'dot', isLast: false });
-      assert.ok(withBorder.indexOf('border-bottom:1px solid var(--border-light);') >= 0, 'linha do meio tem borda inferior');
+      assert.ok(withBorder.indexOf('is-last') === -1, 'linha do meio não tem a classe que omite a borda');
 
       const html = window.statementRowHtml(row, {
         showBalance: true, status: 'dot', isLast: true,
@@ -50,7 +50,7 @@
       assert.ok(html.indexOf('80,00') >= 0, 'mostra o valor da transação');
       assert.ok(html.indexOf('920,00') >= 0, 'mostra o saldo acumulado');
       assert.ok(html.indexOf('data-act="edit"') >= 0, 'callback de ações é chamado pra linhas normais');
-      assert.ok(html.indexOf('border-bottom:1px solid var(--border-light);') === -1, 'isLast omite a borda inferior');
+      assert.ok(html.indexOf('is-last') >= 0, 'isLast aplica a classe que omite a borda inferior');
     });
 
     QUnit.test('statementRowHtml esconde ações em linha de cabeçalho mesmo com actions() informado', function (assert) {

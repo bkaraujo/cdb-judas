@@ -567,6 +567,166 @@ button { font-family: var(--font); cursor: pointer; border: none; outline: none;
 .import-table-head-row { position: sticky; top: 0; background: var(--bg-hover); }
 .import-table tbody tr { border-top: 1px solid var(--border); }
 
+/* ───── Icon button size/tone modifiers (rowActionBtn/rowActionsHtml) ───── */
+.icon-btn-sm { width: 28px; height: 28px; }
+.chip-btn { width: 22px; height: 22px; }
+.icon-btn.is-danger { color: var(--expense); }
+
+/* ───── Progress bar ───── */
+.progress { height: 8px; background: var(--bg-hover); border-radius: 4px; overflow: hidden; }
+.progress-sm { height: 6px; border-radius: 3px; }
+.progress-fill { height: 100%; border-radius: inherit; transition: width 0.5s ease; }
+
+/* ───── Stat card ───── */
+.stat-card { padding: 16px 20px; }
+.stat-card--icon { padding: 14px 18px; display: flex; align-items: center; gap: 12px; }
+.stat-card-body--flex { flex: 1; }
+.stat-card-label { font-size: 11px; color: var(--text-muted); font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; }
+.stat-card-label--icon { text-transform: none; }
+.stat-card-value { font-size: 20px; font-weight: 800; margin-top: 4px; }
+.stat-card-value--icon { font-size: 18px; margin-top: 2px; }
+.stat-card-sub { font-size: 12px; color: var(--text-muted); margin-top: 4px; }
+
+/* ───── Type toggle (expense/income/transfer) ───── */
+.type-toggle-btn {
+  flex: 1; padding: 8px; border-radius: var(--radius-sm); font-size: 13px; font-weight: 600;
+  border: 1px solid var(--border); background: transparent; color: var(--text-secondary);
+  cursor: pointer; transition: all var(--transition);
+}
+.type-toggle-btn[disabled] { opacity: 0.55; cursor: not-allowed; }
+.type-toggle-btn.is-active.type-toggle-btn--expense { border-color: var(--expense); background: var(--expense-light); color: var(--expense); }
+.type-toggle-btn.is-active.type-toggle-btn--income  { border-color: var(--income);  background: var(--income-light);  color: var(--income); }
+.type-toggle-btn.is-active.type-toggle-btn--accent  { border-color: var(--accent);  background: var(--accent-light);  color: var(--accent); }
+
+/* ───── Selector button (extrato de contas/cartão, coluna esquerda) ───── */
+.selector-btn {
+  padding: 14px 16px; border-radius: var(--radius); text-align: left;
+  background: var(--bg-card); border: 1px solid var(--border); color: var(--text-primary);
+  cursor: pointer; font-weight: 400; font-size: 13px;
+  transition: all var(--transition); display: flex; flex-direction: column; gap: 4px;
+}
+.selector-btn.is-active { background: var(--accent-light); border-color: var(--accent); color: var(--accent); font-weight: 700; }
+.selector-btn-value { font-size: 11px; font-weight: 500; color: var(--text-muted); }
+.selector-btn.is-active .selector-btn-value { font-weight: 700; }
+
+/* ───── Color + name field (round swatch input + text + swatch grid) ───── */
+.form-color-field { display: flex; align-items: center; gap: 10px; }
+.form-color-field input[type=color] {
+  width: 40px; height: 40px; border: 1px solid var(--border); border-radius: 50%;
+  padding: 0; background: transparent; cursor: pointer; flex-shrink: 0;
+}
+.form-color-field-swatches { display: flex; gap: 6px; margin-top: 8px; flex-wrap: wrap; }
+
+/* ───── Swatches / icon picker ───── */
+.swatch { width: 22px; height: 22px; border-radius: 50%; cursor: pointer; flex-shrink: 0; padding: 0; border: 1px solid var(--border); }
+.swatch.is-active { border: 2px solid var(--text-primary); }
+.swatch-lg { width: 28px; height: 28px; border: 2px solid transparent; transition: transform var(--transition); }
+.swatch-lg.is-active { border-color: var(--text-primary); }
+.icon-pick { width: 34px; height: 34px; border: 1px solid var(--border); }
+.icon-pick.is-active { background: var(--accent-light); color: var(--accent); border-color: var(--accent); }
+
+/* ───── Tag chip (tela Tags) ───── */
+.tag-chip {
+  display: inline-flex; align-items: center; gap: 10px;
+  padding: 8px 14px; border-radius: 40px;
+  border: 1px solid var(--border); background: var(--bg-hover);
+  cursor: default; transition: all var(--transition);
+}
+.tag-chip.has-color { background: var(--bg-card); }
+.tag-chip:not(.has-color):hover { background: var(--bg-card); }
+.tag-chip-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; background: var(--text-muted); }
+.tag-chip-name { font-size: 13px; font-weight: 700; color: var(--text-secondary); }
+.tag-chip.has-color .tag-chip-name { color: var(--text-primary); }
+.tag-chip-actions { display: none; align-items: center; gap: 2px; margin-left: 2px; }
+.tag-chip:hover .tag-chip-actions { display: inline-flex; }
+
+/* ───── Menu flutuante (linha de A Pagar/Receber) ───── */
+.menu {
+  display: none; position: absolute; right: 0; top: 32px; z-index: 10;
+  background: var(--bg-surface); border: 1px solid var(--border); border-radius: var(--radius-sm);
+  min-width: 170px; box-shadow: 0 8px 24px rgba(0,0,0,0.25); padding: 4px;
+}
+.menu-item {
+  display: flex; align-items: center; gap: 8px; width: 100%; padding: 7px 10px;
+  font-size: 13px; font-weight: 500; color: var(--text-primary); background: transparent;
+  border: none; border-radius: var(--radius-sm); cursor: pointer; text-align: left;
+  transition: background var(--transition);
+}
+.menu-item:hover { background: var(--bg-hover); }
+.menu-item.is-danger { color: var(--expense); }
+
+/* ───── Credit card tile (banda em gradiente + uso + linhas por cartão) ───── */
+.cc-tile { padding: 20px; display: flex; flex-direction: column; gap: 14px; transition: border-color var(--transition); }
+.cc-band {
+  position: relative; overflow: hidden; min-height: 120px;
+  border-radius: var(--radius); padding: 20px; color: #fff;
+  background: linear-gradient(135deg, var(--cc-color), var(--cc-color-soft));
+}
+.cc-band-glow { position: absolute; right: -32px; top: -32px; width: 160px; height: 160px; border-radius: 50%; background: rgba(255,255,255,0.10); }
+.cc-band-label { display: flex; align-items: center; gap: 8px; font-size: 11px; font-weight: 700; letter-spacing: 0.12em; opacity: 0.75; }
+.cc-band-name { font-size: 18px; font-weight: 800; margin-top: 24px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cc-band-closing { position: absolute; bottom: 14px; left: 20px; font-size: 11px; opacity: 0.55; }
+.cc-band-due { position: absolute; bottom: 14px; right: 16px; font-size: 11px; opacity: 0.55; }
+.cc-usage-head { display: flex; justify-content: space-between; margin-bottom: 4px; }
+.cc-usage-label { font-size: 11px; color: var(--text-muted); font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; }
+.cc-usage-value { font-size: 12px; font-weight: 700; color: var(--text-primary); }
+.cc-usage-foot { display: flex; justify-content: space-between; margin-top: 6px; font-size: 12px; color: var(--text-muted); }
+.cc-row { display: flex; justify-content: space-between; align-items: center; padding: 9px 0; border-bottom: 1px solid var(--border-light); }
+.cc-row-last4 { font-size: 12px; color: var(--text-secondary); letter-spacing: 0.04em; }
+.cc-row-link { text-decoration: none; font-size: 12px; font-weight: 600; color: var(--accent); display: inline-flex; align-items: center; gap: 4px; }
+
+/* ───── Panel body scroll modifier (Visão Geral, "rolar painéis") ───── */
+.panel-body--scroll { overflow: auto; max-height: 340px; }
+
+/* ───── Statement row cells (statement-row.js) ───── */
+.stm-row.is-header { background: var(--bg-hover); }
+.stm-row:not(.is-last) { border-bottom: 1px solid var(--border-light); }
+.stm-cell-index { font-size: 12px; color: var(--text-muted); min-width: 24px; text-align: left; }
+.stm-cell-date { font-size: 12px; color: var(--text-muted); min-width: 56px; }
+.stm-cell-acc { font-size: 12px; color: var(--text-muted); text-align: left; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.stm-cell-cat { font-size: 12px; color: var(--text-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.stm-cell-desc {
+  flex: 1; font-size: 13px; font-weight: 500; color: var(--text-primary);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-transform: uppercase;
+}
+.stm-row.is-header .stm-cell-desc { font-weight: 700; color: var(--text-secondary); }
+.stm-cell-desc--link { color: var(--accent); text-decoration: none; }
+.stm-cell-amount, .stm-cell-balance { font-size: 13px; font-weight: 700; min-width: 100px; text-align: right; }
+.stm-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+.stm-dot--confirmed { background: var(--income); }
+.stm-dot--pending { background: var(--warning); }
+.stm-dot--balance { background: var(--text-muted); }
+
+/* ───── Row actions (linha "badge", ex.: Lançamentos) ───── */
+.row-actions { display: flex; align-items: center; justify-content: flex-end; gap: 2px; width: 40px; flex-shrink: 0; }
+
+/* ───── Account card (grade de Contas) ───── */
+.account-card {
+  padding: 0; overflow: hidden; position: relative; display: flex; flex-direction: column;
+  transition: transform var(--transition), border-color var(--transition);
+}
+.account-card-band { height: 4px; }
+.account-card-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; padding: 16px 16px 8px 16px; }
+.account-card-left { display: flex; align-items: center; gap: 12px; min-width: 0; flex: 1; }
+.account-card-icon {
+  width: 40px; height: 40px; border-radius: 10px; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+}
+.account-card-title { min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.account-card-name { font-size: 14px; font-weight: 700; color: var(--text-primary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.account-card-type { font-size: 12px; color: var(--text-muted); font-weight: 500; }
+.account-card-actions { display: flex; gap: 2px; flex-shrink: 0; }
+.account-card-value { padding: 6px 16px 16px 16px; }
+.account-card-value-label { font-size: 11px; color: var(--text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; }
+.account-card-value-amount { font-size: 20px; font-weight: 800; margin-top: 2px; }
+.account-card-cards { display: flex; align-items: center; gap: 6px; padding: 0 16px 14px 16px; font-size: 12px; color: var(--text-muted); }
+.account-card-cards span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.account-card-footer {
+  padding: 8px 16px; border-top: 1px solid var(--border-light);
+  font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em;
+  color: var(--text-muted);
+}
+
 /* ───── Chips ───── */
 .chip-group { display: flex; flex-wrap: wrap; gap: 8px; }
 .chip {

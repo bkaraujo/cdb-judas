@@ -36,16 +36,28 @@
    * `opts` accepts { danger, size, iconSize, act } — `act` defaults to `iconName` (data-act), but
    * some rows dispatch a different action than the icon shown (e.g. icon 'eye' / act 'reactivate').
    * A plain boolean 4th arg is still accepted as shorthand for { danger: bool } (existing callers). */
+  // Tamanho vira classe fixa nos dois casos comuns (28px = a maioria das linhas, 22px = chip de
+  // tag); qualquer outro valor é genuinamente dinâmico e continua inline.
+  function iconBtnSizeClass(size) {
+    if (size === 28) return ' icon-btn-sm';
+    if (size === 22) return ' chip-btn';
+    return '';
+  }
+  function iconBtnSizeStyle(size, cls) {
+    return cls ? '' : 'width:' + size + 'px;height:' + size + 'px;';
+  }
+
   function rowActionBtn(iconName, title, id, opts) {
     if (opts === true || opts === false || opts == null) opts = { danger: !!opts };
     const size = opts.size || 28;
     const iconSize = opts.iconSize || 14;
-    const color = opts.danger ? 'var(--expense)' : 'var(--text-secondary)';
-    const act = opts.act || iconName;
+    const sizeCls = iconBtnSizeClass(size);
+    const sizeStyle = iconBtnSizeStyle(size, sizeCls);
+    const cls = 'icon-btn' + sizeCls + (opts.danger ? ' is-danger' : '');
     return $(
-      '<button type="button" class="icon-btn" title="' + esc(title) + '" ' +
-        'data-act="' + esc(act) + '" data-id="' + esc(id) + '" ' +
-        'style="width:' + size + 'px;height:' + size + 'px;color:' + color + ';">' +
+      '<button type="button" class="' + cls + '" title="' + esc(title) + '" ' +
+        'data-act="' + esc(opts.act || iconName) + '" data-id="' + esc(id) + '"' +
+        (sizeStyle ? ' style="' + sizeStyle + '"' : '') + '>' +
         window.icon(iconName, iconSize) +
       '</button>'
     );
@@ -59,10 +71,12 @@
     function btnHtml(iconName, title, act, danger) {
       const size = opts.size || 28;
       const iconSize = opts.iconSize || 14;
-      const color = danger ? 'var(--expense)' : 'var(--text-secondary)';
-      return '<button type="button" class="icon-btn" title="' + esc(title) + '" ' +
-        'data-act="' + esc(act) + '" data-id="' + esc(id) + '" ' +
-        'style="width:' + size + 'px;height:' + size + 'px;color:' + color + ';">' +
+      const sizeCls = iconBtnSizeClass(size);
+      const sizeStyle = iconBtnSizeStyle(size, sizeCls);
+      const cls = 'icon-btn' + sizeCls + (danger ? ' is-danger' : '');
+      return '<button type="button" class="' + cls + '" title="' + esc(title) + '" ' +
+        'data-act="' + esc(act) + '" data-id="' + esc(id) + '"' +
+        (sizeStyle ? ' style="' + sizeStyle + '"' : '') + '>' +
         window.icon(iconName, iconSize) +
       '</button>';
     }
@@ -87,13 +101,10 @@
   function progressBarHtml(pct, color, opts) {
     opts = opts || {};
     const sm = opts.size === 'sm';
-    const h = sm ? 6 : 8;
-    const r = sm ? 3 : 4;
-    const mb = opts.marginBottom ? 'margin-bottom:' + opts.marginBottom + ';' : '';
+    const mb = opts.marginBottom ? ' style="margin-bottom:' + opts.marginBottom + ';"' : '';
     return (
-      '<div style="height:' + h + 'px;background:var(--bg-hover);border-radius:' + r + 'px;overflow:hidden;' + mb + '">' +
-        '<div style="height:100%;border-radius:' + r + 'px;width:' + pct + '%;' +
-          'background:' + color + ';transition:width 0.5s ease;"></div>' +
+      '<div class="progress' + (sm ? ' progress-sm' : '') + '"' + mb + '>' +
+        '<div class="progress-fill" style="width:' + pct + '%;background:' + color + ';"></div>' +
       '</div>'
     );
   }
@@ -107,22 +118,19 @@
     opts = opts || {};
     const color = opts.color || 'var(--text-primary)';
     const hasIcon = !!opts.icon;
-    const labelHtml =
-      '<p style="font-size:11px;color:var(--text-muted);font-weight:600;letter-spacing:0.04em;' +
-        (hasIcon ? '' : 'text-transform:uppercase;') + '">' + esc(opts.label || '') + '</p>';
-    const valueHtml =
-      '<p style="font-size:' + (hasIcon ? '18px' : '20px') + ';font-weight:800;color:' + color + ';' +
-        'margin-top:' + (hasIcon ? '2px' : '4px') + ';">' + esc(opts.value != null ? opts.value : '') + '</p>';
-    const subHtml = opts.sub
-      ? '<p style="font-size:12px;color:var(--text-muted);margin-top:4px;">' + esc(opts.sub) + '</p>'
-      : '';
-    const body = '<div' + (hasIcon ? '' : ' style="flex:1;"') + '>' + labelHtml + valueHtml + subHtml + '</div>';
+    const labelHtml = '<p class="stat-card-label' + (hasIcon ? ' stat-card-label--icon' : '') + '">' +
+      esc(opts.label || '') + '</p>';
+    const valueHtml = '<p class="stat-card-value' + (hasIcon ? ' stat-card-value--icon' : '') +
+      '" style="color:' + color + ';">' + esc(opts.value != null ? opts.value : '') + '</p>';
+    const subHtml = opts.sub ? '<p class="stat-card-sub">' + esc(opts.sub) + '</p>' : '';
+    const body = '<div class="stat-card-body' + (hasIcon ? '' : ' stat-card-body--flex') + '">' +
+      labelHtml + valueHtml + subHtml + '</div>';
     if (opts.bare) return body;
     if (hasIcon) {
-      return '<div class="card" style="padding:14px 18px;display:flex;align-items:center;gap:12px;">' +
+      return '<div class="card stat-card stat-card--icon">' +
         '<span style="color:' + color + ';display:flex;">' + window.icon(opts.icon, 20) + '</span>' + body + '</div>';
     }
-    return '<div class="card" style="padding:16px 20px;">' + body + '</div>';
+    return '<div class="card stat-card">' + body + '</div>';
   }
 
   /* ---- Type toggle (expense/income[/transfer]) ----
@@ -135,15 +143,10 @@
     const disabled = !!opts.disabled;
     return (options || []).map(function (o) {
       const active = o.value === activeValue;
-      return '<button type="button" data-act="' + esc(opts.act || 'set-form-type') + '" ' +
+      const cls = 'type-toggle-btn' + (active ? ' is-active type-toggle-btn--' + esc(o.color) : '');
+      return '<button type="button" class="' + cls + '" data-act="' + esc(opts.act || 'set-form-type') + '" ' +
         'data-type="' + esc(o.value) + '" ' +
-        (disabled ? 'disabled title="' + esc(opts.disabledTitle || '') + '" ' : '') +
-        'style="flex:1;padding:8px;border-radius:var(--radius-sm);font-size:13px;font-weight:600;' +
-        'border:1px solid ' + (active ? 'var(--' + o.color + ')' : 'var(--border)') + ';' +
-        'background:' + (active ? 'var(--' + o.color + '-light)' : 'transparent') + ';' +
-        'color:' + (active ? 'var(--' + o.color + ')' : 'var(--text-secondary)') + ';' +
-        'opacity:' + (disabled ? '0.55' : '1') + ';' +
-        'cursor:' + (disabled ? 'not-allowed' : 'pointer') + ';transition:all var(--transition);">' +
+        (disabled ? 'disabled title="' + esc(opts.disabledTitle || '') + '"' : '') + '>' +
         esc(o.label) +
       '</button>';
     }).join('');
@@ -156,18 +159,13 @@
   function selectorButtonHtml(opts) {
     opts = opts || {};
     const active = !!opts.active;
-    const style =
-      'padding:14px 16px;border-radius:var(--radius);text-align:left;' +
-      'background:' + (active ? 'var(--accent-light)' : 'var(--bg-card)') + ';' +
-      'border:1px solid ' + (active ? 'var(--accent)' : 'var(--border)') + ';' +
-      'color:' + (active ? 'var(--accent)' : 'var(--text-primary)') + ';' +
-      'cursor:pointer;font-weight:' + (active ? '700' : '400') + ';font-size:13px;' +
-      'transition:all var(--transition);display:flex;flex-direction:column;gap:4px;';
-    return '<button type="button" class="' + esc(opts.cls || 'stm') + '" ' +
-      'data-act="' + esc(opts.act || 'select-account') + '" data-id="' + esc(opts.id) + '" style="' + style + '">' +
+    const cls = 'selector-btn' + (active ? ' is-active' : '') + (opts.cls ? ' ' + esc(opts.cls) : '');
+    return '<button type="button" class="' + cls + '" ' +
+      'data-act="' + esc(opts.act || 'select-account') + '" data-id="' + esc(opts.id) + '">' +
       '<span>' + esc(opts.title) + '</span>' +
-      '<span style="font-size:11px;color:' + (opts.valueColor || 'var(--text-muted)') + ';font-weight:' +
-        (active ? '700' : '500') + ';">' + esc(opts.value) + '</span>' +
+      '<span class="selector-btn-value" style="color:' + (opts.valueColor || 'var(--text-muted)') + ';">' +
+        esc(opts.value) +
+      '</span>' +
     '</button>';
   }
 
@@ -180,16 +178,15 @@
   function colorNameFieldHtml(opts) {
     opts = opts || {};
     const swatches = window.swatchesHtml(opts.swatches || window.PALETTE.swatches, opts.color);
+    const mt = opts.swatchMarginTop ? ' style="margin-top:' + esc(opts.swatchMarginTop) + ';"' : '';
     return (
       '<label class="form-label" for="' + esc(opts.nameId) + '">Nome</label>' +
-      '<div style="display:flex;align-items:center;gap:10px;">' +
-        '<input id="' + esc(opts.colorId) + '" name="color" type="color" value="' + esc(opts.color) + '" ' +
-          'style="width:40px;height:40px;border:1px solid var(--border);border-radius:50%;padding:0;' +
-          'background:transparent;cursor:pointer;flex-shrink:0;" />' +
+      '<div class="form-color-field">' +
+        '<input id="' + esc(opts.colorId) + '" name="color" type="color" value="' + esc(opts.color) + '" />' +
         '<input id="' + esc(opts.nameId) + '" name="name" type="text" required ' +
           'placeholder="' + esc(opts.placeholder || '') + '" value="' + esc(opts.nameValue || '') + '" />' +
       '</div>' +
-      '<div data-region="swatches" style="display:flex;gap:6px;margin-top:' + (opts.swatchMarginTop || '8px') + ';flex-wrap:wrap;">' +
+      '<div class="form-color-field-swatches" data-region="swatches"' + mt + '>' +
         swatches +
       '</div>'
     );

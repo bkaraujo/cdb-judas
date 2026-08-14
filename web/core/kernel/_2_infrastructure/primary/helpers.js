@@ -107,10 +107,9 @@
   function swatchesHtml(colors, selectedHex) {
     return colors.map(function (c) {
       const isSel = c.toLowerCase() === String(selectedHex || '').toLowerCase();
-      return '<button type="button" data-swatch="' + window.esc(c) + '" ' +
-        'style="width:22px;height:22px;border-radius:50%;cursor:pointer;' +
-        'border:' + (isSel ? '2px solid var(--text-primary)' : '1px solid var(--border)') + ';' +
-        'background:' + window.esc(c) + ';padding:0;flex-shrink:0;" title="' + window.esc(c) + '"></button>';
+      return '<button type="button" class="swatch' + (isSel ? ' is-active' : '') + '" ' +
+        'data-swatch="' + window.esc(c) + '" style="background:' + window.esc(c) + ';" ' +
+        'title="' + window.esc(c) + '"></button>';
     }).join('');
   }
 

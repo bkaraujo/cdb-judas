@@ -335,21 +335,16 @@
     const colorSwatches = window.PALETTE.swatches.map(function (c) {
       const active = c === initColor;
       return (
-        '<button type="button" data-color-pick="' + esc(c) + '" ' +
-          'style="width:28px;height:28px;border-radius:50%;background:' + esc(c) + ';' +
-          'border:2px solid ' + (active ? 'var(--text-primary)' : 'transparent') + ';' +
-          'cursor:pointer;flex-shrink:0;transition:transform var(--transition);"></button>'
+        '<button type="button" class="swatch swatch-lg' + (active ? ' is-active' : '') + '" ' +
+          'data-color-pick="' + esc(c) + '" style="background:' + esc(c) + ';"></button>'
       );
     }).join('');
 
     const iconChoices = ICON_CHOICES.map(function (n) {
       const active = n === initIcon;
       return (
-        '<button type="button" data-icon-pick="' + esc(n) + '" ' +
-          'class="icon-btn" style="width:34px;height:34px;' +
-          'background:' + (active ? 'var(--accent-light)' : 'transparent') + ';' +
-          'color:' + (active ? 'var(--accent)' : 'var(--text-secondary)') + ';' +
-          'border:1px solid ' + (active ? 'var(--accent)' : 'var(--border)') + ';">' +
+        '<button type="button" class="icon-btn icon-pick' + (active ? ' is-active' : '') + '" ' +
+          'data-icon-pick="' + esc(n) + '">' +
           window.icon(n, 16) +
         '</button>'
       );
@@ -427,8 +422,7 @@
       const c = $(this).attr('data-color-pick');
       m.$body.find('input[name=color]').val(c);
       m.$body.find('[data-color-pick]').each(function () {
-        const active = $(this).attr('data-color-pick') === c;
-        $(this).css('border', '2px solid ' + (active ? 'var(--text-primary)' : 'transparent'));
+        $(this).toggleClass('is-active', $(this).attr('data-color-pick') === c);
       });
     });
 
@@ -437,12 +431,7 @@
       const name = $(this).attr('data-icon-pick');
       m.$body.find('input[name=icon]').val(name);
       m.$body.find('[data-icon-pick]').each(function () {
-        const active = $(this).attr('data-icon-pick') === name;
-        $(this).css({
-          background: active ? 'var(--accent-light)' : 'transparent',
-          color:      active ? 'var(--accent)'       : 'var(--text-secondary)',
-          border:     '1px solid ' + (active ? 'var(--accent)' : 'var(--border)'),
-        });
+        $(this).toggleClass('is-active', $(this).attr('data-icon-pick') === name);
       });
     });
 

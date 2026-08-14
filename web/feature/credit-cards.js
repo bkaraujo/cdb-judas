@@ -308,59 +308,34 @@
     const available = window.Domain.CreditCard.availableCredit(limit, accountUsed);
 
     const $card = $(
-      '<div class="card cc" data-account-id="' + esc(account.id) + '" style="' +
-        'padding:20px;display:flex;flex-direction:column;gap:14px;' +
-        'transition:border-color var(--transition);' +
-      '"></div>'
+      '<div class="card cc cc-tile" data-account-id="' + esc(account.id) + '"></div>'
     );
 
     // ── Visual band (gradient) — cor/nome da conta ─────────
-    const bandStyle =
-      'position:relative;overflow:hidden;min-height:120px;' +
-      'border-radius:var(--radius);padding:20px;color:#fff;' +
-      'background:linear-gradient(135deg, ' + esc(color) + ', ' + esc(color) + '99);';
-
-    const $header = $('<div style="' + bandStyle + '"></div>');
+    const $header = $('<div class="cc-band" style="--cc-color:' + esc(color) + ';--cc-color-soft:' + esc(color) + '99;"></div>');
+    $header.append('<div class="cc-band-glow"></div>');
     $header.append(
-      '<div style="position:absolute;right:-32px;top:-32px;width:160px;height:160px;' +
-        'border-radius:50%;background:rgba(255,255,255,0.10);"></div>'
-    );
-    $header.append(
-      '<div style="display:flex;align-items:center;gap:8px;' +
-        'font-size:11px;font-weight:700;letter-spacing:0.12em;opacity:0.75;">' +
+      '<div class="cc-band-label">' +
         window.icon('creditCard', 14) +
         '<span>CRÉDITO' + (account.active === false ? ' · INATIVA' : '') + '</span>' +
       '</div>'
     );
     $header.append(
-      '<div style="font-size:18px;font-weight:800;margin-top:24px;' +
-        'overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' +
-        esc(account.name || '—') +
-      '</div>'
+      '<div class="cc-band-name">' + esc(account.name || '—') + '</div>'
     );
-    $header.append(
-      '<div style="position:absolute;bottom:14px;left:20px;font-size:11px;opacity:0.55;">' +
-        'Fecha dia ' + esc(closingDay) +
-      '</div>'
-    );
-    $header.append(
-      '<div style="position:absolute;bottom:14px;right:16px;font-size:11px;opacity:0.55;">' +
-        'Vence dia ' + esc(dueDay) +
-      '</div>'
-    );
+    $header.append('<div class="cc-band-closing">Fecha dia ' + esc(closingDay) + '</div>');
+    $header.append('<div class="cc-band-due">Vence dia ' + esc(dueDay) + '</div>');
     $card.append($header);
 
     // ── Shared usage bar (account-level: all of the account's cards combined) ─
     const $usage = $(
         '<div>' +
-        '<div style="display:flex;justify-content:space-between;margin-bottom:4px;">' +
-        '<span style="font-size:11px;color:var(--text-muted);font-weight:700;' +
-        'text-transform:uppercase;letter-spacing:0.04em;">Limite da conta</span>' +
-        '<span style="font-size:12px;font-weight:700;color:var(--text-primary);">' + esc(fmt(limit)) + '</span>' +
+        '<div class="cc-usage-head">' +
+        '<span class="cc-usage-label">Limite da conta</span>' +
+        '<span class="cc-usage-value">' + esc(fmt(limit)) + '</span>' +
         '</div>' +
         window.progressBarHtml(pct.toFixed(1), barColor) +
-        '<div style="display:flex;justify-content:space-between;margin-top:6px;' +
-        'font-size:12px;color:var(--text-muted);">' +
+        '<div class="cc-usage-foot">' +
         '<span>' + esc(pct.toFixed(0)) + '% utilizado</span>' +
         '<span>' + esc(fmt(available)) + ' disponível</span>' +
         '</div>' +
@@ -378,15 +353,10 @@
         : '<span style="font-size:14px;font-weight:800;color:' +
             (used > 0 ? 'var(--expense)' : 'var(--text-primary)') + ';">' + esc(fmt(used)) + '</span>';
       $rows.append(
-        '<div style="display:flex;justify-content:space-between;align-items:center;' +
-          'padding:9px 0;border-bottom:1px solid var(--border-light);">' +
-          '<span style="font-size:12px;color:var(--text-secondary);letter-spacing:0.04em;">' +
-            '•••• ' + esc(c.last4) +
-          '</span>' +
+        '<div class="cc-row">' +
+          '<span class="cc-row-last4">•••• ' + esc(c.last4) + '</span>' +
           valueHtml +
-          '<a href="#/card-statement/' + esc(c.id) + '" ' +
-            'style="text-decoration:none;font-size:12px;' +
-            'font-weight:600;color:var(--accent);display:inline-flex;align-items:center;gap:4px;">' +
+          '<a href="#/card-statement/' + esc(c.id) + '" class="cc-row-link">' +
             'Ver fatura ' + window.icon('chevronRight', 12) +
           '</a>' +
         '</div>'

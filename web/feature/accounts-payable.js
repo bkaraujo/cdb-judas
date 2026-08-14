@@ -297,24 +297,19 @@
               esc(fmt(amtAbs)) +
             '</span>' +
             '<div style="position:relative;">' +
-              '<button type="button" class="icon-btn" data-act="menu" data-id="' + esc(item.id) + '" ' +
-                'style="width:28px;height:28px;">' +
+              '<button type="button" class="icon-btn icon-btn-sm" data-act="menu" data-id="' + esc(item.id) + '">' +
                 window.icon('moreVertical', 14) +
               '</button>' +
-              '<div class="ap-menu" data-menu-for="' + esc(item.id) + '" ' +
-                'style="display:none;position:absolute;right:0;top:32px;z-index:10;background:var(--bg-surface);' +
-                'border:1px solid var(--border);border-radius:var(--radius-sm);min-width:170px;' +
-                'box-shadow:0 8px 24px rgba(0,0,0,0.25);padding:4px;">' +
+              '<div class="menu" data-menu-for="' + esc(item.id) + '">' +
                 (st !== 'confirmed'
-                  ? '<button type="button" class="ap-menu-item" data-act="mark-paid" data-id="' + esc(item.id) + '">' +
+                  ? '<button type="button" class="menu-item" data-act="mark-paid" data-id="' + esc(item.id) + '">' +
                       window.icon('check', 14) + '<span>Marcar como pago</span>' +
                     '</button>'
                   : '') +
-                '<button type="button" class="ap-menu-item" data-act="edit" data-id="' + esc(item.id) + '">' +
+                '<button type="button" class="menu-item" data-act="edit" data-id="' + esc(item.id) + '">' +
                   window.icon('edit', 14) + '<span>Editar</span>' +
                 '</button>' +
-                '<button type="button" class="ap-menu-item" data-act="trash" data-id="' + esc(item.id) + '" ' +
-                  'style="color:var(--expense);">' +
+                '<button type="button" class="menu-item is-danger" data-act="trash" data-id="' + esc(item.id) + '">' +
                   window.icon('trash', 14) + '<span>Excluir</span>' +
                 '</button>' +
               '</div>' +
@@ -325,19 +320,6 @@
 
       $card.append($row);
     });
-
-    // Inject menu-item styling once.
-    if (!$card.find('style[data-ap-menu]').length) {
-      $card.prepend(
-        '<style data-ap-menu>' +
-          '.ap-menu-item{display:flex;align-items:center;gap:8px;width:100%;padding:7px 10px;' +
-          'font-size:13px;font-weight:500;color:var(--text-primary);background:transparent;' +
-          'border:none;border-radius:var(--radius-sm);cursor:pointer;text-align:left;' +
-          'transition:background var(--transition);}' +
-          '.ap-menu-item:hover{background:var(--bg-hover);}' +
-        '</style>'
-      );
-    }
 
     return $card;
   }
@@ -503,7 +485,7 @@
   // ── Menu toggle / outside-click close ─────────────────────
   function closeAllMenus() {
     if (!state || !state.$root) return;
-    state.$root.find('.ap-menu').hide();
+    state.$root.find('.menu').hide();
   }
 
   function bindRoot($root) {
@@ -512,7 +494,7 @@
     $root.on('click.ap', '[data-act=menu]', function (e) {
       e.stopPropagation();
       const id = $(this).attr('data-id');
-      const $menu = $root.find('.ap-menu[data-menu-for="' + id + '"]');
+      const $menu = $root.find('.menu[data-menu-for="' + id + '"]');
       const wasOpen = $menu.is(':visible');
       closeAllMenus();
       if (!wasOpen) $menu.show();

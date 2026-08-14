@@ -49,56 +49,38 @@
     const catLbl = cat ? window.categoryLabel(cat) : '';
     const amt = Number(row.amount) || 0;
 
-    const rowStyle =
-      'display:flex;align-items:center;gap:16px;padding:11px 20px;' +
-      (opts.isLast ? '' : 'border-bottom:1px solid var(--border-light);') +
-      'background:' + (isHeader ? 'var(--bg-hover)' : 'transparent') + ';' +
-      'transition:background var(--transition);';
+    const rowCls = 'stm-row' + (isHeader ? ' is-header' : '') + (opts.isLast ? ' is-last' : '');
 
-    const descStyle =
-      'flex:1;font-size:13px;font-weight:' + (isHeader ? '700' : '500') + ';' +
-      'color:' + (isHeader ? 'var(--text-secondary)' : 'var(--text-primary)') + ';' +
-      'overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-transform:uppercase;';
-
-    const catStyle =
-      'flex:0 0 ' + cols.catColCh + 'ch;width:' + cols.catColCh + 'ch;' +
-      'font-size:12px;color:var(--text-muted);' +
-      'overflow:hidden;text-overflow:ellipsis;white-space:nowrap;';
+    // Larguras fixas (catColCh/accColCh) são dinâmicas por catálogo — inline de propósito.
+    const catStyle = 'flex:0 0 ' + cols.catColCh + 'ch;width:' + cols.catColCh + 'ch;';
 
     const indexHtml = opts.index != null
-      ? '<span style="font-size:12px;color:var(--text-muted);min-width:24px;text-align:left;">' +
-          esc(opts.index) +
-        '</span>'
+      ? '<span class="stm-cell-index">' + esc(opts.index) + '</span>'
       : '';
 
     const accHtml = opts.showAccount
-      ? '<span style="flex:0 0 ' + cols.accColCh + 'ch;width:' + cols.accColCh + 'ch;' +
-          'font-size:12px;color:var(--text-muted);text-align:left;' +
-          'overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' +
+      ? '<span class="stm-cell-acc" style="flex:0 0 ' + cols.accColCh + 'ch;width:' + cols.accColCh + 'ch;">' +
           esc(opts.accountName || '—') +
         '</span>'
       : '';
 
     const descText = window.Domain.Transaction.describe(row) || '—';
     const descHtml = (opts.invoiceLink && row.invoice)
-      ? '<a href="#/credit-cards" style="' + descStyle + 'color:var(--accent);text-decoration:none;">' +
-          esc(descText) +
-        '</a>'
-      : '<span style="' + descStyle + '">' + esc(descText) + '</span>';
+      ? '<a href="#/credit-cards" class="stm-cell-desc stm-cell-desc--link">' + esc(descText) + '</a>'
+      : '<span class="stm-cell-desc">' + esc(descText) + '</span>';
 
     // Extrato (dot): some se for cabeçalho ou valor zerado. Lançamentos (badge): sempre.
     const amountVisible = opts.showBalance ? (!isHeader && amt !== 0) : true;
     const amountColor = opts.showBalance ? window.valueColor(amt) :
       (row.type === 'income' ? 'var(--income)' : row.type === 'transfer' ? 'var(--text-secondary)' : 'var(--expense)');
     const amountHtml = amountVisible
-      ? '<span style="font-size:13px;font-weight:700;color:' + amountColor + ';min-width:100px;text-align:right;">' +
-          esc(fmt(amt)) +
-        '</span>'
+      ? '<span class="stm-cell-amount" style="color:' + amountColor + ';">' + esc(fmt(amt)) + '</span>'
       : '';
 
     const balanceHtml = opts.showBalance
-      ? '<span style="font-size:13px;font-weight:700;color:' + window.valueColor(window.Domain.StatementItem.runningBalance(row)) + ';' +
-          'min-width:100px;text-align:right;">' + esc(fmt(window.Domain.StatementItem.runningBalance(row))) + '</span>'
+      ? '<span class="stm-cell-balance" style="color:' + window.valueColor(window.Domain.StatementItem.runningBalance(row)) + ';">' +
+          esc(fmt(window.Domain.StatementItem.runningBalance(row))) +
+        '</span>'
       : '';
 
     const stKey = row.status || 'confirmed';
@@ -107,30 +89,29 @@
           esc(window.Domain.Transaction.statusLabel(stKey)) +
         '</span>'
       : (function () {
-          const dotColor =
-            row.status === 'confirmed' ? 'var(--income)' :
-            isHeader ? 'var(--text-muted)' : 'var(--warning)';
-          return '<div style="width:8px;height:8px;border-radius:50%;flex-shrink:0;background:' + dotColor + ';"></div>';
+          const dotVariant =
+            row.status === 'confirmed' ? 'confirmed' :
+            isHeader ? 'balance' : 'pending';
+          return '<div class="stm-dot stm-dot--' + dotVariant + '"></div>';
         })();
 
     const actionsInner = isHeader ? '' : (opts.actions ? opts.actions(row) : '');
     const actionsHtml = opts.status === 'badge'
-      ? '<div style="display:flex;align-items:center;justify-content:flex-end;gap:2px;width:40px;flex-shrink:0;">' + actionsInner + '</div>'
+      ? '<div class="row-actions">' + actionsInner + '</div>'
       : '<div class="stm-row-actions">' + actionsInner + '</div>';
 
     const cells = opts.status === 'badge'
       ? (indexHtml +
-          '<span style="font-size:12px;color:var(--text-muted);min-width:56px;">' + esc(fmtDate(row.date)) + '</span>' +
+          '<span class="stm-cell-date">' + esc(fmtDate(row.date)) + '</span>' +
           accHtml +
-          '<span style="' + catStyle + '">' + esc(catLbl) + '</span>' +
+          '<span class="stm-cell-cat" style="' + catStyle + '">' + esc(catLbl) + '</span>' +
           window.tagFlagHtml(row.tagIds) +
           descHtml +
           statusHtml +
           amountHtml +
           actionsHtml)
-      : ('<span style="font-size:12px;color:var(--text-muted);min-width:56px;">' +
-          esc(row.date ? fmtDate(row.date) : '') + '</span>' +
-          '<span style="' + catStyle + '">' + esc(catLbl) + '</span>' +
+      : ('<span class="stm-cell-date">' + esc(row.date ? fmtDate(row.date) : '') + '</span>' +
+          '<span class="stm-cell-cat" style="' + catStyle + '">' + esc(catLbl) + '</span>' +
           window.tagFlagHtml(row.tagIds) +
           descHtml +
           amountHtml +
@@ -138,7 +119,7 @@
           statusHtml +
           actionsHtml);
 
-    return '<div class="stm-row" data-id="' + esc(row.id || '') + '" style="' + rowStyle + '">' + cells + '</div>';
+    return '<div class="' + rowCls + '" data-id="' + esc(row.id || '') + '">' + cells + '</div>';
   }
 
   window.statementColumns = statementColumns;

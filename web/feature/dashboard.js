@@ -736,14 +736,9 @@
   // ── Panel skeleton (PanelWrap) ───────────────────────────────
   function panelWrap(opts) {
     // opts: { title, icon, action: jQuery|string, body: jQuery|string }
-    const $card = $('<div class="card" style="padding:0;overflow:hidden;display:flex;flex-direction:column;"></div>');
+    const $card = $('<div class="card panel"></div>');
 
-    const $head = $(
-      '<div style="' +
-        'padding:11px 16px 10px;border-bottom:1px solid var(--border);' +
-        'display:flex;align-items:center;justify-content:space-between;flex-shrink:0;' +
-        'cursor:grab;"></div>'
-    );
+    const $head = $('<div class="panel-head" style="flex-shrink:0;"></div>');
 
     const gripSvg =
       '<svg width="10" height="14" viewBox="0 0 10 14" fill="var(--text-muted)" style="flex-shrink:0;opacity:0.5;">' +
@@ -773,11 +768,7 @@
 
     $card.append($head);
 
-    let bodyStyle = 'padding:14px 16px;flex:1;overflow:hidden;';
-    if (state.settings.scrollPanels) {
-      bodyStyle = 'padding:14px 16px;flex:1;overflow:auto;max-height:340px;';
-    }
-    const $body = $('<div style="' + bodyStyle + '"></div>');
+    const $body = $('<div class="panel-body' + (state.settings.scrollPanels ? ' panel-body--scroll' : '') + '"></div>');
     if (opts.body) {
       if (typeof opts.body === 'string') $body.html(opts.body);
       else $body.append(opts.body);

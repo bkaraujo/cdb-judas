@@ -322,48 +322,31 @@
     const active = a.active !== false;
 
     const $card = $(
-      '<div class="card" data-card="account" data-id="' + esc(a.id) + '" style="' +
-        'padding:0;overflow:hidden;position:relative;display:flex;flex-direction:column;' +
-        'transition:transform var(--transition), border-color var(--transition);' +
-      '"></div>'
+      '<div class="card account-card" data-card="account" data-id="' + esc(a.id) + '"></div>'
     );
 
     // Colored top band.
-    $card.append(
-      '<div style="height:4px;background:' + esc(color) + ';"></div>'
-    );
+    $card.append('<div class="account-card-band" style="background:' + esc(color) + ';"></div>');
 
     // Header: dot + name/type ; action buttons top-right.
-    const $head = $(
-      '<div style="' +
-        'display:flex;align-items:flex-start;justify-content:space-between;' +
-        'gap:10px;padding:16px 16px 8px 16px;' +
-      '"></div>'
-    );
+    const $head = $('<div class="account-card-head"></div>');
 
-    const $left = $(
-      '<div style="display:flex;align-items:center;gap:12px;min-width:0;flex:1;"></div>'
-    );
+    const $left = $('<div class="account-card-left"></div>');
     $left.append(
-      '<div style="' +
-        'width:40px;height:40px;border-radius:10px;flex-shrink:0;' +
-        'background:' + esc(color) + '26;color:' + esc(color) + ';' +
-        'display:flex;align-items:center;justify-content:center;' +
-      '">' + window.icon(iconName, 20) + '</div>'
+      '<div class="account-card-icon" style="background:' + esc(color) + '26;color:' + esc(color) + ';">' +
+        window.icon(iconName, 20) +
+      '</div>'
     );
 
     $left.append(
-      '<div style="min-width:0;display:flex;flex-direction:column;gap:2px;">' +
-        '<div style="font-size:14px;font-weight:700;color:var(--text-primary);' +
-          'overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + esc(a.name) + '</div>' +
-        '<div style="font-size:12px;color:var(--text-muted);font-weight:500;">' + esc(typeLabel) + '</div>' +
+      '<div class="account-card-title">' +
+        '<div class="account-card-name">' + esc(a.name) + '</div>' +
+        '<div class="account-card-type">' + esc(typeLabel) + '</div>' +
       '</div>'
     );
     $head.append($left);
 
-    const $actions = $(
-      '<div style="display:flex;gap:2px;flex-shrink:0;"></div>'
-    );
+    const $actions = $('<div class="account-card-actions"></div>');
     $actions.append(window.rowActionBtn('edit',  'Editar',  a.id));
     $actions.append(window.rowActionBtn('trash', 'Excluir', a.id, true));
     $head.append($actions);
@@ -372,10 +355,9 @@
 
     // Value block.
     $card.append(
-      '<div style="padding:6px 16px 16px 16px;">' +
-        '<div style="font-size:11px;color:var(--text-muted);font-weight:600;' +
-          'text-transform:uppercase;letter-spacing:0.04em;">Saldo atual</div>' +
-        '<div style="font-size:20px;font-weight:800;color:' + valueColor + ';margin-top:2px;">' +
+      '<div class="account-card-value">' +
+        '<div class="account-card-value-label">Saldo atual</div>' +
+        '<div class="account-card-value-amount" style="color:' + valueColor + ';">' +
           esc(fmt(displayValue)) +
         '</div>' +
       '</div>'
@@ -385,23 +367,16 @@
     if (window.Domain.Account.hasCards(a)) {
       const last4Line = a.cards.map(function (c) { return '•••• ' + c.last4; }).join('  ·  ');
       $card.append(
-        '<div style="display:flex;align-items:center;gap:6px;padding:0 16px 14px 16px;' +
-          'font-size:12px;color:var(--text-muted);">' +
+        '<div class="account-card-cards">' +
           window.icon('creditCard', 13) +
-          '<span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + esc(last4Line) + '</span>' +
+          '<span>' + esc(last4Line) + '</span>' +
         '</div>'
       );
     }
 
     // Footer with active status (subtle).
     if (!active) {
-      $card.append(
-        '<div style="' +
-          'padding:8px 16px;border-top:1px solid var(--border-light);' +
-          'font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.04em;' +
-          'color:var(--text-muted);' +
-        '">Inativa</div>'
-      );
+      $card.append('<div class="account-card-footer">Inativa</div>');
     }
 
     return $card;

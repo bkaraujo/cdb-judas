@@ -94,24 +94,13 @@
   function renderChip(t) {
     const hasColor = !!t.color;
     const color = hasColor ? t.color : '';
-    // Muted variant when no color set.
-    const dotStyle = hasColor
-      ? 'background:' + esc(color) + ';'
-      : 'background:var(--text-muted);';
-    const chipStyle = hasColor
-      ? 'border:1px solid var(--border);background:var(--bg-card);'
-      : 'border:1px solid var(--border);background:var(--bg-hover);';
-    const nameColor = hasColor ? 'var(--text-primary)' : 'var(--text-secondary)';
 
     const $chip = $(
-      '<div class="tag-chip" data-id="' + esc(t.id) + '" ' +
-        (hasColor ? 'data-color="' + esc(color) + '" ' : '') +
-        'style="display:inline-flex;align-items:center;gap:10px;' +
-        'padding:8px 14px;border-radius:40px;' + chipStyle +
-        'cursor:default;transition:all var(--transition);">' +
-        '<span style="width:10px;height:10px;border-radius:50%;flex-shrink:0;' + dotStyle + '"></span>' +
-        '<span style="font-size:13px;font-weight:700;color:' + nameColor + ';">#' + esc(t.name) + '</span>' +
-        '<span data-region="row-actions" style="display:none;align-items:center;gap:2px;margin-left:2px;"></span>' +
+      '<div class="tag-chip' + (hasColor ? ' has-color' : '') + '" data-id="' + esc(t.id) + '" ' +
+        (hasColor ? 'data-color="' + esc(color) + '" ' : '') + '>' +
+        '<span class="tag-chip-dot"' + (hasColor ? ' style="background:' + esc(color) + ';"' : '') + '></span>' +
+        '<span class="tag-chip-name">#' + esc(t.name) + '</span>' +
+        '<span class="tag-chip-actions" data-region="row-actions"></span>' +
       '</div>'
     );
 
@@ -119,25 +108,18 @@
       .append(window.rowActionBtn('edit',  'Editar',  t.id, { size: 22, iconSize: 12 }))
       .append(window.rowActionBtn('trash', 'Excluir', t.id, { size: 22, iconSize: 12, danger: true }));
 
-    // Hover reveals actions; if colored, tint border/background.
-    $chip.on('mouseenter', function () {
-      $chip.find('[data-region=row-actions]').css('display', 'inline-flex');
-      if (hasColor) {
+    // Hover tints border/background for colored chips (uncolored chips are handled by CSS
+    // :hover alone); leaving values empty on mouseleave restores the class-driven default.
+    if (hasColor) {
+      $chip.on('mouseenter', function () {
         $chip.css('border-color', color);
         $chip.css('background', color + '18');
-      } else {
-        $chip.css('background', 'var(--bg-card)');
-      }
-    });
-    $chip.on('mouseleave', function () {
-      $chip.find('[data-region=row-actions]').css('display', 'none');
-      if (hasColor) {
-        $chip.css('border-color', 'var(--border)');
-        $chip.css('background', 'var(--bg-card)');
-      } else {
-        $chip.css('background', 'var(--bg-hover)');
-      }
-    });
+      });
+      $chip.on('mouseleave', function () {
+        $chip.css('border-color', '');
+        $chip.css('background', '');
+      });
+    }
 
     return $chip;
   }
