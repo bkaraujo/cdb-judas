@@ -1,0 +1,1535 @@
+---
+openapi: 3.1.0
+components:
+  schemas:
+    AccountRequest:
+      type: object
+      required:
+      - name
+      - type
+      - color
+      properties:
+        name:
+          type: string
+          pattern: \S
+        type:
+          type: string
+          pattern: \S
+        color:
+          type: string
+          pattern: "#[0-9A-Fa-f]{6}"
+        active:
+          type: boolean
+        creditLimit:
+          type: number
+          minimum: 0
+        overdraftLimit:
+          type: number
+          minimum: 0
+        closingDay:
+          type: integer
+          format: int32
+          maximum: 31
+          minimum: 1
+        dueDay:
+          type: integer
+          format: int32
+          maximum: 31
+          minimum: 1
+    AccountResponse:
+      type: object
+      properties:
+        id:
+          $ref: "#/components/schemas/UUID"
+        name:
+          type: string
+        type:
+          type: string
+        color:
+          type: string
+        active:
+          type: boolean
+        creditLimit:
+          type: number
+        overdraftLimit:
+          type: number
+        closingDay:
+          type: integer
+          format: int32
+        dueDay:
+          type: integer
+          format: int32
+        currentBalance:
+          type: number
+        cards:
+          type: array
+          items:
+            $ref: "#/components/schemas/Card"
+    BalanceResponse:
+      type: object
+      properties:
+        accountId:
+          $ref: "#/components/schemas/UUID"
+        period:
+          $ref: "#/components/schemas/YearMonth"
+        balance:
+          type: number
+    Card:
+      type: object
+      properties:
+        id:
+          $ref: "#/components/schemas/UUID"
+        last4:
+          type: string
+        accountId:
+          $ref: "#/components/schemas/UUID"
+        active:
+          type: boolean
+    CardRequest:
+      type: object
+      required:
+      - last4
+      properties:
+        last4:
+          type: string
+          pattern: "\\d{4}"
+    CardResponse:
+      type: object
+      properties:
+        id:
+          $ref: "#/components/schemas/UUID"
+        last4:
+          type: string
+        accountId:
+          $ref: "#/components/schemas/UUID"
+        active:
+          type: boolean
+    CardStatusRequest:
+      type: object
+      properties:
+        active:
+          type: boolean
+    CategoryResponse:
+      type: object
+      properties:
+        id:
+          $ref: "#/components/schemas/UUID"
+        name:
+          type: string
+        nature:
+          type: string
+        parentId:
+          $ref: "#/components/schemas/UUID"
+        isSystem:
+          type: boolean
+        active:
+          type: boolean
+    ClosingRequest:
+      type: object
+      required:
+      - period
+      properties:
+        period:
+          type: string
+          pattern: "\\d{4}-\\d{2}"
+    ClosingResponse:
+      type: object
+      properties:
+        period:
+          type: string
+    CostCenter:
+      type: object
+      properties:
+        id:
+          $ref: "#/components/schemas/UUID"
+        description:
+          type: string
+    CreateRequest:
+      type: object
+      required:
+      - name
+      - nature
+      properties:
+        name:
+          type: string
+          pattern: \S
+        nature:
+          type: string
+          pattern: \S
+        parentId:
+          $ref: "#/components/schemas/UUID"
+    HistoricalResult:
+      type: object
+      properties:
+        month:
+          type: string
+        incomes:
+          type: number
+          format: double
+        expenses:
+          type: number
+          format: double
+    ImportRule:
+      type: object
+      properties:
+        id:
+          $ref: "#/components/schemas/UUID"
+        personId:
+          $ref: "#/components/schemas/UUID"
+        name:
+          type: string
+        accountId:
+          $ref: "#/components/schemas/UUID"
+        categoryId:
+          $ref: "#/components/schemas/UUID"
+        costCenterId:
+          $ref: "#/components/schemas/UUID"
+        createdAt:
+          $ref: "#/components/schemas/LocalDateTime"
+    ImportRuleRequest:
+      type: object
+      required:
+      - name
+      properties:
+        name:
+          type: string
+          pattern: \S
+          minLength: 3
+          maxLength: 255
+        accountId:
+          $ref: "#/components/schemas/UUID"
+        categoryId:
+          $ref: "#/components/schemas/UUID"
+        costCenterId:
+          $ref: "#/components/schemas/UUID"
+    LocalDate:
+      type: string
+      format: date
+      examples:
+      - 2022-03-10
+    LocalDateTime:
+      type: string
+      format: date-time
+      examples:
+      - 2022-03-10T12:15:50
+    LoginRequest:
+      type: object
+      properties:
+        username:
+          type: string
+        password:
+          type: string
+    MonthlyResult:
+      type: object
+      properties:
+        incomes:
+          type: number
+          format: double
+        expenses:
+          type: number
+          format: double
+        result:
+          type: number
+          format: double
+        history:
+          type: array
+          items:
+            $ref: "#/components/schemas/HistoricalResult"
+    PatchStatusRequest:
+      type: object
+      required:
+      - status
+      - paymentDate
+      properties:
+        status:
+          $ref: "#/components/schemas/Status"
+        paymentDate:
+          $ref: "#/components/schemas/LocalDate"
+    Preferences:
+      type: object
+      properties:
+        theme:
+          type: string
+        language:
+          type: string
+        locale:
+          type: string
+        sidebarCollapsed:
+          type: boolean
+    PreferencesRequest:
+      type: object
+      properties:
+        theme:
+          type: string
+        language:
+          type: string
+        locale:
+          type: string
+        sidebarCollapsed:
+          type: boolean
+    Row:
+      type: object
+      required:
+      - description
+      - amount
+      - date
+      - categoryId
+      properties:
+        description:
+          type: string
+          pattern: \S
+        amount:
+          type: number
+        date:
+          $ref: "#/components/schemas/LocalDate"
+        originalDate:
+          $ref: "#/components/schemas/LocalDate"
+        installmentNumber:
+          type: integer
+          format: int32
+        installmentTotal:
+          type: integer
+          format: int32
+        transactionType:
+          $ref: "#/components/schemas/Type"
+        categoryId:
+          $ref: "#/components/schemas/UUID"
+        costCenterId:
+          $ref: "#/components/schemas/UUID"
+        cardId:
+          $ref: "#/components/schemas/UUID"
+        tagIds:
+          type: array
+          items:
+            type: string
+            format: uuid
+            pattern: "[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}"
+    SelfResponse:
+      type: object
+      properties:
+        id:
+          type: string
+        username:
+          type: string
+        name:
+          type: string
+        preferences:
+          $ref: "#/components/schemas/Preferences"
+    StatementConfirmRequest:
+      type: object
+      required:
+      - type
+      - rows
+      properties:
+        type:
+          $ref: "#/components/schemas/StatementType"
+        accountId:
+          $ref: "#/components/schemas/UUID"
+        rows:
+          type: array
+          items:
+            $ref: "#/components/schemas/Row"
+    StatementType:
+      type: string
+      enum:
+      - CREDIT_CARD_INVOICE
+      - BANK_STATEMENT
+    Status:
+      type: string
+      enum:
+      - SCHEDULED
+      - CONFIRMED
+      - PENDING
+    Tag:
+      type: object
+      properties:
+        id:
+          $ref: "#/components/schemas/UUID"
+        personId:
+          $ref: "#/components/schemas/UUID"
+        name:
+          type: string
+        color:
+          type: string
+        createdAt:
+          $ref: "#/components/schemas/LocalDateTime"
+    TagRequest:
+      type: object
+      required:
+      - name
+      - color
+      properties:
+        name:
+          type: string
+          pattern: \S
+        color:
+          type: string
+          pattern: "#[0-9A-Fa-f]{6}"
+    TransactionRequest:
+      type: object
+      required:
+      - description
+      - amount
+      - date
+      - categoryId
+      - costCenterId
+      - status
+      - type
+      properties:
+        description:
+          type: string
+          pattern: \S
+        amount:
+          type: number
+        date:
+          $ref: "#/components/schemas/LocalDate"
+        categoryId:
+          $ref: "#/components/schemas/UUID"
+        accountId:
+          $ref: "#/components/schemas/UUID"
+        costCenterId:
+          $ref: "#/components/schemas/UUID"
+        status:
+          $ref: "#/components/schemas/Status"
+        type:
+          $ref: "#/components/schemas/Type"
+        installments:
+          type: integer
+          format: int32
+          minimum: 1
+        editMode:
+          type: string
+        deleteMode:
+          type: string
+        notes:
+          type: string
+          maxLength: 250
+        cardId:
+          $ref: "#/components/schemas/UUID"
+        tagIds:
+          type: array
+          items:
+            type: string
+            format: uuid
+            pattern: "[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}"
+    TransactionResponse:
+      type: object
+      properties:
+        id:
+          $ref: "#/components/schemas/UUID"
+        description:
+          type: string
+        amount:
+          type: number
+        date:
+          $ref: "#/components/schemas/LocalDate"
+        categoryId:
+          $ref: "#/components/schemas/UUID"
+        accountId:
+          $ref: "#/components/schemas/UUID"
+        status:
+          $ref: "#/components/schemas/Status"
+        type:
+          $ref: "#/components/schemas/Type"
+        costCenterId:
+          $ref: "#/components/schemas/UUID"
+        paymentDate:
+          $ref: "#/components/schemas/LocalDate"
+        groupId:
+          $ref: "#/components/schemas/UUID"
+        installmentNumber:
+          type: integer
+          format: int32
+        totalInstallments:
+          type: integer
+          format: int32
+        notes:
+          type: string
+        cardId:
+          $ref: "#/components/schemas/UUID"
+        tagIds:
+          type: array
+          items:
+            type: string
+            format: uuid
+            pattern: "[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}"
+    TransferCategoryResponse:
+      type: object
+      properties:
+        id:
+          $ref: "#/components/schemas/UUID"
+    TransferRequest:
+      type: object
+      required:
+      - fromAccountId
+      - toAccountId
+      - date
+      - amount
+      properties:
+        fromAccountId:
+          $ref: "#/components/schemas/UUID"
+        toAccountId:
+          $ref: "#/components/schemas/UUID"
+        date:
+          $ref: "#/components/schemas/LocalDate"
+        amount:
+          type: number
+    Type:
+      type: string
+      enum:
+      - EXPENSE
+      - INCOME
+    UUID:
+      type: string
+      format: uuid
+      pattern: "[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}"
+    UpdateMeRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          maxLength: 80
+        preferences:
+          $ref: "#/components/schemas/PreferencesRequest"
+    UpdateRequest:
+      type: object
+      required:
+      - name
+      properties:
+        name:
+          type: string
+          pattern: \S
+        parentId:
+          $ref: "#/components/schemas/UUID"
+        active:
+          type: boolean
+    YearMonth:
+      type: object
+      properties:
+        year:
+          type: integer
+          format: int32
+        month:
+          type: integer
+          format: int32
+        prolepticMonth:
+          type: integer
+          format: int64
+        monthValue:
+          type: integer
+          format: int32
+        leapYear:
+          type: boolean
+paths:
+  /api/cost-center:
+    get:
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/CostCenter"
+      summary: List
+      tags:
+      - Cost Center Resource
+  /api/me:
+    patch:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateMeRequest"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SelfResponse"
+      summary: Update
+      tags:
+      - Self Resource
+    get:
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SelfResponse"
+      summary: Get Me
+      tags:
+      - Self Resource
+  /api/version:
+    get:
+      summary: Retorna a versão do sistema extraída do pom.xml
+      tags:
+      - System
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties:
+                  type: string
+  /api/{uuid}/accounts:
+    get:
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/AccountResponse"
+      summary: List All
+      tags:
+      - Account Resource
+    post:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AccountRequest"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AccountResponse"
+        "400":
+          description: Bad Request
+      summary: Create
+      tags:
+      - Account Resource
+  /api/{uuid}/accounts/balance:
+    get:
+      parameters:
+      - name: period
+        in: query
+        schema:
+          type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/BalanceResponse"
+      summary: List Balances
+      tags:
+      - Account Balance Resource
+  /api/{uuid}/accounts/closing:
+    post:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ClosingRequest"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ClosingResponse"
+        "400":
+          description: Bad Request
+      summary: Set
+      tags:
+      - Closing Resource
+    get:
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ClosingResponse"
+      summary: Get
+      tags:
+      - Closing Resource
+    delete:
+      responses:
+        "204":
+          description: No Content
+      summary: Clear
+      tags:
+      - Closing Resource
+  /api/{uuid}/accounts/transaction/rules:
+    get:
+      parameters:
+      - name: uuid
+        in: path
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ImportRule"
+      summary: List All
+      tags:
+      - Import Rule Resource
+    post:
+      parameters:
+      - name: uuid
+        in: path
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ImportRuleRequest"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ImportRule"
+        "400":
+          description: Bad Request
+      summary: Create
+      tags:
+      - Import Rule Resource
+  /api/{uuid}/accounts/transaction/rules/{id}:
+    patch:
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      - name: uuid
+        in: path
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ImportRuleRequest"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ImportRule"
+      summary: Update
+      tags:
+      - Import Rule Resource
+    delete:
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      - name: uuid
+        in: path
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: {}
+      summary: Delete
+      tags:
+      - Import Rule Resource
+  /api/{uuid}/accounts/transactions:
+    get:
+      parameters:
+      - name: uuid
+        in: path
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      - name: dateFrom
+        in: query
+        schema:
+          $ref: "#/components/schemas/LocalDate"
+      - name: dateTo
+        in: query
+        schema:
+          $ref: "#/components/schemas/LocalDate"
+      - name: limit
+        in: query
+        schema:
+          type: integer
+          format: int32
+      - name: status
+        in: query
+        schema:
+          type: string
+      - name: type
+        in: query
+        schema:
+          type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/TransactionResponse"
+      summary: List All
+      tags:
+      - Transaction Resource
+  /api/{uuid}/accounts/transactions/by-category:
+    get:
+      parameters:
+      - name: uuid
+        in: path
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      - name: categoryIds
+        in: query
+        schema:
+          type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: string
+                  format: uuid
+                  pattern: "[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}"
+      summary: By Category
+      tags:
+      - Transaction Resource
+  /api/{uuid}/accounts/transactions/import/confirm:
+    post:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/StatementConfirmRequest"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: {}
+        "400":
+          description: Bad Request
+      summary: Confirm
+      tags:
+      - Import Resource
+  /api/{uuid}/accounts/transactions/import/preview:
+    post:
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+                password:
+                  type: string
+                accountId:
+                  $ref: "#/components/schemas/UUID"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: {}
+      summary: Preview
+      tags:
+      - Import Resource
+  /api/{uuid}/accounts/transactions/transfer:
+    post:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TransferRequest"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TransactionResponse"
+        "400":
+          description: Bad Request
+      summary: Transfer
+      tags:
+      - Transfer Resource
+  /api/{uuid}/accounts/{accId}/transactions:
+    get:
+      parameters:
+      - name: accId
+        in: path
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      - name: uuid
+        in: path
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      - name: dateFrom
+        in: query
+        schema:
+          $ref: "#/components/schemas/LocalDate"
+      - name: dateTo
+        in: query
+        schema:
+          $ref: "#/components/schemas/LocalDate"
+      - name: limit
+        in: query
+        schema:
+          type: integer
+          format: int32
+      - name: status
+        in: query
+        schema:
+          type: string
+      - name: type
+        in: query
+        schema:
+          type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/TransactionResponse"
+      summary: List By Account
+      tags:
+      - Transaction Resource
+    post:
+      parameters:
+      - name: accId
+        in: path
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      - name: uuid
+        in: path
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TransactionRequest"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TransactionResponse"
+        "400":
+          description: Bad Request
+      summary: Create
+      tags:
+      - Transaction Resource
+  /api/{uuid}/accounts/{accId}/transactions/{txId}:
+    patch:
+      parameters:
+      - name: accId
+        in: path
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      - name: txId
+        in: path
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      - name: uuid
+        in: path
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TransactionRequest"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TransactionResponse"
+      summary: Update
+      tags:
+      - Transaction Resource
+    delete:
+      parameters:
+      - name: txId
+        in: path
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      - name: mode
+        in: query
+        schema:
+          type: string
+      responses:
+        "204":
+          description: No Content
+      summary: Delete
+      tags:
+      - Transaction Resource
+  /api/{uuid}/accounts/{accId}/transactions/{txId}/status:
+    patch:
+      parameters:
+      - name: txId
+        in: path
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      - name: uuid
+        in: path
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PatchStatusRequest"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TransactionResponse"
+      summary: Patch Status
+      tags:
+      - Transaction Resource
+  /api/{uuid}/accounts/{accountId}/cards:
+    get:
+      parameters:
+      - name: accountId
+        in: path
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/CardResponse"
+      summary: List
+      tags:
+      - Account Card Resource
+    post:
+      parameters:
+      - name: accountId
+        in: path
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CardRequest"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CardResponse"
+        "400":
+          description: Bad Request
+      summary: Create
+      tags:
+      - Account Card Resource
+  /api/{uuid}/accounts/{accountId}/cards/{cardId}:
+    patch:
+      parameters:
+      - name: accountId
+        in: path
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      - name: cardId
+        in: path
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CardStatusRequest"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CardResponse"
+      summary: Update Status
+      tags:
+      - Account Card Resource
+    delete:
+      parameters:
+      - name: accountId
+        in: path
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      - name: cardId
+        in: path
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      - name: strategy
+        in: query
+        schema:
+          type: string
+      - name: targetId
+        in: query
+        schema:
+          $ref: "#/components/schemas/UUID"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: {}
+      summary: Delete
+      tags:
+      - Account Card Resource
+  /api/{uuid}/accounts/{id}:
+    patch:
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AccountRequest"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AccountResponse"
+      summary: Update
+      tags:
+      - Account Resource
+    get:
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AccountResponse"
+      summary: Get By Id
+      tags:
+      - Account Resource
+    delete:
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      - name: uuid
+        in: path
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      - name: strategy
+        in: query
+        schema:
+          type: string
+      - name: targetId
+        in: query
+        schema:
+          $ref: "#/components/schemas/UUID"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: {}
+      summary: Delete
+      tags:
+      - Account Resource
+  /api/{uuid}/accounts/{id}/balance:
+    get:
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      - name: period
+        in: query
+        schema:
+          type: string
+      - name: year
+        in: query
+        schema:
+          type: integer
+          format: int32
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: {}
+      summary: Get Balance
+      tags:
+      - Account Balance Resource
+  /api/{uuid}/categories:
+    get:
+      parameters:
+      - name: uuid
+        in: path
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/CategoryResponse"
+      summary: List All
+      tags:
+      - Category Resource
+    post:
+      parameters:
+      - name: uuid
+        in: path
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateRequest"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CategoryResponse"
+        "400":
+          description: Bad Request
+      summary: Create
+      tags:
+      - Category Resource
+  /api/{uuid}/categories/transfer:
+    get:
+      parameters:
+      - name: uuid
+        in: path
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      - name: nature
+        in: query
+        schema:
+          type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TransferCategoryResponse"
+      summary: Transfer Category
+      tags:
+      - Category Resource
+  /api/{uuid}/categories/{id}:
+    patch:
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      - name: uuid
+        in: path
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateRequest"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CategoryResponse"
+      summary: Update
+      tags:
+      - Category Resource
+    delete:
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      - name: uuid
+        in: path
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      - name: strategy
+        in: query
+        schema:
+          type: string
+      - name: targetId
+        in: query
+        schema:
+          $ref: "#/components/schemas/UUID"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: {}
+      summary: Delete
+      tags:
+      - Category Resource
+  /api/{uuid}/dashboard:
+    get:
+      parameters:
+      - name: month
+        in: query
+        schema:
+          type: integer
+          format: int32
+      - name: year
+        in: query
+        schema:
+          type: integer
+          format: int32
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MonthlyResult"
+      summary: Get Monthly Result
+      tags:
+      - Dashboard Resource
+  /api/{uuid}/stream:
+    get:
+      responses:
+        "204":
+          description: No Content
+      summary: Stream
+      tags:
+      - Sse Resource
+  /api/{uuid}/tags:
+    get:
+      parameters:
+      - name: uuid
+        in: path
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Tag"
+      summary: List All
+      tags:
+      - Tag Resource
+    post:
+      parameters:
+      - name: uuid
+        in: path
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TagRequest"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Tag"
+        "400":
+          description: Bad Request
+      summary: Create
+      tags:
+      - Tag Resource
+  /api/{uuid}/tags/{id}:
+    patch:
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      - name: uuid
+        in: path
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TagRequest"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Tag"
+      summary: Update
+      tags:
+      - Tag Resource
+    delete:
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      - name: uuid
+        in: path
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      - name: strategy
+        in: query
+        schema:
+          type: string
+      - name: targetId
+        in: query
+        schema:
+          $ref: "#/components/schemas/UUID"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: {}
+      summary: Delete
+      tags:
+      - Tag Resource
+  /login:
+    post:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginRequest"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: {}
+        "400":
+          description: Bad Request
+      summary: Login
+      tags:
+      - Login Resource
+tags:
+- name: System
+  description: Recursos de sistema
+info:
+  title: application API
+  version: 1.0.0

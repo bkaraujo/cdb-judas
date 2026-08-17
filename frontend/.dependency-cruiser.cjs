@@ -30,5 +30,8 @@ module.exports = {
     doNotFollow: { path: 'node_modules' },
     tsConfig: { fileName: 'tsconfig.json' },
     exclude: { path: '\\.test\\.ts$' },
+    // Sem isto, `import type` (obrigatório com verbatimModuleSyntax) fica invisível ao grafo —
+    // no-orphans/no-cross-slice/no-domain-to-infra passariam cegos pelo acoplamento via tipos.
+    tsPreCompilationDeps: true,
   },
 };
