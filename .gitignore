@@ -26,3 +26,5 @@ data/
 # ================================
 web/node_modules
 web/package-lock.json
+frontend/node_modules
+frontend/dist

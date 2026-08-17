@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="pt-BR" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CBD Finance</title>
+  <!-- No-flash theme: apply the mirror-cached theme before first paint. -->
+  <script>
+    (function () {
+      try {
+        const raw = localStorage.getItem('cbd-preferences');
+        let t = raw ? JSON.parse(raw).theme : null;
+        if (!t) t = localStorage.getItem('cbd-theme'); /* legacy single-key layout */
+        if (t) document.documentElement.setAttribute('data-theme', t);
+      } catch (e) { /* storage unavailable */ }
+    })();
+  </script>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/src/styles/app.css">
+</head>
+<body>
+  <div id="app"></div>
+
+  <script type="module" src="/src/main.ts"></script>
+</body>
+</html>

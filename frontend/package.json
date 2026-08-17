@@ -1,0 +1,31 @@
+{
+  "name": "cdb-finance-frontend",
+  "private": true,
+  "type": "module",
+  "engines": { "node": ">=22" },
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "coverage": "vitest run --coverage",
+    "check:arch": "depcruise src --config .dependency-cruiser.cjs",
+    "sync:api": "curl -sf http://localhost:8080/q/openapi.yaml -o openapi.yaml",
+    "gen:api": "openapi-typescript openapi.yaml -o src/api/schema.d.ts"
+  },
+  "dependencies": {
+    "jquery": "4.0.0"
+  },
+  "devDependencies": {
+    "@types/jquery": "4.0.1",
+    "@vitest/coverage-v8": "4.1.10",
+    "dependency-cruiser": "18.2.0",
+    "jsdom": "30.0.1",
+    "openapi-typescript": "7.13.0",
+    "typescript": "7.0.2",
+    "vite": "8.2.1",
+    "vitest": "4.1.10"
+  }
+}
