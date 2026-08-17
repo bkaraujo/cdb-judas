@@ -29,7 +29,7 @@ export interface TransactionLike {
   description?: string;
   totalInstallments?: number | null;
   installmentNumber?: number | null;
-  date?: string;
+  date?: string | null;
 }
 
 export function normalizeType(value: unknown): TransactionType {
