@@ -4,13 +4,14 @@
  * EventSource cannot send the Authorization header, so we parse the stream manually via fetch +
  * ReadableStream. Aplica upsert/delete via a porta `SseCachePort` (implementada por `cache-store`,
  * Fase 4 — é lá que mora a normalização de categoria/conta, não mais duplicada aqui) e transmite
- * `cbd:change` via o barramento de eventos da aplicação.
+ * `cbd:change` via o barramento de eventos da aplicação (`event-bus.ts`, Fase 4).
  */
+import type { CbdEntityKind, SseCachePort } from '../../_1_application/cache-store.ts';
+import type { CbdChangeDetail, EventBus } from '../../_1_application/event-bus.ts';
 import type { AuthStore } from './auth-store.ts';
 
 const HANDSHAKE_TIMEOUT_MS = 10000;
 
-export type CbdEntityKind = 'categories' | 'accounts' | 'tags';
 type CbdEventType = 'CATEGORY' | 'ACCOUNT' | 'TAG';
 
 const KIND_BY_EVENT_TYPE: Record<CbdEventType, CbdEntityKind> = {
@@ -18,15 +19,6 @@ const KIND_BY_EVENT_TYPE: Record<CbdEventType, CbdEntityKind> = {
   ACCOUNT: 'accounts',
   TAG: 'tags',
 };
-
-export interface SseCachePort {
-  upsert(kind: CbdEntityKind, payload: Record<string, unknown>): boolean;
-  remove(kind: CbdEntityKind, id: string): boolean;
-}
-
-export interface EventBusPort {
-  emit(event: 'cbd:change', detail: unknown): void;
-}
 
 export interface SseClient {
   connect(): void;
@@ -36,7 +28,7 @@ export interface SseClient {
 export interface SseClientOptions {
   baseUrl?: string;
   authStore: AuthStore;
-  bus?: EventBusPort;
+  bus?: EventBus;
   cache: SseCachePort;
   enqueue?: <T>(fn: () => Promise<T>) => Promise<T>;
 }
@@ -95,7 +87,7 @@ export function createSseClient(opts: SseClientOptions): SseClient {
   let connecting = false;
   let backoff = 1000;
 
-  function broadcast(detail: unknown): void {
+  function broadcast(detail: CbdChangeDetail): void {
     if (bus) bus.emit('cbd:change', detail);
   }
 

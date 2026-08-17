@@ -10,10 +10,15 @@ export interface LocalStorageArea extends StorageArea {
 }
 
 export interface Storage {
+  KEYS: typeof STORAGE_KEYS;
   local: LocalStorageArea;
   session: StorageArea;
 }
 
+/** Exposto pendurado no próprio objeto `Storage` (não como export solto): quem precisa de uma
+ * chave recebe o `Storage` inteiro por DI e lê `storage.KEYS.X` — igual ao `deps.storage.KEYS` do
+ * `preferences-service.js`/`auth-store.js` originais. Evita _1_application importar um valor
+ * estático de _2_infrastructure/secondary só para pegar nomes de chave. */
 export const STORAGE_KEYS = {
   THEME: 'cbd-theme',
   SCREEN: 'cbd-screen',
@@ -81,6 +86,7 @@ function ssDel(key: string): void {
 
 export function createStorage(): Storage {
   return {
+    KEYS: STORAGE_KEYS,
     local: { get: lsGet, set: lsSet, del: lsDel, json: lsJson, setJson: lsSetJson },
     session: { get: ssGet, set: ssSet, del: ssDel },
   };

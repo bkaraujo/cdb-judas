@@ -1,5 +1,4 @@
 import type { Storage } from './storage.ts';
-import { STORAGE_KEYS } from './storage.ts';
 
 const USER_KEY = 'auth_user';
 const UID_KEY = 'auth_uid';
@@ -20,11 +19,12 @@ export interface AuthStore {
 
 export function createAuthStore(storage: Storage): AuthStore {
   const ss = storage.session;
+  const AUTH_TOKEN = storage.KEYS.AUTH_TOKEN;
   return {
-    get: () => ss.get(STORAGE_KEYS.AUTH_TOKEN),
-    set: (token) => ss.set(STORAGE_KEYS.AUTH_TOKEN, token),
+    get: () => ss.get(AUTH_TOKEN),
+    set: (token) => ss.set(AUTH_TOKEN, token),
     clear: () => {
-      ss.del(STORAGE_KEYS.AUTH_TOKEN);
+      ss.del(AUTH_TOKEN);
       ss.del(USER_KEY);
       ss.del(UID_KEY);
       ss.del(NAME_KEY);

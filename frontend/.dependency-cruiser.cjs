@@ -9,10 +9,14 @@ module.exports = {
     },
     {
       name: 'no-domain-to-infra',
-      comment: '_0_domain/_1_application não acessam _2_infrastructure.',
+      comment: '_0_domain/_1_application não acessam _2_infrastructure em runtime. Tipo-só é '
+        + 'exceção deliberada: as portas (Storage/AuthStore/HttpClient/SelfRepository/SseClient) '
+        + 'nascem dentro dos arquivos _2_infrastructure/secondary (Fase 2 do plano) e '
+        + '_1_application as consome via DI (`createXService(port: PortType)`) — só a FORMA é '
+        + 'referenciada, nunca a implementação; o objeto real chega de fora, via composition-root.',
       severity: 'error',
       from: { path: '^src/core/kernel/_(0_domain|1_application)/' },
-      to: { path: '^src/core/kernel/_2_infrastructure/' },
+      to: { path: '^src/core/kernel/_2_infrastructure/', dependencyTypesNot: ['type-only'] },
       // money.ts é facade deliberada sobre format.ts (documentado no topo do próprio arquivo,
       // e já era exceção nomeada em web/tools/check-slices.js:32-35).
       // A exceção some se format.ts for classificado como _0_domain — ver Fase 3.
