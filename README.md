@@ -63,6 +63,33 @@ O projeto abrange frontend e backend, com forte separação arquitetural interna
 - **Request Tracing:** Cada requisição envia o cabeçalho `X-Request-Id` para correlação fim-a-fim no log do backend.
 - **Dependência externa:** o jQuery 4 é carregado de CDN (`code.jquery.com`) — a primeira carga exige rede.
 
+### Frontend TS (`frontend/`, em migração)
+
+Em paralelo ao SPA vanilla acima, uma reescrita 1:1 em **TypeScript + Vite** vive em `frontend/` —
+mesma paridade funcional, mesmo servidor Quarkus, arquitetura Hexagonal + Vertical Slice espelhando
+o backend (`_0_domain` → `_1_application` → `_2_infrastructure/{primary,secondary}` no kernel,
+`feature/<slice>/` nas fatias, cada uma com `index.ts`/`api.ts` como único ponto de acesso
+cross-slice). Ainda não é o caminho padrão: o build Maven continua servindo `web/` a menos que o
+profile `frontend-ts` seja ativado explicitamente.
+
+```bash
+cd frontend
+npm install
+npm run dev          # servidor de desenvolvimento Vite, com hot reload
+npm run typecheck    # tsc --noEmit, strict
+npm test             # Vitest
+npm run check:arch   # dependency-cruiser — 5 regras (no-cross-slice, no-domain-to-infra, ...)
+npm run build        # produção → frontend/dist
+```
+
+Para o backend servir `frontend/dist` em vez de `web/`, ative o profile Maven:
+
+```bash
+mvn -pl br-application -am quarkus:dev -Pfrontend-ts
+```
+
+O cutover (tornar este o caminho padrão e remover `web/`) é decisão futura, não coberta aqui.
+
 ## 🛠️ Tecnologias Utilizadas
 
 | Camada | Stack |

@@ -83,4 +83,52 @@
             </plugin>
         </plugins>
     </build>
+
+    <!-- Profile inativo por padrão: sem ele, o build continua idêntico ao de hoje, servindo web/
+         (SPA vanilla). Ativado explicitamente (-Pfrontend-ts) builda e serve o frontend TS/Vite de
+         frontend/dist no lugar. Os dois <resource> colidiriam (ambos têm index.html) se ativos ao
+         mesmo tempo — por isso este entra num profile, não direto em <build><resources> acima. O
+         cutover (tornar o profile default, apagar web/) é decisão separada, fora deste plano. -->
+    <profiles>
+        <profile>
+            <id>frontend-ts</id>
+            <build>
+                <resources>
+                    <resource>
+                        <directory>${maven.multiModuleProjectDirectory}/frontend/dist</directory>
+                        <targetPath>META-INF/resources</targetPath>
+                        <filtering>false</filtering>
+                    </resource>
+                </resources>
+                <plugins>
+                    <plugin>
+                        <groupId>org.codehaus.mojo</groupId>
+                        <artifactId>exec-maven-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>frontend-build</id>
+                                <phase>generate-resources</phase>
+                                <goals><goal>exec</goal></goals>
+                                <configuration>
+                                    <workingDirectory>${maven.multiModuleProjectDirectory}/frontend</workingDirectory>
+                                    <executable>npm</executable>
+                                    <arguments><argument>ci</argument></arguments>
+                                </configuration>
+                            </execution>
+                            <execution>
+                                <id>frontend-bundle</id>
+                                <phase>generate-resources</phase>
+                                <goals><goal>exec</goal></goals>
+                                <configuration>
+                                    <workingDirectory>${maven.multiModuleProjectDirectory}/frontend</workingDirectory>
+                                    <executable>npm</executable>
+                                    <arguments><argument>run</argument><argument>build</argument></arguments>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
 </project>
