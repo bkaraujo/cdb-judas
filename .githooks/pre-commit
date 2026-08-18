@@ -9,8 +9,10 @@ cd "$REPO_ROOT"
 status=0
 
 echo "==> ArchUnit (br-application)"
+# -Dexec.skip=true: o pom de br-application builda a SPA (npm ci + vite) no generate-resources;
+# o gate ArchUnit não precisa do bundle, e `npm ci` não funcionaria com o -o do Maven.
 mvn -q -pl br-application -am test \
-    -Dtest='*ArchitectureTest' -Dsurefire.failIfNoSpecifiedTests=false -o
+    -Dtest='*ArchitectureTest' -Dsurefire.failIfNoSpecifiedTests=false -o -Dexec.skip=true
 if [ $? -ne 0 ]; then
     echo "FALHOU: ArchUnit"
     status=1

@@ -1,15 +1,21 @@
 # syntax=docker/dockerfile:1
 
 # ============================================================================
-# Frontend estático servido por nginx.
-# O frontend é HTML/CSS/JS vanilla + jQuery vendorizado (web/vendor/, sem CDN),
-# sem etapa de build, então uma única stage basta: copiamos os arquivos e a
-# config do nginx. O que não deve entrar (web/node_modules, ~30 MB do harness de
-# teste) fica de fora pelo .dockerignore da raiz.
+# Frontend TS + Vite servido por nginx. Precisa compilar antes de servir: duas
+# stages — build (node) produz frontend/dist, run (nginx) só copia o resultado,
+# sem levar node_modules/toolchain pra imagem final.
 #
 # IMPORTANTE: o contexto de build é a RAIZ do repositório (.), logo todos os
 # caminhos de COPY são relativos à raiz, não a este diretório.
 # ============================================================================
+FROM node:22-alpine AS build
+
+WORKDIR /src
+COPY frontend/package.json frontend/package-lock.json ./
+RUN npm ci
+COPY frontend/ ./
+RUN npm run build
+
 FROM nginx:alpine
 
 # Versão atual do sistema (pom <version>). Sobrescrevível pelo build do compose.
@@ -17,9 +23,9 @@ ARG APP_VERSION=0.1.0
 LABEL org.opencontainers.image.title="cdb-judas-frontend" \
       org.opencontainers.image.version="${APP_VERSION}"
 
-# Site estático: index.html + css/ + core/ + feature/ + vendor/. Mesma fonte que
-# o backend empacota via <resource> do pom (web/ → META-INF/resources).
-COPY web/ /usr/share/nginx/html/
+# Bundle de produção (index.html + assets/), mesma saída que o pom de
+# br-application empacota via <resource> (frontend/dist → META-INF/resources).
+COPY --from=build /src/dist/ /usr/share/nginx/html/
 
 # Config do server: serve o estático e faz proxy reverso das rotas do backend.
 COPY br-application/src/main/docker/nginx.conf /etc/nginx/conf.d/default.conf

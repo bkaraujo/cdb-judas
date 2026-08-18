@@ -1,6 +1,21 @@
 # syntax=docker/dockerfile:1
 
 # ============================================================================
+# Frontend stage — builda a SPA TS/Vite (frontend/dist).
+# O pom de br-application copia frontend/dist para META-INF/resources e chama
+# `npm ci`/`npm run build` no generate-resources, mas a imagem do Maven não tem
+# Node. Por isso o bundle sai aqui e entra pronto na stage do Maven, que roda com
+# -Dexec.skip=true. Mesma receita de Dockerfile.frontend (nginx), duplicada de
+# propósito: as duas imagens são construídas de forma independente.
+# ============================================================================
+FROM node:22-alpine AS frontend
+WORKDIR /src
+COPY frontend/package.json frontend/package-lock.json ./
+RUN npm ci
+COPY frontend/ ./
+RUN npm run build
+
+# ============================================================================
 # Build stage — compila e empacota a fast-jar do Quarkus.
 # Base com Maven 3.9 + Temurin 25, exigidos pelo maven-enforcer-plugin do pom.
 # ============================================================================
@@ -18,12 +33,12 @@ COPY pom.xml .
 # ambos precisam estar no contexto pro `mvn package` resolver via reactor (sem
 # precisar de `mvn install` prévio). Os antigos br-context-people/br-context-monetary
 # foram dissolvidos na fase 2 e não existem mais — copiá-los quebrava o build aqui.
-# web/ entra porque o pom de br-application copia esse diretório pro classpath
-# (META-INF/resources) — é o que faz o Quarkus servir a SPA como estático.
+# frontend/dist vem pronto da stage anterior porque o pom copia esse diretório pro
+# classpath (META-INF/resources) — é o que faz o Quarkus servir a SPA como estático.
 COPY br-parent ./br-parent
 COPY br-commons ./br-commons
 COPY br-application ./br-application
-COPY web ./web
+COPY --from=frontend /src/dist ./frontend/dist
 
 # `dependency:go-offline` (usado antes para cachear as dependências numa camada
 # separada de pom.xml, antes desta linha) falhava com "version is missing" para
@@ -39,7 +54,9 @@ COPY web ./web
 # Compila o reactor inteiro; a fast-jar de saída fica em
 # br-application/target/quarkus-app/ (app/ + lib/ + quarkus/ + quarkus-run.jar).
 # Testes ficam por conta do CI; a imagem foca no runtime.
-RUN mvn -B package -DskipTests
+# -Dexec.skip=true: o bundle da SPA já veio da stage `frontend`; sem isto o Maven
+# tentaria rodar `npm`, que não existe nesta imagem.
+RUN mvn -B package -DskipTests -Dexec.skip=true
 
 # ============================================================================
 # Runtime stage — apenas o JRE e a fast-jar. Imagem final enxuta.

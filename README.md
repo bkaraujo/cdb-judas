@@ -34,7 +34,7 @@ O projeto abrange frontend e backend, com forte separação arquitetural interna
 
 ### Módulos Maven
 
-`br-parent` (pom pai: versões, plugins, gate de qualidade) · `br-commons` (framework comum, sem `br.cdb.*`) · `br-context-people` e `br-context-monetary` (contextos hexagonais, dependem só de `br-commons`) · `br-application` (borda HTTP/CDI, fast-jar Quarkus). `web/` é copiado para dentro do jar de `br-application`, mas não é módulo Maven.
+`br-parent` (pom pai: versões, plugins, gate de qualidade) · `br-commons` (framework comum, sem `br.cdb.*`) · `br-context-people` e `br-context-monetary` (contextos hexagonais, dependem só de `br-commons`) · `br-application` (borda HTTP/CDI, fast-jar Quarkus). `frontend/` não é módulo Maven: o pom de `br-application` roda `npm run build` e copia `frontend/dist` para dentro do jar.
 
 ### Backend (Java 25 + Quarkus)
 
@@ -52,25 +52,21 @@ O projeto abrange frontend e backend, com forte separação arquitetural interna
 - **Null-Safety & Qualidade:** `NullAway` + `ErrorProne` com anotações JSpecify (`@NullMarked`/`@Nullable`) no ciclo de compilação, falhando o build contra `NullPointerException`; PMD/CPD *enforcing* na fase `verify`.
 - **Testes:** Testes unitários com JUnit 5, testes de arquitetura com ArchUnit (ex.: *Resources* não acessam repositórios; *feature* fala com *context* só via *facade*; fatia só depende de fatia anterior) e testes de integração HTTP com `@QuarkusTest` + RestAssured.
 
-### Frontend (HTML / CSS / JS)
+### Frontend (`frontend/` — TypeScript + Vite)
 
-- **Single Page Application (SPA):** Abordagem leve (Vanilla JS/CSS + jQuery 4), sem etapa de build no frontend. É servida pelo próprio backend — o pom de `br-application` copia `web/` para `META-INF/resources` no classpath.
-- **Arquitetura em Camadas:** O JavaScript replica o modelo de domínio:
-  - `_1_domain` — entidades, validações e regras do cliente.
-  - `_2_application` — serviços, orquestração e estado.
-  - `_3_infrastructure` — adaptadores *primary* (`router`, `sidebar`, `theme`) e *secondary* (`http-client`, `*-repository`, `auth-store`, `sse-client`).
-- **Design:** Interface moderna (`app.css`) com Dark Mode nativo (aplicado antes do primeiro *paint*, sem *flash*).
-- **Request Tracing:** Cada requisição envia o cabeçalho `X-Request-Id` para correlação fim-a-fim no log do backend.
-- **Dependência externa:** o jQuery 4 é carregado de CDN (`code.jquery.com`) — a primeira carga exige rede.
+- **Single Page Application (SPA):** **TypeScript + Vite**, com jQuery 4 como dependência npm
+  (sem CDN). Servida pelo próprio backend — o pom de `br-application` roda `npm ci`/`npm run build`
+  no `generate-resources` e copia `frontend/dist` para `META-INF/resources` no classpath.
+  `-Dexec.skip=true` pula esse passo quando o bundle não é necessário.
+- **Arquitetura:** Hexagonal + Vertical Slice espelhando o backend — `_0_domain` →
+  `_1_application` → `_2_infrastructure/{primary,secondary}` no kernel, `feature/<slice>/` nas
+  fatias, cada uma com `index.ts`/`api.ts` como único ponto de acesso cross-slice.
+- **Design:** Interface moderna com Dark Mode nativo (aplicado antes do primeiro *paint*, sem
+  *flash*).
+- **Request Tracing:** Cada requisição envia o cabeçalho `X-Request-Id` para correlação fim-a-fim
+  no log do backend.
 
-### Frontend TS (`frontend/`, em migração)
-
-Em paralelo ao SPA vanilla acima, uma reescrita 1:1 em **TypeScript + Vite** vive em `frontend/` —
-mesma paridade funcional, mesmo servidor Quarkus, arquitetura Hexagonal + Vertical Slice espelhando
-o backend (`_0_domain` → `_1_application` → `_2_infrastructure/{primary,secondary}` no kernel,
-`feature/<slice>/` nas fatias, cada uma com `index.ts`/`api.ts` como único ponto de acesso
-cross-slice). Ainda não é o caminho padrão: o build Maven continua servindo `web/` a menos que o
-profile `frontend-ts` seja ativado explicitamente.
+O SPA Vanilla JS/jQuery que vivia em `web/` foi portado 1:1 para cá e removido do repositório.
 
 ```bash
 cd frontend
@@ -82,22 +78,15 @@ npm run check:arch   # dependency-cruiser — 5 regras (no-cross-slice, no-domai
 npm run build        # produção → frontend/dist
 ```
 
-Para o backend servir `frontend/dist` em vez de `web/`, ative o profile Maven:
-
-```bash
-mvn -pl br-application -am quarkus:dev -Pfrontend-ts
-```
-
-O cutover (tornar este o caminho padrão e remover `web/`) é decisão futura, não coberta aqui.
 
 ## 🛠️ Tecnologias Utilizadas
 
 | Camada | Stack |
 |--------|-------|
-| **Linguagens** | Java 25 · JavaScript (ES6+) · HTML5 · CSS3 |
+| **Linguagens** | Java 25 · TypeScript · HTML5 · CSS3 |
 | **Backend** | Quarkus 3.37.0 (REST, Hibernate Validator, SmallRye OpenAPI/Health, Elytron Security) — modo JVM |
 | **Build** | Maven 3.9+ · Quarkus Maven Plugin |
-| **Frontend** | Vanilla JS/CSS · jQuery 4 |
+| **Frontend** | TypeScript · Vite · jQuery 4 |
 | **Banco** | H2 (embarcado, arquivo) via pool JDBC próprio (`br.commons`) |
 | **Utilitários** | Lombok 1.18.42 · SLF4J · PDFBox 3.0.5 (leitura de PDF) · Jackson (YAML/JSR-310) · juniversalchardet (detecção de *charset*) |
 | **API Docs** | SmallRye OpenAPI (Swagger UI) |

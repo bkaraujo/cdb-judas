@@ -46,6 +46,17 @@
                 <directory>src/main/resources</directory>
                 <filtering>true</filtering>
             </resource>
+            <!-- SPA TS/Vite: frontend/dist sai do `npm run build` amarrado ao generate-resources
+                 (plugin exec abaixo) e é copiada verbatim para o classpath. Quarkus serve
+                 conteúdo estático de META-INF/resources automaticamente (convenção servlet).
+                 Ancorado em maven.multiModuleProjectDirectory (raiz do repo) porque frontend/
+                 vive lá, não dentro deste módulo — um <directory>frontend/dist</directory>
+                 relativo resolveria contra o basedir deste pom e não acharia nada. -->
+            <resource>
+                <directory>${maven.multiModuleProjectDirectory}/frontend/dist</directory>
+                <targetPath>META-INF/resources</targetPath>
+                <filtering>false</filtering>
+            </resource>
         </resources>
         <plugins>
             <!-- CoreModule lê o YAML pelo caminho em cdb.application.yaml (default: ./application.yaml,
@@ -60,92 +71,37 @@
                     </systemPropertyVariables>
                 </configuration>
             </plugin>
+
+            <!-- Build da SPA antes do process-resources, que é a fase que copia frontend/dist
+                 para o classpath. `-Dexec.skip=true` pula as duas execuções para quem não precisa
+                 do bundle — é o que o gate ArchUnit do .githooks/pre-commit faz. -->
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>exec-maven-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>frontend-build</id>
+                        <phase>generate-resources</phase>
+                        <goals><goal>exec</goal></goals>
+                        <configuration>
+                            <workingDirectory>${maven.multiModuleProjectDirectory}/frontend</workingDirectory>
+                            <executable>npm</executable>
+                            <arguments><argument>ci</argument></arguments>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>frontend-bundle</id>
+                        <phase>generate-resources</phase>
+                        <goals><goal>exec</goal></goals>
+                        <configuration>
+                            <workingDirectory>${maven.multiModuleProjectDirectory}/frontend</workingDirectory>
+                            <executable>npm</executable>
+                            <arguments><argument>run</argument><argument>build</argument></arguments>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
         </plugins>
     </build>
 
-    <!-- Os dois <resource> de META-INF/resources (web/ vanilla vs. frontend/dist TS/Vite)
-         colidiriam se ativos ao mesmo tempo (ambos têm index.html) — por isso `web/` também
-         virou profile, não fica direto em <build><resources> acima. `default-web`
-         (activeByDefault) e `frontend-ts` (ativado por -P) são mutuamente exclusivos "de
-         graça": Maven desativa automaticamente todo profile activeByDefault assim que QUALQUER
-         outro profile é ativado explicitamente — comportamento documentado do Maven, não uma
-         condição escrita à mão aqui. `mvn ... -Pfrontend-ts` builda e serve frontend/dist no
-         lugar de web/; sem a flag, o build continua idêntico ao de hoje. O cutover (tornar
-         frontend-ts o único caminho, apagar web/ e este profile) é decisão separada, fora deste
-         plano. -->
-    <profiles>
-        <profile>
-            <id>default-web</id>
-            <activation>
-                <activeByDefault>true</activeByDefault>
-            </activation>
-            <build>
-                <resources>
-                    <!-- SPA vanilla (sem etapa de build): copiada verbatim para o classpath.
-                         Quarkus serve conteúdo estático de META-INF/resources automaticamente
-                         (convenção servlet). Ancorado em maven.multiModuleProjectDirectory (raiz
-                         do repo) porque web/ vive lá, não dentro deste módulo — um
-                         <directory>web</directory> relativo resolveria contra o basedir deste pom
-                         e não acharia nada. -->
-                    <resource>
-                        <directory>${maven.multiModuleProjectDirectory}/web</directory>
-                        <targetPath>META-INF/resources</targetPath>
-                        <filtering>false</filtering>
-                        <excludes>
-                            <exclude>CLAUDE.md</exclude>
-                            <exclude>package.json</exclude>
-                            <exclude>package-lock.json</exclude>
-                            <!-- Dependências de desenvolvimento do harness de teste
-                                 (puppeteer-core & cia., ~30 MB). Sem esta exclusão elas iam parar
-                                 dentro da fast-jar e ficavam servidas publicamente em
-                                 /node_modules/**. -->
-                            <exclude>node_modules/**</exclude>
-                            <exclude>tools/**</exclude>
-                            <exclude>test/**</exclude>
-                        </excludes>
-                    </resource>
-                </resources>
-            </build>
-        </profile>
-        <profile>
-            <id>frontend-ts</id>
-            <build>
-                <resources>
-                    <resource>
-                        <directory>${maven.multiModuleProjectDirectory}/frontend/dist</directory>
-                        <targetPath>META-INF/resources</targetPath>
-                        <filtering>false</filtering>
-                    </resource>
-                </resources>
-                <plugins>
-                    <plugin>
-                        <groupId>org.codehaus.mojo</groupId>
-                        <artifactId>exec-maven-plugin</artifactId>
-                        <executions>
-                            <execution>
-                                <id>frontend-build</id>
-                                <phase>generate-resources</phase>
-                                <goals><goal>exec</goal></goals>
-                                <configuration>
-                                    <workingDirectory>${maven.multiModuleProjectDirectory}/frontend</workingDirectory>
-                                    <executable>npm</executable>
-                                    <arguments><argument>ci</argument></arguments>
-                                </configuration>
-                            </execution>
-                            <execution>
-                                <id>frontend-bundle</id>
-                                <phase>generate-resources</phase>
-                                <goals><goal>exec</goal></goals>
-                                <configuration>
-                                    <workingDirectory>${maven.multiModuleProjectDirectory}/frontend</workingDirectory>
-                                    <executable>npm</executable>
-                                    <arguments><argument>run</argument><argument>build</argument></arguments>
-                                </configuration>
-                            </execution>
-                        </executions>
-                    </plugin>
-                </plugins>
-            </build>
-        </profile>
-    </profiles>
 </project>
