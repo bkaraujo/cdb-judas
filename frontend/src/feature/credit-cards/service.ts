@@ -44,6 +44,27 @@ export interface CreditCardService {
 }
 
 export function createCreditCardService(deps: CreditCardServiceDeps): CreditCardService {
+  /* O endpoint é POR CONTA + janela do ciclo, mas `invoiceFor` é por CARTÃO: N cartões da mesma
+   * conta no mesmo período pedem exatamente a mesma URL (a tela de Extrato do Cartão dispara uma
+   * por cartão para montar a coluna da esquerda). Como o http-client serializa a fila, essas
+   * chamadas viram N GETs idênticos em sequência. Este mapa compartilha a promessa enquanto ela
+   * está em voo e a descarta ao assentar — sem cache com validade, nada fica velho. */
+  const inFlight = new Map<string, Promise<InvoiceTx[]>>();
+
+  function listByAccountShared(accountId: string, query: string): Promise<InvoiceTx[]> {
+    const key = accountId + '?' + query;
+    const pending = inFlight.get(key);
+    if (pending) return pending;
+    const promise = deps.txRepo
+      .listByAccount(accountId, query)
+      .then((txs) => (Array.isArray(txs) ? txs : []))
+      .finally(() => {
+        inFlight.delete(key);
+      });
+    inFlight.set(key, promise);
+    return promise;
+  }
+
   return {
     listFromCache: () => {
       const out: CreditCardWithAccount[] = [];
@@ -62,8 +83,8 @@ export function createCreditCardService(deps: CreditCardServiceDeps): CreditCard
       }
       const due = dues[0] as string;
       const cycle = cycleFor(account, due);
-      return deps.txRepo.listByAccount(account.id, 'dateFrom=' + cycle.from + '&dateTo=' + cycle.to).then((txs) => {
-        const items = (Array.isArray(txs) ? txs : []).filter((t) => String(t.cardId) === String(card.id));
+      return listByAccountShared(account.id, 'dateFrom=' + cycle.from + '&dateTo=' + cycle.to).then((txs) => {
+        const items = txs.filter((t) => String(t.cardId) === String(card.id));
         return {
           dueDate: due,
           cycle,

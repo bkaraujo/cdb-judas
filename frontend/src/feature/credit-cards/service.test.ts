@@ -37,6 +37,30 @@ describe('feature:credit-cards — service (txRepo/cache fakes)', () => {
     expect(out[0]?.name).toBe('Com cartão');
   });
 
+  it('invoiceFor compartilha o GET em voo entre cartões da mesma conta e período', async () => {
+    let calls = 0;
+    const txRepo: CreditCardsTxRepoPort = {
+      listByAccount: () => {
+        calls += 1;
+        return Promise.resolve([{ id: '1', cardId: '9', date: '2026-03-10', amount: -100, type: 'expense' }]);
+      },
+    };
+    const service = createCreditCardService({ txRepo, cache: fakeCache() });
+    const account = { id: '1', closingDay: 20, dueDay: 5 } as Account;
+    const period = Period.create(4, 2026);
+    const [a, b] = await Promise.all([
+      service.invoiceFor({ id: '9', last4: '1234' } as Account['cards'][number], account, period),
+      service.invoiceFor({ id: '8', last4: '5678' } as Account['cards'][number], account, period),
+    ]);
+    expect(calls).toBe(1);
+    expect(a.total).toBe(100);
+    expect(b.total).toBe(0); // mesma resposta, filtro por cardId é de cada cartão
+
+    // Assentou: a próxima leva vai à rede de novo (não é cache com validade).
+    await service.invoiceFor({ id: '9', last4: '1234' } as Account['cards'][number], account, period);
+    expect(calls).toBe(2);
+  });
+
   it('invoiceFor busca a janela do ciclo e filtra pelo cardId', async () => {
     const service = createCreditCardService({ txRepo: fakeTxRepo(), cache: fakeCache() });
     const account = { id: '1', closingDay: 20, dueDay: 5 } as Account;
