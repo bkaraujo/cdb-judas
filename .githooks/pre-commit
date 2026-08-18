@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# Pre-commit gate: ArchUnit (backend) + Test Harness QUnit (frontend) precisam passar.
-# Instalar uma vez: git config core.hooksPath .githooks
+# Pre-commit gate: ArchUnit (backend) + Test Harness QUnit (web) + typecheck/test/check:arch
+# (frontend) precisam passar. Instalar uma vez: git config core.hooksPath .githooks
 set -uo pipefail
 
 REPO_ROOT="$(git rev-parse --show-toplevel)"
@@ -29,6 +29,38 @@ else
         status=1
     else
         echo "OK: Test Harness"
+    fi
+fi
+
+echo "==> typecheck (frontend)"
+if [ ! -d "frontend/node_modules" ]; then
+    echo "node_modules ausente em frontend/ — rode: npm install --prefix frontend"
+    status=1
+else
+    (cd frontend && npm run --silent typecheck)
+    if [ $? -ne 0 ]; then
+        echo "FALHOU: typecheck (frontend)"
+        status=1
+    else
+        echo "OK: typecheck (frontend)"
+    fi
+
+    echo "==> test (frontend)"
+    (cd frontend && npm run --silent test -- --run)
+    if [ $? -ne 0 ]; then
+        echo "FALHOU: test (frontend)"
+        status=1
+    else
+        echo "OK: test (frontend)"
+    fi
+
+    echo "==> check:arch (frontend)"
+    (cd frontend && npm run --silent check:arch)
+    if [ $? -ne 0 ]; then
+        echo "FALHOU: check:arch (frontend)"
+        status=1
+    else
+        echo "OK: check:arch (frontend)"
     fi
 fi
 
