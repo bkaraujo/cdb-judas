@@ -49,6 +49,12 @@ export interface CacheStore extends SseCachePort {
    * carga inicial e só normalizava (parcialmente, só categoria/conta) nas atualizações via SSE;
    * aqui as duas fontes convergem para o mesmo formato. */
   hydrate(snapshot: RegistrySnapshot): void;
+  /** Substitui a lista de regras de importação. Sem canal SSE (f010 não dispara evento — ver
+   * padrão 008 na wiki), então a fatia `import-rules` é a única origem que mantém isto fresco:
+   * `loadRules()` (recarga completa após mutação) e `ImportRulesApi.quickCreate` (append otimista,
+   * pro quick-create no cabeçalho do preview de import-statement ficar elegível sem esperar
+   * reload). Único caso de escrita em `importRules` fora de `hydrate`. */
+  setImportRules(rules: ImportRule[]): void;
 }
 
 export function createCacheStore(bus: EventBus): CacheStore {
@@ -147,6 +153,9 @@ export function createCacheStore(bus: EventBus): CacheStore {
         costCenters: snapshot.costCenters,
         importRules: snapshot.importRules,
       };
+    },
+    setImportRules(rules) {
+      store = { ...store, importRules: rules };
     },
   };
 }

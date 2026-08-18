@@ -12,7 +12,7 @@ import { toast } from './ui/toast.ts';
 /* ---- Record lookup ----
  * Replaces the per-page findAccount/findItem/findCard/findTag/findTx helpers. String-compares
  * ids so a numeric record id matches a data-id attribute. */
-export function byId<T extends { id: unknown }>(arr: readonly T[] | null | undefined, id: unknown): T | null {
+export function byId<T extends { id?: unknown }>(arr: readonly T[] | null | undefined, id: unknown): T | null {
   if (!arr) return null;
   for (let i = 0; i < arr.length; i++) {
     if (String(arr[i]?.id) === String(id)) return arr[i] as T;
@@ -140,6 +140,21 @@ export function bindSwatches(m: Modal, $colorInput: JQuery): (activeHex?: string
   });
   $colorInput.on('input change', () => paint($colorInput.val() as string));
   return paint;
+}
+
+/** Bind a live BR-currency mask to an <input>. Returns the jQuery element. Deferido da Fase 3
+ * (format.ts, domínio puro — isto tem efeito colateral de DOM) e não portado na Fase 5 por
+ * descuido; completado aqui, no primeiro ponto onde a fatia (accounts) realmente precisa dele. */
+export function bindCurrencyMask($input: JQuery): JQuery {
+  return $input.on('input', function () {
+    const raw = (($(this).val() as string) || '').replace(/\D/g, '');
+    if (!raw) {
+      $(this).val('');
+      return;
+    }
+    const n = parseInt(raw, 10) / 100;
+    $(this).val(n.toFixed(2).replace('.', ',').replace(/\B(?=(\d{3})+(?!\d))/g, '.'));
+  });
 }
 
 export interface ShiftMonthState {

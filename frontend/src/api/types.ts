@@ -19,7 +19,7 @@ export type LocalDate = components['schemas']['LocalDate'];
 export type LocalDateTime = components['schemas']['LocalDateTime'];
 export type LoginRequest = components['schemas']['LoginRequest'];
 export type MonthlyResult = components['schemas']['MonthlyResult'];
-export type PatchStatusRequest = components['schemas']['PatchStatusRequest'];
+// PatchStatusRequest: ver api/overrides.ts — mesmo caso de TransactionRequest (status lowercase).
 export type Preferences = components['schemas']['Preferences'];
 export type PreferencesRequest = components['schemas']['PreferencesRequest'];
 export type Row = components['schemas']['Row'];
@@ -27,8 +27,8 @@ export type SelfResponse = components['schemas']['SelfResponse'];
 export type StatementConfirmRequest = components['schemas']['StatementConfirmRequest'];
 export type Tag = components['schemas']['Tag'];
 export type TagRequest = components['schemas']['TagRequest'];
-export type TransactionRequest = components['schemas']['TransactionRequest'];
-export type TransactionResponse = components['schemas']['TransactionResponse'];
+// TransactionRequest/TransactionResponse: ver api/overrides.ts — status/type vão na rede em
+// lowercase, o gerado (uppercase) está errado; corrigidos lá para não formar ciclo de import.
 export type TransferCategoryResponse = components['schemas']['TransferCategoryResponse'];
 export type TransferRequest = components['schemas']['TransferRequest'];
 export type UpdateMeRequest = components['schemas']['UpdateMeRequest'];

@@ -1,3 +1,4 @@
+import type { components } from './schema.d.ts';
 import type { UUID } from './types.ts';
 
 /**
@@ -9,6 +10,22 @@ import type { UUID } from './types.ts';
 // enum Java é uppercase e é dele que o SmallRye deriva o schema gerado. `planed` é o typo real.
 export type TransactionType = 'income' | 'expense' | 'transfer';
 export type TransactionStatus = 'pending' | 'scheduled' | 'confirmed' | 'planed' | 'balance' | 'cancelled';
+
+/** `TransactionRequest`/`TransactionResponse` corrigidos (status/type lowercase) — vivem aqui, não
+ * em `types.ts`, para não criar um ciclo de import (`types.ts` → `overrides.ts` → `types.ts`);
+ * `types.ts` continua a única fonte de `UUID`/`components`, `overrides.ts` só consome. Consumidor:
+ * `feature/transactions` (Fase 6), primeira fatia a precisar do record completo tipado certo. */
+export type TransactionRequest = Omit<components['schemas']['TransactionRequest'], 'status' | 'type'> & {
+  status: TransactionStatus;
+  type: TransactionType;
+};
+export type TransactionResponse = Omit<components['schemas']['TransactionResponse'], 'status' | 'type'> & {
+  status?: TransactionStatus;
+  type?: TransactionType;
+};
+export type PatchStatusRequest = Omit<components['schemas']['PatchStatusRequest'], 'status'> & {
+  status: TransactionStatus;
+};
 
 // 2. CategoryResponse.nature e AccountResponse.type SÃO uppercase de verdade — a inconsistência
 // entre entidades é real e não é uniformizada aqui (o gerado já cobre esses dois campos).

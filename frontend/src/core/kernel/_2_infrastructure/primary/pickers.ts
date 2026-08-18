@@ -235,7 +235,7 @@ export interface OptionsHtmlOptions<T> {
 
 // Generic "— placeholder — + items" <option> list, keyed by `.id` (labelOf defaults to
 // name/description). Used where a field is optional (no valid default to fall back to).
-export function optionsHtml<T extends { id: string; name?: string; description?: string }>(items: readonly T[] | null | undefined, selectedId: string | null | undefined, opts: OptionsHtmlOptions<T> = {}): string {
+export function optionsHtml<T extends { id?: string; name?: string; description?: string }>(items: readonly T[] | null | undefined, selectedId: string | null | undefined, opts: OptionsHtmlOptions<T> = {}): string {
   const labelOf = opts.labelOf || ((it: T) => it.name || it.description || '');
   const out = ['<option value="">' + esc(opts.placeholder || '— Nenhuma —') + '</option>'];
   (items || []).forEach((it) => {
