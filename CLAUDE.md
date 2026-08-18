@@ -1,6 +1,6 @@
 # CDB Finance — Guia Central
 
-Gestor de finanças pessoais. Backend **Java 25 + Quarkus** (JVM mode); frontend **SPA Vanilla JS/CSS + jQuery 4** (servido pelo próprio backend). Arquitetura híbrida: **Vertical Slice** nas features de entrega HTTP (`br.cdb.feature.fNNN`) sobre **Hexagonal** nos contextos de negócio.
+Gestor de finanças pessoais. Backend **Java 25 + Quarkus** (JVM mode); frontend **SPA TypeScript + Vite** em `frontend/` (jQuery 4 via npm, servido pelo próprio backend). Arquitetura híbrida: **Vertical Slice** nas features de entrega HTTP (`br.cdb.feature.fNNN`) sobre **Hexagonal** nos contextos de negócio.
 
 > **A documentação completa deste projeto mora na WikiJS** (skill `wikijs`), não mais em `docs/` ou nos `CLAUDE.md` de cada módulo — esses foram removidos/reduzidos em 2026-08-12. Este arquivo é só um apontador mínimo para orientar sessões futuras do Claude Code; para qualquer detalhe de arquitetura, padrão de código, contrato de API ou regra de negócio, **consulte a wiki**.
 
@@ -9,7 +9,7 @@ Gestor de finanças pessoais. Backend **Java 25 + Quarkus** (JVM mode); frontend
 | Assunto | Página na wiki |
 |---|---|
 | Arquitetura backend (VSA+Hexagonal, módulos Maven, fatias `fNNN` f000–f999, Result, Lombok, Null-Safety, JDBC/H2, qualidade & build, testes, diagramas de pacote/classe/atividade, schema do banco) | `secular/profissao/bkraujo/judas/backend` |
-| Arquitetura frontend (padrões 001–009, fatias físicas `web/feature/*`, contratos de API request/response JSON, seleção de categoria/tag, testes QUnit, diagramas) | `secular/profissao/bkraujo/judas/frontend` |
+| Arquitetura frontend (padrões 001–010, fatias físicas `frontend/src/feature/*`, contratos de API request/response JSON, seleção de categoria/tag, testes Vitest + gates `typecheck`/`check:arch`, diagramas) | `secular/profissao/bkraujo/judas/frontend` |
 | Regras de negócio (funcionalidades, contas, cartões, ciclo de fatura, transações, categorização, importação de extrato/fatura, fechamento de período) | `secular/profissao/bkraujo/judas/regras-negocio` |
 | Casos de uso — **página única**: tabela tela × endpoint (UI-001…UI-095 com diagrama de atividade cada; UC-001…UC-090 com objetivo, exceções, regras, endpoint/classe) | `secular/profissao/bkraujo/judas/casos-de-uso` |
 | Índice/overview do projeto | `secular/profissao/bkraujo/judas` |
@@ -24,7 +24,7 @@ Use a skill `wikijs` para ler/atualizar essas páginas (GraphQL API ou UI em `ht
 
 ## Esqueleto rápido (para não precisar abrir a wiki toda vez)
 
-Módulos Maven (três, é o que o `<modules>` da raiz lista): `br-parent` · `br-commons` · `br-application` (`feature`/`core` — **não há `br.cdb.infra`**). `br-context-people`/`br-context-monetary` foram dissolvidos na fase 2 e não existem mais nem como diretório. `web/` não é módulo Maven, é copiado para `META-INF/resources` pelo pom de `br-application`.
+Módulos Maven (três, é o que o `<modules>` da raiz lista): `br-parent` · `br-commons` · `br-application` (`feature`/`core` — **não há `br.cdb.infra`**). `br-context-people`/`br-context-monetary` foram dissolvidos na fase 2 e não existem mais nem como diretório. `frontend/` não é módulo Maven: o pom de `br-application` roda `npm ci`/`npm run build` no `generate-resources` e copia `frontend/dist` para `META-INF/resources` (`-Dexec.skip=true` pula o bundle). O SPA vanilla em `web/` foi removido em 2026-08-18.
 
 Config de runtime mora em **`application.yaml` na raiz** (árvore `cdb.*`, lida por `CoreModule` via system property `cdb.application.yaml`); `application.properties` só cuida de `quarkus.*` — as chaves `datasource.jdbc.*`/`DATASOURCE_JDBC_URL` foram removidas de lá (a interface `DataSourceProperties` sobrou no código, sem consumidor). DDL é por fatia (`FNNNModule.model()` + `Database.initialize`), sem migrações one-shot: mudou schema, apague `database.mv.db`.
 
