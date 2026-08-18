@@ -46,27 +46,6 @@
                 <directory>src/main/resources</directory>
                 <filtering>true</filtering>
             </resource>
-            <!-- SPA vanilla (sem etapa de build): copiada verbatim para o classpath. Quarkus serve
-                 conteúdo estático de META-INF/resources automaticamente (convenção servlet).
-                 Ancorado em maven.multiModuleProjectDirectory (raiz do repo) porque web/ vive lá,
-                 não dentro deste módulo — um <directory>web</directory> relativo resolveria contra
-                 o basedir deste pom e não acharia nada. -->
-            <resource>
-                <directory>${maven.multiModuleProjectDirectory}/web</directory>
-                <targetPath>META-INF/resources</targetPath>
-                <filtering>false</filtering>
-                <excludes>
-                    <exclude>CLAUDE.md</exclude>
-                    <exclude>package.json</exclude>
-                    <exclude>package-lock.json</exclude>
-                    <!-- Dependências de desenvolvimento do harness de teste (puppeteer-core &
-                         cia., ~30 MB). Sem esta exclusão elas iam parar dentro da fast-jar e
-                         ficavam servidas publicamente em /node_modules/**. -->
-                    <exclude>node_modules/**</exclude>
-                    <exclude>tools/**</exclude>
-                    <exclude>test/**</exclude>
-                </excludes>
-            </resource>
         </resources>
         <plugins>
             <!-- CoreModule lê o YAML pelo caminho em cdb.application.yaml (default: ./application.yaml,
@@ -84,12 +63,50 @@
         </plugins>
     </build>
 
-    <!-- Profile inativo por padrão: sem ele, o build continua idêntico ao de hoje, servindo web/
-         (SPA vanilla). Ativado explicitamente (-Pfrontend-ts) builda e serve o frontend TS/Vite de
-         frontend/dist no lugar. Os dois <resource> colidiriam (ambos têm index.html) se ativos ao
-         mesmo tempo — por isso este entra num profile, não direto em <build><resources> acima. O
-         cutover (tornar o profile default, apagar web/) é decisão separada, fora deste plano. -->
+    <!-- Os dois <resource> de META-INF/resources (web/ vanilla vs. frontend/dist TS/Vite)
+         colidiriam se ativos ao mesmo tempo (ambos têm index.html) — por isso `web/` também
+         virou profile, não fica direto em <build><resources> acima. `default-web`
+         (activeByDefault) e `frontend-ts` (ativado por -P) são mutuamente exclusivos "de
+         graça": Maven desativa automaticamente todo profile activeByDefault assim que QUALQUER
+         outro profile é ativado explicitamente — comportamento documentado do Maven, não uma
+         condição escrita à mão aqui. `mvn ... -Pfrontend-ts` builda e serve frontend/dist no
+         lugar de web/; sem a flag, o build continua idêntico ao de hoje. O cutover (tornar
+         frontend-ts o único caminho, apagar web/ e este profile) é decisão separada, fora deste
+         plano. -->
     <profiles>
+        <profile>
+            <id>default-web</id>
+            <activation>
+                <activeByDefault>true</activeByDefault>
+            </activation>
+            <build>
+                <resources>
+                    <!-- SPA vanilla (sem etapa de build): copiada verbatim para o classpath.
+                         Quarkus serve conteúdo estático de META-INF/resources automaticamente
+                         (convenção servlet). Ancorado em maven.multiModuleProjectDirectory (raiz
+                         do repo) porque web/ vive lá, não dentro deste módulo — um
+                         <directory>web</directory> relativo resolveria contra o basedir deste pom
+                         e não acharia nada. -->
+                    <resource>
+                        <directory>${maven.multiModuleProjectDirectory}/web</directory>
+                        <targetPath>META-INF/resources</targetPath>
+                        <filtering>false</filtering>
+                        <excludes>
+                            <exclude>CLAUDE.md</exclude>
+                            <exclude>package.json</exclude>
+                            <exclude>package-lock.json</exclude>
+                            <!-- Dependências de desenvolvimento do harness de teste
+                                 (puppeteer-core & cia., ~30 MB). Sem esta exclusão elas iam parar
+                                 dentro da fast-jar e ficavam servidas publicamente em
+                                 /node_modules/**. -->
+                            <exclude>node_modules/**</exclude>
+                            <exclude>tools/**</exclude>
+                            <exclude>test/**</exclude>
+                        </excludes>
+                    </resource>
+                </resources>
+            </build>
+        </profile>
         <profile>
             <id>frontend-ts</id>
             <build>
