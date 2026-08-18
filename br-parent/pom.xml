@@ -40,6 +40,7 @@
         <maven.plugin.pmd>3.28.0</maven.plugin.pmd>
         <maven.plugin.versions>2.21.0</maven.plugin.versions>
         <maven.plugin.antrun>3.2.0</maven.plugin.antrun>
+        <maven.plugin.frontend>2.0.2</maven.plugin.frontend>
         <!-- ######################################################### -->
         <!-- Dependências Técnicas -->
         <!-- ######################################################### -->
@@ -113,6 +114,7 @@
                 <plugin><groupId>org.jacoco</groupId><artifactId>jacoco-maven-plugin</artifactId><version>${maven.plugin.jacoco}</version></plugin>
                 <plugin><groupId>org.apache.maven.plugins</groupId><artifactId>maven-pmd-plugin</artifactId><version>${maven.plugin.pmd}</version></plugin>
                 <plugin><groupId>org.codehaus.mojo</groupId><artifactId>exec-maven-plugin</artifactId><version>${maven.plugin.exec}</version></plugin>
+                <plugin><groupId>com.github.eirslett</groupId><artifactId>frontend-maven-plugin</artifactId><version>${maven.plugin.frontend}</version></plugin>
                 <plugin><groupId>org.codehaus.mojo</groupId><artifactId>versions-maven-plugin</artifactId><version>${maven.plugin.versions}</version></plugin>
                 <plugin><groupId>org.apache.maven.plugins</groupId><artifactId>maven-clean-plugin</artifactId><version>${maven.plugin.clean}</version></plugin>
                 <plugin><groupId>org.apache.maven.plugins</groupId><artifactId>maven-resources-plugin</artifactId><version>${maven.plugin.resources}</version></plugin>

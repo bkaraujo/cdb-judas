@@ -14,6 +14,13 @@
     <artifactId>application</artifactId>
     <packaging>jar</packaging>
 
+    <properties>
+        <!-- default de -Dexec.skip: mesma flag que pulava o bundle no exec-maven-plugin
+             (ver README.md/CLAUDE.md/.githooks/pre-commit) — mantida ao trocar pro
+             frontend-maven-plugin, que não a conhece nativamente. -->
+        <exec.skip>false</exec.skip>
+    </properties>
+
     <dependencies>
         <dependency><groupId>br.cdb</groupId><artifactId>commons</artifactId><version>${project.version}</version></dependency>
 
@@ -73,30 +80,44 @@
             </plugin>
 
             <!-- Build da SPA antes do process-resources, que é a fase que copia frontend/dist
-                 para o classpath. `-Dexec.skip=true` pula as duas execuções para quem não precisa
-                 do bundle — é o que o gate ArchUnit do .githooks/pre-commit faz. -->
+                 para o classpath. Node/npm vêm baixados e fixados pelo próprio plugin (instalados
+                 em frontend/node, fora do PATH do sistema) — não depende de nvm nem de qual node
+                 estiver ativo no shell que invoca o mvn (era o exec-maven-plugin com <executable>npm</executable>
+                 antes, resolvido via PATH). `-Dexec.skip=true` pula as três execuções para quem não
+                 precisa do bundle — é o que o gate ArchUnit do .githooks/pre-commit faz. -->
             <plugin>
-                <groupId>org.codehaus.mojo</groupId>
-                <artifactId>exec-maven-plugin</artifactId>
+                <groupId>com.github.eirslett</groupId>
+                <artifactId>frontend-maven-plugin</artifactId>
+                <configuration>
+                    <workingDirectory>${maven.multiModuleProjectDirectory}/frontend</workingDirectory>
+                    <installDirectory>${maven.multiModuleProjectDirectory}/frontend</installDirectory>
+                </configuration>
                 <executions>
+                    <execution>
+                        <id>frontend-install-node-npm</id>
+                        <phase>generate-resources</phase>
+                        <goals><goal>install-node-and-npm</goal></goals>
+                        <configuration>
+                            <nodeVersion>v22.22.1</nodeVersion>
+                            <skip>${exec.skip}</skip>
+                        </configuration>
+                    </execution>
                     <execution>
                         <id>frontend-build</id>
                         <phase>generate-resources</phase>
-                        <goals><goal>exec</goal></goals>
+                        <goals><goal>npm</goal></goals>
                         <configuration>
-                            <workingDirectory>${maven.multiModuleProjectDirectory}/frontend</workingDirectory>
-                            <executable>npm</executable>
-                            <arguments><argument>ci</argument></arguments>
+                            <arguments>ci</arguments>
+                            <skip>${exec.skip}</skip>
                         </configuration>
                     </execution>
                     <execution>
                         <id>frontend-bundle</id>
                         <phase>generate-resources</phase>
-                        <goals><goal>exec</goal></goals>
+                        <goals><goal>npm</goal></goals>
                         <configuration>
-                            <workingDirectory>${maven.multiModuleProjectDirectory}/frontend</workingDirectory>
-                            <executable>npm</executable>
-                            <arguments><argument>run</argument><argument>build</argument></arguments>
+                            <arguments>run build</arguments>
+                            <skip>${exec.skip}</skip>
                         </configuration>
                     </execution>
                 </executions>
