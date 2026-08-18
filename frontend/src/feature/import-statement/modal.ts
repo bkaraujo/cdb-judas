@@ -18,6 +18,7 @@ import { openCategoryCreateModal, openTagCreateModal, categoryPickerHtml } from 
 import { btn } from '../../core/kernel/_2_infrastructure/primary/ui/button.ts';
 import type { Modal } from '../../core/kernel/_2_infrastructure/primary/ui/modal.ts';
 import { modal } from '../../core/kernel/_2_infrastructure/primary/ui/modal.ts';
+import { refreshSearchSelect } from '../../core/kernel/_2_infrastructure/primary/ui/search-select.ts';
 import { modalFooter } from '../../core/kernel/_2_infrastructure/primary/helpers.ts';
 import { refreshTagsDropdownLabel, tagsDropdownHtml } from '../../core/kernel/_2_infrastructure/primary/ui/tags-dropdown.ts';
 import { toast } from '../../core/kernel/_2_infrastructure/primary/ui/toast.ts';
@@ -733,7 +734,7 @@ export function createImportStatementModal(deps: ImportStatementDeps) {
           m.$el.find('[data-row-description][data-idx="' + i + '"]').val(value as string);
         } else if (field === 'categoryId') {
           m.$el.find('[data-row-category][data-idx="' + i + '"]').val(value as string);
-          void import('../../core/kernel/_2_infrastructure/primary/ui/search-select.ts').then(({ refreshSearchSelect }) => refreshSearchSelect(catSelectId(i)));
+          refreshSearchSelect(catSelectId(i));
         } else if (field === 'type') {
           m.$el.find('[data-row-type][data-idx="' + i + '"]').val(value as string);
           refreshCategoryOptions(i, value as string);
@@ -761,7 +762,7 @@ export function createImportStatementModal(deps: ImportStatementDeps) {
         .map((it) => '<option value="' + esc(it.value) + '"' + (String(it.value) === String(selId) ? ' selected' : '') + '>' + esc(it.label) + '</option>')
         .join('');
       $cat.html(optionsHtml).prop('disabled', !cats.length);
-      void import('../../core/kernel/_2_infrastructure/primary/ui/search-select.ts').then(({ refreshSearchSelect }) => refreshSearchSelect(catSelectId(idx)));
+      refreshSearchSelect(catSelectId(idx));
       const data = previewData || statementData;
       if (data && data.rows && data.rows[idx]) (data.rows[idx] as ImportRowUI).categoryId = selId || null;
     }
