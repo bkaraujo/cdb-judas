@@ -1,5 +1,6 @@
 package br.cdb.feature.f007;
 
+import br.cdb.core.View;
 import br.cdb.core.web.HTTPApi;
 import br.cdb.feature.f006._0_domain.model.Transaction;
 import br.cdb.feature.f007._2_infrastructure.web.ImportResource;
@@ -44,7 +45,7 @@ public class F007Api {
             @Nullable UUID costCenterId,
             @Nullable UUID cardId,
             @Nullable List<UUID> tagIds
-    ) {}
+    ) implements View {}
 
     /** Corpo de {@link #confirm} — espelha {@code StatementConfirmRequest}. */
     @NullMarked
@@ -52,7 +53,7 @@ public class F007Api {
 
     /** Espelha {@code ImportConfirmResponse}. */
     @NullMarked
-    public record ConfirmResult(int created, int reconciled, int skipped) {}
+    public record ConfirmResult(int created, int reconciled, int skipped) implements View {}
 
     private static HTTPApi internalApi() {
         return Context.get(HTTPApi.class);

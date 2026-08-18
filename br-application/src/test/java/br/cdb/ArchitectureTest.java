@@ -1,7 +1,9 @@
 package br.cdb;
 
+import br.cdb.core.View;
 import br.commons.framework.persistence.jdbc.JDBCRepository;
 import br.commons.tools.Meta;
+import com.tngtech.archunit.base.DescribedPredicate;
 import com.tngtech.archunit.core.domain.JavaClass;
 import com.tngtech.archunit.core.importer.ImportOption;
 import com.tngtech.archunit.junit.AnalyzeClasses;
@@ -92,6 +94,15 @@ class ArchitectureTest {
                     .because("fatia de negócio não importa fatia de negócio irmã; use evento (f000), porta no _0_domain do consumidor, ou adapter em f999 — ver CLAUDE.md");
 
     @ArchTest
+    static final ArchRule records_of_slice_api_clients_must_implement_view = classes()
+            .that().areRecords()
+            .and().arePublic()
+            .and().haveSimpleNameNotEndingWith("Body")
+            .and(isDirectlyNestedInSliceApiClient())
+            .should().implement(View.class)
+            .because("todo record devolvido por um FxxxApi (cliente da API pública de fatia) deve implementar View — corpo de requisição (sufixo Body) e records privados são exceção");
+
+    @ArchTest
     static final ArchRule person_scoped_repositories_must_declare_a_person_scoped_finder =
             classes().that().haveSimpleName("AccountRepository")
                     .or().haveSimpleName("CreditCardRepository")
@@ -180,6 +191,24 @@ class ArchitectureTest {
                     events.add(SimpleConditionEvent.violated(clazz,
                             clazz.getFullName() + " não declara nenhum finder escopado por pessoa (nome contendo \"Person\")"));
                 }
+            }
+        };
+    }
+
+    private static final Pattern SLICE_API_CLIENT_SIMPLE_NAME = Pattern.compile("F\\d{3}Api");
+
+    /**
+     * Record diretamente aninhado num {@code FNNNApi} (não em profundidade — ex.: {@code CardView}
+     * aninhado dentro de {@code AccountView} não conta, só o record projetado pela própria classe do
+     * cliente). É o universo alcançado por {@code records_of_slice_api_clients_must_implement_view}.
+     */
+    private static DescribedPredicate<JavaClass> isDirectlyNestedInSliceApiClient() {
+        return new DescribedPredicate<>("estar diretamente aninhado num FxxxApi") {
+            @Override
+            public boolean test(JavaClass clazz) {
+                return clazz.getEnclosingClass()
+                        .map(enclosing -> SLICE_API_CLIENT_SIMPLE_NAME.matcher(enclosing.getSimpleName()).matches())
+                        .orElse(false);
             }
         };
     }

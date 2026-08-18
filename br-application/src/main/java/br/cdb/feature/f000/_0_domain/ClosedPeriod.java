@@ -1,5 +1,6 @@
 package br.cdb.feature.f000._0_domain;
 
+import br.cdb.core.View;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 
@@ -18,7 +19,7 @@ import java.time.YearMonth;
  * dependência de fatia irmã.
  */
 @NullMarked
-public record ClosedPeriod(@Nullable YearMonth period) {
+public record ClosedPeriod(@Nullable YearMonth period) implements View {
 
     private static final ClosedPeriod OPEN = new ClosedPeriod(null);
 

@@ -1,5 +1,6 @@
 package br.cdb.feature.f003;
 
+import br.cdb.core.View;
 import br.cdb.core.web.HTTPApi;
 import br.cdb.feature.f003._2_infrastructure.web.AccountCardResource;
 import br.commons.framework.cdi.Context;
@@ -30,7 +31,7 @@ public class F003Api {
 
     /** Espelha {@code CardResponse}. */
     @NullMarked
-    public record CardView(UUID id, String last4, UUID accountId, boolean active) {}
+    public record CardView(UUID id, String last4, UUID accountId, boolean active) implements View {}
 
     /** Corpo de {@link #createCard} — espelha {@code CardRequest}. */
     @NullMarked

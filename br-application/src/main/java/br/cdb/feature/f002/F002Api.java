@@ -1,5 +1,6 @@
 package br.cdb.feature.f002;
 
+import br.cdb.core.View;
 import br.cdb.core.web.HTTPApi;
 import br.cdb.feature.f000._0_domain.ClosedPeriod;
 import br.cdb.feature.f002._2_infrastructure.web.AccountBalanceResource;
@@ -57,7 +58,7 @@ public class F002Api {
             @Nullable Integer dueDay,
             BigDecimal currentBalance,
             List<CardView> cards
-    ) {
+    ) implements View {
         /** Espelha {@code AccountResponse.Card} — projeção somente-leitura de cartão embutida na conta. */
         @NullMarked
         public record CardView(UUID id, String last4, UUID accountId, boolean active) {}
@@ -78,7 +79,7 @@ public class F002Api {
 
     /** Espelha {@code BalanceResponse}. */
     @NullMarked
-    public record BalanceView(UUID accountId, YearMonth period, BigDecimal balance) {}
+    public record BalanceView(UUID accountId, YearMonth period, BigDecimal balance) implements View {}
 
     private static HTTPApi internalApi() {
         return Context.get(HTTPApi.class);

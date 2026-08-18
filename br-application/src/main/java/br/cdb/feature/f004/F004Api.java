@@ -1,5 +1,6 @@
 package br.cdb.feature.f004;
 
+import br.cdb.core.View;
 import br.cdb.core.web.HTTPApi;
 import br.cdb.feature.f000._0_domain.DeletionStrategy;
 import br.cdb.feature.f004._2_infrastructure.web.TagResource;
@@ -37,7 +38,7 @@ public class F004Api {
 
     /** Espelha o modelo {@code Tag}. */
     @NullMarked
-    public record TagView(UUID id, UUID personId, String name, String color, @Nullable LocalDateTime createdAt) {}
+    public record TagView(UUID id, UUID personId, String name, String color, @Nullable LocalDateTime createdAt) implements View {}
 
     /** Corpo de {@link #createTag}/{@link #updateTag} — espelha {@code TagRequest}. */
     @NullMarked

@@ -1,5 +1,6 @@
 package br.cdb.feature.f006;
 
+import br.cdb.core.View;
 import br.cdb.core.web.HTTPApi;
 import br.cdb.feature.f006._0_domain.model.Transaction;
 import br.cdb.feature.f006._2_infrastructure.web.TransactionResource;
@@ -54,7 +55,7 @@ public class F006Api {
             Transaction.Status status,
             Transaction.Type type,
             @Nullable UUID groupId
-    ) {}
+    ) implements View {}
 
     /** Espelha {@code TransactionResponse} — devolvida por criação/atualização/patch de status. */
     @NullMarked
@@ -75,7 +76,7 @@ public class F006Api {
             @Nullable String notes,
             @Nullable UUID cardId,
             List<UUID> tagIds
-    ) {}
+    ) implements View {}
 
     /** Corpo de {@link #createTransaction}/{@link #updateTransaction} — espelha {@code TransactionRequest}. */
     @NullMarked
