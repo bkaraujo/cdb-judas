@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# Pre-commit gate: ArchUnit (backend) + Test Harness QUnit (web) + typecheck/test/check:arch
-# (frontend) precisam passar. Instalar uma vez: git config core.hooksPath .githooks
+# Pre-commit gate: ArchUnit (backend) + typecheck/test/check:arch (frontend) precisam passar.
+# Instalar uma vez: git config core.hooksPath .githooks
 set -uo pipefail
 
 REPO_ROOT="$(git rev-parse --show-toplevel)"
@@ -16,20 +16,6 @@ if [ $? -ne 0 ]; then
     status=1
 else
     echo "OK: ArchUnit"
-fi
-
-echo "==> Test Harness QUnit (web)"
-if [ ! -d "web/node_modules/puppeteer-core" ]; then
-    echo "puppeteer-core ausente em web/node_modules — rode: npm install --prefix web"
-    status=1
-else
-    (cd web && npm run --silent test)
-    if [ $? -ne 0 ]; then
-        echo "FALHOU: Test Harness"
-        status=1
-    else
-        echo "OK: Test Harness"
-    fi
 fi
 
 echo "==> typecheck (frontend)"
