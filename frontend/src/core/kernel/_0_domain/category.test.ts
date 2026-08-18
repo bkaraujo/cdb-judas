@@ -56,4 +56,12 @@ describe('kernel:category', () => {
     const eligible = Category.eligibleParents(CATS, 'EXPENSE', '1');
     expect(eligible.length).toBe(0);
   });
+
+  it('isTransferCategory é true só pra categoria de sistema (isSystem)', () => {
+    const withTransfer = CATS.concat([{ id: '9', name: 'Transferência', nature: 'EXPENSE', parentId: null, isSystem: true, active: true }]);
+    expect(Category.isTransferCategory(withTransfer, '9')).toBe(true);
+    expect(Category.isTransferCategory(withTransfer, '1')).toBe(false);
+    expect(Category.isTransferCategory(withTransfer, '999')).toBe(false);
+    expect(Category.isTransferCategory(withTransfer, null)).toBe(false);
+  });
 });

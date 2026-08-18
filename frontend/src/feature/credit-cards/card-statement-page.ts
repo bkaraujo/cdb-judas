@@ -36,8 +36,8 @@ import type { CreditCardService, CreditCardWithAccount } from './service.ts';
 /** Porta mínima do contrato público de `transactions` (fatia irmã que vem depois na ordem do
  * plano) — só editor/exclusão de uma linha, usados aqui. */
 export interface CardStatementTxPort {
-  openEditor(opts: { existing: InvoiceTx; list: InvoiceTx[]; defaultDate?: string | null; onSaved?: () => void }): void;
-  openDeleteFlow(tx: InvoiceTx, opts: { list: InvoiceTx[]; onDone?: () => void }): void;
+  openEditor(opts: { existing: InvoiceTx; defaultDate?: string | null; onSaved?: () => void }): void;
+  openDeleteFlow(tx: InvoiceTx, opts: { onDone?: () => void }): void;
 }
 
 export interface CardStatementPageDeps {
@@ -270,7 +270,7 @@ export function createCardStatementPage(deps: CardStatementPageDeps): Page {
         toast('Lançamento indisponível — recarregue o período', 'error');
         return;
       }
-      deps.transactions.openEditor({ existing: tx, list: state.txIndex, defaultDate: state.cycle ? state.cycle.to : null, onSaved: reloadPeriod });
+      deps.transactions.openEditor({ existing: tx, defaultDate: state.cycle ? state.cycle.to : null, onSaved: reloadPeriod });
     });
     $root.on('click.cst', '[data-act=trash]', function (e) {
       e.stopPropagation();
@@ -279,7 +279,7 @@ export function createCardStatementPage(deps: CardStatementPageDeps): Page {
         toast('Lançamento indisponível — recarregue o período', 'error');
         return;
       }
-      deps.transactions.openDeleteFlow(tx, { list: state.txIndex, onDone: reloadPeriod });
+      deps.transactions.openDeleteFlow(tx, { onDone: reloadPeriod });
     });
   }
 

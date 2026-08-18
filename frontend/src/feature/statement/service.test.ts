@@ -26,11 +26,12 @@ describe('feature:statement — service (fakes)', () => {
       listByAccount: () => Promise.resolve([{ id: '1', date: '2026-03-10', description: 'Compra', amount: -50, type: 'expense' }]),
     };
     const service = createStatementService({ txRepo, balance: fakeBalance, cache: fakeCache([ACCOUNT], { '1': ACCOUNT }) });
-    const rows = await service.load('1', Period.create(3, 2026), 100);
+    const { rows, raw } = await service.load('1', Period.create(3, 2026), 100);
     expect(rows.length).toBe(2);
     expect(rows[0]?.status).toBe('balance');
     expect(rows[0]?.runningBal).toBe(100);
     expect(rows[1]?.runningBal).toBe(50);
+    expect(raw.length).toBe(1);
   });
 
   it('load funde as compras dos cartões da conta numa linha "Cartões de crédito" no vencimento', async () => {
@@ -46,7 +47,7 @@ describe('feature:statement — service (fakes)', () => {
         ]),
     };
     const service = createStatementService({ txRepo, balance: fakeBalance, cache: fakeCache([cardAccount], { '1': cardAccount }) });
-    const rows = await service.load('1', Period.create(4, 2026), 100);
+    const { rows } = await service.load('1', Period.create(4, 2026), 100);
     expect(rows.length).toBe(2);
     expect((rows[1] as unknown as { description?: string }).description).toBe('Cartões de crédito');
     expect(rows[1]?.date).toBe('2026-04-05');
@@ -57,8 +58,8 @@ describe('feature:statement — service (fakes)', () => {
   it('load devolve lista vazia se a conta não existe no cache', async () => {
     const txRepo: StatementTxPort = { listByAccount: () => Promise.resolve([]) };
     const service = createStatementService({ txRepo, balance: fakeBalance, cache: fakeCache([ACCOUNT], { '1': ACCOUNT }) });
-    const rows = await service.load('999', Period.create(3, 2026), 0);
-    expect(rows).toEqual([]);
+    const result = await service.load('999', Period.create(3, 2026), 0);
+    expect(result).toEqual({ rows: [], raw: [] });
   });
 
   it('summary combina o fechamento do período com a abertura (fechamento do mês anterior)', async () => {

@@ -135,7 +135,7 @@ export function createApp(): App {
   const importRulesApi = createImportRulesApi(importRuleService, cache);
 
   const transactionFormModal = createTransactionFormModal({ transactionService, cache, importRules: importRulesApi });
-  const transactionActions = createTransactionActions({ transactionService, formModal: transactionFormModal });
+  const transactionActions = createTransactionActions({ transactionService, formModal: transactionFormModal, cache });
   const transactionsApi = createTransactionsApi(transactionService, transactionActions);
 
   // Payable/Statement/CreditCard/Dashboard leem transações mas não são donas da fatia — recebem

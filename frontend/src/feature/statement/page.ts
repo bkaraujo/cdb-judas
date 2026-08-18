@@ -11,6 +11,7 @@ import $ from 'jquery';
 import type { Account } from '../../core/kernel/_0_domain/account.ts';
 import * as AccountDomain from '../../core/kernel/_0_domain/account.ts';
 import { esc, fmt, sortByName, valueColor } from '../../core/kernel/_0_domain/format.ts';
+import type { InvoiceTx } from '../../core/kernel/_0_domain/invoice.ts';
 import * as Period from '../../core/kernel/_0_domain/period.ts';
 import * as StatementItem from '../../core/kernel/_0_domain/statement-item.ts';
 import type { CacheStore } from '../../core/kernel/_1_application/cache-store.ts';
@@ -27,13 +28,13 @@ import { toast } from '../../core/kernel/_2_infrastructure/primary/ui/toast.ts';
 import type { AccountStatementSummary, StatementService } from './service.ts';
 
 /** Porta mínima do contrato público de `transactions` (fatia irmã) — só editor/exclusão de uma
- * linha + a listagem para o índice do mês, usados aqui. Cada fatia que precisa disto declara sua
- * própria cópia local (nunca importa de dentro de outra fatia — só via `<slice>/api.ts`, e
- * `transactions` vem depois na ordem do plano). */
+ * linha, usados aqui. Cada fatia que precisa disto declara sua própria cópia local (nunca importa
+ * de dentro de outra fatia — só via `<slice>/api.ts`, e `transactions` vem depois na ordem do
+ * plano). Sem `list`: o índice de lançamentos vem de graça do próprio `service.load` (a mesma
+ * janela alargada da conta), não precisa mais de um GET de todas as contas à parte. */
 export interface StatementTransactionsPort {
-  list(query: string): Promise<unknown[] | null>;
-  openEditor(opts: { existing: StatementItem.StatementSourceTx; list: StatementItem.StatementSourceTx[]; defaultDate?: string | null; onSaved?: () => void }): void;
-  openDeleteFlow(tx: StatementItem.StatementSourceTx, opts: { list: StatementItem.StatementSourceTx[]; onDone?: () => void }): void;
+  openEditor(opts: { existing: InvoiceTx; defaultDate?: string | null; onSaved?: () => void }): void;
+  openDeleteFlow(tx: InvoiceTx, opts: { onDone?: () => void }): void;
 }
 
 export interface StatementPageDeps {
@@ -49,7 +50,7 @@ interface StatementPageState extends PageState {
   year: number;
   items: StatementItem.StatementRow[];
   summary: Record<string, AccountStatementSummary>;
-  txIndex: StatementItem.StatementSourceTx[];
+  txIndex: InvoiceTx[];
   loading: boolean;
 }
 
@@ -68,14 +69,15 @@ export function createStatementPage(deps: StatementPageDeps): Page {
     return Period.create(state?.month || 1, state?.year || new Date().getFullYear());
   }
 
-  function findFullTx(id: string): StatementItem.StatementSourceTx | null {
-    return state ? byId(state.txIndex as (StatementItem.StatementSourceTx & { id?: unknown })[], id) : null;
+  function findFullTx(id: string): InvoiceTx | null {
+    return state ? byId(state.txIndex, id) : null;
   }
 
   function loadStatement(): Promise<void> {
     if (!state) return Promise.resolve();
     if (!state.accountId) {
       state.items = [];
+      state.txIndex = [];
       state.loading = false;
       render();
       return Promise.resolve();
@@ -87,15 +89,17 @@ export function createStatementPage(deps: StatementPageDeps): Page {
     const openingBalance = sum ? sum.openingBalance : account ? +account.balance || 0 : 0;
     return deps.service
       .load(state.accountId, currentPeriod(), openingBalance)
-      .then((list) => {
+      .then((result) => {
         if (!state) return;
-        state.items = Array.isArray(list) ? list : [];
+        state.items = result.rows;
+        state.txIndex = result.raw;
         state.loading = false;
         render();
       })
       .catch((err: { message?: string }) => {
         if (!state) return;
         state.items = [];
+        state.txIndex = [];
         state.loading = false;
         render();
         toast((err && err.message) || 'Falha ao carregar extrato', 'error');
@@ -119,25 +123,8 @@ export function createStatementPage(deps: StatementPageDeps): Page {
       });
   }
 
-  // Índice do mês (todas as contas): usado para resolver o lançamento completo por trás de uma
-  // linha do extrato (editar/excluir) e para detectar transferências.
-  function loadMonthIndex(): Promise<void> {
-    if (!state) return Promise.resolve();
-    const b = Period.bounds(currentPeriod());
-    return deps.transactions
-      .list('dateFrom=' + b.from + '&dateTo=' + b.to)
-      .then((list) => {
-        if (state) state.txIndex = (Array.isArray(list) ? list : []) as StatementItem.StatementSourceTx[];
-      })
-      .catch(() => {
-        if (state) state.txIndex = [];
-      });
-  }
-
   function reloadPeriod(): Promise<void> {
-    return Promise.all([loadSummary(), loadMonthIndex()]).then(() => {
-      loadStatement();
-    });
+    return Promise.all([loadSummary(), loadStatement()]).then(() => undefined);
   }
 
   function render(): void {
@@ -244,7 +231,7 @@ export function createStatementPage(deps: StatementPageDeps): Page {
         toast('Lançamento indisponível — recarregue o período', 'error');
         return;
       }
-      deps.transactions.openEditor({ existing: tx, list: state.txIndex, defaultDate: Period.bounds(currentPeriod()).from, onSaved: reloadPeriod });
+      deps.transactions.openEditor({ existing: tx, defaultDate: Period.bounds(currentPeriod()).from, onSaved: reloadPeriod });
     });
     $root.on('click.stm', '[data-act=trash]', function (e) {
       e.stopPropagation();
@@ -253,7 +240,7 @@ export function createStatementPage(deps: StatementPageDeps): Page {
         toast('Lançamento indisponível — recarregue o período', 'error');
         return;
       }
-      deps.transactions.openDeleteFlow(tx, { list: state.txIndex, onDone: reloadPeriod });
+      deps.transactions.openDeleteFlow(tx, { onDone: reloadPeriod });
     });
   }
 

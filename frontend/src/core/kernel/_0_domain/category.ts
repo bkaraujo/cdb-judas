@@ -83,3 +83,14 @@ export function isEffectivelyActive(list: readonly Category[] | null | undefined
   }
   return true;
 }
+
+/** Transferência é lançada pelo backend contra a categoria de sistema "Transferência" (uma por
+ * natureza, global) — ver f006 TransferUseCase. `isSystem` é exclusivo dela (f005 só marca
+ * FLG_SYSTEM nesse nome), então a categoria do lançamento basta: não é preciso achar a perna
+ * contrária, que vive em outra conta. Acoplamento: se f005 passar a marcar outra categoria como
+ * sistema, isto ganha falso positivo — o SPA não conhece os UUIDs fixos de
+ * `GET /categories/transfer` (rota interna, só f006 via InternalApi). */
+export function isTransferCategory(list: readonly Category[] | null | undefined, categoryId: string | null | undefined): boolean {
+  const c = byId(list, categoryId);
+  return !!c && c.isSystem;
+}

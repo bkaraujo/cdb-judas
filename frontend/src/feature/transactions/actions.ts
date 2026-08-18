@@ -1,12 +1,15 @@
 /** Ações de linha de lançamento (transfer detection, exclusão com escopo de grupo, confirmar
  * pagamento), compartilhadas entre a tela de Lançamentos e o Extrato de Contas.
  *
- * Todas recebem a lista de transações do período (`list`) para detectar transferências — uma
- * transferência é um par income/expense no mesmo grupo — e um callback de recarga (`onDone`/
- * `onSaved`) que a página passa para atualizar sua própria visão após a mutação.
+ * Detectar transferência não depende mais da lista de transações do período — o backend carimba
+ * toda perna de transferência com a categoria de sistema "Transferência" (`isSystem`), então basta
+ * olhar a categoria do próprio lançamento (`Category.isTransferCategory`, kernel). Um callback de
+ * recarga (`onDone`/`onSaved`) que a página passa para atualizar sua própria visão após a mutação.
  */
+import * as Category from '../../core/kernel/_0_domain/category.ts';
 import { esc } from '../../core/kernel/_0_domain/format.ts';
 import * as Transaction from '../../core/kernel/_0_domain/transaction.ts';
+import type { CacheStore } from '../../core/kernel/_1_application/cache-store.ts';
 import { confirmModal, modalFooter, modalText, runMutation } from '../../core/kernel/_2_infrastructure/primary/helpers.ts';
 import { btn } from '../../core/kernel/_2_infrastructure/primary/ui/button.ts';
 import { modal } from '../../core/kernel/_2_infrastructure/primary/ui/modal.ts';
@@ -19,35 +22,29 @@ export interface TxLike {
   groupId?: string | null;
   type?: string;
   description?: string;
+  categoryId?: string | null;
   totalInstallments?: number | null;
   installmentNumber?: number | null;
 }
 
-// A transfer is stored as two legs (one income + one expense) sharing a groupId, unlike
-// installments whose legs share a single type. Both legs carry the same date, so they sit in the
-// same month view together — detection works off the loaded list.
-export function isTransfer(tx: TxLike | null | undefined, list: readonly TxLike[] | null | undefined): boolean {
-  if (!tx || !tx.groupId) return false;
-  const group = (list || []).filter((t) => String(t.groupId) === String(tx.groupId));
-  const hasIncome = group.some((t) => t.type === 'income');
-  const hasExpense = group.some((t) => t.type === 'expense');
-  return hasIncome && hasExpense;
+export function isTransfer(tx: TxLike | null | undefined, categories: Parameters<typeof Category.isTransferCategory>[0]): boolean {
+  if (!tx) return false;
+  return Category.isTransferCategory(categories, tx.categoryId);
 }
 
 export interface TransactionActionsDeps {
   transactionService: TransactionService;
   formModal: (opts: TransactionFormModalOptions) => unknown;
+  cache: CacheStore;
 }
 
 export interface OpenFormModalOptions {
   existing?: TxLike | null;
-  list?: readonly TxLike[];
   defaultDate?: string | null;
   onSaved?: () => void;
 }
 
 export interface OpenDeleteModalOptions {
-  list?: readonly TxLike[];
   onDone?: () => void;
 }
 
@@ -56,7 +53,7 @@ export interface MarkPaidOptions {
 }
 
 export interface TransactionActions {
-  isTransfer(tx: TxLike | null | undefined, list: readonly TxLike[] | null | undefined): boolean;
+  isTransfer(tx: TxLike | null | undefined, categories: Parameters<typeof Category.isTransferCategory>[0]): boolean;
   openFormModal(opts: OpenFormModalOptions): void;
   openDeleteModal(tx: TxLike, opts?: OpenDeleteModalOptions): void;
   markPaid(tx: TxLike, opts?: MarkPaidOptions): void;
@@ -66,7 +63,7 @@ export function createTransactionActions(deps: TransactionActionsDeps): Transact
   function openFormModal(opts: OpenFormModalOptions): void {
     deps.formModal({
       existing: (opts.existing || null) as never,
-      isTransfer: isTransfer(opts.existing || null, opts.list),
+      isTransfer: isTransfer(opts.existing || null, deps.cache.categories()),
       defaultDate: opts.defaultDate,
       onSaved: typeof opts.onSaved === 'function' ? opts.onSaved : () => undefined,
     });
@@ -74,10 +71,9 @@ export function createTransactionActions(deps: TransactionActionsDeps): Transact
 
   // ── Delete (with scope for grouped/recurring) ─────────────
   function openDeleteModal(tx: TxLike, opts: OpenDeleteModalOptions = {}): void {
-    const list = opts.list || [];
     const onDone = typeof opts.onDone === 'function' ? opts.onDone : () => undefined;
 
-    const transfer = isTransfer(tx, list);
+    const transfer = isTransfer(tx, deps.cache.categories());
     // Transfer legs carry a groupId but are not installments — never offer the parcelas scope for them.
     const isGrouped = !!tx.groupId && !transfer;
 

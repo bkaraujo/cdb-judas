@@ -30,6 +30,14 @@ export interface AccountStatementSummary {
   openingBalance: number;
 }
 
+export interface LoadStatementResult {
+  rows: StatementItem.StatementRow[];
+  /** Resposta crua da conta na janela alargada (superset do mês, fetchWindow) — é o índice que a
+   * página usa pra resolver o lançamento completo por trás de uma linha clicada (findFullTx),
+   * sem precisar de um segundo GET nem de um índice global de todas as contas. */
+  raw: InvoiceTx[];
+}
+
 export interface StatementService {
   /** Detail for one account in a period: a "Saldo anterior" row carrying the opening balance
    * (previous period's closing, resolved by summary() — no balance fetch here), then each
@@ -37,7 +45,7 @@ export interface StatementService {
    * linha nem cartão a cartão: Domain.Invoice.collapse as troca por uma linha por (cartão,
    * vencimento) e Domain.Invoice.mergeCards funde os cartões da conta numa linha 'Cartões de
    * crédito' por vencimento. */
-  load(accountId: string, period: Period.Period, openingBalance: number): Promise<StatementItem.StatementRow[]>;
+  load(accountId: string, period: Period.Period, openingBalance: number): Promise<LoadStatementResult>;
   /** Left-column panorama: closing + opening (previous period's closing) balance per checking
    * account for the period. Accounts absent from a batch response (no snapshot yet) fall back to
    * the account's current/initial balance. */
@@ -52,12 +60,13 @@ export function createStatementService(deps: StatementServiceDeps): StatementSer
   return {
     load: (accountId, period, openingBalance) => {
       const account = deps.cache.findById('accounts', accountId);
-      if (!account) return Promise.resolve([]);
+      if (!account) return Promise.resolve({ rows: [], raw: [] });
       const b = Period.bounds(period);
       const w = fetchWindow([account], period);
       return deps.txRepo.listByAccount(accountId, 'dateFrom=' + w.from + '&dateTo=' + w.to).then((txs) => {
-        const rows = collapse(Array.isArray(txs) ? txs : [], [account], period);
-        return StatementItem.buildRows(openingBalance, mergeCards(rows) as StatementItem.StatementSourceTx[], b.from);
+        const raw = Array.isArray(txs) ? txs : [];
+        const rows = collapse(raw, [account], period);
+        return { rows: StatementItem.buildRows(openingBalance, mergeCards(rows) as StatementItem.StatementSourceTx[], b.from), raw };
       });
     },
     summary: (period) => {

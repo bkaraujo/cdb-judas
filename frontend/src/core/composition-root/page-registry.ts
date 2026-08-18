@@ -68,7 +68,7 @@ export interface PageRegistryDeps {
 
 export function buildPageRegistry(deps: PageRegistryDeps): PageRegistry {
   const openEditor = (opts: unknown) => deps.transactionsApi.openEditor(opts as Parameters<TransactionsApi['openEditor']>[0]);
-  const openDeleteFlow = (tx: unknown, opts: { list?: unknown[]; onDone?: () => void }) =>
+  const openDeleteFlow = (tx: unknown, opts: { onDone?: () => void }) =>
     deps.transactionsApi.openDeleteFlow(tx as TxLike, opts as Parameters<TransactionsApi['openDeleteFlow']>[1]);
 
   return {
@@ -128,7 +128,7 @@ export function buildPageRegistry(deps: PageRegistryDeps): PageRegistry {
       service: deps.statementService,
       periodService: deps.periodService,
       cache: deps.cache,
-      transactions: { list: (query) => deps.transactionsApi.list(query), openEditor, openDeleteFlow },
+      transactions: { openEditor, openDeleteFlow },
     }),
     tags: createTagsPage(deps.tagService),
     transactions: createTransactionsPage({

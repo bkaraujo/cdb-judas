@@ -101,7 +101,6 @@ export function createTransactionsListPage(deps: TransactionsPageDeps, cfg: Tran
     if (!state) return;
     deps.actions.openFormModal({
       existing: existing || null,
-      list: state.raw,
       defaultDate: defaultNewDate(),
       onSaved: () => loadTransactions(),
     });
@@ -421,7 +420,7 @@ export function createTransactionsListPage(deps: TransactionsPageDeps, cfg: Tran
     $root.on('click.tx', '[data-act=trash]', function (e) {
       e.stopPropagation();
       const tx = findTx($(this).attr('data-id') as string);
-      if (tx && state) deps.actions.openDeleteModal(tx, { list: state.transactions, onDone: loadTransactions });
+      if (tx && state) deps.actions.openDeleteModal(tx, { onDone: loadTransactions });
     });
     $root.on('click.tx', '[data-act=mark-paid]', function (e) {
       e.stopPropagation();
