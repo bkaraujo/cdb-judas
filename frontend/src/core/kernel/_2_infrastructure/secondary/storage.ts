@@ -20,11 +20,11 @@ export interface Storage {
  * `preferences-service.js`/`auth-store.js` originais. Evita _1_application importar um valor
  * estático de _2_infrastructure/secondary só para pegar nomes de chave. */
 export const STORAGE_KEYS = {
-  THEME: 'cbd-theme',
-  SCREEN: 'cbd-screen',
-  SIDEBAR_COLLAPSED: 'cbd-sidebar-collapsed',
-  SIDEBAR_GROUPS: 'cbd-sidebar-groups',
-  DASHBOARD_SETTINGS: 'cbd-dashboard-settings',
+  THEME: 'cdb-theme',
+  SCREEN: 'cdb-screen',
+  SIDEBAR_COLLAPSED: 'cdb-sidebar-collapsed',
+  SIDEBAR_GROUPS: 'cdb-sidebar-groups',
+  DASHBOARD_SETTINGS: 'cdb-dashboard-settings',
   AUTH_TOKEN: 'auth_token',
 } as const;
 

@@ -13,7 +13,7 @@
 import type { AuthStore } from '../_2_infrastructure/secondary/auth-store.ts';
 import type { Storage } from '../_2_infrastructure/secondary/storage.ts';
 
-const MIRROR_KEY = 'cbd-preferences';
+const MIRROR_KEY = 'cdb-preferences';
 const DEBOUNCE_MS = 500;
 
 export interface LocalPreferences {

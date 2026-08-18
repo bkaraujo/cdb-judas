@@ -9,7 +9,7 @@
 import * as Period from '../_0_domain/period.ts';
 import type { Storage } from '../_2_infrastructure/secondary/storage.ts';
 
-const KEY = 'cbd-period';
+const KEY = 'cdb-period';
 
 export interface PeriodService {
   /** Returns { month: 1-12, year }. */

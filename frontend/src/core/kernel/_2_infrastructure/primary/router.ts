@@ -2,7 +2,7 @@
  * Hash-based router. Mounts `registry[id]` into #page.
  *
  * A rota é `#/<id>` ou `#/<id>/<param>` — só `card-statement` usa o parâmetro hoje (o id do
- * cartão), repassado como 2º argumento de `mount()`. O que se persiste em `cbd-screen` é a rota
+ * cartão), repassado como 2º argumento de `mount()`. O que se persiste em `cdb-screen` é a rota
  * INTEIRA, com o parâmetro: guardar só o id faria o boot em `#/card-statement` cair numa tela sem
  * cartão.
  */
@@ -49,7 +49,7 @@ const SCREENS: Record<PageId, string> = {
   settings: 'Configurações',
 };
 
-const KEY_SCREEN = 'cbd-screen';
+const KEY_SCREEN = 'cdb-screen';
 
 interface ParsedRoute {
   id: PageId;
