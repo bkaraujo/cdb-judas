@@ -81,6 +81,7 @@ export function createCategoryEvolutionPage(deps: CategoryEvolutionPageDeps): Pa
 
     const { buckets, rows } = state.matrix;
     const incomeByBucket = state!.matrix!.incomeByBucket;
+    const expenseByBucket = state!.matrix!.expenseByBucket;
 
     const $table = $('<table class="report-table"></table>');
 
@@ -120,7 +121,8 @@ export function createCategoryEvolutionPage(deps: CategoryEvolutionPageDeps): Pa
       // Células de valor por bucket
       row.values.forEach((value, idx) => {
         const $cell = $('<td></td>');
-        const share = Domain.shareOf(value, incomeByBucket[idx] ?? 0);
+        const base = row.nature === 'EXPENSE' ? Math.abs(expenseByBucket[idx] ?? 0) : (incomeByBucket[idx] ?? 0);
+        const share = Domain.shareOf(value, base);
         const shareHtml = share != null
           ? '<span class="report-cell-share">' + esc(share.toFixed(2) + '%') + '</span>'
           : '<span class="report-cell-share">-</span>';
