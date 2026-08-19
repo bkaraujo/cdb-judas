@@ -10,7 +10,7 @@ import java.util.UUID;
 
 /**
  * Preview payload for a bank statement. {@code documentType} is always {@code "BANK_STATEMENT"} so the
- * client can branch from the shared preview endpoint. {@code amount} is signed; {@code type} is
+ * api can branch from the shared preview endpoint. {@code amount} is signed; {@code type} is
  * {@code INCOME}/{@code EXPENSE}; {@code state} is {@code "NEW"}/{@code "DUPLICATE"}/
  * {@code "RECONCILE"}; {@code reconcileDescription} is the matched manual transaction (RECONCILE only).
  * {@code candidateAccounts} are the destination accounts; {@code selectedAccountId} is the one the

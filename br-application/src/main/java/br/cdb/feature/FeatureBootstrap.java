@@ -38,7 +38,7 @@ import java.util.List;
  *
  * <p>Os dois beans CDI que as engines Context-wired precisam entram no {@link Context} antes de
  * qualquer módulo: {@link UserGuards} (guarda anti-IDOR, {@code @RequestScoped} — o que se registra é
- * o client proxy, então cada chamada resolve a instância da requisição corrente) e
+ * o api proxy, então cada chamada resolve a instância da requisição corrente) e
  * {@link HTTPApi} (leitura cross-slice). Nenhum dos dois toca porta de repositório ao ser
  * construído — quem toca (ex.: {@code UserService}, que resolve {@code PersonRepository}/
  * {@code UserRepository} em campo) fica fora daqui e é montado pelo próprio módulo que o usa.

@@ -6,6 +6,7 @@ import br.cdb.feature.f000._0_domain.event.UserEvents;
 import br.cdb.feature.f005._0_domain.model.Category;
 import br.cdb.feature.f005._0_domain.repository.CategoryRepository;
 import br.cdb.feature.f005._1_application.service.UserCategoryService;
+import br.cdb.feature.f005._2_infrastructure.F005ApiImpl;
 import br.cdb.feature.f005._2_infrastructure.persistence.CategoryJDBCRepository;
 import br.cdb.feature.f006._0_domain.model.Transaction;
 import br.commons.Logger;
@@ -58,6 +59,7 @@ public class F005Module implements Lifecycle {
         Database.initialize(model());
 
         Context.set(CategoryRepository.class, CategoryJDBCRepository::new);
+        Context.set(F005Api.class, F005ApiImpl::new);
 
         MessageBus.subscribe(new Object(){
             @MessageListener

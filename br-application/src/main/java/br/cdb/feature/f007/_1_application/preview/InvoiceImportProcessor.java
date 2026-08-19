@@ -39,7 +39,6 @@ import java.util.stream.Collectors;
 @NullMarked
 public class InvoiceImportProcessor {
 
-    private final F006Api f006 = Context.tryGet(F006Api.class);
 
     private final CreditCardProvider creditCardProvider;
     private final CardMatcher cardMatcher = new CardMatcher();
@@ -72,7 +71,7 @@ public class InvoiceImportProcessor {
 
         val today = LocalDate.now(clock);
         val statementPeriod = period != null ? period : YearMonth.from(today);
-        val history = f006.transactions();
+        val history = Context.get(F006Api.class).transactions();
 
         val rows = new ArrayList<PreviewRow>();
         for (val line : statement) {
@@ -122,7 +121,7 @@ public class InvoiceImportProcessor {
     public Result<ImportResult, BusinessError> confirm(UUID personId, InvoiceConfirmCommand cmd) {
         return resolveAccountsByCard(cmd).map(accountByCard -> {
             val today = LocalDate.now(clock);
-            val seen = f006.transactions();
+            val seen = Context.get(F006Api.class).transactions();
             val existingGroups = seen.stream()
                     .map(F006Api.TransactionView::groupId)
                     .filter(Objects::nonNull)

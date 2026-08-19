@@ -31,10 +31,9 @@ import java.util.UUID;
 @NullMarked
 public class WriteUseCase {
 
-    private final PersonService service = Context.get(PersonService.class);
-    private final CostCenterService costCenterService = Context.get(CostCenterService.class);
-
     // ── Pessoa ─────────────────────────────────────────────────────
+
+    private final PersonService service = Context.get(PersonService.class);
 
     /** Cria uma nova pessoa (dona dos recursos). O login apenas a referencia depois. */
     public Result<Person, BusinessError> registerPerson(String name, String locale, String language) {
@@ -46,6 +45,8 @@ public class WriteUseCase {
     }
 
     // ── Centro de custo ────────────────────────────────────────────
+
+    private final CostCenterService costCenterService = Context.get(CostCenterService.class);
 
     public Result<CostCenter, BusinessError> upsertCostCenter(CostCenterCommand.Upsert cmd) {
         return switch (cmd) {

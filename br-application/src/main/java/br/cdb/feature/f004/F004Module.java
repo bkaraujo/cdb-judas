@@ -2,6 +2,7 @@ package br.cdb.feature.f004;
 
 import br.cdb.core.persistence.Database;
 import br.cdb.feature.f004._0_domain.repository.TagRepository;
+import br.cdb.feature.f004._2_infrastructure.F004ApiImpl;
 import br.cdb.feature.f004._2_infrastructure.persistence.TagJDBCRepository;
 import br.commons.Logger;
 import br.commons.Result;
@@ -45,6 +46,7 @@ public class F004Module implements Lifecycle {
         Database.initialize(model());
 
         Context.set(TagRepository.class, TagJDBCRepository::new);
+        Context.set(F004Api.class, F004ApiImpl::new);
 
         return Result.success();
     }

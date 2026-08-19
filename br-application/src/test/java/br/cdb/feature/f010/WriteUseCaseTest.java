@@ -18,7 +18,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * Cobre a mutação de regra de nomenclatura da fatia {@code f010} — o par de {@code ReadUseCaseTest}.
- * Sem evento de exclusão (nada reage — o casamento é 100% client-side); o foco aqui é a validação de
+ * Sem evento de exclusão (nada reage — o casamento é 100% api-side); o foco aqui é a validação de
  * ambiguidade na criação/edição.
  */
 class WriteUseCaseTest extends AbstractUseCaseTest {

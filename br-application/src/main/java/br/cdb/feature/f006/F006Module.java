@@ -12,6 +12,7 @@ import br.cdb.feature.f006._0_domain.repository.TransactionRepository;
 import br.cdb.feature.f006._0_domain.repository.TransactionTagRepository;
 import br.cdb.feature.f006._1_application.usecase.ReadUseCases;
 import br.cdb.feature.f006._1_application.usecase.WriteUseCases;
+import br.cdb.feature.f006._2_infrastructure.F006ApiImpl;
 import br.cdb.feature.f006._2_infrastructure.persistence.TransactionCategoryJDBCRepository;
 import br.cdb.feature.f006._2_infrastructure.persistence.TransactionJDBCRepository;
 import br.cdb.feature.f006._2_infrastructure.persistence.TransactionTagJDBCRepository;
@@ -87,6 +88,7 @@ public class F006Module implements Lifecycle {
         Context.set(TransactionRepository.class, TransactionJDBCRepository::new);
         Context.set(TransactionCategoryRepository.class, TransactionCategoryJDBCRepository::new);
         Context.set(TransactionTagRepository.class, TransactionTagJDBCRepository::new);
+        Context.set(F006Api.class, F006ApiImpl::new);
 
         MessageBus.subscribe(new Object(){
 

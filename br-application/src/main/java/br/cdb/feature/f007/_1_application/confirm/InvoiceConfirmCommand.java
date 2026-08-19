@@ -12,8 +12,8 @@ import java.util.UUID;
 /**
  * Confirm a credit-card statement import: the rows the user kept. Deselected rows are simply absent.
  * {@code amount} is the POSITIVE charge/credit value — the server applies the sign from {@code type}
- * ({@code EXPENSE} when the client omits it, matching every row before card credits were surfaced).
- * Status is recomputed server-side from {@code date}; no client status is trusted.
+ * ({@code EXPENSE} when the api omits it, matching every row before card credits were surfaced).
+ * Status is recomputed server-side from {@code date}; no api status is trusted.
  *
  * <p>A single invoice can carry charges from several cards (titular + additional cardholders), so each
  * {@link Row} names its own {@code cardId}. The persistence account (and therefore the dedup/group

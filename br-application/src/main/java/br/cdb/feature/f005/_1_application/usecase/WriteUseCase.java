@@ -54,8 +54,6 @@ public class WriteUseCase {
     private final ReadUseCases transactionReads = Context.tryGet(ReadUseCases.class);
     private final WriteUseCases transactionWrites = Context.tryGet(WriteUseCases.class);
 
-    /** Cliente da API pública de f006 — as transações vinculadas são dela. */
-    private final F006Api f006 = Context.tryGet(F006Api.class);
 
     public Result<Category, BusinessError> createCategory(UUID personId, String name, Transaction.Type nature, @Nullable UUID parentId) {
         if (parentId != null
@@ -111,7 +109,7 @@ public class WriteUseCase {
     /** IDs das transações da pessoa vinculadas a qualquer categoria de {@code categoryIds} —
      *  leitura cross-slice síncrona via {@link F006Api} (endpoint público de f006). */
     private List<UUID> transactionIdsByCategories(List<UUID> categoryIds) {
-        return f006.transactionIdsByCategories(categoryIds);
+        return Context.get(F006Api.class).transactionIdsByCategories(categoryIds);
     }
 
     // CPD-OFF

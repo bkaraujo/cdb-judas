@@ -30,8 +30,6 @@ import java.util.List;
 @NullMarked
 public class ReadUseCase {
 
-    /** Cliente da API pública de f006 — as transações são dela. */
-    private final F006Api f006 = Context.tryGet(F006Api.class);
 
     public Result<MonthlyResult, BusinessError> getMonthlyResult(int month, int year) {
         val start = LocalDate.of(year, month, 1);
@@ -39,7 +37,7 @@ public class ReadUseCase {
 
         // Filtro já aplicado no servidor (status/dateFrom/dateTo são suportados pelo endpoint público
         // de f006) — evita trazer o histórico inteiro só pra descartar a maior parte aqui.
-        val confirmedThisMonth = f006.transactions("CONFIRMED", start, end);
+        val confirmedThisMonth = Context.get(F006Api.class).transactions("CONFIRMED", start, end);
 
         val incomes = sumWhere(confirmedThisMonth, Transaction.Type.INCOME);
         val expenses = sumWhere(confirmedThisMonth, Transaction.Type.EXPENSE);

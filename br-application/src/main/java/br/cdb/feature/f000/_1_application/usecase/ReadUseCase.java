@@ -28,10 +28,9 @@ import java.util.UUID;
 @NullMarked
 public class ReadUseCase {
 
-    private final PersonService service = Context.get(PersonService.class);
-    private final CostCenterService costCenterService = Context.get(CostCenterService.class);
-
     // ── Pessoa ─────────────────────────────────────────────────────
+
+    private final PersonService service = Context.get(PersonService.class);
 
     public Result<Person, BusinessError> person(String id) {
         return person(UUID.fromString(id));
@@ -44,6 +43,8 @@ public class ReadUseCase {
     }
 
     // ── Centro de custo ────────────────────────────────────────────
+
+    private final CostCenterService costCenterService = Context.get(CostCenterService.class);
 
     /** Catálogo persistido. O {@code CostCenterResource} não passa por aqui: a rota pública devolve
      *  as constantes de {@link CostCenter}, que é dado fixo do sistema. */

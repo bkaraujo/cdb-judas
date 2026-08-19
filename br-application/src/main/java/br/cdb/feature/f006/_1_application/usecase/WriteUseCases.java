@@ -59,10 +59,6 @@ public class WriteUseCases {
     private final BalanceService balanceService = Context.tryGet(BalanceService.class);
     private final CreditCardService creditCardService = Context.tryGet(CreditCardService.class);
     private final ReadUseCases reads = Context.tryGet(ReadUseCases.class);
-    /** Cliente da API pública de f002 — o fechamento contábil é dela. */
-    private final F002Api f002 = Context.tryGet(F002Api.class);
-    /** Cliente da API pública de f004 — a posse da tag é dela. */
-    private final F004Api f004 = Context.tryGet(F004Api.class);
 
     /** Bean CDI resolvido a cada chamada: {@code @RequestScoped}, nunca guardado em campo. */
     private static UserGuards guards() {
@@ -78,7 +74,7 @@ public class WriteUseCases {
         if (validateClosing(cmd.date()) instanceof Result.Failure<Void, BusinessError>(var error)) {
             return Result.failure(error);
         }
-        if (f004.ownsTags(tagIds) instanceof Result.Failure<Void, BusinessError>(var error)) {
+        if (Context.get(F004Api.class).ownsTags(tagIds) instanceof Result.Failure<Void, BusinessError>(var error)) {
             return Result.failure(error);
         }
         return upsert(cmd).map(t -> {
@@ -95,7 +91,7 @@ public class WriteUseCases {
         if (guards().ownsAccountAndCard(cmd.accountId(), cmd.cardId()) instanceof Result.Failure<Void, BusinessError>(var error)) {
             return Result.failure(error);
         }
-        if (f004.ownsTags(tagIds) instanceof Result.Failure<Void, BusinessError>(var error)) {
+        if (Context.get(F004Api.class).ownsTags(tagIds) instanceof Result.Failure<Void, BusinessError>(var error)) {
             return Result.failure(error);
         }
 
@@ -178,7 +174,7 @@ public class WriteUseCases {
      *  valida todas as datas localmente — {@code updateTransaction} checa data antiga + nova.
      *  Visível ao pacote porque {@link TransferUseCase} aplica a mesma política na sua entrada. */
     Result<Void, BusinessError> validateClosing(LocalDate... dates) {
-        val closed = f002.closingPeriod();
+        val closed = Context.get(F002Api.class).closingPeriod();
         for (val date : dates) {
             if (closed.covers(date)) {
                 return Result.failure(new BusinessError.BusinessRule("Período fechado. Lançamentos até %s não podem ser alterados.", closed.label()));

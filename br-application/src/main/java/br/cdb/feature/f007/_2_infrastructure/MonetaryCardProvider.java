@@ -21,11 +21,9 @@ import java.util.List;
 @NullMarked
 public class MonetaryCardProvider implements CreditCardProvider {
 
-    private final F002Api f002 = Context.tryGet(F002Api.class);
-
     @Override
     public List<F003Api.CardView> creditCards() {
-        return f002.accounts().stream()
+        return  Context.get(F002Api.class).accounts().stream()
                 .flatMap(account -> account.cards().stream())
                 .map(card -> new F003Api.CardView(card.id(), card.last4(), card.accountId(), card.active()))
                 .toList();

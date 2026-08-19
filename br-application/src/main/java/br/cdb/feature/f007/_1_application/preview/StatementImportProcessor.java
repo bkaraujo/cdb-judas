@@ -39,9 +39,6 @@ public class StatementImportProcessor {
 
     private static final int RECONCILE_WINDOW_DAYS = 3;
 
-    private final F002Api f002 = Context.tryGet(F002Api.class);
-    private final F006Api f006 = Context.tryGet(F006Api.class);
-
     private final Clock clock;
 
     public StatementImportProcessor(Clock clock) {
@@ -53,12 +50,12 @@ public class StatementImportProcessor {
     }
 
     public Result<ImportPreviewOutcome, ImportError> preview(String personId, String issuer, List<MonetaryDocumentEntry> statement, @Nullable UUID accountId) {
-        val candidates = f002.accounts().stream()
+        val candidates = Context.get(F002Api.class).accounts().stream()
                 .filter(F002Api.AccountView::active)
                 .toList();
         val selectedAccountId = selectAccount(accountId, candidates, Strings.lower(issuer));
 
-        val history = f006.transactions();
+        val history = Context.get(F006Api.class).transactions();
         val accountTx = selectedAccountId != null
                 ? history.stream().filter(t -> selectedAccountId.equals(t.accountId())).toList()
                 : List.<F006Api.TransactionView>of();
@@ -81,7 +78,7 @@ public class StatementImportProcessor {
         val accountId = cmd.accountId();
         val today = LocalDate.now(clock);
 
-        val accountTx = f006.transactions().stream()
+        val accountTx = Context.get(F006Api.class).transactions().stream()
                 .filter(t -> accountId.equals(t.accountId()))
                 .toList();
 
@@ -141,7 +138,7 @@ public class StatementImportProcessor {
     }
 
     /** {@code categoryId}/{@code costCenterId} saem sempre nulos: quem escolhe cada linha é o
-     *  usuário (ou uma regra de nomenclatura casada client-side), na tela. */
+     *  usuário (ou uma regra de nomenclatura casada api-side), na tela. */
     private BankStatementPreviewRow bankRow(MonetaryDocumentEntry line, Classification cls) {
         val type = line.amount().signum() < 0 ? Transaction.Type.EXPENSE : Transaction.Type.INCOME;
         val reconcileDescription = cls.target() != null ? cls.target().description() : null;

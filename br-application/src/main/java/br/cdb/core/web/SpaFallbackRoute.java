@@ -10,7 +10,7 @@ import org.jspecify.annotations.NullMarked;
 /**
  * Fallback estilo SPA: qualquer {@code GET} que não seja API/sistema nem pareça um asset estático
  * (sem extensão no último segmento) é rerroteado para {@code /index.html}, para o roteamento
- * client-side (History API) funcionar em deep-links. Roda em {@code order} 20000 — depois do
+ * api-side (History API) funcionar em deep-links. Roda em {@code order} 20000 — depois do
  * handler estático embutido do Quarkus (10000) e do roteamento JAX-RS — então só age quando nada
  * mais respondeu à rota.
  */

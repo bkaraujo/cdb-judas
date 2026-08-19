@@ -2,6 +2,7 @@ package br.cdb.feature.f003;
 
 import br.cdb.core.persistence.Database;
 import br.cdb.feature.f003._0_domain.repository.CreditCardRepository;
+import br.cdb.feature.f003._2_infrastructure.F003ApiImpl;
 import br.cdb.feature.f003._2_infrastructure.persistence.CreditCardJDBCRepository;
 import br.commons.Logger;
 import br.commons.Result;
@@ -38,6 +39,7 @@ public class F003Module implements Lifecycle {
         Database.initialize(model());
 
         Context.set(CreditCardRepository.class, CreditCardJDBCRepository::new);
+        Context.set(F003Api.class, F003ApiImpl::new);
 
         return Result.success();
     }

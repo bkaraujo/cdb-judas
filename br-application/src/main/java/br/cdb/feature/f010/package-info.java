@@ -4,7 +4,7 @@
  * pelo próprio `nome` e pode pré-preencher conta/categoria/centro de custo
  * ({@code /api/{uuid}/accounts/transaction/rules}).
  *
- * <p>O casamento em si é <b>100% client-side</b> — regras vêm cacheadas no frontend (mesmo padrão
+ * <p>O casamento em si é <b>100% api-side</b> — regras vêm cacheadas no frontend (mesmo padrão
  * de Tags/Categorias/Contas) e o texto é comparado em JS, tanto no cadastro manual de lançamento
  * quanto nas telas de preview de importação. Esta fatia é <b>CRUD puro</b>: não tem consumidor
  * cross-slice nenhum no backend (nem {@code f006} fala com ela).

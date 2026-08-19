@@ -17,7 +17,7 @@ import java.util.UUID;
  * escreve <b>só</b> por aqui.
  *
  * <p>Diferente de {@code f004} (tags): a exclusão aqui não publica evento — nada no resto do
- * sistema referencia uma regra (o casamento com descrição é 100% client-side, ver {@code web/
+ * sistema referencia uma regra (o casamento com descrição é 100% api-side, ver {@code web/
  * CLAUDE.md}), então não há vínculo cross-slice pra limpar. A guarda de propriedade na exclusão é a
  * mesma de {@code f004.deleteTag}: passa por {@link ReadUseCase#rule} antes de apagar, pra apagar
  * uma regra de outra pessoa vire {@code NotFound} em vez de silenciosamente funcionar (IDOR).

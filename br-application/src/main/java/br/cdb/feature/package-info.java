@@ -67,7 +67,7 @@
  * ├── f009  dashboard (só ReadUseCase: fatia somente-leitura)
  * │   └── DashboardResource    GET /api/{uuid}/dashboard?month=&amp;year=
  * ├── f010  regras de nomenclatura (par CQRS ReadUseCase/WriteUseCase, sem *UseCase de fronteira;
- * │         CRUD puro, sem consumidor cross-slice — casamento de texto é 100% client-side)
+ * │         CRUD puro, sem consumidor cross-slice — casamento de texto é 100% api-side)
  * │   └── ImportRuleResource   GET    /api/{uuid}/accounts/transaction/rules
  * │                            POST   /api/{uuid}/accounts/transaction/rules
  * │                            PATCH  /api/{uuid}/accounts/transaction/rules/{id}

@@ -1,6 +1,7 @@
 package br.cdb.feature.f007;
 
 import br.cdb.feature.f007._1_application.service.StatementImportService;
+import br.cdb.feature.f007._2_infrastructure.F007ApiImpl;
 import br.cdb.feature.f007._2_infrastructure.MonetaryCardProvider;
 import br.cdb.feature.f007._2_infrastructure.provider.btg_pactual.BTGInvoiceParser;
 import br.cdb.feature.f007._2_infrastructure.provider.btg_pactual.BTGStatementParser;
@@ -47,6 +48,7 @@ public class F007Module implements Lifecycle {
                 ),
                 MAX_STATEMENT_FILE_BYTES)
         );
+        Context.set(F007Api.class, F007ApiImpl::new);
 
         return Result.success();
     }

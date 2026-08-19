@@ -15,7 +15,7 @@ import java.util.UUID;
  * {@link RowState#RECONCILE}, {@code reconcileDescription} carries the matched manual transaction's
  * description so the UI can show what it will confirm. {@code categoryId} and {@code costCenterId}
  * are always {@code null} — slots the UI fills in when the user (or a matched import rule,
- * client-side) picks them for the row before confirming.
+ * api-side) picks them for the row before confirming.
  */
 @NullMarked
 public record BankStatementPreviewRow(

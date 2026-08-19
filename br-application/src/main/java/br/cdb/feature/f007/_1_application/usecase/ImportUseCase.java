@@ -39,10 +39,7 @@ import java.util.stream.Collectors;
 public class ImportUseCase {
 
     private final StatementImportService service = Context.get(StatementImportService.class);
-    /** Cliente da API pública de f002 — contas, cartões embutidos e o fechamento contábil são dela. */
-    private final F002Api f002 = Context.tryGet(F002Api.class);
-    /** Cliente da API pública de f004 — a posse da tag é dela. */
-    private final F004Api f004 = Context.tryGet(F004Api.class);
+
 
     private final UserGuards guards;
 
@@ -60,7 +57,7 @@ public class ImportUseCase {
         }
 
         return service.preview(HTTPRequest.personId(), fileBytes, password, accountId)
-                .map(outcome -> new ImportPreviewView(outcome, accountNamesById(), f002.closingPeriod()));
+                .map(outcome -> new ImportPreviewView(outcome, accountNamesById(), Context.get(F002Api.class).closingPeriod()));
     }
 
     public Result<ImportResult, BusinessError> confirmInvoiceImport(UUID personId, InvoiceConfirmCommand cmd) {
@@ -70,7 +67,7 @@ public class ImportUseCase {
             }
         }
         return validateClosing(cmd.rows().stream().map(InvoiceConfirmCommand.Row::date).toList())
-                .flatMap(ignored -> f004.ownsTags(tagIdsOf(cmd.rows().stream().map(InvoiceConfirmCommand.Row::tagIds).toList())))
+                .flatMap(ignored -> Context.get(F004Api.class).ownsTags(tagIdsOf(cmd.rows().stream().map(InvoiceConfirmCommand.Row::tagIds).toList())))
                 .flatMap(ignored -> service.confirm(personId, cmd))
                 .ifSuccess(ignored -> affectedAccountIds(cmd.rows())
                         .forEach(accountId -> MessageBus.submit(new AccountStreamEvents.Refresh(accountId, personId.toString()))));
@@ -79,7 +76,7 @@ public class ImportUseCase {
     public Result<ImportResult, BusinessError> confirmStatementImport(UUID personId, StatementConfirmCommand cmd) {
         return guards.ownsAccount(cmd.accountId())
                 .flatMap(ignored -> validateClosing(cmd.rows().stream().map(StatementConfirmCommand.Row::date).toList()))
-                .flatMap(ignored -> f004.ownsTags(tagIdsOf(cmd.rows().stream().map(StatementConfirmCommand.Row::tagIds).toList())))
+                .flatMap(ignored -> Context.get(F004Api.class).ownsTags(tagIdsOf(cmd.rows().stream().map(StatementConfirmCommand.Row::tagIds).toList())))
                 .flatMap(ignored -> service.confirm(personId, cmd))
                 .ifSuccess(ignored -> MessageBus.submit(new AccountStreamEvents.Refresh(cmd.accountId(), personId.toString())));
     }
@@ -91,7 +88,7 @@ public class ImportUseCase {
      * confirmou com um preview vencido (ou chamou a API direto).
      */
     private Result<Void, BusinessError> validateClosing(List<LocalDate> dates) {
-        val closed = f002.closingPeriod();
+        val closed = Context.get(F002Api.class).closingPeriod();
         for (val date : dates) {
             if (closed.covers(date)) {
                 return Result.failure(new BusinessError.BusinessRule("Período fechado. Lançamentos até %s não podem ser importados.", closed.label()));
@@ -107,7 +104,7 @@ public class ImportUseCase {
 
     /** Nome da conta a que cada cartão pertence, para rotular as opções de cartão do preview. */
     private Map<UUID, String> accountNamesById() {
-        return f002.accounts().stream()
+        return Context.get(F002Api.class).accounts().stream()
                 .collect(Collectors.toMap(F002Api.AccountView::id, F002Api.AccountView::name));
     }
 
@@ -117,7 +114,7 @@ public class ImportUseCase {
      * (mesma projeção que {@code f007.MonetaryCardProvider} usa).
      */
     private List<UUID> affectedAccountIds(List<InvoiceConfirmCommand.Row> rows) {
-        val accountByCard = f002.accounts().stream()
+        val accountByCard = Context.get(F002Api.class).accounts().stream()
                 .flatMap(account -> account.cards().stream())
                 .collect(Collectors.toMap(F002Api.AccountView.CardView::id, F002Api.AccountView.CardView::accountId));
         return rows.stream()

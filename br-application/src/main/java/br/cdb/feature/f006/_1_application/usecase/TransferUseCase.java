@@ -30,8 +30,6 @@ import java.util.UUID;
 public class TransferUseCase {
 
     private final WriteUseCases writes = Context.tryGet(WriteUseCases.class);
-    /** Cliente da API pública de f005 — a categoria de sistema de transferência é dela. */
-    private final F005Api f005 = Context.tryGet(F005Api.class);
 
     /** Bean CDI resolvido a cada chamada: {@code @RequestScoped}, nunca guardado em campo. */
     private static UserGuards guards() {
@@ -48,6 +46,7 @@ public class TransferUseCase {
         // F006_TRANSACTION_CATEGORY.COD_CATEGORY é NOT NULL. Cada perna recebe a categoria de sistema
         // "9. Outros / Transferência" da sua natureza: a saída (EXPENSE) a de despesa, a entrada
         // (INCOME) a de receita. Cobre as duas pernas do grupo, mantendo o 1:1 com F006_TRANSACTION.
+        val f005 = Context.get(F005Api.class);
         val expenseCategoryId = f005.transferCategoryId(Transaction.Type.EXPENSE);
         val incomeCategoryId = f005.transferCategoryId(Transaction.Type.INCOME);
         return writes.createTransfer(fromAccountId, toAccountId, date, amount).map(t -> {
