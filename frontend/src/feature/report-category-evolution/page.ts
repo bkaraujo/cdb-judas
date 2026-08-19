@@ -121,7 +121,7 @@ export function createCategoryEvolutionPage(deps: CategoryEvolutionPageDeps): Pa
       row.values.forEach((value, idx) => {
         const $cell = $('<td></td>');
         const share = Domain.shareOf(value, incomeByBucket[idx] ?? 0);
-        const shareHtml = row.nature === 'EXPENSE' && share != null
+        const shareHtml = share != null
           ? '<span class="report-cell-share">' + esc(share.toFixed(2) + '%') + '</span>'
           : '<span class="report-cell-share">-</span>';
         const valueHtml = value === 0
