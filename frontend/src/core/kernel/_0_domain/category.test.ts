@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import * as Category from './category.ts';
+import * as Category from '@/core/kernel/_0_domain/category.ts';
 
 const CATS: Category.Category[] = [
   { id: '1', name: 'Moradia', nature: 'EXPENSE', parentId: null, isSystem: false, active: true },

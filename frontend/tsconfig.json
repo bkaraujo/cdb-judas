@@ -5,6 +5,8 @@
     "module": "ESNext",
     "moduleResolution": "bundler",
     "allowImportingTsExtensions": true,
+    "baseUrl": ".",
+    "paths": { "@/*": ["src/*"] },
     "types": ["vite/client"],
     "strict": true,
     "noUncheckedIndexedAccess": true,

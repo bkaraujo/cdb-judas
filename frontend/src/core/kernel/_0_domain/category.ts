@@ -1,4 +1,4 @@
-import type { CategoryResponse } from '../../../api/types.ts';
+import type { CategoryResponse } from '@/api/types.ts';
 
 export const NATURE = { EXPENSE: 'EXPENSE', INCOME: 'INCOME' } as const;
 export type Nature = (typeof NATURE)[keyof typeof NATURE];

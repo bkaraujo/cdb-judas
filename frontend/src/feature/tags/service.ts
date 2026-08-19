@@ -1,11 +1,11 @@
 /** Tag use cases. Sem domain própria — Domain.Tag é kernel (core/kernel/_0_domain/tag.ts), usado
  * pelos widgets genéricos de picker. */
-import type { Tag as TagWire, TagRequest } from '../../api/types.ts';
-import type { Tag } from '../../core/kernel/_0_domain/tag.ts';
-import type { CacheStore } from '../../core/kernel/_1_application/cache-store.ts';
-import type { CbdChangeDetail } from '../../core/kernel/_1_application/event-bus.ts';
-import type { DeletionQueryOptions } from '../../core/kernel/_2_infrastructure/secondary/http-client.ts';
-import type { TagRepository } from './repository.ts';
+import type { Tag as TagWire, TagRequest } from '@/api/types.ts';
+import type { Tag } from '@/core/kernel/_0_domain/tag.ts';
+import type { CacheStore } from '@/core/kernel/_1_application/cache-store.ts';
+import type { CbdChangeDetail } from '@/core/kernel/_1_application/event-bus.ts';
+import type { DeletionQueryOptions } from '@/core/kernel/_2_infrastructure/secondary/http-client.ts';
+import type { TagRepository } from '@/feature/tags/repository.ts';
 
 export interface TagServiceDeps {
   repo: TagRepository;

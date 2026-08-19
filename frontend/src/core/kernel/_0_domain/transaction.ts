@@ -1,5 +1,5 @@
-import type { TransactionStatus, TransactionType } from '../../../api/overrides.ts';
-import * as Period from './period.ts';
+import type { TransactionStatus, TransactionType } from '@/api/overrides.ts';
+import * as Period from '@/core/kernel/_0_domain/period.ts';
 
 export const TRANSACTION_TYPES = {
   INCOME: 'income',

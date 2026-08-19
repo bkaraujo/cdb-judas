@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import * as ImportRuleMatcher from './domain.ts';
+import * as ImportRuleMatcher from '@/feature/import-rules/domain.ts';
 
 describe('feature:import-rules — domain (ImportRuleMatcher)', () => {
   it('normalize maiusculiza e remove acentos', () => {

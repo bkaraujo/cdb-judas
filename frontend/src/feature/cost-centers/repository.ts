@@ -1,7 +1,7 @@
 /** Read-only adapter for the global /cost-center catalog (fixed system data; no user namespace,
  * no mutations). */
-import type { CostCenter } from '../../api/types.ts';
-import type { HttpClient } from '../../core/kernel/_2_infrastructure/secondary/http-client.ts';
+import type { CostCenter } from '@/api/types.ts';
+import type { HttpClient } from '@/core/kernel/_2_infrastructure/secondary/http-client.ts';
 
 export interface CostCenterRepository {
   list(): Promise<CostCenter[] | null>;

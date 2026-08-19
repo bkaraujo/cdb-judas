@@ -1,13 +1,13 @@
 /** Shared picker UI components and related modals. */
-import type { Account } from '../../_0_domain/account.ts';
-import { accountsList, categoryById, esc, flatCategories, sortByName } from '../../_0_domain/format.ts';
-import type { Category } from '../../_0_domain/category.ts';
-import type { CostCenter } from '../../../../api/types.ts';
-import { formModal, bindSwatches } from './helpers.ts';
-import type { Modal } from './ui/modal.ts';
-import { colorNameFieldHtml } from './ui/color-name-field.ts';
-import { searchSelectHtml } from './ui/search-select.ts';
-import type { SearchSelectItem } from './ui/search-select.ts';
+import type { Account } from '@/core/kernel/_0_domain/account.ts';
+import { accountsList, categoryById, esc, flatCategories, sortByName } from '@/core/kernel/_0_domain/format.ts';
+import type { Category } from '@/core/kernel/_0_domain/category.ts';
+import type { CostCenter } from '@/api/types.ts';
+import { formModal, bindSwatches } from '@/core/kernel/_2_infrastructure/primary/helpers.ts';
+import type { Modal } from '@/core/kernel/_2_infrastructure/primary/ui/modal.ts';
+import { colorNameFieldHtml } from '@/core/kernel/_2_infrastructure/primary/ui/color-name-field.ts';
+import { searchSelectHtml } from '@/core/kernel/_2_infrastructure/primary/ui/search-select.ts';
+import type { SearchSelectItem } from '@/core/kernel/_2_infrastructure/primary/ui/search-select.ts';
 
 export const PALETTE = {
   swatches: ['#6366F1', '#10B981', '#F43F5E', '#F59E0B', '#38BDF8', '#A78BFA', '#820AD1', '#1C2951'],

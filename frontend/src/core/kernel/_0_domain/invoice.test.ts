@@ -1,9 +1,9 @@
 /** Contrato do ciclo de fatura: docs/backend/invoice-cycle.md (espelhado no backend por
  * f002._0_domain.model.InvoiceCycle — mudou aqui, muda lá). */
 import { describe, expect, it } from 'vitest';
-import type { Account } from './account.ts';
-import * as Invoice from './invoice.ts';
-import * as Period from './period.ts';
+import type { Account } from '@/core/kernel/_0_domain/account.ts';
+import * as Invoice from '@/core/kernel/_0_domain/invoice.ts';
+import * as Period from '@/core/kernel/_0_domain/period.ts';
 
 // closingDay=20, dueDay=5 — mesmo exemplo do comentário de topo do arquivo fonte.
 const ACCOUNT = {

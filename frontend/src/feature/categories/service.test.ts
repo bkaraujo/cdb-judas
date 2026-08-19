@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import type { CacheStore } from '../../core/kernel/_1_application/cache-store.ts';
-import * as CategoryDomain from '../../core/kernel/_0_domain/category.ts';
-import type { Category } from '../../core/kernel/_0_domain/category.ts';
-import { createCategoryService } from './service.ts';
-import type { CategoryRepository } from './repository.ts';
+import type { CacheStore } from '@/core/kernel/_1_application/cache-store.ts';
+import * as CategoryDomain from '@/core/kernel/_0_domain/category.ts';
+import type { Category } from '@/core/kernel/_0_domain/category.ts';
+import { createCategoryService } from '@/feature/categories/service.ts';
+import type { CategoryRepository } from '@/feature/categories/repository.ts';
 
 const CATS: Category[] = [
   { id: '1', name: 'Moradia', nature: 'EXPENSE', parentId: null, isSystem: false, active: true },

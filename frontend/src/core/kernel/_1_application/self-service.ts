@@ -1,6 +1,6 @@
 /** Typed access to the self resource (/api/me). */
-import type { PreferencesRequest, SelfResponse } from '../../../api/types.ts';
-import type { SelfRepository } from '../_2_infrastructure/secondary/self-repository.ts';
+import type { PreferencesRequest, SelfResponse } from '@/api/types.ts';
+import type { SelfRepository } from '@/core/kernel/_2_infrastructure/secondary/self-repository.ts';
 
 export interface SelfService {
   getMe(): Promise<SelfResponse | null>;

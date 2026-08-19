@@ -15,8 +15,8 @@
  *
  * Datas trafegam como 'yyyy-mm-dd', comparáveis com < e > (ordem lexicográfica = cronológica).
  */
-import type { Account } from './account.ts';
-import * as Period from './period.ts';
+import type { Account } from '@/core/kernel/_0_domain/account.ts';
+import * as Period from '@/core/kernel/_0_domain/period.ts';
 
 const DEFAULT_CLOSING_DAY = 1;
 const DEFAULT_DUE_DAY = 10;

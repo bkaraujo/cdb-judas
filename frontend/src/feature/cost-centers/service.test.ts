@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import type { CacheStore } from '../../core/kernel/_1_application/cache-store.ts';
-import { createCostCenterService } from './service.ts';
-import type { CostCenterRepository } from './repository.ts';
+import type { CacheStore } from '@/core/kernel/_1_application/cache-store.ts';
+import { createCostCenterService } from '@/feature/cost-centers/service.ts';
+import type { CostCenterRepository } from '@/feature/cost-centers/repository.ts';
 
 function fakeRepo(): CostCenterRepository {
   return { list: () => Promise.resolve([{ id: '1', name: 'TI' } as never]) };

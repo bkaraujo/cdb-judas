@@ -1,10 +1,10 @@
 /** Painel: Metas de Despesa. Único painel assíncrono: renderiza um esqueleto "Carregando…" e
  * substitui o corpo quando `BudgetApi.loadPeriod` resolve. `/budget` 404 hoje (ver fatia
  * `budget`) — o catch mostra "Em breve" em vez de erro, preservado do original. */
-import * as Period from '../../../core/kernel/_0_domain/period.ts';
-import { emptyState } from '../../../core/kernel/_2_infrastructure/primary/ui/empty-state.ts';
-import { progressBarHtml } from '../../../core/kernel/_2_infrastructure/primary/ui/progress-bar.ts';
-import type { PanelRenderer } from './types.ts';
+import * as Period from '@/core/kernel/_0_domain/period.ts';
+import { emptyState } from '@/core/kernel/_2_infrastructure/primary/ui/empty-state.ts';
+import { progressBarHtml } from '@/core/kernel/_2_infrastructure/primary/ui/progress-bar.ts';
+import type { PanelRenderer } from '@/feature/dashboard/panels/types.ts';
 
 export const expenseGoals: PanelRenderer = (p, ctx) => {
   const now = new Date();

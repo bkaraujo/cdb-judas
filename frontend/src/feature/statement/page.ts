@@ -8,24 +8,24 @@
  * sem ações de editar/excluir, como a linha de saldo.
  */
 import $ from 'jquery';
-import type { Account } from '../../core/kernel/_0_domain/account.ts';
-import * as AccountDomain from '../../core/kernel/_0_domain/account.ts';
-import { esc, fmt, sortByName, valueColor } from '../../core/kernel/_0_domain/format.ts';
-import type { InvoiceTx } from '../../core/kernel/_0_domain/invoice.ts';
-import * as Period from '../../core/kernel/_0_domain/period.ts';
-import * as StatementItem from '../../core/kernel/_0_domain/statement-item.ts';
-import type { CacheStore } from '../../core/kernel/_1_application/cache-store.ts';
-import { byId, shiftMonth } from '../../core/kernel/_2_infrastructure/primary/helpers.ts';
-import { createPage } from '../../core/kernel/_2_infrastructure/primary/page.ts';
-import type { Page, PageState } from '../../core/kernel/_2_infrastructure/primary/page.ts';
-import { statementColumns, statementRowHtml } from '../../core/kernel/_2_infrastructure/primary/statement-row.ts';
-import { rowActionsHtml } from '../../core/kernel/_2_infrastructure/primary/ui/button.ts';
-import { emptyState } from '../../core/kernel/_2_infrastructure/primary/ui/empty-state.ts';
-import { pageHeader } from '../../core/kernel/_2_infrastructure/primary/ui/page-header.ts';
-import { periodNav } from '../../core/kernel/_2_infrastructure/primary/ui/period-nav.ts';
-import { selectorButtonHtml } from '../../core/kernel/_2_infrastructure/primary/ui/search-select.ts';
-import { toast } from '../../core/kernel/_2_infrastructure/primary/ui/toast.ts';
-import type { AccountStatementSummary, StatementService } from './service.ts';
+import type { Account } from '@/core/kernel/_0_domain/account.ts';
+import * as AccountDomain from '@/core/kernel/_0_domain/account.ts';
+import { esc, fmt, sortByName, valueColor } from '@/core/kernel/_0_domain/format.ts';
+import type { InvoiceTx } from '@/core/kernel/_0_domain/invoice.ts';
+import * as Period from '@/core/kernel/_0_domain/period.ts';
+import * as StatementItem from '@/core/kernel/_0_domain/statement-item.ts';
+import type { CacheStore } from '@/core/kernel/_1_application/cache-store.ts';
+import { byId, shiftMonth } from '@/core/kernel/_2_infrastructure/primary/helpers.ts';
+import { createPage } from '@/core/kernel/_2_infrastructure/primary/page.ts';
+import type { Page, PageState } from '@/core/kernel/_2_infrastructure/primary/page.ts';
+import { statementColumns, statementRowHtml } from '@/core/kernel/_2_infrastructure/primary/statement-row.ts';
+import { rowActionsHtml } from '@/core/kernel/_2_infrastructure/primary/ui/button.ts';
+import { emptyState } from '@/core/kernel/_2_infrastructure/primary/ui/empty-state.ts';
+import { pageHeader } from '@/core/kernel/_2_infrastructure/primary/ui/page-header.ts';
+import { periodNav } from '@/core/kernel/_2_infrastructure/primary/ui/period-nav.ts';
+import { selectorButtonHtml } from '@/core/kernel/_2_infrastructure/primary/ui/search-select.ts';
+import { toast } from '@/core/kernel/_2_infrastructure/primary/ui/toast.ts';
+import type { AccountStatementSummary, StatementService } from '@/feature/statement/service.ts';
 
 /** Porta mínima do contrato público de `transactions` (fatia irmã) — só editor/exclusão de uma
  * linha, usados aqui. Cada fatia que precisa disto declara sua própria cópia local (nunca importa

@@ -1,6 +1,6 @@
-import type { TransactionResponse } from '../../api/overrides.ts';
-import type { Period } from '../../core/kernel/_0_domain/period.ts';
-import type { DashboardRepository, MonthlyResult } from './repository.ts';
+import type { TransactionResponse } from '@/api/overrides.ts';
+import type { Period } from '@/core/kernel/_0_domain/period.ts';
+import type { DashboardRepository, MonthlyResult } from '@/feature/dashboard/repository.ts';
 
 export interface DashboardService {
   monthlyResult(period: Period): Promise<MonthlyResult | null>;

@@ -4,7 +4,7 @@ import type {
   CostCenter,
   ImportRule,
   Tag,
-} from '../../../../api/types.ts';
+} from '@/api/types.ts';
 
 export interface RegistrySnapshot {
   categories: CategoryResponse[];

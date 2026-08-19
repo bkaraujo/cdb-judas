@@ -1,7 +1,7 @@
-import type { Period } from '../../core/kernel/_0_domain/period.ts';
-import * as BudgetDomain from './domain.ts';
-import type { BudgetRepository } from './repository.ts';
-import type { BudgetCreateRequest, BudgetResponse, BudgetUpdateRequest } from './types.ts';
+import type { Period } from '@/core/kernel/_0_domain/period.ts';
+import * as BudgetDomain from '@/feature/budget/domain.ts';
+import type { BudgetRepository } from '@/feature/budget/repository.ts';
+import type { BudgetCreateRequest, BudgetResponse, BudgetUpdateRequest } from '@/feature/budget/types.ts';
 
 export interface BudgetSummary {
   total: number;

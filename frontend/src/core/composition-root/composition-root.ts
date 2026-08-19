@@ -9,18 +9,18 @@
 import {
   createCostCenterRepository,
   createCostCenterService,
-} from '../../feature/cost-centers/index.ts';
-import { createTagRepository, createTagService } from '../../feature/tags/index.ts';
+} from '@/feature/cost-centers/index.ts';
+import { createTagRepository, createTagService } from '@/feature/tags/index.ts';
 import {
   createCategoriesApi,
   createCategoryRepository,
   createCategoryService,
-} from '../../feature/categories/index.ts';
+} from '@/feature/categories/index.ts';
 import {
   createImportRuleRepository,
   createImportRuleService,
   createImportRulesApi,
-} from '../../feature/import-rules/index.ts';
+} from '@/feature/import-rules/index.ts';
 import {
   createAccountRepository,
   createAccountService,
@@ -30,46 +30,46 @@ import {
   createClosingDialog,
   createClosingRepository,
   createClosingService,
-} from '../../feature/accounts/index.ts';
-import { createCreditCardService, createCreditCardsApi } from '../../feature/credit-cards/index.ts';
-import type { CreditCardsTxRepoPort } from '../../feature/credit-cards/index.ts';
+} from '@/feature/accounts/index.ts';
+import { createCreditCardService, createCreditCardsApi } from '@/feature/credit-cards/index.ts';
+import type { CreditCardsTxRepoPort } from '@/feature/credit-cards/index.ts';
 import {
   createTransactionRepository,
   createTransactionService,
   createTransactionFormModal,
   createTransactionActions,
   createTransactionsApi,
-} from '../../feature/transactions/index.ts';
-import { createStatementService } from '../../feature/statement/index.ts';
-import { createPayableService, createAccountsPayableApi } from '../../feature/accounts-payable/index.ts';
-import { createImportStatementApi } from '../../feature/import-statement/index.ts';
-import { createBudgetRepository, createBudgetService, createBudgetApi } from '../../feature/budget/index.ts';
+} from '@/feature/transactions/index.ts';
+import { createStatementService } from '@/feature/statement/index.ts';
+import { createPayableService, createAccountsPayableApi } from '@/feature/accounts-payable/index.ts';
+import { createImportStatementApi } from '@/feature/import-statement/index.ts';
+import { createBudgetRepository, createBudgetService, createBudgetApi } from '@/feature/budget/index.ts';
 
-import { buildPageRegistry } from './page-registry.ts';
-import type { InvoiceTx } from '../kernel/_0_domain/invoice.ts';
-import { createCacheStore } from '../kernel/_1_application/cache-store.ts';
-import type { CacheStore } from '../kernel/_1_application/cache-store.ts';
-import { createEventBus } from '../kernel/_1_application/event-bus.ts';
-import { createPeriodService } from '../kernel/_1_application/period-service.ts';
-import { createPreferencesService } from '../kernel/_1_application/preferences-service.ts';
-import { createSelfService } from '../kernel/_1_application/self-service.ts';
-import { createSessionService } from '../kernel/_1_application/session-service.ts';
-import type { LoginResult, SessionService } from '../kernel/_1_application/session-service.ts';
-import { createSystemService } from '../kernel/_1_application/system-service.ts';
-import { createAuthStore } from '../kernel/_2_infrastructure/secondary/auth-store.ts';
-import { createHttpClient } from '../kernel/_2_infrastructure/secondary/http-client.ts';
-import { createRegistryBootstrap } from '../kernel/_2_infrastructure/secondary/registry-bootstrap.ts';
-import { createSelfRepository } from '../kernel/_2_infrastructure/secondary/self-repository.ts';
-import { createSseClient } from '../kernel/_2_infrastructure/secondary/sse-client.ts';
-import { createStorage } from '../kernel/_2_infrastructure/secondary/storage.ts';
-import { initUi } from '../kernel/_2_infrastructure/primary/ui/index.ts';
-import { configureQuickCreate } from '../kernel/_2_infrastructure/primary/pickers.ts';
-import { createSidebar } from '../kernel/_2_infrastructure/primary/sidebar.ts';
-import type { Sidebar } from '../kernel/_2_infrastructure/primary/sidebar.ts';
-import { createRouter } from '../kernel/_2_infrastructure/primary/router.ts';
-import type { Router } from '../kernel/_2_infrastructure/primary/router.ts';
-import { createTheme } from '../kernel/_2_infrastructure/primary/theme.ts';
-import type { Theme } from '../kernel/_2_infrastructure/primary/theme.ts';
+import { buildPageRegistry } from '@/core/composition-root/page-registry.ts';
+import type { InvoiceTx } from '@/core/kernel/_0_domain/invoice.ts';
+import { createCacheStore } from '@/core/kernel/_1_application/cache-store.ts';
+import type { CacheStore } from '@/core/kernel/_1_application/cache-store.ts';
+import { createEventBus } from '@/core/kernel/_1_application/event-bus.ts';
+import { createPeriodService } from '@/core/kernel/_1_application/period-service.ts';
+import { createPreferencesService } from '@/core/kernel/_1_application/preferences-service.ts';
+import { createSelfService } from '@/core/kernel/_1_application/self-service.ts';
+import { createSessionService } from '@/core/kernel/_1_application/session-service.ts';
+import type { LoginResult, SessionService } from '@/core/kernel/_1_application/session-service.ts';
+import { createSystemService } from '@/core/kernel/_1_application/system-service.ts';
+import { createAuthStore } from '@/core/kernel/_2_infrastructure/secondary/auth-store.ts';
+import { createHttpClient } from '@/core/kernel/_2_infrastructure/secondary/http-client.ts';
+import { createRegistryBootstrap } from '@/core/kernel/_2_infrastructure/secondary/registry-bootstrap.ts';
+import { createSelfRepository } from '@/core/kernel/_2_infrastructure/secondary/self-repository.ts';
+import { createSseClient } from '@/core/kernel/_2_infrastructure/secondary/sse-client.ts';
+import { createStorage } from '@/core/kernel/_2_infrastructure/secondary/storage.ts';
+import { initUi } from '@/core/kernel/_2_infrastructure/primary/ui/index.ts';
+import { configureQuickCreate } from '@/core/kernel/_2_infrastructure/primary/pickers.ts';
+import { createSidebar } from '@/core/kernel/_2_infrastructure/primary/sidebar.ts';
+import type { Sidebar } from '@/core/kernel/_2_infrastructure/primary/sidebar.ts';
+import { createRouter } from '@/core/kernel/_2_infrastructure/primary/router.ts';
+import type { Router } from '@/core/kernel/_2_infrastructure/primary/router.ts';
+import { createTheme } from '@/core/kernel/_2_infrastructure/primary/theme.ts';
+import type { Theme } from '@/core/kernel/_2_infrastructure/primary/theme.ts';
 
 export interface App {
   cache: CacheStore;

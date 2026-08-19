@@ -6,23 +6,23 @@
  * sempre visível).
  */
 import $ from 'jquery';
-import type { Account } from '../../core/kernel/_0_domain/account.ts';
-import type { Card as CardWire } from '../../api/types.ts';
-import * as AccountDomain from '../../core/kernel/_0_domain/account.ts';
-import { esc, fmt, maskCurrency, parseCurrency, sortByName } from '../../core/kernel/_0_domain/format.ts';
-import { bindCurrencyMask, bindSwatches, byId, formModal, runMutation } from '../../core/kernel/_2_infrastructure/primary/helpers.ts';
-import { deleteWithLinkedFallback, linkedDeleteDialog, pluralTransactions } from '../../core/kernel/_2_infrastructure/primary/delete-dialog.ts';
-import { icon } from '../../core/kernel/_2_infrastructure/primary/icons.ts';
-import { cachePage } from '../../core/kernel/_2_infrastructure/primary/page.ts';
-import type { Page, PageState } from '../../core/kernel/_2_infrastructure/primary/page.ts';
-import { PALETTE } from '../../core/kernel/_2_infrastructure/primary/pickers.ts';
-import { rowActionBtn } from '../../core/kernel/_2_infrastructure/primary/ui/button.ts';
-import { btn } from '../../core/kernel/_2_infrastructure/primary/ui/button.ts';
-import { colorNameFieldHtml } from '../../core/kernel/_2_infrastructure/primary/ui/color-name-field.ts';
-import { emptyState } from '../../core/kernel/_2_infrastructure/primary/ui/empty-state.ts';
-import { pageHeader } from '../../core/kernel/_2_infrastructure/primary/ui/page-header.ts';
-import { toast } from '../../core/kernel/_2_infrastructure/primary/ui/toast.ts';
-import type { AccountService } from './service.ts';
+import type { Account } from '@/core/kernel/_0_domain/account.ts';
+import type { Card as CardWire } from '@/api/types.ts';
+import * as AccountDomain from '@/core/kernel/_0_domain/account.ts';
+import { esc, fmt, maskCurrency, parseCurrency, sortByName } from '@/core/kernel/_0_domain/format.ts';
+import { bindCurrencyMask, bindSwatches, byId, formModal, runMutation } from '@/core/kernel/_2_infrastructure/primary/helpers.ts';
+import { deleteWithLinkedFallback, linkedDeleteDialog, pluralTransactions } from '@/core/kernel/_2_infrastructure/primary/delete-dialog.ts';
+import { icon } from '@/core/kernel/_2_infrastructure/primary/icons.ts';
+import { cachePage } from '@/core/kernel/_2_infrastructure/primary/page.ts';
+import type { Page, PageState } from '@/core/kernel/_2_infrastructure/primary/page.ts';
+import { PALETTE } from '@/core/kernel/_2_infrastructure/primary/pickers.ts';
+import { rowActionBtn } from '@/core/kernel/_2_infrastructure/primary/ui/button.ts';
+import { btn } from '@/core/kernel/_2_infrastructure/primary/ui/button.ts';
+import { colorNameFieldHtml } from '@/core/kernel/_2_infrastructure/primary/ui/color-name-field.ts';
+import { emptyState } from '@/core/kernel/_2_infrastructure/primary/ui/empty-state.ts';
+import { pageHeader } from '@/core/kernel/_2_infrastructure/primary/ui/page-header.ts';
+import { toast } from '@/core/kernel/_2_infrastructure/primary/ui/toast.ts';
+import type { AccountService } from '@/feature/accounts/service.ts';
 
 const TYPE_LABELS: Record<string, string> = {
   CHECKING: 'Conta Corrente',
@@ -263,7 +263,7 @@ export function createAccountsPage(service: AccountService): Page {
       });
     });
 
-    function doRemoveCard(cardId: string, opts?: { strategy: 'MOVE' | 'DELETE'; targetId?: string }, dialogModal?: import('../../core/kernel/_2_infrastructure/primary/ui/modal.ts').Modal, dialogReEnable?: () => void): void {
+    function doRemoveCard(cardId: string, opts?: { strategy: 'MOVE' | 'DELETE'; targetId?: string }, dialogModal?: import('@/core/kernel/_2_infrastructure/primary/ui/modal.ts').Modal, dialogReEnable?: () => void): void {
       const $chip = m.$body.find('[data-card-id="' + cardId + '"]');
       $chip.css('opacity', '0.5');
       runMutation(service.removeCard((existing as Account).id, cardId, opts), {

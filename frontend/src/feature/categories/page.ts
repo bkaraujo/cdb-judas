@@ -1,17 +1,17 @@
 /** pages/categories — Categorias (CRUD com árvore pai/filho por natureza). */
 import $ from 'jquery';
-import { esc, sortByName } from '../../core/kernel/_0_domain/format.ts';
-import type { Category } from '../../core/kernel/_0_domain/category.ts';
-import { byId, formModal, modalText, runMutation } from '../../core/kernel/_2_infrastructure/primary/helpers.ts';
-import { deleteWithLinkedFallback, pluralTransactions } from '../../core/kernel/_2_infrastructure/primary/delete-dialog.ts';
-import { icon } from '../../core/kernel/_2_infrastructure/primary/icons.ts';
-import { cachePage } from '../../core/kernel/_2_infrastructure/primary/page.ts';
-import type { Page, PageState } from '../../core/kernel/_2_infrastructure/primary/page.ts';
-import { badge } from '../../core/kernel/_2_infrastructure/primary/ui/badge.ts';
-import type { Modal } from '../../core/kernel/_2_infrastructure/primary/ui/modal.ts';
-import { btn, rowActionBtn } from '../../core/kernel/_2_infrastructure/primary/ui/button.ts';
-import { pageHeader } from '../../core/kernel/_2_infrastructure/primary/ui/page-header.ts';
-import type { CategoryService } from './service.ts';
+import { esc, sortByName } from '@/core/kernel/_0_domain/format.ts';
+import type { Category } from '@/core/kernel/_0_domain/category.ts';
+import { byId, formModal, modalText, runMutation } from '@/core/kernel/_2_infrastructure/primary/helpers.ts';
+import { deleteWithLinkedFallback, pluralTransactions } from '@/core/kernel/_2_infrastructure/primary/delete-dialog.ts';
+import { icon } from '@/core/kernel/_2_infrastructure/primary/icons.ts';
+import { cachePage } from '@/core/kernel/_2_infrastructure/primary/page.ts';
+import type { Page, PageState } from '@/core/kernel/_2_infrastructure/primary/page.ts';
+import { badge } from '@/core/kernel/_2_infrastructure/primary/ui/badge.ts';
+import type { Modal } from '@/core/kernel/_2_infrastructure/primary/ui/modal.ts';
+import { btn, rowActionBtn } from '@/core/kernel/_2_infrastructure/primary/ui/button.ts';
+import { pageHeader } from '@/core/kernel/_2_infrastructure/primary/ui/page-header.ts';
+import type { CategoryService } from '@/feature/categories/service.ts';
 
 const NATURE_EXPENSE = 'EXPENSE';
 const NATURE_REVENUE = 'INCOME';

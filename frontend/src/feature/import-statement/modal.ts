@@ -9,19 +9,19 @@
  * WRONG_PASSWORD).
  */
 import $ from 'jquery';
-import type { ImportRule } from '../../api/types.ts';
-import { esc, flatCategories, fmt } from '../../core/kernel/_0_domain/format.ts';
-import type { CacheStore } from '../../core/kernel/_1_application/cache-store.ts';
-import { runMutation } from '../../core/kernel/_2_infrastructure/primary/helpers.ts';
-import { icon } from '../../core/kernel/_2_infrastructure/primary/icons.ts';
-import { openCategoryCreateModal, openTagCreateModal, categoryPickerHtml } from '../../core/kernel/_2_infrastructure/primary/pickers.ts';
-import { btn } from '../../core/kernel/_2_infrastructure/primary/ui/button.ts';
-import type { Modal } from '../../core/kernel/_2_infrastructure/primary/ui/modal.ts';
-import { modal } from '../../core/kernel/_2_infrastructure/primary/ui/modal.ts';
-import { refreshSearchSelect } from '../../core/kernel/_2_infrastructure/primary/ui/search-select.ts';
-import { modalFooter } from '../../core/kernel/_2_infrastructure/primary/helpers.ts';
-import { refreshTagsDropdownLabel, tagsDropdownHtml } from '../../core/kernel/_2_infrastructure/primary/ui/tags-dropdown.ts';
-import { toast } from '../../core/kernel/_2_infrastructure/primary/ui/toast.ts';
+import type { ImportRule } from '@/api/types.ts';
+import { esc, flatCategories, fmt } from '@/core/kernel/_0_domain/format.ts';
+import type { CacheStore } from '@/core/kernel/_1_application/cache-store.ts';
+import { runMutation } from '@/core/kernel/_2_infrastructure/primary/helpers.ts';
+import { icon } from '@/core/kernel/_2_infrastructure/primary/icons.ts';
+import { openCategoryCreateModal, openTagCreateModal, categoryPickerHtml } from '@/core/kernel/_2_infrastructure/primary/pickers.ts';
+import { btn } from '@/core/kernel/_2_infrastructure/primary/ui/button.ts';
+import type { Modal } from '@/core/kernel/_2_infrastructure/primary/ui/modal.ts';
+import { modal } from '@/core/kernel/_2_infrastructure/primary/ui/modal.ts';
+import { refreshSearchSelect } from '@/core/kernel/_2_infrastructure/primary/ui/search-select.ts';
+import { modalFooter } from '@/core/kernel/_2_infrastructure/primary/helpers.ts';
+import { refreshTagsDropdownLabel, tagsDropdownHtml } from '@/core/kernel/_2_infrastructure/primary/ui/tags-dropdown.ts';
+import { toast } from '@/core/kernel/_2_infrastructure/primary/ui/toast.ts';
 
 /** Linha do preview — superset mutável dos dois formatos (fatura/extrato); campos ausentes num
  * fluxo simplesmente não são lidos pelas colunas do outro (ver COLUMNS). */

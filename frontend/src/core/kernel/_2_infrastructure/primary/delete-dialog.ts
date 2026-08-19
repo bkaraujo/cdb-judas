@@ -3,12 +3,12 @@
  * (accounts/cards/categories/tags).
  */
 import $ from 'jquery';
-import { esc } from '../../_0_domain/format.ts';
-import { confirmModal, modalFooter, modalText } from './helpers.ts';
-import { btn } from './ui/button.ts';
-import type { Modal } from './ui/modal.ts';
-import { modal } from './ui/modal.ts';
-import { toast } from './ui/toast.ts';
+import { esc } from '@/core/kernel/_0_domain/format.ts';
+import { confirmModal, modalFooter, modalText } from '@/core/kernel/_2_infrastructure/primary/helpers.ts';
+import { btn } from '@/core/kernel/_2_infrastructure/primary/ui/button.ts';
+import type { Modal } from '@/core/kernel/_2_infrastructure/primary/ui/modal.ts';
+import { modal } from '@/core/kernel/_2_infrastructure/primary/ui/modal.ts';
+import { toast } from '@/core/kernel/_2_infrastructure/primary/ui/toast.ts';
 
 export interface DeleteChoice {
   value: string;

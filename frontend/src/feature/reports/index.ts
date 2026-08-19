@@ -1,1 +1,1 @@
-export { createReportsPage } from './page.ts';
+export { createReportsPage } from '@/feature/reports/page.ts';

@@ -1,15 +1,15 @@
 /** Transaction use cases. Sem domain própria: Domain.Transaction é kernel
  * (core/kernel/_0_domain/transaction.ts) — statement/credit-cards/accounts-payable precisam da
  * forma pura pra renderizar linha de extrato/fatura/conta a pagar. */
-import type { ImportPreview, PatchStatusRequest, TransactionRequest, TransactionResponse } from '../../api/overrides.ts';
-import type { TransferRequest } from '../../api/types.ts';
-import type { Account } from '../../core/kernel/_0_domain/account.ts';
-import * as Invoice from '../../core/kernel/_0_domain/invoice.ts';
-import type { CollapsedRow, InvoiceTx } from '../../core/kernel/_0_domain/invoice.ts';
-import * as Period from '../../core/kernel/_0_domain/period.ts';
-import * as Transaction from '../../core/kernel/_0_domain/transaction.ts';
-import type { CacheStore } from '../../core/kernel/_1_application/cache-store.ts';
-import type { TransactionRepository } from './repository.ts';
+import type { ImportPreview, PatchStatusRequest, TransactionRequest, TransactionResponse } from '@/api/overrides.ts';
+import type { TransferRequest } from '@/api/types.ts';
+import type { Account } from '@/core/kernel/_0_domain/account.ts';
+import * as Invoice from '@/core/kernel/_0_domain/invoice.ts';
+import type { CollapsedRow, InvoiceTx } from '@/core/kernel/_0_domain/invoice.ts';
+import * as Period from '@/core/kernel/_0_domain/period.ts';
+import * as Transaction from '@/core/kernel/_0_domain/transaction.ts';
+import type { CacheStore } from '@/core/kernel/_1_application/cache-store.ts';
+import type { TransactionRepository } from '@/feature/transactions/repository.ts';
 
 export interface TransactionServiceDeps {
   repo: TransactionRepository;

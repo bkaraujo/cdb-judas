@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import * as Period from '../../core/kernel/_0_domain/period.ts';
-import * as PayableDomain from './domain.ts';
+import * as Period from '@/core/kernel/_0_domain/period.ts';
+import * as PayableDomain from '@/feature/accounts-payable/domain.ts';
 
 describe('feature:accounts-payable — domain', () => {
   it('isActive é false só quando status é cancelled', () => {

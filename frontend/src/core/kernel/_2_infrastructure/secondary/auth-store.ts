@@ -1,4 +1,4 @@
-import type { Storage } from './storage.ts';
+import type { Storage } from '@/core/kernel/_2_infrastructure/secondary/storage.ts';
 
 const USER_KEY = 'auth_user';
 const UID_KEY = 'auth_uid';

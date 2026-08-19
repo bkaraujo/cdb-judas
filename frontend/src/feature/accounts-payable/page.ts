@@ -5,25 +5,25 @@
  * TransactionsApi.patchStatus.
  */
 import $ from 'jquery';
-import { categoryById, categoryLabel, esc, fmt, fmtDate, maskCurrency, parseCurrency } from '../../core/kernel/_0_domain/format.ts';
-import * as Period from '../../core/kernel/_0_domain/period.ts';
-import * as Transaction from '../../core/kernel/_0_domain/transaction.ts';
-import type { CacheStore } from '../../core/kernel/_1_application/cache-store.ts';
-import { byId, formModal, shiftMonth } from '../../core/kernel/_2_infrastructure/primary/helpers.ts';
-import { bindCurrencyMask } from '../../core/kernel/_2_infrastructure/primary/helpers.ts';
-import { createPage } from '../../core/kernel/_2_infrastructure/primary/page.ts';
-import type { Page, PageState } from '../../core/kernel/_2_infrastructure/primary/page.ts';
-import { accountOptionsHtml, categoryItemsFor, categoryPickerHtml } from '../../core/kernel/_2_infrastructure/primary/pickers.ts';
-import { icon } from '../../core/kernel/_2_infrastructure/primary/icons.ts';
-import { statCardHtml } from '../../core/kernel/_2_infrastructure/primary/ui/card.ts';
-import { emptyState } from '../../core/kernel/_2_infrastructure/primary/ui/empty-state.ts';
-import { pageHeader } from '../../core/kernel/_2_infrastructure/primary/ui/page-header.ts';
-import { periodNav } from '../../core/kernel/_2_infrastructure/primary/ui/period-nav.ts';
-import { tabs } from '../../core/kernel/_2_infrastructure/primary/ui/tabs.ts';
-import { toast } from '../../core/kernel/_2_infrastructure/primary/ui/toast.ts';
-import { typeToggleHtml } from '../../core/kernel/_2_infrastructure/primary/ui/type-toggle.ts';
-import * as PayableDomain from './domain.ts';
-import type { PayableListItem, PayableService } from './service.ts';
+import { categoryById, categoryLabel, esc, fmt, fmtDate, maskCurrency, parseCurrency } from '@/core/kernel/_0_domain/format.ts';
+import * as Period from '@/core/kernel/_0_domain/period.ts';
+import * as Transaction from '@/core/kernel/_0_domain/transaction.ts';
+import type { CacheStore } from '@/core/kernel/_1_application/cache-store.ts';
+import { byId, formModal, shiftMonth } from '@/core/kernel/_2_infrastructure/primary/helpers.ts';
+import { bindCurrencyMask } from '@/core/kernel/_2_infrastructure/primary/helpers.ts';
+import { createPage } from '@/core/kernel/_2_infrastructure/primary/page.ts';
+import type { Page, PageState } from '@/core/kernel/_2_infrastructure/primary/page.ts';
+import { accountOptionsHtml, categoryItemsFor, categoryPickerHtml } from '@/core/kernel/_2_infrastructure/primary/pickers.ts';
+import { icon } from '@/core/kernel/_2_infrastructure/primary/icons.ts';
+import { statCardHtml } from '@/core/kernel/_2_infrastructure/primary/ui/card.ts';
+import { emptyState } from '@/core/kernel/_2_infrastructure/primary/ui/empty-state.ts';
+import { pageHeader } from '@/core/kernel/_2_infrastructure/primary/ui/page-header.ts';
+import { periodNav } from '@/core/kernel/_2_infrastructure/primary/ui/period-nav.ts';
+import { tabs } from '@/core/kernel/_2_infrastructure/primary/ui/tabs.ts';
+import { toast } from '@/core/kernel/_2_infrastructure/primary/ui/toast.ts';
+import { typeToggleHtml } from '@/core/kernel/_2_infrastructure/primary/ui/type-toggle.ts';
+import * as PayableDomain from '@/feature/accounts-payable/domain.ts';
+import type { PayableListItem, PayableService } from '@/feature/accounts-payable/service.ts';
 
 /** Porta mínima do contrato público de `transactions` (fatia irmã) — CRUD + delete/mark-paid
  * (ganha de brinde o escopo de parcelas SINGLE/FUTURE/ALL no delete). */

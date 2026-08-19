@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { isActive } from '../accounts-payable/domain.ts';
-import type { Account } from '../../core/kernel/_0_domain/account.ts';
-import type { Category } from '../../core/kernel/_0_domain/category.ts';
-import * as DashboardAggregations from './domain.ts';
-import * as BalanceSheet from './domain.ts';
+import { isActive } from '@/feature/accounts-payable/domain.ts';
+import type { Account } from '@/core/kernel/_0_domain/account.ts';
+import type { Category } from '@/core/kernel/_0_domain/category.ts';
+import * as DashboardAggregations from '@/feature/dashboard/domain.ts';
+import * as BalanceSheet from '@/feature/dashboard/domain.ts';
 
 describe('feature:dashboard — Domain.BalanceSheet', () => {
   it('compute soma o saldo corrente de todas as contas (sem passivo no modelo atual)', () => {

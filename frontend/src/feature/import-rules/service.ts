@@ -1,8 +1,8 @@
 /** ImportRule (regra de nomenclatura) use cases. */
-import type { ImportRule, ImportRuleRequest } from '../../api/types.ts';
-import type { CacheStore } from '../../core/kernel/_1_application/cache-store.ts';
-import type { CbdChangeDetail } from '../../core/kernel/_1_application/event-bus.ts';
-import type { ImportRuleRepository } from './repository.ts';
+import type { ImportRule, ImportRuleRequest } from '@/api/types.ts';
+import type { CacheStore } from '@/core/kernel/_1_application/cache-store.ts';
+import type { CbdChangeDetail } from '@/core/kernel/_1_application/event-bus.ts';
+import type { ImportRuleRepository } from '@/feature/import-rules/repository.ts';
 
 export interface ImportRuleServiceDeps {
   repo: ImportRuleRepository;

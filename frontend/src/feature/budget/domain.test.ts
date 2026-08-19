@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import * as BudgetDomain from './domain.ts';
+import * as BudgetDomain from '@/feature/budget/domain.ts';
 
 describe('feature:budget — domain', () => {
   it('consumptionPct clampa em [0,100] e não divide por zero', () => {

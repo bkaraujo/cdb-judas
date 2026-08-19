@@ -1,7 +1,7 @@
 import $ from 'jquery';
 import { describe, expect, it } from 'vitest';
-import { cachePage, createPage } from './page.ts';
-import type { PageState } from './page.ts';
+import { cachePage, createPage } from '@/core/kernel/_2_infrastructure/primary/page.ts';
+import type { PageState } from '@/core/kernel/_2_infrastructure/primary/page.ts';
 
 interface TestState extends PageState {
   tag?: string;

@@ -15,13 +15,13 @@
  * (larguras de coluna) é responsabilidade de quem chama (a página já resincroniza via
  * `cachePage`/`CacheStore.subscribe`), não deste módulo.
  */
-import type { Account } from '../../_0_domain/account.ts';
-import type { Category } from '../../_0_domain/category.ts';
-import { categoryById, categoryLabel, esc, flatCategories, fmt, fmtDate, valueColor } from '../../_0_domain/format.ts';
-import * as StatementItem from '../../_0_domain/statement-item.ts';
-import * as Transaction from '../../_0_domain/transaction.ts';
-import type { Tag } from '../../_0_domain/tag.ts';
-import { tagFlagHtml } from './ui/tags-dropdown.ts';
+import type { Account } from '@/core/kernel/_0_domain/account.ts';
+import type { Category } from '@/core/kernel/_0_domain/category.ts';
+import { categoryById, categoryLabel, esc, flatCategories, fmt, fmtDate, valueColor } from '@/core/kernel/_0_domain/format.ts';
+import * as StatementItem from '@/core/kernel/_0_domain/statement-item.ts';
+import * as Transaction from '@/core/kernel/_0_domain/transaction.ts';
+import type { Tag } from '@/core/kernel/_0_domain/tag.ts';
+import { tagFlagHtml } from '@/core/kernel/_2_infrastructure/primary/ui/tags-dropdown.ts';
 
 export interface StatementColumns {
   catColCh: number;

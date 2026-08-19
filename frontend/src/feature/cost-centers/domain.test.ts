@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import * as CostCenterDomain from './domain.ts';
+import * as CostCenterDomain from '@/feature/cost-centers/domain.ts';
 
 describe('feature:cost-centers — domain', () => {
   it('normalize aplica defaults', () => {

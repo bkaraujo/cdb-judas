@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { createBudgetService } from './service.ts';
-import type { BudgetRepository } from './repository.ts';
+import { createBudgetService } from '@/feature/budget/service.ts';
+import type { BudgetRepository } from '@/feature/budget/repository.ts';
 
 describe('feature:budget — service (repo fake)', () => {
   const fakeRepo: BudgetRepository = {

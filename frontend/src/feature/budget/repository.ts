@@ -1,6 +1,6 @@
 /** HTTP adapter for /budget. */
-import type { HttpClient } from '../../core/kernel/_2_infrastructure/secondary/http-client.ts';
-import type { BudgetCreateRequest, BudgetResponse, BudgetUpdateRequest } from './types.ts';
+import type { HttpClient } from '@/core/kernel/_2_infrastructure/secondary/http-client.ts';
+import type { BudgetCreateRequest, BudgetResponse, BudgetUpdateRequest } from '@/feature/budget/types.ts';
 
 export interface BudgetRepository {
   list(month: number, year: number): Promise<BudgetResponse[] | null>;

@@ -4,17 +4,17 @@
  * `service.list()` em vez de depender de `CacheStore`/`onChange`, mesmo padrão de `budget`.
  */
 import $ from 'jquery';
-import { categoryLabel, esc, sortByName } from '../../core/kernel/_0_domain/format.ts';
-import type { CacheStore } from '../../core/kernel/_1_application/cache-store.ts';
-import { byId, confirmModal, formModal, modalText, runMutation } from '../../core/kernel/_2_infrastructure/primary/helpers.ts';
-import { createPage } from '../../core/kernel/_2_infrastructure/primary/page.ts';
-import type { Page, PageState } from '../../core/kernel/_2_infrastructure/primary/page.ts';
-import { accountOptionsHtml, categoryItemsFor, categoryPickerHtml, optionsHtml } from '../../core/kernel/_2_infrastructure/primary/pickers.ts';
-import { btn, rowActionBtn } from '../../core/kernel/_2_infrastructure/primary/ui/button.ts';
-import { emptyState } from '../../core/kernel/_2_infrastructure/primary/ui/empty-state.ts';
-import { pageHeader } from '../../core/kernel/_2_infrastructure/primary/ui/page-header.ts';
-import type { ImportRule } from '../../api/types.ts';
-import type { ImportRuleService } from './service.ts';
+import { categoryLabel, esc, sortByName } from '@/core/kernel/_0_domain/format.ts';
+import type { CacheStore } from '@/core/kernel/_1_application/cache-store.ts';
+import { byId, confirmModal, formModal, modalText, runMutation } from '@/core/kernel/_2_infrastructure/primary/helpers.ts';
+import { createPage } from '@/core/kernel/_2_infrastructure/primary/page.ts';
+import type { Page, PageState } from '@/core/kernel/_2_infrastructure/primary/page.ts';
+import { accountOptionsHtml, categoryItemsFor, categoryPickerHtml, optionsHtml } from '@/core/kernel/_2_infrastructure/primary/pickers.ts';
+import { btn, rowActionBtn } from '@/core/kernel/_2_infrastructure/primary/ui/button.ts';
+import { emptyState } from '@/core/kernel/_2_infrastructure/primary/ui/empty-state.ts';
+import { pageHeader } from '@/core/kernel/_2_infrastructure/primary/ui/page-header.ts';
+import type { ImportRule } from '@/api/types.ts';
+import type { ImportRuleService } from '@/feature/import-rules/service.ts';
 
 interface ImportRulesPageState extends PageState {
   rules: ImportRule[];

@@ -1,5 +1,5 @@
 import $ from 'jquery';
-import { icon } from '../icons.ts';
+import { icon } from '@/core/kernel/_2_infrastructure/primary/icons.ts';
 
 export interface PeriodNavOptions {
   month?: number;

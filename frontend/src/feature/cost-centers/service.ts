@@ -1,8 +1,8 @@
-import type { CbdChangeDetail } from '../../core/kernel/_1_application/event-bus.ts';
-import type { CacheStore } from '../../core/kernel/_1_application/cache-store.ts';
-import * as CostCenterDomain from './domain.ts';
-import type { CostCenter } from './domain.ts';
-import type { CostCenterRepository } from './repository.ts';
+import type { CbdChangeDetail } from '@/core/kernel/_1_application/event-bus.ts';
+import type { CacheStore } from '@/core/kernel/_1_application/cache-store.ts';
+import * as CostCenterDomain from '@/feature/cost-centers/domain.ts';
+import type { CostCenter } from '@/feature/cost-centers/domain.ts';
+import type { CostCenterRepository } from '@/feature/cost-centers/repository.ts';
 
 export interface CostCenterServiceDeps {
   repo: CostCenterRepository;

@@ -1,6 +1,6 @@
 import $ from 'jquery';
-import { esc } from '../../../_0_domain/format.ts';
-import { icon } from '../icons.ts';
+import { esc } from '@/core/kernel/_0_domain/format.ts';
+import { icon } from '@/core/kernel/_2_infrastructure/primary/icons.ts';
 
 export interface CardOptions {
   style?: string;

@@ -3,11 +3,11 @@
  * `_0_domain/format.ts` (esc) to factor out patterns that were copy-pasted in nearly every page.
  */
 import $ from 'jquery';
-import { esc } from '../../_0_domain/format.ts';
-import { btn } from './ui/button.ts';
-import type { Modal } from './ui/modal.ts';
-import { modal } from './ui/modal.ts';
-import { toast } from './ui/toast.ts';
+import { esc } from '@/core/kernel/_0_domain/format.ts';
+import { btn } from '@/core/kernel/_2_infrastructure/primary/ui/button.ts';
+import type { Modal } from '@/core/kernel/_2_infrastructure/primary/ui/modal.ts';
+import { modal } from '@/core/kernel/_2_infrastructure/primary/ui/modal.ts';
+import { toast } from '@/core/kernel/_2_infrastructure/primary/ui/toast.ts';
 
 /* ---- Record lookup ----
  * Replaces the per-page findAccount/findItem/findCard/findTag/findTx helpers. String-compares

@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import type { Account } from '../../core/kernel/_0_domain/account.ts';
-import * as Period from '../../core/kernel/_0_domain/period.ts';
-import type { CacheStore } from '../../core/kernel/_1_application/cache-store.ts';
-import { createTransactionService } from './service.ts';
-import type { TransactionRepository } from './repository.ts';
+import type { Account } from '@/core/kernel/_0_domain/account.ts';
+import * as Period from '@/core/kernel/_0_domain/period.ts';
+import type { CacheStore } from '@/core/kernel/_1_application/cache-store.ts';
+import { createTransactionService } from '@/feature/transactions/service.ts';
+import type { TransactionRepository } from '@/feature/transactions/repository.ts';
 
 function fakeRepo(overrides: Partial<TransactionRepository> = {}): TransactionRepository {
   return {

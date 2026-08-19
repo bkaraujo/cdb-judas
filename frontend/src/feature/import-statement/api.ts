@@ -3,12 +3,12 @@
  * partir da sidebar/dashboard). Adapta os wire types reais de `api/overrides.ts` (ImportPreview,
  * a união discriminada por `documentType`) e as portas já publicadas por transactions/import-rules
  * para o modelo de UI mais solto que `modal.ts` trabalha (ImportDataUI/ImportRowUI). */
-import type { ImportPreview } from '../../api/overrides.ts';
-import type { CacheStore } from '../../core/kernel/_1_application/cache-store.ts';
-import type { ImportRulesApi } from '../import-rules/api.ts';
-import type { TransactionsApi } from '../transactions/api.ts';
-import { createImportStatementModal } from './modal.ts';
-import type { ImportDataUI, ImportStatementModalOptions } from './modal.ts';
+import type { ImportPreview } from '@/api/overrides.ts';
+import type { CacheStore } from '@/core/kernel/_1_application/cache-store.ts';
+import type { ImportRulesApi } from '@/feature/import-rules/api.ts';
+import type { TransactionsApi } from '@/feature/transactions/api.ts';
+import { createImportStatementModal } from '@/feature/import-statement/modal.ts';
+import type { ImportDataUI, ImportStatementModalOptions } from '@/feature/import-statement/modal.ts';
 
 export interface ImportStatementApi {
   open(opts?: ImportStatementModalOptions): void;

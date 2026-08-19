@@ -1,8 +1,8 @@
 /** Painéis: Contas a Pagar / Contas a Receber. */
-import { fmtDate } from '../../../core/kernel/_0_domain/format.ts';
-import { badge } from '../../../core/kernel/_2_infrastructure/primary/ui/badge.ts';
-import { emptyState } from '../../../core/kernel/_2_infrastructure/primary/ui/empty-state.ts';
-import type { PanelRenderer } from './types.ts';
+import { fmtDate } from '@/core/kernel/_0_domain/format.ts';
+import { badge } from '@/core/kernel/_2_infrastructure/primary/ui/badge.ts';
+import { emptyState } from '@/core/kernel/_2_infrastructure/primary/ui/empty-state.ts';
+import type { PanelRenderer } from '@/feature/dashboard/panels/types.ts';
 
 function renderListaPayable(_p: Parameters<PanelRenderer>[0], ctx: Parameters<PanelRenderer>[1], kind: 'expense' | 'income'): JQuery {
   const isExp = kind === 'expense';

@@ -1,10 +1,10 @@
 /** Painel: Últimos Lançamentos. */
 import $ from 'jquery';
-import { fmtDate } from '../../../core/kernel/_0_domain/format.ts';
-import * as Transaction from '../../../core/kernel/_0_domain/transaction.ts';
-import { icon } from '../../../core/kernel/_2_infrastructure/primary/icons.ts';
-import { emptyState } from '../../../core/kernel/_2_infrastructure/primary/ui/empty-state.ts';
-import type { PanelRenderer } from './types.ts';
+import { fmtDate } from '@/core/kernel/_0_domain/format.ts';
+import * as Transaction from '@/core/kernel/_0_domain/transaction.ts';
+import { icon } from '@/core/kernel/_2_infrastructure/primary/icons.ts';
+import { emptyState } from '@/core/kernel/_2_infrastructure/primary/ui/empty-state.ts';
+import type { PanelRenderer } from '@/feature/dashboard/panels/types.ts';
 
 export const recentPostings: PanelRenderer = (p, ctx) => {
   const txs = (ctx.state.data.transactions || []).slice(0, 7);

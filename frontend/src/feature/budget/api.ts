@@ -1,9 +1,9 @@
 /** Contrato público da fatia budget (equivalente ao FNNNApi do backend). Único arquivo que outra
  * fatia pode referenciar. Consumidor: dashboard (painel de metas de despesa). */
-import type { Period } from '../../core/kernel/_0_domain/period.ts';
-import * as BudgetDomain from './domain.ts';
-import type { BudgetService } from './service.ts';
-import type { BudgetResponse } from './types.ts';
+import type { Period } from '@/core/kernel/_0_domain/period.ts';
+import * as BudgetDomain from '@/feature/budget/domain.ts';
+import type { BudgetService } from '@/feature/budget/service.ts';
+import type { BudgetResponse } from '@/feature/budget/types.ts';
 
 export interface BudgetApi {
   loadPeriod(period: Period): Promise<BudgetResponse[] | null>;

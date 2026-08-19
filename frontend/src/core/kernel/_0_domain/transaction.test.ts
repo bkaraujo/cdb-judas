@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import * as Transaction from './transaction.ts';
+import * as Transaction from '@/core/kernel/_0_domain/transaction.ts';
 
 describe('kernel:transaction', () => {
   it('normalizeType mapeia aliases e cai pra expense por padrão', () => {

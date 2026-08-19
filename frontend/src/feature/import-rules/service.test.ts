@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import type { CacheStore } from '../../core/kernel/_1_application/cache-store.ts';
-import { createImportRuleService } from './service.ts';
-import type { ImportRuleRepository } from './repository.ts';
+import type { CacheStore } from '@/core/kernel/_1_application/cache-store.ts';
+import { createImportRuleService } from '@/feature/import-rules/service.ts';
+import type { ImportRuleRepository } from '@/feature/import-rules/repository.ts';
 
 function fakeRepo(): ImportRuleRepository {
   return {

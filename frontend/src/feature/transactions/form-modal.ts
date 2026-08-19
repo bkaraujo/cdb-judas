@@ -4,22 +4,22 @@
  * quick-create de categoria a partir do próprio formulário.
  */
 import $ from 'jquery';
-import type { TransactionRequest, TransactionResponse } from '../../api/overrides.ts';
-import type { ImportRule } from '../../api/types.ts';
-import * as AccountDomain from '../../core/kernel/_0_domain/account.ts';
-import { esc, maskCurrency, parseCurrency } from '../../core/kernel/_0_domain/format.ts';
-import * as Transaction from '../../core/kernel/_0_domain/transaction.ts';
-import type { CacheStore } from '../../core/kernel/_1_application/cache-store.ts';
-import { bindCurrencyMask, byId } from '../../core/kernel/_2_infrastructure/primary/helpers.ts';
-import { formModal } from '../../core/kernel/_2_infrastructure/primary/helpers.ts';
-import { icon } from '../../core/kernel/_2_infrastructure/primary/icons.ts';
-import { accountOptionsHtml, categoryItemsFor, categoryPickerHtml, costCenterOptionsHtml, openCategoryCreateModal, openTagCreateModal, quickCategoryLabel } from '../../core/kernel/_2_infrastructure/primary/pickers.ts';
-import { refreshSearchSelect } from '../../core/kernel/_2_infrastructure/primary/ui/search-select.ts';
-import { appendTagRow, refreshTagsDropdownLabel, tagsDropdownHtml } from '../../core/kernel/_2_infrastructure/primary/ui/tags-dropdown.ts';
-import { typeToggleHtml } from '../../core/kernel/_2_infrastructure/primary/ui/type-toggle.ts';
-import { toast } from '../../core/kernel/_2_infrastructure/primary/ui/toast.ts';
-import type { Modal } from '../../core/kernel/_2_infrastructure/primary/ui/modal.ts';
-import type { TransactionService } from './service.ts';
+import type { TransactionRequest, TransactionResponse } from '@/api/overrides.ts';
+import type { ImportRule } from '@/api/types.ts';
+import * as AccountDomain from '@/core/kernel/_0_domain/account.ts';
+import { esc, maskCurrency, parseCurrency } from '@/core/kernel/_0_domain/format.ts';
+import * as Transaction from '@/core/kernel/_0_domain/transaction.ts';
+import type { CacheStore } from '@/core/kernel/_1_application/cache-store.ts';
+import { bindCurrencyMask, byId } from '@/core/kernel/_2_infrastructure/primary/helpers.ts';
+import { formModal } from '@/core/kernel/_2_infrastructure/primary/helpers.ts';
+import { icon } from '@/core/kernel/_2_infrastructure/primary/icons.ts';
+import { accountOptionsHtml, categoryItemsFor, categoryPickerHtml, costCenterOptionsHtml, openCategoryCreateModal, openTagCreateModal, quickCategoryLabel } from '@/core/kernel/_2_infrastructure/primary/pickers.ts';
+import { refreshSearchSelect } from '@/core/kernel/_2_infrastructure/primary/ui/search-select.ts';
+import { appendTagRow, refreshTagsDropdownLabel, tagsDropdownHtml } from '@/core/kernel/_2_infrastructure/primary/ui/tags-dropdown.ts';
+import { typeToggleHtml } from '@/core/kernel/_2_infrastructure/primary/ui/type-toggle.ts';
+import { toast } from '@/core/kernel/_2_infrastructure/primary/ui/toast.ts';
+import type { Modal } from '@/core/kernel/_2_infrastructure/primary/ui/modal.ts';
+import type { TransactionService } from '@/feature/transactions/service.ts';
 
 export interface ImportRulesPort {
   match(description: string | null | undefined, rules: readonly ImportRule[] | null | undefined): ImportRule | null;

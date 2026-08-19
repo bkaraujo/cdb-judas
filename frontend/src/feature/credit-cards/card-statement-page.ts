@@ -15,23 +15,23 @@
  * pelo "Ver fatura" da tela de Cartões.
  */
 import $ from 'jquery';
-import { esc, fmtDate } from '../../core/kernel/_0_domain/format.ts';
-import * as Period from '../../core/kernel/_0_domain/period.ts';
-import * as StatementItem from '../../core/kernel/_0_domain/statement-item.ts';
-import type { CacheStore } from '../../core/kernel/_1_application/cache-store.ts';
-import { byId, shiftMonth } from '../../core/kernel/_2_infrastructure/primary/helpers.ts';
-import { createPage } from '../../core/kernel/_2_infrastructure/primary/page.ts';
-import type { Page, PageState } from '../../core/kernel/_2_infrastructure/primary/page.ts';
-import { rowActionsHtml } from '../../core/kernel/_2_infrastructure/primary/ui/button.ts';
-import { emptyState } from '../../core/kernel/_2_infrastructure/primary/ui/empty-state.ts';
-import { pageHeader } from '../../core/kernel/_2_infrastructure/primary/ui/page-header.ts';
-import { periodNav } from '../../core/kernel/_2_infrastructure/primary/ui/period-nav.ts';
-import { selectorButtonHtml } from '../../core/kernel/_2_infrastructure/primary/ui/search-select.ts';
-import { fmt } from '../../core/kernel/_0_domain/format.ts';
-import { statementColumns, statementRowHtml } from '../../core/kernel/_2_infrastructure/primary/statement-row.ts';
-import { toast } from '../../core/kernel/_2_infrastructure/primary/ui/toast.ts';
-import type { InvoiceTx } from './domain.ts';
-import type { CreditCardService, CreditCardWithAccount } from './service.ts';
+import { esc, fmtDate } from '@/core/kernel/_0_domain/format.ts';
+import * as Period from '@/core/kernel/_0_domain/period.ts';
+import * as StatementItem from '@/core/kernel/_0_domain/statement-item.ts';
+import type { CacheStore } from '@/core/kernel/_1_application/cache-store.ts';
+import { byId, shiftMonth } from '@/core/kernel/_2_infrastructure/primary/helpers.ts';
+import { createPage } from '@/core/kernel/_2_infrastructure/primary/page.ts';
+import type { Page, PageState } from '@/core/kernel/_2_infrastructure/primary/page.ts';
+import { rowActionsHtml } from '@/core/kernel/_2_infrastructure/primary/ui/button.ts';
+import { emptyState } from '@/core/kernel/_2_infrastructure/primary/ui/empty-state.ts';
+import { pageHeader } from '@/core/kernel/_2_infrastructure/primary/ui/page-header.ts';
+import { periodNav } from '@/core/kernel/_2_infrastructure/primary/ui/period-nav.ts';
+import { selectorButtonHtml } from '@/core/kernel/_2_infrastructure/primary/ui/search-select.ts';
+import { fmt } from '@/core/kernel/_0_domain/format.ts';
+import { statementColumns, statementRowHtml } from '@/core/kernel/_2_infrastructure/primary/statement-row.ts';
+import { toast } from '@/core/kernel/_2_infrastructure/primary/ui/toast.ts';
+import type { InvoiceTx } from '@/feature/credit-cards/domain.ts';
+import type { CreditCardService, CreditCardWithAccount } from '@/feature/credit-cards/service.ts';
 
 /** Porta mínima do contrato público de `transactions` (fatia irmã que vem depois na ordem do
  * plano) — só editor/exclusão de uma linha, usados aqui. */

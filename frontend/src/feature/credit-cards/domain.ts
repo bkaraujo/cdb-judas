@@ -1,8 +1,8 @@
 /** Credit card rules (uses Account + Period). Pure. */
-import type { Account } from '../../core/kernel/_0_domain/account.ts';
-import * as Invoice from '../../core/kernel/_0_domain/invoice.ts';
-import type { Period } from '../../core/kernel/_0_domain/period.ts';
-import { thresholdColorToken } from '../../core/kernel/_2_infrastructure/primary/ui/progress-bar.ts';
+import type { Account } from '@/core/kernel/_0_domain/account.ts';
+import * as Invoice from '@/core/kernel/_0_domain/invoice.ts';
+import type { Period } from '@/core/kernel/_0_domain/period.ts';
+import { thresholdColorToken } from '@/core/kernel/_2_infrastructure/primary/ui/progress-bar.ts';
 
 export const DEFAULT_CLOSING_DAY = 1;
 export const DEFAULT_DUE_DAY = 10;

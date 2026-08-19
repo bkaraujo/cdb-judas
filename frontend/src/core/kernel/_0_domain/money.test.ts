@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import * as Money from './money.ts';
+import * as Money from '@/core/kernel/_0_domain/money.ts';
 
 describe('kernel:money', () => {
   it('format sempre devolve valor absoluto em BRL (sem sinal de menos)', () => {

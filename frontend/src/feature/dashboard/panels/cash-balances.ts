@@ -1,7 +1,7 @@
 /** Painel: Saldos de Caixa. */
-import { valueColor } from '../../../core/kernel/_0_domain/format.ts';
-import * as AccountDomain from '../../../core/kernel/_0_domain/account.ts';
-import type { PanelRenderer } from './types.ts';
+import { valueColor } from '@/core/kernel/_0_domain/format.ts';
+import * as AccountDomain from '@/core/kernel/_0_domain/account.ts';
+import type { PanelRenderer } from '@/feature/dashboard/panels/types.ts';
 
 export const cashBalances: PanelRenderer = (p, ctx) => {
   const accs = ctx.cashAccounts();

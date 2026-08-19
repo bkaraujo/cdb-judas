@@ -1,5 +1,5 @@
 /** CostCenter entity. Pure. */
-import type { CostCenter as CostCenterWire } from '../../api/types.ts';
+import type { CostCenter as CostCenterWire } from '@/api/types.ts';
 
 export interface CostCenter {
   id: string;

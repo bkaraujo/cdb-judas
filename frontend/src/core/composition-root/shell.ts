@@ -1,7 +1,7 @@
 /** Scaffold de DOM de topo (`#app` → sidebar + área principal) + montagem do sidebar. */
 import $ from 'jquery';
-import type { Router } from '../kernel/_2_infrastructure/primary/router.ts';
-import type { Sidebar } from '../kernel/_2_infrastructure/primary/sidebar.ts';
+import type { Router } from '@/core/kernel/_2_infrastructure/primary/router.ts';
+import type { Sidebar } from '@/core/kernel/_2_infrastructure/primary/sidebar.ts';
 
 export interface Shell {
   buildShell(): void;

@@ -7,14 +7,14 @@
  * Opens immediately and returns the modal handle, mirroring confirmModal/linkedDeleteDialog.
  */
 import $ from 'jquery';
-import { esc } from '../../core/kernel/_0_domain/format.ts';
-import * as Period from '../../core/kernel/_0_domain/period.ts';
-import { modalFooter, modalText, runMutation } from '../../core/kernel/_2_infrastructure/primary/helpers.ts';
-import { btn } from '../../core/kernel/_2_infrastructure/primary/ui/button.ts';
-import type { Modal } from '../../core/kernel/_2_infrastructure/primary/ui/modal.ts';
-import { modal } from '../../core/kernel/_2_infrastructure/primary/ui/modal.ts';
-import { periodNav } from '../../core/kernel/_2_infrastructure/primary/ui/period-nav.ts';
-import type { ClosingService } from './service.ts';
+import { esc } from '@/core/kernel/_0_domain/format.ts';
+import * as Period from '@/core/kernel/_0_domain/period.ts';
+import { modalFooter, modalText, runMutation } from '@/core/kernel/_2_infrastructure/primary/helpers.ts';
+import { btn } from '@/core/kernel/_2_infrastructure/primary/ui/button.ts';
+import type { Modal } from '@/core/kernel/_2_infrastructure/primary/ui/modal.ts';
+import { modal } from '@/core/kernel/_2_infrastructure/primary/ui/modal.ts';
+import { periodNav } from '@/core/kernel/_2_infrastructure/primary/ui/period-nav.ts';
+import type { ClosingService } from '@/feature/accounts/service.ts';
 
 export interface ClosingDialogOptions {
   current?: string | null;

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import * as Account from './account.ts';
+import * as Account from '@/core/kernel/_0_domain/account.ts';
 
 describe('kernel:account', () => {
   it('normalize aplica defaults e mapeia cards', () => {

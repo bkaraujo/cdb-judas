@@ -1,13 +1,13 @@
 import $ from 'jquery';
-import { esc } from '../../core/kernel/_0_domain/format.ts';
-import { icon } from '../../core/kernel/_2_infrastructure/primary/icons.ts';
-import { cachePage } from '../../core/kernel/_2_infrastructure/primary/page.ts';
-import type { Page, PageState } from '../../core/kernel/_2_infrastructure/primary/page.ts';
-import { emptyState } from '../../core/kernel/_2_infrastructure/primary/ui/empty-state.ts';
-import { pageHeader } from '../../core/kernel/_2_infrastructure/primary/ui/page-header.ts';
-import * as CostCenterDomain from './domain.ts';
-import type { CostCenter } from './domain.ts';
-import type { CostCenterService } from './service.ts';
+import { esc } from '@/core/kernel/_0_domain/format.ts';
+import { icon } from '@/core/kernel/_2_infrastructure/primary/icons.ts';
+import { cachePage } from '@/core/kernel/_2_infrastructure/primary/page.ts';
+import type { Page, PageState } from '@/core/kernel/_2_infrastructure/primary/page.ts';
+import { emptyState } from '@/core/kernel/_2_infrastructure/primary/ui/empty-state.ts';
+import { pageHeader } from '@/core/kernel/_2_infrastructure/primary/ui/page-header.ts';
+import * as CostCenterDomain from '@/feature/cost-centers/domain.ts';
+import type { CostCenter } from '@/feature/cost-centers/domain.ts';
+import type { CostCenterService } from '@/feature/cost-centers/service.ts';
 
 interface CostCentersPageState extends PageState {
   costCenters: CostCenter[];

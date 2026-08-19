@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import type { CacheStore } from '../../core/kernel/_1_application/cache-store.ts';
-import { createTagService } from './service.ts';
-import type { TagRepository } from './repository.ts';
+import type { CacheStore } from '@/core/kernel/_1_application/cache-store.ts';
+import { createTagService } from '@/feature/tags/service.ts';
+import type { TagRepository } from '@/feature/tags/repository.ts';
 
 function fakeRepo(): TagRepository {
   return {

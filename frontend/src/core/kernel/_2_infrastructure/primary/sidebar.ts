@@ -1,9 +1,9 @@
 /** Collapsible sidebar with grouped nav + tooltips + theme toggle. */
 import $ from 'jquery';
-import { esc } from '../../_0_domain/format.ts';
-import { icon } from './icons.ts';
-import { SIDEBAR_NAV } from './sidebar-nav.ts';
-import type { NavItem } from './sidebar-nav.ts';
+import { esc } from '@/core/kernel/_0_domain/format.ts';
+import { icon } from '@/core/kernel/_2_infrastructure/primary/icons.ts';
+import { SIDEBAR_NAV } from '@/core/kernel/_2_infrastructure/primary/sidebar-nav.ts';
+import type { NavItem } from '@/core/kernel/_2_infrastructure/primary/sidebar-nav.ts';
 
 export interface SidebarPreferencesPort {
   getSidebarCollapsed(): boolean;

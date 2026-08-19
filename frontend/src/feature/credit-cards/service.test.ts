@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import type { Account } from '../../core/kernel/_0_domain/account.ts';
-import * as Period from '../../core/kernel/_0_domain/period.ts';
-import type { CacheStore } from '../../core/kernel/_1_application/cache-store.ts';
-import { createCreditCardService } from './service.ts';
-import type { CreditCardsTxRepoPort } from './service.ts';
+import type { Account } from '@/core/kernel/_0_domain/account.ts';
+import * as Period from '@/core/kernel/_0_domain/period.ts';
+import type { CacheStore } from '@/core/kernel/_1_application/cache-store.ts';
+import { createCreditCardService } from '@/feature/credit-cards/service.ts';
+import type { CreditCardsTxRepoPort } from '@/feature/credit-cards/service.ts';
 
 function fakeCache(): CacheStore {
   return {

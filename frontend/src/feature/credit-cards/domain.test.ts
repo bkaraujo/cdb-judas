@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import type { Account } from '../../core/kernel/_0_domain/account.ts';
-import * as Period from '../../core/kernel/_0_domain/period.ts';
-import * as CreditCardDomain from './domain.ts';
+import type { Account } from '@/core/kernel/_0_domain/account.ts';
+import * as Period from '@/core/kernel/_0_domain/period.ts';
+import * as CreditCardDomain from '@/feature/credit-cards/domain.ts';
 
 describe('feature:credit-cards — domain', () => {
   it('usagePct clampa em [0,100] e não divide por zero', () => {

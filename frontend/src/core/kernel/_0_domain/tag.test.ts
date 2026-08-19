@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import * as Tag from './tag.ts';
+import * as Tag from '@/core/kernel/_0_domain/tag.ts';
 
 describe('kernel:tag', () => {
   it('normalize aplica defaults', () => {

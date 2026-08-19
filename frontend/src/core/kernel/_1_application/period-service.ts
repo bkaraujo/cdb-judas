@@ -6,8 +6,8 @@
  * Domain.Period: month is 1-12. Mirrored in sessionStorage so it also survives a reload within the
  * tab; a fresh session defaults to the current month.
  */
-import * as Period from '../_0_domain/period.ts';
-import type { Storage } from '../_2_infrastructure/secondary/storage.ts';
+import * as Period from '@/core/kernel/_0_domain/period.ts';
+import type { Storage } from '@/core/kernel/_2_infrastructure/secondary/storage.ts';
 
 const KEY = 'cdb-period';
 

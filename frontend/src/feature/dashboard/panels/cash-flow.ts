@@ -1,5 +1,5 @@
 /** Painel: Fluxo de Caixa. */
-import type { PanelRenderer } from './types.ts';
+import type { PanelRenderer } from '@/feature/dashboard/panels/types.ts';
 
 export const cashFlow: PanelRenderer = (p, ctx) => {
   const series = ctx.monthlySeries(6);

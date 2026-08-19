@@ -6,9 +6,9 @@
  * Fase 4 — é lá que mora a normalização de categoria/conta, não mais duplicada aqui) e transmite
  * `cbd:change` via o barramento de eventos da aplicação (`event-bus.ts`, Fase 4).
  */
-import type { CbdEntityKind, SseCachePort } from '../../_1_application/cache-store.ts';
-import type { CbdChangeDetail, EventBus } from '../../_1_application/event-bus.ts';
-import type { AuthStore } from './auth-store.ts';
+import type { CbdEntityKind, SseCachePort } from '@/core/kernel/_1_application/cache-store.ts';
+import type { CbdChangeDetail, EventBus } from '@/core/kernel/_1_application/event-bus.ts';
+import type { AuthStore } from '@/core/kernel/_2_infrastructure/secondary/auth-store.ts';
 
 const HANDSHAKE_TIMEOUT_MS = 10000;
 

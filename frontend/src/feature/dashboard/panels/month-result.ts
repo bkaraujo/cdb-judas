@@ -1,5 +1,5 @@
 /** Painel: Resultado do Mês. */
-import type { PanelRenderer } from './types.ts';
+import type { PanelRenderer } from '@/feature/dashboard/panels/types.ts';
 
 export const monthResult: PanelRenderer = (p, ctx) => {
   const txs = ctx.currentMonthTxs();

@@ -1,4 +1,4 @@
-export { createStatementService } from './service.ts';
-export type { AccountStatementSummary, StatementBalancePort, StatementService, StatementServiceDeps, StatementTxPort } from './service.ts';
-export { createStatementPage } from './page.ts';
-export type { StatementPageDeps, StatementTransactionsPort } from './page.ts';
+export { createStatementService } from '@/feature/statement/service.ts';
+export type { AccountStatementSummary, StatementBalancePort, StatementService, StatementServiceDeps, StatementTxPort } from '@/feature/statement/service.ts';
+export { createStatementPage } from '@/feature/statement/page.ts';
+export type { StatementPageDeps, StatementTransactionsPort } from '@/feature/statement/page.ts';

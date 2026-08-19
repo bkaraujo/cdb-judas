@@ -1,6 +1,6 @@
 /** Regras puras de item de orçamento (fatia Metas/Orçamento). */
-import { thresholdColorToken } from '../../core/kernel/_2_infrastructure/primary/ui/progress-bar.ts';
-import type { BudgetResponse } from './types.ts';
+import { thresholdColorToken } from '@/core/kernel/_2_infrastructure/primary/ui/progress-bar.ts';
+import type { BudgetResponse } from '@/feature/budget/types.ts';
 
 export interface Budget {
   id: string;

@@ -1,22 +1,22 @@
-export * from './badge.ts';
-export * from './button.ts';
-export * from './card.ts';
-export * from './color-name-field.ts';
-export * from './empty-state.ts';
-export * from './modal.ts';
-export * from './page-header.ts';
-export * from './period-nav.ts';
-export * from './progress-bar.ts';
-export * from './search-select.ts';
-export * from './tabs.ts';
-export * from './tags-dropdown.ts';
-export * from './toast.ts';
-export * from './type-toggle.ts';
+export * from '@/core/kernel/_2_infrastructure/primary/ui/badge.ts';
+export * from '@/core/kernel/_2_infrastructure/primary/ui/button.ts';
+export * from '@/core/kernel/_2_infrastructure/primary/ui/card.ts';
+export * from '@/core/kernel/_2_infrastructure/primary/ui/color-name-field.ts';
+export * from '@/core/kernel/_2_infrastructure/primary/ui/empty-state.ts';
+export * from '@/core/kernel/_2_infrastructure/primary/ui/modal.ts';
+export * from '@/core/kernel/_2_infrastructure/primary/ui/page-header.ts';
+export * from '@/core/kernel/_2_infrastructure/primary/ui/period-nav.ts';
+export * from '@/core/kernel/_2_infrastructure/primary/ui/progress-bar.ts';
+export * from '@/core/kernel/_2_infrastructure/primary/ui/search-select.ts';
+export * from '@/core/kernel/_2_infrastructure/primary/ui/tabs.ts';
+export * from '@/core/kernel/_2_infrastructure/primary/ui/tags-dropdown.ts';
+export * from '@/core/kernel/_2_infrastructure/primary/ui/toast.ts';
+export * from '@/core/kernel/_2_infrastructure/primary/ui/type-toggle.ts';
 
-import { installModalEscHandler } from './modal.ts';
-import { installSearchDropdownHandlers } from './search-select.ts';
-import type { Tag } from '../../../_0_domain/tag.ts';
-import { installTagFlagHandlers } from './tags-dropdown.ts';
+import { installModalEscHandler } from '@/core/kernel/_2_infrastructure/primary/ui/modal.ts';
+import { installSearchDropdownHandlers } from '@/core/kernel/_2_infrastructure/primary/ui/search-select.ts';
+import type { Tag } from '@/core/kernel/_0_domain/tag.ts';
+import { installTagFlagHandlers } from '@/core/kernel/_2_infrastructure/primary/ui/tags-dropdown.ts';
 
 /** Assina os listeners globais (delegados no document) de toda a camada `ui/`: ESC fecha modal,
  * filtro/posicionamento/fechamento dos search-dropdowns, hover do indicador de tags. Chamar uma
