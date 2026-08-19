@@ -88,7 +88,12 @@ export function isValidTransfer(srcAccountId: string | null | undefined, dstAcco
  * parcelada. O sufixo é só visual — a descrição persistida continua limpa de propósito, porque
  * f006.GroupSignature deriva o groupId do hash da descrição normalizada: gravar o sufixo faria o
  * re-import do mesmo extrato calcular outro id e duplicar a compra em vez de reconhecê-la.
- * Lançamento à vista tem totalInstallments = 1 (default do backend), então não recebe sufixo. */
+ * Lançamento à vista tem totalInstallments = 1 (default do backend), então não recebe sufixo.
+ * Transferência reaproveita installmentNumber/totalInstallments só pra ligar as duas pernas entre
+ * si (não é parcela de compra nenhuma) — mas essa função não enxerga categoria (não tem o
+ * catálogo), então quem chama precisa filtrar transferência ANTES de chamar `describe`
+ * (`Category.isTransferCategory`, não `t.type`: o backend nunca manda `type: "transfer"`, só
+ * EXPENSE/INCOME — a perna é identificada pela categoria de sistema "Transferência"). */
 export function describe(t: TransactionLike | null | undefined): string {
   if (!t) return '';
   const base = t.description || '';

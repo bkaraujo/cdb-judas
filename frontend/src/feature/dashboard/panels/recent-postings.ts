@@ -34,7 +34,7 @@ export const recentPostings: PanelRenderer = (p, ctx) => {
         '</span>' +
         '<div style="flex:1;min-width:0;">' +
           '<p style="font-size:12px;font-weight:600;color:var(--text-primary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-transform:uppercase;">' +
-            ctx.esc(Transaction.describe(t) || '—') +
+            ctx.esc((ctx.isTransferCategory(t.categoryId) ? t.description || '' : Transaction.describe(t)) || '—') +
           '</p>' +
           '<p style="font-size:11px;color:var(--text-muted);">' + ctx.esc(cat) + (dateTxt ? ' · ' + ctx.esc(dateTxt) : '') + '</p>' +
         '</div>' +

@@ -21,6 +21,7 @@ describe('kernel:transaction', () => {
     expect(Transaction.describe(null)).toBe('');
   });
 
+
   it('isValidTransfer exige conta origem diferente da destino', () => {
     expect(Transaction.isValidTransfer('a', 'b')).toBe(true);
     expect(Transaction.isValidTransfer('a', 'a')).toBe(false);

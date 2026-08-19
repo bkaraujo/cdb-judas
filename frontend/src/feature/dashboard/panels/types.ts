@@ -76,6 +76,7 @@ export interface PanelCtx {
   currentMonthTxs(): TransactionResponse[];
   allTxs(): TransactionResponse[];
   categoryName(catId: string | null | undefined): string;
+  isTransferCategory(catId: string | null | undefined): boolean;
   txIsExpense(t: TransactionResponse): boolean;
   expenseByCategory(): CategoryBarDatum[];
   monthlySeries(nMonths: number): LabeledBucket[];

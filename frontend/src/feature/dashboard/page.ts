@@ -2,6 +2,7 @@
  * Última fatia: lê de quase todas as outras via seus `api.ts` (accounts-payable, credit-cards,
  * budget, accounts, categories) — nenhuma domain própria de payable/budget/cartão. */
 import $ from 'jquery';
+import * as Category from '../../core/kernel/_0_domain/category.ts';
 import { esc, fmt } from '../../core/kernel/_0_domain/format.ts';
 import * as Period from '../../core/kernel/_0_domain/period.ts';
 import type { CacheStore } from '../../core/kernel/_1_application/cache-store.ts';
@@ -178,6 +179,10 @@ export function createDashboardPage(deps: DashboardPageDeps): Page {
     return DashboardAggregations.categoryNameFor({ categoryId: catId }, deps.cache.categories());
   }
 
+  function isTransferCategory(catId: string | null | undefined): boolean {
+    return Category.isTransferCategory(deps.cache.categories(), catId);
+  }
+
   function txIsExpense(t: { type?: string | null; amount?: number | string | null; categoryId?: string | null }): boolean {
     const nat = DashboardAggregations.categoryNatureFor(t, deps.cache.categories());
     return DashboardAggregations.txIsExpense(t, nat);
@@ -347,6 +352,7 @@ export function createDashboardPage(deps: DashboardPageDeps): Page {
       currentMonthTxs,
       allTxs: () => state?.data.transactions || [],
       categoryName,
+      isTransferCategory,
       txIsExpense,
       expenseByCategory,
       monthlySeries,

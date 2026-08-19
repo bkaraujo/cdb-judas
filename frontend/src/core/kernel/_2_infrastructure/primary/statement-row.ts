@@ -90,7 +90,10 @@ export function statementRowHtml(row: StatementRowLike, categories: readonly Cat
     ? '<span class="stm-cell-acc" style="flex:0 0 ' + cols.accColCh + 'ch;width:' + cols.accColCh + 'ch;">' + esc(opts.accountName || '—') + '</span>'
     : '';
 
-  const descText = Transaction.describe(row) || '—';
+  // Transferência: `cat.isSystem` já resolvido acima é exclusivo da categoria de sistema
+  // "Transferência" (ver `Category.isTransferCategory`) — pula o sufixo "(n de N)" de
+  // `describe`, que confundiria as duas pernas com parcela de compra.
+  const descText = (cat && cat.isSystem ? row.description || '' : Transaction.describe(row)) || '—';
   const descHtml = opts.invoiceLink && row.invoice
     ? '<a href="#/credit-cards" class="stm-cell-desc stm-cell-desc--link">' + esc(descText) + '</a>'
     : '<span class="stm-cell-desc">' + esc(descText) + '</span>';
