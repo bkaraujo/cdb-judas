@@ -152,7 +152,17 @@ export function createTransactionsListPage(deps: TransactionsPageDeps, cfg: Tran
       if (state?.installmentsOnly && (!(+(tx.totalInstallments ?? 0) > 1) || (cat && cat.isSystem))) return false;
       const catLbl = cat ? categoryLabel(deps?.cache.categories() || [], cat).toLowerCase() : '';
       const matchSearch = !s || (tx.description || '').toLowerCase().indexOf(s) >= 0 || catLbl.indexOf(s) >= 0;
-      const matchType = state?.filterType === 'all' || tx.type === state?.filterType;
+      // Backend nunca manda type:"transfer" (só EXPENSE/INCOME); perna de transferência é
+      // identificada pela categoria de sistema "Transferência" (cat.isSystem), não por tx.type.
+      // Por isso Receitas/Despesas precisam excluir essas pernas explicitamente, senão elas
+      // aparecem duplicadas nos dois filtros (cada perna é EXPENSE numa conta e INCOME na outra).
+      const isTransferTx = !!(cat && cat.isSystem);
+      const matchType =
+        state?.filterType === 'all'
+          ? true
+          : state?.filterType === 'transfer'
+            ? isTransferTx
+            : tx.type === state?.filterType && !isTransferTx;
       const matchAcc = !state?.filterAccount || String(tx.accountId) === String(state?.filterAccount);
       const matchCat = !state?.filterCategory || String(tx.categoryId) === String(state?.filterCategory);
       const matchSt = !state?.filterStatus || (tx as { status?: string }).status === state?.filterStatus;
