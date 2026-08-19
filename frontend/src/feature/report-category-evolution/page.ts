@@ -72,6 +72,10 @@ export function createCategoryEvolutionPage(deps: CategoryEvolutionPageDeps): Pa
     return groupExp && macroExp;
   }
 
+  function zeroCell(): JQuery {
+    return $('<td style="text-align:center;color:var(--text-muted);">-</td>');
+  }
+
   function renderTable(): JQuery {
     if (!state || !state.matrix) return $('<div></div>');
 
@@ -115,6 +119,10 @@ export function createCategoryEvolutionPage(deps: CategoryEvolutionPageDeps): Pa
 
       // Células de valor por bucket
       row.values.forEach((value, idx) => {
+        if (value === 0) {
+          $tr.append(zeroCell());
+          return;
+        }
         const $cell = $('<td></td>');
         const share = Domain.shareOf(value, incomeByBucket[idx] ?? 0);
         const shareHtml = row.nature === 'EXPENSE' && share != null
@@ -127,13 +135,17 @@ export function createCategoryEvolutionPage(deps: CategoryEvolutionPageDeps): Pa
       });
 
       // Média e Total
-      const $avg = $('<td></td>');
-      $avg.html('<div style="color:' + valueColor(row.average) + ';">' + esc(fmt(row.average)) + '</div>');
-      $tr.append($avg);
+      if (row.average === 0) {
+        $tr.append(zeroCell());
+      } else {
+        $tr.append('<td><div style="color:' + valueColor(row.average) + ';">' + esc(fmt(row.average)) + '</div></td>');
+      }
 
-      const $tot = $('<td></td>');
-      $tot.html('<div style="color:' + valueColor(row.total) + ';">' + esc(fmt(row.total)) + '</div>');
-      $tr.append($tot);
+      if (row.total === 0) {
+        $tr.append(zeroCell());
+      } else {
+        $tr.append('<td><div style="color:' + valueColor(row.total) + ';">' + esc(fmt(row.total)) + '</div></td>');
+      }
 
       $tbody.append($tr);
     });
@@ -148,18 +160,24 @@ export function createCategoryEvolutionPage(deps: CategoryEvolutionPageDeps): Pa
     const resultAvg = resultTotal / buckets.length;
 
     state.matrix.resultByBucket.forEach((result) => {
-      const $cell = $('<td></td>');
-      $cell.html('<div style="color:' + valueColor(result) + ';">' + esc(fmt(result)) + '</div>');
-      $footRow.append($cell);
+      if (result === 0) {
+        $footRow.append(zeroCell());
+        return;
+      }
+      $footRow.append('<td><div style="color:' + valueColor(result) + ';">' + esc(fmt(result)) + '</div></td>');
     });
 
-    const $avgFoot = $('<td></td>');
-    $avgFoot.html('<div style="color:' + valueColor(resultAvg) + ';">' + esc(fmt(resultAvg)) + '</div>');
-    $footRow.append($avgFoot);
+    if (resultAvg === 0) {
+      $footRow.append(zeroCell());
+    } else {
+      $footRow.append('<td><div style="color:' + valueColor(resultAvg) + ';">' + esc(fmt(resultAvg)) + '</div></td>');
+    }
 
-    const $totFoot = $('<td></td>');
-    $totFoot.html('<div style="color:' + valueColor(resultTotal) + ';">' + esc(fmt(resultTotal)) + '</div>');
-    $footRow.append($totFoot);
+    if (resultTotal === 0) {
+      $footRow.append(zeroCell());
+    } else {
+      $footRow.append('<td><div style="color:' + valueColor(resultTotal) + ';">' + esc(fmt(resultTotal)) + '</div></td>');
+    }
 
     $tfoot.append($footRow);
     $table.append($tfoot);
