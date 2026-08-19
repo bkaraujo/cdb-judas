@@ -179,7 +179,15 @@ export function buildMatrix(
     }
   });
 
-  // Poda: descarta linhas vazias
+  // Garante linha p/ toda categoria ativa, mesmo sem transação no período
+  categories.forEach((cat) => {
+    if (!cat.active) return;
+    if (Category.isTransferCategory(categories, cat.id)) return;
+    const nature = cat.nature === 'INCOME' ? 'INCOME' : 'EXPENSE';
+    addToRow(cat.id, 0, nature, 0, rows, categories, buckets);
+  });
+
+  // Poda: descarta só linhas sintéticas ('none:*') vazias; categorias reais sempre aparecem
   const allRows = Array.from(rows.values());
   const nonEmptyIds = new Set<string>();
 
@@ -193,7 +201,8 @@ export function buildMatrix(
   }
 
   allRows.forEach((row) => {
-    if (row.values.some((v) => v !== 0)) {
+    const isSynthetic = row.id.startsWith('none:');
+    if (!isSynthetic || row.values.some((v) => v !== 0)) {
       markNonEmpty(row.id);
     }
   });
