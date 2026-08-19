@@ -68,7 +68,7 @@ export interface SidebarDeps {
   nav?: NavItem[];
 }
 
-const DEFAULT_GROUPS: Record<string, boolean> = { movements: true, registries: false };
+const DEFAULT_GROUPS: Record<string, boolean> = { movements: true, registries: false, reports: false };
 
 export function createSidebar(deps: SidebarDeps): Sidebar {
   const NAV = deps.nav || SIDEBAR_NAV;

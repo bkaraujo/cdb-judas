@@ -22,7 +22,14 @@ export const SIDEBAR_NAV: NavItem[] = [
   { id: 'statement', label: 'Extrato de Contas', icon: 'bookOpen' },
   { id: 'credit-cards', label: 'Cartões de Crédito', icon: 'creditCard' },
   { id: 'budget', label: 'Metas / Orçamento', icon: 'target' },
-  { id: 'reports', label: 'Relatórios', icon: 'barChart' },
+  {
+    id: 'reports',
+    label: 'Relatórios',
+    icon: 'barChart',
+    children: [
+      { id: 'report-category-evolution', label: 'Evolução por categoria', icon: 'trendingUp' },
+    ],
+  },
   {
     id: 'registries',
     label: 'Cadastros',

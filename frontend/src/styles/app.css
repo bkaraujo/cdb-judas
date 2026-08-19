@@ -746,6 +746,24 @@ button { font-family: var(--font); cursor: pointer; border: none; outline: none;
 .fade-in { opacity: 1 !important; }
 .slide-in { opacity: 1 !important; }
 
+/* ───── Relatório: matriz categoria × período ───── */
+.report-table-wrap { overflow: auto; max-height: calc(100vh - 260px); }
+.report-table { width: 100%; border-collapse: collapse; font-size: 13px; white-space: nowrap; }
+.report-table th, .report-table td { padding: 8px 12px; text-align: right; }
+.report-table th:first-child, .report-table td:first-child {
+  text-align: left; position: sticky; left: 0; background: var(--bg-card); z-index: 1; min-width: 240px;
+}
+.report-table thead th { position: sticky; top: 0; background: var(--bg-hover); font-size: 11px; color: var(--text-muted); z-index: 2; }
+.report-table thead th:first-child { z-index: 3; }
+.report-table tbody tr { border-top: 1px solid var(--border-light); }
+.report-row-group td { font-weight: 700; }
+.report-row-group--income td { background: var(--income-light); }
+.report-row-group--expense td { background: var(--expense-light); }
+.report-row-group--income td:first-child, .report-row-group--expense td:first-child { background: inherit; }
+.report-cell-share { display: block; font-size: 10px; font-style: italic; color: var(--text-muted); }
+.report-toggle { display: inline-flex; align-items: center; gap: 6px; color: inherit; }
+.report-table tfoot td { border-top: 2px solid var(--border); font-weight: 700; }
+
 /* ───── Responsive ───── */
 @media (max-width: 960px) {
   .page-content { padding: 16px; }

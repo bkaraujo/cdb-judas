@@ -22,6 +22,7 @@ import type { CreditCardsApi } from '@/feature/credit-cards/index.ts';
 import { createImportRulesPage } from '@/feature/import-rules/index.ts';
 import type { ImportRuleService } from '@/feature/import-rules/index.ts';
 import type { ImportStatementApi } from '@/feature/import-statement/index.ts';
+import { createCategoryEvolutionPage, createCategoryEvolutionService } from '@/feature/report-category-evolution/index.ts';
 import { createReportsPage } from '@/feature/reports/index.ts';
 import { createSettingsPage } from '@/feature/settings/index.ts';
 import type { SettingsAuthPort, SettingsSelfPort, SettingsThemePort } from '@/feature/settings/index.ts';
@@ -110,6 +111,13 @@ export function buildPageRegistry(deps: PageRegistryDeps): PageRegistry {
       categories: deps.categoriesApi,
     }),
     'import-rules': createImportRulesPage({ service: deps.importRuleService, cache: deps.cache }),
+    'report-category-evolution': createCategoryEvolutionPage({
+      service: createCategoryEvolutionService({
+        txRepo: { list: (q) => deps.transactionsApi.list(q) },
+        cache: deps.cache,
+      }),
+      cache: deps.cache,
+    }),
     installments: createInstallmentsPage({
       transactionService: deps.transactionService,
       periodService: deps.periodService,

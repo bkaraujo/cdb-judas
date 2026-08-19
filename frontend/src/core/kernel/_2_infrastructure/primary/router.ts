@@ -21,6 +21,7 @@ export type PageId =
   | 'dashboard'
   | 'import-rules'
   | 'installments'
+  | 'report-category-evolution'
   | 'reports'
   | 'settings'
   | 'statement'
@@ -40,6 +41,7 @@ const SCREENS: Record<PageId, string> = {
   // "Ver fatura" — precisa do id do cartão no path.
   'card-statement': 'Extrato do Cartão',
   budget: 'Metas / Orçamento',
+  'report-category-evolution': 'Evolução por categoria',
   reports: 'Relatórios',
   categories: 'Categorias',
   'cost-centers': 'Centros de Custo',
