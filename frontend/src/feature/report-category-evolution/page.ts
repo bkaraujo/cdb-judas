@@ -119,18 +119,15 @@ export function createCategoryEvolutionPage(deps: CategoryEvolutionPageDeps): Pa
 
       // Células de valor por bucket
       row.values.forEach((value, idx) => {
-        if (value === 0) {
-          $tr.append(zeroCell());
-          return;
-        }
         const $cell = $('<td></td>');
         const share = Domain.shareOf(value, incomeByBucket[idx] ?? 0);
         const shareHtml = row.nature === 'EXPENSE' && share != null
           ? '<span class="report-cell-share">' + esc(share.toFixed(2) + '%') + '</span>'
           : '<span class="report-cell-share">-</span>';
-        $cell.html(
-          '<div style="color:' + valueColor(value) + ';">' + esc(fmt(value)) + '</div>' + shareHtml
-        );
+        const valueHtml = value === 0
+          ? '<div style="text-align:center;color:var(--text-muted);">-</div>'
+          : '<div style="color:' + valueColor(value) + ';">' + esc(fmt(value)) + '</div>';
+        $cell.html(valueHtml + shareHtml);
         $tr.append($cell);
       });
 
