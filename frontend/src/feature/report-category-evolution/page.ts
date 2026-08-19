@@ -176,10 +176,10 @@ export function createCategoryEvolutionPage(deps: CategoryEvolutionPageDeps): Pa
     $root.append($header);
 
     // Filtros
-    const $filters = $('<div class="card" style="display:flex;gap:12px;flex-wrap:wrap;"></div>');
+    const $filters = $('<div class="card" style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;"></div>');
 
     const $intervalSel = $(
-      '<select data-role="interval" style="flex:1;min-width:120px;">' +
+      '<select data-role="interval" style="flex:none;width:120px;">' +
         '<option value="month"' + (state.interval === 'month' ? ' selected' : '') + '>Mensal</option>' +
         '<option value="year"' + (state.interval === 'year' ? ' selected' : '') + '>Anual</option>' +
       '</select>'
@@ -188,7 +188,7 @@ export function createCategoryEvolutionPage(deps: CategoryEvolutionPageDeps): Pa
 
     if (state!.interval === 'month') {
       const $monthSel = $(
-        '<select data-role="start-month">' +
+        '<select data-role="start-month" style="flex:none;width:90px;">' +
           Array.from({ length: 12 }, (_, i) => {
             const mon = i + 1;
             return '<option value="' + i + '"' + (mon === state!.startMonth + 1 ? ' selected' : '') + '>' +
@@ -200,11 +200,11 @@ export function createCategoryEvolutionPage(deps: CategoryEvolutionPageDeps): Pa
       $filters.append($monthSel);
     }
 
-    const $yearInp = $('<input type="number" data-role="start-year" min="2000" max="2099" value="' + state!.startYear + '" style="width:80px;" />');
+    const $yearInp = $('<input type="number" data-role="start-year" min="2000" max="2099" value="' + state!.startYear + '" style="flex:none;width:80px;" />');
     $filters.append($yearInp);
 
     const sizes = state!.interval === 'month' ? ['6', '12', '24', '36'] : ['3', '5', '10'];
-    const $sizeSel = $('<select data-role="size">' + sizes.map((s) => '<option value="' + s + '"' + (parseInt(s) === state!.size ? ' selected' : '') + '>' + s + '</option>').join('') + '</select>');
+    const $sizeSel = $('<select data-role="size" style="flex:none;width:70px;">' + sizes.map((s) => '<option value="' + s + '"' + (parseInt(s) === state!.size ? ' selected' : '') + '>' + s + '</option>').join('') + '</select>');
     $filters.append($sizeSel);
 
     $filters.append(btn({ label: 'Carregar', variant: 'primary', attrs: 'data-role="load"' }));

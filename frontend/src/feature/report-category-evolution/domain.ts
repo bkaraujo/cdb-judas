@@ -193,7 +193,7 @@ export function buildMatrix(
   }
 
   allRows.forEach((row) => {
-    if (row.total !== 0) {
+    if (row.values.some((v) => v !== 0)) {
       markNonEmpty(row.id);
     }
   });
@@ -205,23 +205,27 @@ export function buildMatrix(
   // Filtra linhas visíveis
   const visibleRows = allRows.filter((row) => nonEmptyIds.has(row.id));
 
-  // Ordena: INCOME antes EXPENSE; depois por nome alfabético
+  // Ordena hierarquicamente: grupo → macro (alfabético) → suas subs (alfabético)
   const result: EvolutionRow[] = [];
-  const byNature = { INCOME: [] as EvolutionRow[], EXPENSE: [] as EvolutionRow[] };
+  const byId = new Map(visibleRows.map((r) => [r.id, r] as const));
+  const childrenOf = new Map<string, EvolutionRow[]>();
   visibleRows.forEach((r) => {
-    byNature[r.nature].push(r);
+    if (r.parentId == null) return;
+    const list = childrenOf.get(r.parentId) ?? [];
+    list.push(r);
+    childrenOf.set(r.parentId, list);
   });
+  childrenOf.forEach((list) => list.sort((a, b) => a.label.localeCompare(b.label, 'pt-BR')));
 
-  byNature.INCOME.sort((a, b) => {
-    if (a.level === 0 && b.level === 0) return 0; // 'group:INCOME' == 'group:INCOME'
-    return a.label.localeCompare(b.label, 'pt-BR');
-  });
-  byNature.EXPENSE.sort((a, b) => {
-    if (a.level === 0 && b.level === 0) return 0; // 'group:EXPENSE' == 'group:EXPENSE'
-    return a.label.localeCompare(b.label, 'pt-BR');
-  });
+  function appendWithChildren(row: EvolutionRow) {
+    result.push(row);
+    (childrenOf.get(row.id) ?? []).forEach(appendWithChildren);
+  }
 
-  result.push(...byNature.INCOME, ...byNature.EXPENSE);
+  (['INCOME', 'EXPENSE'] as const).forEach((nature) => {
+    const group = byId.get('group:' + nature);
+    if (group) appendWithChildren(group);
+  });
 
   // Computa average para cada linha
   result.forEach((row) => {
