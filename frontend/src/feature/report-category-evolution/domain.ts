@@ -179,6 +179,11 @@ export function buildMatrix(
     }
   });
 
+  // Garante linhas de grupo (raiz da árvore) mesmo sem nenhuma transação daquela natureza no período —
+  // sem isso 'group:NATURE' nunca existe em `rows` e appendWithChildren pula a natureza inteira.
+  addToRow('group:INCOME', 0, 'INCOME', 0, rows, categories, buckets);
+  addToRow('group:EXPENSE', 0, 'EXPENSE', 0, rows, categories, buckets);
+
   // Garante linha p/ toda categoria ativa, mesmo sem transação no período
   categories.forEach((cat) => {
     if (!cat.active) return;

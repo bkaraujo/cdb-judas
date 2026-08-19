@@ -160,6 +160,22 @@ describe('feature:report-category-evolution — domain', () => {
     expect(matrix.rows.find((r) => r.id === 'cat3')).toBeUndefined();
   });
 
+  it('buildMatrix mantém categorias de receita mesmo sem nenhuma transação de receita no período', () => {
+    const txs: Domain.EvolutionTx[] = [
+      { date: '2026-03-01', amount: 100, type: 'expense', status: 'confirmed', categoryId: 'cat1' },
+    ];
+    const buckets = Domain.buildBuckets('month', Period.create(3, 2026), 1);
+    const categories: Category[] = [
+      { id: 'cat1', name: 'Cat 1', nature: 'EXPENSE', parentId: null, isSystem: false, active: true },
+      { id: 'cat2', name: 'Salário', nature: 'INCOME', parentId: null, isSystem: false, active: true },
+    ];
+    const accounts: Account[] = [];
+
+    const matrix = Domain.buildMatrix(txs, categories, accounts, buckets, 'month');
+    expect(matrix.rows.find((r) => r.id === 'group:INCOME')).toBeDefined();
+    expect(matrix.rows.find((r) => r.id === 'cat2')).toBeDefined();
+  });
+
   it('buildMatrix calcula average como total / buckets.length', () => {
     const txs: Domain.EvolutionTx[] = [
       { date: '2026-03-01', amount: 60, type: 'expense', status: 'confirmed', categoryId: 'cat1' },
