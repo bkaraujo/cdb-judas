@@ -156,7 +156,7 @@ export function createImportRulesPage(deps: ImportRulesPageDeps): Page {
         '<div class="form-grid">' +
           '<div class="form-group full">' +
             '<label class="form-label" for="' + ids.name + '">Nome</label>' +
-            '<input id="' + ids.name + '" name="name" type="text" required minlength="3" placeholder="Ex: Companhia de Saneamento" value="' + esc(initial.name) + '" />' +
+            '<input id="' + ids.name + '" name="name" type="text" minlength="3" placeholder="Ex: Companhia de Saneamento" value="' + esc(initial.name) + '" />' +
           '</div>' +
           '<div class="form-group full">' +
             '<label class="form-label">Gatilhos</label>' +
@@ -185,7 +185,9 @@ export function createImportRulesPage(deps: ImportRulesPageDeps): Page {
       autofocus: 'input[name=name]',
       onSubmit: ($form) => {
         const $name = $form.find('input[name=name]');
-        const name = (($name.val() as string) || '').trim();
+        const categoryIdForName = ($form.find('select[name=categoryId]').val() as string) || '';
+        const categoryName = categoryIdForName ? categoryLabel(cache.categories(), { id: categoryIdForName }) : '';
+        const name = (($name.val() as string) || '').trim() || categoryName;
         if (name.length < 3) {
           $name.trigger('focus');
           return null;
@@ -217,7 +219,9 @@ export function createImportRulesPage(deps: ImportRulesPageDeps): Page {
     $form.on('click', '[data-act=add-trigger]', function (e) {
       e.preventDefault();
       const $container = $form.find('[data-region=triggers]');
-      $container.append(triggerRowHtml(''));
+      const $row = $(triggerRowHtml(''));
+      $container.append($row);
+      $row.find('input[name="triggers[]"]').trigger('focus');
     });
 
     $form.on('click', '[data-act=remove-trigger]', function (e) {
