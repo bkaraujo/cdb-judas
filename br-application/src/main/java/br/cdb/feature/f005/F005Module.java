@@ -37,11 +37,19 @@ public class F005Module implements Lifecycle {
     private static List<String> model() {
         return List.of(
                 """
+                CREATE TABLE F005_CATEGORY_NATURE (
+                    ID VARCHAR(20) PRIMARY KEY,
+                    TXT_DESCRIPTION VARCHAR(10) NOT NULL
+                )
+                """,
+                "INSERT INTO F005_CATEGORY_NATURE (ID, TXT_DESCRIPTION) VALUES ('EXPENSE', 'Despesa')",
+                "INSERT INTO F005_CATEGORY_NATURE (ID, TXT_DESCRIPTION) VALUES ('INCOME', 'Receita')",
+                """
                 CREATE TABLE F005_CATEGORY (
                     ID CHAR(36) PRIMARY KEY,
                     COD_PERSON CHAR(36) NOT NULL,
                     COD_PARENT CHAR(36),
-                    COD_NATURE VARCHAR(20) NOT NULL REFERENCES SYS_TRANSACTION_NATURE(ID),
+                    COD_NATURE VARCHAR(20) NOT NULL REFERENCES F005_CATEGORY_NATURE(ID),
                     TXT_NAME VARCHAR(80) NOT NULL,
                     FLG_SYSTEM CHAR(1) NOT NULL,
                     FLG_ACTIVE CHAR(1) NOT NULL,

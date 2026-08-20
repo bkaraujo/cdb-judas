@@ -40,6 +40,16 @@ public class F006Module implements Lifecycle {
     private static List<String> model() {
         return List.of(
                 """
+                CREATE TABLE F006_TRANSACTION_STATUS (
+                    ID VARCHAR(20) PRIMARY KEY,
+                    TXT_DESCRIPTION VARCHAR(50) NOT NULL,
+                    FLG_ACTIVE CHAR(1) NOT NULL
+                )
+                """,
+                "INSERT INTO F006_TRANSACTION_STATUS (ID, TXT_DESCRIPTION, FLG_ACTIVE) VALUES ('SCHEDULED', 'Agendado', 'Y')",
+                "INSERT INTO F006_TRANSACTION_STATUS (ID, TXT_DESCRIPTION, FLG_ACTIVE) VALUES ('CONFIRMED', 'Confirmado', 'Y')",
+                "INSERT INTO F006_TRANSACTION_STATUS (ID, TXT_DESCRIPTION, FLG_ACTIVE) VALUES ('PENDING', 'Pendente', 'Y')",
+                """
                 CREATE TABLE F006_TRANSACTION (
                     ID CHAR(36) PRIMARY KEY,
                     COD_PERSON CHAR(36),
@@ -49,7 +59,7 @@ public class F006Module implements Lifecycle {
                     TMS_PURCHASE TIMESTAMP NOT NULL,
                     COD_ACCOUNT CHAR(36) NOT NULL,
                     COD_CARD CHAR(36),
-                    COD_STATUS VARCHAR(20) NOT NULL REFERENCES SYS_STATUS(ID),
+                    COD_STATUS VARCHAR(20) NOT NULL REFERENCES F006_TRANSACTION_STATUS(ID),
                     COD_COST_CENTER CHAR(36) NOT NULL REFERENCES F000_COST_CENTER(ID),
                     DAT_PAYMENT DATE,
                     GROUP_ID CHAR(36),

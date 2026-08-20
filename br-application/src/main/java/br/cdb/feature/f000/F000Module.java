@@ -30,33 +30,6 @@ public class F000Module implements Lifecycle {
     private static List<String> model() {
         return List.of(
                 """
-                CREATE TABLE SYS_ACCOUNT_TYPE (
-                    ID CHAR(36) PRIMARY KEY,
-                    TXT_DESCRIPTION VARCHAR(50) NOT NULL,
-                    FLG_ACTIVE CHAR(1) NOT NULL
-                )
-                """,
-                "INSERT INTO SYS_ACCOUNT_TYPE (ID, TXT_DESCRIPTION, FLG_ACTIVE) VALUES ('" + AccountTypeMapper.CHECKING_ID    + "', 'Conta corrente', 'Y')",
-                "INSERT INTO SYS_ACCOUNT_TYPE (ID, TXT_DESCRIPTION, FLG_ACTIVE) VALUES ('" + AccountTypeMapper.INVESTMENT_ID  + "', 'Investimento', 'Y')",
-                """
-                CREATE TABLE SYS_STATUS (
-                    ID VARCHAR(20) PRIMARY KEY,
-                    TXT_DESCRIPTION VARCHAR(50) NOT NULL,
-                    FLG_ACTIVE CHAR(1) NOT NULL
-                )
-                """,
-                "INSERT INTO SYS_STATUS (ID, TXT_DESCRIPTION, FLG_ACTIVE) VALUES ('SCHEDULED', 'Agendado', 'Y')",
-                "INSERT INTO SYS_STATUS (ID, TXT_DESCRIPTION, FLG_ACTIVE) VALUES ('CONFIRMED', 'Confirmado', 'Y')",
-                "INSERT INTO SYS_STATUS (ID, TXT_DESCRIPTION, FLG_ACTIVE) VALUES ('PENDING', 'Pendente', 'Y')",
-                """
-                CREATE TABLE SYS_TRANSACTION_NATURE (
-                    ID VARCHAR(20) PRIMARY KEY,
-                    TXT_DESCRIPTION VARCHAR(10) NOT NULL
-                )
-                """,
-                "INSERT INTO SYS_TRANSACTION_NATURE (ID, TXT_DESCRIPTION) VALUES ('EXPENSE', 'Despesa')",
-                "INSERT INTO SYS_TRANSACTION_NATURE (ID, TXT_DESCRIPTION) VALUES ('INCOME', 'Receita')",
-                """
                 CREATE TABLE F000_PERSON (
                     ID CHAR(36) PRIMARY KEY,
                     TXT_NAME VARCHAR(255) NOT NULL,

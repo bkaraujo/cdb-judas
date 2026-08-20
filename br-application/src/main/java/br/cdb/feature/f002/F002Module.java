@@ -1,6 +1,7 @@
 package br.cdb.feature.f002;
 
 import br.cdb.core.persistence.Database;
+import br.cdb.core.persistence.repository.AccountTypeMapper;
 import br.cdb.feature.f002._0_domain.repository.AccountRepository;
 import br.cdb.feature.f002._0_domain.repository.BalanceRepository;
 import br.cdb.feature.f002._0_domain.repository.ClosingRepository;
@@ -23,10 +24,19 @@ public class F002Module implements Lifecycle {
     private static List<String> model() {
         return List.of(
                 """
+                CREATE TABLE F002_ACCOUNT_TYPE (
+                    ID CHAR(36) PRIMARY KEY,
+                    TXT_DESCRIPTION VARCHAR(50) NOT NULL,
+                    FLG_ACTIVE CHAR(1) NOT NULL
+                )
+                """,
+                "INSERT INTO F002_ACCOUNT_TYPE (ID, TXT_DESCRIPTION, FLG_ACTIVE) VALUES ('" + AccountTypeMapper.CHECKING_ID    + "', 'Conta corrente', 'Y')",
+                "INSERT INTO F002_ACCOUNT_TYPE (ID, TXT_DESCRIPTION, FLG_ACTIVE) VALUES ('" + AccountTypeMapper.INVESTMENT_ID  + "', 'Investimento', 'Y')",
+                """
                 CREATE TABLE F002_ACCOUNT (
                     ID CHAR(36) PRIMARY KEY,
                     COD_PERSON CHAR(36),
-                    TXT_TYPE CHAR(36) NOT NULL REFERENCES SYS_ACCOUNT_TYPE(ID),
+                    TXT_TYPE CHAR(36) NOT NULL REFERENCES F002_ACCOUNT_TYPE(ID),
                     TXT_NAME VARCHAR(80) NOT NULL,
                     TXT_COLOR VARCHAR(20),
                     DEC_CREDIT_LIMIT DECIMAL(19, 2),
