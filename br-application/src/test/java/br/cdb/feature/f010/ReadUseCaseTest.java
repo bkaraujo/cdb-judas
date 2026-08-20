@@ -37,7 +37,10 @@ class ReadUseCaseTest extends AbstractUseCaseTest {
     }
 
     private ImportRule seedRule(UUID personId, String name) {
-        return importRuleRepository().save(new ImportRule(UUID.randomUUID(), personId, name, null, null, null, null));
+        val ruleId = UUID.randomUUID();
+        val rule = importRuleRepository().save(new ImportRule(ruleId, personId, name, List.of(), null, null, null, null));
+        importRuleTriggerRepository().replaceTriggers(ruleId, personId, List.of(name));
+        return rule;
     }
 
     @Test

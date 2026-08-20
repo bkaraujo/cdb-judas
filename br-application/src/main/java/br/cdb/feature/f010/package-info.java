@@ -1,8 +1,8 @@
 /**
- * Regras de nomenclatura — cadastro que casa um texto (`nome`) contra a descrição de um lançamento
- * (digitado manualmente ou vindo de importação de PDF) e, ao bater, substitui a descrição inteira
- * pelo próprio `nome` e pode pré-preencher conta/categoria/centro de custo
- * ({@code /api/{uuid}/accounts/transaction/rules}).
+ * Regras de nomenclatura — cadastro de um nome/rótulo + uma lista de gatilhos que casam contra a
+ * descrição de um lançamento (digitado manualmente ou vindo de importação de PDF). Ao bater qualquer
+ * gatilho, a regra pode pré-preencher conta/categoria/centro de custo — mas <b>nunca altera a
+ * descrição original</b> ({@code /api/{uuid}/accounts/transaction/rules}).
  *
  * <p>O casamento em si é <b>100% api-side</b> — regras vêm cacheadas no frontend (mesmo padrão
  * de Tags/Categorias/Contas) e o texto é comparado em JS, tanto no cadastro manual de lançamento
@@ -15,10 +15,10 @@
  * f006. Sem {@code UserGuards}: escopo por pessoa na própria query
  * ({@code F010_IMPORT_RULE.COD_PERSON}), mesma convenção de f004/f005.
  *
- * <p>Regras ambíguas (padrão substring de outra já cadastrada, em qualquer direção, comparação
- * normalizada — uppercase + sem acento) são rejeitadas na criação/edição
+ * <p>Gatilhos ambíguos (um é substring de outro, em qualquer direção, comparação normalizada —
+ * uppercase + sem acento) entre regras DIFERENTES da mesma pessoa são rejeitados na criação/edição
  * ({@code ImportRuleService.findAmbiguousConflict}, {@code BusinessError.Conflict} → 409) — nunca
- * resolvidas em tempo de aplicação do lado do cliente.
+ * resolvidos em tempo de aplicação do lado do cliente.
  */
 @NullMarked
 package br.cdb.feature.f010;

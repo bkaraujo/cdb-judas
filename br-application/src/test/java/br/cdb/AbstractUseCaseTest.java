@@ -21,6 +21,7 @@ import br.cdb.feature.f006._1_application.service.TransactionCategoryService;
 import br.cdb.feature.f006._1_application.service.TransactionService;
 import br.cdb.feature.f006._1_application.service.TransactionTagService;
 import br.cdb.feature.f010._0_domain.repository.ImportRuleRepository;
+import br.cdb.feature.f010._0_domain.repository.ImportRuleTriggerRepository;
 import br.cdb.feature.f010._1_application.service.ImportRuleService;
 import br.commons.MessageBus;
 import br.commons.framework.cdi.Context;
@@ -41,6 +42,7 @@ public abstract class AbstractUseCaseTest {
     protected CategoryRepository categoryRepository() { return Context.get(CategoryRepository.class); }
     protected PersonRepository personRepository() { return Context.get(PersonRepository.class); }
     protected ImportRuleRepository importRuleRepository() { return Context.get(ImportRuleRepository.class); }
+    protected ImportRuleTriggerRepository importRuleTriggerRepository() { return Context.get(ImportRuleTriggerRepository.class); }
 
     @BeforeEach
     public void beforeEach() {
@@ -70,6 +72,7 @@ public abstract class AbstractUseCaseTest {
         Context.set(CategoryRepository.class, InMemoryRepositories.Categories::new);
         Context.set(PersonRepository.class, InMemoryRepositories.People::new);
         Context.set(ImportRuleRepository.class, InMemoryRepositories.ImportRules::new);
+        Context.set(ImportRuleTriggerRepository.class, InMemoryRepositories.ImportRuleTriggers::new);
 
         // O par ReadUseCase/WriteUseCase resolve o service com Context.get() estrito (em produção quem registra é
         // F000Module): re-registra sobre os fakes acima, depois de removido.

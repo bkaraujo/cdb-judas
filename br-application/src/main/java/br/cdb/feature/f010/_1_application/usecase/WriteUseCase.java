@@ -8,6 +8,7 @@ import br.commons.framework.cdi.Context;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 
+import java.util.List;
 import java.util.UUID;
 
 /**
@@ -29,15 +30,15 @@ public class WriteUseCase {
     private final ReadUseCase reads = Context.tryGet(ReadUseCase.class);
 
     public Result<ImportRule, BusinessError> createRule(
-            UUID personId, String name, @Nullable UUID accountId, @Nullable UUID categoryId, @Nullable UUID costCenterId
+            UUID personId, String name, List<String> triggers, @Nullable UUID accountId, @Nullable UUID categoryId, @Nullable UUID costCenterId
     ) {
-        return service.create(personId, name, accountId, categoryId, costCenterId);
+        return service.create(personId, name, triggers, accountId, categoryId, costCenterId);
     }
 
     public Result<ImportRule, BusinessError> updateRule(
-            UUID personId, UUID id, String name, @Nullable UUID accountId, @Nullable UUID categoryId, @Nullable UUID costCenterId
+            UUID personId, UUID id, String name, List<String> triggers, @Nullable UUID accountId, @Nullable UUID categoryId, @Nullable UUID costCenterId
     ) {
-        return service.update(personId, id, name, accountId, categoryId, costCenterId);
+        return service.update(personId, id, name, triggers, accountId, categoryId, costCenterId);
     }
 
     public Result<Void, BusinessError> deleteRule(UUID personId, UUID id) {

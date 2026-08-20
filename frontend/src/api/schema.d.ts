@@ -1675,6 +1675,7 @@ export interface components {
             id?: components["schemas"]["UUID"];
             personId?: components["schemas"]["UUID"];
             name?: string;
+            triggers?: string[];
             accountId?: components["schemas"]["UUID"];
             categoryId?: components["schemas"]["UUID"];
             costCenterId?: components["schemas"]["UUID"];
@@ -1682,6 +1683,7 @@ export interface components {
         };
         ImportRuleRequest: {
             name: string;
+            triggers: string[];
             accountId?: components["schemas"]["UUID"];
             categoryId?: components["schemas"]["UUID"];
             costCenterId?: components["schemas"]["UUID"];

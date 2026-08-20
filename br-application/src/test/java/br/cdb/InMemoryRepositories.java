@@ -21,6 +21,7 @@ import br.cdb.feature.f006._0_domain.repository.TransactionRepository;
 import br.cdb.feature.f006._0_domain.repository.TransactionTagRepository;
 import br.cdb.feature.f010._0_domain.model.ImportRule;
 import br.cdb.feature.f010._0_domain.repository.ImportRuleRepository;
+import br.cdb.feature.f010._0_domain.repository.ImportRuleTriggerRepository;
 import lombok.val;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
@@ -240,6 +241,32 @@ public abstract class InMemoryRepositories {
         public Optional<ImportRule> findByPersonAndId(UUID personId, UUID id) {
             return findById(id).filter(r -> personId.equals(r.personId()));
         }
+    }
+
+    /** Vínculo F010_IMPORT_RULE_TRIGGER: regra → pessoa → gatilhos (tabela à parte, como no JDBC). */
+    public static class ImportRuleTriggers implements ImportRuleTriggerRepository {
+        private final Map<UUID, Map<UUID, List<String>>> triggers = new LinkedHashMap<>();
+
+        public void replaceTriggers(UUID ruleId, UUID personId, List<String> triggerList) {
+            if (triggerList.isEmpty()) {
+                triggers.getOrDefault(ruleId, new LinkedHashMap<>()).remove(personId);
+                return;
+            }
+            triggers.computeIfAbsent(ruleId, ignored -> new LinkedHashMap<>()).put(personId, List.copyOf(triggerList));
+        }
+
+        public Map<UUID, List<String>> findTriggersByPerson(UUID personId) {
+            var byRule = new LinkedHashMap<UUID, List<String>>();
+            triggers.forEach((ruleId, byPerson) -> {
+                var triggerList = byPerson.get(personId);
+                if (triggerList != null && !triggerList.isEmpty()) byRule.put(ruleId, triggerList);
+            });
+            return byRule;
+        }
+
+        public void deleteTriggersByRule(UUID ruleId) { triggers.remove(ruleId); }
+
+        public void clearCache() { triggers.clear(); }
     }
 
     /** Como o fake de tag, modela {@code COD_PERSON} — {@code personId} é campo do próprio

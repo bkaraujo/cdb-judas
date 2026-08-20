@@ -1,4 +1,4 @@
-/** pages/import-rules — Regras de nomenclatura (nome → conta/categoria/centro de custo).
+/** pages/import-rules — Regras de nomenclatura (nome + gatilhos → conta/categoria/centro de custo).
  *
  * Sem SSE (a fatia f010 não dispara evento nenhum): toda mutação recarrega a lista via
  * `service.list()` em vez de depender de `CacheStore`/`onChange`, mesmo padrão de `budget`.
@@ -11,6 +11,7 @@ import { createPage } from '@/core/kernel/_2_infrastructure/primary/page.ts';
 import type { Page, PageState } from '@/core/kernel/_2_infrastructure/primary/page.ts';
 import { accountOptionsHtml, categoryItemsFor, categoryPickerHtml, optionsHtml } from '@/core/kernel/_2_infrastructure/primary/pickers.ts';
 import { btn, rowActionBtn } from '@/core/kernel/_2_infrastructure/primary/ui/button.ts';
+import { icon } from '@/core/kernel/_2_infrastructure/primary/icons.ts';
 import { emptyState } from '@/core/kernel/_2_infrastructure/primary/ui/empty-state.ts';
 import { pageHeader } from '@/core/kernel/_2_infrastructure/primary/ui/page-header.ts';
 import type { ImportRule } from '@/api/types.ts';
@@ -49,7 +50,9 @@ function renderRow(r: ImportRule, deps: ImportRulesPageDeps): JQuery {
   if (acc) parts.push('Conta: ' + acc);
   if (cat) parts.push('Categoria: ' + cat);
   if (cc) parts.push('Centro de custo: ' + cc);
-  const subtitle = parts.length ? parts.join(' · ') : 'Sem conta/categoria/centro de custo';
+  const triggerCount = (r.triggers || []).length;
+  parts.push(triggerCount === 1 ? '1 gatilho' : triggerCount + ' gatilhos');
+  const subtitle = parts.join(' · ');
 
   const $row = $(
     '<div class="card-row" data-id="' + esc(r.id) + '">' +
@@ -76,9 +79,6 @@ export function createImportRulesPage(deps: ImportRulesPageDeps): Page {
     return state ? byId(state.rules, id) : null;
   }
 
-  // No SSE for this slice — this page is the only place regras de nomenclatura get mutated, so
-  // it's also the only place that can keep CacheStore.importRules fresh for the live matcher used
-  // elsewhere (manual lançamento form, import previews).
   function loadRules(): Promise<void> {
     return service.list().then((list) => {
       if (!state) return;
@@ -103,7 +103,7 @@ export function createImportRulesPage(deps: ImportRulesPageDeps): Page {
         emptyState({
           icon: 'edit',
           title: 'Nenhuma regra cadastrada',
-          desc: 'Ao aparecer o texto de uma regra na descrição de um lançamento (digitado ou importado de PDF), a descrição é substituída e conta/categoria/centro de custo podem ser preenchidos automaticamente. Clique em "Nova Regra" para começar.',
+          desc: 'Cadastre uma regra com um ou mais gatilhos (textos que podem aparecer na descrição de um lançamento, digitado ou importado de PDF). Ao bater qualquer gatilho, conta/categoria/centro de custo são preenchidos automaticamente — a descrição original nunca é alterada. Clique em "Nova Regra" para começar.',
         }),
       );
     } else {
@@ -115,12 +115,22 @@ export function createImportRulesPage(deps: ImportRulesPageDeps): Page {
     $root.empty().append($header).append($body);
   }
 
+  function triggerRowHtml(value: string): string {
+    return (
+      '<div class="trigger-row" style="display:flex;gap:6px;align-items:center;" data-trigger-row>' +
+        '<input type="text" name="triggers[]" placeholder="Ex: Companhia de Saneamento" value="' + esc(value) + '" style="flex:1;" />' +
+        '<button type="button" data-act="remove-trigger" aria-label="Remover gatilho" style="background:none;border:none;color:var(--muted);cursor:pointer;padding:4px;display:inline-flex;">' + icon('x', 14) + '</button>' +
+      '</div>'
+    );
+  }
+
   function openFormModal(existing: ImportRule | null): void {
     const isEdit = !!existing;
     const uniq = Date.now();
     const ids = { name: 'rule-name-' + uniq, account: 'rule-account-' + uniq, category: 'rule-category-' + uniq, costCenter: 'rule-cc-' + uniq };
     const initial = {
       name: isEdit ? existing?.name || '' : '',
+      triggers: isEdit ? (existing?.triggers && existing.triggers.length ? existing.triggers.slice() : ['']) : [''],
       accountId: isEdit ? existing?.accountId || '' : '',
       categoryId: isEdit ? existing?.categoryId || '' : '',
       costCenterId: isEdit ? existing?.costCenterId || '' : '',
@@ -139,12 +149,19 @@ export function createImportRulesPage(deps: ImportRulesPageDeps): Page {
       labelOf: (c) => c.description || '',
     });
 
+    const triggersHtml = initial.triggers.map(triggerRowHtml).join('');
+
     const bodyHtml =
       '<form data-form="rule" autocomplete="off">' +
         '<div class="form-grid">' +
           '<div class="form-group full">' +
             '<label class="form-label" for="' + ids.name + '">Nome</label>' +
             '<input id="' + ids.name + '" name="name" type="text" required minlength="3" placeholder="Ex: Companhia de Saneamento" value="' + esc(initial.name) + '" />' +
+          '</div>' +
+          '<div class="form-group full">' +
+            '<label class="form-label">Gatilhos</label>' +
+            '<div data-region="triggers" style="display:flex;flex-direction:column;gap:6px;">' + triggersHtml + '</div>' +
+            '<button type="button" data-act="add-trigger" style="background:none;border:none;color:var(--accent);cursor:pointer;font-size:12px;font-weight:600;padding:4px 0;display:inline-flex;align-items:center;gap:3px;">' + icon('plus', 12) + 'Adicionar gatilho</button>' +
           '</div>' +
           '<div class="form-group full">' +
             '<label class="form-label" for="' + ids.account + '">Conta (opcional)</label>' +
@@ -173,8 +190,18 @@ export function createImportRulesPage(deps: ImportRulesPageDeps): Page {
           $name.trigger('focus');
           return null;
         }
+        const triggers = $form
+          .find('input[name="triggers[]"]')
+          .map(function () { return (($(this).val() as string) || '').trim(); })
+          .get()
+          .filter((t) => t.length >= 3);
+        if (!triggers.length) {
+          $form.find('input[name="triggers[]"]').first().trigger('focus');
+          return null;
+        }
         const payload = {
           name,
+          triggers,
           accountId: ($form.find('select[name=accountId]').val() as string) || undefined,
           categoryId: ($form.find('select[name=categoryId]').val() as string) || undefined,
           costCenterId: ($form.find('select[name=costCenterId]').val() as string) || undefined,
@@ -184,6 +211,24 @@ export function createImportRulesPage(deps: ImportRulesPageDeps): Page {
       success: () => (isEdit ? 'Regra atualizada' : 'Regra criada'),
       failure: 'Falha ao salvar regra',
       onDone: loadRules,
+    });
+
+    const $form = $('form[data-form=rule]');
+    $form.on('click', '[data-act=add-trigger]', function (e) {
+      e.preventDefault();
+      const $container = $form.find('[data-region=triggers]');
+      $container.append(triggerRowHtml(''));
+    });
+
+    $form.on('click', '[data-act=remove-trigger]', function (e) {
+      e.preventDefault();
+      const $row = $(this).closest('[data-trigger-row]');
+      const $container = $row.closest('[data-region=triggers]');
+      if ($container.find('[data-trigger-row]').length > 1) {
+        $row.remove();
+      } else {
+        $row.find('input[name="triggers[]"]').val('');
+      }
     });
   }
 

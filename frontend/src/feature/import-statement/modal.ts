@@ -262,17 +262,16 @@ export function createImportStatementModal(deps: ImportStatementDeps) {
       return '<select data-row-costcenter data-idx="' + idx + '" style="width:auto;font-size:12px;padding:4px 6px;">' + options + '</select>';
     }
 
-    // Regra de nomenclatura: casa a descrição crua de cada linha contra o cache de regras e, ao
-    // bater, sobrescreve descrição/categoria/centro de custo (nunca conta) antes da linha ser
-    // renderizada. Roda antes de alignGroupFields(), pra a propagação de parcelas herdar o
-    // resultado da 1ª parcela.
+    // Regra de nomenclatura: casa a descrição crua de cada linha contra o cache de regras
+    // (qualquer gatilho cadastrado) e, ao bater, aplica categoria/centro de custo (nunca conta,
+    // nem descrição) antes da linha ser renderizada. Roda antes de alignGroupFields(), pra a
+    // propagação de parcelas herdar o resultado da 1ª parcela.
     function applyImportRules(rows: ImportRowUI[]): void {
       const rules = deps.importRules.listCached();
       if (!rules.length) return;
       rows.forEach((row) => {
         const rule = deps.importRules.match(row.description, rules);
         if (!rule) return;
-        row.description = rule.name || row.description;
         if (rule.categoryId) row.categoryId = rule.categoryId;
         if (rule.costCenterId) row.costCenterId = rule.costCenterId;
       });

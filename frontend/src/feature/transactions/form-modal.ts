@@ -230,17 +230,14 @@ export function createTransactionFormModal(deps: TransactionFormModalDeps) {
     }
     bindNotesCounter();
 
-    // Live "regra de nomenclatura" match: while typing the description, if a rule's name appears
-    // in the text, replace the description with the rule's own name and pre-fill whichever of
-    // conta/categoria/centro de custo the rule sets.
+    // Live "regra de nomenclatura" match: enquanto o usuário digita a descrição, se qualquer
+    // gatilho cadastrado aparecer no texto, pré-preenche conta/categoria/centro de custo que a
+    // regra define — a descrição digitada nunca é alterada.
     m.$body.on('input', 'input[name=description]', function () {
       const $desc = $(this);
       const value = ($desc.val() as string) || '';
       const rule = deps.importRules.match(value, deps.importRules.listCached());
-      if (!rule || value === rule.name) return;
-
-      $desc.val(rule.name || '');
-      initial.description = rule.name || '';
+      if (!rule) return;
 
       if (rule.accountId) {
         const $acc = m.$body.find('select[name=accountId]');

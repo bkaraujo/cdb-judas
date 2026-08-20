@@ -57,7 +57,7 @@ public final class ImportRuleJDBCRepository extends JDBCRepository<ImportRule> i
         val values = new LinkedHashMap<String, @Nullable Object>();
         values.put("ID", entity.id().toString());
         values.put("COD_PERSON", entity.personId().toString());
-        values.put("TXT_NAME", entity.name());
+        values.put("TXT_LABEL", entity.name());
         values.put("COD_ACCOUNT", entity.accountId() != null ? entity.accountId().toString() : null);
         values.put("COD_CATEGORY", entity.categoryId() != null ? entity.categoryId().toString() : null);
         values.put("COD_COST_CENTER", entity.costCenterId() != null ? entity.costCenterId().toString() : null);
@@ -69,7 +69,7 @@ public final class ImportRuleJDBCRepository extends JDBCRepository<ImportRule> i
     protected ImportRule map(JDBCResultSet rs) {
         val id = UUID.fromString(rs.getString("ID").get());
         val personId = UUID.fromString(rs.getString("COD_PERSON").get());
-        val name = rs.getString("TXT_NAME").get();
+        val name = rs.getString("TXT_LABEL").get();
         final @Nullable String accountRaw = rs.getString("COD_ACCOUNT").get();
         final @Nullable UUID accountId = (accountRaw == null || accountRaw.isBlank()) ? null : UUID.fromString(accountRaw);
         final @Nullable String categoryRaw = rs.getString("COD_CATEGORY").get();
@@ -77,6 +77,6 @@ public final class ImportRuleJDBCRepository extends JDBCRepository<ImportRule> i
         final @Nullable String costCenterRaw = rs.getString("COD_COST_CENTER").get();
         final @Nullable UUID costCenterId = (costCenterRaw == null || costCenterRaw.isBlank()) ? null : UUID.fromString(costCenterRaw);
         val createdAt = rs.getTimestamp("TMS_CREATE_AT").get().toLocalDateTime();
-        return new ImportRule(id, personId, name, accountId, categoryId, costCenterId, createdAt);
+        return new ImportRule(id, personId, name, List.of(), accountId, categoryId, costCenterId, createdAt);
     }
 }
