@@ -18,25 +18,29 @@ export interface AuthStore {
 }
 
 export function createAuthStore(storage: Storage): AuthStore {
-  const ss = storage.session;
+  // Token e identidade em localStorage (compartilhado entre abas do mesmo origin).
+  // Isso permite múltiplas abas simultâneas sem novo login: o token rotativo é sempre
+  // lido via auth.get() no momento do disparo de cada requisição, então uma aba que
+  // rotaciona o token já escreve em localStorage e as demais leem o valor atualizado.
+  const ls = storage.local;
   const AUTH_TOKEN = storage.KEYS.AUTH_TOKEN;
   return {
-    get: () => ss.get(AUTH_TOKEN),
-    set: (token) => ss.set(AUTH_TOKEN, token),
+    get: () => ls.get(AUTH_TOKEN),
+    set: (token) => ls.set(AUTH_TOKEN, token),
     clear: () => {
-      ss.del(AUTH_TOKEN);
-      ss.del(USER_KEY);
-      ss.del(UID_KEY);
-      ss.del(NAME_KEY);
+      ls.del(AUTH_TOKEN);
+      ls.del(USER_KEY);
+      ls.del(UID_KEY);
+      ls.del(NAME_KEY);
     },
-    setUser: (user) => ss.set(USER_KEY, user),
-    decodeUser: () => ss.get(USER_KEY) || 'anonymous',
-    setUserId: (id) => ss.set(UID_KEY, id),
-    userId: () => ss.get(UID_KEY),
+    setUser: (user) => ls.set(USER_KEY, user),
+    decodeUser: () => ls.get(USER_KEY) || 'anonymous',
+    setUserId: (id) => ls.set(UID_KEY, id),
+    userId: () => ls.get(UID_KEY),
     setName: (name) => {
-      if (name) ss.set(NAME_KEY, name);
-      else ss.del(NAME_KEY);
+      if (name) ls.set(NAME_KEY, name);
+      else ls.del(NAME_KEY);
     },
-    name: () => ss.get(NAME_KEY),
+    name: () => ls.get(NAME_KEY),
   };
 }

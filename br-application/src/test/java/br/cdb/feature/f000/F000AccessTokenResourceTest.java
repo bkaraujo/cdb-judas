@@ -34,17 +34,21 @@ public class F000AccessTokenResourceTest extends BaseHttpTest {
                 .extract().header(HTTPRequest.TOKEN_HEADER);
     }
 
-    /** Sessão única: logar de novo revoga a sessão anterior do mesmo usuário. */
+    /** Múltiplas abas: logins simultâneos do mesmo usuário geram tokens independentes, todos válidos. */
     @Test
-    void novoLoginRevogaSessaoAnteriorDoMesmoUsuario() {
+    void multipleSessionsSameUserAreAllValid() {
         val primeiro = login();
         val segundo = login();
         assertNotEquals(primeiro, segundo, "cada login emite um token novo");
 
-        RestAssured.given()
+        // Ambos os tokens devem ser válidos simultaneamente — permite múltiplas abas.
+        val primeiroRotacionado = RestAssured.given()
                 .header(HTTPRequest.TOKEN_HEADER, primeiro)
                 .when().get("/api/version")
-                .then().statusCode(401);
+                .then().statusCode(200)
+                .extract().header(HTTPRequest.TOKEN_HEADER);
+
+        assertNotNull(primeiroRotacionado);
 
         RestAssured.given()
                 .header(HTTPRequest.TOKEN_HEADER, segundo)
@@ -73,28 +77,27 @@ public class F000AccessTokenResourceTest extends BaseHttpTest {
     }
 
     /**
-     * Isolamento entre usuários: a revogação de {@link #novoLoginRevogaSessaoAnteriorDoMesmoUsuario}
-     * é escopada por usuário — a sessão de um não derruba a de outro. É o que o mapa por
-     * {@code userId} garante e o que precisa continuar valendo com mais de um usuário.
+     * Isolamento entre usuários: sessões de usuários diferentes são independentes.
+     * Um login novo do admin não afeta a sessão do test user, e vice-versa.
      */
     @Test
     void sessaoDeUmUsuarioNaoDerrubaADeOutro() {
         val doTestUser = tokenStore.open(TEST_USER_ID, TEST_USER_ID, TEST_USERNAME).token();
         val doAdmin = login();
+        val doAdminSegundo = login();
 
-        // Novo login do admin: revoga só o dele.
-        val doAdminRenovado = login();
-
+        // Os dois tokens do admin são válidos simultaneamente.
         RestAssured.given()
                 .header(HTTPRequest.TOKEN_HEADER, doAdmin)
                 .when().get("/api/version")
-                .then().statusCode(401);
+                .then().statusCode(200);
 
         RestAssured.given()
-                .header(HTTPRequest.TOKEN_HEADER, doAdminRenovado)
+                .header(HTTPRequest.TOKEN_HEADER, doAdminSegundo)
                 .when().get("/api/version")
                 .then().statusCode(200);
 
+        // Sessão do test user continua intacta.
         RestAssured.given()
                 .header(HTTPRequest.TOKEN_HEADER, doTestUser)
                 .when().get("/api/" + TEST_USER_ID + "/accounts")

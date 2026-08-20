@@ -20,11 +20,11 @@ import java.util.concurrent.TimeUnit;
  * monitor, o que é o que torna {@link HashMap} seguro. Nada de {@link HTTPSession} escapa mutável —
  * é um record, então devolvê-la ao filtro de autenticação não expõe estado que possa rasgar.
  *
- * <h2>Uma sessão por usuário (política, não acidente)</h2>
- * {@link #open} revoga a sessão anterior <b>daquele</b> {@code userId}: logar de novo derruba a
- * antiga, inclusive em outro dispositivo. Usuários diferentes não interferem entre si — o despejo é
- * escopado por identidade. Trocar isto por N sessões simultâneas é fazer {@code byUser} apontar para
- * um conjunto; enquanto a política for sessão única, o mapa 1:1 é o que a garante.
+ * <h2>Múltiplas sessões por usuário</h2>
+ * {@link #open} cria uma nova sessão sem revogar as anteriores do mesmo {@code userId} — o que
+ * permite abas simultâneas no browser ou o mesmo usuário em dispositivos diferentes. {@code byUser}
+ * aponta para um {@link java.util.Set} de sessões; a revogação por identidade (ex: "derrubar todas
+ * as sessões deste usuário") pode ser reintroduzida iterando sobre esse conjunto.
  *
  * <h2>Expiração</h2>
  * Sessão caduca por <b>ociosidade</b> ({@value #SESSION_IDLE_KEY} em {@code application.yaml}), com a
@@ -63,8 +63,8 @@ public class AccessTokenStore {
     /** Caminho quente: toda requisição autenticada chega por aqui. */
     private final Map<String, HTTPSession> byToken = new HashMap<>();
 
-    /** Identidade de login — é o que garante a sessão única. */
-    private final Map<String, HTTPSession> byUser = new HashMap<>();
+    /** Identidade de login — suporta N sessões simultâneas (múltiplas abas/dispositivos). */
+    private final Map<String, Set<HTTPSession>> byUser = new HashMap<>();
 
     /** Identidade de negócio — {@code InternalApi} minta o efêmero tendo só o {@code personId}. */
     private final Map<String, HTTPSession> byPerson = new HashMap<>();
@@ -72,10 +72,9 @@ public class AccessTokenStore {
     /** Dona de cada efêmero em voo, para o consumo ser O(1). */
     private final Map<String, HTTPSession> byEphemeral = new HashMap<>();
 
-    /** Abre sessão no login, revogando a anterior do mesmo usuário (sessão única — ver javadoc). */
+    /** Abre sessão no login; não revoga sessões anteriores do mesmo usuário (ver javadoc da classe). */
     public synchronized HTTPSession open(String userId, String personId, String username) {
         purgeExpired();
-        unindex(byUser.get(userId));
 
         val session = HTTPSession.opened(userId, personId, username, generate(),
                 expiryFrom(sessionIdleTtlMillis));
@@ -159,7 +158,7 @@ public class AccessTokenStore {
 
     private void index(HTTPSession session) {
         byToken.put(session.token(), session);
-        byUser.put(session.userId(), session);
+        byUser.computeIfAbsent(session.userId(), k -> new HashSet<>()).add(session);
         byPerson.put(session.personId(), session);
         session.ephemeralTokens().keySet().forEach(token -> byEphemeral.put(token, session));
     }
@@ -167,7 +166,11 @@ public class AccessTokenStore {
     private void unindex(@Nullable HTTPSession session) {
         if (session == null) return;
         byToken.remove(session.token(), session);
-        byUser.remove(session.userId(), session);
+        val userSessions = byUser.get(session.userId());
+        if (userSessions != null) {
+            userSessions.remove(session);
+            if (userSessions.isEmpty()) byUser.remove(session.userId());
+        }
         byPerson.remove(session.personId(), session);
         session.ephemeralTokens().keySet().forEach(token -> byEphemeral.remove(token, session));
     }
