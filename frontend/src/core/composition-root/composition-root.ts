@@ -113,8 +113,6 @@ export function createApp(): App {
   const importRuleRepo = createImportRuleRepository(http);
   const transactionRepo = createTransactionRepository(http);
   const budgetRepo = createBudgetRepository(http);
-  // dashboard não tem secondary própria consumida pela página (DashboardService/DashboardRepository
-  // existem só pela fidelidade ao original — nenhum consumidor real; ver dashboard/page.ts).
 
   // ── Serviços (application) ─────────────────────────────────
   const accountService = createAccountService({ repo: accountRepo, cache });

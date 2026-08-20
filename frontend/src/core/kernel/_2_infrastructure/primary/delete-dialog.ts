@@ -4,11 +4,10 @@
  */
 import $ from 'jquery';
 import { esc } from '@/core/kernel/_0_domain/format.ts';
-import { confirmModal, modalFooter, modalText } from '@/core/kernel/_2_infrastructure/primary/helpers.ts';
+import { confirmModal, modalFooter, modalText, runMutation } from '@/core/kernel/_2_infrastructure/primary/helpers.ts';
 import { btn } from '@/core/kernel/_2_infrastructure/primary/ui/button.ts';
 import type { Modal } from '@/core/kernel/_2_infrastructure/primary/ui/modal.ts';
 import { modal } from '@/core/kernel/_2_infrastructure/primary/ui/modal.ts';
-import { toast } from '@/core/kernel/_2_infrastructure/primary/ui/toast.ts';
 
 export interface DeleteChoice {
   value: string;
@@ -161,23 +160,22 @@ export function deleteWithLinkedFallback<TRemove, TLinked>(opts: DeleteWithLinke
     title: opts.title,
     body: opts.body,
     onConfirm: (m, reEnable) => {
-      opts
-        .remove()
-        .then((result) => {
-          m.close();
-          const msg = typeof opts.success === 'function' ? opts.success(result) : opts.success;
-          if (msg) toast(msg, 'success');
-          if (opts.onDone) opts.onDone(result);
-        })
-        .catch((err: ApiErrorLike) => {
-          if (err && err.status === 409 && err.code === 'LINKED_TRANSACTIONS') {
+      runMutation(opts.remove(), {
+        modal: m,
+        success: opts.success,
+        failure: (err) => ((err as ApiErrorLike)?.message) || opts.failure || 'Falha ao excluir',
+        onDone: opts.onDone,
+        onError: (err) => {
+          const e = err as ApiErrorLike;
+          if (e && e.status === 409 && e.code === 'LINKED_TRANSACTIONS') {
             m.close();
-            openLinkedFallbackDialog(opts.linked, err.count || 0, opts.onDone);
-            return;
+            openLinkedFallbackDialog(opts.linked, e.count || 0, opts.onDone);
+            return true;
           }
           reEnable();
-          toast((err && err.message) || opts.failure || 'Falha ao excluir', 'error');
-        });
+          return false;
+        },
+      });
     },
   });
 }
@@ -189,17 +187,16 @@ function openLinkedFallbackDialog<TLinked>(linked: LinkedFlowOptions<TLinked> | 
     intro: l.intro ? l.intro(count) : undefined,
     options: l.options ? l.options(count) : [],
     onConfirm: (choice, m, reEnable) => {
-      l.dispatch(choice)
-        .then((result) => {
-          m.close();
-          const msg = typeof l.success === 'function' ? l.success(choice, result) : l.success;
-          if (msg) toast(msg, 'success');
-          if (onDone) onDone(result);
-        })
-        .catch((err: ApiErrorLike) => {
+      runMutation(l.dispatch(choice), {
+        modal: m,
+        success: (result) => (typeof l.success === 'function' ? l.success(choice, result) : l.success),
+        failure: (err) => ((err as ApiErrorLike)?.message) || l.failure || 'Falha ao excluir',
+        onDone: onDone,
+        onError: () => {
           reEnable();
-          toast((err && err.message) || l.failure || 'Falha ao excluir', 'error');
-        });
+          return false;
+        },
+      });
     },
   });
 }

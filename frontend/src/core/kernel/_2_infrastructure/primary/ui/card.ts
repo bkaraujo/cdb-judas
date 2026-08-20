@@ -1,18 +1,5 @@
-import $ from 'jquery';
 import { esc } from '@/core/kernel/_0_domain/format.ts';
 import { icon } from '@/core/kernel/_2_infrastructure/primary/icons.ts';
-
-export interface CardOptions {
-  style?: string;
-}
-
-export function card(content: string | JQuery | null | undefined, opts: CardOptions = {}): JQuery {
-  const $el = $('<div class="card"></div>');
-  if (opts.style) $el.attr('style', opts.style);
-  if (typeof content === 'string') $el.html(content);
-  else if (content) $el.append(content);
-  return $el;
-}
 
 export interface StatCardOptions {
   color?: string;

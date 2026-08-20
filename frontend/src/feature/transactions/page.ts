@@ -19,20 +19,19 @@
  * de totalInstallments > 1.
  */
 import $ from 'jquery';
-import { categoryById, categoryLabel, esc, fmt, flatCategories } from '@/core/kernel/_0_domain/format.ts';
+import { categoryById, categoryLabel, esc, fmt, flatCategories, valueColor } from '@/core/kernel/_0_domain/format.ts';
 import * as Period from '@/core/kernel/_0_domain/period.ts';
 import * as Transaction from '@/core/kernel/_0_domain/transaction.ts';
 import type { CacheStore } from '@/core/kernel/_1_application/cache-store.ts';
-import { byId, shiftMonth } from '@/core/kernel/_2_infrastructure/primary/helpers.ts';
+import { bindRecordActions, byId, periodNavFor } from '@/core/kernel/_2_infrastructure/primary/helpers.ts';
 import { createPage } from '@/core/kernel/_2_infrastructure/primary/page.ts';
 import type { Page, PageState } from '@/core/kernel/_2_infrastructure/primary/page.ts';
 import { accountOptionsHtml, categoryPickerHtml } from '@/core/kernel/_2_infrastructure/primary/pickers.ts';
-import { statementRowHtml, statementColumns } from '@/core/kernel/_2_infrastructure/primary/statement-row.ts';
+import { rowCountFooterHtml, statementRowHtml, statementColumns } from '@/core/kernel/_2_infrastructure/primary/statement-row.ts';
 import { btn, rowActionsHtml } from '@/core/kernel/_2_infrastructure/primary/ui/button.ts';
 import { emptyState } from '@/core/kernel/_2_infrastructure/primary/ui/empty-state.ts';
 import { icon } from '@/core/kernel/_2_infrastructure/primary/icons.ts';
 import { pageHeader } from '@/core/kernel/_2_infrastructure/primary/ui/page-header.ts';
-import { periodNav } from '@/core/kernel/_2_infrastructure/primary/ui/period-nav.ts';
 import { statCardHtml } from '@/core/kernel/_2_infrastructure/primary/ui/card.ts';
 import { toast } from '@/core/kernel/_2_infrastructure/primary/ui/toast.ts';
 import type { TransactionActions, TxLike } from '@/feature/transactions/actions.ts';
@@ -300,36 +299,16 @@ export function createTransactionsListPage(deps: TransactionsPageDeps, cfg: Tran
         btn({ variant: 'secondary', size: 'md', icon: 'download', label: 'Importar', attrs: 'data-act="import"' }),
         btn({ variant: 'primary', size: 'md', icon: 'plus', label: 'Novo Lançamento', attrs: 'data-act="new"' }),
       ],
-      nav: periodNav({
-        month: state.month + 1,
-        year: state.year,
-        onPrev: () => {
-          if (state) shiftMonth(state, -1, false, deps.periodService);
-          loadTransactions();
-        },
-        onNext: () => {
-          if (state) shiftMonth(state, 1, false, deps.periodService);
-          loadTransactions();
-        },
-        onChange: (m, y) => {
-          deps.periodService.set(m, y);
-          if (state) {
-            state.month = m - 1;
-            state.year = y;
-          }
-          loadTransactions();
-        },
-      }),
+      nav: periodNavFor(state, { oneBased: false, periodService: deps.periodService, onChange: loadTransactions }),
     });
     $page.append($header);
 
     const sum = summary(filteredTxs());
-    const resultColor = sum.result >= 0 ? 'var(--income)' : 'var(--expense)';
     const $summary = $(
       '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:18px;">' +
         statCardHtml({ icon: 'arrowUp', label: 'RECEITAS', value: fmt(sum.income), color: 'var(--income)' }) +
         statCardHtml({ icon: 'arrowDown', label: 'DESPESAS', value: fmt(sum.expense), color: 'var(--expense)' }) +
-        statCardHtml({ icon: 'trendingUp', label: 'RESULTADO', value: fmt(sum.result), color: resultColor }) +
+        statCardHtml({ icon: 'trendingUp', label: 'RESULTADO', value: fmt(sum.result), color: valueColor(sum.result) }) +
       '</div>',
     );
     $page.append($summary);
@@ -351,7 +330,7 @@ export function createTransactionsListPage(deps: TransactionsPageDeps, cfg: Tran
 
     if (!state.loading) {
       const txCount = filteredTxs().length;
-      $page.append('<div style="text-align:right;padding:12px 4px 0;font-size:12px;color:var(--text-muted);">' + esc(txCount + (txCount === 1 ? ' transação exibida' : ' transações exibidas')) + '</div>');
+      $page.append(rowCountFooterHtml(txCount));
     }
 
     $root.empty().append($page);
@@ -422,16 +401,13 @@ export function createTransactionsListPage(deps: TransactionsPageDeps, cfg: Tran
       render();
     });
 
-    $root.on('click.tx', '[data-act=edit]', function (e) {
-      e.stopPropagation();
-      const tx = findTx($(this).attr('data-id') as string);
-      if (tx) openFormModal(tx);
+    bindRecordActions($root, '.tx', {
+      find: findTx,
+      onNew: () => openFormModal(null),
+      onEdit: openFormModal,
+      onDelete: (tx) => deps.actions.openDeleteModal(tx, { onDone: loadTransactions }),
     });
-    $root.on('click.tx', '[data-act=trash]', function (e) {
-      e.stopPropagation();
-      const tx = findTx($(this).attr('data-id') as string);
-      if (tx && state) deps.actions.openDeleteModal(tx, { onDone: loadTransactions });
-    });
+
     $root.on('click.tx', '[data-act=mark-paid]', function (e) {
       e.stopPropagation();
       const tx = findTx($(this).attr('data-id') as string);

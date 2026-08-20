@@ -5,11 +5,11 @@
  * TransactionsApi.patchStatus.
  */
 import $ from 'jquery';
-import { categoryById, categoryLabel, esc, fmt, fmtDate, maskCurrency, parseCurrency } from '@/core/kernel/_0_domain/format.ts';
+import { categoryById, categoryLabel, esc, fmt, fmtDate, maskCurrency, parseCurrency, valueColor } from '@/core/kernel/_0_domain/format.ts';
 import * as Period from '@/core/kernel/_0_domain/period.ts';
 import * as Transaction from '@/core/kernel/_0_domain/transaction.ts';
 import type { CacheStore } from '@/core/kernel/_1_application/cache-store.ts';
-import { byId, formModal, shiftMonth } from '@/core/kernel/_2_infrastructure/primary/helpers.ts';
+import { bindRecordActions, byId, formModal, periodNavFor } from '@/core/kernel/_2_infrastructure/primary/helpers.ts';
 import { bindCurrencyMask } from '@/core/kernel/_2_infrastructure/primary/helpers.ts';
 import { createPage } from '@/core/kernel/_2_infrastructure/primary/page.ts';
 import type { Page, PageState } from '@/core/kernel/_2_infrastructure/primary/page.ts';
@@ -18,7 +18,6 @@ import { icon } from '@/core/kernel/_2_infrastructure/primary/icons.ts';
 import { statCardHtml } from '@/core/kernel/_2_infrastructure/primary/ui/card.ts';
 import { emptyState } from '@/core/kernel/_2_infrastructure/primary/ui/empty-state.ts';
 import { pageHeader } from '@/core/kernel/_2_infrastructure/primary/ui/page-header.ts';
-import { periodNav } from '@/core/kernel/_2_infrastructure/primary/ui/period-nav.ts';
 import { tabs } from '@/core/kernel/_2_infrastructure/primary/ui/tabs.ts';
 import { toast } from '@/core/kernel/_2_infrastructure/primary/ui/toast.ts';
 import { typeToggleHtml } from '@/core/kernel/_2_infrastructure/primary/ui/type-toggle.ts';
@@ -163,26 +162,7 @@ export function createAccountsPayablePage(deps: AccountsPayablePageDeps): Page {
 
     const $header = pageHeader({
       title: 'A Pagar e Receber',
-      nav: periodNav({
-        month: state.month + 1,
-        year: state.year,
-        onPrev: () => {
-          if (state) shiftMonth(state, -1, false, deps.periodService);
-          render();
-        },
-        onNext: () => {
-          if (state) shiftMonth(state, 1, false, deps.periodService);
-          render();
-        },
-        onChange: (m, y) => {
-          deps.periodService.set(m, y);
-          if (state) {
-            state.month = m - 1;
-            state.year = y;
-          }
-          render();
-        },
-      }),
+      nav: periodNavFor(state, { oneBased: false, periodService: deps.periodService, onChange: render }),
     });
     $page.append($header);
 
@@ -191,7 +171,6 @@ export function createAccountsPayablePage(deps: AccountsPayablePageDeps): Page {
     const totalPayable = periodPayable.reduce((s, i) => s + (Number(i.amount) || 0), 0);
     const totalReceivable = periodReceivable.reduce((s, i) => s + (Number(i.amount) || 0), 0);
     const result = totalReceivable - totalPayable;
-    const resultColor = result >= 0 ? 'var(--income)' : 'var(--expense)';
 
     function col(label: string, value: number, color: string): string {
       return statCardHtml({ label, value: fmt(value), color, bare: true });
@@ -202,7 +181,7 @@ export function createAccountsPayablePage(deps: AccountsPayablePageDeps): Page {
         '<div style="width:1px;align-self:stretch;background:var(--border);"></div>' +
         col('A Receber', totalReceivable, 'var(--income)') +
         '<div style="width:1px;align-self:stretch;background:var(--border);"></div>' +
-        col('Resultado', result, resultColor) +
+        col('Resultado', result, valueColor(result)) +
       '</div>',
     );
     $page.append($summary);
@@ -358,7 +337,7 @@ export function createAccountsPayablePage(deps: AccountsPayablePageDeps): Page {
   }
 
   function bindRoot($root: JQuery): void {
-    $root.on('click.ap', '[data-act=new]', () => openFormModal(null));
+    bindRecordActions($root, '.ap', { find: findItem, onNew: () => openFormModal(null), onEdit: openFormModal, onDelete: openDeleteModal, before: closeAllMenus });
 
     $root.on('click.ap', '[data-act=menu]', function (e) {
       e.stopPropagation();
@@ -369,18 +348,6 @@ export function createAccountsPayablePage(deps: AccountsPayablePageDeps): Page {
       if (!wasOpen) $menu.show();
     });
 
-    $root.on('click.ap', '[data-act=edit]', function (e) {
-      e.stopPropagation();
-      closeAllMenus();
-      const item = findItem($(this).attr('data-id') as string);
-      if (item) openFormModal(item);
-    });
-    $root.on('click.ap', '[data-act=trash]', function (e) {
-      e.stopPropagation();
-      closeAllMenus();
-      const item = findItem($(this).attr('data-id') as string);
-      if (item) openDeleteModal(item);
-    });
     $root.on('click.ap', '[data-act=mark-paid]', function (e) {
       e.stopPropagation();
       closeAllMenus();

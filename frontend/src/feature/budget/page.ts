@@ -3,7 +3,7 @@ import $ from 'jquery';
 import { esc, fmt, maskCurrency, parseCurrency } from '@/core/kernel/_0_domain/format.ts';
 import * as Period from '@/core/kernel/_0_domain/period.ts';
 import type { CacheStore } from '@/core/kernel/_1_application/cache-store.ts';
-import { bindCurrencyMask, byId, confirmModal, formModal, modalText, runMutation, shiftMonth } from '@/core/kernel/_2_infrastructure/primary/helpers.ts';
+import { bindCurrencyMask, bindRecordActions, byId, confirmModal, formModal, modalText, periodNavFor, runMutation } from '@/core/kernel/_2_infrastructure/primary/helpers.ts';
 import { icon, ICONS } from '@/core/kernel/_2_infrastructure/primary/icons.ts';
 import { createPage } from '@/core/kernel/_2_infrastructure/primary/page.ts';
 import type { Page, PageState } from '@/core/kernel/_2_infrastructure/primary/page.ts';
@@ -12,7 +12,6 @@ import { badge } from '@/core/kernel/_2_infrastructure/primary/ui/badge.ts';
 import { statCardHtml } from '@/core/kernel/_2_infrastructure/primary/ui/card.ts';
 import { emptyState } from '@/core/kernel/_2_infrastructure/primary/ui/empty-state.ts';
 import { pageHeader } from '@/core/kernel/_2_infrastructure/primary/ui/page-header.ts';
-import { periodNav } from '@/core/kernel/_2_infrastructure/primary/ui/period-nav.ts';
 import { progressBarHtml } from '@/core/kernel/_2_infrastructure/primary/ui/progress-bar.ts';
 import { btn, rowActionBtn } from '@/core/kernel/_2_infrastructure/primary/ui/button.ts';
 import { toast } from '@/core/kernel/_2_infrastructure/primary/ui/toast.ts';
@@ -150,26 +149,7 @@ export function createBudgetPage(deps: BudgetPageDeps): Page {
     const $header = pageHeader({
       title: 'Metas / Orçamento',
       actions: btn({ variant: 'primary', size: 'md', icon: 'plus', label: 'Nova Meta', attrs: 'data-act="new"' }),
-      nav: periodNav({
-        month: state.month + 1,
-        year: state.year,
-        onPrev: () => {
-          if (state) shiftMonth(state, -1, false, deps.periodService);
-          loadBudget();
-        },
-        onNext: () => {
-          if (state) shiftMonth(state, 1, false, deps.periodService);
-          loadBudget();
-        },
-        onChange: (m, y) => {
-          deps.periodService.set(m, y);
-          if (state) {
-            state.month = m - 1;
-            state.year = y;
-          }
-          loadBudget();
-        },
-      }),
+      nav: periodNavFor(state, { oneBased: false, periodService: deps.periodService, onChange: loadBudget }),
     });
     $root.append($header);
 
@@ -348,19 +328,7 @@ export function createBudgetPage(deps: BudgetPageDeps): Page {
   }
 
   function bindRoot($root: JQuery): void {
-    $root.on('click.bd', '[data-act=new]', () => openFormModal(null));
-    $root.on('click.bd', '[data-act=edit]', function (e) {
-      e.stopPropagation();
-      const id = $(this).attr('data-id') as string;
-      const it = findById(id);
-      if (it) openFormModal(it);
-    });
-    $root.on('click.bd', '[data-act=trash]', function (e) {
-      e.stopPropagation();
-      const id = $(this).attr('data-id') as string;
-      const it = findById(id);
-      if (it) openDeleteModal(it);
-    });
+    bindRecordActions($root, '.bd', { find: findById, onNew: () => openFormModal(null), onEdit: openFormModal, onDelete: openDeleteModal });
   }
 
   return createPage<BudgetPageState>({

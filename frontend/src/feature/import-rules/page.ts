@@ -6,7 +6,7 @@
 import $ from 'jquery';
 import { categoryLabel, esc, sortByName } from '@/core/kernel/_0_domain/format.ts';
 import type { CacheStore } from '@/core/kernel/_1_application/cache-store.ts';
-import { byId, confirmModal, formModal, modalText, runMutation } from '@/core/kernel/_2_infrastructure/primary/helpers.ts';
+import { bindRecordActions, byId, confirmModal, formModal, modalText, runMutation } from '@/core/kernel/_2_infrastructure/primary/helpers.ts';
 import { createPage } from '@/core/kernel/_2_infrastructure/primary/page.ts';
 import type { Page, PageState } from '@/core/kernel/_2_infrastructure/primary/page.ts';
 import { accountOptionsHtml, categoryItemsFor, categoryPickerHtml, optionsHtml } from '@/core/kernel/_2_infrastructure/primary/pickers.ts';
@@ -250,19 +250,7 @@ export function createImportRulesPage(deps: ImportRulesPageDeps): Page {
   }
 
   function bindRoot($root: JQuery): void {
-    $root.on('click.import-rules', '[data-act=new]', () => openFormModal(null));
-    $root.on('click.import-rules', '[data-act=edit]', function (e) {
-      e.stopPropagation();
-      const id = $(this).attr('data-id') as string;
-      const r = findRule(id);
-      if (r) openFormModal(r);
-    });
-    $root.on('click.import-rules', '[data-act=trash]', function (e) {
-      e.stopPropagation();
-      const id = $(this).attr('data-id') as string;
-      const r = findRule(id);
-      if (r) openDeleteModal(r);
-    });
+    bindRecordActions($root, '.import-rules', { find: findRule, onNew: () => openFormModal(null), onEdit: openFormModal, onDelete: openDeleteModal });
   }
 
   return createPage<ImportRulesPageState>({

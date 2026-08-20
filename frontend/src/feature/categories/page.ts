@@ -2,7 +2,7 @@
 import $ from 'jquery';
 import { esc, sortByName } from '@/core/kernel/_0_domain/format.ts';
 import type { Category } from '@/core/kernel/_0_domain/category.ts';
-import { byId, formModal, modalText, runMutation } from '@/core/kernel/_2_infrastructure/primary/helpers.ts';
+import { bindRecordActions, byId, formModal, modalText, runMutation } from '@/core/kernel/_2_infrastructure/primary/helpers.ts';
 import { deleteWithLinkedFallback, pluralTransactions } from '@/core/kernel/_2_infrastructure/primary/delete-dialog.ts';
 import { icon } from '@/core/kernel/_2_infrastructure/primary/icons.ts';
 import { cachePage } from '@/core/kernel/_2_infrastructure/primary/page.ts';
@@ -335,7 +335,7 @@ export function createCategoriesPage(service: CategoryService): Page {
   }
 
   function bindRoot($root: JQuery): void {
-    $root.on('click.cats', '[data-act=new]', () => openFormModal(null));
+    bindRecordActions($root, '.cats', { find: findCategory, onNew: () => openFormModal(null), onEdit: openFormModal, onDelete: openDeleteModal });
     $root.on('click.cats', '[data-act=set-tab]', function () {
       const t = $(this).attr('data-tab') as 'expense' | 'income' | undefined;
       if (t && state && t !== state.tab) {
@@ -349,18 +349,6 @@ export function createCategoriesPage(service: CategoryService): Page {
       if (!id || !state) return;
       state.expanded[id] = !state.expanded[id];
       render();
-    });
-    $root.on('click.cats', '[data-act=edit]', function (e) {
-      e.stopPropagation();
-      const id = $(this).attr('data-id') as string;
-      const cat = findCategory(id);
-      if (cat) openFormModal(cat);
-    });
-    $root.on('click.cats', '[data-act=trash]', function (e) {
-      e.stopPropagation();
-      const id = $(this).attr('data-id') as string;
-      const cat = findCategory(id);
-      if (cat) openDeleteModal(cat);
     });
     $root.on('click.cats', '[data-act=reactivate]', function (e) {
       e.stopPropagation();

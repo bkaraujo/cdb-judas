@@ -1,7 +1,7 @@
 import $ from 'jquery';
 import { esc, sortByName } from '@/core/kernel/_0_domain/format.ts';
 import type { Tag } from '@/core/kernel/_0_domain/tag.ts';
-import { bindSwatches, byId, formModal, modalText } from '@/core/kernel/_2_infrastructure/primary/helpers.ts';
+import { bindRecordActions, bindSwatches, byId, formModal, modalText } from '@/core/kernel/_2_infrastructure/primary/helpers.ts';
 import { cachePage } from '@/core/kernel/_2_infrastructure/primary/page.ts';
 import type { Page, PageState } from '@/core/kernel/_2_infrastructure/primary/page.ts';
 import { deleteWithLinkedFallback, pluralTransactions } from '@/core/kernel/_2_infrastructure/primary/delete-dialog.ts';
@@ -153,19 +153,7 @@ export function createTagsPage(service: TagService): Page {
   }
 
   function bindRoot($root: JQuery): void {
-    $root.on('click.tags', '[data-act=new]', () => openFormModal(null));
-    $root.on('click.tags', '[data-act=edit]', function (e) {
-      e.stopPropagation();
-      const id = $(this).attr('data-id') as string;
-      const t = findTag(id);
-      if (t) openFormModal(t);
-    });
-    $root.on('click.tags', '[data-act=trash]', function (e) {
-      e.stopPropagation();
-      const id = $(this).attr('data-id') as string;
-      const t = findTag(id);
-      if (t) openDeleteModal(t);
-    });
+    bindRecordActions($root, '.tags', { find: findTag, onNew: () => openFormModal(null), onEdit: openFormModal, onDelete: openDeleteModal });
   }
 
   return cachePage<TagsPageState>({

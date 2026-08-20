@@ -1,18 +1,12 @@
-import { describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it } from 'vitest';
 import type { Account } from '@/core/kernel/_0_domain/account.ts';
 import * as Period from '@/core/kernel/_0_domain/period.ts';
 import type { CacheStore } from '@/core/kernel/_1_application/cache-store.ts';
+import { fakeCache } from '@/test-support/fakes.ts';
 import { createStatementService } from '@/feature/statement/service.ts';
 import type { StatementBalancePort, StatementTxPort } from '@/feature/statement/service.ts';
 
 const ACCOUNT = { id: '1', name: 'Conta', balance: 999, cards: [] } as unknown as Account;
-
-function fakeCache(accounts: Account[], byId: Record<string, Account | null>): CacheStore {
-  return {
-    accounts: () => accounts,
-    findById: ((key: string, id: string) => (key === 'accounts' ? byId[id] || null : null)) as CacheStore['findById'],
-  } as unknown as CacheStore;
-}
 
 const fakeBalance: StatementBalancePort = {
   // Fecha o mês corrente com 500; o mês anterior (usado como abertura) não aparece na resposta de
@@ -21,11 +15,20 @@ const fakeBalance: StatementBalancePort = {
 };
 
 describe('feature:statement — service (fakes)', () => {
-  it('load monta o header "Saldo anterior" + as transações com saldo corrente', async () => {
+  let service: ReturnType<typeof createStatementService>;
+
+  beforeEach(() => {
     const txRepo: StatementTxPort = {
       listByAccount: () => Promise.resolve([{ id: '1', date: '2026-03-10', description: 'Compra', amount: -50, type: 'expense' }]),
     };
-    const service = createStatementService({ txRepo, balance: fakeBalance, cache: fakeCache([ACCOUNT], { '1': ACCOUNT }) });
+    const cache = fakeCache({
+      accounts: () => [ACCOUNT],
+      findById: ((key: string, id: string) => (key === 'accounts' && id === '1' ? ACCOUNT : null)) as CacheStore['findById'],
+    });
+    service = createStatementService({ txRepo, balance: fakeBalance, cache });
+  });
+
+  it('load monta o header "Saldo anterior" + as transações com saldo corrente', async () => {
     const { rows, raw } = await service.load('1', Period.create(3, 2026), 100);
     expect(rows.length).toBe(2);
     expect(rows[0]?.status).toBe('balance');
@@ -35,6 +38,7 @@ describe('feature:statement — service (fakes)', () => {
   });
 
   it('load funde as compras dos cartões da conta numa linha "Cartões de crédito" no vencimento', async () => {
+    // Sobrescreve beforeEach pra usar cardAccount
     const cardAccount = {
       id: '1', name: 'Conta', balance: 0, closingDay: 20, dueDay: 5,
       cards: [{ id: '9', last4: '1234', accountId: '1', active: true }, { id: '10', last4: '5678', accountId: '1', active: true }],
@@ -46,8 +50,12 @@ describe('feature:statement — service (fakes)', () => {
           { id: '2', cardId: '10', date: '2026-03-11', amount: -30, type: 'expense' }, // outro cartão, mesma fatura
         ]),
     };
-    const service = createStatementService({ txRepo, balance: fakeBalance, cache: fakeCache([cardAccount], { '1': cardAccount }) });
-    const { rows } = await service.load('1', Period.create(4, 2026), 100);
+    const cache = fakeCache({
+      accounts: () => [cardAccount],
+      findById: ((key: string, id: string) => (key === 'accounts' && id === '1' ? cardAccount : null)) as CacheStore['findById'],
+    });
+    const svc = createStatementService({ txRepo, balance: fakeBalance, cache });
+    const { rows } = await svc.load('1', Period.create(4, 2026), 100);
     expect(rows.length).toBe(2);
     expect((rows[1] as unknown as { description?: string }).description).toBe('Cartões de crédito');
     expect(rows[1]?.date).toBe('2026-04-05');
@@ -56,16 +64,18 @@ describe('feature:statement — service (fakes)', () => {
   });
 
   it('load devolve lista vazia se a conta não existe no cache', async () => {
-    const txRepo: StatementTxPort = { listByAccount: () => Promise.resolve([]) };
-    const service = createStatementService({ txRepo, balance: fakeBalance, cache: fakeCache([ACCOUNT], { '1': ACCOUNT }) });
     const result = await service.load('999', Period.create(3, 2026), 0);
     expect(result).toEqual({ rows: [], raw: [] });
   });
 
   it('summary combina o fechamento do período com a abertura (fechamento do mês anterior)', async () => {
     const txRepo: StatementTxPort = { listByAccount: () => Promise.resolve([]) };
-    const service = createStatementService({ txRepo, balance: fakeBalance, cache: fakeCache([ACCOUNT], { '1': ACCOUNT }) });
-    const out = await service.summary(Period.create(3, 2026));
+    const cache = fakeCache({
+      accounts: () => [ACCOUNT],
+      findById: ((key: string, id: string) => (key === 'accounts' && id === '1' ? ACCOUNT : null)) as CacheStore['findById'],
+    });
+    const svc = createStatementService({ txRepo, balance: fakeBalance, cache });
+    const out = await svc.summary(Period.create(3, 2026));
     expect(out.length).toBe(1);
     expect(out[0]?.closingBalance).toBe(500);
     expect(out[0]?.openingBalance).toBe(999);

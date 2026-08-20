@@ -40,7 +40,6 @@ export interface PreferencesService {
   getTheme(): string | null;
   setTheme(t: string): void;
   getLastScreen(): string | null;
-  setLastScreen(id: string): void;
   getSidebarCollapsed(): boolean;
   setSidebarCollapsed(b: boolean): void;
   getSidebarGroups(): Record<string, unknown>;
@@ -157,7 +156,6 @@ export function createPreferencesService(deps: PreferencesServiceDeps): Preferen
     getSidebarCollapsed: () => !!prefs.sidebarCollapsed,
     setSidebarCollapsed: (b) => set('sidebarCollapsed', !!b),
     getLastScreen: () => storage.local.get(storage.KEYS.SCREEN),
-    setLastScreen: (id) => storage.local.set(storage.KEYS.SCREEN, id),
     getSidebarGroups: () => storage.local.json<Record<string, unknown>>(storage.KEYS.SIDEBAR_GROUPS) || {},
     setSidebarGroups: (obj) => storage.local.setJson(storage.KEYS.SIDEBAR_GROUPS, obj),
     getDashboardSettings: () => storage.local.json(storage.KEYS.DASHBOARD_SETTINGS),

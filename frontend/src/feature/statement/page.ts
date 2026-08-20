@@ -10,19 +10,18 @@
 import $ from 'jquery';
 import type { Account } from '@/core/kernel/_0_domain/account.ts';
 import * as AccountDomain from '@/core/kernel/_0_domain/account.ts';
-import { esc, fmt, sortByName, valueColor } from '@/core/kernel/_0_domain/format.ts';
+import { fmt, sortByName, valueColor } from '@/core/kernel/_0_domain/format.ts';
 import type { InvoiceTx } from '@/core/kernel/_0_domain/invoice.ts';
 import * as Period from '@/core/kernel/_0_domain/period.ts';
 import * as StatementItem from '@/core/kernel/_0_domain/statement-item.ts';
 import type { CacheStore } from '@/core/kernel/_1_application/cache-store.ts';
-import { byId, shiftMonth } from '@/core/kernel/_2_infrastructure/primary/helpers.ts';
+import { bindRecordActions, byId, periodNavFor } from '@/core/kernel/_2_infrastructure/primary/helpers.ts';
 import { createPage } from '@/core/kernel/_2_infrastructure/primary/page.ts';
 import type { Page, PageState } from '@/core/kernel/_2_infrastructure/primary/page.ts';
-import { statementColumns, statementRowHtml } from '@/core/kernel/_2_infrastructure/primary/statement-row.ts';
+import { rowCountFooterHtml, statementColumns, statementRowHtml } from '@/core/kernel/_2_infrastructure/primary/statement-row.ts';
 import { rowActionsHtml } from '@/core/kernel/_2_infrastructure/primary/ui/button.ts';
 import { emptyState } from '@/core/kernel/_2_infrastructure/primary/ui/empty-state.ts';
 import { pageHeader } from '@/core/kernel/_2_infrastructure/primary/ui/page-header.ts';
-import { periodNav } from '@/core/kernel/_2_infrastructure/primary/ui/period-nav.ts';
 import { selectorButtonHtml } from '@/core/kernel/_2_infrastructure/primary/ui/search-select.ts';
 import { toast } from '@/core/kernel/_2_infrastructure/primary/ui/toast.ts';
 import type { AccountStatementSummary, StatementService } from '@/feature/statement/service.ts';
@@ -135,26 +134,7 @@ export function createStatementPage(deps: StatementPageDeps): Page {
 
     const $header = pageHeader({
       title: 'Extrato de Contas',
-      nav: periodNav({
-        month: state.month,
-        year: state.year,
-        onPrev: () => {
-          if (state) shiftMonth(state, -1, true, deps.periodService);
-          reloadPeriod();
-        },
-        onNext: () => {
-          if (state) shiftMonth(state, 1, true, deps.periodService);
-          reloadPeriod();
-        },
-        onChange: (m, y) => {
-          deps.periodService.set(m, y);
-          if (state) {
-            state.month = m;
-            state.year = y;
-          }
-          reloadPeriod();
-        },
-      }),
+      nav: periodNavFor(state, { oneBased: true, periodService: deps.periodService, onChange: reloadPeriod }),
     });
 
     const $sticky = $('<div class="stm-sticky-header"></div>');
@@ -209,7 +189,7 @@ export function createStatementPage(deps: StatementPageDeps): Page {
 
     if (state.accountId && !state.loading) {
       const txCount = state.items.filter((it) => !StatementItem.isBalanceHeader(it)).length;
-      $page.append('<div style="text-align:right;padding:12px 4px 0;font-size:12px;color:var(--text-muted);">' + esc(txCount + (txCount === 1 ? ' transação exibida' : ' transações exibidas')) + '</div>');
+      $page.append(rowCountFooterHtml(txCount));
     }
 
     $root.empty().append($page);
@@ -224,23 +204,11 @@ export function createStatementPage(deps: StatementPageDeps): Page {
       }
     });
 
-    $root.on('click.stm', '[data-act=edit]', function (e) {
-      e.stopPropagation();
-      const tx = findFullTx($(this).attr('data-id') as string);
-      if (!tx || !state) {
-        toast('Lançamento indisponível — recarregue o período', 'error');
-        return;
-      }
-      deps.transactions.openEditor({ existing: tx, defaultDate: Period.bounds(currentPeriod()).from, onSaved: reloadPeriod });
-    });
-    $root.on('click.stm', '[data-act=trash]', function (e) {
-      e.stopPropagation();
-      const tx = findFullTx($(this).attr('data-id') as string);
-      if (!tx || !state) {
-        toast('Lançamento indisponível — recarregue o período', 'error');
-        return;
-      }
-      deps.transactions.openDeleteFlow(tx, { onDone: reloadPeriod });
+    bindRecordActions($root, '.stm', {
+      find: findFullTx,
+      onEdit: (tx) => deps.transactions.openEditor({ existing: tx, defaultDate: Period.bounds(currentPeriod()).from, onSaved: reloadPeriod }),
+      onDelete: (tx) => deps.transactions.openDeleteFlow(tx, { onDone: reloadPeriod }),
+      onMissing: () => toast('Lançamento indisponível — recarregue o período', 'error'),
     });
   }
 

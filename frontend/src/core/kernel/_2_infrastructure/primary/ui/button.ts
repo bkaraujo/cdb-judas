@@ -28,20 +28,6 @@ export function btn(opts: BtnOptions = {}): JQuery {
   return $el;
 }
 
-export interface IconBtnOptions {
-  size?: number;
-  title?: string;
-  onClick?: (e: JQuery.ClickEvent) => void;
-}
-
-export function iconBtn(name: string, opts: IconBtnOptions = {}): JQuery {
-  const size = opts.size || 18;
-  const $el = $('<button class="icon-btn" type="button">' + icon(name, size) + '</button>');
-  if (opts.title) $el.attr('title', opts.title);
-  if (opts.onClick) $el.on('click', opts.onClick);
-  return $el;
-}
-
 /* Tamanho vira classe fixa nos dois casos comuns (28px = a maioria das linhas, 22px = chip de
  * tag); qualquer outro valor é genuinamente dinâmico e continua inline. */
 function iconBtnSizeClass(size: number): string {
@@ -60,23 +46,27 @@ export interface RowActionBtnOptions {
   act?: string;
 }
 
+/** Construtor único da string do botão de ação de linha. `rowActionBtn` embrulha em jQuery;
+ * `rowActionsHtml` concatena — antes os dois mantinham a mesma marcação digitada duas vezes. */
+function rowActionBtnHtml(iconName: string, title: string, id: string, act: string, danger: boolean, size: number, iconSize: number): string {
+  const sizeCls = iconBtnSizeClass(size);
+  const sizeStyle = iconBtnSizeStyle(size, sizeCls);
+  const cls = 'icon-btn' + sizeCls + (danger ? ' is-danger' : '');
+  return (
+    '<button type="button" class="' + cls + '" title="' + esc(title) + '" ' +
+    'data-act="' + esc(act) + '" data-id="' + esc(id) + '"' +
+    (sizeStyle ? ' style="' + sizeStyle + '"' : '') + '>' +
+    icon(iconName, iconSize) +
+    '</button>'
+  );
+}
+
 /** `opts` accepts { danger, size, iconSize, act } — `act` defaults to `iconName` (data-act), but
  * some rows dispatch a different action than the icon shown (e.g. icon 'eye' / act 'reactivate').
  * A plain boolean 4th arg is still accepted as shorthand for { danger: bool } (existing callers). */
 export function rowActionBtn(iconName: string, title: string, id: string, opts?: RowActionBtnOptions | boolean | null): JQuery {
   const o: RowActionBtnOptions = opts === true || opts === false || opts == null ? { danger: !!opts } : opts;
-  const size = o.size || 28;
-  const iconSize = o.iconSize || 14;
-  const sizeCls = iconBtnSizeClass(size);
-  const sizeStyle = iconBtnSizeStyle(size, sizeCls);
-  const cls = 'icon-btn' + sizeCls + (o.danger ? ' is-danger' : '');
-  return $(
-    '<button type="button" class="' + cls + '" title="' + esc(title) + '" ' +
-      'data-act="' + esc(o.act || iconName) + '" data-id="' + esc(id) + '"' +
-      (sizeStyle ? ' style="' + sizeStyle + '"' : '') + '>' +
-      icon(iconName, iconSize) +
-    '</button>',
-  );
+  return $(rowActionBtnHtml(iconName, title, id, o.act || iconName, !!o.danger, o.size || 28, o.iconSize || 14));
 }
 
 export interface RowActionsHtmlOptions {
@@ -91,23 +81,11 @@ export interface RowActionsHtmlOptions {
 // rather than jQuery chains. `extra` is raw HTML prepended before edit/trash (e.g. a
 // mark-paid button that only shows for some rows).
 export function rowActionsHtml(id: string, opts: RowActionsHtmlOptions = {}): string {
-  function btnHtml(iconName: string, title: string, act: string, danger: boolean): string {
-    const size = opts.size || 28;
-    const iconSize = opts.iconSize || 14;
-    const sizeCls = iconBtnSizeClass(size);
-    const sizeStyle = iconBtnSizeStyle(size, sizeCls);
-    const cls = 'icon-btn' + sizeCls + (danger ? ' is-danger' : '');
-    return (
-      '<button type="button" class="' + cls + '" title="' + esc(title) + '" ' +
-      'data-act="' + esc(act) + '" data-id="' + esc(id) + '"' +
-      (sizeStyle ? ' style="' + sizeStyle + '"' : '') + '>' +
-      icon(iconName, iconSize) +
-      '</button>'
-    );
-  }
+  const size = opts.size || 28;
+  const iconSize = opts.iconSize || 14;
   return (
     (opts.extra || '') +
-    (opts.edit !== false ? btnHtml('edit', 'Editar', 'edit', false) : '') +
-    (opts.trash !== false ? btnHtml('trash', 'Excluir', 'trash', true) : '')
+    (opts.edit !== false ? rowActionBtnHtml('edit', 'Editar', id, 'edit', false, size, iconSize) : '') +
+    (opts.trash !== false ? rowActionBtnHtml('trash', 'Excluir', id, 'trash', true, size, iconSize) : '')
   );
 }

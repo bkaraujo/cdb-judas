@@ -43,6 +43,11 @@ export function rowCountLabel(n: number): string {
   return n + (n === 1 ? ' transação exibida' : ' transações exibidas');
 }
 
+/** O rodapé de contagem — o wrapper também era byte-idêntico nas 3 telas. */
+export function rowCountFooterHtml(n: number): string {
+  return '<div style="text-align:right;padding:12px 4px 0;font-size:12px;color:var(--text-muted);">' + esc(rowCountLabel(n)) + '</div>';
+}
+
 export interface StatementRowLike {
   id?: string | null;
   date?: string | null;

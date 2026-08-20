@@ -10,7 +10,7 @@
  */
 import $ from 'jquery';
 import type { ImportRule } from '@/api/types.ts';
-import { esc, flatCategories, fmt } from '@/core/kernel/_0_domain/format.ts';
+import { esc, flatCategories, fmt, valueColor } from '@/core/kernel/_0_domain/format.ts';
 import type { CacheStore } from '@/core/kernel/_1_application/cache-store.ts';
 import { runMutation } from '@/core/kernel/_2_infrastructure/primary/helpers.ts';
 import { icon } from '@/core/kernel/_2_infrastructure/primary/icons.ts';
@@ -361,8 +361,7 @@ export function createImportStatementModal(deps: ImportStatementDeps) {
     function amountCellHtml(kind: string, row: ImportRowUI): string {
       if (kind === 'BANK_STATEMENT') {
         const amt = Number(row.amount) || 0;
-        const color = amt < 0 ? 'var(--expense)' : 'var(--income)';
-        return '<span style="color:' + color + ';">' + esc(fmt(amt)) + '</span>';
+        return '<span style="color:' + valueColor(amt) + ';">' + esc(fmt(amt)) + '</span>';
       }
       return esc(fmt(row.amount));
     }

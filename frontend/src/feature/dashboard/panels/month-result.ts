@@ -1,4 +1,5 @@
 /** Painel: Resultado do Mês. */
+import { valueColor } from '@/core/kernel/_0_domain/format.ts';
 import type { PanelRenderer } from '@/feature/dashboard/panels/types.ts';
 
 export const monthResult: PanelRenderer = (p, ctx) => {
@@ -14,7 +15,7 @@ export const monthResult: PanelRenderer = (p, ctx) => {
   const rows = [
     { label: 'Receitas', value: inc, color: 'var(--income)', bold: false },
     { label: 'Despesas', value: exp, color: 'var(--expense)', bold: false },
-    { label: 'Resultado', value: res, color: res >= 0 ? 'var(--income)' : 'var(--expense)', bold: true },
+    { label: 'Resultado', value: res, color: valueColor(res), bold: true },
   ];
   let body = '<div style="display:flex;flex-direction:column;gap:10px;">';
   rows.forEach((r) => {

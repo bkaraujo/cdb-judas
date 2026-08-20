@@ -15,20 +15,19 @@
  * pelo "Ver fatura" da tela de Cartões.
  */
 import $ from 'jquery';
-import { esc, fmtDate } from '@/core/kernel/_0_domain/format.ts';
+import { fmtDate } from '@/core/kernel/_0_domain/format.ts';
 import * as Period from '@/core/kernel/_0_domain/period.ts';
 import * as StatementItem from '@/core/kernel/_0_domain/statement-item.ts';
 import type { CacheStore } from '@/core/kernel/_1_application/cache-store.ts';
-import { byId, shiftMonth } from '@/core/kernel/_2_infrastructure/primary/helpers.ts';
+import { bindRecordActions, byId, periodNavFor } from '@/core/kernel/_2_infrastructure/primary/helpers.ts';
 import { createPage } from '@/core/kernel/_2_infrastructure/primary/page.ts';
 import type { Page, PageState } from '@/core/kernel/_2_infrastructure/primary/page.ts';
 import { rowActionsHtml } from '@/core/kernel/_2_infrastructure/primary/ui/button.ts';
 import { emptyState } from '@/core/kernel/_2_infrastructure/primary/ui/empty-state.ts';
 import { pageHeader } from '@/core/kernel/_2_infrastructure/primary/ui/page-header.ts';
-import { periodNav } from '@/core/kernel/_2_infrastructure/primary/ui/period-nav.ts';
 import { selectorButtonHtml } from '@/core/kernel/_2_infrastructure/primary/ui/search-select.ts';
 import { fmt } from '@/core/kernel/_0_domain/format.ts';
-import { statementColumns, statementRowHtml } from '@/core/kernel/_2_infrastructure/primary/statement-row.ts';
+import { rowCountFooterHtml, statementColumns, statementRowHtml } from '@/core/kernel/_2_infrastructure/primary/statement-row.ts';
 import { toast } from '@/core/kernel/_2_infrastructure/primary/ui/toast.ts';
 import type { InvoiceTx } from '@/feature/credit-cards/domain.ts';
 import type { CreditCardService, CreditCardWithAccount } from '@/feature/credit-cards/service.ts';
@@ -179,26 +178,7 @@ export function createCardStatementPage(deps: CardStatementPageDeps): Page {
     const $header = pageHeader({
       title: 'Extrato do Cartão',
       subtitle: cycleLabel || undefined,
-      nav: periodNav({
-        month: state.month,
-        year: state.year,
-        onPrev: () => {
-          if (state) shiftMonth(state, -1, true, deps.periodService);
-          reloadPeriod();
-        },
-        onNext: () => {
-          if (state) shiftMonth(state, 1, true, deps.periodService);
-          reloadPeriod();
-        },
-        onChange: (m, y) => {
-          deps.periodService.set(m, y);
-          if (state) {
-            state.month = m;
-            state.year = y;
-          }
-          reloadPeriod();
-        },
-      }),
+      nav: periodNavFor(state, { oneBased: true, periodService: deps.periodService, onChange: reloadPeriod }),
     });
 
     const $sticky = $('<div class="stm-sticky-header"></div>');
@@ -244,7 +224,7 @@ export function createCardStatementPage(deps: CardStatementPageDeps): Page {
 
     if (card && !state.loading) {
       const txCount = state.items.filter((it) => !StatementItem.isBalanceHeader(it)).length;
-      $page.append('<div style="text-align:right;padding:12px 4px 0;font-size:12px;color:var(--text-muted);">' + esc(txCount + (txCount === 1 ? ' transação exibida' : ' transações exibidas')) + '</div>');
+      $page.append(rowCountFooterHtml(txCount));
     }
 
     $root.empty().append($page);
@@ -263,23 +243,11 @@ export function createCardStatementPage(deps: CardStatementPageDeps): Page {
       }
     });
 
-    $root.on('click.cst', '[data-act=edit]', function (e) {
-      e.stopPropagation();
-      const tx = findFullTx($(this).attr('data-id') as string);
-      if (!tx || !state) {
-        toast('Lançamento indisponível — recarregue o período', 'error');
-        return;
-      }
-      deps.transactions.openEditor({ existing: tx, defaultDate: state.cycle ? state.cycle.to : null, onSaved: reloadPeriod });
-    });
-    $root.on('click.cst', '[data-act=trash]', function (e) {
-      e.stopPropagation();
-      const tx = findFullTx($(this).attr('data-id') as string);
-      if (!tx || !state) {
-        toast('Lançamento indisponível — recarregue o período', 'error');
-        return;
-      }
-      deps.transactions.openDeleteFlow(tx, { onDone: reloadPeriod });
+    bindRecordActions($root, '.cst', {
+      find: findFullTx,
+      onEdit: (tx) => deps.transactions.openEditor({ existing: tx, defaultDate: state?.cycle ? state.cycle.to : null, onSaved: reloadPeriod }),
+      onDelete: (tx) => deps.transactions.openDeleteFlow(tx, { onDone: reloadPeriod }),
+      onMissing: () => toast('Lançamento indisponível — recarregue o período', 'error'),
     });
   }
 

@@ -7,7 +7,11 @@ import { esc } from '@/core/kernel/_0_domain/format.ts';
 import { btn } from '@/core/kernel/_2_infrastructure/primary/ui/button.ts';
 import type { Modal } from '@/core/kernel/_2_infrastructure/primary/ui/modal.ts';
 import { modal } from '@/core/kernel/_2_infrastructure/primary/ui/modal.ts';
+import { periodNav } from '@/core/kernel/_2_infrastructure/primary/ui/period-nav.ts';
 import { toast } from '@/core/kernel/_2_infrastructure/primary/ui/toast.ts';
+import { bindRecordActions } from '@/core/kernel/_2_infrastructure/primary/record-actions.ts';
+
+export { bindRecordActions };
 
 /* ---- Record lookup ----
  * Replaces the per-page findAccount/findItem/findCard/findTag/findTx helpers. String-compares
@@ -260,4 +264,35 @@ export function formModal<T>(opts: FormModalOptions<T>): Modal {
   $form.on('submit', submit);
   m.$el.on('click', '[data-act=save]', () => submit());
   return m;
+}
+
+export interface PeriodNavForOptions {
+  /** `true` → `state.month` é 1-12 (statement, credit-cards, card-statement);
+   *  `false` → 0-11 (budget, transactions, accounts-payable). Mesmo flag de `shiftMonth`. */
+  oneBased: boolean;
+  periodService: PeriodServicePort;
+  /** Recarga da tela depois de mudar o período (`loadX()` ou `render()`). */
+  onChange: () => void;
+}
+
+/** O par periodNav+shiftMonth que 6 telas repetiam em ~20 linhas cada. Recebe o objeto de
+ * estado por referência — é o mesmo objeto que `cachePage`/`createPage` seguram, então não
+ * há o risco de null que o `if (state)` de cada cópia protegia. */
+export function periodNavFor(state: ShiftMonthState, opts: PeriodNavForOptions): JQuery {
+  const step = (delta: number) => () => {
+    shiftMonth(state, delta, opts.oneBased, opts.periodService);
+    opts.onChange();
+  };
+  return periodNav({
+    month: opts.oneBased ? state.month : state.month + 1,
+    year: state.year,
+    onPrev: step(-1),
+    onNext: step(1),
+    onChange: (m, y) => {
+      opts.periodService.set(m, y);
+      state.month = opts.oneBased ? m : m - 1;
+      state.year = y;
+      opts.onChange();
+    },
+  });
 }

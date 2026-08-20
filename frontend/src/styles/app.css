@@ -163,13 +163,11 @@ button { font-family: var(--font); cursor: pointer; border: none; outline: none;
 
 .btn-sm { padding: 6px 12px; font-size: 12px; }
 .btn-md { padding: 9px 16px; font-size: 13px; }
-.btn-lg { padding: 12px 22px; font-size: 14px; }
 
 .btn-primary   { background: var(--accent); color: #fff; }
 .btn-secondary { background: var(--bg-hover); color: var(--text-primary); border: 1px solid var(--border); }
 .btn-ghost     { background: transparent; color: var(--text-secondary); }
 .btn-danger    { background: var(--expense-light); color: var(--expense); }
-.btn-income    { background: var(--income-light); color: var(--income); }
 
 /* ───── Badge ───── */
 .badge {
@@ -744,7 +742,6 @@ button { font-family: var(--font); cursor: pointer; border: none; outline: none;
 
 /* ───── Animations ───── */
 .fade-in { opacity: 1 !important; }
-.slide-in { opacity: 1 !important; }
 
 /* ───── Relatório: matriz categoria × período ───── */
 .report-table-wrap { overflow: auto; max-height: calc(100vh - 260px); }

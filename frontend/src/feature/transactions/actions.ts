@@ -96,7 +96,7 @@ export function createTransactionActions(deps: TransactionActionsDeps): Transact
 
     // Grouped: scope choice. Nomeia a parcela — escolher "este e seguintes" sem saber qual das N
     // está em jogo é decidir no escuro.
-    const bodyHtml = '<p style="font-size:13px;color:var(--text-secondary);line-height:1.5;"><strong>' + esc(Transaction.describe(tx) || 'Lançamento') + '</strong> faz parte de um grupo de parcelas. Como deseja excluí-lo?</p>';
+    const bodyHtml = modalText('<strong>' + esc(Transaction.describe(tx) || 'Lançamento') + '</strong> faz parte de um grupo de parcelas. Como deseja excluí-lo?');
     const $only = btn({ variant: 'secondary', size: 'md', label: 'Apenas este', attrs: 'data-act="del-single" type="button"' });
     const $future = btn({ variant: 'secondary', size: 'md', label: 'Este e seguintes', attrs: 'data-act="del-future" type="button"' });
     const $all = btn({ variant: 'danger', size: 'md', icon: 'trash', label: 'Todos', attrs: 'data-act="del-all" type="button"' });

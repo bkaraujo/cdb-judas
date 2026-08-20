@@ -9,8 +9,8 @@ import $ from 'jquery';
 import type { Account } from '@/core/kernel/_0_domain/account.ts';
 import type { Card as CardWire } from '@/api/types.ts';
 import * as AccountDomain from '@/core/kernel/_0_domain/account.ts';
-import { esc, fmt, maskCurrency, parseCurrency, sortByName } from '@/core/kernel/_0_domain/format.ts';
-import { bindCurrencyMask, bindSwatches, byId, formModal, runMutation } from '@/core/kernel/_2_infrastructure/primary/helpers.ts';
+import { esc, fmt, maskCurrency, parseCurrency, sortByName, valueColor } from '@/core/kernel/_0_domain/format.ts';
+import { bindCurrencyMask, bindRecordActions, bindSwatches, byId, formModal, modalText, runMutation } from '@/core/kernel/_2_infrastructure/primary/helpers.ts';
 import { deleteWithLinkedFallback, linkedDeleteDialog, pluralTransactions } from '@/core/kernel/_2_infrastructure/primary/delete-dialog.ts';
 import { icon } from '@/core/kernel/_2_infrastructure/primary/icons.ts';
 import { cachePage } from '@/core/kernel/_2_infrastructure/primary/page.ts';
@@ -58,7 +58,6 @@ function renderCard(a: Account): JQuery {
   const iconName = iconForType(a.type);
 
   const displayValue = AccountDomain.currentBalance(a);
-  const valueColor = displayValue >= 0 ? 'var(--income)' : 'var(--expense)';
   const active = a.active !== false;
 
   const $card = $('<div class="card account-card" data-card="account" data-id="' + esc(a.id) + '"></div>');
@@ -79,7 +78,7 @@ function renderCard(a: Account): JQuery {
 
   $card.append($head);
 
-  $card.append('<div class="account-card-value"><div class="account-card-value-label">Saldo atual</div><div class="account-card-value-amount" style="color:' + valueColor + ';">' + esc(fmt(displayValue)) + '</div></div>');
+  $card.append('<div class="account-card-value"><div class="account-card-value-label">Saldo atual</div><div class="account-card-value-amount" style="color:' + valueColor(displayValue) + ';">' + esc(fmt(displayValue)) + '</div></div>');
 
   if (AccountDomain.hasCards(a)) {
     const last4Line = a.cards.map((c) => '•••• ' + c.last4).join('  ·  ');
@@ -357,7 +356,7 @@ export function createAccountsPage(service: AccountService): Page {
   function openDeleteModal(target: Account): void {
     deleteWithLinkedFallback({
       title: 'Excluir Conta',
-      body: '<p style="font-size:13px;color:var(--text-secondary);line-height:1.5;">Tem certeza que deseja excluir a conta <strong>' + esc(target.name) + '</strong>? Esta ação não pode ser desfeita.</p>',
+      body: modalText('Tem certeza que deseja excluir a conta <strong>' + esc(target.name) + '</strong>? Esta ação não pode ser desfeita.'),
       remove: () => service.remove(target.id),
       success: 'Conta excluída',
       failure: 'Falha ao excluir conta',
@@ -396,19 +395,7 @@ export function createAccountsPage(service: AccountService): Page {
   }
 
   function bindRoot($root: JQuery): void {
-    $root.on('click.accs', '[data-act=new]', () => openFormModal(null));
-    $root.on('click.accs', '[data-act=edit]', function (e) {
-      e.stopPropagation();
-      const id = $(this).attr('data-id') as string;
-      const acc = findAccount(id);
-      if (acc) openFormModal(acc);
-    });
-    $root.on('click.accs', '[data-act=trash]', function (e) {
-      e.stopPropagation();
-      const id = $(this).attr('data-id') as string;
-      const acc = findAccount(id);
-      if (acc) openDeleteModal(acc);
-    });
+    bindRecordActions($root, '.accs', { find: findAccount, onNew: () => openFormModal(null), onEdit: openFormModal, onDelete: openDeleteModal });
   }
 
   return cachePage<AccountsPageState>({

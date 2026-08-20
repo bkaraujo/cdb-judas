@@ -72,8 +72,14 @@ export function createCategoryEvolutionPage(deps: CategoryEvolutionPageDeps): Pa
     return groupExp && macroExp;
   }
 
-  function zeroCell(): JQuery {
-    return $('<td style="text-align:center;color:var(--text-muted);">-</td>');
+  /** Célula de valor com o percentual embaixo. Substitui os 6 blocos idênticos que a tabela
+   * repetia (linhas de bucket, Média, Total, e os três equivalentes do tfoot Resultado).
+   * `base` é o total da natureza contra o qual o percentual é calculado. */
+  function valueCellHtml(value: number, base: number): string {
+    if (value === 0) return '<td style="text-align:center;color:var(--text-muted);">-</td>';
+    const share = Domain.shareOf(value, base);
+    const shareHtml = '<span class="report-cell-share">' + (share != null ? esc(share.toFixed(2) + '%') : '-') + '</span>';
+    return '<td><div style="color:' + valueColor(value) + ';">' + esc(fmt(value)) + '</div>' + shareHtml + '</td>';
   }
 
   function renderTable(): JQuery {
@@ -121,40 +127,13 @@ export function createCategoryEvolutionPage(deps: CategoryEvolutionPageDeps): Pa
 
       // Células de valor por bucket
       row.values.forEach((value, idx) => {
-        const $cell = $('<td></td>');
-        if (value === 0) {
-          $cell.html('<div style="text-align:center;color:var(--text-muted);">-</div>');
-        } else {
-          const base = incomeByBucket[idx] ?? 0;
-          const share = Domain.shareOf(value, base);
-          const shareHtml = share != null
-            ? '<span class="report-cell-share">' + esc(share.toFixed(2) + '%') + '</span>'
-            : '<span class="report-cell-share">-</span>';
-          $cell.html('<div style="color:' + valueColor(value) + ';">' + esc(fmt(value)) + '</div>' + shareHtml);
-        }
-        $tr.append($cell);
+        $tr.append(valueCellHtml(value, incomeByBucket[idx] ?? 0));
       });
 
       // Média e Total
-      if (row.average === 0) {
-        $tr.append(zeroCell());
-      } else {
-        const avgShare = Domain.shareOf(row.average, avgIncome);
-        const avgShareHtml = avgShare != null
-          ? '<span class="report-cell-share">' + esc(avgShare.toFixed(2) + '%') + '</span>'
-          : '<span class="report-cell-share">-</span>';
-        $tr.append('<td><div style="color:' + valueColor(row.average) + ';">' + esc(fmt(row.average)) + '</div>' + avgShareHtml + '</td>');
-      }
+      $tr.append(valueCellHtml(row.average, avgIncome));
 
-      if (row.total === 0) {
-        $tr.append(zeroCell());
-      } else {
-        const totalShare = Domain.shareOf(row.total, totalIncome);
-        const totalShareHtml = totalShare != null
-          ? '<span class="report-cell-share">' + esc(totalShare.toFixed(2) + '%') + '</span>'
-          : '<span class="report-cell-share">-</span>';
-        $tr.append('<td><div style="color:' + valueColor(row.total) + ';">' + esc(fmt(row.total)) + '</div>' + totalShareHtml + '</td>');
-      }
+      $tr.append(valueCellHtml(row.total, totalIncome));
 
       $tbody.append($tr);
     });
@@ -169,36 +148,12 @@ export function createCategoryEvolutionPage(deps: CategoryEvolutionPageDeps): Pa
     const resultAvg = resultTotal / buckets.length;
 
     state.matrix.resultByBucket.forEach((result, idx) => {
-      if (result === 0) {
-        $footRow.append(zeroCell());
-        return;
-      }
-      const share = Domain.shareOf(result, incomeByBucket[idx] ?? 0);
-      const shareHtml = share != null
-        ? '<span class="report-cell-share">' + esc(share.toFixed(2) + '%') + '</span>'
-        : '<span class="report-cell-share">-</span>';
-      $footRow.append('<td><div style="color:' + valueColor(result) + ';">' + esc(fmt(result)) + '</div>' + shareHtml + '</td>');
+      $footRow.append(valueCellHtml(result, incomeByBucket[idx] ?? 0));
     });
 
-    if (resultAvg === 0) {
-      $footRow.append(zeroCell());
-    } else {
-      const avgShare = Domain.shareOf(resultAvg, avgIncome);
-      const avgShareHtml = avgShare != null
-        ? '<span class="report-cell-share">' + esc(avgShare.toFixed(2) + '%') + '</span>'
-        : '<span class="report-cell-share">-</span>';
-      $footRow.append('<td><div style="color:' + valueColor(resultAvg) + ';">' + esc(fmt(resultAvg)) + '</div>' + avgShareHtml + '</td>');
-    }
+    $footRow.append(valueCellHtml(resultAvg, avgIncome));
 
-    if (resultTotal === 0) {
-      $footRow.append(zeroCell());
-    } else {
-      const totalShare = Domain.shareOf(resultTotal, totalIncome);
-      const totalShareHtml = totalShare != null
-        ? '<span class="report-cell-share">' + esc(totalShare.toFixed(2) + '%') + '</span>'
-        : '<span class="report-cell-share">-</span>';
-      $footRow.append('<td><div style="color:' + valueColor(resultTotal) + ';">' + esc(fmt(resultTotal)) + '</div>' + totalShareHtml + '</td>');
-    }
+    $footRow.append(valueCellHtml(resultTotal, totalIncome));
 
     $tfoot.append($footRow);
     $table.append($tfoot);

@@ -2,31 +2,29 @@ import { describe, expect, it } from 'vitest';
 import type { Account } from '@/core/kernel/_0_domain/account.ts';
 import * as Period from '@/core/kernel/_0_domain/period.ts';
 import type { CacheStore } from '@/core/kernel/_1_application/cache-store.ts';
+import { fakeCache, fakeCrudRepo } from '@/test-support/fakes.ts';
 import { createTransactionService } from '@/feature/transactions/service.ts';
 import type { TransactionRepository } from '@/feature/transactions/repository.ts';
 
 function fakeRepo(overrides: Partial<TransactionRepository> = {}): TransactionRepository {
-  return {
-    list: (params) => Promise.resolve([{ id: '1', description: 'Tx', params } as never]),
+  return fakeCrudRepo([], {
+    list: (params: any) => Promise.resolve([{ id: '1', description: 'Tx', params } as never]),
     listByAccount: () => Promise.resolve([]),
-    create: (data) => Promise.resolve({ id: '99', ...data }),
-    update: (id, data) => Promise.resolve({ id, ...data }),
-    remove: () => Promise.resolve(null),
-    patchStatus: (accountId, id, status) => Promise.resolve({ accountId, id, status } as never),
-    transfer: (data) => Promise.resolve({ id: '77', ...data } as never),
+    patchStatus: (accountId: any, id: any, status: any) => Promise.resolve({ accountId, id, status } as never),
+    transfer: (data: any) => Promise.resolve({ id: '77', ...data } as never),
     importPreview: () => Promise.resolve(null),
     importConfirm: () => Promise.resolve(null),
     ...overrides,
-  };
+  }) as unknown as TransactionRepository;
 }
 
-function fakeCache(accounts: Account[] = []): CacheStore {
-  return { accounts: () => accounts } as unknown as CacheStore;
+function fakeCache2(accounts: Account[] = []): CacheStore {
+  return fakeCache({ accounts: () => accounts });
 }
 
 describe('feature:transactions — service.buildPayload (puro)', () => {
   it('aplica a regra de sinal do domínio (expense negativa, income positiva)', () => {
-    const service = createTransactionService({ repo: fakeRepo(), cache: fakeCache() });
+    const service = createTransactionService({ repo: fakeRepo(), cache: fakeCache2() });
     const payload = service.buildPayload({ type: 'expense', amount: 150, description: 'Mercado' });
     expect(payload.amount).toBe(-150);
     expect(payload.type).toBe('expense');
@@ -34,7 +32,7 @@ describe('feature:transactions — service.buildPayload (puro)', () => {
   });
 
   it('normaliza o type (ex.: "revenue" vira "income")', () => {
-    const service = createTransactionService({ repo: fakeRepo(), cache: fakeCache() });
+    const service = createTransactionService({ repo: fakeRepo(), cache: fakeCache2() });
     const payload = service.buildPayload({ type: 'revenue', amount: 100 });
     expect(payload.type).toBe('income');
     expect(payload.amount).toBe(100);
@@ -43,13 +41,13 @@ describe('feature:transactions — service.buildPayload (puro)', () => {
 
 describe('feature:transactions — service (repo/cache fakes)', () => {
   it('list delega pro repo com os params recebidos', async () => {
-    const service = createTransactionService({ repo: fakeRepo(), cache: fakeCache() });
+    const service = createTransactionService({ repo: fakeRepo(), cache: fakeCache2() });
     const out = await service.list('status=pending');
     expect((out?.[0] as unknown as { params?: string })?.params).toBe('status=pending');
   });
 
   it('create/update/patchStatus/remove passam pelo repo', async () => {
-    const service = createTransactionService({ repo: fakeRepo(), cache: fakeCache() });
+    const service = createTransactionService({ repo: fakeRepo(), cache: fakeCache2() });
     const created = await service.create({ description: 'Nova' } as never);
     expect(created?.id).toBe('99');
     const patched = await service.patchStatus('1', created?.id as string, 'confirmed', '2026-03-10');
@@ -60,7 +58,7 @@ describe('feature:transactions — service (repo/cache fakes)', () => {
   it('listForPeriod colapsa via Domain.Invoice usando as contas do cache', async () => {
     // Sem contas com cartão no cache: fetchWindow devolve a janela do próprio mês, sem alargar —
     // collapse não tem nada pra colapsar, só repassa o que o repo devolveu.
-    const service = createTransactionService({ repo: fakeRepo(), cache: fakeCache() });
+    const service = createTransactionService({ repo: fakeRepo(), cache: fakeCache2() });
     const out = await service.listForPeriod(Period.create(3, 2026));
     expect(Array.isArray(out.rows)).toBe(true);
     expect(Array.isArray(out.raw)).toBe(true);
@@ -78,7 +76,7 @@ describe('feature:transactions — service (repo/cache fakes)', () => {
           { id: '2', cardId: '10', accountId: '1', date: '2026-03-11', amount: -30, type: 'expense' } as never,
         ]),
     });
-    const service = createTransactionService({ repo, cache: fakeCache([account]) });
+    const service = createTransactionService({ repo, cache: fakeCache2([account]) });
     const out = await service.listForPeriod(Period.create(4, 2026));
     expect(out.rows.length).toBe(1);
     expect((out.rows[0] as { description?: string }).description).toBe('Cartões Nubank');

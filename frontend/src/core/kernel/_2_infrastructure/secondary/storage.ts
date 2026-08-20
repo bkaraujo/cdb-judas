@@ -28,66 +28,58 @@ export const STORAGE_KEYS = {
   AUTH_TOKEN: 'auth_token',
 } as const;
 
-function lsGet(key: string): string | null {
-  try {
-    return localStorage.getItem(key);
-  } catch {
-    return null;
-  }
-}
-function lsSet(key: string, value: string): void {
-  try {
-    localStorage.setItem(key, value);
-  } catch {
-    /* noop */
-  }
-}
-function lsDel(key: string): void {
-  try {
-    localStorage.removeItem(key);
-  } catch {
-    /* noop */
-  }
-}
-function lsJson<T>(key: string): T | null {
-  const raw = lsGet(key);
-  if (!raw) return null;
-  try {
-    return JSON.parse(raw) as T;
-  } catch {
-    return null;
-  }
-}
-function lsSetJson(key: string, value: unknown): void {
-  lsSet(key, JSON.stringify(value));
+/** Um único wrapper try/catch por área — `localStorage` e `sessionStorage` diferem só no
+ * objeto nativo. Acesso pode lançar (modo privado, cota, iframe sem permissão), por isso
+ * toda operação é engolida: leitura falha vira `null`, escrita falha vira no-op. */
+function area(store: globalThis.Storage): StorageArea {
+  return {
+    get(key) {
+      try {
+        return store.getItem(key);
+      } catch {
+        return null;
+      }
+    },
+    set(key, value) {
+      try {
+        store.setItem(key, value);
+      } catch {
+        /* noop */
+      }
+    },
+    del(key) {
+      try {
+        store.removeItem(key);
+      } catch {
+        /* noop */
+      }
+    },
+  };
 }
 
-function ssGet(key: string): string | null {
-  try {
-    return sessionStorage.getItem(key);
-  } catch {
-    return null;
-  }
-}
-function ssSet(key: string, value: string): void {
-  try {
-    sessionStorage.setItem(key, value);
-  } catch {
-    /* noop */
-  }
-}
-function ssDel(key: string): void {
-  try {
-    sessionStorage.removeItem(key);
-  } catch {
-    /* noop */
-  }
+function localArea(): LocalStorageArea {
+  const base = area(localStorage);
+  return {
+    ...base,
+    json<T>(key: string): T | null {
+      const raw = base.get(key);
+      if (!raw) return null;
+      try {
+        return JSON.parse(raw) as T;
+      } catch {
+        return null;
+      }
+    },
+    setJson(key: string, value: unknown): void {
+      base.set(key, JSON.stringify(value));
+    },
+  };
 }
 
 export function createStorage(): Storage {
   return {
     KEYS: STORAGE_KEYS,
-    local: { get: lsGet, set: lsSet, del: lsDel, json: lsJson, setJson: lsSetJson },
-    session: { get: ssGet, set: ssSet, del: ssDel },
+    local: localArea(),
+    session: area(sessionStorage),
   };
 }
