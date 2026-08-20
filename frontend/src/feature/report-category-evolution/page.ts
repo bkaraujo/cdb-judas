@@ -81,7 +81,8 @@ export function createCategoryEvolutionPage(deps: CategoryEvolutionPageDeps): Pa
 
     const { buckets, rows } = state.matrix;
     const incomeByBucket = state!.matrix!.incomeByBucket;
-    const expenseByBucket = state!.matrix!.expenseByBucket;
+    const totalIncome = incomeByBucket.reduce((s, v) => s + v, 0);
+    const avgIncome = totalIncome / buckets.length;
 
     const $table = $('<table class="report-table"></table>');
 
@@ -121,15 +122,16 @@ export function createCategoryEvolutionPage(deps: CategoryEvolutionPageDeps): Pa
       // Células de valor por bucket
       row.values.forEach((value, idx) => {
         const $cell = $('<td></td>');
-        const base = row.nature === 'EXPENSE' ? Math.abs(expenseByBucket[idx] ?? 0) : (incomeByBucket[idx] ?? 0);
-        const share = Domain.shareOf(value, base);
-        const shareHtml = share != null
-          ? '<span class="report-cell-share">' + esc(share.toFixed(2) + '%') + '</span>'
-          : '<span class="report-cell-share">-</span>';
-        const valueHtml = value === 0
-          ? '<div style="text-align:center;color:var(--text-muted);">-</div>'
-          : '<div style="color:' + valueColor(value) + ';">' + esc(fmt(value)) + '</div>';
-        $cell.html(valueHtml + shareHtml);
+        if (value === 0) {
+          $cell.html('<div style="text-align:center;color:var(--text-muted);">-</div>');
+        } else {
+          const base = incomeByBucket[idx] ?? 0;
+          const share = Domain.shareOf(value, base);
+          const shareHtml = share != null
+            ? '<span class="report-cell-share">' + esc(share.toFixed(2) + '%') + '</span>'
+            : '<span class="report-cell-share">-</span>';
+          $cell.html('<div style="color:' + valueColor(value) + ';">' + esc(fmt(value)) + '</div>' + shareHtml);
+        }
         $tr.append($cell);
       });
 
@@ -137,13 +139,21 @@ export function createCategoryEvolutionPage(deps: CategoryEvolutionPageDeps): Pa
       if (row.average === 0) {
         $tr.append(zeroCell());
       } else {
-        $tr.append('<td><div style="color:' + valueColor(row.average) + ';">' + esc(fmt(row.average)) + '</div></td>');
+        const avgShare = Domain.shareOf(row.average, avgIncome);
+        const avgShareHtml = avgShare != null
+          ? '<span class="report-cell-share">' + esc(avgShare.toFixed(2) + '%') + '</span>'
+          : '<span class="report-cell-share">-</span>';
+        $tr.append('<td><div style="color:' + valueColor(row.average) + ';">' + esc(fmt(row.average)) + '</div>' + avgShareHtml + '</td>');
       }
 
       if (row.total === 0) {
         $tr.append(zeroCell());
       } else {
-        $tr.append('<td><div style="color:' + valueColor(row.total) + ';">' + esc(fmt(row.total)) + '</div></td>');
+        const totalShare = Domain.shareOf(row.total, totalIncome);
+        const totalShareHtml = totalShare != null
+          ? '<span class="report-cell-share">' + esc(totalShare.toFixed(2) + '%') + '</span>'
+          : '<span class="report-cell-share">-</span>';
+        $tr.append('<td><div style="color:' + valueColor(row.total) + ';">' + esc(fmt(row.total)) + '</div>' + totalShareHtml + '</td>');
       }
 
       $tbody.append($tr);
@@ -158,24 +168,36 @@ export function createCategoryEvolutionPage(deps: CategoryEvolutionPageDeps): Pa
     const resultTotal = state.matrix.resultByBucket.reduce((a, b) => a + b, 0);
     const resultAvg = resultTotal / buckets.length;
 
-    state.matrix.resultByBucket.forEach((result) => {
+    state.matrix.resultByBucket.forEach((result, idx) => {
       if (result === 0) {
         $footRow.append(zeroCell());
         return;
       }
-      $footRow.append('<td><div style="color:' + valueColor(result) + ';">' + esc(fmt(result)) + '</div></td>');
+      const share = Domain.shareOf(result, incomeByBucket[idx] ?? 0);
+      const shareHtml = share != null
+        ? '<span class="report-cell-share">' + esc(share.toFixed(2) + '%') + '</span>'
+        : '<span class="report-cell-share">-</span>';
+      $footRow.append('<td><div style="color:' + valueColor(result) + ';">' + esc(fmt(result)) + '</div>' + shareHtml + '</td>');
     });
 
     if (resultAvg === 0) {
       $footRow.append(zeroCell());
     } else {
-      $footRow.append('<td><div style="color:' + valueColor(resultAvg) + ';">' + esc(fmt(resultAvg)) + '</div></td>');
+      const avgShare = Domain.shareOf(resultAvg, avgIncome);
+      const avgShareHtml = avgShare != null
+        ? '<span class="report-cell-share">' + esc(avgShare.toFixed(2) + '%') + '</span>'
+        : '<span class="report-cell-share">-</span>';
+      $footRow.append('<td><div style="color:' + valueColor(resultAvg) + ';">' + esc(fmt(resultAvg)) + '</div>' + avgShareHtml + '</td>');
     }
 
     if (resultTotal === 0) {
       $footRow.append(zeroCell());
     } else {
-      $footRow.append('<td><div style="color:' + valueColor(resultTotal) + ';">' + esc(fmt(resultTotal)) + '</div></td>');
+      const totalShare = Domain.shareOf(resultTotal, totalIncome);
+      const totalShareHtml = totalShare != null
+        ? '<span class="report-cell-share">' + esc(totalShare.toFixed(2) + '%') + '</span>'
+        : '<span class="report-cell-share">-</span>';
+      $footRow.append('<td><div style="color:' + valueColor(resultTotal) + ';">' + esc(fmt(resultTotal)) + '</div>' + totalShareHtml + '</td>');
     }
 
     $tfoot.append($footRow);
@@ -271,11 +293,10 @@ export function createCategoryEvolutionPage(deps: CategoryEvolutionPageDeps): Pa
   return createPage<CategoryEvolutionPageState>({
     ns: '.report-cat-evolution',
     state: () => {
-      const start = Period.shift(Period.currentMonth(), -11);
       state = {
         interval: 'month',
-        startMonth: start.month - 1,
-        startYear: start.year,
+        startMonth: 0,
+        startYear: Period.currentMonth().year,
         size: 12,
         loading: false,
         matrix: null,
