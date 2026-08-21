@@ -2,7 +2,7 @@ package br.cdb.feature.f005._1_application.usecase;
 
 import br.cdb.feature.f005._0_domain.model.Category;
 import br.cdb.feature.f005._1_application.service.UserCategoryService;
-import br.cdb.feature.f006._0_domain.model.Transaction;
+import br.cdb.feature.f005._0_domain.model.Nature;
 import br.commons.Result;
 import br.commons.business.BusinessError;
 import br.commons.framework.cdi.Context;
@@ -44,7 +44,7 @@ public class ReadUseCase {
      * <p>Leitura com autocura: semeia a categoria global no primeiro uso em banco fresh/teste, onde
      * a migração que a cria não roda.
      */
-    public Category transferCategory(UUID personId, Transaction.Type nature) {
+    public Category transferCategory(UUID personId, Nature nature) {
         return service.findOrCreateTransferCategory(nature);
     }
 

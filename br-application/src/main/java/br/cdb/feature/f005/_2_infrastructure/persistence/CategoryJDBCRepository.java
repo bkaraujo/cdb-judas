@@ -2,7 +2,7 @@ package br.cdb.feature.f005._2_infrastructure.persistence;
 
 import br.cdb.feature.f005._0_domain.model.Category;
 import br.cdb.feature.f005._0_domain.repository.CategoryRepository;
-import br.cdb.feature.f006._0_domain.model.Transaction;
+import br.cdb.feature.f005._0_domain.model.Nature;
 import br.commons.chrono.Time;
 import br.commons.framework.persistence.jdbc.JDBCRepository;
 import br.commons.framework.persistence.jdbc.primitives.JDBCParameter;
@@ -37,7 +37,7 @@ public final class CategoryJDBCRepository extends JDBCRepository<Category> imple
     }
 
     @Override
-    public List<Category> findByNature(UUID personId, Transaction.Type nature) {
+    public List<Category> findByNature(UUID personId, Nature nature) {
         return datasource.query(
                 "SELECT " + columnList() + " FROM " + table() + " WHERE COD_PERSON = ? AND COD_NATURE = ?",
                 JDBCParameter.of(personId.toString(), nature.name()),
@@ -77,7 +77,7 @@ public final class CategoryJDBCRepository extends JDBCRepository<Category> imple
     protected Category map(JDBCResultSet rs) {
         val id = UUID.fromString(rs.getString("ID").get());
         val personId = UUID.fromString(rs.getString("COD_PERSON").get());
-        val nature = Transaction.Type.valueOf(rs.getString("COD_NATURE").get());
+        val nature = Nature.valueOf(rs.getString("COD_NATURE").get());
         val name = rs.getString("TXT_NAME").get();
         val isSystem = "Y".equals(rs.getString("FLG_SYSTEM").get());
         val active = "Y".equals(rs.getString("FLG_ACTIVE").get());

@@ -4,7 +4,7 @@ import br.cdb.core.web.AbstractApiClient;
 import br.cdb.core.web.HTTPApi;
 import br.cdb.feature.f005.F005Api;
 import br.cdb.feature.f005._2_infrastructure.web.CategoryResource;
-import br.cdb.feature.f006._0_domain.model.Transaction;
+import br.cdb.feature.f005._0_domain.model.Nature;
 import org.jspecify.annotations.NullMarked;
 
 import java.util.UUID;
@@ -31,7 +31,7 @@ public class F005ApiImpl extends AbstractApiClient implements F005Api {
     private record TransferCategoryDto(UUID id) {}
 
     @Override
-    public UUID transferCategoryId(Transaction.Type nature) {
+    public UUID transferCategoryId(Nature nature) {
         return get("/categories/transfer?nature=" + nature.name(), TransferCategoryDto.class).id();
     }
 }

@@ -7,7 +7,7 @@ import br.cdb.feature.f000._0_domain.event.CategoryReassigned;
 import br.cdb.feature.f005._0_domain.model.Category;
 import br.cdb.feature.f005._1_application.usecase.ReadUseCase;
 import br.cdb.feature.f005._1_application.usecase.WriteUseCase;
-import br.cdb.feature.f006._0_domain.model.Transaction;
+import br.cdb.feature.f005._0_domain.model.Nature;
 import br.commons.MessageBus;
 import br.commons.Result;
 import br.commons.business.BusinessError;
@@ -69,19 +69,19 @@ class WriteUseCaseTest extends AbstractUseCaseTest {
         MessageBus.subscribe(events);
     }
 
-    private Category seedCategory(String name, Transaction.Type nature, UUID parentId) {
+    private Category seedCategory(String name, Nature nature, UUID parentId) {
         return categoryRepository().save(new Category(UUID.randomUUID(), PERSON_ID, nature, name, parentId));
     }
 
     private Category seedSystemCategory(String name) {
         return categoryRepository().save(
-                new Category(UUID.randomUUID(), PERSON_ID, Transaction.Type.EXPENSE, name, null, true));
+                new Category(UUID.randomUUID(), PERSON_ID, Nature.EXPENSE, name, null, true));
     }
 
     @Test
     @DisplayName("createCategory cria macro-categoria da pessoa")
     void createsRootCategory() {
-        val r = useCase.createCategory(PERSON_ID, "Moradia", Transaction.Type.EXPENSE, null);
+        val r = useCase.createCategory(PERSON_ID, "Moradia", Nature.EXPENSE, null);
 
         assertTrue(r.isSuccess());
         val created = ((Result.Success<Category, BusinessError>) r).value();
@@ -93,9 +93,9 @@ class WriteUseCaseTest extends AbstractUseCaseTest {
     @Test
     @DisplayName("createCategory com pai de outra natureza → BusinessRule")
     void rejectsParentOfAnotherNature() {
-        val parent = seedCategory("Salário", Transaction.Type.INCOME, null);
+        val parent = seedCategory("Salário", Nature.INCOME, null);
 
-        val r = useCase.createCategory(PERSON_ID, "Aluguel", Transaction.Type.EXPENSE, parent.id());
+        val r = useCase.createCategory(PERSON_ID, "Aluguel", Nature.EXPENSE, parent.id());
 
         assertTrue(r.isFailure());
         assertInstanceOf(BusinessError.BusinessRule.class, ((Result.Failure<Category, BusinessError>) r).error());
@@ -104,10 +104,10 @@ class WriteUseCaseTest extends AbstractUseCaseTest {
     @Test
     @DisplayName("createCategory com subcategoria como pai → BusinessRule (só dois níveis)")
     void rejectsSubcategoryAsParent() {
-        val root = seedCategory("Moradia", Transaction.Type.EXPENSE, null);
-        val child = seedCategory("Aluguel", Transaction.Type.EXPENSE, root.id());
+        val root = seedCategory("Moradia", Nature.EXPENSE, null);
+        val child = seedCategory("Aluguel", Nature.EXPENSE, root.id());
 
-        val r = useCase.createCategory(PERSON_ID, "Condomínio", Transaction.Type.EXPENSE, child.id());
+        val r = useCase.createCategory(PERSON_ID, "Condomínio", Nature.EXPENSE, child.id());
 
         assertTrue(r.isFailure());
         assertInstanceOf(BusinessError.BusinessRule.class, ((Result.Failure<Category, BusinessError>) r).error());
@@ -116,9 +116,9 @@ class WriteUseCaseTest extends AbstractUseCaseTest {
     @Test
     @DisplayName("createCategory com nome duplicado no mesmo nível → BusinessRule")
     void rejectsDuplicateNameOnSameLevel() {
-        seedCategory("Moradia", Transaction.Type.EXPENSE, null);
+        seedCategory("Moradia", Nature.EXPENSE, null);
 
-        val r = useCase.createCategory(PERSON_ID, "moradia", Transaction.Type.EXPENSE, null);
+        val r = useCase.createCategory(PERSON_ID, "moradia", Nature.EXPENSE, null);
 
         assertTrue(r.isFailure());
         assertInstanceOf(BusinessError.BusinessRule.class, ((Result.Failure<Category, BusinessError>) r).error());
@@ -127,7 +127,7 @@ class WriteUseCaseTest extends AbstractUseCaseTest {
     @Test
     @DisplayName("updateCategory troca nome e mantém o dono")
     void updatesCategory() {
-        val category = seedCategory("Moradia", Transaction.Type.EXPENSE, null);
+        val category = seedCategory("Moradia", Nature.EXPENSE, null);
 
         val r = useCase.updateCategory(PERSON_ID, category.id(), "Casa", null, null);
 
@@ -162,10 +162,10 @@ class WriteUseCaseTest extends AbstractUseCaseTest {
     @Test
     @DisplayName("deleteCategory MOVE publica reatribuição da subárvore + exclusão")
     void moveReassignsSubtreeAndDeletes() {
-        val root = seedCategory("Moradia", Transaction.Type.EXPENSE, null);
-        val child = seedCategory("Aluguel", Transaction.Type.EXPENSE, root.id());
-        val targetRoot = seedCategory("Casa", Transaction.Type.EXPENSE, null);
-        val target = seedCategory("Prestação", Transaction.Type.EXPENSE, targetRoot.id());
+        val root = seedCategory("Moradia", Nature.EXPENSE, null);
+        val child = seedCategory("Aluguel", Nature.EXPENSE, root.id());
+        val targetRoot = seedCategory("Casa", Nature.EXPENSE, null);
+        val target = seedCategory("Prestação", Nature.EXPENSE, targetRoot.id());
 
         val r = useCase.deleteCategory(PERSON_ID, root.id(), DeletionStrategy.MOVE, target.id());
 
@@ -179,8 +179,8 @@ class WriteUseCaseTest extends AbstractUseCaseTest {
     @Test
     @DisplayName("deleteCategory MOVE para macro-categoria → BusinessRule, sem evento")
     void moveRejectsRootTarget() {
-        val root = seedCategory("Moradia", Transaction.Type.EXPENSE, null);
-        val target = seedCategory("Casa", Transaction.Type.EXPENSE, null);
+        val root = seedCategory("Moradia", Nature.EXPENSE, null);
+        val target = seedCategory("Casa", Nature.EXPENSE, null);
 
         val r = useCase.deleteCategory(PERSON_ID, root.id(), DeletionStrategy.MOVE, target.id());
 
@@ -193,8 +193,8 @@ class WriteUseCaseTest extends AbstractUseCaseTest {
     @Test
     @DisplayName("deleteCategory MOVE para dentro da própria subárvore → BusinessRule")
     void moveRejectsTargetInsideSubtree() {
-        val root = seedCategory("Moradia", Transaction.Type.EXPENSE, null);
-        val child = seedCategory("Aluguel", Transaction.Type.EXPENSE, root.id());
+        val root = seedCategory("Moradia", Nature.EXPENSE, null);
+        val child = seedCategory("Aluguel", Nature.EXPENSE, root.id());
 
         val r = useCase.deleteCategory(PERSON_ID, root.id(), DeletionStrategy.MOVE, child.id());
 

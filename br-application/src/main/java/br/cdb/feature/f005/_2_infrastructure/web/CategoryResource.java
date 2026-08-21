@@ -8,7 +8,7 @@ import br.cdb.feature.f005._2_infrastructure.web.request.CreateRequest;
 import br.cdb.feature.f005._2_infrastructure.web.request.UpdateRequest;
 import br.cdb.feature.f005._2_infrastructure.web.response.CategoryResponse;
 import br.cdb.feature.f005._2_infrastructure.web.response.TransferCategoryResponse;
-import br.cdb.feature.f006._0_domain.model.Transaction;
+import br.cdb.feature.f005._0_domain.model.Nature;
 import br.commons.Result;
 import br.commons.business.BusinessException;
 import br.commons.framework.cdi.Context;
@@ -48,13 +48,13 @@ public class CategoryResource {
     @GET
     @Path("/transfer")
     public TransferCategoryResponse transferCategory(@PathParam("uuid") UUID uuid, @QueryParam("nature") String nature) {
-        val category = reads.transferCategory(uuid, Transaction.Type.valueOf(Strings.upper(nature)));
+        val category = reads.transferCategory(uuid, Nature.valueOf(Strings.upper(nature)));
         return new TransferCategoryResponse(category.id());
     }
 
     @POST
     public RestResponse<CategoryResponse> create(@PathParam("uuid") UUID uuid, @Valid CreateRequest req) {
-        val nature = Transaction.Type.valueOf(Strings.upper(req.nature()));
+        val nature = Nature.valueOf(Strings.upper(req.nature()));
         return switch (writes.createCategory(uuid, req.name(), nature, req.parentId())) {
             case Result.Success(var category) -> RestResponse.status(RestResponse.Status.CREATED, CategoryResponse.from(category));
             case Result.Failure(var error) -> throw new BusinessException(error);

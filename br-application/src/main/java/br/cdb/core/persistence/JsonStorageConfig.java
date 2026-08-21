@@ -1,6 +1,7 @@
 package br.cdb.core.persistence;
 
 import br.cdb.core.JsonStorageProperties;
+import br.cdb.feature.f005._0_domain.model.Nature;
 import br.cdb.feature.f006._0_domain.model.Transaction;
 import br.commons.framework.persistence.Storage;
 import br.commons.framework.persistence.json.LocalFileStorage;
@@ -63,16 +64,16 @@ public class JsonStorageConfig implements ObjectMapperCustomizer {
                 return Transaction.Status.valueOf(Strings.upper(p.getValueAsString()));
             }
         });
-        module.addSerializer(Transaction.Type.class, new JsonSerializer<>() {
+        module.addSerializer(Nature.class, new JsonSerializer<>() {
             @Override
-            public void serialize(Transaction.Type value, JsonGenerator gen, SerializerProvider serializers) throws IOException {
+            public void serialize(Nature value, JsonGenerator gen, SerializerProvider serializers) throws IOException {
                 gen.writeString(Strings.lower(value.name()));
             }
         });
-        module.addDeserializer(Transaction.Type.class, new JsonDeserializer<>() {
+        module.addDeserializer(Nature.class, new JsonDeserializer<>() {
             @Override
-            public Transaction.Type deserialize(JsonParser p, DeserializationContext ctxt) throws IOException {
-                return Transaction.Type.valueOf(Strings.upper(p.getValueAsString()));
+            public Nature deserialize(JsonParser p, DeserializationContext ctxt) throws IOException {
+                return Nature.valueOf(Strings.upper(p.getValueAsString()));
             }
         });
         return module;

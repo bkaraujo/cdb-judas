@@ -1,7 +1,7 @@
 package br.cdb.feature.f005;
 
 import br.cdb.BaseHttpTest;
-import br.cdb.feature.f006._0_domain.model.Transaction.Type;
+import br.cdb.feature.f005._0_domain.model.Nature;
 import br.commons.framework.persistence.jdbc.primitives.JDBCParameter;
 import io.quarkus.test.junit.QuarkusTest;
 import lombok.val;
@@ -82,7 +82,7 @@ public class F005CategoryResourceTest extends BaseHttpTest {
                 .then().statusCode(201)
                 .body("id", notNullValue())
                 .body("name", is("Alimentação"))
-                .body("nature", is(Type.EXPENSE.name()))
+                .body("nature", is(Nature.EXPENSE.name()))
                 .body("active", is(true))
                 .extract().jsonPath().getString("id");
 
@@ -181,7 +181,7 @@ public class F005CategoryResourceTest extends BaseHttpTest {
                 .then().statusCode(201)
                 .body("id", notNullValue())
                 .body("name", is("Moradia"))
-                .body("nature", is(Type.EXPENSE.name()))
+                .body("nature", is(Nature.EXPENSE.name()))
                 .extract().jsonPath().getString("id");
 
         asTestUser()
@@ -204,7 +204,7 @@ public class F005CategoryResourceTest extends BaseHttpTest {
                 .body("id", notNullValue())
                 .body("name", is("Aluguél"))
                 .body("parentId", is(moradiaId))
-                .body("nature", is(Type.EXPENSE.name()));
+                .body("nature", is(Nature.EXPENSE.name()));
 
         asTestUser()
                 .when().get("/api/" + TEST_USER_ID + "/categories")

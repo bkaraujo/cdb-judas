@@ -1,5 +1,6 @@
 package br.cdb.feature.f006._0_domain.model;
 
+import br.cdb.feature.f005._0_domain.model.Nature;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 
@@ -57,18 +58,7 @@ public record Transaction(
     }
 
     /** Derived from signal: positive signal = INCOME, non-positive = EXPENSE. */
-    public Type type() { return signal > 0 ? Type.INCOME : Type.EXPENSE; }
-
-    /**
-     * Natureza de um {@link Transaction}
-     * <ul>
-     *     <li>{@link #EXPENSE} (saída, sinal negativo)</li>
-     *     <li>{@link #INCOME} (entrada, sinal positivo)</li>
-     * </ul>
-     */
-    public enum Type {
-        EXPENSE, INCOME
-    }
+    public Nature type() { return signal > 0 ? Nature.INCOME : Nature.EXPENSE; }
 
     /**
      * Situação de um {@link Transaction}
@@ -84,10 +74,10 @@ public record Transaction(
 
     /** Convenience constructor: derives signal from type, takes absolute amount, uses start-of-day. */
     public Transaction(UUID id, String description, BigDecimal amount, LocalDate date,
-            UUID accountId, Status status, Type type,
+            UUID accountId, Status status, Nature type,
             UUID costCenterId, @Nullable LocalDate paymentDate, @Nullable UUID groupId,
             int installmentNumber, int totalInstallments, @Nullable String notes, @Nullable UUID cardId) {
-        this(id, description, type == Type.INCOME ? 1 : -1, amount.abs(), date.atStartOfDay(),
+        this(id, description, type == Nature.INCOME ? 1 : -1, amount.abs(), date.atStartOfDay(),
                 accountId, status, costCenterId, paymentDate, groupId,
                 installmentNumber, totalInstallments, notes, null, null, cardId, null, List.of());
     }

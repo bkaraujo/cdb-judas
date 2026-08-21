@@ -4,6 +4,7 @@ import br.cdb.feature.f000._0_domain.event.TransactionImported;
 import br.cdb.feature.f000._0_domain.model.CostCenter;
 import br.cdb.feature.f003.F003Api;
 import br.cdb.feature.f006.F006Api;
+import br.cdb.feature.f005._0_domain.model.Nature;
 import br.cdb.feature.f006._0_domain.model.Transaction;
 import br.cdb.feature.f007._0_domain.model.*;
 import br.cdb.feature.f007._1_application.CreditCardProvider;
@@ -106,7 +107,7 @@ public class InvoiceImportProcessor {
             if (entry.last4() == null) {
                 continue;
             }
-            val signed = entry.type() == Transaction.Type.INCOME ? entry.amount().negate() : entry.amount();
+            val signed = entry.type() == Nature.INCOME ? entry.amount().negate() : entry.amount();
             netByCard.merge(entry.last4(), signed, BigDecimal::add);
         }
         for (val printed : printedTotals.entrySet()) {
@@ -230,7 +231,7 @@ public class InvoiceImportProcessor {
     ) {
         val status = YearMonth.from(row.date()).isAfter(YearMonth.from(today)) ? Transaction.Status.SCHEDULED : Transaction.Status.CONFIRMED;
         val costCenterId = row.costCenterId() != null ? row.costCenterId() : CostCenter.VARIAVEL.id();
-        val type = row.type() != null ? row.type() : Transaction.Type.EXPENSE;
+        val type = row.type() != null ? row.type() : Nature.EXPENSE;
         val imported = new ImportedTransaction(row.description(), row.amount(), row.date(), accountId, status, type,
                 costCenterId, groupId, installmentNumber, totalInstallments, row.cardId());
         try {

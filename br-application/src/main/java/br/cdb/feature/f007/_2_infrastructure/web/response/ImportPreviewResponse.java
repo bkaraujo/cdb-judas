@@ -1,5 +1,6 @@
 package br.cdb.feature.f007._2_infrastructure.web.response;
 
+import br.cdb.feature.f005._0_domain.model.Nature;
 import br.cdb.feature.f006._0_domain.model.Transaction;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
@@ -39,7 +40,7 @@ public record ImportPreviewResponse(
             @Nullable Integer installmentTotal,
             @Nullable UUID groupId,
             Transaction.Status status,
-            Transaction.Type type,
+            Nature type,
             boolean duplicate,
             boolean closed,
             @Nullable UUID categoryId,

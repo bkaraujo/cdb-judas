@@ -1,5 +1,6 @@
 package br.cdb.feature.f006._1_application.service;
 
+import br.cdb.feature.f005._0_domain.model.Nature;
 import br.cdb.feature.f006._0_domain.model.Transaction;
 import br.cdb.feature.f006._0_domain.repository.TransactionRepository;
 import br.commons.Result;
@@ -85,8 +86,8 @@ public class TransactionService {
     public List<Transaction> findTransferSiblings(Transaction tx) {
         if (tx.groupId() == null) return List.of();
         val group = findByGroupId(tx.groupId());
-        val hasIncome = group.stream().anyMatch(t -> Transaction.Type.INCOME.equals(t.type()));
-        val hasExpense = group.stream().anyMatch(t -> Transaction.Type.EXPENSE.equals(t.type()));
+        val hasIncome = group.stream().anyMatch(t -> Nature.INCOME.equals(t.type()));
+        val hasExpense = group.stream().anyMatch(t -> Nature.EXPENSE.equals(t.type()));
         if (!hasIncome || !hasExpense) return List.of();
         return group.stream().filter(t -> !t.id().equals(tx.id())).toList();
     }

@@ -10,6 +10,7 @@ import br.cdb.feature.f000._0_domain.event.TransactionsDeleted;
 import br.cdb.feature.f005._0_domain.model.Category;
 import br.cdb.feature.f005._1_application.service.UserCategoryService;
 import br.cdb.feature.f006.F006Api;
+import br.cdb.feature.f005._0_domain.model.Nature;
 import br.cdb.feature.f006._0_domain.model.Transaction;
 import br.cdb.feature.f006._1_application.usecase.ReadUseCases;
 import br.cdb.feature.f006._1_application.usecase.WriteUseCases;
@@ -55,7 +56,7 @@ public class WriteUseCase {
     private final WriteUseCases transactionWrites = Context.tryGet(WriteUseCases.class);
 
 
-    public Result<Category, BusinessError> createCategory(UUID personId, String name, Transaction.Type nature, @Nullable UUID parentId) {
+    public Result<Category, BusinessError> createCategory(UUID personId, String name, Nature nature, @Nullable UUID parentId) {
         if (parentId != null
                 && service.validateParent(parentId, nature) instanceof Result.Failure<Void, BusinessError>(var error)) {
             return Result.failure(error);

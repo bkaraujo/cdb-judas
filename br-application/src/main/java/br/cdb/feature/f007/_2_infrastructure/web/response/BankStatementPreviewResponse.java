@@ -1,6 +1,6 @@
 package br.cdb.feature.f007._2_infrastructure.web.response;
 
-import br.cdb.feature.f006._0_domain.model.Transaction;
+import br.cdb.feature.f005._0_domain.model.Nature;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 
@@ -33,7 +33,7 @@ public record BankStatementPreviewResponse(
             String date,
             String description,
             BigDecimal amount,
-            Transaction.Type type,
+            Nature type,
             String state,
             boolean closed,
             @Nullable UUID categoryId,

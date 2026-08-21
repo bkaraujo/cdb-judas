@@ -1,7 +1,7 @@
 package br.cdb.feature.f009._1_application.usecase;
 
 import br.cdb.feature.f006.F006Api;
-import br.cdb.feature.f006._0_domain.model.Transaction;
+import br.cdb.feature.f005._0_domain.model.Nature;
 import br.commons.Result;
 import br.commons.business.BusinessError;
 import br.commons.framework.cdi.Context;
@@ -39,8 +39,8 @@ public class ReadUseCase {
         // de f006) — evita trazer o histórico inteiro só pra descartar a maior parte aqui.
         val confirmedThisMonth = Context.get(F006Api.class).transactions("CONFIRMED", start, end);
 
-        val incomes = sumWhere(confirmedThisMonth, Transaction.Type.INCOME);
-        val expenses = sumWhere(confirmedThisMonth, Transaction.Type.EXPENSE);
+        val incomes = sumWhere(confirmedThisMonth, Nature.INCOME);
+        val expenses = sumWhere(confirmedThisMonth, Nature.EXPENSE);
 
         List<HistoricalResult> history = new ArrayList<>();
         for (int w = 1; w <= 5; w++) {
@@ -53,7 +53,7 @@ public class ReadUseCase {
                     .filter(t -> !t.date().isBefore(wStart) && !t.date().isAfter(wEnd))
                     .toList();
 
-            history.add(new HistoricalResult("S" + w, sumWhere(wConfirmed, Transaction.Type.INCOME), sumWhere(wConfirmed, Transaction.Type.EXPENSE)));
+            history.add(new HistoricalResult("S" + w, sumWhere(wConfirmed, Nature.INCOME), sumWhere(wConfirmed, Nature.EXPENSE)));
             if (wEnd.equals(end)) break;
         }
 
@@ -68,7 +68,7 @@ public class ReadUseCase {
     /** {@code amount} no DTO vem assinado (negativo pra despesa, espelhando o que o cliente
      *  submeteu) — soma em magnitude, igual ao {@code incomes}/{@code expenses} sempre positivos
      *  de antes da fase 6. */
-    private static double sumWhere(List<F006Api.TransactionView> transactions, Transaction.Type type) {
+    private static double sumWhere(List<F006Api.TransactionView> transactions, Nature type) {
         return transactions.stream()
                 .filter(t -> t.type() == type)
                 .mapToDouble(t -> Math.abs(t.amount().doubleValue()))

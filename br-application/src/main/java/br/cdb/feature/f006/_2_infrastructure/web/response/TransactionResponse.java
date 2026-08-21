@@ -1,5 +1,6 @@
 package br.cdb.feature.f006._2_infrastructure.web.response;
 
+import br.cdb.feature.f005._0_domain.model.Nature;
 import br.cdb.feature.f006._0_domain.model.Transaction;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
@@ -18,7 +19,7 @@ public record TransactionResponse(
         @Nullable UUID categoryId,
         UUID accountId,
         Transaction.Status status,
-        Transaction.Type type,
+        Nature type,
         UUID costCenterId,
         @Nullable LocalDate paymentDate,
         @Nullable UUID groupId,

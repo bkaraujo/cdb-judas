@@ -1,7 +1,7 @@
 package br.cdb.feature.f007;
 
 import br.cdb.core.View;
-import br.cdb.feature.f006._0_domain.model.Transaction;
+import br.cdb.feature.f005._0_domain.model.Nature;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 
@@ -25,7 +25,7 @@ public interface F007Api {
             @Nullable LocalDate originalDate,
             @Nullable Integer installmentNumber,
             @Nullable Integer installmentTotal,
-            Transaction.@Nullable Type transactionType,
+            @Nullable Nature transactionType,
             UUID categoryId,
             @Nullable UUID costCenterId,
             @Nullable UUID cardId,

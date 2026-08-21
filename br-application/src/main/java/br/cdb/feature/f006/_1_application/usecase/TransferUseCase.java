@@ -3,6 +3,7 @@ package br.cdb.feature.f006._1_application.usecase;
 import br.cdb.feature.f000._0_domain.event.AccountStreamEvents;
 import br.cdb.feature.f000._1_application.service.UserGuards;
 import br.cdb.feature.f005.F005Api;
+import br.cdb.feature.f005._0_domain.model.Nature;
 import br.cdb.feature.f006._0_domain.model.Transaction;
 import br.commons.MessageBus;
 import br.commons.Result;
@@ -47,8 +48,8 @@ public class TransferUseCase {
         // "9. Outros / Transferência" da sua natureza: a saída (EXPENSE) a de despesa, a entrada
         // (INCOME) a de receita. Cobre as duas pernas do grupo, mantendo o 1:1 com F006_TRANSACTION.
         val f005 = Context.get(F005Api.class);
-        val expenseCategoryId = f005.transferCategoryId(Transaction.Type.EXPENSE);
-        val incomeCategoryId = f005.transferCategoryId(Transaction.Type.INCOME);
+        val expenseCategoryId = f005.transferCategoryId(Nature.EXPENSE);
+        val incomeCategoryId = f005.transferCategoryId(Nature.INCOME);
         return writes.createTransfer(fromAccountId, toAccountId, date, amount).map(t -> {
             val categoryId = writes.saveTransferCategories(t, personId, expenseCategoryId, incomeCategoryId);
             MessageBus.submit(new AccountStreamEvents.Refresh(fromAccountId, personId.toString()));

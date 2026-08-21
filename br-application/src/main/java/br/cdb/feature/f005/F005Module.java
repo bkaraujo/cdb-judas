@@ -8,7 +8,7 @@ import br.cdb.feature.f005._0_domain.repository.CategoryRepository;
 import br.cdb.feature.f005._1_application.service.UserCategoryService;
 import br.cdb.feature.f005._2_infrastructure.F005ApiImpl;
 import br.cdb.feature.f005._2_infrastructure.persistence.CategoryJDBCRepository;
-import br.cdb.feature.f006._0_domain.model.Transaction;
+import br.cdb.feature.f005._0_domain.model.Nature;
 import br.commons.Logger;
 import br.commons.MessageBus;
 import br.commons.Result;
@@ -75,7 +75,7 @@ public class F005Module implements Lifecycle {
                 Logger.debug("Cadastrando categorias para usuário %s", event.id());
                 val personId = UUID.fromString(event.personId());
 
-                seed(personId, Transaction.Type.INCOME,
+                seed(personId, Nature.INCOME,
                         Map.of(
                                 "0. CLT", List.of("Salário", "Benefício", "13º Salário", "Férias", "Restituição", "PLR"),
                                 "1. CNPJ", List.of("Pró labore"),
@@ -83,7 +83,7 @@ public class F005Module implements Lifecycle {
                                 "9. Outros", List.of("Restituição", "Freelance", "Vendas", "IRPF", "FGTS", "Transferência")
                         ));
 
-                seed(personId, Transaction.Type.EXPENSE,
+                seed(personId, Nature.EXPENSE,
                         Map.of(
                                 "1. Moradia", List.of("Aluguél, Prestação", "Condomínio", "Imposto, Tarifa", "Conta de energia", "Conta de água", "Conta de gás", "Telefone fixo", "Internet", "Supermercado", "Feira", "Padaria", "Empregados", "Lavanderia", "Decoração", "Utensilios", "Restaurantes", "Assinaturas", "Manutenção", "Outros"),
                                 "2. Transporte", List.of("Prestação", "Imposto, Tarifa", "Seguro", "Combustível", "Estacionamento", "Multas", "Transporte Público", "Aplicativo", "Aluguél", "Pedágio", "Manutenção", "Outros"),
@@ -98,7 +98,7 @@ public class F005Module implements Lifecycle {
                 return MessageResult.CONSUMED;
             }
 
-            void seed(UUID personId, Transaction.Type nature, Map<String, List<String>> categories) {
+            void seed(UUID personId, Nature nature, Map<String, List<String>> categories) {
                 Logger.trace("Cadastrando categorias %s para usuário %s", nature, personId);
                 val repository = Context.get(CategoryRepository.class);
                 val existing = repository.findByNature(personId, nature);

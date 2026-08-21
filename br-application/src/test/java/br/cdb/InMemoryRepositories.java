@@ -15,6 +15,7 @@ import br.cdb.feature.f004._0_domain.model.Tag;
 import br.cdb.feature.f004._0_domain.repository.TagRepository;
 import br.cdb.feature.f005._0_domain.model.Category;
 import br.cdb.feature.f005._0_domain.repository.CategoryRepository;
+import br.cdb.feature.f005._0_domain.model.Nature;
 import br.cdb.feature.f006._0_domain.model.Transaction;
 import br.cdb.feature.f006._0_domain.repository.TransactionCategoryRepository;
 import br.cdb.feature.f006._0_domain.repository.TransactionRepository;
@@ -278,7 +279,7 @@ public abstract class InMemoryRepositories {
             return findAll().stream().filter(c -> personId.equals(c.personId())).toList();
         }
 
-        public List<Category> findByNature(UUID personId, Transaction.Type nature) {
+        public List<Category> findByNature(UUID personId, Nature nature) {
             return findAllByPerson(personId).stream().filter(c -> c.nature() == nature).toList();
         }
     }

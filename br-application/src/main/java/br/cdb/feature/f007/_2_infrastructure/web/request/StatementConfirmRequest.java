@@ -1,6 +1,6 @@
 package br.cdb.feature.f007._2_infrastructure.web.request;
 
-import br.cdb.feature.f006._0_domain.model.Transaction;
+import br.cdb.feature.f005._0_domain.model.Nature;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -34,7 +34,7 @@ public record StatementConfirmRequest(
             @Nullable LocalDate originalDate,
             @Nullable Integer installmentNumber,
             @Nullable Integer installmentTotal,
-            Transaction.@Nullable Type transactionType,
+            @Nullable Nature transactionType,
             @NotNull UUID categoryId,
             @Nullable UUID costCenterId,
             @Nullable UUID cardId,

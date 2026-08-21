@@ -3,7 +3,7 @@ package br.cdb.feature.f005._1_application.service;
 import br.cdb.feature.f005._0_domain.event.CategoryEvents;
 import br.cdb.feature.f005._0_domain.model.Category;
 import br.cdb.feature.f005._0_domain.repository.CategoryRepository;
-import br.cdb.feature.f006._0_domain.model.Transaction;
+import br.cdb.feature.f005._0_domain.model.Nature;
 import br.commons.MessageBus;
 import br.commons.Result;
 import br.commons.business.BusinessError;
@@ -63,7 +63,7 @@ public class UserCategoryService {
         });
     }
 
-    public Result<Void, BusinessError> validateParent(UUID parentId, Transaction.Type nature) {
+    public Result<Void, BusinessError> validateParent(UUID parentId, Nature nature) {
         return repo.findById(parentId)
                 .<Result<Void, BusinessError>>map(parent -> {
                     if (parent.parentId() != null) {
@@ -78,7 +78,7 @@ public class UserCategoryService {
     }
 
     public Result<Void, BusinessError> validateUniqueName(UUID personId, String nature, String name, @Nullable UUID parentId, @Nullable UUID excludeId) {
-        val optional = repo.findByNature(personId, Transaction.Type.valueOf(nature)).stream()
+        val optional = repo.findByNature(personId, Nature.valueOf(nature)).stream()
                 .filter(c -> c.name().equalsIgnoreCase(name))
                 .filter(c -> Objects.equals(c.parentId(), parentId))
                 .filter(c -> excludeId == null || !c.id().equals(excludeId))
@@ -90,7 +90,7 @@ public class UserCategoryService {
         return Result.success();
     }
 
-    public Category create(UUID personId, String name, Transaction.Type nature, @Nullable UUID parentId) {
+    public Category create(UUID personId, String name, Nature nature, @Nullable UUID parentId) {
         val saved = repo.save(new Category(UUID.randomUUID(), personId, nature, name, parentId));
         MessageBus.submit(new CategoryEvents.Created(saved));
         return saved;
@@ -106,10 +106,10 @@ public class UserCategoryService {
 
     public Category findOrCreateUncategorizedCategory(UUID personId) {
         return repo.findAllByPerson(personId).stream()
-                .filter(c -> "Sem categoria".equalsIgnoreCase(c.name()) && c.nature() == Transaction.Type.EXPENSE && c.parentId() == null)
+                .filter(c -> "Sem categoria".equalsIgnoreCase(c.name()) && c.nature() == Nature.EXPENSE && c.parentId() == null)
                 .findFirst()
                 .orElseGet(() -> {
-                    val created = repo.save(new Category(UUID.randomUUID(), personId, Transaction.Type.EXPENSE, "Sem categoria", null, true));
+                    val created = repo.save(new Category(UUID.randomUUID(), personId, Nature.EXPENSE, "Sem categoria", null, true));
                     MessageBus.submit(new CategoryEvents.Created(created));
                     return created;
                 });
@@ -121,8 +121,8 @@ public class UserCategoryService {
      * {@code personId} do chamador não influencia o resultado; a autocura sob {@link #SYSTEM_PERSON_ID}
      * só é exercitada em banco fresh/teste, onde {@code ContextMergeMigration} não roda.
      */
-    public Category findOrCreateTransferCategory(Transaction.Type nature) {
-        val id = nature == Transaction.Type.EXPENSE ? TRANSFER_CATEGORY_EXPENSE_ID : TRANSFER_CATEGORY_INCOME_ID;
+    public Category findOrCreateTransferCategory(Nature nature) {
+        val id = nature == Nature.EXPENSE ? TRANSFER_CATEGORY_EXPENSE_ID : TRANSFER_CATEGORY_INCOME_ID;
         return repo.findById(id).orElseGet(() -> {
             val created = repo.save(new Category(id, SYSTEM_PERSON_ID, nature, TRANSFER_CATEGORY_NAME, null, true));
             MessageBus.submit(new CategoryEvents.Created(created));

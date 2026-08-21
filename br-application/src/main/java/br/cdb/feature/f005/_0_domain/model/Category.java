@@ -1,6 +1,5 @@
 package br.cdb.feature.f005._0_domain.model;
 
-import br.cdb.feature.f006._0_domain.model.Transaction;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 
@@ -11,7 +10,7 @@ import java.util.UUID;
 public record Category(
         UUID id,
         UUID personId,
-        Transaction.Type nature,
+        Nature nature,
         String name,
         @Nullable UUID parentId,
         boolean isSystem,
@@ -19,11 +18,11 @@ public record Category(
         @Nullable LocalDateTime createdAt,
         @Nullable LocalDateTime updatedAt
 ) {
-    public Category(UUID id, UUID personId, Transaction.Type nature, String name, @Nullable UUID parentId) {
+    public Category(UUID id, UUID personId, Nature nature, String name, @Nullable UUID parentId) {
         this(id, personId, nature, name, parentId, false, true, null, null);
     }
 
-    public Category(UUID id, UUID personId, Transaction.Type nature, String name, @Nullable UUID parentId, boolean isSystem) {
+    public Category(UUID id, UUID personId, Nature nature, String name, @Nullable UUID parentId, boolean isSystem) {
         this(id, personId, nature, name, parentId, isSystem, true, null, null);
     }
 }

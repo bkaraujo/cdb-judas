@@ -1,6 +1,6 @@
 package br.cdb.feature.f007._1_application.confirm;
 
-import br.cdb.feature.f006._0_domain.model.Transaction;
+import br.cdb.feature.f005._0_domain.model.Nature;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 
@@ -30,7 +30,7 @@ public record InvoiceConfirmCommand(List<Row> rows) {
             LocalDate originalDate,
             @Nullable Integer installmentNumber,
             @Nullable Integer installmentTotal,
-            Transaction.@Nullable Type type,
+            @Nullable Nature type,
             UUID categoryId,
             @Nullable UUID costCenterId,
             UUID cardId,

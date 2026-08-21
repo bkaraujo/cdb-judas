@@ -1,6 +1,6 @@
 package br.cdb.feature.f005;
 
-import br.cdb.feature.f006._0_domain.model.Transaction;
+import br.cdb.feature.f005._0_domain.model.Nature;
 import org.jspecify.annotations.NullMarked;
 
 import java.util.UUID;
@@ -10,6 +10,6 @@ import java.util.UUID;
 public interface F005Api {
 
     /** Categoria de sistema de transferência ("9. Outros / Transferência") da natureza pedida. */
-    UUID transferCategoryId(Transaction.Type nature);
+    UUID transferCategoryId(Nature nature);
 
 }

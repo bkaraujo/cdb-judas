@@ -11,6 +11,7 @@ import br.cdb.feature.f003._0_domain.model.CreditCard;
 import br.cdb.feature.f003._1_application.service.CreditCardService;
 import br.cdb.feature.f004.F004Api;
 import br.cdb.feature.f006._0_domain.event.TransactionEvents;
+import br.cdb.feature.f005._0_domain.model.Nature;
 import br.cdb.feature.f006._0_domain.model.Transaction;
 import br.cdb.feature.f006._1_application.service.TransactionCategoryService;
 import br.cdb.feature.f006._1_application.service.TransactionService;
@@ -406,12 +407,12 @@ public class WriteUseCases {
 
         val outflow = new Transaction(
                 outId, "Transferência (saída)", absAmount, date,
-                fromAccountId, Transaction.Status.CONFIRMED, Transaction.Type.EXPENSE, CostCenter.VARIAVEL.id(), date,
+                fromAccountId, Transaction.Status.CONFIRMED, Nature.EXPENSE, CostCenter.VARIAVEL.id(), date,
                 groupId, 1, 2, null, null
         );
         val inflow = new Transaction(
                 inId, "Transferência (entrada)", absAmount, date,
-                toAccountId, Transaction.Status.CONFIRMED, Transaction.Type.INCOME, CostCenter.VARIAVEL.id(), date,
+                toAccountId, Transaction.Status.CONFIRMED, Nature.INCOME, CostCenter.VARIAVEL.id(), date,
                 groupId, 2, 2, null, null
         );
 
@@ -479,7 +480,7 @@ public class WriteUseCases {
     }
 
     private static UUID transferCategoryFor(Transaction leg, UUID expenseCategoryId, UUID incomeCategoryId) {
-        return leg.type() == Transaction.Type.EXPENSE ? expenseCategoryId : incomeCategoryId;
+        return leg.type() == Nature.EXPENSE ? expenseCategoryId : incomeCategoryId;
     }
 
     /** Persiste uma transação já montada pelo chamador. Valida a invariante de cartão. */
@@ -492,7 +493,7 @@ public class WriteUseCases {
     }
 
     private Transaction toEntity(UUID id, String description, BigDecimal amount, LocalDate date, UUID accountId,
-                                 Transaction.Status status, Transaction.Type type, UUID costCenterId,
+                                 Transaction.Status status, Nature type, UUID costCenterId,
                                  @Nullable String notes, @Nullable UUID cardId,
                                  @Nullable UUID groupId, @Nullable Integer installmentNumber, @Nullable Integer totalInstallments) {
         return new Transaction(id, description, amount.abs(), date,

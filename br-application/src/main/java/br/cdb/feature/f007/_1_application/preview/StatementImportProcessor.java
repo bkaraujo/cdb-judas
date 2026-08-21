@@ -4,6 +4,7 @@ import br.cdb.feature.f000._0_domain.event.TransactionImported;
 import br.cdb.feature.f000._0_domain.model.CostCenter;
 import br.cdb.feature.f002.F002Api;
 import br.cdb.feature.f006.F006Api;
+import br.cdb.feature.f005._0_domain.model.Nature;
 import br.cdb.feature.f006._0_domain.model.Transaction;
 import br.cdb.feature.f007._0_domain.model.*;
 import br.cdb.feature.f007._1_application.TransactionWriter;
@@ -116,7 +117,7 @@ public class StatementImportProcessor {
 
     private boolean persistStatementRow(UUID personId, StatementConfirmCommand.Row row, UUID accountId, LocalDate today) {
         val status = YearMonth.from(row.date()).isAfter(YearMonth.from(today)) ? Transaction.Status.SCHEDULED : Transaction.Status.CONFIRMED;
-        val type = row.type() != null ? row.type() : (row.amount().signum() < 0 ? Transaction.Type.EXPENSE : Transaction.Type.INCOME);
+        val type = row.type() != null ? row.type() : (row.amount().signum() < 0 ? Nature.EXPENSE : Nature.INCOME);
         val costCenterId = row.costCenterId() != null ? row.costCenterId() : CostCenter.VARIAVEL.id();
         val imported = new ImportedTransaction(row.description(), row.amount(), row.date(), accountId, status, type,
                 costCenterId, null, null, null, null);
@@ -140,7 +141,7 @@ public class StatementImportProcessor {
     /** {@code categoryId}/{@code costCenterId} saem sempre nulos: quem escolhe cada linha é o
      *  usuário (ou uma regra de nomenclatura casada api-side), na tela. */
     private BankStatementPreviewRow bankRow(MonetaryDocumentEntry line, Classification cls) {
-        val type = line.amount().signum() < 0 ? Transaction.Type.EXPENSE : Transaction.Type.INCOME;
+        val type = line.amount().signum() < 0 ? Nature.EXPENSE : Nature.INCOME;
         val reconcileDescription = cls.target() != null ? cls.target().description() : null;
         return new BankStatementPreviewRow(
                 line.date(), line.description(), line.amount(), type, cls.state(), null, null, reconcileDescription);

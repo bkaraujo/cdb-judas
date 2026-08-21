@@ -1,6 +1,7 @@
 package br.cdb.feature.f006._1_application.usecase;
 
 import br.cdb.feature.f000._1_application.service.UserGuards;
+import br.cdb.feature.f005._0_domain.model.Nature;
 import br.cdb.feature.f006._0_domain.model.Transaction;
 import br.cdb.feature.f006._1_application.service.TransactionCategoryService;
 import br.cdb.feature.f006._1_application.service.TransactionService;
@@ -126,8 +127,8 @@ public class ReadUseCases {
         val groupId = t.groupId();
         if (groupId == null) return List.of();
         val group = transactionsInGroup(groupId, personId);
-        val hasIncome = group.stream().anyMatch(x -> x.type() == Transaction.Type.INCOME);
-        val hasExpense = group.stream().anyMatch(x -> x.type() == Transaction.Type.EXPENSE);
+        val hasIncome = group.stream().anyMatch(x -> x.type() == Nature.INCOME);
+        val hasExpense = group.stream().anyMatch(x -> x.type() == Nature.EXPENSE);
         if (!hasIncome || !hasExpense) return List.of();
         return group.stream().filter(x -> !x.id().equals(t.id())).toList();
     }

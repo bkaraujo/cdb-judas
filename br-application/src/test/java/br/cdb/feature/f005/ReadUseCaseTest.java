@@ -4,7 +4,7 @@ import br.cdb.AbstractUseCaseTest;
 import br.cdb.feature.f005._0_domain.model.Category;
 import br.cdb.feature.f005._1_application.usecase.ReadUseCase;
 import br.cdb.feature.f005._1_application.usecase.WriteUseCase;
-import br.cdb.feature.f006._0_domain.model.Transaction;
+import br.cdb.feature.f005._0_domain.model.Nature;
 import br.commons.Result;
 import br.commons.business.BusinessError;
 import br.commons.framework.cdi.Context;
@@ -39,16 +39,16 @@ class ReadUseCaseTest extends AbstractUseCaseTest {
         reads = new ReadUseCase();
     }
 
-    private Category seedCategory(UUID personId, String name, Transaction.Type nature, UUID parentId) {
+    private Category seedCategory(UUID personId, String name, Nature nature, UUID parentId) {
         return categoryRepository().save(new Category(UUID.randomUUID(), personId, nature, name, parentId));
     }
 
     @Test
     @DisplayName("categories devolve só as categorias da pessoa")
     void listsCategoriesOfPerson() {
-        seedCategory(PERSON_ID, "Moradia", Transaction.Type.EXPENSE, null);
-        seedCategory(PERSON_ID, "Salário", Transaction.Type.INCOME, null);
-        seedCategory(OTHER_PERSON_ID, "De outro dono", Transaction.Type.EXPENSE, null);
+        seedCategory(PERSON_ID, "Moradia", Nature.EXPENSE, null);
+        seedCategory(PERSON_ID, "Salário", Nature.INCOME, null);
+        seedCategory(OTHER_PERSON_ID, "De outro dono", Nature.EXPENSE, null);
 
         val names = reads.categories(PERSON_ID).stream().map(Category::name).toList();
 
@@ -58,8 +58,8 @@ class ReadUseCaseTest extends AbstractUseCaseTest {
     @Test
     @DisplayName("categories inclui a categoria global de transferência quando ela já existe")
     void listsIncludeGlobalTransferCategory() {
-        seedCategory(PERSON_ID, "Moradia", Transaction.Type.EXPENSE, null);
-        val transfer = reads.transferCategory(PERSON_ID, Transaction.Type.EXPENSE);
+        seedCategory(PERSON_ID, "Moradia", Nature.EXPENSE, null);
+        val transfer = reads.transferCategory(PERSON_ID, Nature.EXPENSE);
 
         val ids = reads.categories(PERSON_ID).stream().map(Category::id).toList();
 
@@ -69,9 +69,9 @@ class ReadUseCaseTest extends AbstractUseCaseTest {
     @Test
     @DisplayName("transferCategory semeia a global uma vez e reusa depois (id fixo por natureza)")
     void transferCategoryIsGlobalAndStable() {
-        val first = reads.transferCategory(PERSON_ID, Transaction.Type.EXPENSE);
-        val again = reads.transferCategory(OTHER_PERSON_ID, Transaction.Type.EXPENSE);
-        val income = reads.transferCategory(PERSON_ID, Transaction.Type.INCOME);
+        val first = reads.transferCategory(PERSON_ID, Nature.EXPENSE);
+        val again = reads.transferCategory(OTHER_PERSON_ID, Nature.EXPENSE);
+        val income = reads.transferCategory(PERSON_ID, Nature.INCOME);
 
         assertEquals(first.id(), again.id(), "mesma categoria para qualquer pessoa");
         assertTrue(first.isSystem());
@@ -89,9 +89,9 @@ class ReadUseCaseTest extends AbstractUseCaseTest {
     @Test
     @DisplayName("subtreeIds devolve a raiz + descendentes em pré-ordem")
     void subtreeIdsCollectsDescendants() {
-        val root = seedCategory(PERSON_ID, "Moradia", Transaction.Type.EXPENSE, null);
-        val child = seedCategory(PERSON_ID, "Aluguel", Transaction.Type.EXPENSE, root.id());
-        seedCategory(PERSON_ID, "Salário", Transaction.Type.INCOME, null);
+        val root = seedCategory(PERSON_ID, "Moradia", Nature.EXPENSE, null);
+        val child = seedCategory(PERSON_ID, "Aluguel", Nature.EXPENSE, root.id());
+        seedCategory(PERSON_ID, "Salário", Nature.INCOME, null);
 
         val r = reads.subtreeIds(root.id(), PERSON_ID);
 
@@ -102,7 +102,7 @@ class ReadUseCaseTest extends AbstractUseCaseTest {
     @Test
     @DisplayName("subtreeIds de categoria de outra pessoa → NotFound")
     void subtreeIdsHidesCategoryOfAnotherPerson() {
-        val foreign = seedCategory(OTHER_PERSON_ID, "De outro dono", Transaction.Type.EXPENSE, null);
+        val foreign = seedCategory(OTHER_PERSON_ID, "De outro dono", Nature.EXPENSE, null);
 
         val r = reads.subtreeIds(foreign.id(), PERSON_ID);
 

@@ -1,6 +1,6 @@
 package br.cdb.feature.f007._0_domain.model;
 
-import br.cdb.feature.f006._0_domain.model.Transaction;
+import br.cdb.feature.f005._0_domain.model.Nature;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 
@@ -32,7 +32,7 @@ public record MonetaryDocumentEntry(
         int installmentNumber,
         int installmentTotal,
         ChargeKind kind,
-        Transaction.Type type
+        Nature type
 ) {
     /**
      * Placeholder year stamped on a credit-card charge's year-less {@link MonthDay}. A leap year so
@@ -44,16 +44,16 @@ public record MonetaryDocumentEntry(
     /** A checking-account movement: absolute date, no card, no installment. */
     public MonetaryDocumentEntry(LocalDate date, String description, BigDecimal amount) {
         this(null, date, description, amount, 1, 1, ChargeKind.PURCHASE,
-                amount.signum() < 0 ? Transaction.Type.EXPENSE : Transaction.Type.INCOME);
+                amount.signum() < 0 ? Nature.EXPENSE : Nature.INCOME);
     }
 
     /** A credit-card {@code EXPENSE} charge printed year-less ({@link MonthDay}); the year is a {@link #CARD_PLACEHOLDER_YEAR placeholder}. */
     public static MonetaryDocumentEntry charge(@Nullable String last4, MonthDay date, String description, BigDecimal amount, int installmentNumber, int installmentTotal, ChargeKind kind) {
-        return charge(last4, date, description, amount, installmentNumber, installmentTotal, kind, Transaction.Type.EXPENSE);
+        return charge(last4, date, description, amount, installmentNumber, installmentTotal, kind, Nature.EXPENSE);
     }
 
     /** A credit-card charge printed year-less ({@link MonthDay}); the year is a {@link #CARD_PLACEHOLDER_YEAR placeholder}. */
-    public static MonetaryDocumentEntry charge(@Nullable String last4, MonthDay date, String description, BigDecimal amount, int installmentNumber, int installmentTotal, ChargeKind kind, Transaction.Type type) {
+    public static MonetaryDocumentEntry charge(@Nullable String last4, MonthDay date, String description, BigDecimal amount, int installmentNumber, int installmentTotal, ChargeKind kind, Nature type) {
         return new MonetaryDocumentEntry(last4, date.atYear(CARD_PLACEHOLDER_YEAR), description, amount, installmentNumber, installmentTotal, kind, type);
     }
 
@@ -64,7 +64,7 @@ public record MonetaryDocumentEntry(
 
     /** À-vista card credit (refund/estorno): always {@code 1/1}, never installments. */
     public static MonetaryDocumentEntry credit(@Nullable String last4, MonthDay date, String description, BigDecimal amount, ChargeKind kind) {
-        return charge(last4, date, description, amount, 1, 1, kind, Transaction.Type.INCOME);
+        return charge(last4, date, description, amount, 1, 1, kind, Nature.INCOME);
     }
 
     public boolean isInstallment() {

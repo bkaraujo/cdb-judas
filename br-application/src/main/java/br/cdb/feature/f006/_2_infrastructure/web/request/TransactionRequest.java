@@ -1,5 +1,6 @@
 package br.cdb.feature.f006._2_infrastructure.web.request;
 
+import br.cdb.feature.f005._0_domain.model.Nature;
 import br.cdb.feature.f006._0_domain.model.Transaction;
 import br.commons.validation.TwoDecimalPlaces;
 import jakarta.validation.constraints.Min;
@@ -23,7 +24,7 @@ public record TransactionRequest(
         @Nullable UUID accountId,
         @NotNull UUID costCenterId,
         @NotNull Transaction.Status status,
-        @NotNull Transaction.Type type,
+        @NotNull Nature type,
         @Nullable @Min(1) Integer installments,
         @Nullable String editMode,
         @Nullable String deleteMode,
