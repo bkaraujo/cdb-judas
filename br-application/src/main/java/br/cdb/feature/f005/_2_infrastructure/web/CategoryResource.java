@@ -2,13 +2,13 @@ package br.cdb.feature.f005._2_infrastructure.web;
 
 import br.cdb.feature.f000._0_domain.DeletionStrategy;
 import br.cdb.feature.f000._1_application.Deletions;
+import br.cdb.feature.f005._0_domain.model.Nature;
 import br.cdb.feature.f005._1_application.usecase.ReadUseCase;
 import br.cdb.feature.f005._1_application.usecase.WriteUseCase;
 import br.cdb.feature.f005._2_infrastructure.web.request.CreateRequest;
 import br.cdb.feature.f005._2_infrastructure.web.request.UpdateRequest;
 import br.cdb.feature.f005._2_infrastructure.web.response.CategoryResponse;
 import br.cdb.feature.f005._2_infrastructure.web.response.TransferCategoryResponse;
-import br.cdb.feature.f005._0_domain.model.Nature;
 import br.commons.Result;
 import br.commons.business.BusinessException;
 import br.commons.framework.cdi.Context;

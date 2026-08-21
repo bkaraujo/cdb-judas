@@ -4,7 +4,6 @@ import br.cdb.core.web.AbstractApiClient;
 import br.cdb.core.web.HTTPApi;
 import br.cdb.feature.f006.F006Api;
 import br.cdb.feature.f006._0_domain.model.Status;
-import br.cdb.feature.f006._0_domain.model.Transaction;
 import br.cdb.feature.f006._2_infrastructure.web.TransactionResource;
 import br.cdb.feature.f006._2_infrastructure.web.TransferResource;
 import lombok.val;

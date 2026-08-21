@@ -2,10 +2,9 @@ package br.cdb.core.persistence.migration;
 
 import br.commons.Logger;
 import br.commons.framework.persistence.jdbc.DataSource;
+import br.commons.framework.persistence.jdbc.primitives.JDBCResultSet;
 import lombok.val;
 import org.jspecify.annotations.NullMarked;
-
-import br.commons.framework.persistence.jdbc.primitives.JDBCResultSet;
 
 /**
  * Migração one-shot: {@code F010_IMPORT_RULE.TXT_NAME} fazia papel duplo (padrão de match E texto

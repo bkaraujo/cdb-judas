@@ -3,7 +3,6 @@ package br.cdb.core.persistence;
 import br.cdb.core.JsonStorageProperties;
 import br.cdb.feature.f005._0_domain.model.Nature;
 import br.cdb.feature.f006._0_domain.model.Status;
-import br.cdb.feature.f006._0_domain.model.Transaction;
 import br.commons.framework.persistence.Storage;
 import br.commons.framework.persistence.json.LocalFileStorage;
 import br.commons.tools.Strings;

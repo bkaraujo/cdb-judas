@@ -1,7 +1,6 @@
 package br.cdb.feature.f000;
 
 import br.cdb.core.persistence.Database;
-import br.cdb.core.persistence.repository.AccountTypeMapper;
 import br.cdb.feature.f000._0_domain.SSE;
 import br.cdb.feature.f000._0_domain.repository.CostCenterRepository;
 import br.cdb.feature.f000._0_domain.repository.PersonRepository;

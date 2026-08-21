@@ -1,8 +1,8 @@
 package br.cdb.feature.f005._1_application.usecase;
 
 import br.cdb.feature.f005._0_domain.model.Category;
-import br.cdb.feature.f005._1_application.service.UserCategoryService;
 import br.cdb.feature.f005._0_domain.model.Nature;
+import br.cdb.feature.f005._1_application.service.UserCategoryService;
 import br.commons.Result;
 import br.commons.business.BusinessError;
 import br.commons.framework.cdi.Context;

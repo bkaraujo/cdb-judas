@@ -3,8 +3,8 @@ package br.cdb.feature.f005._2_infrastructure;
 import br.cdb.core.web.AbstractApiClient;
 import br.cdb.core.web.HTTPApi;
 import br.cdb.feature.f005.F005Api;
-import br.cdb.feature.f005._2_infrastructure.web.CategoryResource;
 import br.cdb.feature.f005._0_domain.model.Nature;
+import br.cdb.feature.f005._2_infrastructure.web.CategoryResource;
 import org.jspecify.annotations.NullMarked;
 
 import java.util.UUID;

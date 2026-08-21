@@ -9,12 +9,7 @@ import br.commons.framework.persistence.jdbc.primitives.JDBCResultSet;
 import lombok.val;
 import org.jspecify.annotations.NullMarked;
 
-import java.util.ArrayList;
-import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 
 /**
  * Adaptador JDBC (H2) da porta {@link ImportRuleTriggerRepository}; tabela

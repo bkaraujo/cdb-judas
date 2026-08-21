@@ -2,9 +2,9 @@ package br.cdb.feature.f005;
 
 import br.cdb.AbstractUseCaseTest;
 import br.cdb.feature.f005._0_domain.model.Category;
+import br.cdb.feature.f005._0_domain.model.Nature;
 import br.cdb.feature.f005._1_application.usecase.ReadUseCase;
 import br.cdb.feature.f005._1_application.usecase.WriteUseCase;
-import br.cdb.feature.f005._0_domain.model.Nature;
 import br.commons.Result;
 import br.commons.business.BusinessError;
 import br.commons.framework.cdi.Context;
