@@ -196,11 +196,12 @@ export function createStatementPage(deps: StatementPageDeps): Page {
   }
 
   function bindRoot($root: JQuery): void {
+    // Trocar de conta reescreve a rota: o hash é o estado da tela (deep-link compartilhável,
+    // e sobrevive ao botão Voltar do navegador — ver card-statement-page.ts).
     $root.on('click.stm', '[data-act=select-account]', function () {
       const id = $(this).attr('data-id');
       if (id && state && String(id) !== String(state.accountId)) {
-        state.accountId = id;
-        loadStatement();
+        window.location.hash = '#/statement/' + id;
       }
     });
 
@@ -212,20 +213,22 @@ export function createStatementPage(deps: StatementPageDeps): Page {
     });
   }
 
-  // Default-select first checking account if available.
-  function resetStateWithDefaultAccount(): StatementPageState {
+  // Conta vem do path (#/statement/{accountId}); sem param, ou id inexistente, cai na primeira.
+  function resetState(accountId?: string | null): StatementPageState {
     const p = deps.periodService.get();
     state = {
-      accountId: null, month: p.month, year: p.year, items: [], summary: {}, txIndex: [], loading: false,
+      accountId: accountId ? String(accountId) : null, month: p.month, year: p.year, items: [], summary: {}, txIndex: [], loading: false,
     };
     const accs = checkingAccounts();
-    if (accs.length > 0) state.accountId = String(accs[0]?.id);
+    if (!accs.some((a) => String(a.id) === String(state?.accountId))) {
+      state.accountId = accs.length > 0 ? String(accs[0]?.id) : null;
+    }
     return state;
   }
 
   return createPage<StatementPageState>({
     ns: '.stm',
-    state: resetStateWithDefaultAccount,
+    state: resetState,
     render,
     bind: bindRoot,
     onMount: () => {
