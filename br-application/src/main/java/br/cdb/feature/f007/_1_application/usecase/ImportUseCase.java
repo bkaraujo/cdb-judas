@@ -91,7 +91,7 @@ public class ImportUseCase {
         val closed = Context.get(F002Api.class).closingPeriod();
         for (val date : dates) {
             if (closed.covers(date)) {
-                return Result.failure(new BusinessError.BusinessRule("Período fechado. Lançamentos até %s não podem ser importados.", closed.label()));
+                return Result.failure(new BusinessError.BusinessRule("closingPeriod.lockedForImport", closed.label()));
             }
         }
         return Result.success();
