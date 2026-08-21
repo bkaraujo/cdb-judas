@@ -33,7 +33,7 @@ public class PersonService {
 
     public Result<Person, BusinessError> rename(Person person, String newName) {
         if (newName.equals(person.name())) return Result.success(person);
-        if (newName.isBlank()) return Result.failure(new BusinessError.Validation("Novo nome não pode estar em branco"));
+        if (newName.isBlank()) return Result.failure(new BusinessError.Validation("person.newNameBlank"));
 
         val newPerson = new Person(
                 person.id(),

@@ -39,7 +39,7 @@ public class ReadUseCase {
     public Result<Person, BusinessError> person(UUID id) {
         return service.findById(id)
                 .<Result<Person, BusinessError>>map(Result::success)
-                .orElseGet(() -> Result.failure(new BusinessError.NotFound("Person not found: %s", id)));
+                .orElseGet(() -> Result.failure(new BusinessError.NotFound("person.notFound", id)));
     }
 
     // ── Centro de custo ────────────────────────────────────────────

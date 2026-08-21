@@ -63,7 +63,7 @@ public abstract class HTTPRequest {
     public static String personId() {
         val authenticated = user();
         if (authenticated == null) {
-            throw new BusinessException(new BusinessError.Validation("Usuário não Autenticado"));
+            throw new BusinessException(new BusinessError.Validation("auth.notAuthenticated"));
         }
 
         return authenticated.personId();
