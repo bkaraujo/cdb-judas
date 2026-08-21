@@ -25,7 +25,7 @@ public class TransactionService {
     public Result<Transaction, BusinessError> findById(UUID id) {
         return repository.findById(id)
                 .<Result<Transaction, BusinessError>>map(Result::success)
-                .orElseGet(() -> Result.failure(new BusinessError.NotFound("TransactionResponse not found: %s", id)));
+                .orElseGet(() -> Result.failure(new BusinessError.NotFound("transaction.notFound", id)));
     }
 
     public List<Transaction> findAllByPerson(String personId) {
@@ -35,7 +35,7 @@ public class TransactionService {
     public Result<Transaction, BusinessError> findByIdAndPerson(UUID id, String personId) {
         return repository.findByIdAndPerson(id, personId)
                 .<Result<Transaction, BusinessError>>map(Result::success)
-                .orElseGet(() -> Result.failure(new BusinessError.NotFound("Transaction not found: %s", id)));
+                .orElseGet(() -> Result.failure(new BusinessError.NotFound("transaction.notFound", id)));
     }
 
     public Transaction save(Transaction transaction) {
