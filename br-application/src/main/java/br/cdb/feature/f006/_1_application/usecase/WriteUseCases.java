@@ -12,6 +12,7 @@ import br.cdb.feature.f003._1_application.service.CreditCardService;
 import br.cdb.feature.f004.F004Api;
 import br.cdb.feature.f006._0_domain.event.TransactionEvents;
 import br.cdb.feature.f005._0_domain.model.Nature;
+import br.cdb.feature.f006._0_domain.model.Status;
 import br.cdb.feature.f006._0_domain.model.Transaction;
 import br.cdb.feature.f006._1_application.service.TransactionCategoryService;
 import br.cdb.feature.f006._1_application.service.TransactionService;
@@ -124,7 +125,7 @@ public class WriteUseCases {
     }
 
     public Result<Transaction, BusinessError> updateTransactionStatus(
-            UUID personId, UUID txId, Transaction.Status status, @Nullable LocalDate paymentDate) {
+            UUID personId, UUID txId, Status status, @Nullable LocalDate paymentDate) {
         return reads.transaction(txId)
                 .flatMap(existing -> guards().ownsAccount(existing.accountId()))
                 .flatMap(ignored -> updateTransactionStatus(txId, status, paymentDate).map(t -> {
@@ -217,7 +218,7 @@ public class WriteUseCases {
 
         for (int i = 1; i <= installmentsCount; i++) {
             val date = cmd.date().plusMonths(i - 1);
-            val status = (i == 1) ? cmd.status() : Transaction.Status.PENDING;
+            val status = (i == 1) ? cmd.status() : Status.PENDING;
             batch.add(toEntity(UUID.randomUUID(), cmd.description(), cmd.amount(), date, cmd.accountId(), status,
                     cmd.type(), cmd.costCenterId(), cmd.notes(), cmd.cardId(), groupId, i, installmentsCount));
         }
@@ -298,15 +299,15 @@ public class WriteUseCases {
     }
 
     /** Transfer legs never carry a card — cardId is always null. */
-    private static Transaction withTransferEdits(Transaction leg, UUID accountId, BigDecimal absAmount, LocalDate date, Transaction.Status status) {
+    private static Transaction withTransferEdits(Transaction leg, UUID accountId, BigDecimal absAmount, LocalDate date, Status status) {
         return new Transaction(
                 leg.id(), leg.description(), absAmount, date,
                 accountId, status, leg.type(), leg.costCenterId(),
-                Transaction.Status.CONFIRMED.equals(status) ? date : null,
+                Status.CONFIRMED.equals(status) ? date : null,
                 leg.groupId(), leg.installmentNumber(), leg.totalInstallments(), leg.notes(), null);
     }
 
-    public Result<Transaction, BusinessError> updateTransactionStatus(UUID id, Transaction.Status status, @Nullable LocalDate paymentDate) {
+    public Result<Transaction, BusinessError> updateTransactionStatus(UUID id, Status status, @Nullable LocalDate paymentDate) {
         return service.findById(id)
                 .map(existing -> {
                     val saved = service.save(new Transaction(
@@ -407,12 +408,12 @@ public class WriteUseCases {
 
         val outflow = new Transaction(
                 outId, "Transferência (saída)", absAmount, date,
-                fromAccountId, Transaction.Status.CONFIRMED, Nature.EXPENSE, CostCenter.VARIAVEL.id(), date,
+                fromAccountId, Status.CONFIRMED, Nature.EXPENSE, CostCenter.VARIAVEL.id(), date,
                 groupId, 1, 2, null, null
         );
         val inflow = new Transaction(
                 inId, "Transferência (entrada)", absAmount, date,
-                toAccountId, Transaction.Status.CONFIRMED, Nature.INCOME, CostCenter.VARIAVEL.id(), date,
+                toAccountId, Status.CONFIRMED, Nature.INCOME, CostCenter.VARIAVEL.id(), date,
                 groupId, 2, 2, null, null
         );
 
@@ -493,7 +494,7 @@ public class WriteUseCases {
     }
 
     private Transaction toEntity(UUID id, String description, BigDecimal amount, LocalDate date, UUID accountId,
-                                 Transaction.Status status, Nature type, UUID costCenterId,
+                                 Status status, Nature type, UUID costCenterId,
                                  @Nullable String notes, @Nullable UUID cardId,
                                  @Nullable UUID groupId, @Nullable Integer installmentNumber, @Nullable Integer totalInstallments) {
         return new Transaction(id, description, amount.abs(), date,

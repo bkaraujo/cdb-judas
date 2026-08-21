@@ -2,6 +2,7 @@ package br.cdb.core.persistence;
 
 import br.cdb.core.JsonStorageProperties;
 import br.cdb.feature.f005._0_domain.model.Nature;
+import br.cdb.feature.f006._0_domain.model.Status;
 import br.cdb.feature.f006._0_domain.model.Transaction;
 import br.commons.framework.persistence.Storage;
 import br.commons.framework.persistence.json.LocalFileStorage;
@@ -52,16 +53,16 @@ public class JsonStorageConfig implements ObjectMapperCustomizer {
      */
     private SimpleModule transactionEnumModule() {
         val module = new SimpleModule("transactionEnum");
-        module.addSerializer(Transaction.Status.class, new JsonSerializer<>() {
+        module.addSerializer(Status.class, new JsonSerializer<>() {
             @Override
-            public void serialize(Transaction.Status value, JsonGenerator gen, SerializerProvider serializers) throws IOException {
+            public void serialize(Status value, JsonGenerator gen, SerializerProvider serializers) throws IOException {
                 gen.writeString(Strings.lower(value.name()));
             }
         });
-        module.addDeserializer(Transaction.Status.class, new JsonDeserializer<>() {
+        module.addDeserializer(Status.class, new JsonDeserializer<>() {
             @Override
-            public Transaction.Status deserialize(JsonParser p, DeserializationContext ctxt) throws IOException {
-                return Transaction.Status.valueOf(Strings.upper(p.getValueAsString()));
+            public Status deserialize(JsonParser p, DeserializationContext ctxt) throws IOException {
+                return Status.valueOf(Strings.upper(p.getValueAsString()));
             }
         });
         module.addSerializer(Nature.class, new JsonSerializer<>() {

@@ -2,6 +2,7 @@ package br.cdb.feature.f006;
 
 import br.cdb.core.View;
 import br.cdb.feature.f005._0_domain.model.Nature;
+import br.cdb.feature.f006._0_domain.model.Status;
 import br.cdb.feature.f006._0_domain.model.Transaction;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
@@ -28,7 +29,7 @@ public interface F006Api {
             String description,
             BigDecimal amount,
             LocalDate date,
-            Transaction.Status status,
+            Status status,
             Nature type,
             @Nullable UUID groupId
     ) implements View {}
@@ -42,7 +43,7 @@ public interface F006Api {
             LocalDate date,
             @Nullable UUID categoryId,
             UUID accountId,
-            Transaction.Status status,
+            Status status,
             Nature type,
             UUID costCenterId,
             @Nullable LocalDate paymentDate,
@@ -63,7 +64,7 @@ public interface F006Api {
             UUID categoryId,
             @Nullable UUID accountId,
             UUID costCenterId,
-            Transaction.Status status,
+            Status status,
             Nature type,
             @Nullable Integer installments,
             @Nullable String editMode,
@@ -96,7 +97,7 @@ public interface F006Api {
 
     TransactionDto updateTransaction(UUID accountId, UUID transactionId, TransactionBody body);
 
-    TransactionDto patchStatus(UUID accountId, UUID transactionId, Transaction.Status status, LocalDate paymentDate);
+    TransactionDto patchStatus(UUID accountId, UUID transactionId, Status status, LocalDate paymentDate);
 
     void deleteTransaction(UUID accountId, UUID transactionId, @Nullable String mode);
 

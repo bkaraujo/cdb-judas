@@ -8,6 +8,7 @@ import br.cdb.feature.f003._1_application.usecase.CreditCardCommand;
 import br.cdb.feature.f003._1_application.usecase.ReadUseCase;
 import br.cdb.feature.f003._1_application.usecase.WriteUseCase;
 import br.cdb.feature.f005._0_domain.model.Nature;
+import br.cdb.feature.f006._0_domain.model.Status;
 import br.cdb.feature.f006._0_domain.model.Transaction;
 import br.cdb.feature.f006._1_application.usecase.ReadUseCases;
 import br.commons.Result;
@@ -138,7 +139,7 @@ class WriteUseCaseTest extends AbstractUseCaseTest {
         val account = seedChecking();
         val creditCard = createCard(account.id(), "1234");
         transactionRepository().save(new Transaction(UUID.randomUUID(), "compra", java.math.BigDecimal.TEN, java.time.LocalDate.now(),
-                account.id(), Transaction.Status.CONFIRMED, Nature.EXPENSE, UUID.randomUUID(), null, null, 1, 1, null, creditCard.id()));
+                account.id(), Status.CONFIRMED, Nature.EXPENSE, UUID.randomUUID(), null, null, 1, 1, null, creditCard.id()));
 
         val r = useCase.delete(new CreditCardCommand.Delete(creditCard.id(), new TransactionPolicy.Block()));
 
@@ -154,7 +155,7 @@ class WriteUseCaseTest extends AbstractUseCaseTest {
         val source = createCard(account.id(), "1234");
         val target = createCard(account.id(), "5678");
         val tx = transactionRepository().save(new Transaction(UUID.randomUUID(), "compra", java.math.BigDecimal.TEN,
-                java.time.LocalDate.now(), account.id(), Transaction.Status.CONFIRMED, Nature.EXPENSE,
+                java.time.LocalDate.now(), account.id(), Status.CONFIRMED, Nature.EXPENSE,
                 UUID.randomUUID(), null, null, 1, 1, null, source.id()));
 
         val r = useCase.delete(new CreditCardCommand.Delete(source.id(), new TransactionPolicy.Move(target.id())));
@@ -216,7 +217,7 @@ class WriteUseCaseTest extends AbstractUseCaseTest {
         val account = seedChecking();
         val creditCard = createCard(account.id(), "1234");
         val tx = transactionRepository().save(new Transaction(UUID.randomUUID(), "compra", java.math.BigDecimal.TEN,
-                java.time.LocalDate.now(), account.id(), Transaction.Status.CONFIRMED, Nature.EXPENSE,
+                java.time.LocalDate.now(), account.id(), Status.CONFIRMED, Nature.EXPENSE,
                 UUID.randomUUID(), null, null, 1, 1, null, creditCard.id()));
 
         val r = useCase.delete(new CreditCardCommand.Delete(creditCard.id(), new TransactionPolicy.Purge()));

@@ -1,7 +1,7 @@
 package br.cdb.feature.f006._2_infrastructure.web.request;
 
 import br.cdb.feature.f005._0_domain.model.Nature;
-import br.cdb.feature.f006._0_domain.model.Transaction;
+import br.cdb.feature.f006._0_domain.model.Status;
 import br.commons.validation.TwoDecimalPlaces;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
@@ -23,7 +23,7 @@ public record TransactionRequest(
         @NotNull UUID categoryId,
         @Nullable UUID accountId,
         @NotNull UUID costCenterId,
-        @NotNull Transaction.Status status,
+        @NotNull Status status,
         @NotNull Nature type,
         @Nullable @Min(1) Integer installments,
         @Nullable String editMode,

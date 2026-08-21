@@ -6,6 +6,7 @@ import br.cdb.feature.f002._0_domain.model.Account;
 import br.cdb.feature.f002._0_domain.model.Balance;
 import br.cdb.feature.f003._0_domain.model.CreditCard;
 import br.cdb.feature.f005._0_domain.model.Nature;
+import br.cdb.feature.f006._0_domain.model.Status;
 import br.cdb.feature.f006._0_domain.model.Transaction;
 import br.cdb.feature.f006._1_application.usecase.ReadUseCases;
 import br.cdb.feature.f006._1_application.usecase.TransactionCommand;
@@ -43,14 +44,14 @@ class WriteUseCasesTest extends AbstractUseCaseTest {
         reads = new ReadUseCases();
     }
 
-    private TransactionCommand.Create cmd(LocalDate date, Transaction.Status status, Integer installments) {
+    private TransactionCommand.Create cmd(LocalDate date, Status status, Integer installments) {
         return new TransactionCommand.Create("desc", new BigDecimal("10.00"), date, accountId,
                 costCenterId, status, Nature.EXPENSE, installments, null, null);
     }
 
     private TransactionCommand.Create cmdWithCard(LocalDate date, Integer installments, UUID cardId) {
         return new TransactionCommand.Create("desc", new BigDecimal("10.00"), date, accountId,
-                costCenterId, Transaction.Status.CONFIRMED, Nature.EXPENSE, installments, null, cardId);
+                costCenterId, Status.CONFIRMED, Nature.EXPENSE, installments, null, cardId);
     }
 
     private CreditCard seedCard(UUID forAccountId, String last4) {
@@ -61,14 +62,14 @@ class WriteUseCasesTest extends AbstractUseCaseTest {
     @DisplayName("1 parcela: salva único lançamento sem groupId")
     void singleInstallmentCreatesOne() {
         Result<Transaction, BusinessError> r = useCase.upsert(
-                cmd(LocalDate.of(2026, 5, 10), Transaction.Status.CONFIRMED, null));
+                cmd(LocalDate.of(2026, 5, 10), Status.CONFIRMED, null));
         assertTrue(r.isSuccess());
         assertEquals(1, transactionRepository().findAll().size());
         Transaction t = transactionRepository().findAll().get(0);
         assertNull(t.groupId());
         assertEquals(1, t.installmentNumber());
         assertEquals(1, t.totalInstallments());
-        assertEquals(Transaction.Status.CONFIRMED, t.status());
+        assertEquals(Status.CONFIRMED, t.status());
     }
 
     @Test
@@ -76,7 +77,7 @@ class WriteUseCasesTest extends AbstractUseCaseTest {
     void nInstallmentsExpandsAndShiftsDates() {
         LocalDate base = LocalDate.of(2026, 5, 10);
         Result<Transaction, BusinessError> r = useCase.upsert(
-                cmd(base, Transaction.Status.CONFIRMED, 3));
+                cmd(base, Status.CONFIRMED, 3));
         assertTrue(r.isSuccess());
         List<Transaction> all = transactionRepository().findAll();
         assertEquals(3, all.size());
@@ -87,19 +88,19 @@ class WriteUseCasesTest extends AbstractUseCaseTest {
             assertEquals(3, t.totalInstallments());
             int n = t.installmentNumber();
             assertEquals(base.plusMonths(n - 1), t.date());
-            assertEquals(n == 1 ? Transaction.Status.CONFIRMED : Transaction.Status.PENDING, t.status());
+            assertEquals(n == 1 ? Status.CONFIRMED : Status.PENDING, t.status());
         }
     }
 
     @Test
     @DisplayName("update default só altera o selecionado")
     void updateDefaultModeOnlyOne() {
-        useCase.upsert(cmd(LocalDate.of(2026, 5, 10), Transaction.Status.CONFIRMED, 3));
+        useCase.upsert(cmd(LocalDate.of(2026, 5, 10), Status.CONFIRMED, 3));
         List<Transaction> all = transactionRepository().findAll();
         Transaction first = all.stream().filter(t -> t.installmentNumber() == 1).findFirst().orElseThrow();
 
         TransactionCommand.Update upd = new TransactionCommand.Update(first.id(), "upd", new BigDecimal("20.00"),
-                LocalDate.of(2026, 5, 15), accountId, costCenterId, Transaction.Status.CONFIRMED, Nature.EXPENSE, new TransactionScope.Single(), null, null);
+                LocalDate.of(2026, 5, 15), accountId, costCenterId, Status.CONFIRMED, Nature.EXPENSE, new TransactionScope.Single(), null, null);
         Result<Transaction, BusinessError> r = useCase.upsert(upd);
         assertTrue(r.isSuccess());
 
@@ -117,13 +118,13 @@ class WriteUseCasesTest extends AbstractUseCaseTest {
     @Test
     @DisplayName("FUTURE: atualiza atual+futuras, preserva status, ajusta datas proporcionalmente")
     void updateFutureModeShiftsDatesAndPreservesStatus() {
-        useCase.upsert(cmd(LocalDate.of(2026, 5, 10), Transaction.Status.CONFIRMED, 4));
+        useCase.upsert(cmd(LocalDate.of(2026, 5, 10), Status.CONFIRMED, 4));
         Transaction second = transactionRepository().findAll().stream()
                 .filter(t -> t.installmentNumber() == 2).findFirst().orElseThrow();
 
         LocalDate newDate = LocalDate.of(2026, 7, 20);
         TransactionCommand.Update upd = new TransactionCommand.Update(second.id(), "future", new BigDecimal("99.00"),
-                newDate, accountId, costCenterId, Transaction.Status.CONFIRMED, Nature.EXPENSE, new TransactionScope.Future(), null, null);
+                newDate, accountId, costCenterId, Status.CONFIRMED, Nature.EXPENSE, new TransactionScope.Future(), null, null);
         Result<Transaction, BusinessError> r = useCase.upsert(upd);
         assertTrue(r.isSuccess());
 
@@ -139,26 +140,26 @@ class WriteUseCasesTest extends AbstractUseCaseTest {
             assertEquals("future", t.description());
             assertEquals(new BigDecimal("99.00"), t.amount());
             assertEquals(newDate.plusMonths(n - 2), t.date());
-            assertEquals(Transaction.Status.PENDING, t.status());
+            assertEquals(Status.PENDING, t.status());
         }
     }
 
     @Test
     @DisplayName("updateStatus apenas muda status e paymentDate")
     void updateStatusBypassesClosing() {
-        useCase.upsert(cmd(LocalDate.of(2026, 5, 10), Transaction.Status.PENDING, null));
+        useCase.upsert(cmd(LocalDate.of(2026, 5, 10), Status.PENDING, null));
         Transaction t = transactionRepository().findAll().get(0);
         Result<Transaction, BusinessError> r = useCase.updateTransactionStatus(
-                t.id(), Transaction.Status.CONFIRMED, LocalDate.of(2026, 5, 12));
+                t.id(), Status.CONFIRMED, LocalDate.of(2026, 5, 12));
         assertTrue(r.isSuccess());
-        assertEquals(Transaction.Status.CONFIRMED, transactionRepository().findById(t.id()).orElseThrow().status());
+        assertEquals(Status.CONFIRMED, transactionRepository().findById(t.id()).orElseThrow().status());
         assertEquals(LocalDate.of(2026, 5, 12), transactionRepository().findById(t.id()).orElseThrow().paymentDate());
     }
 
     @Test
     @DisplayName("delete default exclui só o lançamento")
     void deleteDefaultMode() {
-        useCase.upsert(cmd(LocalDate.of(2026, 5, 10), Transaction.Status.CONFIRMED, 2));
+        useCase.upsert(cmd(LocalDate.of(2026, 5, 10), Status.CONFIRMED, 2));
         Transaction first = transactionRepository().findAll().stream()
                 .filter(t -> t.installmentNumber() == 1).findFirst().orElseThrow();
         Result<List<UUID>, BusinessError> r = useCase.delete(new TransactionCommand.Delete(first.id(), new TransactionScope.Single()));
@@ -169,7 +170,7 @@ class WriteUseCasesTest extends AbstractUseCaseTest {
     @Test
     @DisplayName("delete FUTURE exclui atual+futuras do grupo")
     void deleteFutureMode() {
-        useCase.upsert(cmd(LocalDate.of(2026, 5, 10), Transaction.Status.CONFIRMED, 4));
+        useCase.upsert(cmd(LocalDate.of(2026, 5, 10), Status.CONFIRMED, 4));
         Transaction second = transactionRepository().findAll().stream()
                 .filter(t -> t.installmentNumber() == 2).findFirst().orElseThrow();
         Result<List<UUID>, BusinessError> r = useCase.delete(new TransactionCommand.Delete(second.id(), new TransactionScope.Future()));
@@ -181,9 +182,9 @@ class WriteUseCasesTest extends AbstractUseCaseTest {
     @Test
     @DisplayName("transactions ordena por data desc")
     void listOrdersByDateDesc() {
-        useCase.upsert(cmd(LocalDate.of(2026, 5, 10), Transaction.Status.CONFIRMED, null));
-        useCase.upsert(cmd(LocalDate.of(2026, 6, 10), Transaction.Status.CONFIRMED, null));
-        useCase.upsert(cmd(LocalDate.of(2026, 4, 10), Transaction.Status.CONFIRMED, null));
+        useCase.upsert(cmd(LocalDate.of(2026, 5, 10), Status.CONFIRMED, null));
+        useCase.upsert(cmd(LocalDate.of(2026, 6, 10), Status.CONFIRMED, null));
+        useCase.upsert(cmd(LocalDate.of(2026, 4, 10), Status.CONFIRMED, null));
         List<Transaction> list = ((Result.Success<List<Transaction>, BusinessError>)
                 reads.transactions()).value();
         assertEquals(LocalDate.of(2026, 6, 10), list.get(0).date());
@@ -193,18 +194,18 @@ class WriteUseCasesTest extends AbstractUseCaseTest {
     @Test
     @DisplayName("pending retorna só PENDING")
     void listPendingReturnsOnlyPending() {
-        useCase.upsert(cmd(LocalDate.of(2026, 5, 10), Transaction.Status.CONFIRMED, null));
-        useCase.upsert(cmd(LocalDate.of(2026, 5, 11), Transaction.Status.PENDING, null));
+        useCase.upsert(cmd(LocalDate.of(2026, 5, 10), Status.CONFIRMED, null));
+        useCase.upsert(cmd(LocalDate.of(2026, 5, 11), Status.PENDING, null));
         List<Transaction> pending = ((Result.Success<List<Transaction>, BusinessError>)
                 reads.pending()).value();
         assertEquals(1, pending.size());
-        assertEquals(Transaction.Status.PENDING, pending.get(0).status());
+        assertEquals(Status.PENDING, pending.get(0).status());
     }
 
     @Test
     @DisplayName("lançamento criado guarda o centro de custo do comando")
     void persistsCostCenter() {
-        useCase.upsert(cmd(LocalDate.of(2026, 5, 10), Transaction.Status.CONFIRMED, null));
+        useCase.upsert(cmd(LocalDate.of(2026, 5, 10), Status.CONFIRMED, null));
         assertEquals(costCenterId, transactionRepository().findAll().get(0).costCenterId());
     }
 
@@ -214,9 +215,9 @@ class WriteUseCasesTest extends AbstractUseCaseTest {
     private UUID saveTransferPair(LocalDate date, UUID fromAccount, UUID toAccount) {
         UUID groupId = UUID.randomUUID();
         transactionRepository().save(new Transaction(UUID.randomUUID(), "Transferência (saída)", new BigDecimal("-50.00"),
-                date, fromAccount, Transaction.Status.CONFIRMED, Nature.EXPENSE, costCenterId, date, groupId, 1, 2, null, null));
+                date, fromAccount, Status.CONFIRMED, Nature.EXPENSE, costCenterId, date, groupId, 1, 2, null, null));
         transactionRepository().save(new Transaction(UUID.randomUUID(), "Transferência (entrada)", new BigDecimal("50.00"),
-                date, toAccount, Transaction.Status.CONFIRMED, Nature.INCOME, costCenterId, date, groupId, 2, 2, null, null));
+                date, toAccount, Status.CONFIRMED, Nature.INCOME, costCenterId, date, groupId, 2, 2, null, null));
         return groupId;
     }
 
@@ -281,7 +282,7 @@ class WriteUseCasesTest extends AbstractUseCaseTest {
         UUID newAccount = UUID.randomUUID();
         TransactionCommand.Update upd = new TransactionCommand.Update(entrada.id(), "ajuste", new BigDecimal("70.00"),
                 LocalDate.of(2026, 5, 12), newAccount, costCenterId,
-                Transaction.Status.CONFIRMED, Nature.INCOME, new TransactionScope.Single(), null, null);
+                Status.CONFIRMED, Nature.INCOME, new TransactionScope.Single(), null, null);
         Result<Transaction, BusinessError> r = useCase.upsert(upd);
         assertTrue(r.isSuccess());
 
@@ -312,7 +313,7 @@ class WriteUseCasesTest extends AbstractUseCaseTest {
 
         TransactionCommand.Update upd = new TransactionCommand.Update(saida.id(), "x", new BigDecimal("50.00"),
                 LocalDate.of(2026, 5, 10), toAccount, costCenterId,
-                Transaction.Status.CONFIRMED, Nature.EXPENSE, new TransactionScope.Single(), null, null);
+                Status.CONFIRMED, Nature.EXPENSE, new TransactionScope.Single(), null, null);
         assertTrue(useCase.upsert(upd).isFailure());
         assertEquals(2, transactionRepository().findAll().size(), "nada alterado");
         assertEquals(accountId, transactionRepository().findById(saida.id()).orElseThrow().accountId(), "conta intacta");
@@ -321,12 +322,12 @@ class WriteUseCasesTest extends AbstractUseCaseTest {
     @Test
     @DisplayName("grupo de parcelas (tipo único) não é tratado como transferência ao editar")
     void updateInstallmentGroupNotTreatedAsTransfer() {
-        useCase.upsert(cmd(LocalDate.of(2026, 5, 10), Transaction.Status.CONFIRMED, 3));
+        useCase.upsert(cmd(LocalDate.of(2026, 5, 10), Status.CONFIRMED, 3));
         Transaction first = transactionRepository().findAll().stream()
                 .filter(t -> t.installmentNumber() == 1).findFirst().orElseThrow();
 
         TransactionCommand.Update upd = new TransactionCommand.Update(first.id(), "upd", new BigDecimal("20.00"),
-                LocalDate.of(2026, 5, 15), accountId, costCenterId, Transaction.Status.CONFIRMED, Nature.EXPENSE, new TransactionScope.Single(), null, null);
+                LocalDate.of(2026, 5, 15), accountId, costCenterId, Status.CONFIRMED, Nature.EXPENSE, new TransactionScope.Single(), null, null);
         assertTrue(useCase.upsert(upd).isSuccess());
 
         assertEquals(3, transactionRepository().findAll().size(), "parcelas preservadas");
@@ -389,7 +390,7 @@ class WriteUseCasesTest extends AbstractUseCaseTest {
         useCase.upsert(cmdWithCard(LocalDate.of(2026, 5, 10), null, creditCard.id()));
         Transaction t = transactionRepository().findAll().get(0);
 
-        Result<Transaction, BusinessError> r = useCase.updateTransactionStatus(t.id(), Transaction.Status.CONFIRMED, LocalDate.of(2026, 5, 12));
+        Result<Transaction, BusinessError> r = useCase.updateTransactionStatus(t.id(), Status.CONFIRMED, LocalDate.of(2026, 5, 12));
         assertTrue(r.isSuccess());
         assertEquals(creditCard.id(), transactionRepository().findById(t.id()).orElseThrow().cardId());
     }
@@ -401,7 +402,7 @@ class WriteUseCasesTest extends AbstractUseCaseTest {
     void createPersistsTransactionAsReceived() {
         val tx = new Transaction(
                 UUID.randomUUID(), "compra importada", new BigDecimal("42.00"), LocalDate.of(2026, 5, 10),
-                accountId, Transaction.Status.CONFIRMED, Nature.EXPENSE, costCenterId, null, null,
+                accountId, Status.CONFIRMED, Nature.EXPENSE, costCenterId, null, null,
                 1, 1, null, null);
 
         Result<Transaction, BusinessError> r = useCase.create(tx);
@@ -420,7 +421,7 @@ class WriteUseCasesTest extends AbstractUseCaseTest {
         CreditCard creditCard = seedCard(UUID.randomUUID(), "1234");
         val tx = new Transaction(
                 UUID.randomUUID(), "compra importada", new BigDecimal("42.00"), LocalDate.of(2026, 5, 10),
-                accountId, Transaction.Status.CONFIRMED, Nature.EXPENSE, costCenterId, null, null,
+                accountId, Status.CONFIRMED, Nature.EXPENSE, costCenterId, null, null,
                 1, 1, null, creditCard.id());
 
         Result<Transaction, BusinessError> r = useCase.create(tx);
@@ -435,7 +436,7 @@ class WriteUseCasesTest extends AbstractUseCaseTest {
     @Test
     @DisplayName("deleteTransactions: dedupe (mesmo id repetido) apaga uma vez")
     void deleteTransactionsDedupesRepeatedIds() {
-        useCase.upsert(cmd(LocalDate.of(2026, 5, 10), Transaction.Status.CONFIRMED, null));
+        useCase.upsert(cmd(LocalDate.of(2026, 5, 10), Status.CONFIRMED, null));
         Transaction t = transactionRepository().findAll().get(0);
 
         Result<Void, BusinessError> r = useCase.deleteTransactions(List.of(t.id(), t.id()));
@@ -447,7 +448,7 @@ class WriteUseCasesTest extends AbstractUseCaseTest {
     @Test
     @DisplayName("deleteTransactions: id inexistente é ignorado (idempotente)")
     void deleteTransactionsSkipsMissingIds() {
-        useCase.upsert(cmd(LocalDate.of(2026, 5, 10), Transaction.Status.CONFIRMED, null));
+        useCase.upsert(cmd(LocalDate.of(2026, 5, 10), Status.CONFIRMED, null));
         Transaction t = transactionRepository().findAll().get(0);
 
         Result<Void, BusinessError> r = useCase.deleteTransactions(List.of(t.id(), UUID.randomUUID()));
@@ -472,7 +473,7 @@ class WriteUseCasesTest extends AbstractUseCaseTest {
     @Test
     @DisplayName("deleteTransactions: recalcula saldo da conta (sem atividade → snapshot antigo cai)")
     void deleteTransactionsRecalculatesBalance() {
-        useCase.upsert(cmd(LocalDate.of(2026, 5, 10), Transaction.Status.CONFIRMED, null));
+        useCase.upsert(cmd(LocalDate.of(2026, 5, 10), Status.CONFIRMED, null));
         Transaction t = transactionRepository().findAll().get(0);
         balanceRepository().save(new Balance(accountRepository().findById(accountId).orElseThrow(), YearMonth.of(2026, 5), new BigDecimal("999.00")));
 

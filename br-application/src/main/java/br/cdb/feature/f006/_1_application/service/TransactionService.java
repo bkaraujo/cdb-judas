@@ -1,6 +1,7 @@
 package br.cdb.feature.f006._1_application.service;
 
 import br.cdb.feature.f005._0_domain.model.Nature;
+import br.cdb.feature.f006._0_domain.model.Status;
 import br.cdb.feature.f006._0_domain.model.Transaction;
 import br.cdb.feature.f006._0_domain.repository.TransactionRepository;
 import br.commons.Result;
@@ -69,7 +70,7 @@ public class TransactionService {
 
     public List<Transaction> findPending() {
         return repository.findAll().stream()
-                .filter(t -> Transaction.Status.PENDING.equals(t.status()))
+                .filter(t -> Status.PENDING.equals(t.status()))
                 .sorted(Comparator.comparing(Transaction::date))
                 .toList();
     }

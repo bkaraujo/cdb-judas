@@ -60,18 +60,6 @@ public record Transaction(
     /** Derived from signal: positive signal = INCOME, non-positive = EXPENSE. */
     public Nature type() { return signal > 0 ? Nature.INCOME : Nature.EXPENSE; }
 
-    /**
-     * Situação de um {@link Transaction}
-     * <ul>
-     *     <li>{@link #SCHEDULED} Planejado mas ainda não executado</li>
-     *     <li>{@link #CONFIRMED} Executado</li>
-     *     <li>{@link #PENDING} Atrasádo/Pendente de Pagamento</li>
-     * </ul>
-     */
-    public enum Status {
-        SCHEDULED, CONFIRMED, PENDING
-    }
-
     /** Convenience constructor: derives signal from type, takes absolute amount, uses start-of-day. */
     public Transaction(UUID id, String description, BigDecimal amount, LocalDate date,
             UUID accountId, Status status, Nature type,

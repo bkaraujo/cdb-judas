@@ -1,5 +1,6 @@
 package br.cdb.feature.f999._2_infrastructure.adapter;
 
+import br.cdb.feature.f006._0_domain.model.Status;
 import br.cdb.feature.f006._0_domain.model.Transaction;
 import br.cdb.feature.f006._1_application.usecase.WriteUseCases;
 import br.cdb.feature.f007._0_domain.model.ImportedTransaction;
@@ -19,7 +20,7 @@ import java.util.UUID;
  * esta implementação na porta {@link TransactionWriter} do {@link Context}, e quem a consome é a
  * importação ({@code InvoiceImportProcessor}/{@code StatementImportProcessor} em f007), resolvida
  * por chamada. {@code create}/{@code confirmStatus} chamam {@code f006.WriteUseCases#create(Transaction)}/
- * {@code #updateTransactionStatus(UUID, Transaction.Status, LocalDate)} — os dois métodos que só têm
+ * {@code #updateTransactionStatus(UUID, Status, LocalDate)} — os dois métodos que só têm
  * a importação como chamador externo, o contrato f006↔f007 (D3 de {@code .claude/plan.md}).
  */
 @NullMarked
@@ -39,7 +40,7 @@ public class TransactionWriterAdapter implements TransactionWriter {
 
     @Override
     public Result<Void, BusinessError> confirmStatus(UUID transactionId, LocalDate paymentDate) {
-        return writes.updateTransactionStatus(transactionId, Transaction.Status.CONFIRMED, paymentDate)
+        return writes.updateTransactionStatus(transactionId, Status.CONFIRMED, paymentDate)
                 .flatMap(ignored -> Result.success());
     }
 

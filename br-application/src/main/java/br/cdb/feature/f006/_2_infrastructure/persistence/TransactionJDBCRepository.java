@@ -1,6 +1,7 @@
 package br.cdb.feature.f006._2_infrastructure.persistence;
 
 import br.cdb.core.persistence.repository.AccountOwnerLookup;
+import br.cdb.feature.f006._0_domain.model.Status;
 import br.cdb.feature.f006._0_domain.model.Transaction;
 import br.cdb.feature.f006._0_domain.repository.TransactionRepository;
 import br.commons.chrono.Time;
@@ -128,7 +129,7 @@ public final class TransactionJDBCRepository extends JDBCRepository<Transaction>
         val amount = rs.getBigDecimal("DEC_AMOUNT").get();
         val purchasedAt = rs.getTimestamp("TMS_PURCHASE").get().toLocalDateTime();
         val accountId = UUID.fromString(rs.getString("COD_ACCOUNT").get());
-        val status = Transaction.Status.valueOf(rs.getString("COD_STATUS").get());
+        val status = Status.valueOf(rs.getString("COD_STATUS").get());
         val costCenterId = UUID.fromString(rs.getString("COD_COST_CENTER").get());
 
         final @Nullable Date paymentRaw = rs.getDate("DAT_PAYMENT").get();

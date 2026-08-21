@@ -6,6 +6,7 @@ import br.cdb.feature.f002._0_domain.model.Account;
 import br.cdb.feature.f002._0_domain.model.Balance;
 import br.cdb.feature.f002._1_application.usecase.ReadUseCase;
 import br.cdb.feature.f005._0_domain.model.Nature;
+import br.cdb.feature.f006._0_domain.model.Status;
 import br.cdb.feature.f006._0_domain.model.Transaction;
 import br.cdb.feature.f006._1_application.usecase.ReadUseCases;
 import br.commons.Result;
@@ -73,7 +74,7 @@ class ReadUseCaseTest extends AbstractUseCaseTest {
 
     private void seedTransaction(UUID accountId) {
         transactionRepository().save(new Transaction(UUID.randomUUID(), "compra", BigDecimal.TEN, LocalDate.of(2026, 5, 10),
-                accountId, Transaction.Status.CONFIRMED, Nature.EXPENSE, UUID.randomUUID(), null, null, 1, 1, null, null));
+                accountId, Status.CONFIRMED, Nature.EXPENSE, UUID.randomUUID(), null, null, 1, 1, null, null));
     }
 
     @Test

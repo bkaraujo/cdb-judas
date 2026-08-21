@@ -9,6 +9,7 @@ import br.cdb.feature.f002._1_application.usecase.ReadUseCase;
 import br.cdb.feature.f002._1_application.usecase.WriteUseCase;
 import br.cdb.feature.f003._0_domain.model.CreditCard;
 import br.cdb.feature.f005._0_domain.model.Nature;
+import br.cdb.feature.f006._0_domain.model.Status;
 import br.cdb.feature.f006._0_domain.model.Transaction;
 import br.cdb.feature.f006._1_application.usecase.ReadUseCases;
 import br.commons.Result;
@@ -68,7 +69,7 @@ class WriteUseCaseTest extends AbstractUseCaseTest {
 
     private Transaction seedTransaction(UUID accountId) {
         return transactionRepository().save(new Transaction(UUID.randomUUID(), "compra", BigDecimal.TEN, LocalDate.of(2026, 5, 10),
-                accountId, Transaction.Status.CONFIRMED, Nature.EXPENSE, UUID.randomUUID(), null, null, 1, 1, null, null));
+                accountId, Status.CONFIRMED, Nature.EXPENSE, UUID.randomUUID(), null, null, 1, 1, null, null));
     }
 
     @Test
@@ -190,8 +191,8 @@ class WriteUseCaseTest extends AbstractUseCaseTest {
         val other = seedChecking("Outra", true);
         val creditCard = cardRepository().save(new CreditCard(UUID.randomUUID(), "1234", source.id(), true));
         val groupId = UUID.randomUUID();
-        val outLeg = transactionRepository().save(new Transaction(UUID.randomUUID(), "Transferência (saída)", new BigDecimal("50.00"), LocalDate.of(2026, 5, 10), source.id(), Transaction.Status.CONFIRMED, Nature.EXPENSE, UUID.randomUUID(), null, groupId, 1, 2, null, null));
-        val inLeg = transactionRepository().save(new Transaction(UUID.randomUUID(), "Transferência (entrada)", new BigDecimal("50.00"), LocalDate.of(2026, 5, 10), other.id(), Transaction.Status.CONFIRMED, Nature.INCOME, UUID.randomUUID(), null, groupId, 2, 2, null, null));
+        val outLeg = transactionRepository().save(new Transaction(UUID.randomUUID(), "Transferência (saída)", new BigDecimal("50.00"), LocalDate.of(2026, 5, 10), source.id(), Status.CONFIRMED, Nature.EXPENSE, UUID.randomUUID(), null, groupId, 1, 2, null, null));
+        val inLeg = transactionRepository().save(new Transaction(UUID.randomUUID(), "Transferência (entrada)", new BigDecimal("50.00"), LocalDate.of(2026, 5, 10), other.id(), Status.CONFIRMED, Nature.INCOME, UUID.randomUUID(), null, groupId, 2, 2, null, null));
 
         val r = useCase.delete(new AccountCommand.Delete(source.id(), new TransactionPolicy.Purge()));
 

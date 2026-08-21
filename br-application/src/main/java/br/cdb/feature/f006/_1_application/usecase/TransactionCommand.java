@@ -1,7 +1,7 @@
 package br.cdb.feature.f006._1_application.usecase;
 
 import br.cdb.feature.f005._0_domain.model.Nature;
-import br.cdb.feature.f006._0_domain.model.Transaction;
+import br.cdb.feature.f006._0_domain.model.Status;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 
@@ -22,7 +22,7 @@ public sealed interface TransactionCommand {
             LocalDate date,
             UUID accountId,
             UUID costCenterId,
-            Transaction.Status status,
+            Status status,
             Nature type,
             @Nullable Integer installments,
             @Nullable String notes,
@@ -37,7 +37,7 @@ public sealed interface TransactionCommand {
             LocalDate date,
             UUID accountId,
             UUID costCenterId,
-            Transaction.Status status,
+            Status status,
             Nature type,
             TransactionScope scope,
             @Nullable String notes,

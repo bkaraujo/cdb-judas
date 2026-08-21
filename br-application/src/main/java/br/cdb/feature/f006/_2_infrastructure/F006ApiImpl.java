@@ -3,6 +3,7 @@ package br.cdb.feature.f006._2_infrastructure;
 import br.cdb.core.web.AbstractApiClient;
 import br.cdb.core.web.HTTPApi;
 import br.cdb.feature.f006.F006Api;
+import br.cdb.feature.f006._0_domain.model.Status;
 import br.cdb.feature.f006._0_domain.model.Transaction;
 import br.cdb.feature.f006._2_infrastructure.web.TransactionResource;
 import br.cdb.feature.f006._2_infrastructure.web.TransferResource;
@@ -41,7 +42,7 @@ import java.util.stream.Collectors;
 public class F006ApiImpl extends AbstractApiClient implements F006Api {
 
     @NullMarked
-    private record PatchStatusBody(Transaction.Status status, LocalDate paymentDate) {}
+    private record PatchStatusBody(Status status, LocalDate paymentDate) {}
 
     @NullMarked
     private record TransferBody(UUID fromAccountId, UUID toAccountId, LocalDate date, BigDecimal amount) {}
@@ -84,7 +85,7 @@ public class F006ApiImpl extends AbstractApiClient implements F006Api {
     }
 
     @Override
-    public TransactionDto patchStatus(UUID accountId, UUID transactionId, Transaction.Status status, LocalDate paymentDate) {
+    public TransactionDto patchStatus(UUID accountId, UUID transactionId, Status status, LocalDate paymentDate) {
         return patch("/accounts/" + accountId + "/transactions/" + transactionId + "/status",
                 new PatchStatusBody(status, paymentDate), TransactionDto.class);
     }

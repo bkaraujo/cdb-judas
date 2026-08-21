@@ -1,6 +1,7 @@
 package br.cdb.feature.f007._0_domain.model;
 
 import br.cdb.feature.f005._0_domain.model.Nature;
+import br.cdb.feature.f006._0_domain.model.Status;
 import br.cdb.feature.f006._0_domain.model.Transaction;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
@@ -27,7 +28,7 @@ public record TransactionDraft(
         LocalDate originalDate,
         String description,
         BigDecimal amount,
-        Transaction.Status status,
+        Status status,
         Nature type,
         UUID accountId,
         @Nullable UUID groupId,

@@ -1,5 +1,6 @@
 package br.cdb.feature.f007._1_application.preview;
 
+import br.cdb.feature.f006._0_domain.model.Status;
 import br.cdb.feature.f006._0_domain.model.Transaction;
 import br.cdb.feature.f007._0_domain.model.MonetaryDocumentEntry;
 import br.cdb.feature.f007._0_domain.model.TransactionDraft;
@@ -65,7 +66,7 @@ public class InstallmentExpander {
         return monthDay.atYear(year);
     }
 
-    private static Transaction.Status statusFor(LocalDate d, LocalDate today) {
-        return YearMonth.from(d).isAfter(YearMonth.from(today)) ? Transaction.Status.SCHEDULED : Transaction.Status.CONFIRMED;
+    private static Status statusFor(LocalDate d, LocalDate today) {
+        return YearMonth.from(d).isAfter(YearMonth.from(today)) ? Status.SCHEDULED : Status.CONFIRMED;
     }
 }

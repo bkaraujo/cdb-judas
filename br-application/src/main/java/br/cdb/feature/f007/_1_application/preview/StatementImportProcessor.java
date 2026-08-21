@@ -3,9 +3,9 @@ package br.cdb.feature.f007._1_application.preview;
 import br.cdb.feature.f000._0_domain.event.TransactionImported;
 import br.cdb.feature.f000._0_domain.model.CostCenter;
 import br.cdb.feature.f002.F002Api;
-import br.cdb.feature.f006.F006Api;
 import br.cdb.feature.f005._0_domain.model.Nature;
-import br.cdb.feature.f006._0_domain.model.Transaction;
+import br.cdb.feature.f006.F006Api;
+import br.cdb.feature.f006._0_domain.model.Status;
 import br.cdb.feature.f007._0_domain.model.*;
 import br.cdb.feature.f007._1_application.TransactionWriter;
 import br.cdb.feature.f007._1_application.confirm.StatementConfirmCommand;
@@ -116,7 +116,7 @@ public class StatementImportProcessor {
     }
 
     private boolean persistStatementRow(UUID personId, StatementConfirmCommand.Row row, UUID accountId, LocalDate today) {
-        val status = YearMonth.from(row.date()).isAfter(YearMonth.from(today)) ? Transaction.Status.SCHEDULED : Transaction.Status.CONFIRMED;
+        val status = YearMonth.from(row.date()).isAfter(YearMonth.from(today)) ? Status.SCHEDULED : Status.CONFIRMED;
         val type = row.type() != null ? row.type() : (row.amount().signum() < 0 ? Nature.EXPENSE : Nature.INCOME);
         val costCenterId = row.costCenterId() != null ? row.costCenterId() : CostCenter.VARIAVEL.id();
         val imported = new ImportedTransaction(row.description(), row.amount(), row.date(), accountId, status, type,
@@ -182,8 +182,8 @@ public class StatementImportProcessor {
         return out;
     }
 
-    private static boolean isReconcilable(Transaction.Status status) {
-        return Transaction.Status.PENDING.equals(status) || Transaction.Status.SCHEDULED.equals(status);
+    private static boolean isReconcilable(Status status) {
+        return Status.PENDING.equals(status) || Status.SCHEDULED.equals(status);
     }
 
     @NullMarked
