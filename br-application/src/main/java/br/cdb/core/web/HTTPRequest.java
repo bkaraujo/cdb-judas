@@ -12,6 +12,7 @@ import lombok.val;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 
+import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -20,6 +21,9 @@ public abstract class HTTPRequest {
 
     public static final String X_REQUEST_ID = "X-REQUEST-ID";
     public static final String X_REQUEST_USER = "X-REQUEST-USER";
+    /** Chave interna (não header HTTP) onde {@code LocaleFilter} guarda o locale resolvido da
+     *  requisição (via {@code Accept-Language}) — ver {@link #locale()}. */
+    public static final String LOCALE = "LOCALE";
     /** Header do token opaco rotativo — mora aqui (não em {@code LoginResource}) para que os
      *  filtros de {@code core.web.filter} o referenciem sem depender de {@code feature.f000}, nem
      *  mesmo silenciosamente (constante {@code String} é inlined em tempo de compilação, então um
@@ -63,6 +67,13 @@ public abstract class HTTPRequest {
         }
 
         return authenticated.personId();
+    }
+
+    /** Locale resolvido pelo {@code LocaleFilter} a partir de {@code Accept-Language} — pt-BR default
+     *  fora de requisição HTTP (listener de {@code MessageBus}, jobs) ou quando o filtro não rodou. */
+    public static Locale locale() {
+        val resolved = get(LOCALE, Locale.class);
+        return resolved != null ? resolved : Locale.of("pt", "BR");
     }
 
     public static boolean isStream(ContainerRequestContext request) {

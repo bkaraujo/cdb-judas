@@ -7,6 +7,6 @@ import org.jspecify.annotations.NullMarked;
 @NullMarked
 public record ClosingRequest(
         @NotBlank
-        @Pattern(regexp = "\\d{4}-\\d{2}", message = "Invalid format. Use YYYY-MM")
+        @Pattern(regexp = "\\d{4}-\\d{2}", message = "{cdb.validation.closingFormat}")
         String period
 ) {}

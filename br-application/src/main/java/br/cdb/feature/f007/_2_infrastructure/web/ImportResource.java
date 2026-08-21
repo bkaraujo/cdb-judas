@@ -112,16 +112,7 @@ public class ImportResource {
      *  diálogo tratar; o resto é entidade não encontrada (cartão/conta). */
     private static Response failure(BusinessError error, String notFoundCode) {
         val code = error instanceof BusinessError.BusinessRule ? "CLOSED_PERIOD" : notFoundCode;
-        return HTTPResponse.unprocessable(code, messageOf(error));
-    }
-
-    private static String messageOf(BusinessError error) {
-        return switch (error) {
-            case BusinessError.NotFound(var message) -> message;
-            case BusinessError.BusinessRule(var message) -> message;
-            case BusinessError.Validation(var message) -> message;
-            case BusinessError.Conflict(var message) -> message;
-        };
+        return HTTPResponse.unprocessable(code, error.render(HTTPRequest.locale()));
     }
 
 }

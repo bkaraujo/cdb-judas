@@ -330,6 +330,53 @@ public class F005CategoryResourceTest extends BaseHttpTest {
                 .then().statusCode(404);
     }
 
+    /** Mesmo BusinessError, mensagem em locale diferente conforme Accept-Language — modelo de i18n
+     *  (br.commons.i18n.Messages), fatia f005 migrada como exemplo. code é a própria chave de tradução,
+     *  estável nos dois locales. */
+    @Test
+    void mensagemDeErroRespeitaAcceptLanguage() {
+        String macroId = createCategory("Casa", "EXPENSE", null);
+        String subId = createCategory("Aluguel", "EXPENSE", macroId);
+        String accountId = createAccount();
+        createTransaction(accountId, subId);
+        String targetId = UUID.randomUUID().toString();
+
+        asTestUser()
+                .queryParam("strategy", "MOVE")
+                .queryParam("targetId", targetId)
+                .when().delete("/api/" + TEST_USER_ID + "/categories/" + subId)
+                .then().statusCode(404)
+                .body("code", is("category.notFound"))
+                .body("detail", is("Categoria não encontrada: " + targetId));
+
+        asTestUser()
+                .header("Accept-Language", "en-US")
+                .queryParam("strategy", "MOVE")
+                .queryParam("targetId", targetId)
+                .when().delete("/api/" + TEST_USER_ID + "/categories/" + subId)
+                .then().statusCode(404)
+                .body("code", is("category.notFound"))
+                .body("detail", is("Category not found: " + targetId));
+    }
+
+    /** ValidationMessages_pt_BR.properties traduz as mensagens padrão do Jakarta Validation (antes só
+     *  o default em inglês do Hibernate Validator). Diferente de BusinessError (ver
+     *  {@link #mensagemDeErroRespeitaAcceptLanguage}), NÃO respeita Accept-Language por requisição:
+     *  confirmado (com {@code LocaleResolver} próprio, ver histórico) que o interceptor de validação
+     *  de parâmetro do Quarkus para JAX-RS (diferente do pipeline de GraphQL) sempre resolve contra
+     *  {@code quarkus.default-locale}, nunca consulta o {@code LocaleResolver} dinâmico — limitação
+     *  conhecida do Quarkus/Hibernate Validator 9.1 nesta versão, não deste modelo. Fixar isso exigiria
+     *  reimplementar a interpolação a partir de {@code ConstraintViolation#getMessageTemplate()} em vez
+     *  de confiar em {@code getMessage()} — fora de escopo desta rodada (infra + exemplo). */
+    @Test
+    void validacaoDeBeanUsaMensagemPtBr() {
+        asTestUser()
+                .body("{\"name\":\"\",\"nature\":\"EXPENSE\"}")
+                .when().post("/api/" + TEST_USER_ID + "/categories")
+                .then().statusCode(422)
+                .body("detail", is("create.req.name: não pode estar em branco"));
+    }
+
     @Test
     void deleteExpandeParaPernaDeTransferenciaEmOutraConta() {
         String macroId = createCategory("Casa", "EXPENSE", null);

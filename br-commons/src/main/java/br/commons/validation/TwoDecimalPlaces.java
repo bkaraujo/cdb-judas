@@ -12,7 +12,7 @@ import java.lang.annotation.*;
 @Target({ElementType.FIELD, ElementType.PARAMETER})
 @Retention(RetentionPolicy.RUNTIME)
 public @interface TwoDecimalPlaces {
-    String message() default "must have at most 2 decimal places";
+    String message() default "{cdb.validation.twoDecimalPlaces}";
     Class<?>[] groups() default {};
     Class<? extends Payload>[] payload() default {};
 }

@@ -1,36 +1,35 @@
 package br.commons.business;
 
+import br.commons.i18n.Messages;
 import org.jspecify.annotations.NullMarked;
 
+import java.util.Locale;
+
+/**
+ * Erro de domínio. {@code key} é uma chave de tradução (ver {@link Messages}), não texto pronto —
+ * {@link #render(Locale)} é o único ponto que vira texto, resolvido no locale de quem pede (a
+ * requisição HTTP, tipicamente), nunca no instante em que o erro nasce dentro do use case.
+ */
 @NullMarked
 public sealed interface BusinessError {
-    
-    @NullMarked
-    record NotFound(String message) implements BusinessError {
-        public NotFound(String message, Object ... args) {
-            this(String.format(message, args));
-        }
-    }
-    
-    @NullMarked
-    record BusinessRule(String message) implements BusinessError {
-        public BusinessRule(String message, Object ... args) {
-            this(String.format(message, args));
-        }
+
+    String key();
+    Object[] args();
+
+    default String render(Locale locale) {
+        return Messages.of(key(), locale, args());
     }
 
     @NullMarked
-    record Validation(String message) implements BusinessError {
-        public Validation(String message, Object ... args) {
-            this(String.format(message, args));
-        }
-    }
+    record NotFound(String key, Object... args) implements BusinessError {}
 
     @NullMarked
-    record Conflict(String message) implements BusinessError {
-        public Conflict(String message, Object ... args) {
-            this(String.format(message, args));
-        }
-    }
+    record BusinessRule(String key, Object... args) implements BusinessError {}
+
+    @NullMarked
+    record Validation(String key, Object... args) implements BusinessError {}
+
+    @NullMarked
+    record Conflict(String key, Object... args) implements BusinessError {}
 
 }

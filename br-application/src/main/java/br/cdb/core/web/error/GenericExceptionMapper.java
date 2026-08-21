@@ -2,6 +2,7 @@ package br.cdb.core.web.error;
 
 import br.cdb.core.web.HTTPRequest;
 import br.commons.Logger;
+import br.commons.i18n.Messages;
 import br.commons.tools.Strings;
 import jakarta.ws.rs.WebApplicationException;
 import jakarta.ws.rs.core.Context;
@@ -43,7 +44,8 @@ public class GenericExceptionMapper implements ExceptionMapper<Exception> {
         val cause = ex.getCause();
         if (cause != null) { Logger.error(() -> Strings.orEmpty(cause.getMessage())); }
 
-        val pd = ProblemDetail.of(Response.Status.INTERNAL_SERVER_ERROR, instance, "Erro interno");
+        val pd = ProblemDetail.of(Response.Status.INTERNAL_SERVER_ERROR, instance,
+                Messages.of("error.internal", HTTPRequest.locale()));
         return Response.status(pd.status()).entity(pd).build();
     }
 

@@ -21,12 +21,14 @@ public class DomainExceptionMapper implements ExceptionMapper<BusinessException>
     @Override
     public Response toResponse(BusinessException ex) {
         val instance = HTTPRequest.path(uriInfo);
-        val pd = switch (ex.getError()) {
-            case BusinessError.NotFound ignored -> ProblemDetail.of(Response.Status.NOT_FOUND, instance, ex.getMessage());
-            case BusinessError.Conflict ignored -> ProblemDetail.of(Response.Status.CONFLICT, instance, ex.getMessage());
-            case BusinessError.Validation ignored -> ProblemDetail.unprocessableContent(instance, ex.getMessage());
-            case BusinessError.BusinessRule ignored -> ProblemDetail.of(Response.Status.BAD_REQUEST, instance, ex.getMessage());
+        val error = ex.getError();
+        val detail = error.render(HTTPRequest.locale());
+        val pd = switch (error) {
+            case BusinessError.NotFound ignored -> ProblemDetail.of(Response.Status.NOT_FOUND, instance, detail);
+            case BusinessError.Conflict ignored -> ProblemDetail.of(Response.Status.CONFLICT, instance, detail);
+            case BusinessError.Validation ignored -> ProblemDetail.unprocessableContent(instance, detail);
+            case BusinessError.BusinessRule ignored -> ProblemDetail.of(Response.Status.BAD_REQUEST, instance, detail);
         };
-        return Response.status(pd.status()).entity(pd).build();
+        return Response.status(pd.status()).entity(pd.withCode(error.key())).build();
     }
 }

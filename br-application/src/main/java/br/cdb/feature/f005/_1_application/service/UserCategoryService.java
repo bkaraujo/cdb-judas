@@ -50,14 +50,13 @@ public class UserCategoryService {
     public Result<Category, BusinessError> findById(UUID id) {
         return repo.findById(id)
                 .<Result<Category, BusinessError>>map(Result::success)
-                .orElseGet(() -> Result.failure(new BusinessError.NotFound("Category not found: %s", id)));
+                .orElseGet(() -> Result.failure(new BusinessError.NotFound("category.notFound", id)));
     }
 
     public Result<Void, BusinessError> validateNotMacroCategory(UUID categoryId) {
         return findById(categoryId).flatMap(cat -> {
             if (cat.parentId() == null) {
-                return Result.failure(new BusinessError.BusinessRule(
-                        "Não é permitido lançar transações em macro-categorias. Selecione uma subcategoria."));
+                return Result.failure(new BusinessError.BusinessRule("category.macroCategory"));
             }
             return Result.success();
         });
@@ -67,14 +66,14 @@ public class UserCategoryService {
         return repo.findById(parentId)
                 .<Result<Void, BusinessError>>map(parent -> {
                     if (parent.parentId() != null) {
-                        return Result.failure(new BusinessError.BusinessRule("Subcategoria não pode ter outra subcategoria como pai"));
+                        return Result.failure(new BusinessError.BusinessRule("category.subcategoryParentMustBeRoot"));
                     }
                     if (parent.nature() != nature) {
-                        return Result.failure(new BusinessError.BusinessRule("Natureza da subcategoria deve ser igual à do pai"));
+                        return Result.failure(new BusinessError.BusinessRule("category.subcategoryNatureMustMatchParent"));
                     }
                     return Result.success();
                 })
-                .orElseGet(() -> Result.failure(new BusinessError.NotFound("Category not found: %s", parentId)));
+                .orElseGet(() -> Result.failure(new BusinessError.NotFound("category.notFound", parentId)));
     }
 
     public Result<Void, BusinessError> validateUniqueName(UUID personId, String nature, String name, @Nullable UUID parentId, @Nullable UUID excludeId) {
@@ -85,7 +84,7 @@ public class UserCategoryService {
                 .findFirst();
 
         if (optional.isPresent()) {
-            return Result.failure(new BusinessError.BusinessRule("Já existe uma categoria com o nome '%s' neste nível", name));
+            return Result.failure(new BusinessError.BusinessRule("category.duplicateName", name));
         }
         return Result.success();
     }
@@ -134,9 +133,9 @@ public class UserCategoryService {
     public Result<List<UUID>, BusinessError> subtreeIds(UUID id, UUID personId) {
         val all = repo.findAllByPerson(personId);
         val root = all.stream().filter(c -> c.id().equals(id)).findFirst();
-        if (root.isEmpty()) return Result.failure(new BusinessError.NotFound("Category not found: %s", id));
+        if (root.isEmpty()) return Result.failure(new BusinessError.NotFound("category.notFound", id));
         if (root.get().isSystem()) {
-            return Result.failure(new BusinessError.BusinessRule("Categoria de sistema não pode ser excluída"));
+            return Result.failure(new BusinessError.BusinessRule("category.systemCannotBeDeleted"));
         }
 
         val ids = new ArrayList<UUID>();
@@ -150,27 +149,27 @@ public class UserCategoryService {
     public Result<List<UUID>, BusinessError> validateMoveTarget(UUID id, UUID targetId, UUID personId) {
         val all = repo.findAllByPerson(personId);
         val rootOpt = all.stream().filter(c -> c.id().equals(id)).findFirst();
-        if (rootOpt.isEmpty()) return Result.failure(new BusinessError.NotFound("Category not found: %s", id));
+        if (rootOpt.isEmpty()) return Result.failure(new BusinessError.NotFound("category.notFound", id));
         val root = rootOpt.get();
 
         val targetOpt = all.stream().filter(c -> c.id().equals(targetId)).findFirst();
-        if (targetOpt.isEmpty()) return Result.failure(new BusinessError.NotFound("Category not found: %s", targetId));
+        if (targetOpt.isEmpty()) return Result.failure(new BusinessError.NotFound("category.notFound", targetId));
         val target = targetOpt.get();
 
         if (target.parentId() == null) {
-            return Result.failure(new BusinessError.BusinessRule("Categoria de destino deve ser uma subcategoria"));
+            return Result.failure(new BusinessError.BusinessRule("category.moveTargetMustBeSubcategory"));
         }
         if (target.nature() != root.nature()) {
-            return Result.failure(new BusinessError.BusinessRule("Categoria de destino deve ter a mesma natureza"));
+            return Result.failure(new BusinessError.BusinessRule("category.moveTargetNatureMismatch"));
         }
         if (!target.active()) {
-            return Result.failure(new BusinessError.BusinessRule("Categoria de destino está inativa"));
+            return Result.failure(new BusinessError.BusinessRule("category.moveTargetInactive"));
         }
 
         val subtree = new ArrayList<UUID>();
         collectSubtree(id, all, subtree);
         if (subtree.contains(targetId)) {
-            return Result.failure(new BusinessError.BusinessRule("Categoria de destino não pode pertencer à subárvore excluída"));
+            return Result.failure(new BusinessError.BusinessRule("category.moveTargetInsideSubtree"));
         }
         return Result.success(subtree);
     }

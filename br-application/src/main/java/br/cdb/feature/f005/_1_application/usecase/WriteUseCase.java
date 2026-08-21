@@ -68,7 +68,7 @@ public class WriteUseCase {
     public Result<Category, BusinessError> updateCategory(UUID personId, UUID id, String name, @Nullable UUID parentId, @Nullable Boolean active) {
         return reads.category(id).flatMap(existing -> {
             if (existing.isSystem()) {
-                return Result.failure(new BusinessError.BusinessRule("Categoria de sistema não pode ser modificada"));
+                return Result.failure(new BusinessError.BusinessRule("category.systemCannotBeModified"));
             }
             return service.validateUniqueName(personId, existing.nature().name(), name, parentId, id)
                     .map(ignored -> service.update(id, name, parentId, active));
