@@ -61,7 +61,7 @@ public class F004ApiImpl extends AbstractApiClient implements F004Api {
         val owned = tags().stream().map(TagView::id).collect(Collectors.toUnmodifiableSet());
         for (val tagId : tagIds) {
             if (!owned.contains(tagId)) {
-                return Result.failure(new BusinessError.NotFound("Tag not found: %s", tagId));
+                return Result.failure(new BusinessError.NotFound("tag.notFound", tagId));
             }
         }
         return Result.success();
