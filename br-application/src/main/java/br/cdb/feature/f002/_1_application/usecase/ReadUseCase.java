@@ -89,7 +89,7 @@ public class ReadUseCase {
             val account = findAccount(accountId, personId);
             if (account.isFailure()) {
                 Logger.warn("Conta %s não pertence ao usuário", accountId.toString());
-                return Result.failure(new BusinessError.NotFound("account.notFound", accountId));
+                return Result.failure(new BusinessError.NotFound("f002.account.notFound", accountId));
             }
 
             return Result.success(new AccountView(

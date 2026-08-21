@@ -36,7 +36,7 @@ public class CreditCardService {
     public Result<CreditCard, BusinessError> findById(UUID id) {
         return repository.findById(id)
                 .<Result<CreditCard, BusinessError>>map(Result::success)
-                .orElseGet(() -> Result.failure(new BusinessError.NotFound("creditCard.notFound", id)));
+                .orElseGet(() -> Result.failure(new BusinessError.NotFound("f003.creditCard.notFound", id)));
     }
 
     public CreditCard save(CreditCard creditCard) {

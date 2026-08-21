@@ -45,7 +45,7 @@ public class GenericExceptionMapper implements ExceptionMapper<Exception> {
         if (cause != null) { Logger.error(() -> Strings.orEmpty(cause.getMessage())); }
 
         val pd = ProblemDetail.of(Response.Status.INTERNAL_SERVER_ERROR, instance,
-                Messages.of("error.internal", HTTPRequest.locale()));
+                Messages.of("core.error.internal", HTTPRequest.locale()));
         return Response.status(pd.status()).entity(pd).build();
     }
 

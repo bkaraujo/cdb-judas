@@ -346,7 +346,7 @@ public class F005CategoryResourceTest extends BaseHttpTest {
                 .queryParam("targetId", targetId)
                 .when().delete("/api/" + TEST_USER_ID + "/categories/" + subId)
                 .then().statusCode(404)
-                .body("code", is("category.notFound"))
+                .body("code", is("f005.category.notFound"))
                 .body("detail", is("Categoria não encontrada: " + targetId));
 
         asTestUser()
@@ -355,7 +355,7 @@ public class F005CategoryResourceTest extends BaseHttpTest {
                 .queryParam("targetId", targetId)
                 .when().delete("/api/" + TEST_USER_ID + "/categories/" + subId)
                 .then().statusCode(404)
-                .body("code", is("category.notFound"))
+                .body("code", is("f005.category.notFound"))
                 .body("detail", is("Category not found: " + targetId));
     }
 

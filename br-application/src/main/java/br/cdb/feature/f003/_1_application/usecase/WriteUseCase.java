@@ -105,7 +105,7 @@ public class WriteUseCase {
 
     private Result<CreditCard, BusinessError> create(UUID accountId, String last4) {
         if (!LAST4.matcher(last4).matches()) {
-            return Result.failure(new BusinessError.Validation("creditCard.last4InvalidLength"));
+            return Result.failure(new BusinessError.Validation("f003.creditCard.last4InvalidLength"));
         }
 
         return accountService
@@ -116,13 +116,13 @@ public class WriteUseCase {
 
     private Result<CreditCard, BusinessError> createCardFor(String last4, Account account) {
         if (!account.active()) {
-            return Result.failure(new BusinessError.BusinessRule("account.inactive", account.id()));
+            return Result.failure(new BusinessError.BusinessRule("f003.account.inactive", account.id()));
         }
 
         val duplicate = service.findByAccount(account.id()).stream()
                 .anyMatch(c -> c.last4().equals(last4));
         if (duplicate) {
-            return Result.failure(new BusinessError.Conflict("creditCard.alreadyRegistered", last4));
+            return Result.failure(new BusinessError.Conflict("f003.creditCard.alreadyRegistered", last4));
         }
 
         val saved = service.save(new CreditCard(UUID.randomUUID(), last4, account.id(), true));
@@ -141,7 +141,7 @@ public class WriteUseCase {
 
     private Result<List<UUID>, BusinessError> deleteBlock(CreditCard creditCard) {
         if (!transactionService.findByCard(creditCard.id()).isEmpty()) {
-            return Result.failure(new BusinessError.Conflict("creditCard.hasLinkedTransactions", creditCard.id()));
+            return Result.failure(new BusinessError.Conflict("f003.creditCard.hasLinkedTransactions", creditCard.id()));
         }
         service.deleteById(creditCard.id());
         return Result.success(List.of());
@@ -151,15 +151,15 @@ public class WriteUseCase {
         return service.findById(targetId).flatMap(target -> {
             if (target.id().equals(creditCard.id())) {
                 return Result.<List<UUID>>failure(
-                        new BusinessError.BusinessRule("creditCard.transferTargetMustDiffer", targetId));
+                        new BusinessError.BusinessRule("f003.creditCard.transferTargetMustDiffer", targetId));
             }
             if (!target.accountId().equals(creditCard.accountId())) {
                 return Result.<List<UUID>>failure(
-                        new BusinessError.BusinessRule("creditCard.transferTargetMustBeSameAccount", targetId));
+                        new BusinessError.BusinessRule("f003.creditCard.transferTargetMustBeSameAccount", targetId));
             }
             if (!target.active()) {
                 return Result.<List<UUID>>failure(
-                        new BusinessError.BusinessRule("creditCard.transferTargetInactive", targetId));
+                        new BusinessError.BusinessRule("f003.creditCard.transferTargetInactive", targetId));
             }
 
             val movedIds = transactionService.findByCard(creditCard.id()).stream().map(Transaction::id).toList();

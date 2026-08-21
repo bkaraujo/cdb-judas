@@ -72,7 +72,7 @@ public class SelfResource {
     private Result<String, BusinessError> username(String personId) {
         return userRepository.findByPersonId(personId)
                 .<Result<String, BusinessError>>map(user -> Result.success(user.username()))
-                .orElseGet(() -> Result.failure(new BusinessError.NotFound("user.notFound")));
+                .orElseGet(() -> Result.failure(new BusinessError.NotFound("f001.user.notFound")));
     }
 
     @Nullable

@@ -179,7 +179,7 @@ public class WriteUseCases {
         val closed = Context.get(F002Api.class).closingPeriod();
         for (val date : dates) {
             if (closed.covers(date)) {
-                return Result.failure(new BusinessError.BusinessRule("closingPeriod.locked", closed.label()));
+                return Result.failure(new BusinessError.BusinessRule("f006.closingPeriod.locked", closed.label()));
             }
         }
         return Result.success();
@@ -283,7 +283,7 @@ public class WriteUseCases {
     private Result<Transaction, BusinessError> updateTransfer(Transaction edited, List<Transaction> siblings, TransactionCommand.Update cmd) {
         val newAccount = cmd.accountId();
         if (siblings.stream().anyMatch(sib -> newAccount.equals(sib.accountId()))) {
-            return Result.failure(new BusinessError.BusinessRule("account.transferSameSource"));
+            return Result.failure(new BusinessError.BusinessRule("f006.account.transferSameSource"));
         }
 
         val absAmount = cmd.amount().abs();
@@ -399,7 +399,7 @@ public class WriteUseCases {
 
     public Result<Transaction, BusinessError> createTransfer(UUID fromAccountId, UUID toAccountId, LocalDate date, BigDecimal amount) {
         if (fromAccountId.equals(toAccountId)) {
-            return Result.failure(new BusinessError.BusinessRule("account.transferSameSource"));
+            return Result.failure(new BusinessError.BusinessRule("f006.account.transferSameSource"));
         }
 
         val groupId = UUID.randomUUID();
@@ -516,7 +516,7 @@ public class WriteUseCases {
 
     private static Result<Void, BusinessError> validateCardOwner(UUID accountId, CreditCard creditCard) {
         if (!accountId.equals(creditCard.accountId())) {
-            return Result.failure(new BusinessError.BusinessRule("creditCard.accountMismatch", creditCard.id()));
+            return Result.failure(new BusinessError.BusinessRule("f006.creditCard.accountMismatch", creditCard.id()));
         }
         return Result.success();
     }

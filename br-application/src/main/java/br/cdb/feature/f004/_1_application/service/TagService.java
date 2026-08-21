@@ -27,20 +27,20 @@ public class TagService {
     public Result<Tag, BusinessError> find(UUID personId, UUID tagId) {
         return repository.findByPersonAndId(personId, tagId)
                 .<Result<Tag, BusinessError>>map(Result::success)
-                .orElseGet(() -> Result.failure(new BusinessError.NotFound("tag.notFound", tagId)));
+                .orElseGet(() -> Result.failure(new BusinessError.NotFound("f004.tag.notFound", tagId)));
     }
 
     public Result<Tag, BusinessError> findById(UUID id) {
         return repository.findById(id)
                 .<Result<Tag, BusinessError>>map(Result::success)
-                .orElseGet(() -> Result.failure(new BusinessError.NotFound("tag.notFound", id)));
+                .orElseGet(() -> Result.failure(new BusinessError.NotFound("f004.tag.notFound", id)));
     }
 
     public Result<Tag, BusinessError> create(UUID personId, String name, String color) {
         val duplicate = repository.findAllByPerson(personId).stream()
                 .anyMatch(t -> t.name().trim().equalsIgnoreCase(name.trim()));
         if (duplicate) {
-            return Result.failure(new BusinessError.Conflict("tag.duplicateName", name.trim()));
+            return Result.failure(new BusinessError.Conflict("f004.tag.duplicateName", name.trim()));
         }
         val saved = repository.save(new Tag(UUID.randomUUID(), personId, name, color, null));
         MessageBus.submit(new TagEvents.Created(saved));

@@ -46,7 +46,7 @@ public class ProfileService {
     /** Atualiza o nome de exibição. Aplica trim; nome em branco é rejeitado. */
     public Result<Profile, BusinessError> updateName(String personId, String name) {
         val trimmed = name.trim();
-        if (trimmed.isBlank()) return Result.failure(new BusinessError.Validation("person.newNameBlank"));
+        if (trimmed.isBlank()) return Result.failure(new BusinessError.Validation("f000.person.newNameBlank"));
 
         return personReads.person(personId)
                 .flatMap(person -> personWrites.renamePerson(person, trimmed))

@@ -56,7 +56,7 @@ public class ImportRuleService {
                 .map(rule -> rule.withTriggers(
                         triggerRepository.findTriggersByPerson(personId).getOrDefault(rule.id(), List.of())))
                 .<Result<ImportRule, BusinessError>>map(Result::success)
-                .orElseGet(() -> Result.failure(new BusinessError.NotFound("importRule.notFound", id)));
+                .orElseGet(() -> Result.failure(new BusinessError.NotFound("f010.importRule.notFound", id)));
     }
 
     public Result<ImportRule, BusinessError> create(
@@ -116,7 +116,7 @@ public class ImportRuleService {
             for (val candidate : normalizedCandidates) {
                 if (candidate.contains(otherNormalized) || otherNormalized.contains(candidate)) {
                     return new BusinessError.Conflict(
-                            "importRule.ambiguousTrigger", other.name(), otherTrigger);
+                            "f010.importRule.ambiguousTrigger", other.name(), otherTrigger);
                 }
             }
         }

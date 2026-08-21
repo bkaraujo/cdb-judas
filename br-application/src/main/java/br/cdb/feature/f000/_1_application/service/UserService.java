@@ -30,7 +30,7 @@ public class UserService {
         Logger.debug("Criando usuário %s", username);
 
         if (userRepository.findByUsername(username).isPresent()) {
-            return Result.failure(new BusinessError.Validation("user.alreadyExists", username));
+            return Result.failure(new BusinessError.Validation("f000.user.alreadyExists", username));
         }
 
         // 1 - Cria a Person (dono dos recursos; toda a funcionalidade referencia a Person)

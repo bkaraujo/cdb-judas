@@ -36,7 +36,7 @@ public class BalanceService {
                 .filter(b -> b.period().equals(period))
                 .findFirst()
                 .<Result<Balance, BusinessError>>map(Result::success)
-                .orElseGet(() -> Result.failure(new BusinessError.NotFound("balance.notFoundForPeriod", period)));
+                .orElseGet(() -> Result.failure(new BusinessError.NotFound("f002.balance.notFoundForPeriod", period)));
     }
 
     public List<Balance> findByAccountAndYear(UUID accountId, int year) {

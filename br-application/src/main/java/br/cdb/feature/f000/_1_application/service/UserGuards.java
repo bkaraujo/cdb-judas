@@ -40,7 +40,7 @@ public class UserGuards {
 
     public Result<Void, BusinessError> ownsAccount(UUID accountId) {
         if (!ownedAccounts().contains(accountId)) {
-            return Result.failure(new BusinessError.NotFound("account.notFound", accountId));
+            return Result.failure(new BusinessError.NotFound("f002.account.notFound", accountId));
         }
         return Result.success();
     }
@@ -57,7 +57,7 @@ public class UserGuards {
     public Result<Void, BusinessError> ownsCard(UUID cardId) {
         val accountId = accountByCard().get(cardId);
         if (accountId == null || !ownedAccounts().contains(accountId)) {
-            return Result.failure(new BusinessError.NotFound("creditCard.notFound", cardId));
+            return Result.failure(new BusinessError.NotFound("f003.creditCard.notFound", cardId));
         }
         return Result.success();
     }
@@ -65,7 +65,7 @@ public class UserGuards {
     public Result<Void, BusinessError> ownsCard(UUID accountId, UUID cardId) {
         return ownsAccount(accountId).flatMap(ignored -> {
             if (!accountId.equals(accountByCard().get(cardId))) {
-                return Result.failure(new BusinessError.NotFound("creditCard.notFound", cardId));
+                return Result.failure(new BusinessError.NotFound("f003.creditCard.notFound", cardId));
             }
             return Result.success();
         });
