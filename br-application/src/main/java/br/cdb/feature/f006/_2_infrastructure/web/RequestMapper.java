@@ -1,5 +1,6 @@
 package br.cdb.feature.f006._2_infrastructure.web;
 
+import br.cdb.feature.f005._0_domain.model.Nature;
 import br.cdb.feature.f006._0_domain.model.Transaction;
 import br.cdb.feature.f006._1_application.usecase.TransactionCommand;
 import br.cdb.feature.f006._1_application.usecase.TransactionScope;
@@ -23,7 +24,7 @@ public abstract class RequestMapper {
                 t.categoryId(),
                 t.accountId(),
                 t.status(),
-                t.type(),
+                t.signal() > 0 ? Nature.INCOME : Nature.EXPENSE,
                 t.costCenterId(),
                 t.paymentDate(),
                 t.groupId(),

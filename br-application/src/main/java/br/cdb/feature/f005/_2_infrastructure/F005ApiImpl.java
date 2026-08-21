@@ -34,4 +34,14 @@ public class F005ApiImpl extends AbstractApiClient implements F005Api {
     public UUID transferCategoryId(Nature nature) {
         return get("/categories/transfer?nature=" + nature.name(), TransferCategoryDto.class).id();
     }
+
+    /** Corpo mínimo do endpoint {@code GET /categories/{id}/nature} — espelha
+     *  {@code CategoryNatureResponse} sem obrigar o consumidor a conhecê-lo. */
+    @NullMarked
+    private record CategoryNatureDto(Nature nature) {}
+
+    @Override
+    public Nature natureOf(UUID categoryId) {
+        return get("/categories/" + categoryId + "/nature", CategoryNatureDto.class).nature();
+    }
 }

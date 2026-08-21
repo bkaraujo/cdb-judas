@@ -301,20 +301,21 @@ public class WriteUseCases {
     /** Transfer legs never carry a card — cardId is always null. */
     private static Transaction withTransferEdits(Transaction leg, UUID accountId, BigDecimal absAmount, LocalDate date, Status status) {
         return new Transaction(
-                leg.id(), leg.description(), absAmount, date,
-                accountId, status, leg.type(), leg.costCenterId(),
+                leg.id(), leg.description(), leg.signal(), absAmount, date.atStartOfDay(),
+                accountId, status, leg.costCenterId(),
                 Status.CONFIRMED.equals(status) ? date : null,
-                leg.groupId(), leg.installmentNumber(), leg.totalInstallments(), leg.notes(), null);
+                leg.groupId(), leg.installmentNumber(), leg.totalInstallments(), leg.notes(),
+                leg.createdAt(), leg.updatedAt(), null);
     }
 
     public Result<Transaction, BusinessError> updateTransactionStatus(UUID id, Status status, @Nullable LocalDate paymentDate) {
         return service.findById(id)
                 .map(existing -> {
                     val saved = service.save(new Transaction(
-                            existing.id(), existing.description(), existing.amount(), existing.date(),
-                            existing.accountId(), status, existing.type(), existing.costCenterId(), paymentDate,
+                            existing.id(), existing.description(), existing.signal(), existing.amount(), existing.purchasedAt(),
+                            existing.accountId(), status, existing.costCenterId(), paymentDate,
                             existing.groupId(), existing.installmentNumber(), existing.totalInstallments(), existing.notes(),
-                            existing.cardId()
+                            existing.createdAt(), existing.updatedAt(), existing.cardId()
                     ));
                     MessageBus.submit(new TransactionEvents.Updated(saved));
                     return saved;
@@ -481,7 +482,7 @@ public class WriteUseCases {
     }
 
     private static UUID transferCategoryFor(Transaction leg, UUID expenseCategoryId, UUID incomeCategoryId) {
-        return leg.type() == Nature.EXPENSE ? expenseCategoryId : incomeCategoryId;
+        return leg.signal() < 0 ? expenseCategoryId : incomeCategoryId;
     }
 
     /** Persiste uma transação já montada pelo chamador. Valida a invariante de cartão. */

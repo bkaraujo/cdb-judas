@@ -10,7 +10,7 @@ import java.util.List;
 import java.util.UUID;
 
 /**
- * Confirm a bank-statement import. {@code type} may be null when the sign of {@code amount}
+ * Confirm a bank-statement import. {@code nature} may be null when the sign of {@code amount}
  * unambiguously determines the direction (positive = income, negative = expense).
  */
 @NullMarked

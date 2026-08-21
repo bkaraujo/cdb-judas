@@ -233,8 +233,8 @@ class WriteUseCasesTest extends AbstractUseCaseTest {
         UUID groupId = all.get(0).groupId();
         assertNotNull(groupId);
         assertTrue(all.stream().allMatch(t -> groupId.equals(t.groupId())));
-        assertTrue(all.stream().anyMatch(t -> Nature.EXPENSE.equals(t.type()) && accountId.equals(t.accountId())));
-        assertTrue(all.stream().anyMatch(t -> Nature.INCOME.equals(t.type()) && toAccount.equals(t.accountId())));
+        assertTrue(all.stream().anyMatch(t -> t.signal() < 0 && accountId.equals(t.accountId())));
+        assertTrue(all.stream().anyMatch(t -> t.signal() > 0 && toAccount.equals(t.accountId())));
     }
 
     @Test
@@ -251,7 +251,7 @@ class WriteUseCasesTest extends AbstractUseCaseTest {
     void deleteTransferLegRemovesBothLegs() {
         saveTransferPair(LocalDate.of(2026, 5, 10), accountId, UUID.randomUUID());
         Transaction entrada = transactionRepository().findAll().stream()
-                .filter(t -> Nature.INCOME.equals(t.type())).findFirst().orElseThrow();
+                .filter(t -> t.signal() > 0).findFirst().orElseThrow();
 
         Result<List<UUID>, BusinessError> r = useCase.delete(new TransactionCommand.Delete(entrada.id(), new TransactionScope.Single()));
         assertTrue(r.isSuccess());
@@ -263,7 +263,7 @@ class WriteUseCasesTest extends AbstractUseCaseTest {
     void deleteTransferLegIgnoresMode() {
         saveTransferPair(LocalDate.of(2026, 5, 10), accountId, UUID.randomUUID());
         Transaction saida = transactionRepository().findAll().stream()
-                .filter(t -> Nature.EXPENSE.equals(t.type())).findFirst().orElseThrow();
+                .filter(t -> t.signal() < 0).findFirst().orElseThrow();
 
         assertTrue(useCase.delete(new TransactionCommand.Delete(saida.id(), new TransactionScope.Future())).isSuccess());
         assertEquals(0, transactionRepository().findAll().size());
@@ -275,9 +275,9 @@ class WriteUseCasesTest extends AbstractUseCaseTest {
         UUID toAccount = UUID.randomUUID();
         UUID groupId = saveTransferPair(LocalDate.of(2026, 5, 10), accountId, toAccount);
         Transaction entrada = transactionRepository().findAll().stream()
-                .filter(t -> Nature.INCOME.equals(t.type())).findFirst().orElseThrow();
+                .filter(t -> t.signal() > 0).findFirst().orElseThrow();
         Transaction saida = transactionRepository().findAll().stream()
-                .filter(t -> Nature.EXPENSE.equals(t.type())).findFirst().orElseThrow();
+                .filter(t -> t.signal() < 0).findFirst().orElseThrow();
 
         UUID newAccount = UUID.randomUUID();
         TransactionCommand.Update upd = new TransactionCommand.Update(entrada.id(), "ajuste", new BigDecimal("70.00"),
@@ -309,7 +309,7 @@ class WriteUseCasesTest extends AbstractUseCaseTest {
         UUID toAccount = UUID.randomUUID();
         saveTransferPair(LocalDate.of(2026, 5, 10), accountId, toAccount);
         Transaction saida = transactionRepository().findAll().stream()
-                .filter(t -> Nature.EXPENSE.equals(t.type())).findFirst().orElseThrow();
+                .filter(t -> t.signal() < 0).findFirst().orElseThrow();
 
         TransactionCommand.Update upd = new TransactionCommand.Update(saida.id(), "x", new BigDecimal("50.00"),
                 LocalDate.of(2026, 5, 10), toAccount, costCenterId,
@@ -462,7 +462,7 @@ class WriteUseCasesTest extends AbstractUseCaseTest {
     void deleteTransactionsExpandsTransferSiblings() {
         saveTransferPair(LocalDate.of(2026, 5, 10), accountId, UUID.randomUUID());
         Transaction saida = transactionRepository().findAll().stream()
-                .filter(t -> Nature.EXPENSE.equals(t.type())).findFirst().orElseThrow();
+                .filter(t -> t.signal() < 0).findFirst().orElseThrow();
 
         Result<Void, BusinessError> r = useCase.deleteTransactions(List.of(saida.id()));
 

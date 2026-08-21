@@ -119,7 +119,7 @@ class F007InvoiceImportResourceTest extends AbstractImportTest {
     @Test
     void btgLeCreditoDoBlocoComoLinhaDeReceita() throws IOException {
         // O cartão final 5115 só tem crédito (nenhuma compra): antes do fix o bloco inteiro caía;
-        // agora cada linha vira uma entrada type=income, sem expandir em carnê.
+        // agora cada linha vira uma entrada nature=income, sem expandir em carnê.
         val json = previewFixture(BTG_MAIO);
 
         assertTrue(json.getList("last4s", String.class).contains("5115"));

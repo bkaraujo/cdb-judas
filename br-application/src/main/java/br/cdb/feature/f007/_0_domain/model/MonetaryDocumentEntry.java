@@ -20,7 +20,7 @@ import java.time.MonthDay;
  * à-vista charges and bank movements are a single installment ({@code 1}/{@code 1}), so
  * {@link #isInstallment()} (total &gt; 1) tells the two apart. {@code last4} carries the
  * card for a charge and is {@code null} for a bank movement. {@code amount} is always the positive
- * BRL value as printed; {@code type} carries the sign instead — a card credit (refund/estorno) is
+ * BRL value as printed; {@code nature} carries the sign instead — a card credit (refund/estorno) is
  * {@code INCOME}, everything else {@code EXPENSE}. A credit never installments (always {@code 1/1}).
  */
 @NullMarked

@@ -11,7 +11,7 @@ import java.util.UUID;
 
 /**
  * Confirm a credit-card statement import: the rows the user kept. Deselected rows are simply absent.
- * {@code amount} is the POSITIVE charge/credit value — the server applies the sign from {@code type}
+ * {@code amount} is the POSITIVE charge/credit value — the server applies the sign from {@code nature}
  * ({@code EXPENSE} when the api omits it, matching every row before card credits were surfaced).
  * Status is recomputed server-side from {@code date}; no api status is trusted.
  *

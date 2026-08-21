@@ -14,9 +14,9 @@ import java.util.UUID;
 
 /**
  * Unified confirm-import payload for both credit-card invoices and bank statements. The
- * {@code type} discriminator (which the preview already returns) tells the server which confirm
+ * {@code nature} discriminator (which the preview already returns) tells the server which confirm
  * path to follow. Fields specific to one path are {@code @Nullable} and validated by the resource
- * layer according to the declared type.
+ * layer according to the declared nature.
  */
 @NullMarked
 public record StatementConfirmRequest(

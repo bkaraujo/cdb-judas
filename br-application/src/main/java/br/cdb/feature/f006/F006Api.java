@@ -18,7 +18,7 @@ public interface F006Api {
 
     /**
      * Projeção mínima de uma transação para quem lê de fora da fatia. {@code amount} vem assinado
-     * (negativo para despesa), {@code status}/{@code type} desserializam como enum (ver
+     * (negativo para despesa), {@code status}/{@code nature} desserializam como enum (ver
      * {@code JsonStorageConfig.transactionEnumModule}), exatamente como o endpoint responde.
      */
     @NullMarked

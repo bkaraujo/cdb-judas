@@ -57,10 +57,7 @@ public record Transaction(
                 categoryId, tags);
     }
 
-    /** Derived from signal: positive signal = INCOME, non-positive = EXPENSE. */
-    public Nature type() { return signal > 0 ? Nature.INCOME : Nature.EXPENSE; }
-
-    /** Convenience constructor: derives signal from type, takes absolute amount, uses start-of-day. */
+    /** Convenience constructor: derives signal from nature, takes absolute amount, uses start-of-day. */
     public Transaction(UUID id, String description, BigDecimal amount, LocalDate date,
             UUID accountId, Status status, Nature type,
             UUID costCenterId, @Nullable LocalDate paymentDate, @Nullable UUID groupId,

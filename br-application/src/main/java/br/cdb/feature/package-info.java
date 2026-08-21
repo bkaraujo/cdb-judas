@@ -53,9 +53,9 @@
  * │                            GET    /api/{uuid}/categories/transfer?nature=            (interno — InternalApi de f006.ReadUseCases)
  * ├── f006  transactions + transfer
  * │   ├── TransferResource     POST   /api/{uuid}/accounts/transactions/transfer
- * │   └── TransactionResource  GET    /api/{uuid}/accounts/transactions?limit=&amp;dateFrom=&amp;dateTo=&amp;status=&amp;type=       (cross-account)
+ * │   └── TransactionResource  GET    /api/{uuid}/accounts/transactions?limit=&amp;dateFrom=&amp;dateTo=&amp;status=&amp;nature=       (cross-account)
  * │                            GET    /api/{uuid}/accounts/transactions/by-category?categoryIds=     (interno — InternalApi de f005.WriteUseCase)
- * │                            GET    /api/{uuid}/accounts/{accId}/transactions?limit=&amp;dateFrom=&amp;dateTo=&amp;status=&amp;type=
+ * │                            GET    /api/{uuid}/accounts/{accId}/transactions?limit=&amp;dateFrom=&amp;dateTo=&amp;status=&amp;nature=
  * │                            POST   /api/{uuid}/accounts/{accId}/transactions
  * │                            PATCH  /api/{uuid}/accounts/{accId}/transactions/{txId}
  * │                            PATCH  /api/{uuid}/accounts/{accId}/transactions/{txId}/status

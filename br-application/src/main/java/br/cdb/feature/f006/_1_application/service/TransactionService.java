@@ -1,6 +1,5 @@
 package br.cdb.feature.f006._1_application.service;
 
-import br.cdb.feature.f005._0_domain.model.Nature;
 import br.cdb.feature.f006._0_domain.model.Status;
 import br.cdb.feature.f006._0_domain.model.Transaction;
 import br.cdb.feature.f006._0_domain.repository.TransactionRepository;
@@ -83,12 +82,12 @@ public class TransactionService {
 
     /** Returns the opposite leg(s) of a transfer when {@code tx} belongs to a transfer group.
      *  A transfer group mixes one income and one expense leg under a shared groupId, unlike an
-     *  installment group whose members share a single type. Empty when {@code tx} is not a transfer. */
+     *  installment group whose members share a single nature. Empty when {@code tx} is not a transfer. */
     public List<Transaction> findTransferSiblings(Transaction tx) {
         if (tx.groupId() == null) return List.of();
         val group = findByGroupId(tx.groupId());
-        val hasIncome = group.stream().anyMatch(t -> Nature.INCOME.equals(t.type()));
-        val hasExpense = group.stream().anyMatch(t -> Nature.EXPENSE.equals(t.type()));
+        val hasIncome = group.stream().anyMatch(t -> t.signal() > 0);
+        val hasExpense = group.stream().anyMatch(t -> t.signal() < 0);
         if (!hasIncome || !hasExpense) return List.of();
         return group.stream().filter(t -> !t.id().equals(tx.id())).toList();
     }

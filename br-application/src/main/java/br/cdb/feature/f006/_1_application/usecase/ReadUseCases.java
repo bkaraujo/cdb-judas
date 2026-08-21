@@ -99,7 +99,7 @@ public class ReadUseCases {
                 .filter(t -> dateFrom == null || !t.date().isBefore(dateFrom))
                 .filter(t -> dateTo == null || !t.date().isAfter(dateTo))
                 .filter(t -> status == null || status.equalsIgnoreCase(t.status().name()))
-                .filter(t -> type == null || type.equalsIgnoreCase(t.type().name()))
+                .filter(t -> type == null || type.equalsIgnoreCase((t.signal() > 0 ? Nature.INCOME : Nature.EXPENSE).name()))
                 .toList();
         val page = (limit != null && limit > 0 && limit < filtered.size())
                 ? filtered.subList(0, limit)
@@ -127,8 +127,8 @@ public class ReadUseCases {
         val groupId = t.groupId();
         if (groupId == null) return List.of();
         val group = transactionsInGroup(groupId, personId);
-        val hasIncome = group.stream().anyMatch(x -> x.type() == Nature.INCOME);
-        val hasExpense = group.stream().anyMatch(x -> x.type() == Nature.EXPENSE);
+        val hasIncome = group.stream().anyMatch(x -> x.signal() > 0);
+        val hasExpense = group.stream().anyMatch(x -> x.signal() < 0);
         if (!hasIncome || !hasExpense) return List.of();
         return group.stream().filter(x -> !x.id().equals(t.id())).toList();
     }

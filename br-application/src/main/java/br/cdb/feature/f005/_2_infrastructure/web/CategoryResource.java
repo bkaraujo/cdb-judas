@@ -7,6 +7,7 @@ import br.cdb.feature.f005._1_application.usecase.ReadUseCase;
 import br.cdb.feature.f005._1_application.usecase.WriteUseCase;
 import br.cdb.feature.f005._2_infrastructure.web.request.CreateRequest;
 import br.cdb.feature.f005._2_infrastructure.web.request.UpdateRequest;
+import br.cdb.feature.f005._2_infrastructure.web.response.CategoryNatureResponse;
 import br.cdb.feature.f005._2_infrastructure.web.response.CategoryResponse;
 import br.cdb.feature.f005._2_infrastructure.web.response.TransferCategoryResponse;
 import br.commons.Result;
@@ -50,6 +51,19 @@ public class CategoryResource {
     public TransferCategoryResponse transferCategory(@PathParam("uuid") UUID uuid, @QueryParam("nature") String nature) {
         val category = reads.transferCategory(uuid, Nature.valueOf(Strings.upper(nature)));
         return new TransferCategoryResponse(category.id());
+    }
+
+    /** Endpoint interno (consumido pelo cliente {@code F005Api} da própria fatia, sobre
+     *  {@code InternalApi}, por {@code f006.RequestMapper#toDto} ao montar a resposta HTTP de uma
+     *  transação) — público como qualquer outro em {@code /api/{uuid}/…}, guardado pelo mesmo
+     *  {@code OwnershipFilter}, nunca chamado pelo frontend. */
+    @GET
+    @Path("/{id}/nature")
+    public CategoryNatureResponse nature(@PathParam("uuid") UUID uuid, @PathParam("id") UUID id) {
+        return switch (reads.category(id)) {
+            case Result.Success(var category) -> new CategoryNatureResponse(category.nature());
+            case Result.Failure(var error) -> throw new BusinessException(error);
+        };
     }
 
     @POST
