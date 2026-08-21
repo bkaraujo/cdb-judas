@@ -22,7 +22,7 @@ public class AccountService {
     public Result<Account, BusinessError> findById(UUID accountId) {
         return repository.findById(accountId)
                 .<Result<Account, BusinessError>>map(Result::success)
-                .orElseGet(() -> Result.failure(new BusinessError.NotFound("Account not found: %s", accountId)));
+                .orElseGet(() -> Result.failure(new BusinessError.NotFound("account.notFound", accountId)));
     }
 
     public List<Account> findAllByPerson(String personId) {
@@ -32,7 +32,7 @@ public class AccountService {
     public Result<Account, BusinessError> findByIdAndPerson(UUID accountId, String personId) {
         return repository.findByIdAndPerson(accountId, personId)
                 .<Result<Account, BusinessError>>map(Result::success)
-                .orElseGet(() -> Result.failure(new BusinessError.NotFound("Account not found: %s", accountId)));
+                .orElseGet(() -> Result.failure(new BusinessError.NotFound("account.notFound", accountId)));
     }
 
     public Account save(Account account) {

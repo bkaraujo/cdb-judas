@@ -30,7 +30,7 @@ public class AccountBalanceResource {
     @Path("/balance")
     public List<BalanceResponse> listBalances(@QueryParam("period") String period) {
         if (period == null) {
-            throw new BusinessException(new BusinessError.Validation("'period' must be provided"));
+            throw new BusinessException(new BusinessError.Validation("balance.periodRequired"));
         }
         val ym = YearMonth.parse(period, DateTimeFormatter.ofPattern("yyyyMM"));
         return switch (reads.balances(ym)) {
@@ -59,6 +59,6 @@ public class AccountBalanceResource {
                 case Result.Failure(var error) -> throw new BusinessException(error);
             };
         }
-        throw new BusinessException(new BusinessError.Validation("'period' or 'year' must be provided"));
+        throw new BusinessException(new BusinessError.Validation("balance.periodOrYearRequired"));
     }
 }
