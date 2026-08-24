@@ -1,7 +1,6 @@
 package br.cdb.feature.f007._1_application.preview;
 
 import br.cdb.feature.f000._0_domain.event.TransactionImported;
-import br.cdb.feature.f000._0_domain.model.CostCenter;
 import br.cdb.feature.f003.F003Api;
 import br.cdb.feature.f005._0_domain.model.Nature;
 import br.cdb.feature.f006.F006Api;
@@ -230,10 +229,10 @@ public class InvoiceImportProcessor {
                                 @Nullable Integer totalInstallments
     ) {
         val status = YearMonth.from(row.date()).isAfter(YearMonth.from(today)) ? Status.SCHEDULED : Status.CONFIRMED;
-        val costCenterId = row.costCenterId() != null ? row.costCenterId() : CostCenter.VARIAVEL.id();
+        val planned = row.planned();
         val type = row.type() != null ? row.type() : Nature.EXPENSE;
         val imported = new ImportedTransaction(row.description(), row.amount(), row.date(), accountId, status, type,
-                costCenterId, groupId, installmentNumber, totalInstallments, row.cardId());
+                planned, groupId, installmentNumber, totalInstallments, row.cardId());
         try {
             return switch (writer().create(imported)) {
                 case Result.Success(var id) -> {

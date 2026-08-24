@@ -81,7 +81,7 @@ public abstract class RequestMapper {
     static InvoiceConfirmCommand.Row toInvoiceRow(StatementConfirmRequest.Row row) {
         return new InvoiceConfirmCommand.Row(
                 row.description(), row.amount(), row.date(), row.originalDate(),
-                row.installmentNumber(), row.installmentTotal(), row.transactionType(), row.categoryId(), row.costCenterId(),
+                row.installmentNumber(), row.installmentTotal(), row.transactionType(), row.categoryId(), row.planned(),
                 Objects.requireNonNull(row.cardId()), row.tagIds() != null ? row.tagIds() : List.of());
     }
 }

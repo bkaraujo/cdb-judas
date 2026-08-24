@@ -15,5 +15,5 @@ public record ImportRuleRequest(
         @NotEmpty List<@NotBlank @Size(min = 3, max = 255) String> triggers,
         @Nullable UUID accountId,
         @Nullable UUID categoryId,
-        @Nullable UUID costCenterId
+        @Nullable Boolean planned
 ) {}

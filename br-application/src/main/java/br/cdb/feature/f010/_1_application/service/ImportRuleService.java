@@ -61,21 +61,21 @@ public class ImportRuleService {
 
     public Result<ImportRule, BusinessError> create(
             UUID personId, String name, List<String> triggers,
-            @Nullable UUID accountId, @Nullable UUID categoryId, @Nullable UUID costCenterId
+            @Nullable UUID accountId, @Nullable UUID categoryId, @Nullable Boolean planned
     ) {
         val sanitized = sanitizeTriggers(triggers);
         val conflict = findAmbiguousConflict(personId, sanitized, null);
         if (conflict != null) return Result.failure(conflict);
 
         val saved = repository.save(new ImportRule(
-                UUID.randomUUID(), personId, name, List.of(), accountId, categoryId, costCenterId, null));
+                UUID.randomUUID(), personId, name, List.of(), accountId, categoryId, planned, null));
         triggerRepository.replaceTriggers(saved.id(), personId, sanitized);
         return Result.success(saved.withTriggers(sanitized));
     }
 
     public Result<ImportRule, BusinessError> update(
             UUID personId, UUID id, String name, List<String> triggers,
-            @Nullable UUID accountId, @Nullable UUID categoryId, @Nullable UUID costCenterId
+            @Nullable UUID accountId, @Nullable UUID categoryId, @Nullable Boolean planned
     ) {
         return find(personId, id).flatMap(existing -> {
             val sanitized = sanitizeTriggers(triggers);
@@ -83,7 +83,7 @@ public class ImportRuleService {
             if (conflict != null) return Result.failure(conflict);
 
             val saved = repository.save(new ImportRule(
-                    id, existing.personId(), name, List.of(), accountId, categoryId, costCenterId, existing.createdAt()));
+                    id, existing.personId(), name, List.of(), accountId, categoryId, planned, existing.createdAt()));
             triggerRepository.replaceTriggers(id, personId, sanitized);
             return Result.success(saved.withTriggers(sanitized));
         });

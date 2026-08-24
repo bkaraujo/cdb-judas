@@ -31,7 +31,7 @@ public class F010Module implements Lifecycle {
                     TXT_LABEL VARCHAR(255) NOT NULL,
                     COD_ACCOUNT CHAR(36),
                     COD_CATEGORY CHAR(36),
-                    COD_COST_CENTER CHAR(36),
+                    FLG_PLANNED CHAR(1),
                     TMS_CREATE_AT TIMESTAMP NOT NULL
                 )
                 """,

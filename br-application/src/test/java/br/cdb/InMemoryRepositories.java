@@ -63,7 +63,7 @@ public abstract class InMemoryRepositories {
             for (var t : List.copyOf(data.values())) {
                 if (t.accountId().equals(from)) {
                     data.put(t.id(), new Transaction(t.id(), t.description(), t.signal(), t.amount(), t.purchasedAt(),
-                            to, t.status(), t.costCenterId(), t.paymentDate(), t.groupId(),
+                            to, t.status(), t.planned(), t.paymentDate(), t.groupId(),
                             t.installmentNumber(), t.totalInstallments(), t.notes(), t.createdAt(), t.updatedAt(), t.cardId()));
                 }
             }
@@ -73,7 +73,7 @@ public abstract class InMemoryRepositories {
             for (var t : List.copyOf(data.values())) {
                 if (from.equals(t.cardId())) {
                     data.put(t.id(), new Transaction(t.id(), t.description(), t.signal(), t.amount(), t.purchasedAt(),
-                            t.accountId(), t.status(), t.costCenterId(), t.paymentDate(), t.groupId(),
+                            t.accountId(), t.status(), t.planned(), t.paymentDate(), t.groupId(),
                             t.installmentNumber(), t.totalInstallments(), t.notes(), t.createdAt(), t.updatedAt(), to));
                 }
             }

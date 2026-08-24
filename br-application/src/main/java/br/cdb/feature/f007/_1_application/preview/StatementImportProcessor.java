@@ -1,7 +1,6 @@
 package br.cdb.feature.f007._1_application.preview;
 
 import br.cdb.feature.f000._0_domain.event.TransactionImported;
-import br.cdb.feature.f000._0_domain.model.CostCenter;
 import br.cdb.feature.f002.F002Api;
 import br.cdb.feature.f005._0_domain.model.Nature;
 import br.cdb.feature.f006.F006Api;
@@ -118,9 +117,9 @@ public class StatementImportProcessor {
     private boolean persistStatementRow(UUID personId, StatementConfirmCommand.Row row, UUID accountId, LocalDate today) {
         val status = YearMonth.from(row.date()).isAfter(YearMonth.from(today)) ? Status.SCHEDULED : Status.CONFIRMED;
         val type = row.type() != null ? row.type() : (row.amount().signum() < 0 ? Nature.EXPENSE : Nature.INCOME);
-        val costCenterId = row.costCenterId() != null ? row.costCenterId() : CostCenter.VARIAVEL.id();
+        val planned = row.planned();
         val imported = new ImportedTransaction(row.description(), row.amount(), row.date(), accountId, status, type,
-                costCenterId, null, null, null, null);
+                planned, null, null, null, null);
         try {
             return switch (writer().create(imported)) {
                 case Result.Success(var id) -> {

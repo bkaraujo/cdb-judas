@@ -24,7 +24,7 @@ public record ImportedTransaction(
         UUID accountId,
         Status status,
         Nature type,
-        UUID costCenterId,
+        boolean planned,
         @Nullable UUID groupId,
         @Nullable Integer installmentNumber,
         @Nullable Integer totalInstallments,

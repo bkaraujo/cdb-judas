@@ -30,15 +30,15 @@ public class WriteUseCase {
     private final ReadUseCase reads = Context.tryGet(ReadUseCase.class);
 
     public Result<ImportRule, BusinessError> createRule(
-            UUID personId, String name, List<String> triggers, @Nullable UUID accountId, @Nullable UUID categoryId, @Nullable UUID costCenterId
+            UUID personId, String name, List<String> triggers, @Nullable UUID accountId, @Nullable UUID categoryId, @Nullable Boolean planned
     ) {
-        return service.create(personId, name, triggers, accountId, categoryId, costCenterId);
+        return service.create(personId, name, triggers, accountId, categoryId, planned);
     }
 
     public Result<ImportRule, BusinessError> updateRule(
-            UUID personId, UUID id, String name, List<String> triggers, @Nullable UUID accountId, @Nullable UUID categoryId, @Nullable UUID costCenterId
+            UUID personId, UUID id, String name, List<String> triggers, @Nullable UUID accountId, @Nullable UUID categoryId, @Nullable Boolean planned
     ) {
-        return service.update(personId, id, name, triggers, accountId, categoryId, costCenterId);
+        return service.update(personId, id, name, triggers, accountId, categoryId, planned);
     }
 
     public Result<Void, BusinessError> deleteRule(UUID personId, UUID id) {

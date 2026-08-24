@@ -22,7 +22,7 @@ public record TransactionRequest(
         @NotNull LocalDate date,
         @NotNull UUID categoryId,
         @Nullable UUID accountId,
-        @NotNull UUID costCenterId,
+        boolean planned,
         @NotNull Status status,
         @NotNull Nature type,
         @Nullable @Min(1) Integer installments,

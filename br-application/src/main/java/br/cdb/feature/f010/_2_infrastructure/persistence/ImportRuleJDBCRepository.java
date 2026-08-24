@@ -60,7 +60,7 @@ public final class ImportRuleJDBCRepository extends JDBCRepository<ImportRule> i
         values.put("TXT_LABEL", entity.name());
         values.put("COD_ACCOUNT", entity.accountId() != null ? entity.accountId().toString() : null);
         values.put("COD_CATEGORY", entity.categoryId() != null ? entity.categoryId().toString() : null);
-        values.put("COD_COST_CENTER", entity.costCenterId() != null ? entity.costCenterId().toString() : null);
+        values.put("FLG_PLANNED", entity.planned() != null ? (entity.planned() ? "Y" : "N") : null);
         values.put("TMS_CREATE_AT", Timestamp.valueOf(Time.now()));
         return values;
     }
@@ -74,9 +74,9 @@ public final class ImportRuleJDBCRepository extends JDBCRepository<ImportRule> i
         final @Nullable UUID accountId = (accountRaw == null || accountRaw.isBlank()) ? null : UUID.fromString(accountRaw);
         final @Nullable String categoryRaw = rs.getString("COD_CATEGORY").get();
         final @Nullable UUID categoryId = (categoryRaw == null || categoryRaw.isBlank()) ? null : UUID.fromString(categoryRaw);
-        final @Nullable String costCenterRaw = rs.getString("COD_COST_CENTER").get();
-        final @Nullable UUID costCenterId = (costCenterRaw == null || costCenterRaw.isBlank()) ? null : UUID.fromString(costCenterRaw);
+        final @Nullable String plannedRaw = rs.getString("FLG_PLANNED").get();
+        final @Nullable Boolean planned = plannedRaw == null ? null : "Y".equals(plannedRaw);
         val createdAt = rs.getTimestamp("TMS_CREATE_AT").get().toLocalDateTime();
-        return new ImportRule(id, personId, name, List.of(), accountId, categoryId, costCenterId, createdAt);
+        return new ImportRule(id, personId, name, List.of(), accountId, categoryId, planned, createdAt);
     }
 }

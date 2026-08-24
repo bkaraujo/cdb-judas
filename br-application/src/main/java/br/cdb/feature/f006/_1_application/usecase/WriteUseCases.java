@@ -3,7 +3,6 @@ package br.cdb.feature.f006._1_application.usecase;
 import br.cdb.core.web.HTTPRequest;
 import br.cdb.feature.f000._0_domain.event.AccountStreamEvents;
 import br.cdb.feature.f000._0_domain.event.TransactionsDeleted;
-import br.cdb.feature.f000._0_domain.model.CostCenter;
 import br.cdb.feature.f000._1_application.service.UserGuards;
 import br.cdb.feature.f002.F002Api;
 import br.cdb.feature.f002._1_application.service.BalanceService;
@@ -207,7 +206,7 @@ public class WriteUseCases {
 
     private Result<Transaction, BusinessError> createSingle(TransactionCommand.Create cmd) {
         val saved = service.save(toEntity(UUID.randomUUID(), cmd.description(), cmd.amount(), cmd.date(),
-                cmd.accountId(), cmd.status(), cmd.type(), cmd.costCenterId(), cmd.notes(), cmd.cardId(), null, null, null));
+                cmd.accountId(), cmd.status(), cmd.type(), cmd.planned(), cmd.notes(), cmd.cardId(), null, null, null));
         MessageBus.submit(new TransactionEvents.Created(saved));
         return Result.success(saved);
     }
@@ -220,7 +219,7 @@ public class WriteUseCases {
             val date = cmd.date().plusMonths(i - 1);
             val status = (i == 1) ? cmd.status() : Status.PENDING;
             batch.add(toEntity(UUID.randomUUID(), cmd.description(), cmd.amount(), date, cmd.accountId(), status,
-                    cmd.type(), cmd.costCenterId(), cmd.notes(), cmd.cardId(), groupId, i, installmentsCount));
+                    cmd.type(), cmd.planned(), cmd.notes(), cmd.cardId(), groupId, i, installmentsCount));
         }
 
         Transaction first = null;
@@ -245,7 +244,7 @@ public class WriteUseCases {
 
         if (!isFuture) {
             val updated = service.save(toEntity(id, cmd.description(), cmd.amount(), cmd.date(), cmd.accountId(),
-                    cmd.status(), cmd.type(), cmd.costCenterId(), cmd.notes(), cmd.cardId(),
+                    cmd.status(), cmd.type(), cmd.planned(), cmd.notes(), cmd.cardId(),
                     existing.groupId(), existing.installmentNumber(), existing.totalInstallments()));
             MessageBus.submit(new TransactionEvents.Updated(existing));
             MessageBus.submit(new TransactionEvents.Updated(updated));
@@ -266,7 +265,7 @@ public class WriteUseCases {
             val currentNumber = t.installmentNumber();
             val newDate = cmd.date().plusMonths(currentNumber - installmentNumber);
             val updated = service.save(toEntity(t.id(), cmd.description(), cmd.amount(), newDate, cmd.accountId(),
-                    t.status(), cmd.type(), cmd.costCenterId(), cmd.notes(), cmd.cardId(),
+                    t.status(), cmd.type(), cmd.planned(), cmd.notes(), cmd.cardId(),
                     t.groupId(), t.installmentNumber(), t.totalInstallments()));
             if (t.id().equals(id)) firstSaved = updated;
         }
@@ -302,7 +301,7 @@ public class WriteUseCases {
     private static Transaction withTransferEdits(Transaction leg, UUID accountId, BigDecimal absAmount, LocalDate date, Status status) {
         return new Transaction(
                 leg.id(), leg.description(), leg.signal(), absAmount, date.atStartOfDay(),
-                accountId, status, leg.costCenterId(),
+                accountId, status, leg.planned(),
                 Status.CONFIRMED.equals(status) ? date : null,
                 leg.groupId(), leg.installmentNumber(), leg.totalInstallments(), leg.notes(),
                 leg.createdAt(), leg.updatedAt(), null);
@@ -313,7 +312,7 @@ public class WriteUseCases {
                 .map(existing -> {
                     val saved = service.save(new Transaction(
                             existing.id(), existing.description(), existing.signal(), existing.amount(), existing.purchasedAt(),
-                            existing.accountId(), status, existing.costCenterId(), paymentDate,
+                            existing.accountId(), status, existing.planned(), paymentDate,
                             existing.groupId(), existing.installmentNumber(), existing.totalInstallments(), existing.notes(),
                             existing.createdAt(), existing.updatedAt(), existing.cardId()
                     ));
@@ -409,12 +408,12 @@ public class WriteUseCases {
 
         val outflow = new Transaction(
                 outId, "Transferência (saída)", absAmount, date,
-                fromAccountId, Status.CONFIRMED, Nature.EXPENSE, CostCenter.VARIAVEL.id(), date,
+                fromAccountId, Status.CONFIRMED, Nature.EXPENSE, false, date,
                 groupId, 1, 2, null, null
         );
         val inflow = new Transaction(
                 inId, "Transferência (entrada)", absAmount, date,
-                toAccountId, Status.CONFIRMED, Nature.INCOME, CostCenter.VARIAVEL.id(), date,
+                toAccountId, Status.CONFIRMED, Nature.INCOME, false, date,
                 groupId, 2, 2, null, null
         );
 
@@ -495,11 +494,11 @@ public class WriteUseCases {
     }
 
     private Transaction toEntity(UUID id, String description, BigDecimal amount, LocalDate date, UUID accountId,
-                                 Status status, Nature type, UUID costCenterId,
+                                 Status status, Nature type, boolean planned,
                                  @Nullable String notes, @Nullable UUID cardId,
                                  @Nullable UUID groupId, @Nullable Integer installmentNumber, @Nullable Integer totalInstallments) {
         return new Transaction(id, description, amount.abs(), date,
-                accountId, status, type, costCenterId, null,
+                accountId, status, type, planned, null,
                 groupId, installmentOrDefault(installmentNumber), installmentOrDefault(totalInstallments), notes,
                 cardId);
     }

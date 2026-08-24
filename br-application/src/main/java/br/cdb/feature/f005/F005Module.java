@@ -150,9 +150,9 @@ public class F005Module implements Lifecycle {
             }
         });
 
-        MessageBus.subscribe(new Object() {
-            @MessageListener
-            public MessageResult on(CategoryDeleted event) {
+                MessageBus.subscribe(new Object() {
+                    @MessageListener
+                    public MessageResult on(CategoryDeleted event) {
                 Context.tryGet(UserCategoryService.class).deletePlain(event.categoryIds(), event.personId());
                 return MessageResult.CONSUMED;
             }

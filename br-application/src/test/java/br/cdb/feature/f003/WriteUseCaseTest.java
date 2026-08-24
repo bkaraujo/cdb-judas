@@ -139,7 +139,7 @@ class WriteUseCaseTest extends AbstractUseCaseTest {
         val account = seedChecking();
         val creditCard = createCard(account.id(), "1234");
         transactionRepository().save(new Transaction(UUID.randomUUID(), "compra", java.math.BigDecimal.TEN, java.time.LocalDate.now(),
-                account.id(), Status.CONFIRMED, Nature.EXPENSE, UUID.randomUUID(), null, null, 1, 1, null, creditCard.id()));
+                account.id(), Status.CONFIRMED, Nature.EXPENSE, false, null, null, 1, 1, null, creditCard.id()));
 
         val r = useCase.delete(new CreditCardCommand.Delete(creditCard.id(), new TransactionPolicy.Block()));
 
@@ -156,7 +156,7 @@ class WriteUseCaseTest extends AbstractUseCaseTest {
         val target = createCard(account.id(), "5678");
         val tx = transactionRepository().save(new Transaction(UUID.randomUUID(), "compra", java.math.BigDecimal.TEN,
                 java.time.LocalDate.now(), account.id(), Status.CONFIRMED, Nature.EXPENSE,
-                UUID.randomUUID(), null, null, 1, 1, null, source.id()));
+                false, null, null, 1, 1, null, source.id()));
 
         val r = useCase.delete(new CreditCardCommand.Delete(source.id(), new TransactionPolicy.Move(target.id())));
 
@@ -218,7 +218,7 @@ class WriteUseCaseTest extends AbstractUseCaseTest {
         val creditCard = createCard(account.id(), "1234");
         val tx = transactionRepository().save(new Transaction(UUID.randomUUID(), "compra", java.math.BigDecimal.TEN,
                 java.time.LocalDate.now(), account.id(), Status.CONFIRMED, Nature.EXPENSE,
-                UUID.randomUUID(), null, null, 1, 1, null, creditCard.id()));
+                false, null, null, 1, 1, null, creditCard.id()));
 
         val r = useCase.delete(new CreditCardCommand.Delete(creditCard.id(), new TransactionPolicy.Purge()));
 

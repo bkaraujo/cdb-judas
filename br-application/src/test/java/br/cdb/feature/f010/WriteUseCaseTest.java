@@ -48,9 +48,9 @@ class WriteUseCaseTest extends AbstractUseCaseTest {
     void createsRule() {
         val accountId = UUID.randomUUID();
         val categoryId = UUID.randomUUID();
-        val costCenterId = UUID.randomUUID();
+        val planned = true;
 
-        val r = useCase.createRule(PERSON_ID, "Companhia de Saneamento", List.of("Companhia de Saneamento"), accountId, categoryId, costCenterId);
+        val r = useCase.createRule(PERSON_ID, "Companhia de Saneamento", List.of("Companhia de Saneamento"), accountId, categoryId, planned);
 
         assertTrue(r.isSuccess());
         val rule = ((Result.Success<ImportRule, BusinessError>) r).value();
@@ -59,12 +59,12 @@ class WriteUseCaseTest extends AbstractUseCaseTest {
         assertEquals(List.of("Companhia de Saneamento"), rule.triggers());
         assertEquals(accountId, rule.accountId());
         assertEquals(categoryId, rule.categoryId());
-        assertEquals(costCenterId, rule.costCenterId());
+        assertEquals(planned, rule.planned());
         assertTrue(importRuleRepository().findById(rule.id()).isPresent());
     }
 
     @Test
-    @DisplayName("createRule só com nome — conta/categoria/centro de custo ficam nulos")
+    @DisplayName("createRule só com nome — conta/categoria/flag ficam nulos")
     void createsRuleNameOnly() {
         val r = useCase.createRule(PERSON_ID, "Netflix", List.of("Netflix"), null, null, null);
 
@@ -72,7 +72,7 @@ class WriteUseCaseTest extends AbstractUseCaseTest {
         val rule = ((Result.Success<ImportRule, BusinessError>) r).value();
         assertNull(rule.accountId());
         assertNull(rule.categoryId());
-        assertNull(rule.costCenterId());
+        assertNull(rule.planned());
         assertEquals(List.of("Netflix"), rule.triggers());
     }
 

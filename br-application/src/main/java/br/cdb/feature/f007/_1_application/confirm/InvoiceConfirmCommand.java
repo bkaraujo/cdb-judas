@@ -32,7 +32,7 @@ public record InvoiceConfirmCommand(List<Row> rows) {
             @Nullable Integer installmentTotal,
             @Nullable Nature type,
             UUID categoryId,
-            @Nullable UUID costCenterId,
+            boolean planned,
             UUID cardId,
             List<UUID> tagIds
     ) {}

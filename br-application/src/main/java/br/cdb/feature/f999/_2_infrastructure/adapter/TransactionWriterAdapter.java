@@ -32,7 +32,7 @@ public class TransactionWriterAdapter implements TransactionWriter {
     public Result<UUID, BusinessError> create(ImportedTransaction row) {
         val tx = new Transaction(
                 UUID.randomUUID(), row.description(), row.amount(), row.date(),
-                row.accountId(), row.status(), row.type(), row.costCenterId(), null,
+                row.accountId(), row.status(), row.type(), row.planned(), null,
                 row.groupId(), installmentOrDefault(row.installmentNumber()),
                 installmentOrDefault(row.totalInstallments()), null, row.cardId());
         return writes.create(tx).map(Transaction::id);

@@ -1,6 +1,7 @@
 package br.cdb.feature.f006;
 
 import br.cdb.core.persistence.Database;
+import br.cdb.core.persistence.migration.F006PlannedFlagMigration;
 import br.cdb.feature.f000._0_domain.event.CategoryReassigned;
 import br.cdb.feature.f000._0_domain.event.TransactionImported;
 import br.cdb.feature.f000._0_domain.event.TransactionsDeleted;
@@ -23,6 +24,7 @@ import br.commons.annotation.Lifecycle;
 import br.commons.framework.cdi.Context;
 import br.commons.framework.message.MessageListener;
 import br.commons.framework.message.MessageResult;
+import br.commons.framework.persistence.jdbc.DataSource;
 import lombok.val;
 import org.jspecify.annotations.NullMarked;
 
@@ -60,7 +62,7 @@ public class F006Module implements Lifecycle {
                     COD_ACCOUNT CHAR(36) NOT NULL,
                     COD_CARD CHAR(36),
                     COD_STATUS VARCHAR(20) NOT NULL REFERENCES F006_TRANSACTION_STATUS(ID),
-                    COD_COST_CENTER CHAR(36) NOT NULL REFERENCES F000_COST_CENTER(ID),
+                    FLG_PLANNED CHAR(1) NOT NULL,
                     DAT_PAYMENT DATE,
                     GROUP_ID CHAR(36),
                     NUM_INSTALLMENT INT NOT NULL,
@@ -93,6 +95,7 @@ public class F006Module implements Lifecycle {
     public Result<Void, Throwable> initialize() {
         Logger.debug("Iniciando módulo..");
 
+        F006PlannedFlagMigration.apply(Context.get(DataSource.class));
         Database.initialize(model());
 
         Context.set(TransactionRepository.class, TransactionJDBCRepository::new);

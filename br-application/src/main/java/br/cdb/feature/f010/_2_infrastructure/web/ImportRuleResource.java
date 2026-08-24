@@ -32,7 +32,7 @@ public class ImportRuleResource {
 
     @POST
     public RestResponse<ImportRule> create(@PathParam("uuid") UUID uuid, @Valid ImportRuleRequest req) {
-        return switch (writes.createRule(uuid, req.name(), req.triggers(), req.accountId(), req.categoryId(), req.costCenterId())) {
+        return switch (writes.createRule(uuid, req.name(), req.triggers(), req.accountId(), req.categoryId(), req.planned())) {
             case Result.Success(var rule) -> RestResponse.status(RestResponse.Status.CREATED, rule);
             case Result.Failure(var error) -> throw new BusinessException(error);
         };
@@ -41,7 +41,7 @@ public class ImportRuleResource {
     @PATCH
     @Path("/{id}")
     public ImportRule update(@PathParam("uuid") UUID uuid, @PathParam("id") UUID id, @Valid ImportRuleRequest req) {
-        return switch (writes.updateRule(uuid, id, req.name(), req.triggers(), req.accountId(), req.categoryId(), req.costCenterId())) {
+        return switch (writes.updateRule(uuid, id, req.name(), req.triggers(), req.accountId(), req.categoryId(), req.planned())) {
             case Result.Success(var rule) -> rule;
             case Result.Failure(var error) -> throw new BusinessException(error);
         };

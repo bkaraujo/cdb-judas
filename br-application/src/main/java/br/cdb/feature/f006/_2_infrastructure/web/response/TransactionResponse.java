@@ -20,7 +20,7 @@ public record TransactionResponse(
         UUID accountId,
         Status status,
         Nature type,
-        UUID costCenterId,
+        boolean planned,
         @Nullable LocalDate paymentDate,
         @Nullable UUID groupId,
         @Nullable Integer installmentNumber,

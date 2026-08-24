@@ -15,11 +15,11 @@ public record ImportRule(
         List<String> triggers,
         @Nullable UUID accountId,
         @Nullable UUID categoryId,
-        @Nullable UUID costCenterId,
+        @Nullable Boolean planned,
         @Nullable LocalDateTime createdAt
 ) {
     /** Reconstrói a regra com outra lista de gatilhos (imutável, o record em si não muda). */
     public ImportRule withTriggers(List<String> triggers) {
-        return new ImportRule(id, personId, name, triggers, accountId, categoryId, costCenterId, createdAt);
+        return new ImportRule(id, personId, name, triggers, accountId, categoryId, planned, createdAt);
     }
 }

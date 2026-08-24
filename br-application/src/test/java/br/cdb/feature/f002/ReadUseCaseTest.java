@@ -74,7 +74,7 @@ class ReadUseCaseTest extends AbstractUseCaseTest {
 
     private void seedTransaction(UUID accountId) {
         transactionRepository().save(new Transaction(UUID.randomUUID(), "compra", BigDecimal.TEN, LocalDate.of(2026, 5, 10),
-                accountId, Status.CONFIRMED, Nature.EXPENSE, UUID.randomUUID(), null, null, 1, 1, null, null));
+                accountId, Status.CONFIRMED, Nature.EXPENSE, false, null, null, 1, 1, null, null));
     }
 
     @Test

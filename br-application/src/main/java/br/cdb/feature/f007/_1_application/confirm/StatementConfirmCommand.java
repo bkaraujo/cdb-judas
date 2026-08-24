@@ -23,7 +23,7 @@ public record StatementConfirmCommand(UUID accountId, List<Row> rows) {
             LocalDate date,
             @Nullable Nature type,
             UUID categoryId,
-            @Nullable UUID costCenterId,
+            boolean planned,
             List<UUID> tagIds
     ) {}
 }

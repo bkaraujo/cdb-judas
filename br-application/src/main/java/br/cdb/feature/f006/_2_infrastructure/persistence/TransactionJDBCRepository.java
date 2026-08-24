@@ -109,7 +109,7 @@ public final class TransactionJDBCRepository extends JDBCRepository<Transaction>
         values.put("TMS_PURCHASE", Timestamp.valueOf(entity.purchasedAt()));
         values.put("COD_ACCOUNT", entity.accountId().toString());
         values.put("COD_STATUS", entity.status().name());
-        values.put("COD_COST_CENTER", entity.costCenterId().toString());
+        values.put("FLG_PLANNED", entity.planned() ? "Y" : "N");
         values.put("DAT_PAYMENT", paymentDate);
         values.put("GROUP_ID", groupStr);
         values.put("NUM_INSTALLMENT", entity.installmentNumber());
@@ -130,7 +130,7 @@ public final class TransactionJDBCRepository extends JDBCRepository<Transaction>
         val purchasedAt = rs.getTimestamp("TMS_PURCHASE").get().toLocalDateTime();
         val accountId = UUID.fromString(rs.getString("COD_ACCOUNT").get());
         val status = Status.valueOf(rs.getString("COD_STATUS").get());
-        val costCenterId = UUID.fromString(rs.getString("COD_COST_CENTER").get());
+        val planned = "Y".equals(rs.getString("FLG_PLANNED").get());
 
         final @Nullable Date paymentRaw = rs.getDate("DAT_PAYMENT").get();
         final @Nullable LocalDate paymentDate = paymentRaw == null ? null : paymentRaw.toLocalDate();
@@ -150,7 +150,7 @@ public final class TransactionJDBCRepository extends JDBCRepository<Transaction>
         final @Nullable UUID cardId = (cardRaw == null || cardRaw.isBlank()) ? null : UUID.fromString(cardRaw);
 
         return new Transaction(id, description, signal, amount, purchasedAt,
-                accountId, status, costCenterId, paymentDate, groupId,
+                accountId, status, planned, paymentDate, groupId,
                 installmentNumber, totalInstallments, notes, createdAt, updatedAt, cardId);
     }
 }

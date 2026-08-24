@@ -69,7 +69,7 @@ class WriteUseCaseTest extends AbstractUseCaseTest {
 
     private Transaction seedTransaction(UUID accountId) {
         return transactionRepository().save(new Transaction(UUID.randomUUID(), "compra", BigDecimal.TEN, LocalDate.of(2026, 5, 10),
-                accountId, Status.CONFIRMED, Nature.EXPENSE, UUID.randomUUID(), null, null, 1, 1, null, null));
+                accountId, Status.CONFIRMED, Nature.EXPENSE, false, null, null, 1, 1, null, null));
     }
 
     @Test
@@ -191,8 +191,8 @@ class WriteUseCaseTest extends AbstractUseCaseTest {
         val other = seedChecking("Outra", true);
         val creditCard = cardRepository().save(new CreditCard(UUID.randomUUID(), "1234", source.id(), true));
         val groupId = UUID.randomUUID();
-        val outLeg = transactionRepository().save(new Transaction(UUID.randomUUID(), "Transferência (saída)", new BigDecimal("50.00"), LocalDate.of(2026, 5, 10), source.id(), Status.CONFIRMED, Nature.EXPENSE, UUID.randomUUID(), null, groupId, 1, 2, null, null));
-        val inLeg = transactionRepository().save(new Transaction(UUID.randomUUID(), "Transferência (entrada)", new BigDecimal("50.00"), LocalDate.of(2026, 5, 10), other.id(), Status.CONFIRMED, Nature.INCOME, UUID.randomUUID(), null, groupId, 2, 2, null, null));
+        val outLeg = transactionRepository().save(new Transaction(UUID.randomUUID(), "Transferência (saída)", new BigDecimal("50.00"), LocalDate.of(2026, 5, 10), source.id(), Status.CONFIRMED, Nature.EXPENSE, false, null, groupId, 1, 2, null, null));
+        val inLeg = transactionRepository().save(new Transaction(UUID.randomUUID(), "Transferência (entrada)", new BigDecimal("50.00"), LocalDate.of(2026, 5, 10), other.id(), Status.CONFIRMED, Nature.INCOME, false, null, groupId, 2, 2, null, null));
 
         val r = useCase.delete(new AccountCommand.Delete(source.id(), new TransactionPolicy.Purge()));
 

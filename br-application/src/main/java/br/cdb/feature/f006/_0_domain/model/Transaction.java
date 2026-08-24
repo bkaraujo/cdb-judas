@@ -28,7 +28,7 @@ public record Transaction(
         LocalDateTime purchasedAt,
         UUID accountId,
         Status status,
-        UUID costCenterId,
+        boolean planned,
         @Nullable LocalDate paymentDate,
         @Nullable UUID groupId,
         int installmentNumber,
@@ -45,14 +45,14 @@ public record Transaction(
 
     /** Mesma transação com o vínculo de categoria resolvido (ou limpo, com {@code null}). */
     public Transaction withCategory(@Nullable UUID category) {
-        return new Transaction(id, description, signal, amount, purchasedAt, accountId, status, costCenterId,
+        return new Transaction(id, description, signal, amount, purchasedAt, accountId, status, planned,
                 paymentDate, groupId, installmentNumber, totalInstallments, notes, createdAt, updatedAt, cardId,
                 category, tagIds);
     }
 
     /** Mesma transação com o vínculo de tags resolvido. */
     public Transaction withTags(List<UUID> tags) {
-        return new Transaction(id, description, signal, amount, purchasedAt, accountId, status, costCenterId,
+        return new Transaction(id, description, signal, amount, purchasedAt, accountId, status, planned,
                 paymentDate, groupId, installmentNumber, totalInstallments, notes, createdAt, updatedAt, cardId,
                 categoryId, tags);
     }
@@ -60,19 +60,19 @@ public record Transaction(
     /** Convenience constructor: derives signal from nature, takes absolute amount, uses start-of-day. */
     public Transaction(UUID id, String description, BigDecimal amount, LocalDate date,
             UUID accountId, Status status, Nature type,
-            UUID costCenterId, @Nullable LocalDate paymentDate, @Nullable UUID groupId,
+            boolean planned, @Nullable LocalDate paymentDate, @Nullable UUID groupId,
             int installmentNumber, int totalInstallments, @Nullable String notes, @Nullable UUID cardId) {
         this(id, description, type == Nature.INCOME ? 1 : -1, amount.abs(), date.atStartOfDay(),
-                accountId, status, costCenterId, paymentDate, groupId,
+                accountId, status, planned, paymentDate, groupId,
                 installmentNumber, totalInstallments, notes, null, null, cardId, null, List.of());
     }
 
     /** Forma completa sem categoria/tags — os vínculos são resolvidos à parte, com {@link #withCategory(UUID)}/{@link #withTags(List)}. */
     public Transaction(UUID id, String description, int signal, BigDecimal amount, LocalDateTime purchasedAt,
-            UUID accountId, Status status, UUID costCenterId, @Nullable LocalDate paymentDate,
+            UUID accountId, Status status, boolean planned, @Nullable LocalDate paymentDate,
             @Nullable UUID groupId, int installmentNumber, int totalInstallments, @Nullable String notes,
             @Nullable LocalDateTime createdAt, @Nullable LocalDateTime updatedAt, @Nullable UUID cardId) {
-        this(id, description, signal, amount, purchasedAt, accountId, status, costCenterId, paymentDate,
+        this(id, description, signal, amount, purchasedAt, accountId, status, planned, paymentDate,
                 groupId, installmentNumber, totalInstallments, notes, createdAt, updatedAt, cardId, null, List.of());
     }
 }
