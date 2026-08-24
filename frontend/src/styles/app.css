@@ -7,68 +7,73 @@
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 :root {
-  --font: 'Plus Jakarta Sans', sans-serif;
+  --font-display: 'Fraunces', serif;
+  --font-body: 'Inter', sans-serif;
+  --font-mono: 'IBM Plex Mono', monospace;
+  --font: var(--font-body);
   --radius-sm: 6px;
   --radius: 10px;
   --radius-lg: 16px;
   --transition: 0.18s ease;
 }
 
+/* ───── "Razão noturna" — base Catppuccin Frappé (tema atual do IntelliJ), selo latão mantido ───── */
 [data-theme="dark"] {
   color-scheme: dark;
-  --bg-base:    #282A36;
-  --bg-surface: #21222C;
-  --bg-card:    #343746;
-  --bg-hover:   #44475A;
-  --border:     #44475A;
-  --border-light: #343746;
-  --text-primary:   #F8F8F2;
-  --text-secondary: #C8CADB;
-  --text-muted:     #6272A4;
-  --accent:         #BD93F9;
-  --accent-hover:   #A87FF0;
-  --accent-light:   rgba(189,147,249,0.15);
-  --accent-glow:    rgba(189,147,249,0.25);
-  --income:         #50FA7B;
-  --income-light:   rgba(80,250,123,0.15);
-  --expense:        #FF5555;
-  --expense-light:  rgba(255,85,85,0.15);
-  --warning:        #FFB86C;
-  --warning-light:  rgba(255,184,108,0.15);
-  --info:           #8BE9FD;
-  --info-light:     rgba(139,233,253,0.15);
-  --sidebar-bg:     #21222C;
-  --scrollbar:      #44475A;
-  --sidebar-text:   #C8CADB;
-  --sidebar-active-bg: rgba(189,147,249,0.15);
-  --sidebar-active: #BD93F9;
+  --bg-base:    #303446;
+  --bg-surface: #292C3C;
+  --bg-card:    #414559;
+  --bg-hover:   #51576D;
+  --border:     #51576D;
+  --border-light: #414559;
+  --text-primary:   #C6D0F5;
+  --text-secondary: #B5BFE2;
+  --text-muted:     #838BA7;
+  --accent:         #C99A4A;
+  --accent-hover:   #DBAE5F;
+  --accent-light:   rgba(201,154,74,0.15);
+  --accent-glow:    rgba(201,154,74,0.25);
+  --income:         #A6D189;
+  --income-light:   rgba(166,209,137,0.15);
+  --expense:        #E78284;
+  --expense-light:  rgba(231,130,132,0.15);
+  --warning:        #EF9F76;
+  --warning-light:  rgba(239,159,118,0.15);
+  --info:           #99D1DB;
+  --info-light:     rgba(153,209,219,0.15);
+  --sidebar-bg:     #292C3C;
+  --scrollbar:      #51576D;
+  --sidebar-text:   #B5BFE2;
+  --sidebar-active-bg: rgba(201,154,74,0.15);
+  --sidebar-active: #C99A4A;
 }
 
+/* ───── "Papel" — caderneta/certificado, sem creme nem indigo SaaS ───── */
 [data-theme="light"] {
   color-scheme: light;
-  --bg-base:    #F0F4FF;
+  --bg-base:    #EEF0E9;
   --bg-surface: #FFFFFF;
   --bg-card:    #FFFFFF;
-  --bg-hover:   #F5F7FF;
-  --border:     #DDE3F0;
-  --border-light: #EEF1F8;
-  --text-primary:   #0F1D35;
-  --text-secondary: #4F5E7A;
-  --text-muted:     #8B97B0;
-  --accent:         #4F46E5;
-  --accent-hover:   #4338CA;
-  --accent-light:   rgba(79,70,229,0.08);
-  --accent-glow:    rgba(79,70,229,0.15);
-  --income:         #059669;
-  --income-light:   rgba(5,150,105,0.1);
-  --expense:        #E11D48;
-  --expense-light:  rgba(225,29,72,0.08);
-  --warning:        #D97706;
-  --warning-light:  rgba(217,119,6,0.08);
-  --info:           #0284C7;
-  --info-light:     rgba(2,132,199,0.08);
+  --bg-hover:   #E7EAE1;
+  --border:     #D7DCCF;
+  --border-light: #E4E7DE;
+  --text-primary:   #1B2A2E;
+  --text-secondary: #4C5C57;
+  --text-muted:     #82938B;
+  --accent:         #A6742C;
+  --accent-hover:   #8F6224;
+  --accent-light:   rgba(166,116,44,0.1);
+  --accent-glow:    rgba(166,116,44,0.18);
+  --income:         #2F6B4F;
+  --income-light:   rgba(47,107,79,0.1);
+  --expense:        #8C2F39;
+  --expense-light:  rgba(140,47,57,0.08);
+  --warning:        #B3541E;
+  --warning-light:  rgba(179,84,30,0.1);
+  --info:           #2E6B72;
+  --info-light:     rgba(46,107,114,0.08);
   --sidebar-bg:     #FFFFFF;
-  --scrollbar:      #DDE3F0;
+  --scrollbar:      #D7DCCF;
 }
 
 html, body, #app {
@@ -199,10 +204,12 @@ button { font-family: var(--font); cursor: pointer; border: none; outline: none;
  * sempre centralizado na largura total do header, não no espaço sobrando entre os vizinhos. */
 .page-header {
   display: grid; grid-template-columns: 1fr auto 1fr; align-items: center;
-  column-gap: 12px; margin-bottom: 24px;
+  column-gap: 12px; margin-bottom: 24px; padding-bottom: 10px;
+  border-bottom: 2px solid var(--border);
+  box-shadow: 0 4px 0 -3px var(--border-light);
 }
 .page-header h1 {
-  font-size: 20px; font-weight: 700;
+  font-family: var(--font-display); font-size: 21px; font-weight: 600;
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
 /* min-width:0 deixa o título ceder espaço primeiro (com reticências) quando a largura aperta —
@@ -348,7 +355,8 @@ button { font-family: var(--font); cursor: pointer; border: none; outline: none;
 }
 .panel-head {
   padding: 11px 16px 10px;
-  border-bottom: 1px solid var(--border);
+  border-bottom: 2px solid var(--border);
+  box-shadow: 0 4px 0 -3px var(--border-light);
   display: flex; align-items: center; justify-content: space-between;
   cursor: grab;
 }
@@ -429,8 +437,8 @@ button { font-family: var(--font); cursor: pointer; border: none; outline: none;
   flex-direction: column;
 }
 .sidebar-brand-name {
-  font-weight: 800; font-size: 15px;
-  color: var(--text-primary); letter-spacing: -0.02em;
+  font-family: var(--font-display); font-weight: 600; font-size: 16px;
+  color: var(--text-primary); letter-spacing: -0.01em;
   line-height: 1.2;
 }
 .sidebar-version {
@@ -581,8 +589,8 @@ button { font-family: var(--font); cursor: pointer; border: none; outline: none;
 .stat-card-body--flex { flex: 1; }
 .stat-card-label { font-size: 11px; color: var(--text-muted); font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; }
 .stat-card-label--icon { text-transform: none; }
-.stat-card-value { font-size: 20px; font-weight: 800; margin-top: 4px; }
-.stat-card-value--icon { font-size: 18px; margin-top: 2px; }
+.stat-card-value { font-family: var(--font-mono); font-variant-numeric: tabular-nums; font-size: 19px; font-weight: 600; margin-top: 4px; }
+.stat-card-value--icon { font-size: 17px; margin-top: 2px; }
 .stat-card-sub { font-size: 12px; color: var(--text-muted); margin-top: 4px; }
 
 /* ───── Type toggle (expense/income/transfer) ───── */
@@ -690,9 +698,13 @@ button { font-family: var(--font); cursor: pointer; border: none; outline: none;
 }
 .stm-row.is-header .stm-cell-desc { font-weight: 700; color: var(--text-secondary); }
 .stm-cell-desc--link { color: var(--accent); text-decoration: none; }
-.stm-cell-amount, .stm-cell-balance { font-size: 13px; font-weight: 700; min-width: 100px; text-align: right; }
+.stm-cell-amount, .stm-cell-balance {
+  font-family: var(--font-mono); font-variant-numeric: tabular-nums;
+  font-size: 13px; font-weight: 600; min-width: 100px; text-align: right;
+}
 .stm-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
-.stm-dot--confirmed { background: var(--income); }
+/* Selo de conferência — assinatura visual do razão: anel latão, não pontinho plano. */
+.stm-dot--confirmed { background: var(--accent-light); border: 1.5px solid var(--accent); }
 .stm-dot--pending { background: var(--warning); }
 .stm-dot--balance { background: var(--text-muted); }
 
@@ -717,7 +729,10 @@ button { font-family: var(--font); cursor: pointer; border: none; outline: none;
 .account-card-actions { display: flex; gap: 2px; flex-shrink: 0; }
 .account-card-value { padding: 6px 16px 16px 16px; }
 .account-card-value-label { font-size: 11px; color: var(--text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; }
-.account-card-value-amount { font-size: 20px; font-weight: 800; margin-top: 2px; }
+.account-card-value-amount {
+  font-family: var(--font-mono); font-variant-numeric: tabular-nums;
+  font-size: 19px; font-weight: 600; margin-top: 2px;
+}
 .account-card-cards { display: flex; align-items: center; gap: 6px; padding: 0 16px 14px 16px; font-size: 12px; color: var(--text-muted); }
 .account-card-cards span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .account-card-footer {
@@ -745,8 +760,12 @@ button { font-family: var(--font); cursor: pointer; border: none; outline: none;
 
 /* ───── Relatório: matriz categoria × período ───── */
 .report-table-wrap { overflow: auto; max-height: calc(100vh - 260px); }
-.report-table { width: 100%; border-collapse: collapse; font-size: 13px; white-space: nowrap; }
+.report-table {
+  width: 100%; border-collapse: collapse; font-size: 13px; white-space: nowrap;
+  font-family: var(--font-mono); font-variant-numeric: tabular-nums;
+}
 .report-table th, .report-table td { padding: 8px 12px; text-align: right; }
+.report-table th:first-child, .report-table td:first-child { font-family: var(--font-body); }
 .report-table th:first-child, .report-table td:first-child {
   text-align: left; position: sticky; left: 0; background: var(--bg-card); z-index: 1; min-width: 240px;
 }
