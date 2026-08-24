@@ -17,7 +17,7 @@
   --transition: 0.18s ease;
 }
 
-/* ───── "Razão noturna" — base Catppuccin Frappé (tema atual do IntelliJ), selo latão mantido ───── */
+/* ───── "Razão noturna" — base Catppuccin Frappé (tema atual do IntelliJ), selo verde-esmeralda ───── */
 [data-theme="dark"] {
   color-scheme: dark;
   --bg-base:    #303446;
@@ -29,10 +29,10 @@
   --text-primary:   #C6D0F5;
   --text-secondary: #B5BFE2;
   --text-muted:     #838BA7;
-  --accent:         #C99A4A;
-  --accent-hover:   #DBAE5F;
-  --accent-light:   rgba(201,154,74,0.15);
-  --accent-glow:    rgba(201,154,74,0.25);
+  --accent:         #4FA895;
+  --accent-hover:   #63BFAA;
+  --accent-light:   rgba(79,168,149,0.15);
+  --accent-glow:    rgba(79,168,149,0.25);
   --income:         #A6D189;
   --income-light:   rgba(166,209,137,0.15);
   --expense:        #E78284;
@@ -44,8 +44,8 @@
   --sidebar-bg:     #292C3C;
   --scrollbar:      #51576D;
   --sidebar-text:   #B5BFE2;
-  --sidebar-active-bg: rgba(201,154,74,0.15);
-  --sidebar-active: #C99A4A;
+  --sidebar-active-bg: rgba(79,168,149,0.15);
+  --sidebar-active: #4FA895;
 }
 
 /* ───── "Papel" — caderneta/certificado, sem creme nem indigo SaaS ───── */
@@ -60,10 +60,10 @@
   --text-primary:   #1B2A2E;
   --text-secondary: #4C5C57;
   --text-muted:     #82938B;
-  --accent:         #A6742C;
-  --accent-hover:   #8F6224;
-  --accent-light:   rgba(166,116,44,0.1);
-  --accent-glow:    rgba(166,116,44,0.18);
+  --accent:         #1F7A63;
+  --accent-hover:   #185F4C;
+  --accent-light:   rgba(31,122,99,0.1);
+  --accent-glow:    rgba(31,122,99,0.18);
   --income:         #2F6B4F;
   --income-light:   rgba(47,107,79,0.1);
   --expense:        #8C2F39;
@@ -703,7 +703,7 @@ button { font-family: var(--font); cursor: pointer; border: none; outline: none;
   font-size: 13px; font-weight: 600; min-width: 100px; text-align: right;
 }
 .stm-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
-/* Selo de conferência — assinatura visual do razão: anel latão, não pontinho plano. */
+/* Selo de conferência — assinatura visual do razão: anel verde-esmeralda, não pontinho plano. */
 .stm-dot--confirmed { background: var(--accent-light); border: 1.5px solid var(--accent); }
 .stm-dot--pending { background: var(--warning); }
 .stm-dot--balance { background: var(--text-muted); }
