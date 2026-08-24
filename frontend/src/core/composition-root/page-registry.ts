@@ -11,8 +11,6 @@ import { createCardStatementPage, createCreditCardsPage } from '@/feature/credit
 import type { CreditCardService } from '@/feature/credit-cards/index.ts';
 import { createCategoriesPage } from '@/feature/categories/index.ts';
 import type { CategoryService } from '@/feature/categories/index.ts';
-import { createCostCentersPage } from '@/feature/cost-centers/index.ts';
-import type { CostCenterService } from '@/feature/cost-centers/index.ts';
 import { createDashboardPage } from '@/feature/dashboard/index.ts';
 import type { AccountsPayableApi } from '@/feature/accounts-payable/index.ts';
 import type { AccountsApi } from '@/feature/accounts/index.ts';
@@ -52,7 +50,6 @@ export interface PageRegistryDeps {
   budgetService: BudgetService;
   creditCardService: CreditCardService;
   categoryService: CategoryService;
-  costCenterService: CostCenterService;
   importRuleService: ImportRuleService;
   statementService: StatementService;
   tagService: TagService;
@@ -93,7 +90,6 @@ export function buildPageRegistry(deps: PageRegistryDeps): PageRegistry {
       transactions: { openEditor, openDeleteFlow },
     }),
     categories: createCategoriesPage(deps.categoryService),
-    'cost-centers': createCostCentersPage(deps.costCenterService),
     'credit-cards': createCreditCardsPage({
       service: deps.creditCardService,
       periodService: deps.periodService,

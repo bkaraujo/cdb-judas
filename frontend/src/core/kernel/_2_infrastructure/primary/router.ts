@@ -16,7 +16,6 @@ export type PageId =
   | 'budget'
   | 'card-statement'
   | 'categories'
-  | 'cost-centers'
   | 'credit-cards'
   | 'dashboard'
   | 'import-rules'
@@ -44,7 +43,6 @@ const SCREENS: Record<PageId, string> = {
   'report-category-evolution': 'Evolução por categoria',
   reports: 'Relatórios',
   categories: 'Categorias',
-  'cost-centers': 'Centros de Custo',
   accounts: 'Contas Bancárias',
   tags: 'Tags',
   'import-rules': 'Regras de Nomenclatura',

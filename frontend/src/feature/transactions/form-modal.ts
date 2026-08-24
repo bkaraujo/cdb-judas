@@ -13,7 +13,7 @@ import type { CacheStore } from '@/core/kernel/_1_application/cache-store.ts';
 import { bindCurrencyMask, byId } from '@/core/kernel/_2_infrastructure/primary/helpers.ts';
 import { formModal } from '@/core/kernel/_2_infrastructure/primary/helpers.ts';
 import { icon } from '@/core/kernel/_2_infrastructure/primary/icons.ts';
-import { accountOptionsHtml, categoryItemsFor, categoryPickerHtml, costCenterOptionsHtml, openCategoryCreateModal, openTagCreateModal, quickCategoryLabel } from '@/core/kernel/_2_infrastructure/primary/pickers.ts';
+import { accountOptionsHtml, categoryItemsFor, categoryPickerHtml, openCategoryCreateModal, openTagCreateModal, quickCategoryLabel } from '@/core/kernel/_2_infrastructure/primary/pickers.ts';
 import { refreshSearchSelect } from '@/core/kernel/_2_infrastructure/primary/ui/search-select.ts';
 import { appendTagRow, refreshTagsDropdownLabel, tagsDropdownHtml } from '@/core/kernel/_2_infrastructure/primary/ui/tags-dropdown.ts';
 import { typeToggleHtml } from '@/core/kernel/_2_infrastructure/primary/ui/type-toggle.ts';
@@ -49,7 +49,7 @@ export function createTransactionFormModal(deps: TransactionFormModalDeps) {
     const uniq = Date.now();
     const ids = {
       desc: 'tx-desc-' + uniq, amount: 'tx-amount-' + uniq, date: 'tx-date-' + uniq, category: 'tx-cat-' + uniq,
-      account: 'tx-acc-' + uniq, card: 'tx-card-' + uniq, destAccount: 'tx-dest-' + uniq, costCenter: 'tx-cc-' + uniq,
+      account: 'tx-acc-' + uniq, card: 'tx-card-' + uniq, destAccount: 'tx-dest-' + uniq,
       status: 'tx-status-' + uniq, notes: 'tx-notes-' + uniq,
     };
 
@@ -62,7 +62,7 @@ export function createTransactionFormModal(deps: TransactionFormModalDeps) {
       accountId: isEdit ? String(existing?.accountId || '') : '',
       destAccountId: '',
       status: (isEdit ? (existing?.status === 'balance' ? 'confirmed' : existing?.status || 'confirmed') : 'confirmed') as string,
-      costCenterId: isEdit ? String(existing?.costCenterId || '') : '',
+      planned: isEdit ? existing?.planned || false : false,
       cardId: isEdit ? existing?.cardId || '' : '',
       isEstorno: isEdit ? (existing?.type === 'expense' && Number(existing?.amount) > 0) || (existing?.type === 'income' && Number(existing?.amount) < 0) : false,
       notes: isEdit ? existing?.notes || '' : '',
@@ -116,10 +116,6 @@ export function createTransactionFormModal(deps: TransactionFormModalDeps) {
       );
     }
 
-    function buildCostCenterOpts(selectedId: string): string {
-      return costCenterOptionsHtml(deps.cache.costCenters(), selectedId);
-    }
-
     const accOpts = buildAccountOpts(initial.accountId, false);
 
     const statusOpts = ([['confirmed', 'Confirmado'], ['pending', 'Pendente'], ['scheduled', 'Agendado']] as const)
@@ -150,7 +146,6 @@ export function createTransactionFormModal(deps: TransactionFormModalDeps) {
         '<div class="form-group"><label class="form-label" for="' + ids.date + '">Data</label><input id="' + ids.date + '" name="date" type="date" required value="' + esc(initial.date) + '" /></div>' +
         '<div class="form-group"><label class="form-label" for="' + ids.account + '">' + esc(accountFieldLabel()) + '</label><select id="' + ids.account + '" name="accountId">' + accOpts + '</select></div>' +
         cardFieldHtml(initial.accountId, initial.cardId) +
-        '<div class="form-group"><label class="form-label" for="' + ids.costCenter + '">Centro de Custo</label><select id="' + ids.costCenter + '" name="costCenterId"' + (isTransferEdit ? ' disabled' : '') + '>' + buildCostCenterOpts(initial.costCenterId) + '</select></div>' +
         '<div class="form-group">' +
           '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">' +
             '<label class="form-label" for="' + ids.category + '" style="margin:0;">Categoria</label>' +
@@ -254,12 +249,8 @@ export function createTransactionFormModal(deps: TransactionFormModalDeps) {
           initial.categoryId = String(rule.categoryId);
         }
       }
-      if (rule.costCenterId) {
-        const $cc = m.$body.find('select[name=costCenterId]');
-        if ($cc.find('option[value="' + esc(rule.costCenterId) + '"]').length) {
-          $cc.val(String(rule.costCenterId));
-          initial.costCenterId = String(rule.costCenterId);
-        }
+      if (rule.planned !== null && rule.planned !== undefined) {
+        initial.planned = rule.planned;
       }
     });
 
@@ -296,8 +287,6 @@ export function createTransactionFormModal(deps: TransactionFormModalDeps) {
       if ($catSel.length) initial.categoryId = (($catSel.val() as string) || initial.categoryId);
       const $stSel = $form.find('select[name=status]');
       if ($stSel.length) initial.status = (($stSel.val() as string) || initial.status);
-      const $ccSel = $form.find('select[name=costCenterId]');
-      if ($ccSel.length) initial.costCenterId = (($ccSel.val() as string) || initial.costCenterId);
       const $cardSel = $form.find('select[name=cardId]');
       if ($cardSel.length) initial.cardId = (($cardSel.val() as string) || initial.cardId);
       const $estornoChk = $form.find('input[name=estorno]');
@@ -393,7 +382,6 @@ export function createTransactionFormModal(deps: TransactionFormModalDeps) {
         return null;
       }
       const categoryId = $form.find('select[name=categoryId]').val() as string;
-      const costCenterId = $form.find('select[name=costCenterId]').val() as string;
       const status = $form.find('select[name=status]').val() as TransactionRequest['status'];
       const isEstorno = $form.find('input[name=estorno]').is(':checked');
 
@@ -405,10 +393,6 @@ export function createTransactionFormModal(deps: TransactionFormModalDeps) {
         toast('Selecione uma categoria', 'error');
         return null;
       }
-      if (!costCenterId) {
-        toast('Selecione o centro de custo', 'error');
-        return null;
-      }
 
       const signed = Transaction.signedAmount(type, amt) * (isEstorno ? -1 : 1);
       const notes = (($form.find('textarea[name=notes]').val() as string) || '').trim() || undefined;
@@ -418,7 +402,7 @@ export function createTransactionFormModal(deps: TransactionFormModalDeps) {
         date,
         categoryId,
         accountId,
-        costCenterId,
+        planned: initial.planned,
         status,
         type: type as TransactionRequest['type'],
         notes,

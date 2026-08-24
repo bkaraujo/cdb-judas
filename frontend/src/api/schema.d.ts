@@ -1678,7 +1678,7 @@ export interface components {
             triggers?: string[];
             accountId?: components["schemas"]["UUID"];
             categoryId?: components["schemas"]["UUID"];
-            costCenterId?: components["schemas"]["UUID"];
+            planned?: boolean;
             createdAt?: components["schemas"]["LocalDateTime"];
         };
         ImportRuleRequest: {
@@ -1686,7 +1686,7 @@ export interface components {
             triggers: string[];
             accountId?: components["schemas"]["UUID"];
             categoryId?: components["schemas"]["UUID"];
-            costCenterId?: components["schemas"]["UUID"];
+            planned?: boolean;
         };
         /**
          * Format: date
@@ -1738,7 +1738,7 @@ export interface components {
             installmentTotal?: number;
             transactionType?: components["schemas"]["Type"];
             categoryId: components["schemas"]["UUID"];
-            costCenterId?: components["schemas"]["UUID"];
+            planned?: boolean;
             cardId?: components["schemas"]["UUID"];
             tagIds?: string[];
         };
@@ -1774,7 +1774,7 @@ export interface components {
             date: components["schemas"]["LocalDate"];
             categoryId: components["schemas"]["UUID"];
             accountId?: components["schemas"]["UUID"];
-            costCenterId: components["schemas"]["UUID"];
+            planned?: boolean;
             status: components["schemas"]["Status"];
             type: components["schemas"]["Type"];
             /** Format: int32 */
@@ -1794,7 +1794,7 @@ export interface components {
             accountId?: components["schemas"]["UUID"];
             status?: components["schemas"]["Status"];
             type?: components["schemas"]["Type"];
-            costCenterId?: components["schemas"]["UUID"];
+            planned?: boolean;
             paymentDate?: components["schemas"]["LocalDate"];
             groupId?: components["schemas"]["UUID"];
             /** Format: int32 */

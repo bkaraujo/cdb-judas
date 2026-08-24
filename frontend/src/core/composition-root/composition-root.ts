@@ -6,10 +6,6 @@
  * `POST /login` fica fora de `/api` (fora do `HttpClient`) — mesma decisão do original
  * (`composition-root.js:72`).
  */
-import {
-  createCostCenterRepository,
-  createCostCenterService,
-} from '@/feature/cost-centers/index.ts';
 import { createTagRepository, createTagService } from '@/feature/tags/index.ts';
 import {
   createCategoriesApi,
@@ -109,7 +105,6 @@ export function createApp(): App {
   const closingRepo = createClosingRepository(http);
   const categoryRepo = createCategoryRepository(http);
   const tagRepo = createTagRepository(http);
-  const costCenterRepo = createCostCenterRepository(http);
   const importRuleRepo = createImportRuleRepository(http);
   const transactionRepo = createTransactionRepository(http);
   const budgetRepo = createBudgetRepository(http);
@@ -120,7 +115,6 @@ export function createApp(): App {
   const closingService = createClosingService({ repo: closingRepo });
   const categoryService = createCategoryService({ repo: categoryRepo, cache });
   const tagService = createTagService({ repo: tagRepo, cache });
-  const costCenterService = createCostCenterService({ repo: costCenterRepo, cache });
   const importRuleService = createImportRuleService({ repo: importRuleRepo, cache });
   const transactionService = createTransactionService({ repo: transactionRepo, cache });
   const budgetService = createBudgetService({ repo: budgetRepo });
@@ -199,7 +193,6 @@ export function createApp(): App {
     budgetService,
     creditCardService,
     categoryService,
-    costCenterService,
     importRuleService,
     statementService,
     tagService,
@@ -222,7 +215,6 @@ export function createApp(): App {
     categories: categoryRepo,
     accounts: accountRepo,
     tags: tagRepo,
-    costCenters: costCenterRepo,
     importRules: importRuleRepo,
   });
 

@@ -7,7 +7,7 @@
  * `sse-client.ts`, Fase 2, consome). Páginas leem por aqui e reagem a mudanças via
  * `subscribe(type, cb)`.
  */
-import type { AccountResponse, CategoryResponse, CostCenter, ImportRule, Tag as TagWire } from '@/api/types.ts';
+import type { AccountResponse, CategoryResponse, ImportRule, Tag as TagWire } from '@/api/types.ts';
 import * as Account from '@/core/kernel/_0_domain/account.ts';
 import type { Account as AccountEntity } from '@/core/kernel/_0_domain/account.ts';
 import * as Category from '@/core/kernel/_0_domain/category.ts';
@@ -23,7 +23,6 @@ export interface CbdStore {
   categories: CategoryEntity[];
   accounts: AccountEntity[];
   tags: TagEntity[];
-  costCenters: CostCenter[];
   importRules: ImportRule[];
 }
 
@@ -40,7 +39,6 @@ export interface CacheStore extends SseCachePort {
   categories(): CategoryEntity[];
   accounts(): AccountEntity[];
   tags(): TagEntity[];
-  costCenters(): CostCenter[];
   importRules(): ImportRule[];
   findById<K extends keyof CbdStore>(key: K, id: string | null | undefined): CbdStore[K][number] | null;
   subscribe(typeFilter: CacheSubscribeFilter, cb: (detail: CbdChangeDetail) => void): () => void;
@@ -58,7 +56,7 @@ export interface CacheStore extends SseCachePort {
 }
 
 export function createCacheStore(bus: EventBus): CacheStore {
-  let store: CbdStore = { categories: [], accounts: [], tags: [], costCenters: [], importRules: [] };
+  let store: CbdStore = { categories: [], accounts: [], tags: [], importRules: [] };
 
   function findById<K extends keyof CbdStore>(key: K, id: string | null | undefined): CbdStore[K][number] | null {
     if (id == null) return null;
@@ -139,7 +137,6 @@ export function createCacheStore(bus: EventBus): CacheStore {
     categories: () => store.categories,
     accounts: () => store.accounts,
     tags: () => store.tags,
-    costCenters: () => store.costCenters,
     importRules: () => store.importRules,
     findById,
     subscribe,
@@ -150,7 +147,6 @@ export function createCacheStore(bus: EventBus): CacheStore {
         categories: snapshot.categories.map(Category.normalize).filter((c): c is CategoryEntity => c != null),
         accounts: snapshot.accounts.map(Account.normalize).filter((a): a is AccountEntity => a != null),
         tags: snapshot.tags.map(Tag.normalize).filter((t): t is TagEntity => t != null),
-        costCenters: snapshot.costCenters,
         importRules: snapshot.importRules,
       };
     },

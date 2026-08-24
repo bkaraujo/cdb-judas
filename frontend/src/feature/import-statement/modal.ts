@@ -29,7 +29,7 @@ export interface ImportRowUI {
   checked?: boolean;
   type: string;
   categoryId: string | null;
-  costCenterId?: string | null;
+  planned?: boolean | null;
   description: string;
   tagIds?: string[];
   date: string;
@@ -244,26 +244,19 @@ export function createImportStatementModal(deps: ImportStatementDeps) {
       return categoryComboHtml(importCategoriesFor(type, selectedId), selectedId, idx, groupAttr + lockedAttrs, locked);
     }
 
-    // Mesma convenção de form-modal.ts: sem valor da regra, pré-seleciona o centro "Variável".
-    function costCenterSelectHtml(selectedId: string | null | undefined, idx: number): string {
-      const ccs = deps.cache.costCenters();
-      if (!ccs.length) {
-        return '<select data-row-costcenter data-idx="' + idx + '" disabled><option value="">Sem centros</option></select>';
-      }
-      const variavel = ccs.filter((c) => /vari/i.test(c.description || '')).at(0);
-      const target = selectedId || (variavel && variavel.id) || '';
-      const options = ccs
-        .map((c) => {
-          const label = c.description || '';
-          const sel = String(c.id) === String(target) ? ' selected' : '';
-          return '<option value="' + esc(c.id) + '"' + sel + '>' + esc(label) + '</option>';
-        })
-        .join('');
-      return '<select data-row-costcenter data-idx="' + idx + '" style="width:auto;font-size:12px;padding:4px 6px;">' + options + '</select>';
+    function plannedSelectHtml(selected: boolean | null | undefined, idx: number): string {
+      const selectedVal = selected === true ? 'true' : selected === false ? 'false' : '';
+      return (
+        '<select data-row-planned data-idx="' + idx + '" style="width:auto;font-size:12px;padding:4px 6px;">' +
+          '<option value=""' + (selectedVal === '' ? ' selected' : '') + '>Não definido</option>' +
+          '<option value="true"' + (selectedVal === 'true' ? ' selected' : '') + '>Sim</option>' +
+          '<option value="false"' + (selectedVal === 'false' ? ' selected' : '') + '>Não</option>' +
+        '</select>'
+      );
     }
 
     // Regra de nomenclatura: casa a descrição crua de cada linha contra o cache de regras
-    // (qualquer gatilho cadastrado) e, ao bater, aplica categoria/centro de custo (nunca conta,
+    // (qualquer gatilho cadastrado) e, ao bater, aplica categoria/planned (nunca conta,
     // nem descrição) antes da linha ser renderizada. Roda antes de alignGroupFields(), pra a
     // propagação de parcelas herdar o resultado da 1ª parcela.
     function applyImportRules(rows: ImportRowUI[]): void {
@@ -273,7 +266,7 @@ export function createImportStatementModal(deps: ImportStatementDeps) {
         const rule = deps.importRules.match(row.description, rules);
         if (!rule) return;
         if (rule.categoryId) row.categoryId = rule.categoryId;
-        if (rule.costCenterId) row.costCenterId = rule.costCenterId;
+        if (rule.planned !== null && rule.planned !== undefined) row.planned = rule.planned;
       });
     }
 
@@ -301,9 +294,10 @@ export function createImportStatementModal(deps: ImportStatementDeps) {
         const idx = Number($(this).attr('data-idx'));
         (data.rows[idx] as ImportRowUI).categoryId = (this as HTMLSelectElement).value;
       });
-      m.$el.find('[data-row-costcenter]').each(function () {
+      m.$el.find('[data-row-planned]').each(function () {
         const idx = Number($(this).attr('data-idx'));
-        (data.rows[idx] as ImportRowUI).costCenterId = (this as HTMLSelectElement).value;
+        const val = (this as HTMLSelectElement).value;
+        (data.rows[idx] as ImportRowUI).planned = val === '' ? null : val === 'true';
       });
       m.$el.find('[data-row-description]').each(function () {
         const idx = Number($(this).attr('data-idx'));
@@ -406,8 +400,8 @@ export function createImportStatementModal(deps: ImportStatementDeps) {
         },
       };
     }
-    function colCostCenter(): ImportColumn {
-      return { key: 'costCenterId', label: 'Centro de Custo', sortable: true, align: 'left', width: '', cell: (row, idx) => costCenterSelectHtml(row.costCenterId, idx) };
+    function colPlanned(): ImportColumn {
+      return { key: 'planned', label: 'Planejado', sortable: true, align: 'left', width: '', cell: (row, idx) => plannedSelectHtml(row.planned, idx) };
     }
     function colInstallment(): ImportColumn {
       return {
@@ -451,8 +445,8 @@ export function createImportStatementModal(deps: ImportStatementDeps) {
     }
 
     const COLUMNS: Record<string, ImportColumn[]> = {
-      CREDIT_CARD_INVOICE: [colInclude(), colDate(), colType(), colCategory(), colTags(), colCostCenter(), colInstallment(), colDescription(), colCard(), colStatus(), colAmount()],
-      BANK_STATEMENT: [colInclude(), colDate(), colType(), colCategory(), colTags(), colCostCenter(), colDescription(), colState(), colAmount()],
+      CREDIT_CARD_INVOICE: [colInclude(), colDate(), colType(), colCategory(), colTags(), colPlanned(), colInstallment(), colDescription(), colCard(), colStatus(), colAmount()],
+      BANK_STATEMENT: [colInclude(), colDate(), colType(), colCategory(), colTags(), colPlanned(), colDescription(), colState(), colAmount()],
     };
 
     function sortIcon(col: string): string {
@@ -580,15 +574,16 @@ export function createImportStatementModal(deps: ImportStatementDeps) {
         const s = src && src.rows && src.rows[idx];
         if (!s) return;
         const $cat = m.$el.find('[data-row-category][data-idx="' + idx + '"]');
-        const $costCenter = m.$el.find('[data-row-costcenter][data-idx="' + idx + '"]');
+        const $planned = m.$el.find('[data-row-planned][data-idx="' + idx + '"]');
         const $desc = m.$el.find('[data-row-description][data-idx="' + idx + '"]');
         const categoryId = ($cat.val() as string) || null;
         if (!categoryId) missingCategory = true;
-        const costCenterId = (($costCenter.val() as string) || s.costCenterId) || null;
+        const plannedVal = $planned.length ? ($planned.val() as string) : (s.planned !== null && s.planned !== undefined ? (s.planned ? 'true' : 'false') : '');
+        const planned = plannedVal === '' ? undefined : plannedVal === 'true';
         const description = (($desc.val() as string) || s.description || '').trim();
         const row: Record<string, unknown> = {
           description, amount: s.amount, date: s.date, transactionType: s.type,
-          categoryId, costCenterId, tagIds: s.tagIds || [],
+          categoryId, planned, tagIds: s.tagIds || [],
         };
         if (kind === 'CREDIT_CARD_INVOICE') {
           const $card = m.$el.find('[data-row-card][data-idx="' + idx + '"]');
@@ -798,9 +793,10 @@ export function createImportStatementModal(deps: ImportStatementDeps) {
       propagateGroupEdit(idx, 'tagIds', row.tagIds);
     });
 
-    m.$el.on('change', '[data-row-costcenter]', function () {
+    m.$el.on('change', '[data-row-planned]', function () {
       const idx = Number($(this).attr('data-idx'));
-      if (previewData && previewData.rows && previewData.rows[idx]) previewData.rows[idx].costCenterId = (this as HTMLSelectElement).value;
+      const val = (this as HTMLSelectElement).value;
+      if (previewData && previewData.rows && previewData.rows[idx]) previewData.rows[idx].planned = val === '' ? null : val === 'true';
     });
 
     // Quick-create no topo: sem linha de origem, o Tipo (Despesa/Receita) fica editável no modal

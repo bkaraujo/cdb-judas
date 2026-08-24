@@ -9,7 +9,7 @@ import type { CacheStore } from '@/core/kernel/_1_application/cache-store.ts';
 import { bindRecordActions, byId, confirmModal, formModal, modalText, runMutation } from '@/core/kernel/_2_infrastructure/primary/helpers.ts';
 import { createPage } from '@/core/kernel/_2_infrastructure/primary/page.ts';
 import type { Page, PageState } from '@/core/kernel/_2_infrastructure/primary/page.ts';
-import { accountOptionsHtml, categoryItemsFor, categoryPickerHtml, optionsHtml } from '@/core/kernel/_2_infrastructure/primary/pickers.ts';
+import { accountOptionsHtml, categoryItemsFor, categoryPickerHtml } from '@/core/kernel/_2_infrastructure/primary/pickers.ts';
 import { btn, rowActionBtn } from '@/core/kernel/_2_infrastructure/primary/ui/button.ts';
 import { icon } from '@/core/kernel/_2_infrastructure/primary/icons.ts';
 import { emptyState } from '@/core/kernel/_2_infrastructure/primary/ui/empty-state.ts';
@@ -37,19 +37,12 @@ function renderRow(r: ImportRule, deps: ImportRulesPageDeps): JQuery {
     const c = deps.cache.findById('categories', id);
     return c ? categoryLabel(deps.cache.categories(), c) : null;
   }
-  function costCenterName(id: string | null | undefined): string | null {
-    if (!id) return null;
-    const cc = deps.cache.findById('costCenters', id);
-    return cc ? cc.description || '' : null;
-  }
-
   const parts: string[] = [];
   const acc = accountName(r.accountId);
   const cat = categoryName(r.categoryId);
-  const cc = costCenterName(r.costCenterId);
   if (acc) parts.push('Conta: ' + acc);
   if (cat) parts.push('Categoria: ' + cat);
-  if (cc) parts.push('Centro de custo: ' + cc);
+  if (r.planned !== null && r.planned !== undefined) parts.push('Planejado: ' + (r.planned ? 'Sim' : 'Não'));
   const triggerCount = (r.triggers || []).length;
   parts.push(triggerCount === 1 ? '1 gatilho' : triggerCount + ' gatilhos');
   const subtitle = parts.join(' · ');
@@ -127,13 +120,13 @@ export function createImportRulesPage(deps: ImportRulesPageDeps): Page {
   function openFormModal(existing: ImportRule | null): void {
     const isEdit = !!existing;
     const uniq = Date.now();
-    const ids = { name: 'rule-name-' + uniq, account: 'rule-account-' + uniq, category: 'rule-category-' + uniq, costCenter: 'rule-cc-' + uniq };
+    const ids = { name: 'rule-name-' + uniq, account: 'rule-account-' + uniq, category: 'rule-category-' + uniq, planned: 'rule-planned-' + uniq };
     const initial = {
       name: isEdit ? existing?.name || '' : '',
       triggers: isEdit ? (existing?.triggers && existing.triggers.length ? existing.triggers.slice() : ['']) : [''],
       accountId: isEdit ? existing?.accountId || '' : '',
       categoryId: isEdit ? existing?.categoryId || '' : '',
-      costCenterId: isEdit ? existing?.costCenterId || '' : '',
+      planned: isEdit && existing?.planned !== undefined ? existing.planned : null,
     };
 
     const accountOptions = accountOptionsHtml(cache.accounts(), initial.accountId, { includeEmpty: true, emptyLabel: '— Nenhuma —', activeOnly: false });
@@ -144,9 +137,6 @@ export function createImportRulesPage(deps: ImportRulesPageDeps): Page {
       selectAttrs: ' name="categoryId"',
       placeholder: '— Nenhuma —',
       alwaysPlaceholder: true,
-    });
-    const costCenterOptions = optionsHtml(cache.costCenters(), initial.costCenterId, {
-      labelOf: (c) => c.description || '',
     });
 
     const triggersHtml = initial.triggers.map(triggerRowHtml).join('');
@@ -172,8 +162,12 @@ export function createImportRulesPage(deps: ImportRulesPageDeps): Page {
             categoryFieldHtml +
           '</div>' +
           '<div class="form-group full">' +
-            '<label class="form-label" for="' + ids.costCenter + '">Centro de custo (opcional)</label>' +
-            '<select id="' + ids.costCenter + '" name="costCenterId">' + costCenterOptions + '</select>' +
+            '<label class="form-label" for="' + ids.planned + '">Planejado (opcional)</label>' +
+            '<select id="' + ids.planned + '" name="planned">' +
+              '<option value="">— Não definido —</option>' +
+              '<option value="true"' + (initial.planned === true ? ' selected' : '') + '>Sim</option>' +
+              '<option value="false"' + (initial.planned === false ? ' selected' : '') + '>Não</option>' +
+            '</select>' +
           '</div>' +
         '</div>' +
       '</form>';
@@ -201,12 +195,13 @@ export function createImportRulesPage(deps: ImportRulesPageDeps): Page {
           $form.find('input[name="triggers[]"]').first().trigger('focus');
           return null;
         }
+        const plannedVal = $form.find('select[name=planned]').val() as string;
         const payload = {
           name,
           triggers,
           accountId: ($form.find('select[name=accountId]').val() as string) || undefined,
           categoryId: ($form.find('select[name=categoryId]').val() as string) || undefined,
-          costCenterId: ($form.find('select[name=costCenterId]').val() as string) || undefined,
+          planned: plannedVal === '' ? undefined : plannedVal === 'true',
         };
         return isEdit ? service.update((existing as ImportRule).id as string, payload) : service.create(payload);
       },
