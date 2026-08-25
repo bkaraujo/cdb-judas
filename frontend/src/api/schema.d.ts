@@ -4,42 +4,6 @@
  */
 
 export interface paths {
-    "/api/cost-center": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** List */
-        get: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path?: never;
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description OK */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["CostCenter"][];
-                    };
-                };
-            };
-        };
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/api/me": {
         parameters: {
             query?: never;
@@ -1327,6 +1291,45 @@ export interface paths {
         };
         trace?: never;
     };
+    "/api/{uuid}/categories/{id}/nature": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Nature */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: components["schemas"]["UUID"];
+                    uuid: components["schemas"]["UUID"];
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["CategoryNatureResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/{uuid}/dashboard": {
         parameters: {
             query?: never;
@@ -1641,6 +1644,9 @@ export interface components {
         CardStatusRequest: {
             active?: boolean;
         };
+        CategoryNatureResponse: {
+            nature?: components["schemas"]["Nature"];
+        };
         CategoryResponse: {
             id?: components["schemas"]["UUID"];
             name?: string;
@@ -1654,10 +1660,6 @@ export interface components {
         };
         ClosingResponse: {
             period?: string;
-        };
-        CostCenter: {
-            id?: components["schemas"]["UUID"];
-            description?: string;
         };
         CreateRequest: {
             name: string;
@@ -1711,6 +1713,8 @@ export interface components {
             result?: number;
             history?: components["schemas"]["HistoricalResult"][];
         };
+        /** @enum {string} */
+        Nature: "EXPENSE" | "INCOME";
         PatchStatusRequest: {
             status: components["schemas"]["Status"];
             paymentDate: components["schemas"]["LocalDate"];
@@ -1736,7 +1740,7 @@ export interface components {
             installmentNumber?: number;
             /** Format: int32 */
             installmentTotal?: number;
-            transactionType?: components["schemas"]["Type"];
+            transactionType?: components["schemas"]["Nature"];
             categoryId: components["schemas"]["UUID"];
             planned?: boolean;
             cardId?: components["schemas"]["UUID"];
@@ -1776,7 +1780,7 @@ export interface components {
             accountId?: components["schemas"]["UUID"];
             planned?: boolean;
             status: components["schemas"]["Status"];
-            type: components["schemas"]["Type"];
+            type: components["schemas"]["Nature"];
             /** Format: int32 */
             installments?: number;
             editMode?: string;
@@ -1793,7 +1797,7 @@ export interface components {
             categoryId?: components["schemas"]["UUID"];
             accountId?: components["schemas"]["UUID"];
             status?: components["schemas"]["Status"];
-            type?: components["schemas"]["Type"];
+            type?: components["schemas"]["Nature"];
             planned?: boolean;
             paymentDate?: components["schemas"]["LocalDate"];
             groupId?: components["schemas"]["UUID"];
@@ -1814,8 +1818,6 @@ export interface components {
             date: components["schemas"]["LocalDate"];
             amount: number;
         };
-        /** @enum {string} */
-        Type: "EXPENSE" | "INCOME";
         /** Format: uuid */
         UUID: string;
         UpdateMeRequest: {

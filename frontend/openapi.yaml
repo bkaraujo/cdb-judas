@@ -109,6 +109,11 @@ components:
       properties:
         active:
           type: boolean
+    CategoryNatureResponse:
+      type: object
+      properties:
+        nature:
+          $ref: "#/components/schemas/Nature"
     CategoryResponse:
       type: object
       properties:
@@ -136,13 +141,6 @@ components:
       type: object
       properties:
         period:
-          type: string
-    CostCenter:
-      type: object
-      properties:
-        id:
-          $ref: "#/components/schemas/UUID"
-        description:
           type: string
     CreateRequest:
       type: object
@@ -178,30 +176,43 @@ components:
           $ref: "#/components/schemas/UUID"
         name:
           type: string
+        triggers:
+          type: array
+          items:
+            type: string
         accountId:
           $ref: "#/components/schemas/UUID"
         categoryId:
           $ref: "#/components/schemas/UUID"
-        costCenterId:
-          $ref: "#/components/schemas/UUID"
+        planned:
+          type: boolean
         createdAt:
           $ref: "#/components/schemas/LocalDateTime"
     ImportRuleRequest:
       type: object
       required:
       - name
+      - triggers
       properties:
         name:
           type: string
           pattern: \S
           minLength: 3
           maxLength: 255
+        triggers:
+          type: array
+          items:
+            type: string
+            pattern: \S
+            minLength: 3
+            maxLength: 255
+          minItems: 1
         accountId:
           $ref: "#/components/schemas/UUID"
         categoryId:
           $ref: "#/components/schemas/UUID"
-        costCenterId:
-          $ref: "#/components/schemas/UUID"
+        planned:
+          type: boolean
     LocalDate:
       type: string
       format: date
@@ -235,6 +246,11 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/HistoricalResult"
+    Nature:
+      type: string
+      enum:
+      - EXPENSE
+      - INCOME
     PatchStatusRequest:
       type: object
       required:
@@ -291,11 +307,11 @@ components:
           type: integer
           format: int32
         transactionType:
-          $ref: "#/components/schemas/Type"
+          $ref: "#/components/schemas/Nature"
         categoryId:
           $ref: "#/components/schemas/UUID"
-        costCenterId:
-          $ref: "#/components/schemas/UUID"
+        planned:
+          type: boolean
         cardId:
           $ref: "#/components/schemas/UUID"
         tagIds:
@@ -372,7 +388,6 @@ components:
       - amount
       - date
       - categoryId
-      - costCenterId
       - status
       - type
       properties:
@@ -387,12 +402,12 @@ components:
           $ref: "#/components/schemas/UUID"
         accountId:
           $ref: "#/components/schemas/UUID"
-        costCenterId:
-          $ref: "#/components/schemas/UUID"
+        planned:
+          type: boolean
         status:
           $ref: "#/components/schemas/Status"
         type:
-          $ref: "#/components/schemas/Type"
+          $ref: "#/components/schemas/Nature"
         installments:
           type: integer
           format: int32
@@ -430,9 +445,9 @@ components:
         status:
           $ref: "#/components/schemas/Status"
         type:
-          $ref: "#/components/schemas/Type"
-        costCenterId:
-          $ref: "#/components/schemas/UUID"
+          $ref: "#/components/schemas/Nature"
+        planned:
+          type: boolean
         paymentDate:
           $ref: "#/components/schemas/LocalDate"
         groupId:
@@ -474,11 +489,6 @@ components:
           $ref: "#/components/schemas/LocalDate"
         amount:
           type: number
-    Type:
-      type: string
-      enum:
-      - EXPENSE
-      - INCOME
     UUID:
       type: string
       format: uuid
@@ -521,20 +531,6 @@ components:
         leapYear:
           type: boolean
 paths:
-  /api/cost-center:
-    get:
-      responses:
-        "200":
-          description: OK
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/CostCenter"
-      summary: List
-      tags:
-      - Cost Center Resource
   /api/me:
     patch:
       requestBody:
@@ -1372,6 +1368,29 @@ paths:
             application/json:
               schema: {}
       summary: Delete
+      tags:
+      - Category Resource
+  /api/{uuid}/categories/{id}/nature:
+    get:
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      - name: uuid
+        in: path
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CategoryNatureResponse"
+      summary: Nature
       tags:
       - Category Resource
   /api/{uuid}/dashboard:

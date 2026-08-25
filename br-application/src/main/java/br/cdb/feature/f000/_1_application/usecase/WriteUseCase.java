@@ -16,14 +16,10 @@ import java.util.UUID;
  * {@code @Inject}).
  *
  * <p>Ao contrário das outras fatias, o par de {@code f000} não serve a um {@code *Resource}: os
- * recursos daqui são o catálogo estático de centro de custo, o login (que acessa
- * {@code UserRepository} direto, exceção nomeada no {@code ArchitectureTest}), o SSE e a versão.
- * Quem consome este par é <b>outra fatia</b> — {@code f001.ProfileService} (renomear a pessoa) e o
- * {@code UserService} da própria f000 (criar a pessoa dona dos recursos, antes do login).
- *
- * <p>{@code f000} é o kernel plano, sem sub-pacote por assunto: pessoa e centro de custo dividem o
- * mesmo par porque só cabe um {@code WriteUseCase} por pacote. Se um terceiro assunto entrar aqui,
- * vale reavaliar — a alternativa é voltar a nomear por assunto ({@code PersonUseCase} etc.).
+ * recursos daqui são o login (que acessa {@code UserRepository} direto, exceção nomeada no
+ * {@code ArchitectureTest}), o SSE e a versão. Quem consome este par é <b>outra fatia</b> —
+ * {@code f001.ProfileService} (renomear a pessoa) e o {@code UserService} da própria f000 (criar a
+ * pessoa dona dos recursos, antes do login).
  */
 @NullMarked
 public class WriteUseCase {

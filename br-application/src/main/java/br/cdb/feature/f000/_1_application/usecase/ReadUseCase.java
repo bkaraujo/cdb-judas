@@ -17,11 +17,9 @@ import java.util.UUID;
  *
  * <p>Como o {@link WriteUseCase}, não serve a um {@code *Resource} desta fatia: quem lê é
  * {@code f001.ProfileService} (a pessoa por trás de {@code /api/me}) e o {@code UserService} local.
- * Pessoa e centro de custo dividem o mesmo par porque {@code f000} é o kernel plano, sem sub-pacote
- * por assunto — ver javadoc de {@link WriteUseCase}.
  *
  * <p>Sem guarda de propriedade: a pessoa <b>é</b> a identidade autenticada (não há {@code {uuid}}
- * de terceiro a comparar), e o catálogo de centro de custo é global.
+ * de terceiro a comparar).
  */
 @NullMarked
 public class ReadUseCase {
