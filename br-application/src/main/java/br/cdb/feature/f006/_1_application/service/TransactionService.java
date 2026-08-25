@@ -81,14 +81,14 @@ public class TransactionService {
     }
 
     /** Returns the opposite leg(s) of a transfer when {@code tx} belongs to a transfer group.
-     *  A transfer group mixes one income and one expense leg under a shared groupId, unlike an
-     *  installment group whose members share a single nature. Empty when {@code tx} is not a transfer. */
+     *  A transfer group always splits its two legs across different accounts ({@code createTransfer}
+     *  rejects {@code fromAccountId == toAccountId}), unlike an installment group whose members
+     *  always share the same account. Empty when {@code tx} is not a transfer. */
     public List<Transaction> findTransferSiblings(Transaction tx) {
         if (tx.groupId() == null) return List.of();
         val group = findByGroupId(tx.groupId());
-        val hasIncome = group.stream().anyMatch(t -> t.signal() > 0);
-        val hasExpense = group.stream().anyMatch(t -> t.signal() < 0);
-        if (!hasIncome || !hasExpense) return List.of();
+        val distinctAccounts = group.stream().map(Transaction::accountId).distinct().count();
+        if (distinctAccounts < 2) return List.of();
         return group.stream().filter(t -> !t.id().equals(tx.id())).toList();
     }
 }

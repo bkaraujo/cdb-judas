@@ -23,7 +23,7 @@ import java.util.UUID;
 public record Transaction(
         UUID id,
         String description,
-        int signal,
+        boolean reversal,
         BigDecimal amount,
         LocalDateTime purchasedAt,
         LocalDate installmentDate,
@@ -49,14 +49,14 @@ public record Transaction(
 
     /** Mesma transação com o vínculo de categoria resolvido (ou limpo, com {@code null}). */
     public Transaction withCategory(@Nullable UUID category) {
-        return new Transaction(id, description, signal, amount, purchasedAt, installmentDate, accountId, status, planned,
+        return new Transaction(id, description, reversal, amount, purchasedAt, installmentDate, accountId, status, planned,
                 paymentDate, groupId, installmentNumber, totalInstallments, notes, createdAt, updatedAt, cardId,
                 category, tagIds);
     }
 
     /** Mesma transação com o vínculo de tags resolvido. */
     public Transaction withTags(List<UUID> tags) {
-        return new Transaction(id, description, signal, amount, purchasedAt, installmentDate, accountId, status, planned,
+        return new Transaction(id, description, reversal, amount, purchasedAt, installmentDate, accountId, status, planned,
                 paymentDate, groupId, installmentNumber, totalInstallments, notes, createdAt, updatedAt, cardId,
                 categoryId, tags);
     }
@@ -67,10 +67,10 @@ public record Transaction(
      * — callers that never split the two dates use this form.
      */
     public Transaction(UUID id, String description, BigDecimal amount, LocalDate date,
-            UUID accountId, Status status, Nature type,
+            UUID accountId, Status status, boolean reversal,
             boolean planned, @Nullable LocalDate paymentDate, @Nullable UUID groupId,
             int installmentNumber, int totalInstallments, @Nullable String notes, @Nullable UUID cardId) {
-        this(id, description, type == Nature.INCOME ? 1 : -1, amount.abs(), date.atStartOfDay(), date,
+        this(id, description, reversal, amount.abs(), date.atStartOfDay(), date,
                 accountId, status, planned, paymentDate, groupId,
                 installmentNumber, totalInstallments, notes, null, null, cardId, null, List.of());
     }
@@ -82,10 +82,10 @@ public record Transaction(
      */
     public Transaction(UUID id, String description, BigDecimal amount, LocalDate purchasedAt,
             LocalDate installmentDate,
-            UUID accountId, Status status, Nature type,
+            UUID accountId, Status status, boolean reversal,
             boolean planned, @Nullable LocalDate paymentDate, @Nullable UUID groupId,
             int installmentNumber, int totalInstallments, @Nullable String notes, @Nullable UUID cardId) {
-        this(id, description, type == Nature.INCOME ? 1 : -1, amount.abs(), purchasedAt.atStartOfDay(), installmentDate,
+        this(id, description, reversal, amount.abs(), purchasedAt.atStartOfDay(), installmentDate,
                 accountId, status, planned, paymentDate, groupId,
                 installmentNumber, totalInstallments, notes, null, null, cardId, null, List.of());
     }
@@ -94,12 +94,17 @@ public record Transaction(
      * Forma completa sem categoria/tags (17 args) — os vínculos são resolvidos à parte, com
      * {@link #withCategory(UUID)}/{@link #withTags(List)}.
      */
-    public Transaction(UUID id, String description, int signal, BigDecimal amount, LocalDateTime purchasedAt,
+    public Transaction(UUID id, String description, boolean reversal, BigDecimal amount, LocalDateTime purchasedAt,
             LocalDate installmentDate,
             UUID accountId, Status status, boolean planned, @Nullable LocalDate paymentDate,
             @Nullable UUID groupId, int installmentNumber, int totalInstallments, @Nullable String notes,
             @Nullable LocalDateTime createdAt, @Nullable LocalDateTime updatedAt, @Nullable UUID cardId) {
-        this(id, description, signal, amount, purchasedAt, installmentDate, accountId, status, planned, paymentDate,
+        this(id, description, reversal, amount, purchasedAt, installmentDate, accountId, status, planned, paymentDate,
                 groupId, installmentNumber, totalInstallments, notes, createdAt, updatedAt, cardId, null, List.of());
+    }
+
+    public int calculateSignal(Nature categoryNature) {
+        int base = categoryNature == Nature.INCOME ? 1 : -1;
+        return reversal ? -base : base;
     }
 }

@@ -237,7 +237,7 @@ public class InvoiceImportProcessor {
             return switch (writer().create(imported)) {
                 case Result.Success(var id) -> {
                     MessageBus.submit(new TransactionImported(id, accountId, personId, row.categoryId(), row.tagIds()));
-                    yield new F006Api.TransactionView(id, accountId, row.description(), row.amount(), row.date(), status, type, groupId);
+                    yield new F006Api.TransactionView(id, accountId, row.description(), row.amount(), row.date(), status, type, groupId, row.cardId());
                 }
                 case Result.Failure(var error) -> {
                     Logger.warn("Failed to persist imported row '%s': %s", row.description(), String.valueOf(error));

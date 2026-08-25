@@ -30,7 +30,8 @@ public interface F006Api {
             LocalDate date,
             Status status,
             Nature type,
-            @Nullable UUID groupId
+            @Nullable UUID groupId,
+            @Nullable UUID cardId
     ) implements View {}
 
     /** Espelha {@code TransactionResponse} — devolvida por criação/atualização/patch de status. */

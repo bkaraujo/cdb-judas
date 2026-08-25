@@ -4,6 +4,10 @@ import br.cdb.feature.f000._0_domain.SSE;
 import br.cdb.feature.f000._0_domain.event.AccountStreamEvents;
 import br.cdb.feature.f002._1_application.usecase.ReadUseCase;
 import br.cdb.feature.f002._2_infrastructure.web.response.AccountResponse;
+import br.cdb.feature.f005._0_domain.model.Nature;
+import br.cdb.feature.f005.F005Api;
+import br.cdb.feature.f006.F006Api;
+import br.cdb.feature.f006._0_domain.model.Transaction;
 import br.cdb.feature.f006._1_application.usecase.ReadUseCases;
 import br.commons.MessageBus;
 import br.commons.Result;
@@ -42,6 +46,18 @@ public class AccountStreamListener {
 
     private final SSE sse = Context.get(SSE.class);
 
+    /** Mesma regra de {@code RequestMapper.toDto}: amount assinado e natureza efetiva (pós-estorno). */
+    private static F006Api.TransactionView toView(Transaction t, Map<UUID, UUID> categories) {
+        val categoryId = categories.get(t.id());
+        val categoryNature = categoryId != null ? Context.get(F005Api.class).natureOf(categoryId) : Nature.EXPENSE;
+        val signal = t.calculateSignal(categoryNature);
+        val effectiveNature = signal > 0 ? Nature.INCOME : Nature.EXPENSE;
+        return new F006Api.TransactionView(
+                t.id(), t.accountId(), t.description(),
+                java.math.BigDecimal.valueOf(signal).multiply(t.amount()),
+                t.date(), t.status(), effectiveNature, t.groupId(), t.cardId());
+    }
+
     void subscribe(@Observes StartupEvent event) {
         MessageBus.subscribe(this);
     }
@@ -77,7 +93,9 @@ public class AccountStreamListener {
                 case Result.Success(var account) -> {
                     val cards = cardReads.list(accountId, personId).getOrElse(List.of());
                     val transactions = reads.transactions(personId).getOrElse(List.of());
-                    val dto = AccountResponse.from(account, cards, transactions);
+                    val categories = reads.categoriesByPerson(UUID.fromString(personId));
+                    val views = transactions.stream().map(t -> toView(t, categories)).toList();
+                    val dto = AccountResponse.from(account, cards, views);
                     sse.dispatch(personId, SSE.Event.UPSERT, Map.of("type", TYPE, "payload", dto));
                 }
                 case Result.Failure(var ignored) -> { }

@@ -51,7 +51,7 @@ public class TransferUseCase {
         val expenseCategoryId = f005.transferCategoryId(Nature.EXPENSE);
         val incomeCategoryId = f005.transferCategoryId(Nature.INCOME);
         return writes.createTransfer(fromAccountId, toAccountId, date, amount).map(t -> {
-            val categoryId = writes.saveTransferCategories(t, personId, expenseCategoryId, incomeCategoryId);
+            val categoryId = writes.saveTransferCategories(t, personId, expenseCategoryId, incomeCategoryId, fromAccountId);
             MessageBus.submit(new AccountStreamEvents.Refresh(fromAccountId, personId.toString()));
             MessageBus.submit(new AccountStreamEvents.Refresh(toAccountId, personId.toString()));
             return t.withCategory(categoryId);

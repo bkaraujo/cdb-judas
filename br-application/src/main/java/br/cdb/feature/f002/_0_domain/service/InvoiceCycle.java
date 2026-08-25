@@ -1,5 +1,6 @@
-package br.cdb.feature.f002._0_domain.model;
+package br.cdb.feature.f002._0_domain.service;
 
+import br.cdb.feature.f002._0_domain.model.Account;
 import lombok.val;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;

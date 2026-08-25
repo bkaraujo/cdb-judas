@@ -9,8 +9,7 @@ import br.cdb.feature.f002._1_application.service.BalanceService;
 import br.cdb.feature.f002._1_application.service.ClosingService;
 import br.cdb.feature.f003._0_domain.model.CreditCard;
 import br.cdb.feature.f003._1_application.service.CreditCardService;
-import br.cdb.feature.f006._0_domain.model.Transaction;
-import br.cdb.feature.f006._1_application.usecase.ReadUseCases;
+import br.cdb.feature.f006.F006Api;
 import br.commons.Logger;
 import br.commons.Result;
 import br.commons.business.BusinessError;
@@ -48,7 +47,7 @@ public class ReadUseCase {
     private final AccountService service = Context.tryGet(AccountService.class);
     private final BalanceService balanceService = Context.tryGet(BalanceService.class);
     private final CreditCardService creditCardService = Context.tryGet(CreditCardService.class);
-    private final ReadUseCases transactions = Context.tryGet(ReadUseCases.class);
+    private final F006Api f006Api = Context.tryGet(F006Api.class);
 
     /** Conta (dono+cor inclusos) + cartões; {@code transactions} é a lista completa (o saldo
      *  corrente do DTO é derivado dela). */
@@ -56,7 +55,7 @@ public class ReadUseCase {
     public record AccountView(
             Account account,
             List<CreditCard> cards,
-            List<Transaction> transactions
+            List<F006Api.TransactionView> transactions
     ) {}
 
     /** Bean CDI resolvido a cada chamada: {@code @RequestScoped}, nunca guardado em campo. */
@@ -157,12 +156,12 @@ public class ReadUseCase {
     /** Quantas transações da pessoa estão ligadas à conta — usado pelo delete sem estratégia
      *  ({@code DeletionOutcome.Linked}). */
     public int transactionCount(UUID personId, UUID accountId) {
-        return (int) transactions.transactions(personId.toString()).getOrElse(List.<Transaction>of()).stream()
+        return (int) f006Api.transactions().stream()
                 .filter(t -> accountId.equals(t.accountId()))
                 .count();
     }
 
-    private List<Transaction> transactionsOf(UUID accountId) {
-        return transactions.transactions(accountId).getOrElse(List.of());
+    private List<F006Api.TransactionView> transactionsOf(UUID accountId) {
+        return f006Api.transactionsByAccount(accountId, null, null, null);
     }
 }

@@ -2,6 +2,7 @@ package br.cdb.feature.f006._1_application.usecase;
 
 import br.cdb.feature.f000._1_application.service.UserGuards;
 import br.cdb.feature.f005._0_domain.model.Nature;
+import br.cdb.feature.f005.F005Api;
 import br.cdb.feature.f006._0_domain.model.Transaction;
 import br.cdb.feature.f006._1_application.service.TransactionCategoryService;
 import br.cdb.feature.f006._1_application.service.TransactionService;
@@ -94,12 +95,22 @@ public class ReadUseCases {
 
         val categories = categoriesByPerson(personId);
         val tags = tagsByPerson(personId);
+        
+        val f005 = Context.get(F005Api.class);
+        val natureCache = new HashMap<UUID, Nature>();
+        
         val filtered = transactions(personId.toString()).getOrElse(List.of()).stream()
                 .filter(t -> accountId == null || accountId.equals(t.accountId()))
                 .filter(t -> dateFrom == null || !t.date().isBefore(dateFrom))
                 .filter(t -> dateTo == null || !t.date().isAfter(dateTo))
                 .filter(t -> status == null || status.equalsIgnoreCase(t.status().name()))
-                .filter(t -> type == null || type.equalsIgnoreCase((t.signal() > 0 ? Nature.INCOME : Nature.EXPENSE).name()))
+                .filter(t -> {
+                    if (type == null) return true;
+                    val catId = categories.get(t.id());
+                    val nat = catId != null ? natureCache.computeIfAbsent(catId, f005::natureOf) : Nature.EXPENSE;
+                    val sig = t.calculateSignal(nat);
+                    return type.equalsIgnoreCase((sig > 0 ? Nature.INCOME : Nature.EXPENSE).name());
+                })
                 .toList();
         val page = (limit != null && limit > 0 && limit < filtered.size())
                 ? filtered.subList(0, limit)
@@ -127,8 +138,22 @@ public class ReadUseCases {
         val groupId = t.groupId();
         if (groupId == null) return List.of();
         val group = transactionsInGroup(groupId, personId);
-        val hasIncome = group.stream().anyMatch(x -> x.signal() > 0);
-        val hasExpense = group.stream().anyMatch(x -> x.signal() < 0);
+        
+        val f005 = Context.get(F005Api.class);
+        val categories = categoriesByPerson(personId);
+        val natureCache = new HashMap<UUID, Nature>();
+        
+        val hasIncome = group.stream().anyMatch(x -> {
+            val catId = categories.get(x.id());
+            val nat = catId != null ? natureCache.computeIfAbsent(catId, f005::natureOf) : Nature.EXPENSE;
+            return x.calculateSignal(nat) > 0;
+        });
+        val hasExpense = group.stream().anyMatch(x -> {
+            val catId = categories.get(x.id());
+            val nat = catId != null ? natureCache.computeIfAbsent(catId, f005::natureOf) : Nature.EXPENSE;
+            return x.calculateSignal(nat) < 0;
+        });
+        
         if (!hasIncome || !hasExpense) return List.of();
         return group.stream().filter(x -> !x.id().equals(t.id())).toList();
     }

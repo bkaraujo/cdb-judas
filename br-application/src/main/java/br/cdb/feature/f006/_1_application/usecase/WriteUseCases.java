@@ -9,7 +9,6 @@ import br.cdb.feature.f002._1_application.service.BalanceService;
 import br.cdb.feature.f003._0_domain.model.CreditCard;
 import br.cdb.feature.f003._1_application.service.CreditCardService;
 import br.cdb.feature.f004.F004Api;
-import br.cdb.feature.f005._0_domain.model.Nature;
 import br.cdb.feature.f006._0_domain.event.TransactionEvents;
 import br.cdb.feature.f006._0_domain.model.Status;
 import br.cdb.feature.f006._0_domain.model.Transaction;
@@ -208,7 +207,7 @@ public class WriteUseCases {
 
     private Result<Transaction, BusinessError> createSingle(TransactionCommand.Create cmd) {
         val saved = service.save(toEntity(UUID.randomUUID(), cmd.description(), cmd.amount(), cmd.date(), cmd.date(),
-                cmd.accountId(), cmd.status(), cmd.type(), cmd.planned(), cmd.notes(), cmd.cardId(), null, null, null));
+                cmd.accountId(), cmd.status(), cmd.reversal(), cmd.planned(), cmd.notes(), cmd.cardId(), null, null, null));
         MessageBus.submit(new TransactionEvents.Created(saved));
         return Result.success(saved);
     }
@@ -221,7 +220,7 @@ public class WriteUseCases {
             val date = cmd.date().plusMonths(i - 1);
             val status = (i == 1) ? cmd.status() : Status.PENDING;
             batch.add(toEntity(UUID.randomUUID(), cmd.description(), cmd.amount(), cmd.date(), date, cmd.accountId(), status,
-                    cmd.type(), cmd.planned(), cmd.notes(), cmd.cardId(), groupId, i, installmentsCount));
+                    cmd.reversal(), cmd.planned(), cmd.notes(), cmd.cardId(), groupId, i, installmentsCount));
         }
 
         Transaction first = null;
@@ -251,7 +250,7 @@ public class WriteUseCases {
             // TMS_PURCHASE congelaria na data de criação do lançamento).
             val purchasedAt = existing.totalInstallments() > 1 ? existing.purchaseDate() : cmd.date();
             val updated = service.save(toEntity(id, cmd.description(), cmd.amount(), purchasedAt, cmd.date(), cmd.accountId(),
-                    cmd.status(), cmd.type(), cmd.planned(), cmd.notes(), cmd.cardId(),
+                    cmd.status(), cmd.reversal(), cmd.planned(), cmd.notes(), cmd.cardId(),
                     existing.groupId(), existing.installmentNumber(), existing.totalInstallments()));
             MessageBus.submit(new TransactionEvents.Updated(existing));
             MessageBus.submit(new TransactionEvents.Updated(updated));
@@ -305,7 +304,7 @@ public class WriteUseCases {
         val newDate = cmd.date().plusMonths(t.installmentNumber() - (long) installmentNumber);
         val amount = keepOwnAmount ? t.amount() : cmd.amount();
         return service.save(toEntity(t.id(), cmd.description(), amount, purchasedAt, newDate, cmd.accountId(),
-                t.status(), cmd.type(), cmd.planned(), cmd.notes(), cmd.cardId(),
+                t.status(), cmd.reversal(), cmd.planned(), cmd.notes(), cmd.cardId(),
                 t.groupId(), t.installmentNumber(), t.totalInstallments()));
     }
 
@@ -331,7 +330,7 @@ public class WriteUseCases {
     /** Transfer legs never carry a card — cardId is always null. */
     private static Transaction withTransferEdits(Transaction leg, UUID accountId, BigDecimal absAmount, LocalDate date, Status status) {
         return new Transaction(
-                leg.id(), leg.description(), leg.signal(), absAmount, date.atStartOfDay(), date,
+                leg.id(), leg.description(), leg.reversal(), absAmount, date.atStartOfDay(), date,
                 accountId, status, leg.planned(),
                 Status.CONFIRMED.equals(status) ? date : null,
                 leg.groupId(), leg.installmentNumber(), leg.totalInstallments(), leg.notes(),
@@ -342,7 +341,7 @@ public class WriteUseCases {
         return service.findById(id)
                 .map(existing -> {
                     val saved = service.save(new Transaction(
-                            existing.id(), existing.description(), existing.signal(), existing.amount(), existing.purchasedAt(), existing.installmentDate(),
+                            existing.id(), existing.description(), existing.reversal(), existing.amount(), existing.purchasedAt(), existing.installmentDate(),
                             existing.accountId(), status, existing.planned(), paymentDate,
                             existing.groupId(), existing.installmentNumber(), existing.totalInstallments(), existing.notes(),
                             existing.createdAt(), existing.updatedAt(), existing.cardId()
@@ -441,12 +440,12 @@ public class WriteUseCases {
 
         val outflow = new Transaction(
                 outId, "Transferência (saída)", absAmount, date,
-                fromAccountId, Status.CONFIRMED, Nature.EXPENSE, false, date,
+                fromAccountId, Status.CONFIRMED, false, false, date,
                 groupId, 1, 2, null, null
         );
         val inflow = new Transaction(
                 inId, "Transferência (entrada)", absAmount, date,
-                toAccountId, Status.CONFIRMED, Nature.INCOME, false, date,
+                toAccountId, Status.CONFIRMED, false, false, date,
                 groupId, 2, 2, null, null
         );
 
@@ -508,8 +507,8 @@ public class WriteUseCases {
      * {@code first} e a todas as pernas do grupo. Devolve a categoria de {@code first}, que o
      * chamador usa para montar a resposta.
      */
-    public UUID saveTransferCategories(Transaction first, UUID personId, UUID expenseCategoryId, UUID incomeCategoryId) {
-        val categoryId = transferCategoryFor(first, expenseCategoryId, incomeCategoryId);
+    public UUID saveTransferCategories(Transaction first, UUID personId, UUID expenseCategoryId, UUID incomeCategoryId, UUID fromAccountId) {
+        val categoryId = transferCategoryFor(first, expenseCategoryId, incomeCategoryId, fromAccountId);
         saveCategory(first.id(), personId, categoryId);
 
         val groupId = first.groupId();
@@ -517,13 +516,13 @@ public class WriteUseCases {
             reads.transactionsInGroup(groupId, personId).stream()
                     .filter(t -> !t.id().equals(first.id()))
                     .forEach(t -> saveCategory(t.id(), personId,
-                            transferCategoryFor(t, expenseCategoryId, incomeCategoryId)));
+                            transferCategoryFor(t, expenseCategoryId, incomeCategoryId, fromAccountId)));
         }
         return categoryId;
     }
 
-    private static UUID transferCategoryFor(Transaction leg, UUID expenseCategoryId, UUID incomeCategoryId) {
-        return leg.signal() < 0 ? expenseCategoryId : incomeCategoryId;
+    private static UUID transferCategoryFor(Transaction leg, UUID expenseCategoryId, UUID incomeCategoryId, UUID fromAccountId) {
+        return leg.accountId().equals(fromAccountId) ? expenseCategoryId : incomeCategoryId;
     }
 
     /** Persiste uma transação já montada pelo chamador. Valida a invariante de cartão. */
@@ -538,11 +537,11 @@ public class WriteUseCases {
     private Transaction toEntity(UUID id, String description, BigDecimal amount, LocalDate purchasedAt,
                                  LocalDate installmentDate,
                                  UUID accountId,
-                                 Status status, Nature type, boolean planned,
+                                 Status status, boolean reversal, boolean planned,
                                  @Nullable String notes, @Nullable UUID cardId,
                                  @Nullable UUID groupId, @Nullable Integer installmentNumber, @Nullable Integer totalInstallments) {
         return new Transaction(id, description, amount.abs(), purchasedAt, installmentDate,
-                accountId, status, type, planned, null,
+                accountId, status, reversal, planned, null,
                 groupId, installmentOrDefault(installmentNumber), installmentOrDefault(totalInstallments), notes,
                 cardId);
     }

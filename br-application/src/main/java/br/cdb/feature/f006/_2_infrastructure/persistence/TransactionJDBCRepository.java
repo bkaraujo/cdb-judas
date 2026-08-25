@@ -104,7 +104,7 @@ public final class TransactionJDBCRepository extends JDBCRepository<Transaction>
         values.put("ID", entity.id().toString());
         values.put("COD_PERSON", AccountOwnerLookup.find(datasource, entity.accountId()));
         values.put("TXT_DESCRIPTION", entity.description());
-        values.put("NUM_SIGNAL", entity.signal());
+        values.put("FLG_REVERSAL", entity.reversal() ? "Y" : "N");
         values.put("DEC_AMOUNT", entity.amount());
         values.put("TMS_PURCHASE", Timestamp.valueOf(entity.purchasedAt()));
         values.put("DAT_INSTALLMENT", Date.valueOf(entity.installmentDate()));
@@ -126,7 +126,7 @@ public final class TransactionJDBCRepository extends JDBCRepository<Transaction>
     protected Transaction map(JDBCResultSet rs) {
         val id = UUID.fromString(rs.getString("ID").get());
         val description = rs.getString("TXT_DESCRIPTION").get();
-        val signal = rs.getInt("NUM_SIGNAL").get();
+        val reversal = "Y".equals(rs.getString("FLG_REVERSAL").get());
         val amount = rs.getBigDecimal("DEC_AMOUNT").get();
         val purchasedAt = rs.getTimestamp("TMS_PURCHASE").get().toLocalDateTime();
         val installmentDate = rs.getDate("DAT_INSTALLMENT").get().toLocalDate();
@@ -151,8 +151,8 @@ public final class TransactionJDBCRepository extends JDBCRepository<Transaction>
         final @Nullable String cardRaw = rs.getString("COD_CARD").get();
         final @Nullable UUID cardId = (cardRaw == null || cardRaw.isBlank()) ? null : UUID.fromString(cardRaw);
 
-        return new Transaction(id, description, signal, amount, purchasedAt, installmentDate,
-                accountId, status, planned, paymentDate, groupId,
-                installmentNumber, totalInstallments, notes, createdAt, updatedAt, cardId);
+        return new Transaction(id, description, reversal, amount, purchasedAt, installmentDate,
+                accountId, status, planned, paymentDate, groupId, installmentNumber, totalInstallments, notes,
+                createdAt, updatedAt, cardId);
     }
 }

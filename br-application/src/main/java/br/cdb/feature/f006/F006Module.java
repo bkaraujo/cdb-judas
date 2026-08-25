@@ -3,6 +3,7 @@ package br.cdb.feature.f006;
 import br.cdb.core.persistence.Database;
 import br.cdb.core.persistence.migration.F006InstallmentDateMigration;
 import br.cdb.core.persistence.migration.F006PlannedFlagMigration;
+import br.cdb.core.persistence.migration.F006ReversalFlagMigration;
 import br.cdb.feature.f000._0_domain.event.CategoryReassigned;
 import br.cdb.feature.f000._0_domain.event.TransactionImported;
 import br.cdb.feature.f000._0_domain.event.TransactionsDeleted;
@@ -57,7 +58,7 @@ public class F006Module implements Lifecycle {
                     ID CHAR(36) PRIMARY KEY,
                     COD_PERSON CHAR(36),
                     TXT_DESCRIPTION VARCHAR(255) NOT NULL,
-                    NUM_SIGNAL NUMERIC(1) NOT NULL,
+                    FLG_REVERSAL CHAR(1) NOT NULL,
                     DEC_AMOUNT DECIMAL(19, 2) NOT NULL,
                     TMS_PURCHASE TIMESTAMP NOT NULL,
                     DAT_INSTALLMENT DATE NOT NULL,
@@ -98,6 +99,7 @@ public class F006Module implements Lifecycle {
         Logger.debug("Iniciando módulo..");
 
         F006PlannedFlagMigration.apply(Context.get(DataSource.class));
+        F006ReversalFlagMigration.apply(Context.get(DataSource.class));
         F006InstallmentDateMigration.apply(Context.get(DataSource.class));
         Database.initialize(model());
 

@@ -2,9 +2,9 @@ package br.cdb.feature.f002._1_application.service;
 
 import br.cdb.feature.f002._0_domain.model.Account;
 import br.cdb.feature.f002._0_domain.model.Balance;
-import br.cdb.feature.f002._0_domain.model.InvoiceCycle;
 import br.cdb.feature.f002._0_domain.repository.BalanceRepository;
-import br.cdb.feature.f006._1_application.service.TransactionService;
+import br.cdb.feature.f002._0_domain.service.InvoiceCycle;
+import br.cdb.feature.f006.F006Api;
 import br.commons.Logger;
 import br.commons.Result;
 import br.commons.business.BusinessError;
@@ -25,7 +25,7 @@ public class BalanceService {
 
     private final BalanceRepository repository = Context.get(BalanceRepository.class);
     private final AccountService accountService = Context.tryGet(AccountService.class);
-    private final TransactionService transactionService = Context.tryGet(TransactionService.class);
+    private final F006Api f006Api = Context.tryGet(F006Api.class);
 
     public List<Balance> findByAccount(UUID accountId) {
         return repository.findByAccount(accountId);
@@ -91,10 +91,10 @@ public class BalanceService {
         val accountResult = accountService.findById(accountId);
         if (accountResult.isFailure()) return;
         val account = accountResult.get();
-        val transactions = transactionService.findByAccount(accountId).stream()
+        val transactions = f006Api.transactionsByAccount(accountId, null, null, null).stream()
                 .map(t -> new MonthBalance(
                         t.cardId() == null ? t.date() : InvoiceCycle.dueDate(account, t.date()),
-                        BigDecimal.valueOf(t.signal()).multiply(t.amount())))
+                        t.amount()))
                 .toList();
 
         recalculateBalance(account, transactions);

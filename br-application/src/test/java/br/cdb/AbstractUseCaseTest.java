@@ -65,6 +65,26 @@ public abstract class AbstractUseCaseTest {
         Context.set(TransactionTagRepository.class, InMemoryRepositories.TransactionTags::new);
         Context.set(TagRepository.class, InMemoryRepositories.Tags::new);
         Context.set(CategoryRepository.class, InMemoryRepositories.Categories::new);
+        Context.set(br.cdb.feature.f006.F006Api.class, () -> new br.cdb.feature.f006.F006Api() {
+            private br.cdb.feature.f006.F006Api.TransactionView toView(br.cdb.feature.f006._0_domain.model.Transaction t) {
+                return new br.cdb.feature.f006.F006Api.TransactionView(t.id(), t.accountId(), t.description(), t.amount(),
+                        t.date(), t.status(), br.cdb.feature.f005._0_domain.model.Nature.EXPENSE, t.groupId(), t.cardId());
+            }
+            public java.util.List<br.cdb.feature.f006.F006Api.TransactionView> transactions() {
+                return Context.get(TransactionRepository.class).findAll().stream().map(this::toView).toList();
+            }
+            public java.util.List<br.cdb.feature.f006.F006Api.TransactionView> transactions(String status, java.time.LocalDate from, java.time.LocalDate to) { return transactions(); }
+            public java.util.List<br.cdb.feature.f006.F006Api.TransactionView> transactionsByAccount(java.util.UUID id, String s, java.time.LocalDate f, java.time.LocalDate t) {
+                return Context.get(TransactionRepository.class).findAll().stream()
+                        .filter(x -> id.equals(x.accountId())).map(this::toView).toList();
+            }
+            public br.cdb.feature.f006.F006Api.TransactionDto transfer(java.util.UUID f, java.util.UUID t, java.time.LocalDate d, java.math.BigDecimal a) { return null; }
+            public br.cdb.feature.f006.F006Api.TransactionDto createTransaction(java.util.UUID a, br.cdb.feature.f006.F006Api.TransactionBody b) { return null; }
+            public br.cdb.feature.f006.F006Api.TransactionDto updateTransaction(java.util.UUID a, java.util.UUID t, br.cdb.feature.f006.F006Api.TransactionBody b) { return null; }
+            public br.cdb.feature.f006.F006Api.TransactionDto patchStatus(java.util.UUID a, java.util.UUID t, br.cdb.feature.f006._0_domain.model.Status s, java.time.LocalDate p) { return null; }
+            public void deleteTransaction(java.util.UUID a, java.util.UUID t, String m) {}
+            public java.util.List<java.util.UUID> transactionIdsByCategories(java.util.Collection<java.util.UUID> c) { return java.util.List.of(); }
+        });
         Context.set(PersonRepository.class, InMemoryRepositories.People::new);
         Context.set(ImportRuleRepository.class, InMemoryRepositories.ImportRules::new);
         Context.set(ImportRuleTriggerRepository.class, InMemoryRepositories.ImportRuleTriggers::new);

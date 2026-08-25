@@ -30,9 +30,10 @@ public class TransactionWriterAdapter implements TransactionWriter {
 
     @Override
     public Result<UUID, BusinessError> create(ImportedTransaction row) {
+        boolean reversal = row.type() != br.cdb.feature.f005._0_domain.model.Nature.EXPENSE;
         val tx = new Transaction(
                 UUID.randomUUID(), row.description(), row.amount(), row.purchasedAt(), row.date(),
-                row.accountId(), row.status(), row.type(), row.planned(), null,
+                row.accountId(), row.status(), reversal, row.planned(), null,
                 row.groupId(), installmentOrDefault(row.installmentNumber()),
                 installmentOrDefault(row.totalInstallments()), null, row.cardId());
         return writes.create(tx).map(Transaction::id);

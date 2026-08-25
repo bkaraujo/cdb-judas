@@ -7,7 +7,6 @@ import br.commons.business.BusinessError;
 import br.commons.framework.cdi.Context;
 import org.jspecify.annotations.NullMarked;
 
-import java.util.List;
 import java.util.UUID;
 
 /**

@@ -1,8 +1,10 @@
 package br.cdb.feature.f006._2_infrastructure.web;
 
 import br.cdb.feature.f005._0_domain.model.Nature;
+import br.cdb.feature.f005.F005Api;
 import br.cdb.feature.f006._0_domain.model.Transaction;
 import br.cdb.feature.f006._1_application.usecase.TransactionCommand;
+import br.commons.framework.cdi.Context;
 import br.cdb.feature.f006._1_application.usecase.TransactionScope;
 import br.cdb.feature.f006._2_infrastructure.web.request.TransactionRequest;
 import br.cdb.feature.f006._2_infrastructure.web.response.TransactionResponse;
@@ -16,15 +18,23 @@ import java.util.UUID;
 public abstract class RequestMapper {
     private RequestMapper(){}
     public static TransactionResponse toDto(Transaction t) {
+        Nature categoryNature = Nature.EXPENSE;
+        if (t.categoryId() != null) {
+            categoryNature = Context.get(F005Api.class).natureOf(t.categoryId());
+        }
+        int signal = t.calculateSignal(categoryNature);
+        // Efetiva (pós-estorno) — pode divergir da natureza da categoria quando reversal=true.
+        Nature effectiveNature = signal > 0 ? Nature.INCOME : Nature.EXPENSE;
+
         return new TransactionResponse(
                 t.id(),
                 t.description(),
-                BigDecimal.valueOf(t.signal()).multiply(t.amount()),
+                BigDecimal.valueOf(signal).multiply(t.amount()),
                 t.date(),
                 t.categoryId(),
                 t.accountId(),
                 t.status(),
-                t.signal() > 0 ? Nature.INCOME : Nature.EXPENSE,
+                effectiveNature,
                 t.planned(),
                 t.paymentDate(),
                 t.groupId(),
@@ -38,6 +48,8 @@ public abstract class RequestMapper {
     }
 
     public static TransactionCommand.Create toCreateCommand(UUID accId, TransactionRequest req) {
+        F005Api f005 = Context.get(F005Api.class);
+        Nature catNature = req.categoryId() != null ? f005.natureOf(req.categoryId()) : Nature.EXPENSE;
         return new TransactionCommand.Create(
                 req.description(),
                 req.amount(),
@@ -45,7 +57,7 @@ public abstract class RequestMapper {
                 accId,
                 req.planned(),
                 req.status(),
-                req.type(),
+                req.type() != catNature,
                 req.installments(),
                 req.notes(),
                 req.cardId()
@@ -53,6 +65,8 @@ public abstract class RequestMapper {
     }
 
     public static TransactionCommand.Update toUpdateCommand(UUID txId, UUID accId, TransactionRequest req) {
+        F005Api f005 = Context.get(F005Api.class);
+        Nature catNature = req.categoryId() != null ? f005.natureOf(req.categoryId()) : Nature.EXPENSE;
         return new TransactionCommand.Update(
                 txId,
                 req.description(),
@@ -61,7 +75,7 @@ public abstract class RequestMapper {
                 accId,
                 req.planned(),
                 req.status(),
-                req.type(),
+                req.type() != catNature,
                 toScope(req.editMode()),
                 req.notes(),
                 req.cardId()

@@ -2,7 +2,7 @@ package br.cdb.feature.f002._2_infrastructure.web.response;
 
 import br.cdb.feature.f002._0_domain.model.Account;
 import br.cdb.feature.f003._0_domain.model.CreditCard;
-import br.cdb.feature.f006._0_domain.model.Transaction;
+import br.cdb.feature.f006.F006Api;
 import br.commons.tools.Strings;
 import lombok.val;
 import org.jspecify.annotations.NullMarked;
@@ -37,10 +37,10 @@ public record AccountResponse(
     }
 
     /** Saldo atual = soma de todas as transações da conta (sem conceito de saldo de abertura). */
-    public static AccountResponse from(Account account, List<CreditCard> creditCards, List<Transaction> transactions) {
+    public static AccountResponse from(Account account, List<CreditCard> creditCards, List<F006Api.TransactionView> transactions) {
         var sum = BigDecimal.ZERO;
         for (val t : transactions) {
-            if (account.id().equals(t.accountId())) sum = sum.add(BigDecimal.valueOf(t.signal()).multiply(t.amount()));
+            if (account.id().equals(t.accountId())) sum = sum.add(t.amount());
         }
         val type = Strings.upper(account.type().name());
         val cardDtos = creditCards.stream().map(Card::from).toList();

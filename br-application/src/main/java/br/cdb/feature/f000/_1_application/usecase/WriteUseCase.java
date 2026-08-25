@@ -5,7 +5,6 @@ import br.cdb.feature.f000._1_application.service.PersonService;
 import br.commons.Result;
 import br.commons.business.BusinessError;
 import br.commons.framework.cdi.Context;
-import lombok.val;
 import org.jspecify.annotations.NullMarked;
 
 import java.util.UUID;
