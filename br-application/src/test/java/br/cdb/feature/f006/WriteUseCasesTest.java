@@ -202,8 +202,8 @@ class WriteUseCasesTest extends AbstractUseCaseTest {
     }
 
     @Test
-    @DisplayName("lançamento criado guarda o centro de custo do comando")
-    void persistsCostCenter() {
+    @DisplayName("lançamento criado persiste a flag planned do comando")
+    void persistsPlannedFlag() {
         useCase.upsert(cmd(LocalDate.of(2026, 5, 10), Status.CONFIRMED, null));
         assertEquals(planned, transactionRepository().findAll().get(0).planned());
     }

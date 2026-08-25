@@ -40,10 +40,4 @@ public class F000OwnershipInterceptorTest extends BaseHttpTest {
                 .then().statusCode(403);
     }
 
-    @Test
-    void naoGuardaRotaGlobalDeCentroDeCusto() {
-        asTestUser()
-                .when().get("/api/cost-center")
-                .then().statusCode(200);
-    }
 }

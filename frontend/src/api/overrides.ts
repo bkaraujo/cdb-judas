@@ -9,7 +9,7 @@ import type { UUID } from '@/api/types.ts';
 // 1. Transaction.Status/Type vão na rede em lowercase (JsonStorageConfig, Jackson custom), mas o
 // enum Java é uppercase e é dele que o SmallRye deriva o schema gerado. `planed` é o typo real.
 export type TransactionType = 'income' | 'expense' | 'transfer';
-export type TransactionStatus = 'pending' | 'scheduled' | 'confirmed' | 'planed' | 'balance' | 'cancelled';
+export type TransactionStatus = 'pending' | 'scheduled' | 'confirmed';
 
 /** `TransactionRequest`/`TransactionResponse` corrigidos (status/type lowercase) — vivem aqui, não
  * em `types.ts`, para não criar um ciclo de import (`types.ts` → `overrides.ts` → `types.ts`);
@@ -56,7 +56,7 @@ export interface ImportPreviewRow {
   duplicate: boolean;
   closed: boolean;
   categoryId: UUID | null;
-  costCenterId: UUID | null;
+  planned: boolean | null;
   suggestedCardId: UUID | null;
 }
 
@@ -83,7 +83,7 @@ export interface BankStatementPreviewRow {
   state: 'NEW' | 'DUPLICATE' | 'RECONCILE';
   closed: boolean;
   categoryId: UUID | null;
-  costCenterId: UUID | null;
+  planned: boolean | null;
   reconcileDescription: string | null;
 }
 

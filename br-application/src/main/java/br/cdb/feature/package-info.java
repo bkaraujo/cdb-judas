@@ -17,8 +17,7 @@
  * <pre>
  * feature
  * ├── f000  fatia-base — todas as demais podem depender dela, ela de nenhuma
- * │         (par CQRS ReadUseCase/WriteUseCase: pessoa + centro de custo, consumido por f001/UserService)
- * │   ├── CostCenterResource   GET  /api/cost-center                          (sem namespace de usuário)
+ * │         (par CQRS ReadUseCase/WriteUseCase: pessoa, consumido por f001/UserService)
  * │   ├── LoginResource        POST /login
  * │   ├── SseResource          GET  /api/{uuid}/stream                        (Server-Sent Events)
  * │   └── VersionResource      GET  /api/version                              (sem namespace de usuário)

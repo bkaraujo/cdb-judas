@@ -2,7 +2,6 @@
 import type { Account } from '@/core/kernel/_0_domain/account.ts';
 import { accountsList, categoryById, esc, flatCategories, sortByName } from '@/core/kernel/_0_domain/format.ts';
 import type { Category } from '@/core/kernel/_0_domain/category.ts';
-import type { CostCenter } from '@/api/types.ts';
 import { formModal, bindSwatches } from '@/core/kernel/_2_infrastructure/primary/helpers.ts';
 import type { Modal } from '@/core/kernel/_2_infrastructure/primary/ui/modal.ts';
 import { colorNameFieldHtml } from '@/core/kernel/_2_infrastructure/primary/ui/color-name-field.ts';
@@ -268,19 +267,6 @@ export function accountOptionsHtml(accounts: readonly Account[], selectedId: str
   }).join('');
 }
 
-// Cost-center <option> list with the "Variável" fallback: when nothing is selected yet, the cost
-// center whose description/name matches /vari/i is pre-selected (mirrors the backend's own
-// fallback when a transaction/import row arrives without a costCenterId).
-export function costCenterOptionsHtml(costCenters: readonly CostCenter[], selectedId: string | null | undefined): string {
-  if (!costCenters.length) return '<option value="">Nenhum centro de custo</option>';
-  const variavel = costCenters.filter((c) => /vari/i.test(c.description || '')).at(0);
-  const target = selectedId || (variavel && variavel.id) || '';
-  return costCenters.map((c) => {
-    const label = c.description || '';
-    const sel = String(c.id) === String(target) ? ' selected' : '';
-    return '<option value="' + esc(c.id) + '"' + sel + '>' + esc(label) + '</option>';
-  }).join('');
-}
 
 // The `flatCategories → [{value,label}]` shape shared by every category dropdown that isn't
 // built through categoryPickerHtml directly: falls back to a single disabled-looking placeholder

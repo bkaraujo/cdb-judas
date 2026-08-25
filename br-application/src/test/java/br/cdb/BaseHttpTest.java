@@ -5,12 +5,9 @@ import br.cdb.core.persistence.Database;
 import br.cdb.core.persistence.repository.UserRepository;
 import br.cdb.core.security.AccessTokenStore;
 import br.cdb.core.web.HTTPRequest;
-import br.cdb.feature.f000._0_domain.repository.CostCenterRepository;
 import br.cdb.feature.f000._0_domain.repository.PersonRepository;
-import br.cdb.feature.f000._1_application.service.CostCenterService;
 import br.cdb.feature.f000._1_application.service.PersonService;
 import br.cdb.feature.f000._2_infrastructure.persistence.CachingPersonRepository;
-import br.cdb.feature.f000._2_infrastructure.persistence.CostCenterJDBCRepository;
 import br.cdb.feature.f000._2_infrastructure.persistence.PersonJDBCRepository;
 import br.cdb.feature.f001._0_domain.repository.PreferencesRepository;
 import br.cdb.feature.f001._1_application.service.ProfileService;
@@ -150,7 +147,6 @@ public abstract class BaseHttpTest {
     private static void resetMonetaryRegistry() {
         Context.set(AccountRepository.class, AccountJDBCRepository::new);
         Context.set(BalanceRepository.class, UserAccountBalanceJDBCRepository::new);
-        Context.set(CostCenterRepository.class, CostCenterJDBCRepository::new);
         Context.set(TransactionRepository.class, TransactionJDBCRepository::new);
         Context.set(TransactionCategoryRepository.class, TransactionCategoryJDBCRepository::new);
         Context.set(TransactionTagRepository.class, TransactionTagJDBCRepository::new);
@@ -175,7 +171,6 @@ public abstract class BaseHttpTest {
         Context.remove(TagService.class);
         Context.remove(UserCategoryService.class);
         // Alcançados por Context.get() estrito (não se auto-instanciam): re-registra em vez de remover.
-        Context.set(CostCenterService.class, CostCenterService::new);
         Context.set(PersonService.class, () -> new PersonService(Context.get(PersonRepository.class)));
         Context.remove(WriteUseCase.class);
         Context.remove(ReadUseCase.class);

@@ -14,7 +14,7 @@ import org.jspecify.annotations.NullMarked;
 
 /**
  * Guarda de propriedade: o primeiro segmento após {@code /api/} é o dono da rota e deve coincidir
- * com o usuário autenticado. Rotas globais ({@code /api/cost-center*}, {@code /api/version}) e o
+ * com o usuário autenticado. Rotas globais ({@code /api/version}) e o
  * recurso self ({@code /api/me}) são isentos. Roda depois da autorização.
  */
 @Provider
@@ -45,8 +45,7 @@ public class OwnershipFilter implements ContainerRequestFilter {
     }
 
     private boolean isExcluded(String path) {
-        return path.equals("/api/cost-center") || path.startsWith("/api/cost-center/")
-                || path.equals("/api/version")
+        return path.equals("/api/version")
                 || path.equals("/api/me");
     }
 

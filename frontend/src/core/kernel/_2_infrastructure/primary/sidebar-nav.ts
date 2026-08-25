@@ -35,7 +35,6 @@ export const SIDEBAR_NAV: NavItem[] = [
     label: 'Cadastros',
     icon: 'database',
     children: [
-      { id: 'cost-centers', label: 'Centros de Custo', icon: 'briefcase' },
       { id: 'categories', label: 'Categorias', icon: 'tag' },
       { id: 'accounts', label: 'Contas', icon: 'building' },
       { id: 'tags', label: 'Tags', icon: 'hash' },

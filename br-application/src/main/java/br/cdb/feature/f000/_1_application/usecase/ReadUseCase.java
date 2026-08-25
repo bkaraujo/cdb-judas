@@ -1,8 +1,6 @@
 package br.cdb.feature.f000._1_application.usecase;
 
-import br.cdb.feature.f000._0_domain.model.CostCenter;
 import br.cdb.feature.f000._0_domain.model.Person;
-import br.cdb.feature.f000._1_application.service.CostCenterService;
 import br.cdb.feature.f000._1_application.service.PersonService;
 import br.commons.Result;
 import br.commons.business.BusinessError;
@@ -42,13 +40,4 @@ public class ReadUseCase {
                 .orElseGet(() -> Result.failure(new BusinessError.NotFound("f000.person.notFound", id)));
     }
 
-    // ── Centro de custo ────────────────────────────────────────────
-
-    private final CostCenterService costCenterService = Context.get(CostCenterService.class);
-
-    /** Catálogo persistido. O {@code CostCenterResource} não passa por aqui: a rota pública devolve
-     *  as constantes de {@link CostCenter}, que é dado fixo do sistema. */
-    public Result<List<CostCenter>, BusinessError> costCenters() {
-        return Result.success(costCenterService.findAll());
-    }
 }

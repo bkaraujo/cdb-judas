@@ -1,9 +1,6 @@
 package br.cdb.feature.f000._1_application.usecase;
 
-import br.cdb.feature.f000._0_domain.model.CostCenter;
 import br.cdb.feature.f000._0_domain.model.Person;
-import br.cdb.feature.f000._1_application.command.CostCenterCommand;
-import br.cdb.feature.f000._1_application.service.CostCenterService;
 import br.cdb.feature.f000._1_application.service.PersonService;
 import br.commons.Result;
 import br.commons.business.BusinessError;
@@ -44,25 +41,4 @@ public class WriteUseCase {
         return service.rename(person, newName);
     }
 
-    // ── Centro de custo ────────────────────────────────────────────
-
-    private final CostCenterService costCenterService = Context.get(CostCenterService.class);
-
-    public Result<CostCenter, BusinessError> upsertCostCenter(CostCenterCommand.Upsert cmd) {
-        return switch (cmd) {
-            case CostCenterCommand.Create(var description) -> {
-                val created = costCenterService.save(UUID.randomUUID(), description);
-                yield Result.success(created);
-            }
-            case CostCenterCommand.Update(var id, var description) -> {
-                val updated = costCenterService.save(id, description);
-                yield Result.success(updated);
-            }
-        };
-    }
-
-    public Result<Void, BusinessError> deleteCostCenter(CostCenterCommand.Delete command) {
-        costCenterService.deleteById(command.id());
-        return Result.success();
-    }
 }

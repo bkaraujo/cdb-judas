@@ -8,7 +8,6 @@ export function fakeCache(overrides: Partial<CacheStore> = {}): CacheStore {
     categories: () => [],
     accounts: () => [],
     tags: () => [],
-    costCenters: () => [],
     importRules: () => [],
     findById: () => null,
     subscribe: () => () => {},

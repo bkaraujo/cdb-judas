@@ -198,7 +198,7 @@ class F007InvoiceConfirmResourceTest extends AbstractImportTest {
     private void createTransaction(UUID accountId, UUID categoryId, String description, String amount, String date) {
         val body = """
                 {"description":"%s","amount":%s,"date":"%s","categoryId":"%s",
-                 "costCenterId":"d0000000-0000-0000-0000-000000000002",
+                 "planned":false,
                  "status":"confirmed","type":"expense","installments":1}
                 """.formatted(description, amount, date, categoryId);
         asTestUser()

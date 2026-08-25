@@ -4,8 +4,7 @@ import br.cdb.BaseHttpTest;
 import io.quarkus.test.junit.QuarkusTest;
 import org.junit.jupiter.api.Test;
 
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.notNullValue;
+import static org.hamcrest.Matchers.*;
 
 @QuarkusTest
 public class F010ImportRuleResourceTest extends BaseHttpTest {
@@ -38,7 +37,7 @@ public class F010ImportRuleResourceTest extends BaseHttpTest {
                 .body("triggers[0]", is("Companhia de Saneamento"))
                 .body("accountId", is((Object) null))
                 .body("categoryId", is((Object) null))
-                .body("costCenterId", is((Object) null))
+                .body("planned", is(nullValue()))
                 .extract().jsonPath().getString("id");
 
         asTestUser()

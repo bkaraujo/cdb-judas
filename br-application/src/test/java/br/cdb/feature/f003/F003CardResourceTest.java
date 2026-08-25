@@ -100,7 +100,7 @@ public class F003CardResourceTest extends BaseHttpTest {
                 .then().extract().jsonPath().getString("id");
 
         String txJson = """
-            {"description":"Compra","amount":-50.00,"date":"2024-04-01","categoryId":"%s","costCenterId":"d0000000-0000-0000-0000-000000000002","status":"confirmed","type":"expense","installments":1,"editMode":"single","cardId":"%s"}
+            {"description":"Compra","amount":-50.00,"date":"2024-04-01","categoryId":"%s","planned":false,"status":"confirmed","type":"expense","installments":1,"editMode":"single","cardId":"%s"}
             """.formatted(categoryId, cardId);
         asTestUser()
                 .body(txJson)

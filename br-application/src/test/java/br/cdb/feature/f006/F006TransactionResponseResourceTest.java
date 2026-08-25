@@ -107,7 +107,7 @@ public class F006TransactionResponseResourceTest extends BaseHttpTest {
               "amount": -2500.00,
               "date": "2024-04-01",
               "categoryId": "%s",
-              "costCenterId": "d0000000-0000-0000-0000-000000000002",
+              "planned": false,
               "status": "pending",
               "type": "expense",
               "installments": 1,
@@ -176,7 +176,7 @@ public class F006TransactionResponseResourceTest extends BaseHttpTest {
         UUID categoryId = createLeafCategory();
 
         String createJson = """
-            {"description":"TV","amount":-300.00,"date":"2024-06-01","categoryId":"%s","costCenterId":"d0000000-0000-0000-0000-000000000002","status":"pending","type":"expense","installments":3,"editMode":"single"}
+            {"description":"TV","amount":-300.00,"date":"2024-06-01","categoryId":"%s","planned":false,"status":"pending","type":"expense","installments":3,"editMode":"single"}
             """.formatted(categoryId);
 
         asTestUser()
@@ -281,7 +281,7 @@ public class F006TransactionResponseResourceTest extends BaseHttpTest {
         UUID categoryId = createLeafCategory();
 
         String createJson = """
-            {"description":"Compra","amount":-50.00,"date":"2024-05-01","categoryId":"%s","costCenterId":"d0000000-0000-0000-0000-000000000002","status":"confirmed","type":"expense","installments":1,"editMode":"single","cardId":"%s"}
+            {"description":"Compra","amount":-50.00,"date":"2024-05-01","categoryId":"%s","planned":false,"status":"confirmed","type":"expense","installments":1,"editMode":"single","cardId":"%s"}
             """.formatted(categoryId, cardId);
 
         asTestUser()
@@ -299,7 +299,7 @@ public class F006TransactionResponseResourceTest extends BaseHttpTest {
         UUID categoryId = createLeafCategory();
 
         String createJson = """
-            {"description":"Compra","amount":-50.00,"date":"2024-05-01","categoryId":"%s","costCenterId":"d0000000-0000-0000-0000-000000000002","status":"confirmed","type":"expense","installments":1,"editMode":"single","cardId":"%s"}
+            {"description":"Compra","amount":-50.00,"date":"2024-05-01","categoryId":"%s","planned":false,"status":"confirmed","type":"expense","installments":1,"editMode":"single","cardId":"%s"}
             """.formatted(categoryId, cardOfB);
 
         asTestUser()
@@ -343,7 +343,7 @@ public class F006TransactionResponseResourceTest extends BaseHttpTest {
         assertNotEquals(novaCategoria.toString(), outboundCategoryBefore);
 
         String patchJson = """
-            {"description":"Transferência (saída)","amount":200.00,"date":"2024-08-01","categoryId":"%s","costCenterId":"d0000000-0000-0000-0000-000000000002","status":"confirmed","type":"expense"}
+            {"description":"Transferência (saída)","amount":200.00,"date":"2024-08-01","categoryId":"%s","planned":false,"status":"confirmed","type":"expense"}
             """.formatted(novaCategoria);
 
         asTestUser()
@@ -392,7 +392,7 @@ public class F006TransactionResponseResourceTest extends BaseHttpTest {
         });
 
         String patchJson = """
-            {"description":"Transferência (saída)","amount":75.00,"date":"2024-09-02","categoryId":"%s","costCenterId":"d0000000-0000-0000-0000-000000000002","status":"confirmed","type":"expense"}
+            {"description":"Transferência (saída)","amount":75.00,"date":"2024-09-02","categoryId":"%s","planned":false,"status":"confirmed","type":"expense"}
             """.formatted(outboundCategoria);
 
         asTestUser()
@@ -413,7 +413,7 @@ public class F006TransactionResponseResourceTest extends BaseHttpTest {
         String tagId = createTag();
 
         String json = """
-            {"description":"Com tag","amount":-10.00,"date":"2024-04-01","categoryId":"%s","costCenterId":"d0000000-0000-0000-0000-000000000002","status":"pending","type":"expense","installments":1,"editMode":"single","tagIds":["%s"]}
+            {"description":"Com tag","amount":-10.00,"date":"2024-04-01","categoryId":"%s","planned":false,"status":"pending","type":"expense","installments":1,"editMode":"single","tagIds":["%s"]}
             """;
 
         String ownId = asTestUser()

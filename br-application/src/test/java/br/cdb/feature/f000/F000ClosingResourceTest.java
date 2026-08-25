@@ -57,7 +57,7 @@ public class F000ClosingResourceTest extends BaseHttpTest {
                 .then().statusCode(200);
 
         String blockedJson = """
-            {"description":"Dentro do fechado","amount":-50.00,"date":"2024-06-15","categoryId":"%s","costCenterId":"d0000000-0000-0000-0000-000000000002","status":"pending","type":"expense"}
+            {"description":"Dentro do fechado","amount":-50.00,"date":"2024-06-15","categoryId":"%s","planned":false,"status":"pending","type":"expense"}
             """.formatted(categoryId);
         asTestUser()
                 .body(blockedJson)
@@ -65,7 +65,7 @@ public class F000ClosingResourceTest extends BaseHttpTest {
                 .then().statusCode(400);
 
         String okJson = """
-            {"description":"Pos fechamento","amount":-50.00,"date":"2024-07-15","categoryId":"%s","costCenterId":"d0000000-0000-0000-0000-000000000002","status":"pending","type":"expense"}
+            {"description":"Pos fechamento","amount":-50.00,"date":"2024-07-15","categoryId":"%s","planned":false,"status":"pending","type":"expense"}
             """.formatted(categoryId);
         asTestUser()
                 .body(okJson)
@@ -91,7 +91,7 @@ public class F000ClosingResourceTest extends BaseHttpTest {
 
         // lançamento criado ANTES de fechar o período
         String txJson = """
-            {"description":"Antes","amount":-50.00,"date":"2024-06-15","categoryId":"%s","costCenterId":"d0000000-0000-0000-0000-000000000002","status":"pending","type":"expense"}
+            {"description":"Antes","amount":-50.00,"date":"2024-06-15","categoryId":"%s","planned":false,"status":"pending","type":"expense"}
             """.formatted(categoryId);
         String txId = asTestUser()
                 .body(txJson)
@@ -106,7 +106,7 @@ public class F000ClosingResourceTest extends BaseHttpTest {
                 .then().statusCode(200);
 
         String updJson = """
-            {"description":"Tentativa","amount":-60.00,"date":"2024-06-15","categoryId":"%s","costCenterId":"d0000000-0000-0000-0000-000000000002","status":"pending","type":"expense"}
+            {"description":"Tentativa","amount":-60.00,"date":"2024-06-15","categoryId":"%s","planned":false,"status":"pending","type":"expense"}
             """.formatted(categoryId);
         asTestUser()
                 .body(updJson)

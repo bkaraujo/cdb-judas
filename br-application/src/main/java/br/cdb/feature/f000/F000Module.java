@@ -2,12 +2,9 @@ package br.cdb.feature.f000;
 
 import br.cdb.core.persistence.Database;
 import br.cdb.feature.f000._0_domain.SSE;
-import br.cdb.feature.f000._0_domain.repository.CostCenterRepository;
 import br.cdb.feature.f000._0_domain.repository.PersonRepository;
-import br.cdb.feature.f000._1_application.service.CostCenterService;
 import br.cdb.feature.f000._1_application.service.PersonService;
 import br.cdb.feature.f000._2_infrastructure.persistence.CachingPersonRepository;
-import br.cdb.feature.f000._2_infrastructure.persistence.CostCenterJDBCRepository;
 import br.cdb.feature.f000._2_infrastructure.persistence.PersonJDBCRepository;
 import br.cdb.feature.f000._2_infrastructure.service.SseService;
 import br.commons.Logger;
@@ -65,16 +62,7 @@ public class F000Module implements Lifecycle {
                     TMS_UPDATED_AT TIMESTAMP NOT NULL,
                     PRIMARY KEY (COD_PERSON, TXT_KEY)
                 )
-                """,
                 """
-                CREATE TABLE F000_COST_CENTER (
-                    ID CHAR(36) PRIMARY KEY,
-                    TXT_DESCRIPTION VARCHAR(50) NOT NULL,
-                    FLG_ACTIVE CHAR(1) NOT NULL
-                )
-                """,
-                "INSERT INTO F000_COST_CENTER (ID, TXT_DESCRIPTION, FLG_ACTIVE) VALUES ('d0000000-0000-0000-0000-000000000001', 'Fixo', 'Y')",
-                "INSERT INTO F000_COST_CENTER (ID, TXT_DESCRIPTION, FLG_ACTIVE) VALUES ('d0000000-0000-0000-0000-000000000002', 'Variável', 'Y')"
         );
     }
 
@@ -85,12 +73,10 @@ public class F000Module implements Lifecycle {
         Database.initialize(model());
 
         Context.set(SSE.class, SseService::new);
-        Context.set(CostCenterRepository.class, CostCenterJDBCRepository::new);
         Context.set(PersonRepository.class, () -> new CachingPersonRepository(new PersonJDBCRepository()));
         // Os dois services alcançados por Context.get() estrito (o par ReadUseCase/WriteUseCase);
         // as demais engines resolvem suas portas em campo e o Context as instancia sozinho via tryGet.
         Context.set(PersonService.class, () -> new PersonService(Context.get(PersonRepository.class)));
-        Context.set(CostCenterService.class, CostCenterService::new);
 
         return Result.success();
     }

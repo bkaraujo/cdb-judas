@@ -1,8 +1,6 @@
 package br.cdb;
 
-import br.cdb.feature.f000._0_domain.repository.CostCenterRepository;
 import br.cdb.feature.f000._0_domain.repository.PersonRepository;
-import br.cdb.feature.f000._1_application.service.CostCenterService;
 import br.cdb.feature.f000._1_application.service.PersonService;
 import br.cdb.feature.f002._0_domain.repository.AccountRepository;
 import br.cdb.feature.f002._0_domain.repository.BalanceRepository;
@@ -34,7 +32,6 @@ public abstract class AbstractUseCaseTest {
     protected CreditCardRepository cardRepository() { return Context.get(CreditCardRepository.class); }
     protected BalanceRepository balanceRepository() { return Context.get(BalanceRepository.class); }
     protected AccountRepository accountRepository() { return Context.get(AccountRepository.class); }
-    protected CostCenterRepository costCenterRepository() { return Context.get(CostCenterRepository.class); }
     protected TransactionRepository transactionRepository() { return Context.get(TransactionRepository.class); }
     protected TransactionCategoryRepository transactionCategoryRepository() { return Context.get(TransactionCategoryRepository.class); }
     protected TransactionTagRepository transactionTagRepository() { return Context.get(TransactionTagRepository.class); }
@@ -50,7 +47,6 @@ public abstract class AbstractUseCaseTest {
         Context.remove(CreditCardService.class);
         Context.remove(AccountService.class);
         Context.remove(BalanceService.class);
-        Context.remove(CostCenterService.class);
         Context.remove(TransactionService.class);
         Context.remove(TransactionCategoryService.class);
         Context.remove(TransactionTagService.class);
@@ -62,7 +58,6 @@ public abstract class AbstractUseCaseTest {
         Context.tryGet(BalanceRepository.class, InMemoryRepositories.Balances::new).clearCache();
         Context.tryGet(AccountRepository.class, InMemoryRepositories.Accounts::new).clearCache();
         Context.tryGet(TransactionRepository.class, InMemoryRepositories.Transactions::new).clearCache();
-        Context.tryGet(CostCenterRepository.class, InMemoryRepositories.CostCenters::new).clearCache();
         // TransactionCategoryRepository/TransactionTagRepository/TagRepository não estendem Repository
         // (não têm clearCache): em vez de limpar o fake, publica-se um novo a cada teste — o que
         // também sobrescreve o adaptador JDBC deixado por um @QuarkusTest anterior.
@@ -76,7 +71,6 @@ public abstract class AbstractUseCaseTest {
 
         // O par ReadUseCase/WriteUseCase resolve o service com Context.get() estrito (em produção quem registra é
         // F000Module): re-registra sobre os fakes acima, depois de removido.
-        Context.set(CostCenterService.class, CostCenterService::new);
         Context.set(PersonService.class, () -> new PersonService(Context.get(PersonRepository.class)));
         // O par de f000 guarda os dois services acima em campo: precisa cair junto com eles.
         Context.remove(br.cdb.feature.f000._1_application.usecase.ReadUseCase.class);

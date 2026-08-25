@@ -11,8 +11,6 @@ import static org.hamcrest.Matchers.*;
 @QuarkusTest
 public class F009DashboardResourceTest extends BaseHttpTest {
 
-    private static final String COST_CENTER_ID = "d0000000-0000-0000-0000-000000000002";
-
     @Test
     void deveObterResultadoMensal() {
         asTestUser()
@@ -86,13 +84,13 @@ public class F009DashboardResourceTest extends BaseHttpTest {
               "amount": %s,
               "date": "%s",
               "categoryId": "%s",
-              "costCenterId": "%s",
+              "planned": false,
               "status": "%s",
               "type": "%s",
               "installments": 1,
               "editMode": "single"
             }
-            """.formatted(description, amount, date, categoryId, COST_CENTER_ID, status, type);
+            """.formatted(description, amount, date, categoryId, status, type);
         asTestUser()
                 .body(json)
                 .when().post("/api/" + TEST_USER_ID + "/accounts/" + accountId + "/transactions")

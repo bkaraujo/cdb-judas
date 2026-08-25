@@ -465,7 +465,7 @@ class F007StatementImportResourceTest extends AbstractImportTest {
     private String createTransaction(UUID accountId, String description, String amount, String date, String status) {
         val body = """
                 {"description":"%s","amount":%s,"date":"%s","categoryId":"%s",
-                 "costCenterId":"d0000000-0000-0000-0000-000000000002",
+                 "planned":false,
                  "status":"%s","type":"expense","installments":1}
                 """.formatted(description, amount, date, seedLeafCategory(), status);
         return asTestUser()

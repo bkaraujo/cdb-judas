@@ -42,7 +42,7 @@ public class F005CategoryResourceTest extends BaseHttpTest {
 
     private String createTransaction(String accountId, String categoryId) {
         String json = """
-            {"description":"Compra","amount":-50.00,"date":"2024-04-01","categoryId":"%s","costCenterId":"%s","status":"confirmed","type":"expense","installments":1,"editMode":"single"}
+            {"description":"Compra","amount":-50.00,"date":"2024-04-01","categoryId":"%s","planned":false,"status":"confirmed","type":"expense","installments":1,"editMode":"single"}
             """.formatted(categoryId, COST_CENTER_ID);
         return asTestUser()
                 .body(json)

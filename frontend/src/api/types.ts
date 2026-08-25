@@ -10,7 +10,6 @@ export type CardStatusRequest = components['schemas']['CardStatusRequest'];
 export type CategoryResponse = components['schemas']['CategoryResponse'];
 export type ClosingRequest = components['schemas']['ClosingRequest'];
 export type ClosingResponse = components['schemas']['ClosingResponse'];
-export type CostCenter = components['schemas']['CostCenter'];
 export type CreateRequest = components['schemas']['CreateRequest'];
 export type HistoricalResult = components['schemas']['HistoricalResult'];
 export type ImportRule = components['schemas']['ImportRule'];

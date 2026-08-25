@@ -61,7 +61,7 @@ export function createTransactionFormModal(deps: TransactionFormModalDeps) {
       categoryId: isEdit ? existing?.categoryId || '' : '',
       accountId: isEdit ? String(existing?.accountId || '') : '',
       destAccountId: '',
-      status: (isEdit ? (existing?.status === 'balance' ? 'confirmed' : existing?.status || 'confirmed') : 'confirmed') as string,
+      status: (isEdit ? existing?.status || 'confirmed' : 'confirmed') as string,
       planned: isEdit ? existing?.planned || false : false,
       cardId: isEdit ? existing?.cardId || '' : '',
       isEstorno: isEdit ? (existing?.type === 'expense' && Number(existing?.amount) > 0) || (existing?.type === 'income' && Number(existing?.amount) < 0) : false,

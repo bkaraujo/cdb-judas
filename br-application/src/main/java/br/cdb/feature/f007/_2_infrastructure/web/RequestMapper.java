@@ -47,7 +47,7 @@ public abstract class RequestMapper {
         val rows = preview.rows().stream()
                 .map(r -> new BankStatementPreviewResponse.Row(
                         r.date().toString(), r.description(), r.amount(), r.type(),
-                        r.state().name(), closed.covers(r.date()), r.categoryId(), r.costCenterId(), r.reconcileDescription()))
+                        r.state().name(), closed.covers(r.date()), r.categoryId(), r.planned(), r.reconcileDescription()))
                 .toList();
         return new BankStatementPreviewResponse(
                 "BANK_STATEMENT", preview.issuer(), accounts, preview.selectedAccountId(), rows,
@@ -74,7 +74,7 @@ public abstract class RequestMapper {
                 row.duplicate(),
                 closed.covers(draft.date()),
                 row.categoryId(),
-                row.costCenterId(),
+                row.planned(),
                 row.suggestedCardId());
     }
 

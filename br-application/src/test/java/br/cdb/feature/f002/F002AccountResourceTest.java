@@ -14,8 +14,6 @@ import static org.junit.jupiter.api.Assertions.*;
 @QuarkusTest
 public class F002AccountResourceTest extends BaseHttpTest {
 
-    private static final String COST_CENTER_ID = "d0000000-0000-0000-0000-000000000002";
-
     private String createAccount(String name) {
         String json = "{\"name\":\"%s\",\"type\":\"CHECKING\",\"color\":\"#007AFF\",\"active\":true}".formatted(name);
         return asTestUser()
@@ -38,8 +36,8 @@ public class F002AccountResourceTest extends BaseHttpTest {
 
     private String createTransaction(String accountId, String categoryId) {
         String json = """
-            {"description":"Compra","amount":-50.00,"date":"2024-04-01","categoryId":"%s","costCenterId":"%s","status":"confirmed","type":"expense","installments":1,"editMode":"single"}
-            """.formatted(categoryId, COST_CENTER_ID);
+            {"description":"Compra","amount":-50.00,"date":"2024-04-01","categoryId":"%s","planned":false,"status":"confirmed","type":"expense","installments":1,"editMode":"single"}
+            """.formatted(categoryId);
         return asTestUser()
                 .body(json)
                 .when().post("/api/" + TEST_USER_ID + "/accounts/" + accountId + "/transactions")
@@ -51,8 +49,8 @@ public class F002AccountResourceTest extends BaseHttpTest {
     private String createDatedTransaction(String accountId, String categoryId, String cardId, String date, String amount) {
         String card = cardId == null ? "" : ",\"cardId\":\"%s\"".formatted(cardId);
         String json = """
-            {"description":"Compra","amount":%s,"date":"%s","categoryId":"%s","costCenterId":"%s","status":"confirmed","type":"expense","installments":1,"editMode":"single"%s}
-            """.formatted(amount, date, categoryId, COST_CENTER_ID, card);
+            {"description":"Compra","amount":%s,"date":"%s","categoryId":"%s","planned":false,"status":"confirmed","type":"expense","installments":1,"editMode":"single"%s}
+            """.formatted(amount, date, categoryId, card);
         return asTestUser()
                 .body(json)
                 .when().post("/api/" + TEST_USER_ID + "/accounts/" + accountId + "/transactions")
@@ -246,7 +244,7 @@ public class F002AccountResourceTest extends BaseHttpTest {
 
         // Lançamento de -250 na conta.
         String txJson = """
-            {"description":"Aluguel","amount":-250.00,"date":"2024-04-01","categoryId":"%s","costCenterId":"d0000000-0000-0000-0000-000000000002","status":"confirmed","type":"expense","installments":1,"editMode":"single"}
+            {"description":"Aluguel","amount":-250.00,"date":"2024-04-01","categoryId":"%s","planned":false,"status":"confirmed","type":"expense","installments":1,"editMode":"single"}
             """.formatted(categoryId);
         asTestUser()
                 .body(txJson)

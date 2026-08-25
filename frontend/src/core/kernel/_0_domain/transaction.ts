@@ -11,9 +11,6 @@ export const TRANSACTION_STATUS = {
   PENDING: 'pending',
   SCHEDULED: 'scheduled',
   CONFIRMED: 'confirmed',
-  PLANNED: 'planed',
-  BALANCE: 'balance',
-  CANCELLED: 'cancelled',
 } as const satisfies Record<string, TransactionStatus>;
 
 export const GROUP_SCOPE = { SINGLE: 'SINGLE', FUTURE: 'FUTURE', ALL: 'ALL' } as const;
@@ -59,8 +56,7 @@ export function statusBadgeVariant(status: unknown): StatusBadgeVariant {
   const s = String(status || '').toLowerCase();
   if (s === TRANSACTION_STATUS.CONFIRMED) return 'income';
   if (s === TRANSACTION_STATUS.SCHEDULED) return 'warning';
-  if (s === TRANSACTION_STATUS.PLANNED) return 'info';
-  if (s === TRANSACTION_STATUS.CANCELLED) return 'muted';
+  if (s === 'cancelled') return 'muted'; // accounts-payable domain still uses this status
   return 'expense'; // pending or unknown
 }
 
@@ -68,9 +64,6 @@ const STATUS_LABEL: Record<string, string> = {
   confirmed: 'Confirmado',
   pending: 'Pendente',
   scheduled: 'Agendado',
-  planed: 'Planejado',
-  balance: 'Saldo',
-  cancelled: 'Cancelado',
 };
 
 export function statusLabel(status: unknown): string {

@@ -1,9 +1,7 @@
 package br.cdb.feature.f000;
 
 import br.cdb.AbstractUseCaseTest;
-import br.cdb.feature.f000._0_domain.model.CostCenter;
 import br.cdb.feature.f000._0_domain.model.Person;
-import br.cdb.feature.f000._1_application.command.CostCenterCommand;
 import br.cdb.feature.f000._1_application.usecase.ReadUseCase;
 import br.cdb.feature.f000._1_application.usecase.WriteUseCase;
 import br.commons.Result;
@@ -14,7 +12,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
-import java.util.List;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -71,17 +68,4 @@ class ReadUseCaseTest extends AbstractUseCaseTest {
         assertInstanceOf(BusinessError.NotFound.class, ((Result.Failure<Person, BusinessError>) r).error());
     }
 
-    @Test
-    @DisplayName("costCenters devolve o catálogo persistido, na ordem de inserção")
-    void listsCostCenters() {
-        writes.upsertCostCenter(new CostCenterCommand.Create("Matriz"));
-        writes.upsertCostCenter(new CostCenterCommand.Create("Filial"));
-
-        val r = reads.costCenters();
-
-        assertTrue(r.isSuccess());
-        val descriptions = ((Result.Success<List<CostCenter>, BusinessError>) r).value().stream()
-                .map(CostCenter::description).toList();
-        assertEquals(List.of("Matriz", "Filial"), descriptions);
-    }
 }

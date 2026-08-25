@@ -207,7 +207,7 @@ export function createTransactionsListPage(deps: TransactionsPageDeps, cfg: Tran
 
     const accOpts = accountOptionsHtml(deps.cache.accounts(), state.filterAccount, { includeEmpty: true, emptyLabel: 'Todas', activeOnly: false });
 
-    const stOpts = ['', 'confirmed', 'pending', 'scheduled', 'planed']
+    const stOpts = ['', 'confirmed', 'pending', 'scheduled']
       .map((st) => '<option value="' + esc(st) + '"' + (st === state?.filterStatus ? ' selected' : '') + '>' + esc(st === '' ? 'Todos' : Transaction.statusLabel(st)) + '</option>')
       .join('');
 

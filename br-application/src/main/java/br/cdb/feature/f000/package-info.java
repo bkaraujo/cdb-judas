@@ -14,7 +14,6 @@
  *       (f006 ou cascata de conta/categoria/tag) e reagido best-effort por f006/f004</li>
  *   <li><b>auth</b> — {@code LoginResource} ({@code POST /login}, emissão de token)</li>
  *   <li><b>guards</b> — {@code UserGuards}, checagem de propriedade/anti-IDOR</li>
- *   <li><b>costcenter</b> — {@code CostCenterResource} ({@code GET /api/cost-center}, catálogo fixo)</li>
  *   <li><b>version</b> — {@code VersionResource} ({@code GET /api/version})</li>
  * </ul>
  *
@@ -25,10 +24,8 @@
  * <p><b>Par CQRS</b> ({@code _1_application.usecase.ReadUseCase}/{@code WriteUseCase}, Context-wired
  * como em f001–f006), com uma diferença: aqui ele não serve a nenhum {@code *Resource} da própria
  * fatia — quem o consome é {@code f001.ProfileService} (pessoa por trás de {@code /api/me}) e o
- * {@code UserService} local (cria a pessoa antes do login). Pessoa e centro de custo dividem o mesmo
- * par: {@code f000} é o kernel plano, sem sub-pacote por assunto, e só cabe um {@code ReadUseCase}
- * por pacote. Se um terceiro assunto precisar de use case aqui, vale reavaliar — a alternativa é
- * voltar a nomear por assunto, como eram {@code PersonUseCase}/{@code CostCenterUseCase}.
+ * {@code UserService} local (cria a pessoa antes do login). Pessoa é o único
+ * assunto deste par (já que cost center foi migrado para a flag planned).
  */
 @NullMarked
 package br.cdb.feature.f000;

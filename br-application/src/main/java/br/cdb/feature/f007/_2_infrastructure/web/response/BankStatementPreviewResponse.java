@@ -37,7 +37,7 @@ public record BankStatementPreviewResponse(
             String state,
             boolean closed,
             @Nullable UUID categoryId,
-            @Nullable UUID costCenterId,
+            @Nullable Boolean planned,
             @Nullable String reconcileDescription
     ) {}
 

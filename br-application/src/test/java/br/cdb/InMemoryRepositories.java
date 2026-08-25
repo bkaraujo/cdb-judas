@@ -1,8 +1,6 @@
 package br.cdb;
 
-import br.cdb.feature.f000._0_domain.model.CostCenter;
 import br.cdb.feature.f000._0_domain.model.Person;
-import br.cdb.feature.f000._0_domain.repository.CostCenterRepository;
 import br.cdb.feature.f000._0_domain.repository.PersonRepository;
 import br.cdb.feature.f002._0_domain.model.Account;
 import br.cdb.feature.f002._0_domain.model.Balance;
@@ -164,9 +162,6 @@ public abstract class InMemoryRepositories {
         public void clearCache() { tags.clear(); }
     }
 
-    public static class CostCenters extends BaseRepo<CostCenter, UUID> implements CostCenterRepository {
-        public CostCenter save(CostCenter e) { data.put(e.id(), e); return e; }
-    }
 
     /** Balance tem chave de negócio (accountId, period) — sem personId próprio, não cabe em BaseRepo. */
     public static class Balances implements BalanceRepository {
