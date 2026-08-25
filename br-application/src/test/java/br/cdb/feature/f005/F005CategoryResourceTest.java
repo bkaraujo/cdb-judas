@@ -15,9 +15,6 @@ import static org.hamcrest.Matchers.notNullValue;
 @QuarkusTest
 public class F005CategoryResourceTest extends BaseHttpTest {
 
-    private static final String COST_CENTER_ID = "d0000000-0000-0000-0000-000000000002";
-
-
     private String createCategory(String name, String nature, String parentId) {
         String json = parentId == null
                 ? "{\"name\":\"%s\",\"nature\":\"%s\"}".formatted(name, nature)
@@ -43,7 +40,7 @@ public class F005CategoryResourceTest extends BaseHttpTest {
     private String createTransaction(String accountId, String categoryId) {
         String json = """
             {"description":"Compra","amount":-50.00,"date":"2024-04-01","categoryId":"%s","planned":false,"status":"confirmed","type":"expense","installments":1,"editMode":"single"}
-            """.formatted(categoryId, COST_CENTER_ID);
+            """.formatted(categoryId);
         return asTestUser()
                 .body(json)
                 .when().post("/api/" + TEST_USER_ID + "/accounts/" + accountId + "/transactions")

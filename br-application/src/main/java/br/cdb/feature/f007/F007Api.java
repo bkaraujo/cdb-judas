@@ -27,7 +27,7 @@ public interface F007Api {
             @Nullable Integer installmentTotal,
             @Nullable Nature transactionType,
             UUID categoryId,
-            @Nullable UUID costCenterId,
+            @Nullable Boolean planned,
             @Nullable UUID cardId,
             @Nullable List<UUID> tagIds
     ) implements View {}

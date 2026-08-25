@@ -13,8 +13,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 @QuarkusTest
 public class F004TagResourceTest extends BaseHttpTest {
 
-    private static final String COST_CENTER_ID = "d0000000-0000-0000-0000-000000000002";
-
     private String createTag(String name) {
         String json = "{\"name\":\"%s\",\"color\":\"#00FF00\"}".formatted(name);
         return asTestUser()
@@ -59,7 +57,7 @@ public class F004TagResourceTest extends BaseHttpTest {
     private String createTransaction(String accountId) {
         String json = """
             {"description":"Compra","amount":-50.00,"date":"2024-04-01","categoryId":"%s","planned":false,"status":"confirmed","type":"expense","installments":1,"editMode":"single"}
-            """.formatted(createCategory(), COST_CENTER_ID);
+            """.formatted(createCategory());
         return asTestUser()
                 .body(json)
                 .when().post("/api/" + TEST_USER_ID + "/accounts/" + accountId + "/transactions")
