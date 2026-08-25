@@ -73,6 +73,7 @@ interface TransactionsPageState extends PageState {
   filterAccount: string;
   filterCategory: string;
   filterStatus: string;
+  filterPlanned: '' | 'yes' | 'no';
   showFilters: boolean;
   pendingScrollTop: number | null;
   pendingRootScrollTop: number | null;
@@ -165,7 +166,8 @@ export function createTransactionsListPage(deps: TransactionsPageDeps, cfg: Tran
       const matchAcc = !state?.filterAccount || String(tx.accountId) === String(state?.filterAccount);
       const matchCat = !state?.filterCategory || String(tx.categoryId) === String(state?.filterCategory);
       const matchSt = !state?.filterStatus || (tx as { status?: string }).status === state?.filterStatus;
-      return matchSearch && matchType && matchAcc && matchCat && matchSt;
+      const matchPlanned = !state?.filterPlanned || (state?.filterPlanned === 'yes' && (tx as { planned?: boolean }).planned) || (state?.filterPlanned === 'no' && !(tx as { planned?: boolean }).planned);
+      return matchSearch && matchType && matchAcc && matchCat && matchSt && matchPlanned;
     });
   }
 
@@ -211,14 +213,19 @@ export function createTransactionsListPage(deps: TransactionsPageDeps, cfg: Tran
       .map((st) => '<option value="' + esc(st) + '"' + (st === state?.filterStatus ? ' selected' : '') + '>' + esc(st === '' ? 'Todos' : Transaction.statusLabel(st)) + '</option>')
       .join('');
 
-    const hasAny = !!(state.filterAccount || state.filterCategory || state.filterStatus);
+    const plannedOpts = ['', 'yes', 'no']
+      .map((p) => '<option value="' + esc(p) + '"' + (p === state?.filterPlanned ? ' selected' : '') + '>' + esc(p === '' ? 'Todos' : p === 'yes' ? 'Planejada' : 'Não planejada') + '</option>')
+      .join('');
+
+    const hasAny = !!(state.filterAccount || state.filterCategory || state.filterStatus || state.filterPlanned);
 
     return $(
       '<div class="card" style="padding:16px;margin-bottom:14px;">' +
-        '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;">' +
+        '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;">' +
           '<div class="form-group"><label class="form-label">Conta</label><select data-act="filter-account">' + accOpts + '</select></div>' +
           '<div class="form-group"><label class="form-label">Categoria</label>' + catFieldHtml + '</div>' +
           '<div class="form-group"><label class="form-label">Status</label><select data-act="filter-status">' + stOpts + '</select></div>' +
+          '<div class="form-group"><label class="form-label">Planejada</label><select data-act="filter-planned">' + plannedOpts + '</select></div>' +
         '</div>' +
         (hasAny ? '<div style="display:flex;justify-content:flex-end;margin-top:10px;"><button type="button" data-act="clear-filters" class="btn btn-ghost btn-sm">' + icon('x', 13) + '<span>Limpar filtros</span></button></div>' : '') +
       '</div>',
@@ -392,11 +399,16 @@ export function createTransactionsListPage(deps: TransactionsPageDeps, cfg: Tran
       if (state) state.filterStatus = ($(this).val() as string) || '';
       render();
     });
+    $root.on('change.tx', '[data-act=filter-planned]', function () {
+      if (state) state.filterPlanned = ($(this).val() as TransactionsPageState['filterPlanned']) || '';
+      render();
+    });
     $root.on('click.tx', '[data-act=clear-filters]', () => {
       if (state) {
         state.filterAccount = '';
         state.filterCategory = '';
         state.filterStatus = '';
+        state.filterPlanned = '';
       }
       render();
     });
@@ -422,7 +434,7 @@ export function createTransactionsListPage(deps: TransactionsPageDeps, cfg: Tran
       state = {
         loading: true, title: cfg.title, installmentsOnly: cfg.installmentsOnly,
         transactions: [], raw: [], month: p.month - 1, year: p.year,
-        search: '', filterType: 'all', filterAccount: '', filterCategory: '', filterStatus: '',
+        search: '', filterType: 'all', filterAccount: '', filterCategory: '', filterStatus: '', filterPlanned: '',
         showFilters: false, pendingScrollTop: null, pendingRootScrollTop: null,
       };
       return state;

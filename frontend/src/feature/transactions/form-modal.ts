@@ -174,6 +174,11 @@ export function createTransactionFormModal(deps: TransactionFormModalDeps) {
           '</label>' +
         '</div>' +
         '<div class="form-group full">' +
+          '<label style="display:inline-flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;font-weight:500;color:var(--text-secondary);">' +
+            '<input type="checkbox" name="planejada"' + (initial.planned ? ' checked' : '') + ' style="width:16px;height:16px;accent-color:var(--accent);" />Lançamento planejado' +
+          '</label>' +
+        '</div>' +
+        '<div class="form-group full">' +
           '<label class="form-label" for="' + ids.notes + '">Anotações <span style="font-weight:400;color:var(--text-muted);">(opcional)</span></label>' +
           '<textarea id="' + ids.notes + '" name="notes" maxlength="250" rows="3" ' + (isTransferEdit ? 'disabled ' : '') + 'placeholder="Até 250 caracteres..." style="resize:vertical;min-height:60px;">' + esc(initial.notes) + '</textarea>' +
           '<p style="font-size:11px;color:var(--text-muted);margin-top:4px;text-align:right;" data-region="notes-counter">' + esc(initial.notes.length + '/250') + '</p>' +
@@ -291,6 +296,8 @@ export function createTransactionFormModal(deps: TransactionFormModalDeps) {
       if ($cardSel.length) initial.cardId = (($cardSel.val() as string) || initial.cardId);
       const $estornoChk = $form.find('input[name=estorno]');
       if ($estornoChk.length) initial.isEstorno = $estornoChk.is(':checked');
+      const $planejadaChk = $form.find('input[name=planejada]');
+      if ($planejadaChk.length) initial.planned = $planejadaChk.is(':checked');
       const $notesTa = $form.find('textarea[name=notes]');
       if ($notesTa.length) initial.notes = (($notesTa.val() as string) || initial.notes);
 
@@ -384,6 +391,7 @@ export function createTransactionFormModal(deps: TransactionFormModalDeps) {
       const categoryId = $form.find('select[name=categoryId]').val() as string;
       const status = $form.find('select[name=status]').val() as TransactionRequest['status'];
       const isEstorno = $form.find('input[name=estorno]').is(':checked');
+      const isPlanned = $form.find('input[name=planejada]').is(':checked');
 
       if (!accountId) {
         toast('Selecione uma conta', 'error');
@@ -402,7 +410,7 @@ export function createTransactionFormModal(deps: TransactionFormModalDeps) {
         date,
         categoryId,
         accountId,
-        planned: initial.planned,
+        planned: isPlanned,
         status,
         type: type as TransactionRequest['type'],
         notes,

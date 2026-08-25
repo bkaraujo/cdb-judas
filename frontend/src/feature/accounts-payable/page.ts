@@ -299,7 +299,7 @@ export function createAccountsPayablePage(deps: AccountsPayablePageDeps): Page {
         const signed = Transaction.signedAmount(txType, amt);
         const payload = {
           description: name, amount: Number(signed.toFixed(2)), date: due,
-          categoryId, accountId, status, type: txType,
+          categoryId, accountId, planned: false, status, type: txType,
         };
         return isEdit ? deps.transactions.update((existing as PayableListItem).id, payload) : deps.transactions.create(payload);
       },
