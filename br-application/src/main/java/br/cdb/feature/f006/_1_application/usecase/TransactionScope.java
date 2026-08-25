@@ -11,4 +11,7 @@ public sealed interface TransactionScope {
 
     @NullMarked
     record Future() implements TransactionScope {}
+
+    @NullMarked
+    record All() implements TransactionScope {}
 }

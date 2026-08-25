@@ -51,6 +51,7 @@ export function rowCountFooterHtml(n: number): string {
 export interface StatementRowLike {
   id?: string | null;
   date?: string | null;
+  purchaseDate?: string | null;
   description?: string;
   amount: number;
   status?: string;
@@ -72,6 +73,7 @@ export interface StatementRowOptions {
   showBalance?: boolean;
   status?: 'dot' | 'badge';
   invoiceLink?: boolean;
+  showPurchaseDate?: boolean;
   actions?: (row: StatementRowLike) => string;
 }
 
@@ -126,10 +128,18 @@ export function statementRowHtml(row: StatementRowLike, categories: readonly Cat
   const actionsInner = isHeader ? '' : opts.actions ? opts.actions(row) : '';
   const actionsHtml = opts.status === 'badge' ? '<div class="row-actions">' + actionsInner + '</div>' : '<div class="stm-row-actions">' + actionsInner + '</div>';
 
+  // Parcelamento (`showPurchaseDate`): a coluna mostra a data da 1ª parcela — fixa no grupo —
+  // e não a data desta parcela, que só serve pra alocar a linha no mês/fatura. Perna de
+  // transferência também vem com totalInstallments = 2, e por isso com a flag ligada: o mesmo
+  // `cat.isSystem` que corta o "(n de N)" da descrição a mantém na própria data.
+  const isInstallment = !!opts.showPurchaseDate && !(cat && cat.isSystem);
+  const dateShown = isInstallment && row.purchaseDate ? row.purchaseDate : row.date;
+  const dateHtml = '<span class="stm-cell-date">' + esc(dateShown ? fmtDate(dateShown) : '') + '</span>';
+
   const cells =
     opts.status === 'badge'
       ? indexHtml +
-        '<span class="stm-cell-date">' + esc(fmtDate(row.date)) + '</span>' +
+        dateHtml +
         accHtml +
         '<span class="stm-cell-cat" style="' + catStyle + '">' + esc(catLbl) + '</span>' +
         tagFlagHtml(tags, row.tagIds) +
@@ -137,7 +147,7 @@ export function statementRowHtml(row: StatementRowLike, categories: readonly Cat
         statusHtml +
         amountHtml +
         actionsHtml
-      : '<span class="stm-cell-date">' + esc(row.date ? fmtDate(row.date) : '') + '</span>' +
+      : dateHtml +
         '<span class="stm-cell-cat" style="' + catStyle + '">' + esc(catLbl) + '</span>' +
         tagFlagHtml(tags, row.tagIds) +
         descHtml +

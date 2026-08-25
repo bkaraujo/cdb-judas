@@ -37,6 +37,31 @@ describe('kernel:statement-row', () => {
     expect(html.indexOf('data-id=""')).toBeGreaterThanOrEqual(0);
   });
 
+  it('statementRowHtml: showPurchaseDate troca a data da parcela pela data da compra', () => {
+    const row: StatementRowLike = { id: '1', date: '2025-10-15', purchaseDate: '2025-07-15', description: 'Singer', amount: -72.99, status: 'confirmed', runningBal: -72.99, categoryId: null, tagIds: [], installmentNumber: 4, totalInstallments: 10 };
+    const cols = statementColumns([], []);
+
+    const withFlag = statementRowHtml(row, [], NO_TAGS, cols, { showBalance: true, status: 'dot', showPurchaseDate: true });
+    expect(withFlag.indexOf('15 de jul.')).toBeGreaterThanOrEqual(0);
+    expect(withFlag.indexOf('15 de out.')).toBe(-1);
+
+    // Sem a flag (linha não parcelada) a data da compra é ignorada.
+    const noFlag = statementRowHtml(row, [], NO_TAGS, cols, { showBalance: true, status: 'dot' });
+    expect(noFlag.indexOf('15 de out.')).toBeGreaterThanOrEqual(0);
+  });
+
+  it('statementRowHtml: perna de transferência (categoria de sistema) ignora showPurchaseDate', () => {
+    // Transferência nasce como grupo de 2 "parcelas" (1/2 saída, 2/2 entrada) — as telas ligam a
+    // flag por totalInstallments, e a categoria de sistema é o que desfaz o engano.
+    const transferCat: Category = { id: 'sys', name: 'Transferência', nature: 'EXPENSE', parentId: null, isSystem: true, active: true };
+    const row: StatementRowLike = { id: '1', date: '2025-10-15', purchaseDate: '2025-07-15', description: 'Transferência (saída)', amount: -50, status: 'confirmed', runningBal: -50, categoryId: 'sys', tagIds: [], installmentNumber: 1, totalInstallments: 2 };
+    const cols = statementColumns([transferCat], []);
+
+    const html = statementRowHtml(row, [transferCat], NO_TAGS, cols, { showBalance: true, status: 'dot', showPurchaseDate: true });
+    expect(html.indexOf('15 de out.')).toBeGreaterThanOrEqual(0);
+    expect(html.indexOf('15 de jul.')).toBe(-1);
+  });
+
   it('statementRowHtml estilo dot: transação comum mostra valor, acumulado e ações; isLast omite borda', () => {
     const categories = [cat('9', 'Mercado')];
     const row: StatementRowLike = { id: '5', date: '2026-03-10', description: 'Compra', amount: -80, status: 'pending', runningBal: 920, categoryId: '9', tagIds: [] };

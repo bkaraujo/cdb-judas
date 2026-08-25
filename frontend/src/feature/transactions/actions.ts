@@ -25,6 +25,7 @@ export interface TxLike {
   categoryId?: string | null;
   totalInstallments?: number | null;
   installmentNumber?: number | null;
+  purchaseDate?: string | null;
 }
 
 export function isTransfer(tx: TxLike | null | undefined, categories: Parameters<typeof Category.isTransferCategory>[0]): boolean {

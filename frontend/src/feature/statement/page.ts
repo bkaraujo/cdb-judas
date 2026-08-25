@@ -175,6 +175,7 @@ export function createStatementPage(deps: StatementPageDeps): Page {
             showBalance: true,
             status: 'dot',
             invoiceLink: true,
+            showPurchaseDate: !!tx.totalInstallments && tx.totalInstallments > 1,
             // Row actions (edit/delete) resolve the full transaction from the month index by id;
             // as linhas "Saldo anterior" e de fatura não têm nenhuma — a fatura é derivada,
             // edita-se no extrato do cartão.

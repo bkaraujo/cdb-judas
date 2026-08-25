@@ -231,7 +231,7 @@ public class InvoiceImportProcessor {
         val status = YearMonth.from(row.date()).isAfter(YearMonth.from(today)) ? Status.SCHEDULED : Status.CONFIRMED;
         val planned = row.planned();
         val type = row.type() != null ? row.type() : Nature.EXPENSE;
-        val imported = new ImportedTransaction(row.description(), row.amount(), row.date(), accountId, status, type,
+        val imported = new ImportedTransaction(row.description(), row.amount(), row.originalDate(), row.date(), accountId, status, type,
                 planned, groupId, installmentNumber, totalInstallments, row.cardId());
         try {
             return switch (writer().create(imported)) {

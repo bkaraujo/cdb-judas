@@ -22,6 +22,21 @@ describe('kernel:statement-item', () => {
     expect(rows[2]?.runningBal).toBe(1400);
   });
 
+  it('buildRows propaga purchaseDate — a view do extrato mostra a data da 1ª parcela do grupo', () => {
+    const rows = StatementItem.buildRows(
+      0,
+      [
+        { id: '1', date: '2025-10-15', purchaseDate: '2025-07-15', description: 'Singer', amount: -72.99, status: 'confirmed', categoryId: null, installmentNumber: 4, totalInstallments: 10 },
+        { id: '2', date: '2025-10-19', description: 'Lanchonete', amount: -46.58, status: 'confirmed', categoryId: null },
+      ],
+      '2025-10-05',
+    );
+
+    expect(rows[1]?.purchaseDate).toBe('2025-07-15');
+    // Sem parcelamento não há data de compra distinta — fica null e a view cai em `date`.
+    expect(rows[2]?.purchaseDate).toBe(null);
+  });
+
   it('lista vazia devolve só o header', () => {
     const rows = StatementItem.buildRows(200, [], '2026-03-01');
     expect(rows.length).toBe(1);

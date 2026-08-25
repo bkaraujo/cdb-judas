@@ -43,6 +43,7 @@ export interface TxRow extends TxLike {
   invoice?: boolean;
   tagIds?: string[];
   amount: number;
+  purchaseDate?: string | null;
 }
 
 export interface TransactionsPageDeps {
@@ -276,6 +277,7 @@ export function createTransactionsListPage(deps: TransactionsPageDeps, cfg: Tran
           accountName: acc ? acc.name : '—',
           status: 'badge',
           invoiceLink: true,
+          showPurchaseDate: !!tx.totalInstallments && tx.totalInstallments > 1,
           // Row actions; mark-paid só pra não-confirmadas. Linha de cartão é derivada — edita-se
           // cada compra no extrato do cartão.
           actions: (row) => {

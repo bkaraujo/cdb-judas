@@ -27,5 +27,6 @@ public record TransactionResponse(
         @Nullable Integer totalInstallments,
         @Nullable String notes,
         @Nullable UUID cardId,
+        @Nullable LocalDate purchaseDate,
         List<UUID> tagIds
 ) {}

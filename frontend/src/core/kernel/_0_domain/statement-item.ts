@@ -3,6 +3,7 @@ export const STATEMENT_ITEM_STATUS = { BALANCE: 'balance', CONFIRMED: 'confirmed
 export interface StatementSourceTx {
   id: string;
   date: string;
+  purchaseDate?: string | null;
   description: string;
   amount: number;
   status: string;
@@ -17,6 +18,7 @@ export interface StatementSourceTx {
 export interface StatementRow {
   id: string | null;
   date: string | null;
+  purchaseDate?: string | null;
   description: string;
   amount: number;
   status: string;
@@ -81,6 +83,9 @@ export function buildRows(
       rows.push({
         id: t.id,
         date: t.date,
+        // Data da 1ª parcela do grupo (fixa) — a view do extrato mostra ela no lugar da data
+        // desta parcela quando a linha é parcelada; `date` segue mandando no bucketing.
+        purchaseDate: t.purchaseDate != null ? t.purchaseDate : null,
         description: t.description,
         amount: +t.amount || 0,
         status: t.status,

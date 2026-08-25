@@ -26,6 +26,7 @@ public record Transaction(
         int signal,
         BigDecimal amount,
         LocalDateTime purchasedAt,
+        LocalDate installmentDate,
         UUID accountId,
         Status status,
         boolean planned,
@@ -40,39 +41,65 @@ public record Transaction(
         @Nullable UUID categoryId,
         List<UUID> tagIds
 ) {
-    /** Convenience accessor returning the purchase date part. */
-    public LocalDate date() { return purchasedAt.toLocalDate(); }
+    /** Accessor de bucketing — data desta parcela (usada em filtros, saldo, extrato). */
+    public LocalDate date() { return installmentDate; }
+
+    /** Data real da compra — igual em todas as parcelas do grupo. */
+    public LocalDate purchaseDate() { return purchasedAt.toLocalDate(); }
 
     /** Mesma transação com o vínculo de categoria resolvido (ou limpo, com {@code null}). */
     public Transaction withCategory(@Nullable UUID category) {
-        return new Transaction(id, description, signal, amount, purchasedAt, accountId, status, planned,
+        return new Transaction(id, description, signal, amount, purchasedAt, installmentDate, accountId, status, planned,
                 paymentDate, groupId, installmentNumber, totalInstallments, notes, createdAt, updatedAt, cardId,
                 category, tagIds);
     }
 
     /** Mesma transação com o vínculo de tags resolvido. */
     public Transaction withTags(List<UUID> tags) {
-        return new Transaction(id, description, signal, amount, purchasedAt, accountId, status, planned,
+        return new Transaction(id, description, signal, amount, purchasedAt, installmentDate, accountId, status, planned,
                 paymentDate, groupId, installmentNumber, totalInstallments, notes, createdAt, updatedAt, cardId,
                 categoryId, tags);
     }
 
-    /** Convenience constructor: derives signal from nature, takes absolute amount, uses start-of-day. */
+    /**
+     * Convenience constructor (14 args): derives signal from nature, takes absolute amount,
+     * uses start-of-day for {@code purchasedAt}. {@code installmentDate} is derived as {@code date}
+     * — callers that never split the two dates use this form.
+     */
     public Transaction(UUID id, String description, BigDecimal amount, LocalDate date,
             UUID accountId, Status status, Nature type,
             boolean planned, @Nullable LocalDate paymentDate, @Nullable UUID groupId,
             int installmentNumber, int totalInstallments, @Nullable String notes, @Nullable UUID cardId) {
-        this(id, description, type == Nature.INCOME ? 1 : -1, amount.abs(), date.atStartOfDay(),
+        this(id, description, type == Nature.INCOME ? 1 : -1, amount.abs(), date.atStartOfDay(), date,
                 accountId, status, planned, paymentDate, groupId,
                 installmentNumber, totalInstallments, notes, null, null, cardId, null, List.of());
     }
 
-    /** Forma completa sem categoria/tags — os vínculos são resolvidos à parte, com {@link #withCategory(UUID)}/{@link #withTags(List)}. */
+    /**
+     * Overload (15 args): separates {@code purchasedAt} (fixed purchase date) from
+     * {@code installmentDate} (bucketing date for this installment). Used by
+     * {@code WriteUseCases.toEntity} and {@code TransactionWriterAdapter.create}.
+     */
+    public Transaction(UUID id, String description, BigDecimal amount, LocalDate purchasedAt,
+            LocalDate installmentDate,
+            UUID accountId, Status status, Nature type,
+            boolean planned, @Nullable LocalDate paymentDate, @Nullable UUID groupId,
+            int installmentNumber, int totalInstallments, @Nullable String notes, @Nullable UUID cardId) {
+        this(id, description, type == Nature.INCOME ? 1 : -1, amount.abs(), purchasedAt.atStartOfDay(), installmentDate,
+                accountId, status, planned, paymentDate, groupId,
+                installmentNumber, totalInstallments, notes, null, null, cardId, null, List.of());
+    }
+
+    /**
+     * Forma completa sem categoria/tags (17 args) — os vínculos são resolvidos à parte, com
+     * {@link #withCategory(UUID)}/{@link #withTags(List)}.
+     */
     public Transaction(UUID id, String description, int signal, BigDecimal amount, LocalDateTime purchasedAt,
+            LocalDate installmentDate,
             UUID accountId, Status status, boolean planned, @Nullable LocalDate paymentDate,
             @Nullable UUID groupId, int installmentNumber, int totalInstallments, @Nullable String notes,
             @Nullable LocalDateTime createdAt, @Nullable LocalDateTime updatedAt, @Nullable UUID cardId) {
-        this(id, description, signal, amount, purchasedAt, accountId, status, planned, paymentDate,
+        this(id, description, signal, amount, purchasedAt, installmentDate, accountId, status, planned, paymentDate,
                 groupId, installmentNumber, totalInstallments, notes, createdAt, updatedAt, cardId, null, List.of());
     }
 }

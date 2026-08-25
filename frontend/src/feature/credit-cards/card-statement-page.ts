@@ -161,6 +161,7 @@ export function createCardStatementPage(deps: CardStatementPageDeps): Page {
           isLast: i === items.length - 1,
           showBalance: true,
           status: 'dot',
+          showPurchaseDate: !!tx.totalInstallments && tx.totalInstallments > 1,
           actions: (row) => rowActionsHtml(row.id as string),
         }),
       );

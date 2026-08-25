@@ -32,6 +32,7 @@ public abstract class RequestMapper {
                 t.totalInstallments(),
                 t.notes(),
                 t.cardId(),
+                t.purchaseDate(),
                 t.tagIds()
         );
     }
@@ -67,8 +68,9 @@ public abstract class RequestMapper {
         );
     }
 
-    /** Qualquer valor além de {@code "FUTURE"} (inclusive {@code null}) vira {@link TransactionScope.Single}. */
+    /** Qualquer valor além de {@code "FUTURE"} ou {@code "ALL"} (inclusive {@code null}) vira {@link TransactionScope.Single}. */
     public static TransactionScope toScope(@Nullable String mode) {
+        if ("ALL".equalsIgnoreCase(mode)) return new TransactionScope.All();
         return "FUTURE".equalsIgnoreCase(mode) ? new TransactionScope.Future() : new TransactionScope.Single();
     }
 }

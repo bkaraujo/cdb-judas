@@ -7,11 +7,14 @@ import $ from 'jquery';
 import type { TransactionRequest, TransactionResponse } from '@/api/overrides.ts';
 import type { ImportRule } from '@/api/types.ts';
 import * as AccountDomain from '@/core/kernel/_0_domain/account.ts';
+import * as Category from '@/core/kernel/_0_domain/category.ts';
 import { esc, maskCurrency, parseCurrency } from '@/core/kernel/_0_domain/format.ts';
 import * as Transaction from '@/core/kernel/_0_domain/transaction.ts';
 import type { CacheStore } from '@/core/kernel/_1_application/cache-store.ts';
-import { bindCurrencyMask, byId } from '@/core/kernel/_2_infrastructure/primary/helpers.ts';
+import { bindCurrencyMask, byId, modalText, modalFooter } from '@/core/kernel/_2_infrastructure/primary/helpers.ts';
 import { formModal } from '@/core/kernel/_2_infrastructure/primary/helpers.ts';
+import { btn } from '@/core/kernel/_2_infrastructure/primary/ui/button.ts';
+import { modal } from '@/core/kernel/_2_infrastructure/primary/ui/modal.ts';
 import { icon } from '@/core/kernel/_2_infrastructure/primary/icons.ts';
 import { accountOptionsHtml, categoryItemsFor, categoryPickerHtml, openCategoryCreateModal, openTagCreateModal, quickCategoryLabel } from '@/core/kernel/_2_infrastructure/primary/pickers.ts';
 import { refreshSearchSelect } from '@/core/kernel/_2_infrastructure/primary/ui/search-select.ts';
@@ -39,6 +42,17 @@ export interface TransactionFormModalOptions {
   onSaved?: () => void;
 }
 
+/** Cancelar o diálogo de escopo não é erro: rejeita com este sentinela pra soltar a Promise do
+ * formulário (reabilita o Salvar) sem o toast de falha — `onError` do formModal o reconhece. */
+const SCOPE_CANCELED = new Error('scope-canceled');
+
+/** `2025-07-15` → `15/07/2025`. A data da compra é fixa no grupo de parcelas e pode estar anos
+ * atrás da parcela em edição — por isso o ano, que `fmtDate` (dd de mmm.) não mostra. */
+function fmtPurchaseDate(iso: string): string {
+  const p = iso.slice(0, 10).split('-');
+  return p.length === 3 ? p[2] + '/' + p[1] + '/' + p[0] : iso;
+}
+
 export function createTransactionFormModal(deps: TransactionFormModalDeps) {
   return function transactionFormModal(opts: TransactionFormModalOptions = {}): Modal {
     const existing = opts.existing || null;
@@ -46,6 +60,14 @@ export function createTransactionFormModal(deps: TransactionFormModalDeps) {
 
     const isEdit = !!existing;
     const isTransferEdit = isEdit && !!opts.isTransfer;
+    // Parcelamento de verdade. Perna de transferência também tem groupId e totalInstallments = 2
+    // (1/2 saída, 2/2 entrada) — o que separa as duas coisas é a categoria de sistema
+    // "Transferência", o mesmo critério de `actions.isTransfer`.
+    const isInstallmentGroup =
+      isEdit &&
+      !isTransferEdit &&
+      (existing?.totalInstallments || 0) > 1 &&
+      !Category.isTransferCategory(deps.cache.categories(), existing?.categoryId);
     const uniq = Date.now();
     const ids = {
       desc: 'tx-desc-' + uniq, amount: 'tx-amount-' + uniq, date: 'tx-date-' + uniq, category: 'tx-cat-' + uniq,
@@ -66,6 +88,7 @@ export function createTransactionFormModal(deps: TransactionFormModalDeps) {
       cardId: isEdit ? existing?.cardId || '' : '',
       isEstorno: isEdit ? (existing?.type === 'expense' && Number(existing?.amount) > 0) || (existing?.type === 'income' && Number(existing?.amount) < 0) : false,
       notes: isEdit ? existing?.notes || '' : '',
+      purchaseDate: isEdit ? (existing?.purchaseDate || null) : null,
       tagIds: isEdit ? (existing?.tagIds || []).map(String) : ([] as string[]),
     };
 
@@ -144,6 +167,10 @@ export function createTransactionFormModal(deps: TransactionFormModalDeps) {
           '<input id="' + ids.desc + '" name="description" type="text" required ' + (isTransferEdit ? 'disabled ' : '') + 'style="text-transform:uppercase;" placeholder="Ex: Mercado, Salário..." value="' + esc(initial.description) + '" />' +
         '</div>' +
         '<div class="form-group"><label class="form-label" for="' + ids.date + '">Data</label><input id="' + ids.date + '" name="date" type="date" required value="' + esc(initial.date) + '" /></div>' +
+        // Só parcelamento tem data de compra distinta da data da parcela — read-only, fixa no grupo.
+        (isInstallmentGroup && initial.purchaseDate
+          ? '<div class="form-group"><span class="form-label" style="display:block;margin-bottom:4px;">Compra em</span><span style="font-size:13px;color:var(--text-secondary);">' + esc(fmtPurchaseDate(initial.purchaseDate)) + '</span></div>'
+          : '') +
         '<div class="form-group"><label class="form-label" for="' + ids.account + '">' + esc(accountFieldLabel()) + '</label><select id="' + ids.account + '" name="accountId">' + accOpts + '</select></div>' +
         cardFieldHtml(initial.accountId, initial.cardId) +
         '<div class="form-group">' +
@@ -210,6 +237,7 @@ export function createTransactionFormModal(deps: TransactionFormModalDeps) {
         return isEdit ? 'Lançamento atualizado' : 'Lançamento criado';
       },
       failure: () => (submittedType === 'transfer' ? 'Falha ao registrar transferência' : 'Falha ao salvar lançamento'),
+      onError: (err) => err === SCOPE_CANCELED,
       onDone: onSaved,
     });
 
@@ -418,7 +446,57 @@ export function createTransactionFormModal(deps: TransactionFormModalDeps) {
         tagIds: initial.tagIds,
       };
 
-      return isEdit ? deps.transactionService.update((existing as TransactionResponse).id as string, payload) : deps.transactionService.create(payload);
+      if (!isEdit) return deps.transactionService.create(payload);
+
+      const tx = existing as TransactionResponse;
+      // Só parcelamento real abre o diálogo de escopo.
+      if (!isInstallmentGroup) {
+        return deps.transactionService.update(tx.id as string, payload);
+      }
+
+      return new Promise<unknown>((resolve, reject) => {
+        const bodyHtml = modalText('<strong>' + esc(Transaction.describe(tx) || 'Lançamento') + '</strong> faz parte de um grupo de parcelas. Como deseja aplicar esta edição?');
+        const $only = btn({ variant: 'secondary', size: 'md', label: 'Apenas este', attrs: 'data-act="edit-single" type="button"' });
+        const $future = btn({ variant: 'secondary', size: 'md', label: 'Este e seguintes', attrs: 'data-act="edit-future" type="button"' });
+        const $all = btn({ variant: 'primary', size: 'md', label: 'Todos', attrs: 'data-act="edit-all" type="button"' });
+        const $cancel = btn({ variant: 'ghost', size: 'md', label: 'Cancelar', attrs: 'data-modal-close="1" type="button"' });
+        const $footer = modalFooter([$cancel, $only, $future, $all], { align: 'end' });
+
+        // `modal` não emite eventos de ciclo de vida — `onClose` é o único gancho pra saber que o
+        // diálogo saiu (Cancelar ou ESC) sem escolha de escopo.
+        let decided = false;
+        const scopeModal = modal({
+          title: 'Editar Lançamento Recorrente',
+          body: bodyHtml,
+          footer: $footer,
+          onClose: () => {
+            if (!decided) reject(SCOPE_CANCELED);
+          },
+        });
+        scopeModal.open();
+
+        function doUpdate(mode: string): void {
+          decided = true;
+          const $btns = scopeModal.$el.find('button');
+          $btns.prop('disabled', true);
+          payload.editMode = mode;
+          deps.transactionService.update(tx.id as string, payload)
+            .then((res) => {
+              scopeModal.close();
+              resolve(res);
+            })
+            .catch((err) => {
+              // Falha do servidor: o diálogo de escopo continua aberto pra nova tentativa.
+              decided = false;
+              $btns.prop('disabled', false);
+              reject(err);
+            });
+        }
+
+        scopeModal.$el.on('click', '[data-act=edit-single]', () => doUpdate('SINGLE'));
+        scopeModal.$el.on('click', '[data-act=edit-future]', () => doUpdate('FUTURE'));
+        scopeModal.$el.on('click', '[data-act=edit-all]', () => doUpdate('ALL'));
+      });
     }
 
     return m;

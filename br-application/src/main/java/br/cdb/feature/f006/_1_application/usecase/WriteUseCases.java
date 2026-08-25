@@ -112,11 +112,13 @@ public class WriteUseCases {
             saveCategory(t.id(), personId, categoryId);
             saveTags(t.id(), personId, tagIds);
             val transferSiblings = reads.transferSiblingsOf(t, personId);
+            val isAll = cmd.scope() instanceof TransactionScope.All;
             // Se for grupo de parcelas (nunca transferência — pernas de transferência carregam
             // categoria por natureza da própria perna, nunca a da perna editada; ver
             // saveTransferCategories/transfer()): atualiza a categoria de todos os membros.
-            if (t.groupId() != null && !hadCategory && transferSiblings.isEmpty()) {
-                saveCategoryForGroup(t, personId, categoryId);
+            if (t.groupId() != null && transferSiblings.isEmpty()) {
+                if (!hadCategory || isAll) saveCategoryForGroup(t, personId, categoryId);
+                if (isAll) saveTagsForGroup(t, personId, tagIds);
             }
             publishAccountUpdate(personId, t.accountId(), previousAccountId, transferSiblings);
             return t.withCategory(categoryId).withTags(tagIds);
@@ -205,7 +207,7 @@ public class WriteUseCases {
     }
 
     private Result<Transaction, BusinessError> createSingle(TransactionCommand.Create cmd) {
-        val saved = service.save(toEntity(UUID.randomUUID(), cmd.description(), cmd.amount(), cmd.date(),
+        val saved = service.save(toEntity(UUID.randomUUID(), cmd.description(), cmd.amount(), cmd.date(), cmd.date(),
                 cmd.accountId(), cmd.status(), cmd.type(), cmd.planned(), cmd.notes(), cmd.cardId(), null, null, null));
         MessageBus.submit(new TransactionEvents.Created(saved));
         return Result.success(saved);
@@ -218,7 +220,7 @@ public class WriteUseCases {
         for (int i = 1; i <= installmentsCount; i++) {
             val date = cmd.date().plusMonths(i - 1);
             val status = (i == 1) ? cmd.status() : Status.PENDING;
-            batch.add(toEntity(UUID.randomUUID(), cmd.description(), cmd.amount(), date, cmd.accountId(), status,
+            batch.add(toEntity(UUID.randomUUID(), cmd.description(), cmd.amount(), cmd.date(), date, cmd.accountId(), status,
                     cmd.type(), cmd.planned(), cmd.notes(), cmd.cardId(), groupId, i, installmentsCount));
         }
 
@@ -241,9 +243,14 @@ public class WriteUseCases {
 
     private Result<Transaction, BusinessError> updateNonTransfer(UUID id, Transaction existing, TransactionCommand.Update cmd) {
         val isFuture = cmd.scope() instanceof TransactionScope.Future && existing.groupId() != null;
+        val isAll = cmd.scope() instanceof TransactionScope.All && existing.groupId() != null;
 
-        if (!isFuture) {
-            val updated = service.save(toEntity(id, cmd.description(), cmd.amount(), cmd.date(), cmd.accountId(),
+        if (!isFuture && !isAll) {
+            // Parcelamento: a data da compra é fixa no grupo, editar UMA parcela não a move. Fora de
+            // parcelamento não existe essa distinção — se a data mudou, a compra mudou junto (senão
+            // TMS_PURCHASE congelaria na data de criação do lançamento).
+            val purchasedAt = existing.totalInstallments() > 1 ? existing.purchaseDate() : cmd.date();
+            val updated = service.save(toEntity(id, cmd.description(), cmd.amount(), purchasedAt, cmd.date(), cmd.accountId(),
                     cmd.status(), cmd.type(), cmd.planned(), cmd.notes(), cmd.cardId(),
                     existing.groupId(), existing.installmentNumber(), existing.totalInstallments()));
             MessageBus.submit(new TransactionEvents.Updated(existing));
@@ -251,23 +258,24 @@ public class WriteUseCases {
             return Result.<Transaction, BusinessError>success(updated);
         }
 
+        return updateNonTransferGroup(id, existing, cmd, isAll);
+    }
+
+    private Result<Transaction, BusinessError> updateNonTransferGroup(UUID id, Transaction existing, TransactionCommand.Update cmd, boolean isAll) {
         val groupId = existing.groupId();
         val installmentNumber = existing.installmentNumber();
         if (groupId == null) return Result.<Transaction, BusinessError>success(existing);
 
-        val all = service.findByGroupId(groupId).stream()
-                .filter(t -> t.installmentNumber() >= installmentNumber)
-                .sorted(Comparator.comparing(Transaction::installmentNumber))
-                .toList();
+        // "Todos" re-data o grupo inteiro, parcela 1 inclusive — a data da compra acompanha a nova
+        // data da parcela 1 (invariante do modelo: a parcela 1 nasce na data da compra). "Este e
+        // seguintes" nunca move a parcela 1, então a data da compra fica onde está.
+        val purchasedAt = isAll ? cmd.date().plusMonths(1L - installmentNumber) : existing.purchaseDate();
 
         Transaction firstSaved = null;
-        for (val t : all) {
-            val currentNumber = t.installmentNumber();
-            val newDate = cmd.date().plusMonths(currentNumber - installmentNumber);
-            val updated = service.save(toEntity(t.id(), cmd.description(), cmd.amount(), newDate, cmd.accountId(),
-                    t.status(), cmd.type(), cmd.planned(), cmd.notes(), cmd.cardId(),
-                    t.groupId(), t.installmentNumber(), t.totalInstallments()));
-            if (t.id().equals(id)) firstSaved = updated;
+        for (val t : groupMembers(groupId, installmentNumber, isAll)) {
+            val isEdited = t.id().equals(id);
+            val updated = saveGroupMember(t, cmd, purchasedAt, installmentNumber, isAll && !isEdited);
+            if (isEdited) firstSaved = updated;
         }
 
         if (firstSaved != null) {
@@ -276,6 +284,29 @@ public class WriteUseCases {
         }
 
         return Result.success(firstSaved);
+    }
+
+    /** Membros alcançados pela edição: ALL leva o grupo inteiro; FUTURE, desta parcela em diante. */
+    private List<Transaction> groupMembers(UUID groupId, int installmentNumber, boolean isAll) {
+        return service.findByGroupId(groupId).stream()
+                .filter(t -> isAll || t.installmentNumber() >= installmentNumber)
+                .sorted(Comparator.comparing(Transaction::installmentNumber))
+                .toList();
+    }
+
+    /**
+     * Grava um membro do grupo com os campos do comando, deslocando a data pela distância em
+     * parcelas até {@code installmentNumber} (a parcela editada). {@code keepOwnAmount} preserva o
+     * valor da própria parcela — é o caso das não-editadas no escopo ALL, onde a edição propaga
+     * descrição/categoria/conta, não o valor de uma parcela sobre as outras.
+     */
+    private Transaction saveGroupMember(Transaction t, TransactionCommand.Update cmd, LocalDate purchasedAt,
+                                        int installmentNumber, boolean keepOwnAmount) {
+        val newDate = cmd.date().plusMonths(t.installmentNumber() - (long) installmentNumber);
+        val amount = keepOwnAmount ? t.amount() : cmd.amount();
+        return service.save(toEntity(t.id(), cmd.description(), amount, purchasedAt, newDate, cmd.accountId(),
+                t.status(), cmd.type(), cmd.planned(), cmd.notes(), cmd.cardId(),
+                t.groupId(), t.installmentNumber(), t.totalInstallments()));
     }
 
     /** A transfer stays an inseparable pair when edited. */
@@ -300,7 +331,7 @@ public class WriteUseCases {
     /** Transfer legs never carry a card — cardId is always null. */
     private static Transaction withTransferEdits(Transaction leg, UUID accountId, BigDecimal absAmount, LocalDate date, Status status) {
         return new Transaction(
-                leg.id(), leg.description(), leg.signal(), absAmount, date.atStartOfDay(),
+                leg.id(), leg.description(), leg.signal(), absAmount, date.atStartOfDay(), date,
                 accountId, status, leg.planned(),
                 Status.CONFIRMED.equals(status) ? date : null,
                 leg.groupId(), leg.installmentNumber(), leg.totalInstallments(), leg.notes(),
@@ -311,7 +342,7 @@ public class WriteUseCases {
         return service.findById(id)
                 .map(existing -> {
                     val saved = service.save(new Transaction(
-                            existing.id(), existing.description(), existing.signal(), existing.amount(), existing.purchasedAt(),
+                            existing.id(), existing.description(), existing.signal(), existing.amount(), existing.purchasedAt(), existing.installmentDate(),
                             existing.accountId(), status, existing.planned(), paymentDate,
                             existing.groupId(), existing.installmentNumber(), existing.totalInstallments(), existing.notes(),
                             existing.createdAt(), existing.updatedAt(), existing.cardId()
@@ -321,25 +352,27 @@ public class WriteUseCases {
                 });
     }
 
-    /** Ids das transações apagadas (par de transferência / lote FUTURE / unitário). */
+    /** Ids das transações apagadas (par de transferência / lote FUTURE ou ALL / unitário). */
     public Result<List<UUID>, BusinessError> delete(TransactionCommand.Delete command) {
         return service.findById(command.id()).flatMap(existing -> {
             val transferSiblings = service.findTransferSiblings(existing);
             if (!transferSiblings.isEmpty()) return deleteTransferGroup(existing, transferSiblings);
 
-            val isFuture = command.scope() instanceof TransactionScope.Future && existing.groupId() != null;
             val groupId = existing.groupId();
+            val isFuture = command.scope() instanceof TransactionScope.Future && groupId != null;
+            val isAll = command.scope() instanceof TransactionScope.All && groupId != null;
 
-            if (!isFuture || groupId == null) {
+            if ((!isFuture && !isAll) || groupId == null) {
                 return service.deleteById(command.id()).map(ignored -> {
                     MessageBus.submit(new TransactionEvents.Deleted(existing));
                     return List.of(command.id());
                 });
             }
 
+            // ALL apaga o grupo inteiro; FUTURE, só desta parcela em diante.
             val installmentNumber = existing.installmentNumber();
             val toDelete = service.findByGroupId(groupId).stream()
-                    .filter(t -> t.installmentNumber() >= installmentNumber)
+                    .filter(t -> isAll || t.installmentNumber() >= installmentNumber)
                     .toList();
 
             for (val t : toDelete) {
@@ -460,6 +493,15 @@ public class WriteUseCases {
                 .forEach(t -> saveCategory(t.id(), personId, categoryId));
     }
 
+    /** Aplica {@code tagIds} às demais parcelas do grupo de {@code first} (no-op fora de grupo). */
+    public void saveTagsForGroup(Transaction first, UUID personId, List<UUID> tagIds) {
+        val groupId = first.groupId();
+        if (groupId == null) return;
+        reads.transactionsInGroup(groupId, personId).stream()
+                .filter(t -> !t.id().equals(first.id()))
+                .forEach(t -> saveTags(t.id(), personId, tagIds));
+    }
+
     /**
      * Categoria de transferência por natureza da perna — a saída (EXPENSE) recebe
      * {@code expenseCategoryId}, a entrada (INCOME) {@code incomeCategoryId} — aplicada a
@@ -493,11 +535,13 @@ public class WriteUseCases {
         });
     }
 
-    private Transaction toEntity(UUID id, String description, BigDecimal amount, LocalDate date, UUID accountId,
+    private Transaction toEntity(UUID id, String description, BigDecimal amount, LocalDate purchasedAt,
+                                 LocalDate installmentDate,
+                                 UUID accountId,
                                  Status status, Nature type, boolean planned,
                                  @Nullable String notes, @Nullable UUID cardId,
                                  @Nullable UUID groupId, @Nullable Integer installmentNumber, @Nullable Integer totalInstallments) {
-        return new Transaction(id, description, amount.abs(), date,
+        return new Transaction(id, description, amount.abs(), purchasedAt, installmentDate,
                 accountId, status, type, planned, null,
                 groupId, installmentOrDefault(installmentNumber), installmentOrDefault(totalInstallments), notes,
                 cardId);

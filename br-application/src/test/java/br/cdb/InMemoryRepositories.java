@@ -60,7 +60,7 @@ public abstract class InMemoryRepositories {
         public void reassignAccount(UUID from, UUID to) {
             for (var t : List.copyOf(data.values())) {
                 if (t.accountId().equals(from)) {
-                    data.put(t.id(), new Transaction(t.id(), t.description(), t.signal(), t.amount(), t.purchasedAt(),
+                    data.put(t.id(), new Transaction(t.id(), t.description(), t.signal(), t.amount(), t.purchasedAt(), t.installmentDate(),
                             to, t.status(), t.planned(), t.paymentDate(), t.groupId(),
                             t.installmentNumber(), t.totalInstallments(), t.notes(), t.createdAt(), t.updatedAt(), t.cardId()));
                 }
@@ -70,7 +70,7 @@ public abstract class InMemoryRepositories {
         public void reassignCard(UUID from, UUID to) {
             for (var t : List.copyOf(data.values())) {
                 if (from.equals(t.cardId())) {
-                    data.put(t.id(), new Transaction(t.id(), t.description(), t.signal(), t.amount(), t.purchasedAt(),
+                    data.put(t.id(), new Transaction(t.id(), t.description(), t.signal(), t.amount(), t.purchasedAt(), t.installmentDate(),
                             t.accountId(), t.status(), t.planned(), t.paymentDate(), t.groupId(),
                             t.installmentNumber(), t.totalInstallments(), t.notes(), t.createdAt(), t.updatedAt(), to));
                 }

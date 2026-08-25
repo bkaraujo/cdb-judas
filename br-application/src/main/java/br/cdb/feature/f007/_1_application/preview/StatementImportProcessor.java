@@ -118,7 +118,7 @@ public class StatementImportProcessor {
         val status = YearMonth.from(row.date()).isAfter(YearMonth.from(today)) ? Status.SCHEDULED : Status.CONFIRMED;
         val type = row.type() != null ? row.type() : (row.amount().signum() < 0 ? Nature.EXPENSE : Nature.INCOME);
         val planned = row.planned();
-        val imported = new ImportedTransaction(row.description(), row.amount(), row.date(), accountId, status, type,
+        val imported = new ImportedTransaction(row.description(), row.amount(), row.date(), row.date(), accountId, status, type,
                 planned, null, null, null, null);
         try {
             return switch (writer().create(imported)) {

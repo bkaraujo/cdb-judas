@@ -88,6 +88,7 @@ class WriteUseCasesTest extends AbstractUseCaseTest {
             int n = t.installmentNumber();
             assertEquals(base.plusMonths(n - 1), t.date());
             assertEquals(n == 1 ? Status.CONFIRMED : Status.PENDING, t.status());
+            assertEquals(base, t.purchaseDate());
         }
     }
 
@@ -117,7 +118,8 @@ class WriteUseCasesTest extends AbstractUseCaseTest {
     @Test
     @DisplayName("FUTURE: atualiza atual+futuras, preserva status, ajusta datas proporcionalmente")
     void updateFutureModeShiftsDatesAndPreservesStatus() {
-        useCase.upsert(cmd(LocalDate.of(2026, 5, 10), Status.CONFIRMED, 4));
+        val base = LocalDate.of(2026, 5, 10);
+        useCase.upsert(cmd(base, Status.CONFIRMED, 4));
         Transaction second = transactionRepository().findAll().stream()
                 .filter(t -> t.installmentNumber() == 2).findFirst().orElseThrow();
 
@@ -140,7 +142,68 @@ class WriteUseCasesTest extends AbstractUseCaseTest {
             assertEquals(new BigDecimal("99.00"), t.amount());
             assertEquals(newDate.plusMonths(n - 2), t.date());
             assertEquals(Status.PENDING, t.status());
+            assertEquals(base, t.purchaseDate());
         }
+    }
+
+    @Test
+    @DisplayName("ALL: re-data o grupo inteiro e leva a data da compra junto com a parcela 1")
+    void updateAllModeShiftsWholeGroupAndPurchaseDate() {
+        val base = LocalDate.of(2026, 5, 10);
+        useCase.upsert(cmd(base, Status.CONFIRMED, 3));
+        Transaction second = transactionRepository().findAll().stream()
+                .filter(t -> t.installmentNumber() == 2).findFirst().orElseThrow();
+
+        // Parcela 2 movida de 2026-06-10 para 2026-06-20: o grupo inteiro anda 10 dias.
+        LocalDate newDate = LocalDate.of(2026, 6, 20);
+        TransactionCommand.Update upd = new TransactionCommand.Update(second.id(), "todas", new BigDecimal("99.00"),
+                newDate, accountId, planned, Status.CONFIRMED, Nature.EXPENSE, new TransactionScope.All(), null, null);
+        assertTrue(useCase.upsert(upd).isSuccess());
+
+        for (int n = 1; n <= 3; n++) {
+            int finalN = n;
+            Transaction t = transactionRepository().findAll().stream()
+                    .filter(x -> x.installmentNumber() == finalN).findFirst().orElseThrow();
+            assertEquals("todas", t.description(), "ALL alcança a parcela 1, não só as futuras");
+            assertEquals(newDate.plusMonths(n - 2), t.date());
+            // Data da compra = data da parcela 1 depois do deslocamento (invariante do modelo).
+            assertEquals(LocalDate.of(2026, 5, 20), t.purchaseDate());
+            // Só a parcela editada muda de valor; as demais preservam o próprio.
+            assertEquals(new BigDecimal(t.id().equals(second.id()) ? "99.00" : "10.00"), t.amount());
+        }
+    }
+
+    @Test
+    @DisplayName("update Single de lançamento avulso move a data da compra junto")
+    void updateSingleOnStandaloneMovesPurchaseDate() {
+        useCase.upsert(cmd(LocalDate.of(2026, 5, 10), Status.CONFIRMED, null));
+        Transaction t = transactionRepository().findAll().get(0);
+
+        LocalDate newDate = LocalDate.of(2026, 5, 15);
+        TransactionCommand.Update upd = new TransactionCommand.Update(t.id(), "upd", new BigDecimal("20.00"),
+                newDate, accountId, planned, Status.CONFIRMED, Nature.EXPENSE, new TransactionScope.Single(), null, null);
+        assertTrue(useCase.upsert(upd).isSuccess());
+
+        Transaction reload = transactionRepository().findById(t.id()).orElseThrow();
+        assertEquals(newDate, reload.date());
+        assertEquals(newDate, reload.purchaseDate(), "sem parcelamento não há data de compra separada");
+    }
+
+    @Test
+    @DisplayName("update Single de parcela preserva a data da compra do grupo")
+    void updateSingleOnInstallmentKeepsPurchaseDate() {
+        val base = LocalDate.of(2026, 5, 10);
+        useCase.upsert(cmd(base, Status.CONFIRMED, 3));
+        Transaction second = transactionRepository().findAll().stream()
+                .filter(t -> t.installmentNumber() == 2).findFirst().orElseThrow();
+
+        TransactionCommand.Update upd = new TransactionCommand.Update(second.id(), "upd", new BigDecimal("20.00"),
+                LocalDate.of(2026, 6, 25), accountId, planned, Status.CONFIRMED, Nature.EXPENSE, new TransactionScope.Single(), null, null);
+        assertTrue(useCase.upsert(upd).isSuccess());
+
+        Transaction reload = transactionRepository().findById(second.id()).orElseThrow();
+        assertEquals(LocalDate.of(2026, 6, 25), reload.date());
+        assertEquals(base, reload.purchaseDate());
     }
 
     @Test
@@ -176,6 +239,17 @@ class WriteUseCasesTest extends AbstractUseCaseTest {
         assertTrue(r.isSuccess());
         assertEquals(1, transactionRepository().findAll().size());
         assertEquals(1, transactionRepository().findAll().get(0).installmentNumber());
+    }
+
+    @Test
+    @DisplayName("delete ALL exclui o grupo inteiro, parcelas anteriores inclusive")
+    void deleteAllMode() {
+        useCase.upsert(cmd(LocalDate.of(2026, 5, 10), Status.CONFIRMED, 4));
+        Transaction third = transactionRepository().findAll().stream()
+                .filter(t -> t.installmentNumber() == 3).findFirst().orElseThrow();
+        Result<List<UUID>, BusinessError> r = useCase.delete(new TransactionCommand.Delete(third.id(), new TransactionScope.All()));
+        assertTrue(r.isSuccess());
+        assertEquals(0, transactionRepository().findAll().size());
     }
 
     @Test

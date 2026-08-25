@@ -31,7 +31,7 @@ public class TransactionWriterAdapter implements TransactionWriter {
     @Override
     public Result<UUID, BusinessError> create(ImportedTransaction row) {
         val tx = new Transaction(
-                UUID.randomUUID(), row.description(), row.amount(), row.date(),
+                UUID.randomUUID(), row.description(), row.amount(), row.purchasedAt(), row.date(),
                 row.accountId(), row.status(), row.type(), row.planned(), null,
                 row.groupId(), installmentOrDefault(row.installmentNumber()),
                 installmentOrDefault(row.totalInstallments()), null, row.cardId());

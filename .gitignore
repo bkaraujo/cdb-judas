@@ -21,6 +21,8 @@ data/
 # H2 file DB (dev) — nunca versionar
 *.mv.db
 *.trace.db
+# Backups BACKUP TO gerados pelas migrações one-shot (dump do banco de dev)
+database*.zip
 # ================================
 #           Frontend
 # ================================
