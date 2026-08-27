@@ -2,12 +2,12 @@ package br.cdb.feature.f006._2_infrastructure.web;
 
 import br.cdb.feature.f005._0_domain.model.Nature;
 import br.cdb.feature.f005.F005Api;
+import br.cdb.feature.f006.F006Api;
 import br.cdb.feature.f006._0_domain.model.Transaction;
 import br.cdb.feature.f006._1_application.usecase.TransactionCommand;
 import br.commons.framework.cdi.Context;
 import br.cdb.feature.f006._1_application.usecase.TransactionScope;
 import br.cdb.feature.f006._2_infrastructure.web.request.TransactionRequest;
-import br.cdb.feature.f006._2_infrastructure.web.response.TransactionResponse;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 
@@ -17,7 +17,7 @@ import java.util.UUID;
 @NullMarked
 public abstract class RequestMapper {
     private RequestMapper(){}
-    public static TransactionResponse toDto(Transaction t) {
+    public static F006Api.TransactionDto toDto(Transaction t) {
         Nature categoryNature = Nature.EXPENSE;
         if (t.categoryId() != null) {
             categoryNature = Context.get(F005Api.class).natureOf(t.categoryId());
@@ -26,7 +26,7 @@ public abstract class RequestMapper {
         // Efetiva (pós-estorno) — pode divergir da natureza da categoria quando reversal=true.
         Nature effectiveNature = signal > 0 ? Nature.INCOME : Nature.EXPENSE;
 
-        return new TransactionResponse(
+        return new F006Api.TransactionDto(
                 t.id(),
                 t.description(),
                 BigDecimal.valueOf(signal).multiply(t.amount()),

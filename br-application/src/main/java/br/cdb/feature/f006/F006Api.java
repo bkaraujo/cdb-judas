@@ -3,6 +3,7 @@ package br.cdb.feature.f006;
 import br.cdb.core.View;
 import br.cdb.feature.f005._0_domain.model.Nature;
 import br.cdb.feature.f006._0_domain.model.Status;
+import org.eclipse.microprofile.openapi.annotations.media.Schema;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 
@@ -34,8 +35,10 @@ public interface F006Api {
             @Nullable UUID cardId
     ) implements View {}
 
-    /** Espelha {@code TransactionResponse} — devolvida por criação/atualização/patch de status. */
+    /** Também é o retorno JSON de {@code TransactionResource} — mesmo tipo dos dois lados
+     *  (leitura da coleção incluída, não só criação/atualização/patch de status). */
     @NullMarked
+    @Schema(name = "TransactionResponse")
     record TransactionDto(
             UUID id,
             String description,
@@ -52,6 +55,7 @@ public interface F006Api {
             @Nullable Integer totalInstallments,
             @Nullable String notes,
             @Nullable UUID cardId,
+            @Nullable LocalDate purchaseDate,
             List<UUID> tagIds
     ) implements View {}
 

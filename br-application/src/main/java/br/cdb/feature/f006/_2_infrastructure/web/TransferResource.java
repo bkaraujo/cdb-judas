@@ -1,9 +1,9 @@
 package br.cdb.feature.f006._2_infrastructure.web;
 
 import br.cdb.core.web.HTTPRequest;
+import br.cdb.feature.f006.F006Api;
 import br.cdb.feature.f006._1_application.usecase.TransferUseCase;
 import br.cdb.feature.f006._2_infrastructure.web.request.TransferRequest;
-import br.cdb.feature.f006._2_infrastructure.web.response.TransactionResponse;
 import br.commons.Result;
 import br.commons.business.BusinessException;
 import br.commons.framework.cdi.Context;
@@ -27,7 +27,7 @@ public class TransferResource {
 
     @POST
     @Path("/transactions/transfer")
-    public RestResponse<TransactionResponse> transfer(@Valid TransferRequest req) {
+    public RestResponse<F006Api.TransactionDto> transfer(@Valid TransferRequest req) {
         val personId = UUID.fromString(HTTPRequest.personId());
         return switch (transfers.transfer(personId, req.fromAccountId(), req.toAccountId(), req.date(), req.amount())) {
             case Result.Success(var transaction) ->
