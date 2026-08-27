@@ -462,6 +462,8 @@ components:
           type: string
         cardId:
           $ref: "#/components/schemas/UUID"
+        purchaseDate:
+          $ref: "#/components/schemas/LocalDate"
         tagIds:
           type: array
           items:

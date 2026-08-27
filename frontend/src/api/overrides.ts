@@ -19,13 +19,9 @@ export type TransactionRequest = Omit<components['schemas']['TransactionRequest'
   status: TransactionStatus;
   type: TransactionType;
 };
-// `purchaseDate` (data da 1ª parcela, fixa no grupo) já vem do backend, mas `schema.d.ts` é
-// gerado do OpenAPI e só o incorpora no próximo `npm run sync:api && npm run gen:api` com a
-// aplicação nova no ar — até lá, declarado à mão aqui.
 export type TransactionResponse = Omit<components['schemas']['TransactionResponse'], 'status' | 'type'> & {
   status?: TransactionStatus;
   type?: TransactionType;
-  purchaseDate?: string | null;
 };
 export type PatchStatusRequest = Omit<components['schemas']['PatchStatusRequest'], 'status'> & {
   status: TransactionStatus;

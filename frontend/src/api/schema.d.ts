@@ -1807,6 +1807,7 @@ export interface components {
             totalInstallments?: number;
             notes?: string;
             cardId?: components["schemas"]["UUID"];
+            purchaseDate?: components["schemas"]["LocalDate"];
             tagIds?: string[];
         };
         TransferCategoryResponse: {
