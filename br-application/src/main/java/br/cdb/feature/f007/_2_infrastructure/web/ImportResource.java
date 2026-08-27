@@ -2,12 +2,12 @@ package br.cdb.feature.f007._2_infrastructure.web;
 
 import br.cdb.core.web.HTTPRequest;
 import br.cdb.core.web.HTTPResponse;
+import br.cdb.feature.f007.F007Api;
 import br.cdb.feature.f007._0_domain.model.ImportError;
 import br.cdb.feature.f007._1_application.confirm.InvoiceConfirmCommand;
 import br.cdb.feature.f007._1_application.confirm.StatementConfirmCommand;
 import br.cdb.feature.f007._1_application.usecase.ImportUseCase;
 import br.cdb.feature.f007._2_infrastructure.web.request.StatementConfirmRequest;
-import br.cdb.feature.f007._2_infrastructure.web.response.ImportConfirmResponse;
 import br.commons.Logger;
 import br.commons.Result;
 import br.commons.business.BusinessError;
@@ -87,7 +87,7 @@ public class ImportResource {
 
         return switch (importUseCase.confirmInvoiceImport(personId, new InvoiceConfirmCommand(rows))) {
             case Result.Success(var res) ->
-                    Response.ok(new ImportConfirmResponse(res.created(), res.reconciled(), res.skipped())).build();
+                    Response.ok(new F007Api.ConfirmResult(res.created(), res.reconciled(), res.skipped())).build();
             case Result.Failure(var error) -> failure(error, "CARD_NOT_FOUND");
         };
     }
@@ -103,7 +103,7 @@ public class ImportResource {
 
         return switch (importUseCase.confirmStatementImport(personId, new StatementConfirmCommand(req.accountId(), rows))) {
             case Result.Success(var res) ->
-                    Response.ok(new ImportConfirmResponse(res.created(), res.reconciled(), res.skipped())).build();
+                    Response.ok(new F007Api.ConfirmResult(res.created(), res.reconciled(), res.skipped())).build();
             case Result.Failure(var error) -> failure(error, "ACCOUNT_NOT_FOUND");
         };
     }

@@ -36,7 +36,10 @@ public interface F007Api {
     @NullMarked
     record ConfirmBody(StatementType type, @Nullable UUID accountId, List<ConfirmRow> rows) {}
 
-    /** Espelha {@code ImportConfirmResponse}. */
+    /** Também é o retorno JSON de {@code ImportResource#confirm} — endpoint devolve
+     *  {@code jakarta.ws.rs.core.Response} cru, então o schema não é estaticamente descoberto
+     *  (sem {@code @Schema} aqui de propósito, pra não registrar componente novo no OpenAPI que
+     *  nunca existiu). */
     @NullMarked
     record ConfirmResult(int created, int reconciled, int skipped) implements View {}
 
