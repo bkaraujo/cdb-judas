@@ -10,8 +10,8 @@
  * {@code AccountCardResource} resolve os dois direto no {@code Context}, como em f002/f006. Os nomes
  * simples coincidem com o par de f002 — quem precisa dos dois usa o nome completo em um deles.
  *
- * <p>{@code f002.AccountResponse} mantém uma projeção somente-leitura (record {@code Card}) do mesmo
- * shape — f003 é dono das mutações.
+ * <p>{@code f002.F002Api.AccountView} mantém uma projeção somente-leitura (record {@code CardView})
+ * do mesmo shape — f003 é dono das mutações.
  */
 @NullMarked
 package br.cdb.feature.f003;

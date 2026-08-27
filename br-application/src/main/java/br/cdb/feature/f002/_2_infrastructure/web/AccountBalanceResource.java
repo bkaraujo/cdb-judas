@@ -1,7 +1,7 @@
 package br.cdb.feature.f002._2_infrastructure.web;
 
+import br.cdb.feature.f002.F002Api;
 import br.cdb.feature.f002._1_application.usecase.ReadUseCase;
-import br.cdb.feature.f002._2_infrastructure.web.response.BalanceResponse;
 import br.commons.Result;
 import br.commons.business.BusinessError;
 import br.commons.business.BusinessException;
@@ -28,13 +28,13 @@ public class AccountBalanceResource {
      *  por conta no frontend (usado pela tela de Extrato de Contas). */
     @GET
     @Path("/balance")
-    public List<BalanceResponse> listBalances(@QueryParam("period") String period) {
+    public List<F002Api.BalanceView> listBalances(@QueryParam("period") String period) {
         if (period == null) {
             throw new BusinessException(new BusinessError.Validation("f002.balance.periodRequired"));
         }
         val ym = YearMonth.parse(period, DateTimeFormatter.ofPattern("yyyyMM"));
         return switch (reads.balances(ym)) {
-            case Result.Success(var balances) -> balances.stream().map(BalanceResponse::of).toList();
+            case Result.Success(var balances) -> balances.stream().map(F002Api.BalanceView::of).toList();
             case Result.Failure(var error) -> throw new BusinessException(error);
         };
     }
@@ -49,13 +49,13 @@ public class AccountBalanceResource {
         if (period != null) {
             val ym = YearMonth.parse(period, DateTimeFormatter.ofPattern("yyyyMM"));
             return switch (reads.monthlyBalance(id, ym)) {
-                case Result.Success(var b) -> BalanceResponse.of(b);
+                case Result.Success(var b) -> F002Api.BalanceView.of(b);
                 case Result.Failure(var error) -> throw new BusinessException(error);
             };
         }
         if (year != null) {
             return switch (reads.yearBalances(id, year)) {
-                case Result.Success(var balances) -> balances.stream().map(BalanceResponse::of).toList();
+                case Result.Success(var balances) -> balances.stream().map(F002Api.BalanceView::of).toList();
                 case Result.Failure(var error) -> throw new BusinessException(error);
             };
         }

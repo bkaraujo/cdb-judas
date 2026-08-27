@@ -8,8 +8,9 @@
  * usuário, publicação de SSE e cascata de exclusão). Os {@code *Resource} resolvem os dois direto no
  * {@code Context} ({@code Context.tryGet(...)}), como em f006.
  *
- * <p>{@code AccountResponse} mantém {@code cards[]} embutido via uma projeção somente-leitura própria
- * ({@code AccountResponse.Card}, lendo o {@code CreditCardService} de f003 direto — Context-wired,
+ * <p>{@code F002Api.AccountView} (também o retorno JSON de {@code AccountResource} — mesmo tipo dos
+ * dois lados) mantém {@code cards[]} embutido via uma projeção somente-leitura própria
+ * ({@code AccountView.CardView}, lendo o {@code CreditCardService} de f003 direto — Context-wired,
  * ex-contexto monetário); a mutação de cartão é de f003.
  */
 @NullMarked
