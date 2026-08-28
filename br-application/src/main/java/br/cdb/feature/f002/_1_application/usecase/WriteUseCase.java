@@ -87,20 +87,20 @@ public class WriteUseCase {
 
     // ── Contas (entrada HTTP) ──────────────────────────────────────
 
-    public Result<ReadUseCase.AccountView, BusinessError> createAccount(AccountCommand.Create cmd, String color) {
+    public Result<ReadUseCase.AccountAndTransactionsView, BusinessError> createAccount(AccountCommand.Create cmd, String color) {
         val personId = HTTPRequest.personId();
         return upsert(cmd, personId, color).map(account -> {
             MessageBus.submit(new AccountStreamEvents.Created(account.id(), personId));
-            return new ReadUseCase.AccountView(account, List.of(), List.of());
+            return new ReadUseCase.AccountAndTransactionsView(account, List.of(), List.of());
         });
     }
 
-    public Result<ReadUseCase.AccountView, BusinessError> updateAccount(AccountCommand.Update cmd, String color) {
+    public Result<ReadUseCase.AccountAndTransactionsView, BusinessError> updateAccount(AccountCommand.Update cmd, String color) {
         return guards().ownsAccount(cmd.id()).flatMap(ignored -> {
             val personId = HTTPRequest.personId();
             return upsert(cmd, personId, color).map(account -> {
                 MessageBus.submit(new AccountStreamEvents.Updated(account.id(), personId));
-                return new ReadUseCase.AccountView(account, reads.cards(account.id(), personId), List.of());
+                return new ReadUseCase.AccountAndTransactionsView(account, reads.cards(account.id(), personId), List.of());
             });
         });
     }

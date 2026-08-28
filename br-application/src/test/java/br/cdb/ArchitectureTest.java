@@ -199,7 +199,7 @@ class ArchitectureTest {
 
     /**
      * Record diretamente aninhado num {@code FNNNApi} (não em profundidade — ex.: {@code CardView}
-     * aninhado dentro de {@code AccountView} não conta, só o record projetado pela própria classe do
+     * aninhado dentro de {@code AccountAndTransactionsView} não conta, só o record projetado pela própria classe do
      * cliente). É o universo alcançado por {@code records_of_slice_api_clients_must_implement_view}.
      */
     private static DescribedPredicate<JavaClass> isDirectlyNestedInSliceApiClient() {

@@ -79,7 +79,7 @@ public class AccountResource {
                 "a esta conta.");
     }
 
-    private static F002Api.AccountView toDto(ReadUseCase.AccountView view) {
+    private static F002Api.AccountView toDto(ReadUseCase.AccountAndTransactionsView view) {
         return F002Api.AccountView.from(view.account(), view.cards(), view.transactions());
     }
 

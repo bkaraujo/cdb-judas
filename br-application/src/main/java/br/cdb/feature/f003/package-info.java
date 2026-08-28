@@ -10,7 +10,7 @@
  * {@code AccountCardResource} resolve os dois direto no {@code Context}, como em f002/f006. Os nomes
  * simples coincidem com o par de f002 — quem precisa dos dois usa o nome completo em um deles.
  *
- * <p>{@code f002.F002Api.AccountView} mantém uma projeção somente-leitura (record {@code CardView})
+ * <p>{@code f002.F002Api.AccountAndTransactionsView} mantém uma projeção somente-leitura (record {@code CardView})
  * do mesmo shape — f003 é dono das mutações.
  */
 @NullMarked

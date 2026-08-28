@@ -33,13 +33,13 @@ import java.util.UUID;
  * {@link #account}, {@link #monthlyBalance}, {@link #yearBalances}, {@link #balances}) aplicam a
  * política de usuário — guarda de propriedade via {@link UserGuards}, bean CDI publicado no
  * {@code Context} por {@code f999.FeatureBootstrap} e resolvido <b>por chamada</b> ({@code @RequestScoped},
- * nunca guardado em campo) — e compõem a {@link AccountView}; métodos de <b>engine</b>
+ * nunca guardado em campo) — e compõem a {@link AccountAndTransactionsView}; métodos de <b>engine</b>
  * ({@link #listAccounts}, {@link #findAccount}), consumidos cross-slice por {@code f000.UserGuards},
  * {@code f006} (importação) e {@code f999} (dispatch SSE), não aplicam guarda: têm a
  * <b>guarda implícita</b> do {@code F002_ACCOUNT.COD_PERSON} no WHERE.
  *
  * <p>Cartão tem fatia própria ({@code f003}): esta classe só <em>lê</em> {@link CreditCard} para
- * popular {@link AccountView#cards()} (projeção somente-leitura); mutação de cartão é de {@code f003}.
+ * popular {@link AccountAndTransactionsView#cards()} (projeção somente-leitura); mutação de cartão é de {@code f003}.
  */
 @NullMarked
 public class ReadUseCase {
@@ -52,7 +52,7 @@ public class ReadUseCase {
     /** Conta (dono+cor inclusos) + cartões; {@code transactions} é a lista completa (o saldo
      *  corrente do DTO é derivado dela). */
     @NullMarked
-    public record AccountView(
+    public record AccountAndTransactionsView(
             Account account,
             List<CreditCard> cards,
             List<F006Api.TransactionView> transactions
@@ -71,10 +71,10 @@ public class ReadUseCase {
 
     // ── Contas (entrada HTTP) ──────────────────────────────────────
 
-    public Result<List<AccountView>, BusinessError> accounts() {
+    public Result<List<AccountAndTransactionsView>, BusinessError> accounts() {
         val personId = HTTPRequest.personId();
         return listAccounts(personId).map(accounts -> accounts.stream()
-                .map(account -> new AccountView(
+                .map(account -> new AccountAndTransactionsView(
                         account,
                         cards(account.id(), personId),
                         transactionsOf(account.id())
@@ -82,7 +82,7 @@ public class ReadUseCase {
                 .toList());
     }
 
-    public Result<AccountView, BusinessError> account(UUID accountId) {
+    public Result<AccountAndTransactionsView, BusinessError> account(UUID accountId) {
         return guards().ownsAccount(accountId).flatMap(ignored -> {
             val personId = HTTPRequest.personId();
             val account = findAccount(accountId, personId);
@@ -91,7 +91,7 @@ public class ReadUseCase {
                 return Result.failure(new BusinessError.NotFound("f002.account.notFound", accountId));
             }
 
-            return Result.success(new AccountView(
+            return Result.success(new AccountAndTransactionsView(
                     account.get(),
                     cards(accountId, personId),
                     transactionsOf(accountId)

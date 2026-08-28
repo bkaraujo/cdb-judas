@@ -33,7 +33,7 @@ import java.util.regex.Pattern;
  * de {@code f002}/{@code f006}. Context-wired como as demais classes ex-contexto
  * ({@code Context.tryGet(WriteUseCase.class)}, nunca {@code @Inject}); o {@code AccountCardResource}
  * escreve <b>só</b> por aqui. {@code f002} mantém apenas uma projeção somente-leitura do cartão
- * (ver {@code F002Api.AccountView.CardView}) — f003 é dono das mutações.
+ * (ver {@code F002Api.AccountAndTransactionsView.CardView}) — f003 é dono das mutações.
  *
  * <p>As duas camadas convivem no mesmo tipo: métodos de <b>entrada</b> ({@link #createCard},
  * {@link #deleteCard}, {@link #setCardActive}) aplicam a política de usuário ({@link UserGuards},

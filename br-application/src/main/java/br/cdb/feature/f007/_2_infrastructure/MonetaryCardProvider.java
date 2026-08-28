@@ -13,7 +13,7 @@ import java.util.List;
  * {@code InternalApi}, D1 de {@code .claude/plan.md}) — nunca o use case de {@code f003} direto.
  * {@code AccountCardResource} só expõe listagem por conta ({@code GET .../accounts/{id}/cards}), sem
  * rota "todos os cartões da pessoa"; em vez de N chamadas (uma por conta), lê os cartões já embutidos
- * na resposta de {@link F002Api#accounts()} ({@code AccountView.cards}, a mesma projeção
+ * na resposta de {@link F002Api#accounts()} ({@code AccountAndTransactionsView.cards}, a mesma projeção
  * somente-leitura que {@code f002} mantém para não depender de {@code f003}) — uma única chamada
  * HTTP. O nome da conta a que cada cartão pertence é resolvido na borda (Resource), ao montar a
  * resposta — não faz parte da identidade do cartão.
