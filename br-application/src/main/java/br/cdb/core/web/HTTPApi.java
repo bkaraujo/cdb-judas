@@ -12,11 +12,14 @@ import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 
 import java.io.IOException;
+import java.net.InetSocketAddress;
+import java.net.Socket;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpRequest.BodyPublishers;
 import java.net.http.HttpResponse;
+import java.time.Duration;
 import java.util.Arrays;
 import java.util.Objects;
 
@@ -42,6 +45,34 @@ public class HTTPApi {
     private final String baseUrl = Objects.requireNonNull(CoreModule.yaml.asString("cdb.internal.base-url"));
 
     private final HttpClient client = HttpClient.newHttpClient();
+
+    private static final int DEFAULT_HTTP_PORT = 80;
+
+    private static final int CONNECT_PROBE_TIMEOUT_MILLIS = 250;
+
+    private static final long CONNECT_PROBE_INTERVAL_MILLIS = 100;
+
+    /**
+     * Espera o servidor HTTP desta JVM começar a aceitar conexões, no máximo {@code timeout}.
+     * Existe porque o {@code StartupEvent} roda <b>antes</b> de a porta abrir: qualquer
+     * {@code FNNNApi} chamado no boot bate em {@link java.net.ConnectException} — foi o que
+     * derrubava a aplicação no recálculo de saldos de {@code FeatureBootstrap}.
+     */
+    public boolean awaitAvailable(Duration timeout) {
+        val uri = URI.create(baseUrl);
+        val port = uri.getPort() > 0 ? uri.getPort() : DEFAULT_HTTP_PORT;
+        val deadline = System.nanoTime() + timeout.toNanos();
+
+        while (System.nanoTime() < deadline) {
+            try (val socket = new Socket()) {
+                socket.connect(new InetSocketAddress(uri.getHost(), port), CONNECT_PROBE_TIMEOUT_MILLIS);
+                return true;
+            } catch (IOException notYet) {
+                Threads.sleep(CONNECT_PROBE_INTERVAL_MILLIS);
+            }
+        }
+        return false;
+    }
 
     /** {@code path} inclui a barra inicial, relativo a {@code /api/{personId}} (ex.: {@code "/categories/transfer?nature=EXPENSE"}). */
     public <T> T get(String path, Class<T> responseType) {
@@ -70,7 +101,7 @@ public class HTTPApi {
     }
 
     private HttpResponse<String> execute(String method, String path, @Nullable Object body, int... acceptedStatuses) {
-        val personId = HTTPRequest.personId();
+        val personId = actingPersonId();
         val token = tokenStore.ephemeral(personId);
 
         try {
@@ -83,6 +114,23 @@ public class HTTPApi {
             Threads.interrupt();
             throw new IllegalStateException("Internal call " + method + " " + path + " interrupted", e);
         }
+    }
+
+    /**
+     * Pessoa por quem esta chamada age. O ator declarado por {@link InternalCall} ganha do usuário da
+     * requisição: quem escreveu {@code as(personId, ..)} sabe por quem quer agir, e é o único caminho
+     * fora do ciclo HTTP (boot, {@code @Scheduled}, listener do {@code MessageBus}), onde
+     * {@link HTTPRequest#user()} é {@code null}.
+     */
+    private static String actingPersonId() {
+        val internal = InternalCall.personId();
+        if (internal != null) return internal;
+
+        val user = HTTPRequest.user();
+        if (user != null) return user.personId();
+
+        throw new IllegalStateException("Chamada interna sem pessoa: fora de uma requisição HTTP, "
+                + "envolva a chamada em InternalCall.as(personId, ..)");
     }
 
     private HttpRequest buildRequest(String method, String path, @Nullable Object body, String personId, String token) throws IOException {

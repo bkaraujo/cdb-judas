@@ -36,16 +36,15 @@ public abstract class HTTPRequest {
     private static final Map<String, Map<String, @Nullable Object>> objects = new ConcurrentHashMap<>();
 
     public static void put(String key, @Nullable Object object) {
-        val request = objects.computeIfAbsent(MDC.get(X_REQUEST_ID), _ -> new ConcurrentHashMap<>());
+        val request = scope();
+        if (request == null) return;
         request.put(key, object);
     }
 
     @Nullable
     public static <T> T get(String key, Class<T> type) {
-        val request = objects.computeIfAbsent(
-                MDC.get(X_REQUEST_ID),
-                _ -> new ConcurrentHashMap<>()
-        );
+        val request = scope();
+        if (request == null) return null;
 
         if (!request.containsKey(key)) return null;
 
@@ -53,6 +52,45 @@ public abstract class HTTPRequest {
         if (value == null) return null;
 
         return Meta.cast(value, type);
+    }
+
+    /**
+     * Mapa da requisição corrente, ou {@code null} quando não há requisição — {@code MDCLoggingFilter}
+     * é quem empurra o {@value #X_REQUEST_ID}, então fora do ciclo HTTP (boot, listener do
+     * {@code MessageBus}, job {@code @Scheduled}) ele não existe. Antes isso ia direto para
+     * {@code computeIfAbsent(null, ..)} e estourava {@link NullPointerException} no meio do
+     * chamador — o que derrubava o boot inteiro em {@code FeatureBootstrap}.
+     */
+    private static @Nullable Map<String, @Nullable Object> scope() {
+        val requestId = MDC.get(X_REQUEST_ID);
+        if (requestId == null) return null;
+        return objects.computeIfAbsent(requestId, _ -> new ConcurrentHashMap<>());
+    }
+
+    /**
+     * Mapa nomeado que vive só nesta requisição — cache de leitura repetida, como a natureza de
+     * categoria que {@code F005ApiImpl.natureOf} buscaria uma vez por transação da lista (N+1 de
+     * chamadas loopback). {@code null} fora de uma requisição: aí não há escopo em que valha cachear,
+     * e o chamador vai à fonte.
+     */
+    @SuppressWarnings("unchecked")
+    public static <K, V> @Nullable Map<K, V> cache(String name) {
+        val request = scope();
+        if (request == null) return null;
+
+        return (Map<K, V>) request.computeIfAbsent(name, _ -> new ConcurrentHashMap<K, V>());
+    }
+
+    /**
+     * Descarta tudo que foi guardado nesta requisição — chamado pelo {@code MDCLoggingFilter} na
+     * resposta, enquanto o {@value #X_REQUEST_ID} ainda está no MDC. Sem isto o mapa por requisição
+     * nunca saía de {@link #objects}: cada requisição deixava seu {@link AuthenticatedUser} e seu
+     * locale para trás, e um cache por requisição só aumentaria o vazamento.
+     */
+    public static void clear() {
+        val requestId = MDC.get(X_REQUEST_ID);
+        if (requestId == null) return;
+        objects.remove(requestId);
     }
 
     /** Usuário autenticado */

@@ -2,11 +2,14 @@ package br.cdb.feature.f005._2_infrastructure;
 
 import br.cdb.core.web.AbstractApiClient;
 import br.cdb.core.web.HTTPApi;
+import br.cdb.core.web.HTTPRequest;
 import br.cdb.feature.f005.F005Api;
 import br.cdb.feature.f005._0_domain.model.Nature;
 import br.cdb.feature.f005._2_infrastructure.web.CategoryResource;
+import lombok.val;
 import org.jspecify.annotations.NullMarked;
 
+import java.util.Map;
 import java.util.UUID;
 
 /**
@@ -40,8 +43,28 @@ public class F005ApiImpl extends AbstractApiClient implements F005Api {
     @NullMarked
     private record CategoryNatureDto(Nature nature) {}
 
+    /** Chave do cache por requisição — ver {@link HTTPRequest#cache}. */
+    private static final String NATURE_CACHE = "f005.natureByCategory";
+
+    /**
+     * Cacheado pela requisição corrente: os consumidores chamam isto <b>por transação</b> da lista
+     * ({@code f006.RequestMapper#toDto}, {@code f999.AccountStreamListener}), e cada chamada é um
+     * loopback HTTP completo — um extrato com 300 transações de 5 categorias fazia 300 requisições
+     * onde 5 bastam. Categoria não muda de natureza no meio de uma requisição, e o mapa morre com
+     * ela ({@code MDCLoggingFilter} chama {@link HTTPRequest#clear}).
+     *
+     * <p>Fora de uma requisição (boot, job, listener do {@code MessageBus}) não há escopo para
+     * cachear e cada chamada vai à fonte, como antes.
+     */
     @Override
     public Nature natureOf(UUID categoryId) {
+        final Map<UUID, Nature> cache = HTTPRequest.cache(NATURE_CACHE);
+        if (cache == null) return fetchNature(categoryId);
+
+        return cache.computeIfAbsent(categoryId, this::fetchNature);
+    }
+
+    private Nature fetchNature(UUID categoryId) {
         return get("/categories/" + categoryId + "/nature", CategoryNatureDto.class).nature();
     }
 }

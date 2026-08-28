@@ -18,12 +18,14 @@ import br.commons.Logger;
 import br.commons.annotation.Lifecycle;
 import br.commons.framework.cdi.Context;
 import br.commons.tools.Meta;
+import br.commons.tools.Threads;
 import io.quarkus.runtime.StartupEvent;
 import jakarta.annotation.Priority;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.event.Observes;
 import org.jspecify.annotations.NullMarked;
 
+import java.time.Duration;
 import java.util.List;
 
 /**
@@ -50,6 +52,9 @@ import java.util.List;
 @ApplicationScoped
 public class FeatureBootstrap {
 
+    /** Folga generosa: o servidor sobe logo depois deste observer, mas boot frio em disco lento demora. */
+    private static final Duration SERVER_READY_TIMEOUT = Duration.ofSeconds(60);
+
     void onStart(@Observes @Priority(1) StartupEvent ev, UserGuards guards, HTTPApi httpApi) {
         Context.set(UserGuards.class, () -> guards);
         Context.set(HTTPApi.class, () -> httpApi);
@@ -74,7 +79,30 @@ public class FeatureBootstrap {
         // podem ter sido calculados por outra regra (ex.: compra de cartão debitada na data da
         // compra, antes de InvoiceCycle). Recomputa tudo uma vez — sem isto só uma escrita na conta
         // corrigiria o valor.
-        Context.tryGet(BalanceService.class).recomputeAll();
+        Threads.virtual(() -> recomputeBalances(httpApi));
+    }
+
+    /**
+     * Fora da thread de boot, e só depois de a porta abrir: o recálculo lê as transações pela API
+     * pública de {@code f006} ({@code F006Api}, HTTP real), e o servidor desta JVM só passa a aceitar
+     * conexões <b>depois</b> que este observer retorna — chamar aqui dentro dava
+     * {@link java.net.ConnectException} e derrubava a aplicação inteira no boot.
+     *
+     * <p>Falhar aqui não pode mais derrubar nada: no pior caso os snapshots seguem com o valor da
+     * regra antiga até a próxima escrita na conta ou até o job de reconciliação de {@code f999}.
+     */
+    private static void recomputeBalances(HTTPApi httpApi) {
+        Threads.name("balance-recompute-boot");
+        if (!httpApi.awaitAvailable(SERVER_READY_TIMEOUT)) {
+            Logger.warn("Servidor HTTP não subiu em %s: recálculo de saldos do boot pulado", SERVER_READY_TIMEOUT);
+            return;
+        }
+
+        try {
+            Context.tryGet(BalanceService.class).recomputeAll();
+        } catch (RuntimeException e) {
+            Logger.warn("Falha no recálculo de saldos do boot: %s", e.toString());
+        }
     }
 
     private static void initialize(Lifecycle module) {

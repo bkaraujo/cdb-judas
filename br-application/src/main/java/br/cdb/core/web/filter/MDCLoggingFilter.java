@@ -13,8 +13,9 @@ import org.jspecify.annotations.NullMarked;
 import java.util.UUID;
 
 /**
- * Correlação de requisição: injeta {@code X-REQUEST-ID} no MDC no início e limpa as chaves
- * do MDC no fim (evita vazamento entre threads de worker reaproveitadas).
+ * Correlação de requisição: injeta {@code X-REQUEST-ID} no MDC no início e, no fim, descarta o que a
+ * requisição guardou ({@link HTTPRequest#clear}) e limpa as chaves do MDC (evita vazamento entre
+ * threads de worker reaproveitadas).
  */
 @Provider
 @Priority(500)
@@ -35,6 +36,8 @@ public class MDCLoggingFilter implements ContainerRequestFilter, ContainerRespon
 
     @Override
     public void filter(ContainerRequestContext request, ContainerResponseContext response) {
+        // Antes dos pop: clear() encontra o mapa da requisição pelo X-REQUEST-ID que ainda está no MDC.
+        HTTPRequest.clear();
         MDC.pop(HTTPRequest.X_REQUEST_USER);
         MDC.pop(HTTPRequest.X_REQUEST_ID);
     }

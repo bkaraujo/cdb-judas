@@ -60,6 +60,11 @@ public class AccessTokenStore {
      */
     private final long sessionIdleTtlMillis = readSessionIdleTtlMillis();
 
+    /** Prefixo do {@code userId} sintético das sessões internas — ver {@link #openInternal}. */
+    private static final String INTERNAL_USER_PREFIX = "internal:";
+
+    private static final String INTERNAL_USERNAME = "internal";
+
     /** Caminho quente: toda requisição autenticada chega por aqui. */
     private final Map<String, HTTPSession> byToken = new HashMap<>();
 
@@ -111,19 +116,37 @@ public class AccessTokenStore {
      * <p>Pendurado na sessão de quem o pediu, encontrada pelo {@code personId} (única identidade que
      * as features enxergam, via {@code HTTPRequest.personId()}). Chamada aninhada resolve para a
      * mesma sessão: a requisição loopback se autentica com o efêmero e segue carregando o mesmo
-     * {@code personId}. Sem sessão viva não há o que pendurar — é bug de chamador, e falha alto.
+     * {@code personId}. Sem sessão de navegador viva a sessão nasce aqui ({@link #openInternal}) —
+     * é o caso de quem chama fora do ciclo HTTP, como o recálculo de saldos no boot.
      */
     public synchronized String ephemeral(String personId) {
         purgeExpired();
-        val session = byPerson.get(personId);
-        if (session == null) {
-            throw new IllegalStateException("Sem sessão viva para a pessoa " + personId
-                    + " — token efêmero só existe dentro de uma requisição autenticada");
-        }
+        val existing = byPerson.get(personId);
+        val session = existing != null ? existing : openInternal(personId);
 
         val token = generate();
         replace(session, session.withEphemeral(token, expiryFrom(EPHEMERAL_TTL_MILLIS)));
         return token;
+    }
+
+    /**
+     * Sessão sem navegador nenhum atrás, para quem chama uma fatia fora de uma requisição HTTP
+     * ({@code InternalCall.as(personId, ..)} no boot, num job {@code @Scheduled} ou num listener do
+     * {@code MessageBus}). Antes isto era um {@link IllegalStateException} — o que amarrava todo
+     * {@code FNNNApi} a uma sessão de navegador viva e derrubava o boot, que recomputa saldos antes
+     * de existir qualquer login.
+     *
+     * <p>Vive o mesmo {@value #EPHEMERAL_TTL_MILLIS}ms do efêmero que ela existe para emitir, e não
+     * o ocioso da sessão de navegador: fora dessa janela não sobra nada de aproveitável, e a
+     * {@link #purgeExpired} da próxima emissão a recolhe. O {@code userId} é sintético
+     * ({@value #INTERNAL_USER_PREFIX} + personId) para nunca colidir com o {@code SYS_USER.ID} de um
+     * login real no índice {@code byUser}.
+     */
+    private HTTPSession openInternal(String personId) {
+        val session = HTTPSession.opened(INTERNAL_USER_PREFIX + personId, personId, INTERNAL_USERNAME,
+                generate(), expiryFrom(EPHEMERAL_TTL_MILLIS));
+        index(session);
+        return session;
     }
 
     /** Consome (uso único) o efêmero, devolvendo a sessão dona se ele ainda valia. */

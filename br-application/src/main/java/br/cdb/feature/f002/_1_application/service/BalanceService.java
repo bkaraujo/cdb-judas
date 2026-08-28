@@ -1,5 +1,6 @@
 package br.cdb.feature.f002._1_application.service;
 
+import br.cdb.core.web.InternalCall;
 import br.cdb.feature.f002._0_domain.model.Account;
 import br.cdb.feature.f002._0_domain.model.Balance;
 import br.cdb.feature.f002._0_domain.repository.BalanceRepository;
@@ -91,13 +92,26 @@ public class BalanceService {
         val accountResult = accountService.findById(accountId);
         if (accountResult.isFailure()) return;
         val account = accountResult.get();
-        val transactions = f006Api.transactionsByAccount(accountId, null, null, null).stream()
+        val transactions = readTransactions(account).stream()
                 .map(t -> new MonthBalance(
                         t.cardId() == null ? t.date() : InvoiceCycle.dueDate(account, t.date()),
                         t.amount()))
                 .toList();
 
         recalculateBalance(account, transactions);
+    }
+
+    /**
+     * Roda também fora de requisição HTTP (recomputação de boot, job de reconciliação de {@code f999}),
+     * e a leitura cross-slice é HTTP real — daí declarar o dono da conta como ator ({@link InternalCall}),
+     * que é de onde sai o {@code personId} da rota e o token efêmero. Conta sem dono (fixture de teste,
+     * linha antiga sem {@code COD_PERSON}) chama direto: quem resolve a pessoa aí é a requisição corrente.
+     */
+    private List<F006Api.TransactionView> readTransactions(Account account) {
+        val personId = account.personId();
+        if (personId == null) return f006Api.transactionsByAccount(account.id(), null, null, null);
+
+        return InternalCall.as(personId, () -> f006Api.transactionsByAccount(account.id(), null, null, null));
     }
 
     private void recalculateBalance(Account account, List<MonthBalance> transactions) {
