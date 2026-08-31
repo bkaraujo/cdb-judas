@@ -4,13 +4,17 @@ import br.cdb.core.web.HTTPRequest;
 import br.cdb.feature.f000._1_application.service.UserGuards;
 import br.cdb.feature.f002._1_application.service.AccountService;
 import br.cdb.feature.f003._0_domain.model.CreditCard;
+import br.cdb.feature.f003._1_application.cache.CreditCardCache;
+import br.cdb.feature.f003._1_application.cache.CreditCardLayout;
 import br.cdb.feature.f003._1_application.service.CreditCardService;
 import br.cdb.feature.f006._1_application.usecase.ReadUseCases;
 import br.commons.Result;
 import br.commons.business.BusinessError;
 import br.commons.framework.cdi.Context;
+import lombok.val;
 import org.jspecify.annotations.NullMarked;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
@@ -32,6 +36,7 @@ import java.util.UUID;
 @NullMarked
 public class ReadUseCase {
 
+    private final CreditCardCache cache = Context.tryGet(CreditCardCache.class);
     private final CreditCardService service = Context.tryGet(CreditCardService.class);
     private final AccountService accountService = Context.tryGet(AccountService.class);
     private final ReadUseCases transactions = Context.tryGet(ReadUseCases.class);
@@ -50,7 +55,11 @@ public class ReadUseCase {
     // ── Cartões (engine — guarda implícita por COD_PERSON) ─────────
 
     public Result<List<CreditCard>, BusinessError> list(String personId) {
-        return Result.success(service.findAllByPerson(personId));
+        val result = new ArrayList<CreditCard>();
+        cache.forEach(UUID.fromString(personId), v -> {
+            result.add(new CreditCard(v.id(), v.last4(), v.accountId(), v.active(), v.createdAt(), v.updatedAt()));
+        });
+        return Result.success(result);
     }
 
     public Result<List<CreditCard>, BusinessError> list(UUID accountId, String personId) {
