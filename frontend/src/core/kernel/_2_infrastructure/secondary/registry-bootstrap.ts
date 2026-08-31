@@ -1,9 +1,4 @@
-import type {
-  AccountResponse,
-  CategoryResponse,
-  ImportRule,
-  Tag,
-} from '@/api/types.ts';
+import type {AccountResponse, CategoryResponse, ImportRule, Tag,} from '@/api/types.ts';
 
 export interface RegistrySnapshot {
   categories: CategoryResponse[];

@@ -1,6 +1,6 @@
 /** Dublês compartilhados pelas suítes de service. Não é suíte: `vitest.config.ts` coleta só
  * `src/**\/*.test.ts`, e `.dependency-cruiser.cjs` exclui `src/test-support/` do grafo. */
-import type { CacheStore } from '@/core/kernel/_1_application/cache-store.ts';
+import type {CacheStore} from '@/core/kernel/_1_application/cache-store.ts';
 
 /** CacheStore mínimo. Passe só as coleções que a suíte usa. */
 export function fakeCache(overrides: Partial<CacheStore> = {}): CacheStore {

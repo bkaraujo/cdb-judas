@@ -1,12 +1,11 @@
 package br.cdb.feature.f002._1_application.cache;
 
-import br.commons.platform.NativeCache;
 import br.cdb.feature.f002._0_domain.model.Account;
+import br.commons.platform.NativeCache;
 import lombok.val;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 
-import java.lang.foreign.MemoryLayout;
 import java.lang.foreign.MemorySegment;
 import java.lang.foreign.ValueLayout;
 import java.math.BigDecimal;

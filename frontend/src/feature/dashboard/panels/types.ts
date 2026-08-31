@@ -3,12 +3,12 @@
  * cada painel um `(p, ctx) => JQuery` puro dado o `ctx` — sem estado próprio, sem import de
  * fatia irmã (as poucas APIs cross-slice que os painéis precisam — cartões, metas, contas a
  * pagar/receber — chegam via `ctx`, injetadas por `page.ts`). */
-import type { TransactionResponse } from '@/api/overrides.ts';
-import type { Account } from '@/core/kernel/_0_domain/account.ts';
-import type { AccountsPayableApi } from '@/feature/accounts-payable/api.ts';
-import type { BudgetApi } from '@/feature/budget/api.ts';
-import type { CreditCardsApi } from '@/feature/credit-cards/api.ts';
-import type { MonthlyBucket } from '@/feature/dashboard/domain.ts';
+import type {TransactionResponse} from '@/api/overrides.ts';
+import type {Account} from '@/core/kernel/_0_domain/account.ts';
+import type {AccountsPayableApi} from '@/feature/accounts-payable/api.ts';
+import type {BudgetApi} from '@/feature/budget/api.ts';
+import type {CreditCardsApi} from '@/feature/credit-cards/api.ts';
+import type {MonthlyBucket} from '@/feature/dashboard/domain.ts';
 
 export type PayableListItem = Awaited<ReturnType<AccountsPayableApi['listPayable']>>[number];
 

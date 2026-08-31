@@ -6,7 +6,6 @@ import br.cdb.core.web.HTTPRequest;
 import br.cdb.feature.f005.F005Api;
 import br.cdb.feature.f005._0_domain.model.Nature;
 import br.cdb.feature.f005._2_infrastructure.web.CategoryResource;
-import lombok.val;
 import org.jspecify.annotations.NullMarked;
 
 import java.util.Map;

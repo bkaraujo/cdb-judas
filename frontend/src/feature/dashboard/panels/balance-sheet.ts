@@ -1,6 +1,6 @@
 /** Painel: Balanço Patrimonial. */
 import * as BalanceSheetDomain from '@/feature/dashboard/domain.ts';
-import type { PanelRenderer } from '@/feature/dashboard/panels/types.ts';
+import type {PanelRenderer} from '@/feature/dashboard/panels/types.ts';
 
 export const balanceSheet: PanelRenderer = (p, ctx) => {
   const sheet = BalanceSheetDomain.compute(ctx.cbdAccounts());

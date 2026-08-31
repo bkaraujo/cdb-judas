@@ -3,28 +3,35 @@
  * budget, accounts, categories) — nenhuma domain própria de payable/budget/cartão. */
 import $ from 'jquery';
 import * as Category from '@/core/kernel/_0_domain/category.ts';
-import { esc, fmt } from '@/core/kernel/_0_domain/format.ts';
+import {esc, fmt} from '@/core/kernel/_0_domain/format.ts';
 import * as Period from '@/core/kernel/_0_domain/period.ts';
-import type { CacheStore } from '@/core/kernel/_1_application/cache-store.ts';
-import type { PreferencesService } from '@/core/kernel/_1_application/preferences-service.ts';
-import { createPage } from '@/core/kernel/_2_infrastructure/primary/page.ts';
-import type { Page, PageState } from '@/core/kernel/_2_infrastructure/primary/page.ts';
-import { icon } from '@/core/kernel/_2_infrastructure/primary/icons.ts';
-import { PALETTE } from '@/core/kernel/_2_infrastructure/primary/pickers.ts';
-import { btn } from '@/core/kernel/_2_infrastructure/primary/ui/button.ts';
-import { emptyState } from '@/core/kernel/_2_infrastructure/primary/ui/empty-state.ts';
-import { modal } from '@/core/kernel/_2_infrastructure/primary/ui/modal.ts';
-import { pageHeader } from '@/core/kernel/_2_infrastructure/primary/ui/page-header.ts';
-import { progressBarHtml } from '@/core/kernel/_2_infrastructure/primary/ui/progress-bar.ts';
-import type { AccountsPayableApi } from '@/feature/accounts-payable/api.ts';
-import type { BudgetApi } from '@/feature/budget/api.ts';
-import type { AccountsApi } from '@/feature/accounts/api.ts';
-import type { CategoriesApi } from '@/feature/categories/api.ts';
-import type { CreditCardsApi } from '@/feature/credit-cards/api.ts';
-import type { TransactionsApi } from '@/feature/transactions/api.ts';
+import type {CacheStore} from '@/core/kernel/_1_application/cache-store.ts';
+import type {PreferencesService} from '@/core/kernel/_1_application/preferences-service.ts';
+import type {Page, PageState} from '@/core/kernel/_2_infrastructure/primary/page.ts';
+import {createPage} from '@/core/kernel/_2_infrastructure/primary/page.ts';
+import {icon} from '@/core/kernel/_2_infrastructure/primary/icons.ts';
+import {PALETTE} from '@/core/kernel/_2_infrastructure/primary/pickers.ts';
+import {btn} from '@/core/kernel/_2_infrastructure/primary/ui/button.ts';
+import {emptyState} from '@/core/kernel/_2_infrastructure/primary/ui/empty-state.ts';
+import {modal} from '@/core/kernel/_2_infrastructure/primary/ui/modal.ts';
+import {pageHeader} from '@/core/kernel/_2_infrastructure/primary/ui/page-header.ts';
+import {progressBarHtml} from '@/core/kernel/_2_infrastructure/primary/ui/progress-bar.ts';
+import type {AccountsPayableApi} from '@/feature/accounts-payable/api.ts';
+import type {BudgetApi} from '@/feature/budget/api.ts';
+import type {AccountsApi} from '@/feature/accounts/api.ts';
+import type {CategoriesApi} from '@/feature/categories/api.ts';
+import type {CreditCardsApi} from '@/feature/credit-cards/api.ts';
+import type {TransactionsApi} from '@/feature/transactions/api.ts';
 import * as DashboardAggregations from '@/feature/dashboard/domain.ts';
-import { PANELS } from '@/feature/dashboard/panels/index.ts';
-import type { CategoryBarDatum, DashboardData, LabeledBucket, PanelCtx, PanelDef, PayableListItem } from '@/feature/dashboard/panels/types.ts';
+import {PANELS} from '@/feature/dashboard/panels/index.ts';
+import type {
+    CategoryBarDatum,
+    DashboardData,
+    LabeledBucket,
+    PanelCtx,
+    PanelDef,
+    PayableListItem
+} from '@/feature/dashboard/panels/types.ts';
 
 const SERIES_PALETTE = PALETTE.series;
 

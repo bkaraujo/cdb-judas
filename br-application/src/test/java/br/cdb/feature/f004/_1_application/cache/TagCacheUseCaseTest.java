@@ -1,7 +1,7 @@
 package br.cdb.feature.f004._1_application.cache;
 
-import br.commons.platform.NativeCache;
 import br.cdb.feature.f004._0_domain.model.Tag;
+import br.commons.platform.NativeCache;
 import lombok.val;
 import org.junit.jupiter.api.Test;
 

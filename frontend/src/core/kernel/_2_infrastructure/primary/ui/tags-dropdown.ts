@@ -1,9 +1,9 @@
 import $ from 'jquery';
-import type { Tag } from '@/core/kernel/_0_domain/tag.ts';
+import type {Tag} from '@/core/kernel/_0_domain/tag.ts';
 import * as TagDomain from '@/core/kernel/_0_domain/tag.ts';
-import { esc } from '@/core/kernel/_0_domain/format.ts';
-import { icon } from '@/core/kernel/_2_infrastructure/primary/icons.ts';
-import { floatingAttr, summaryClass } from '@/core/kernel/_2_infrastructure/primary/ui/search-select.ts';
+import {esc} from '@/core/kernel/_0_domain/format.ts';
+import {icon} from '@/core/kernel/_2_infrastructure/primary/icons.ts';
+import {floatingAttr, summaryClass} from '@/core/kernel/_2_infrastructure/primary/ui/search-select.ts';
 
 function tagsCountLabel(count: number): string {
   if (!count) return 'Nenhuma tag';

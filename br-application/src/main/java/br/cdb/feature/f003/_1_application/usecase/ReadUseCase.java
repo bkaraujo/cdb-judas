@@ -5,13 +5,11 @@ import br.cdb.feature.f000._1_application.service.UserGuards;
 import br.cdb.feature.f002._1_application.service.AccountService;
 import br.cdb.feature.f003._0_domain.model.CreditCard;
 import br.cdb.feature.f003._1_application.cache.CreditCardCache;
-import br.cdb.feature.f003._1_application.cache.CreditCardLayout;
 import br.cdb.feature.f003._1_application.service.CreditCardService;
 import br.cdb.feature.f006._1_application.usecase.ReadUseCases;
 import br.commons.Result;
 import br.commons.business.BusinessError;
 import br.commons.framework.cdi.Context;
-import lombok.val;
 import org.jspecify.annotations.NullMarked;
 
 import java.util.ArrayList;
@@ -55,12 +53,9 @@ public class ReadUseCase {
     // ── Cartões (engine — guarda implícita por COD_PERSON) ─────────
 
     public Result<List<CreditCard>, BusinessError> list(String personId) {
-        val result = new ArrayList<CreditCard>();
-        return cache.forEach(UUID.fromString(personId), v -> {
-                    result.add(new CreditCard(v.id(), v.last4(), v.accountId(), v.active(), v.createdAt(), v.updatedAt()));
-                })
+        return cache.list(personId)
                 .mapFailure(error -> (BusinessError) new BusinessError.BusinessRule("core.cache.unavailable"))
-                .map(ignored -> result);
+                .map(set -> new ArrayList<>(set));
     }
 
     public Result<List<CreditCard>, BusinessError> list(UUID accountId, String personId) {

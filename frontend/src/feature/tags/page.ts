@@ -1,16 +1,22 @@
 import $ from 'jquery';
-import { esc, sortByName } from '@/core/kernel/_0_domain/format.ts';
-import type { Tag } from '@/core/kernel/_0_domain/tag.ts';
-import { bindRecordActions, bindSwatches, byId, formModal, modalText } from '@/core/kernel/_2_infrastructure/primary/helpers.ts';
-import { cachePage } from '@/core/kernel/_2_infrastructure/primary/page.ts';
-import type { Page, PageState } from '@/core/kernel/_2_infrastructure/primary/page.ts';
-import { deleteWithLinkedFallback, pluralTransactions } from '@/core/kernel/_2_infrastructure/primary/delete-dialog.ts';
-import { PALETTE } from '@/core/kernel/_2_infrastructure/primary/pickers.ts';
-import { btn, rowActionBtn } from '@/core/kernel/_2_infrastructure/primary/ui/button.ts';
-import { colorNameFieldHtml } from '@/core/kernel/_2_infrastructure/primary/ui/color-name-field.ts';
-import { emptyState } from '@/core/kernel/_2_infrastructure/primary/ui/empty-state.ts';
-import { pageHeader } from '@/core/kernel/_2_infrastructure/primary/ui/page-header.ts';
-import type { TagService } from '@/feature/tags/service.ts';
+import {esc, sortByName} from '@/core/kernel/_0_domain/format.ts';
+import type {Tag} from '@/core/kernel/_0_domain/tag.ts';
+import {
+    bindRecordActions,
+    bindSwatches,
+    byId,
+    formModal,
+    modalText
+} from '@/core/kernel/_2_infrastructure/primary/helpers.ts';
+import type {Page, PageState} from '@/core/kernel/_2_infrastructure/primary/page.ts';
+import {cachePage} from '@/core/kernel/_2_infrastructure/primary/page.ts';
+import {deleteWithLinkedFallback, pluralTransactions} from '@/core/kernel/_2_infrastructure/primary/delete-dialog.ts';
+import {PALETTE} from '@/core/kernel/_2_infrastructure/primary/pickers.ts';
+import {btn, rowActionBtn} from '@/core/kernel/_2_infrastructure/primary/ui/button.ts';
+import {colorNameFieldHtml} from '@/core/kernel/_2_infrastructure/primary/ui/color-name-field.ts';
+import {emptyState} from '@/core/kernel/_2_infrastructure/primary/ui/empty-state.ts';
+import {pageHeader} from '@/core/kernel/_2_infrastructure/primary/ui/page-header.ts';
+import type {TagService} from '@/feature/tags/service.ts';
 
 interface TagsPageState extends PageState {
   tags: Tag[];

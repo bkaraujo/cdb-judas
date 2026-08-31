@@ -1,7 +1,7 @@
 /** HTTP adapter for /dashboard + o atalho de últimos lançamentos (mesma rota de transactions,
  * outro parâmetro de query). */
-import type { TransactionResponse } from '@/api/overrides.ts';
-import type { HttpClient } from '@/core/kernel/_2_infrastructure/secondary/http-client.ts';
+import type {TransactionResponse} from '@/api/overrides.ts';
+import type {HttpClient} from '@/core/kernel/_2_infrastructure/secondary/http-client.ts';
 
 export interface MonthlyResult {
   month: number;

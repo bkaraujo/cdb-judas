@@ -1,6 +1,6 @@
-import { describe, expect, it } from 'vitest';
+import {describe, expect, it} from 'vitest';
 import $ from 'jquery';
-import { rowActionBtn, rowActionsHtml } from '@/core/kernel/_2_infrastructure/primary/ui/button.ts';
+import {rowActionBtn, rowActionsHtml} from '@/core/kernel/_2_infrastructure/primary/ui/button.ts';
 
 describe('rowActionBtn / rowActionsHtml', () => {
   it('produzem a mesma marcação para o mesmo botão', () => {

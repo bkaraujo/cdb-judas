@@ -1,6 +1,6 @@
-import { describe, expect, it } from 'vitest';
-import { createPayableService } from '@/feature/accounts-payable/service.ts';
-import type { PayableTxRepoPort } from '@/feature/accounts-payable/service.ts';
+import {describe, expect, it} from 'vitest';
+import type {PayableTxRepoPort} from '@/feature/accounts-payable/service.ts';
+import {createPayableService} from '@/feature/accounts-payable/service.ts';
 
 describe('feature:accounts-payable — service (repo fake)', () => {
   const fakeRepo: PayableTxRepoPort = {

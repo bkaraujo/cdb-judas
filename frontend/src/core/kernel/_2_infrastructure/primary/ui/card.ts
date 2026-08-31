@@ -1,5 +1,5 @@
-import { esc } from '@/core/kernel/_0_domain/format.ts';
-import { icon } from '@/core/kernel/_2_infrastructure/primary/icons.ts';
+import {esc} from '@/core/kernel/_0_domain/format.ts';
+import {icon} from '@/core/kernel/_2_infrastructure/primary/icons.ts';
 
 export interface StatCardOptions {
   color?: string;

@@ -1,6 +1,6 @@
 /** Painel: Receitas por Categoria. */
 import * as DashboardAggregations from '@/feature/dashboard/domain.ts';
-import type { PanelRenderer } from '@/feature/dashboard/panels/types.ts';
+import type {PanelRenderer} from '@/feature/dashboard/panels/types.ts';
 
 export const revenuesByCategory: PanelRenderer = (p, ctx) => {
   const map: Record<string, number> = {};

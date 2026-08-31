@@ -1,41 +1,39 @@
 /** Monta o `PageRegistry` (15 ids) a partir dos serviços/apis já wireados em
  * `composition-root.ts` — só orquestra `createXPage(deps)` de cada fatia, nenhuma lógica própria.
  */
-import { createAccountsPage } from '@/feature/accounts/index.ts';
-import type { AccountService } from '@/feature/accounts/index.ts';
-import { createAccountsPayablePage } from '@/feature/accounts-payable/index.ts';
-import type { PayableService } from '@/feature/accounts-payable/index.ts';
-import { createBudgetPage } from '@/feature/budget/index.ts';
-import type { BudgetService } from '@/feature/budget/index.ts';
-import { createCardStatementPage, createCreditCardsPage } from '@/feature/credit-cards/index.ts';
-import type { CreditCardService } from '@/feature/credit-cards/index.ts';
-import { createCategoriesPage } from '@/feature/categories/index.ts';
-import type { CategoryService } from '@/feature/categories/index.ts';
-import { createDashboardPage } from '@/feature/dashboard/index.ts';
-import type { AccountsPayableApi } from '@/feature/accounts-payable/index.ts';
-import type { AccountsApi } from '@/feature/accounts/index.ts';
-import type { BudgetApi } from '@/feature/budget/index.ts';
-import type { CategoriesApi } from '@/feature/categories/index.ts';
-import type { CreditCardsApi } from '@/feature/credit-cards/index.ts';
-import { createImportRulesPage } from '@/feature/import-rules/index.ts';
-import type { ImportRuleService } from '@/feature/import-rules/index.ts';
-import type { ImportStatementApi } from '@/feature/import-statement/index.ts';
-import { createCategoryEvolutionPage, createCategoryEvolutionService } from '@/feature/report-category-evolution/index.ts';
-import { createReportsPage } from '@/feature/reports/index.ts';
-import { createSettingsPage } from '@/feature/settings/index.ts';
-import type { SettingsAuthPort, SettingsSelfPort, SettingsThemePort } from '@/feature/settings/index.ts';
-import { createStatementPage } from '@/feature/statement/index.ts';
-import type { StatementService } from '@/feature/statement/index.ts';
-import { createTagsPage } from '@/feature/tags/index.ts';
-import type { TagService } from '@/feature/tags/index.ts';
-import { createInstallmentsPage, createTransactionsPage } from '@/feature/transactions/index.ts';
-import type { TransactionActions, TransactionService, TransactionsApi, TxLike } from '@/feature/transactions/index.ts';
+import type {AccountsApi, AccountService} from '@/feature/accounts/index.ts';
+import {createAccountsPage} from '@/feature/accounts/index.ts';
+import type {AccountsPayableApi, PayableService} from '@/feature/accounts-payable/index.ts';
+import {createAccountsPayablePage} from '@/feature/accounts-payable/index.ts';
+import type {BudgetApi, BudgetService} from '@/feature/budget/index.ts';
+import {createBudgetPage} from '@/feature/budget/index.ts';
+import type {CreditCardsApi, CreditCardService} from '@/feature/credit-cards/index.ts';
+import {createCardStatementPage, createCreditCardsPage} from '@/feature/credit-cards/index.ts';
+import type {CategoriesApi, CategoryService} from '@/feature/categories/index.ts';
+import {createCategoriesPage} from '@/feature/categories/index.ts';
+import {createDashboardPage} from '@/feature/dashboard/index.ts';
+import type {ImportRuleService} from '@/feature/import-rules/index.ts';
+import {createImportRulesPage} from '@/feature/import-rules/index.ts';
+import type {ImportStatementApi} from '@/feature/import-statement/index.ts';
+import {
+    createCategoryEvolutionPage,
+    createCategoryEvolutionService
+} from '@/feature/report-category-evolution/index.ts';
+import {createReportsPage} from '@/feature/reports/index.ts';
+import type {SettingsAuthPort, SettingsSelfPort, SettingsThemePort} from '@/feature/settings/index.ts';
+import {createSettingsPage} from '@/feature/settings/index.ts';
+import type {StatementService} from '@/feature/statement/index.ts';
+import {createStatementPage} from '@/feature/statement/index.ts';
+import type {TagService} from '@/feature/tags/index.ts';
+import {createTagsPage} from '@/feature/tags/index.ts';
+import type {TransactionActions, TransactionsApi, TransactionService, TxLike} from '@/feature/transactions/index.ts';
+import {createInstallmentsPage, createTransactionsPage} from '@/feature/transactions/index.ts';
 
-import type { CacheStore } from '@/core/kernel/_1_application/cache-store.ts';
-import type { PeriodService } from '@/core/kernel/_1_application/period-service.ts';
-import type { PreferencesService } from '@/core/kernel/_1_application/preferences-service.ts';
-import type { PageRegistry } from '@/core/kernel/_2_infrastructure/primary/router.ts';
-import type { Sidebar } from '@/core/kernel/_2_infrastructure/primary/sidebar.ts';
+import type {CacheStore} from '@/core/kernel/_1_application/cache-store.ts';
+import type {PeriodService} from '@/core/kernel/_1_application/period-service.ts';
+import type {PreferencesService} from '@/core/kernel/_1_application/preferences-service.ts';
+import type {PageRegistry} from '@/core/kernel/_2_infrastructure/primary/router.ts';
+import type {Sidebar} from '@/core/kernel/_2_infrastructure/primary/sidebar.ts';
 
 export interface PageRegistryDeps {
   cache: CacheStore;

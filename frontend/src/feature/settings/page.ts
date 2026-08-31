@@ -1,13 +1,13 @@
 /** pages/settings — Configurações: shell com abas (Perfil, Aparência).
  * Acessada pelo avatar da sidebar (#/settings); não faz parte do menu lateral. */
 import $ from 'jquery';
-import { esc } from '@/core/kernel/_0_domain/format.ts';
-import { createPage } from '@/core/kernel/_2_infrastructure/primary/page.ts';
-import type { Page, PageState } from '@/core/kernel/_2_infrastructure/primary/page.ts';
-import { btn } from '@/core/kernel/_2_infrastructure/primary/ui/button.ts';
-import { pageHeader } from '@/core/kernel/_2_infrastructure/primary/ui/page-header.ts';
-import { tabs } from '@/core/kernel/_2_infrastructure/primary/ui/tabs.ts';
-import { toast } from '@/core/kernel/_2_infrastructure/primary/ui/toast.ts';
+import {esc} from '@/core/kernel/_0_domain/format.ts';
+import type {Page, PageState} from '@/core/kernel/_2_infrastructure/primary/page.ts';
+import {createPage} from '@/core/kernel/_2_infrastructure/primary/page.ts';
+import {btn} from '@/core/kernel/_2_infrastructure/primary/ui/button.ts';
+import {pageHeader} from '@/core/kernel/_2_infrastructure/primary/ui/page-header.ts';
+import {tabs} from '@/core/kernel/_2_infrastructure/primary/ui/tabs.ts';
+import {toast} from '@/core/kernel/_2_infrastructure/primary/ui/toast.ts';
 
 export interface SettingsAuthPort {
   decodeUser(): string;

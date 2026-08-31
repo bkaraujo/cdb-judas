@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import {describe, expect, it} from 'vitest';
 import * as Money from '@/core/kernel/_0_domain/money.ts';
 
 describe('kernel:money', () => {

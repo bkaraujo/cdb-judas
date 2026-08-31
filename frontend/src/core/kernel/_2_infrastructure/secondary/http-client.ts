@@ -1,5 +1,5 @@
-import { ApiError } from '@/api/problem.ts';
-import type { AuthStore } from '@/core/kernel/_2_infrastructure/secondary/auth-store.ts';
+import {ApiError} from '@/api/problem.ts';
+import type {AuthStore} from '@/core/kernel/_2_infrastructure/secondary/auth-store.ts';
 
 const TOKEN_HEADER = 'X-Access-Token';
 

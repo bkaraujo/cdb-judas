@@ -3,7 +3,6 @@ package br.cdb.feature.f005._1_application.usecase;
 import br.cdb.feature.f005._0_domain.model.Category;
 import br.cdb.feature.f005._0_domain.model.Nature;
 import br.cdb.feature.f005._1_application.cache.CategoryCache;
-import br.cdb.feature.f005._1_application.cache.CategoryLayout;
 import br.cdb.feature.f005._1_application.service.UserCategoryService;
 import br.commons.Result;
 import br.commons.business.BusinessError;
@@ -39,11 +38,11 @@ public class ReadUseCase {
 
     /** Categorias da pessoa + as duas globais de transferência. */
     public List<Category> categories(UUID personId) {
-        val result = new ArrayList<Category>();
-        cache.forEach(personId, v -> {
-            result.add(new Category(v.id(), v.personId(), v.nature(), v.name(), v.parentId(), v.isSystem(), v.active(), v.createdAt(), v.updatedAt()));
-        });
-        return result;
+        val result = cache.list(personId.toString());
+        if (result.isFailure()) {
+            return List.of();
+        }
+        return new ArrayList<>(result.get());
     }
 
     /**

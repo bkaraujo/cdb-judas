@@ -1,5 +1,5 @@
 import $ from 'jquery';
-import { esc } from '@/core/kernel/_0_domain/format.ts';
+import {esc} from '@/core/kernel/_0_domain/format.ts';
 
 export type ToastVariant = 'info' | 'success' | 'error' | 'warning';
 

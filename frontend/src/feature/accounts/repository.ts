@@ -1,7 +1,15 @@
 /** HTTP adapters for /accounts (+ nested cards), monthly balance snapshot, e /accounts/closing. */
-import type { AccountRequest, AccountResponse, BalanceResponse, Card, CardRequest, ClosingRequest, ClosingResponse } from '@/api/types.ts';
-import type { DeletionQueryOptions, HttpClient } from '@/core/kernel/_2_infrastructure/secondary/http-client.ts';
-import { deletionQuery } from '@/core/kernel/_2_infrastructure/secondary/http-client.ts';
+import type {
+    AccountRequest,
+    AccountResponse,
+    BalanceResponse,
+    Card,
+    CardRequest,
+    ClosingRequest,
+    ClosingResponse
+} from '@/api/types.ts';
+import type {DeletionQueryOptions, HttpClient} from '@/core/kernel/_2_infrastructure/secondary/http-client.ts';
+import {deletionQuery} from '@/core/kernel/_2_infrastructure/secondary/http-client.ts';
 
 export interface AccountRepository {
   list(): Promise<AccountResponse[] | null>;

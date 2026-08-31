@@ -1,6 +1,6 @@
 /** Painel: Resultado do Mês. */
-import { valueColor } from '@/core/kernel/_0_domain/format.ts';
-import type { PanelRenderer } from '@/feature/dashboard/panels/types.ts';
+import {valueColor} from '@/core/kernel/_0_domain/format.ts';
+import type {PanelRenderer} from '@/feature/dashboard/panels/types.ts';
 
 export const monthResult: PanelRenderer = (p, ctx) => {
   const txs = ctx.currentMonthTxs();

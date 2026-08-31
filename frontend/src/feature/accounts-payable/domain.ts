@@ -1,5 +1,5 @@
 /** Payable / Receivable rules. Pure. */
-import { statusBadgeVariant as transactionStatusBadgeVariant } from '@/core/kernel/_0_domain/transaction.ts';
+import {statusBadgeVariant as transactionStatusBadgeVariant} from '@/core/kernel/_0_domain/transaction.ts';
 import * as Period from '@/core/kernel/_0_domain/period.ts';
 
 export const PAYABLE_TYPES = { PAYABLE: 'PAYABLE', RECEIVABLE: 'RECEIVABLE' } as const;

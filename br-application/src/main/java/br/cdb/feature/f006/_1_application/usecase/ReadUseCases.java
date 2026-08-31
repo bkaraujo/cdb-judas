@@ -1,8 +1,8 @@
 package br.cdb.feature.f006._1_application.usecase;
 
 import br.cdb.feature.f000._1_application.service.UserGuards;
-import br.cdb.feature.f005._0_domain.model.Nature;
 import br.cdb.feature.f005.F005Api;
+import br.cdb.feature.f005._0_domain.model.Nature;
 import br.cdb.feature.f006._0_domain.model.Transaction;
 import br.cdb.feature.f006._1_application.service.TransactionCategoryService;
 import br.cdb.feature.f006._1_application.service.TransactionService;

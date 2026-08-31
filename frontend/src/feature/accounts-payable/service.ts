@@ -1,9 +1,9 @@
 /** "A Pagar / A Receber" como filtro de transações pendentes. Não há recurso de payables: A
  * Pagar = despesas pendentes; A Receber = receitas pendentes. Sem secondary própria: lê via
  * TransactionsApi (fatia irmã, injetada como porta). */
-import type { Period } from '@/core/kernel/_0_domain/period.ts';
+import type {Period} from '@/core/kernel/_0_domain/period.ts';
+import type {PayableTotals} from '@/feature/accounts-payable/domain.ts';
 import * as PayableDomain from '@/feature/accounts-payable/domain.ts';
-import type { PayableTotals } from '@/feature/accounts-payable/domain.ts';
 
 interface PayableTxLike {
   id?: string;

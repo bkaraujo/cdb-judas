@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import {describe, expect, it} from 'vitest';
 import * as StatementItem from '@/core/kernel/_0_domain/statement-item.ts';
 
 describe('kernel:statement-item', () => {

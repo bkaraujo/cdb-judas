@@ -1,17 +1,17 @@
 /** pages/report-category-evolution — Matriz de transações agrupadas por categoria × período.
  * Seletores: Intervalo (mensal/anual), Início, Tamanho, Carregar. Clique em macro expande subcategorias. */
 import $ from 'jquery';
-import { esc, fmt, valueColor, monthLabel } from '@/core/kernel/_0_domain/format.ts';
+import {esc, fmt, monthLabel, valueColor} from '@/core/kernel/_0_domain/format.ts';
 import * as Period from '@/core/kernel/_0_domain/period.ts';
-import type { CacheStore } from '@/core/kernel/_1_application/cache-store.ts';
-import { icon } from '@/core/kernel/_2_infrastructure/primary/icons.ts';
-import { createPage } from '@/core/kernel/_2_infrastructure/primary/page.ts';
-import type { Page, PageState } from '@/core/kernel/_2_infrastructure/primary/page.ts';
-import { emptyState } from '@/core/kernel/_2_infrastructure/primary/ui/empty-state.ts';
-import { pageHeader } from '@/core/kernel/_2_infrastructure/primary/ui/page-header.ts';
-import { btn } from '@/core/kernel/_2_infrastructure/primary/ui/button.ts';
-import { toast } from '@/core/kernel/_2_infrastructure/primary/ui/toast.ts';
-import type { CategoryEvolutionService } from './service.ts';
+import type {CacheStore} from '@/core/kernel/_1_application/cache-store.ts';
+import {icon} from '@/core/kernel/_2_infrastructure/primary/icons.ts';
+import type {Page, PageState} from '@/core/kernel/_2_infrastructure/primary/page.ts';
+import {createPage} from '@/core/kernel/_2_infrastructure/primary/page.ts';
+import {emptyState} from '@/core/kernel/_2_infrastructure/primary/ui/empty-state.ts';
+import {pageHeader} from '@/core/kernel/_2_infrastructure/primary/ui/page-header.ts';
+import {btn} from '@/core/kernel/_2_infrastructure/primary/ui/button.ts';
+import {toast} from '@/core/kernel/_2_infrastructure/primary/ui/toast.ts';
+import type {CategoryEvolutionService} from './service.ts';
 import * as Domain from './domain.ts';
 
 export interface CategoryEvolutionPageDeps {

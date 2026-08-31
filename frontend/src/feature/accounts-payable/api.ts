@@ -2,7 +2,7 @@
  * que outra fatia pode referenciar. Consumidor: dashboard (painéis de resultado/próximos
  * vencimentos). */
 import * as PayableDomain from '@/feature/accounts-payable/domain.ts';
-import type { PayableListItem, PayableService } from '@/feature/accounts-payable/service.ts';
+import type {PayableListItem, PayableService} from '@/feature/accounts-payable/service.ts';
 
 export interface AccountsPayableApi {
   listPayable(): Promise<PayableListItem[]>;

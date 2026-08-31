@@ -7,7 +7,7 @@
  * tab; a fresh session defaults to the current month.
  */
 import * as Period from '@/core/kernel/_0_domain/period.ts';
-import type { Storage } from '@/core/kernel/_2_infrastructure/secondary/storage.ts';
+import type {Storage} from '@/core/kernel/_2_infrastructure/secondary/storage.ts';
 
 const KEY = 'cdb-period';
 

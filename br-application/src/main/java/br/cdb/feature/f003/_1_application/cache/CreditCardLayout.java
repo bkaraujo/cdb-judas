@@ -1,7 +1,7 @@
 package br.cdb.feature.f003._1_application.cache;
 
-import br.commons.platform.NativeCache;
 import br.cdb.feature.f003._0_domain.model.CreditCard;
+import br.commons.platform.NativeCache;
 import lombok.val;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;

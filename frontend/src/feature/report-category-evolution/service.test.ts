@@ -1,10 +1,10 @@
-import { beforeEach, describe, expect, it } from 'vitest';
-import type { Account } from '@/core/kernel/_0_domain/account.ts';
-import type { Category } from '@/core/kernel/_0_domain/category.ts';
+import {beforeEach, describe, expect, it} from 'vitest';
+import type {Account} from '@/core/kernel/_0_domain/account.ts';
+import type {Category} from '@/core/kernel/_0_domain/category.ts';
 import * as Period from '@/core/kernel/_0_domain/period.ts';
-import { fakeCache } from '@/test-support/fakes.ts';
-import { createCategoryEvolutionService } from '@/feature/report-category-evolution/service.ts';
-import type { EvolutionTx } from '@/feature/report-category-evolution/domain.ts';
+import {fakeCache} from '@/test-support/fakes.ts';
+import {createCategoryEvolutionService} from '@/feature/report-category-evolution/service.ts';
+import type {EvolutionTx} from '@/feature/report-category-evolution/domain.ts';
 
 describe('feature:report-category-evolution — service', () => {
   let capturedQueries: string[];

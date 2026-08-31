@@ -2,7 +2,6 @@ package br.cdb.feature.f004._1_application.usecase;
 
 import br.cdb.feature.f004._0_domain.model.Tag;
 import br.cdb.feature.f004._1_application.cache.TagCache;
-import br.cdb.feature.f004._1_application.cache.TagLayout;
 import br.commons.Result;
 import br.commons.business.BusinessError;
 import br.commons.framework.cdi.Context;
@@ -34,22 +33,19 @@ public class ReadUseCase {
     private final TagCache cache = Context.tryGet(TagCache.class);
 
     public List<Tag> tags(UUID personId) {
-        val result = new ArrayList<Tag>();
-        cache.forEach(personId, v -> {
-            result.add(new Tag(v.id(), v.personId(), v.name(), v.color(), v.createdAt()));
-        });
-        return result;
+        val result = cache.list(personId.toString());
+        if (result.isFailure()) {
+            return List.of();
+        }
+        return new ArrayList<>(result.get());
     }
 
     /** Guarda implícita: {@code NotFound} quando a tag existe mas é de outra pessoa. */
     public Result<Tag, BusinessError> tag(UUID personId, UUID tagId) {
-        val result = new Tag[1];
-        return cache.find(personId, tagId, v -> {
-                    result[0] = new Tag(v.id(), v.personId(), v.name(), v.color(), v.createdAt());
-                })
+        return cache.find(personId.toString(), tagId)
                 .mapFailure(error -> (BusinessError) new BusinessError.BusinessRule("core.cache.unavailable"))
-                .flatMap(found -> found
-                        ? Result.success(result[0])
+                .flatMap(tag -> tag != null
+                        ? Result.success(tag)
                         : Result.failure(new BusinessError.NotFound("error.tag.not-found", tagId)));
     }
 }

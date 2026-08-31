@@ -1,5 +1,5 @@
 /** Currency value helpers (facade over format.ts). Pure. */
-import { fmt, fmtShort, parseCurrency, valueColor } from '@/core/kernel/_0_domain/format.ts';
+import {fmt, fmtShort, parseCurrency, valueColor} from '@/core/kernel/_0_domain/format.ts';
 
 export function format(v: number | string | null | undefined): string {
   return fmt(v);

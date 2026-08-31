@@ -1,5 +1,5 @@
-import type { components } from '@/api/schema.d.ts';
-import type { UUID } from '@/api/types.ts';
+import type {components} from '@/api/schema.d.ts';
+import type {UUID} from '@/api/types.ts';
 
 /**
  * Pontos onde a geração a partir do OpenAPI está errada ou incompleta — escritos à mão.

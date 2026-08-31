@@ -1,5 +1,5 @@
-import { describe, expect, it } from 'vitest';
-import { createStorage, STORAGE_KEYS } from '@/core/kernel/_2_infrastructure/secondary/storage.ts';
+import {describe, expect, it} from 'vitest';
+import {createStorage, STORAGE_KEYS} from '@/core/kernel/_2_infrastructure/secondary/storage.ts';
 
 describe('createStorage', () => {
   it('faz round-trip de string em local e session', () => {

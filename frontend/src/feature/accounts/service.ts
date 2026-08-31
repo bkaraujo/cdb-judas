@@ -1,14 +1,21 @@
 /** Account, monthly-balance e accounting-closing use cases. Sem domain própria: Domain.Account é
  * kernel (core/kernel/_0_domain/account.ts) — transactions/credit-cards/statement/dashboard
  * precisam da forma pura (currentBalance/hasCards). */
-import type { AccountRequest, AccountResponse, BalanceResponse, Card, CardRequest, ClosingResponse } from '@/api/types.ts';
-import type { Account } from '@/core/kernel/_0_domain/account.ts';
-import type { Period } from '@/core/kernel/_0_domain/period.ts';
-import { yyyymm } from '@/core/kernel/_0_domain/period.ts';
-import type { CacheStore } from '@/core/kernel/_1_application/cache-store.ts';
-import type { CbdChangeDetail } from '@/core/kernel/_1_application/event-bus.ts';
-import type { DeletionQueryOptions } from '@/core/kernel/_2_infrastructure/secondary/http-client.ts';
-import type { AccountRepository, BalanceRepository, ClosingRepository } from '@/feature/accounts/repository.ts';
+import type {
+    AccountRequest,
+    AccountResponse,
+    BalanceResponse,
+    Card,
+    CardRequest,
+    ClosingResponse
+} from '@/api/types.ts';
+import type {Account} from '@/core/kernel/_0_domain/account.ts';
+import type {Period} from '@/core/kernel/_0_domain/period.ts';
+import {yyyymm} from '@/core/kernel/_0_domain/period.ts';
+import type {CacheStore} from '@/core/kernel/_1_application/cache-store.ts';
+import type {CbdChangeDetail} from '@/core/kernel/_1_application/event-bus.ts';
+import type {DeletionQueryOptions} from '@/core/kernel/_2_infrastructure/secondary/http-client.ts';
+import type {AccountRepository, BalanceRepository, ClosingRepository} from '@/feature/accounts/repository.ts';
 
 export interface AccountServiceDeps {
   repo: AccountRepository;

@@ -10,8 +10,8 @@
  * Server-synced fields: theme, language, locale, sidebarCollapsed.
  * Local-only (not synced): last screen, sidebar groups, dashboard settings.
  */
-import type { AuthStore } from '@/core/kernel/_2_infrastructure/secondary/auth-store.ts';
-import type { Storage } from '@/core/kernel/_2_infrastructure/secondary/storage.ts';
+import type {AuthStore} from '@/core/kernel/_2_infrastructure/secondary/auth-store.ts';
+import type {Storage} from '@/core/kernel/_2_infrastructure/secondary/storage.ts';
 
 const MIRROR_KEY = 'cdb-preferences';
 const DEBOUNCE_MS = 500;

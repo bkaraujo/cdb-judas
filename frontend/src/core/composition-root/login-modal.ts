@@ -1,9 +1,9 @@
 /** Adapter primário de autenticação. Modal persistente (não pode ser fechado sem logar). */
-import { modal } from '@/core/kernel/_2_infrastructure/primary/ui/modal.ts';
-import type { Modal } from '@/core/kernel/_2_infrastructure/primary/ui/modal.ts';
-import type { Router } from '@/core/kernel/_2_infrastructure/primary/router.ts';
-import type { Sidebar } from '@/core/kernel/_2_infrastructure/primary/sidebar.ts';
-import type { SessionService } from '@/core/kernel/_1_application/session-service.ts';
+import type {Modal} from '@/core/kernel/_2_infrastructure/primary/ui/modal.ts';
+import {modal} from '@/core/kernel/_2_infrastructure/primary/ui/modal.ts';
+import type {Router} from '@/core/kernel/_2_infrastructure/primary/router.ts';
+import type {Sidebar} from '@/core/kernel/_2_infrastructure/primary/sidebar.ts';
+import type {SessionService} from '@/core/kernel/_1_application/session-service.ts';
 
 export interface LoginModalDeps {
   session: SessionService;

@@ -1,5 +1,5 @@
 /** Global system resources. */
-import type { HttpClient } from '@/core/kernel/_2_infrastructure/secondary/http-client.ts';
+import type {HttpClient} from '@/core/kernel/_2_infrastructure/secondary/http-client.ts';
 
 export interface VersionResponse {
   version?: string;

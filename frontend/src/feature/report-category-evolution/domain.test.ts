@@ -1,8 +1,8 @@
-import { describe, expect, it } from 'vitest';
-import type { Account } from '@/core/kernel/_0_domain/account.ts';
+import {describe, expect, it} from 'vitest';
+import type {Account} from '@/core/kernel/_0_domain/account.ts';
 import * as Period from '@/core/kernel/_0_domain/period.ts';
 import * as Domain from '@/feature/report-category-evolution/domain.ts';
-import type { Category } from '@/core/kernel/_0_domain/category.ts';
+import type {Category} from '@/core/kernel/_0_domain/category.ts';
 
 describe('feature:report-category-evolution — domain', () => {
   it('buildBuckets mensal gera 3 períodos corretos', () => {

@@ -4,9 +4,15 @@
  * do repositório cru). accounts-payable também escreve (uma conta a pagar/receber É uma
  * transação com status pendente/agendado/confirmado). import-statement usa importPreview/
  * importConfirm. */
-import type { ImportPreview, PatchStatusRequest, TransactionRequest, TransactionResponse } from '@/api/overrides.ts';
-import type { TransactionActions, TxLike, OpenFormModalOptions, OpenDeleteModalOptions, MarkPaidOptions } from '@/feature/transactions/actions.ts';
-import type { TransactionService } from '@/feature/transactions/service.ts';
+import type {ImportPreview, PatchStatusRequest, TransactionRequest, TransactionResponse} from '@/api/overrides.ts';
+import type {
+    MarkPaidOptions,
+    OpenDeleteModalOptions,
+    OpenFormModalOptions,
+    TransactionActions,
+    TxLike
+} from '@/feature/transactions/actions.ts';
+import type {TransactionService} from '@/feature/transactions/service.ts';
 
 export interface TransactionsApi {
   list(params?: string): Promise<TransactionResponse[] | null>;

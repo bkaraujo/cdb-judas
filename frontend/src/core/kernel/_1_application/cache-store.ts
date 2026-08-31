@@ -7,15 +7,15 @@
  * `sse-client.ts`, Fase 2, consome). Páginas leem por aqui e reagem a mudanças via
  * `subscribe(type, cb)`.
  */
-import type { AccountResponse, CategoryResponse, ImportRule, Tag as TagWire } from '@/api/types.ts';
+import type {AccountResponse, CategoryResponse, ImportRule, Tag as TagWire} from '@/api/types.ts';
+import type {Account as AccountEntity} from '@/core/kernel/_0_domain/account.ts';
 import * as Account from '@/core/kernel/_0_domain/account.ts';
-import type { Account as AccountEntity } from '@/core/kernel/_0_domain/account.ts';
+import type {Category as CategoryEntity} from '@/core/kernel/_0_domain/category.ts';
 import * as Category from '@/core/kernel/_0_domain/category.ts';
-import type { Category as CategoryEntity } from '@/core/kernel/_0_domain/category.ts';
+import type {Tag as TagEntity} from '@/core/kernel/_0_domain/tag.ts';
 import * as Tag from '@/core/kernel/_0_domain/tag.ts';
-import type { Tag as TagEntity } from '@/core/kernel/_0_domain/tag.ts';
-import type { RegistrySnapshot } from '@/core/kernel/_2_infrastructure/secondary/registry-bootstrap.ts';
-import type { CbdChangeDetail, EventBus } from '@/core/kernel/_1_application/event-bus.ts';
+import type {RegistrySnapshot} from '@/core/kernel/_2_infrastructure/secondary/registry-bootstrap.ts';
+import type {CbdChangeDetail, EventBus} from '@/core/kernel/_1_application/event-bus.ts';
 
 export type CbdEntityKind = 'categories' | 'accounts' | 'tags';
 

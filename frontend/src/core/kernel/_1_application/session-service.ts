@@ -1,6 +1,6 @@
 /** Auth + bootstrap orchestration. */
-import type { AuthStore } from '@/core/kernel/_2_infrastructure/secondary/auth-store.ts';
-import type { SseClient } from '@/core/kernel/_2_infrastructure/secondary/sse-client.ts';
+import type {AuthStore} from '@/core/kernel/_2_infrastructure/secondary/auth-store.ts';
+import type {SseClient} from '@/core/kernel/_2_infrastructure/secondary/sse-client.ts';
 
 export interface LoginResult {
   token: string;

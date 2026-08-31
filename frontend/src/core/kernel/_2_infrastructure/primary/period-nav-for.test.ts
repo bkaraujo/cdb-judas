@@ -1,5 +1,5 @@
-import { describe, expect, it } from 'vitest';
-import { periodNavFor } from '@/core/kernel/_2_infrastructure/primary/helpers.ts';
+import {describe, expect, it} from 'vitest';
+import {periodNavFor} from '@/core/kernel/_2_infrastructure/primary/helpers.ts';
 
 function harness(oneBased: boolean, month: number) {
   const state = { month, year: 2026 };

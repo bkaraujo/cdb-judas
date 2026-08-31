@@ -1,14 +1,14 @@
 /** Extrato orchestration. Assembles statement rows client-side from the existing transactions +
  * monthly-balance endpoints (no /statements backend). Sem domain própria e sem secondary: lê via
  * TransactionsApi/AccountsApi (fatias irmãs, injetadas como porta), nunca repositório cru. */
-import type { BalanceResponse } from '@/api/types.ts';
-import type { Account } from '@/core/kernel/_0_domain/account.ts';
+import type {BalanceResponse} from '@/api/types.ts';
+import type {Account} from '@/core/kernel/_0_domain/account.ts';
 import * as AccountDomain from '@/core/kernel/_0_domain/account.ts';
-import { collapse, fetchWindow, mergeCards } from '@/core/kernel/_0_domain/invoice.ts';
-import type { InvoiceTx } from '@/core/kernel/_0_domain/invoice.ts';
+import type {InvoiceTx} from '@/core/kernel/_0_domain/invoice.ts';
+import {collapse, fetchWindow, mergeCards} from '@/core/kernel/_0_domain/invoice.ts';
 import * as Period from '@/core/kernel/_0_domain/period.ts';
 import * as StatementItem from '@/core/kernel/_0_domain/statement-item.ts';
-import type { CacheStore } from '@/core/kernel/_1_application/cache-store.ts';
+import type {CacheStore} from '@/core/kernel/_1_application/cache-store.ts';
 
 export interface StatementTxPort {
   listByAccount(accountId: string, query: string): Promise<InvoiceTx[] | null>;

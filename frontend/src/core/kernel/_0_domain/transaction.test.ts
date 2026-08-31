@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import {describe, expect, it} from 'vitest';
 import * as Transaction from '@/core/kernel/_0_domain/transaction.ts';
 
 describe('kernel:transaction', () => {

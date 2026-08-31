@@ -1,9 +1,9 @@
 /** Regras puras de agregação do Dashboard: balanço patrimonial + análises (despesa por
  * categoria, série mensal, próximos vencimentos). Sem domain própria de payable/budget/cartão —
  * a fatia lê essas via AccountsPayableApi/BudgetApi/CreditCardsApi (fatias irmãs, já fechadas). */
-import type { Account } from '@/core/kernel/_0_domain/account.ts';
+import type {Account} from '@/core/kernel/_0_domain/account.ts';
 import * as AccountDomain from '@/core/kernel/_0_domain/account.ts';
-import type { Category } from '@/core/kernel/_0_domain/category.ts';
+import type {Category} from '@/core/kernel/_0_domain/category.ts';
 import * as CategoryDomain from '@/core/kernel/_0_domain/category.ts';
 
 export interface BalanceSheet {

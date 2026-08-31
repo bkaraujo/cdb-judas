@@ -1,4 +1,4 @@
-import type { UUID } from '@/api/types.ts';
+import type {UUID} from '@/api/types.ts';
 
 /**
  * `/budget` não existe no backend hoje (404) — tipos escritos à mão, sem OpenAPI. Ver

@@ -1,10 +1,10 @@
 /** Regras puras de evolução por categoria. Agregação client-side: transações agrupadas em buckets
  * (mês ou ano), roll-up pelas subcategorias até as raízes, com poda de linhas vazias. Regime
  * caixa: compras de cartão são redatadas pelo vencimento da fatura via Invoice.dueDate. */
-import type { Account } from '@/core/kernel/_0_domain/account.ts';
+import type {Account} from '@/core/kernel/_0_domain/account.ts';
 import * as Category from '@/core/kernel/_0_domain/category.ts';
 import * as Format from '@/core/kernel/_0_domain/format.ts';
-import { dueDate } from '@/core/kernel/_0_domain/invoice.ts';
+import {dueDate} from '@/core/kernel/_0_domain/invoice.ts';
 import * as Period from '@/core/kernel/_0_domain/period.ts';
 import * as Transaction from '@/core/kernel/_0_domain/transaction.ts';
 

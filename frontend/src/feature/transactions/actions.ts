@@ -7,14 +7,14 @@
  * recarga (`onDone`/`onSaved`) que a página passa para atualizar sua própria visão após a mutação.
  */
 import * as Category from '@/core/kernel/_0_domain/category.ts';
-import { esc } from '@/core/kernel/_0_domain/format.ts';
+import {esc} from '@/core/kernel/_0_domain/format.ts';
 import * as Transaction from '@/core/kernel/_0_domain/transaction.ts';
-import type { CacheStore } from '@/core/kernel/_1_application/cache-store.ts';
-import { confirmModal, modalFooter, modalText, runMutation } from '@/core/kernel/_2_infrastructure/primary/helpers.ts';
-import { btn } from '@/core/kernel/_2_infrastructure/primary/ui/button.ts';
-import { modal } from '@/core/kernel/_2_infrastructure/primary/ui/modal.ts';
-import type { TransactionFormModalOptions } from '@/feature/transactions/form-modal.ts';
-import type { TransactionService } from '@/feature/transactions/service.ts';
+import type {CacheStore} from '@/core/kernel/_1_application/cache-store.ts';
+import {confirmModal, modalFooter, modalText, runMutation} from '@/core/kernel/_2_infrastructure/primary/helpers.ts';
+import {btn} from '@/core/kernel/_2_infrastructure/primary/ui/button.ts';
+import {modal} from '@/core/kernel/_2_infrastructure/primary/ui/modal.ts';
+import type {TransactionFormModalOptions} from '@/feature/transactions/form-modal.ts';
+import type {TransactionService} from '@/feature/transactions/service.ts';
 
 export interface TxLike {
   id?: string;

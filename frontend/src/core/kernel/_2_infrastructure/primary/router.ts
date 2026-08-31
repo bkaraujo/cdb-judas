@@ -7,8 +7,8 @@
  * cartão.
  */
 import $ from 'jquery';
-import { emptyState } from '@/core/kernel/_2_infrastructure/primary/ui/empty-state.ts';
-import type { Page } from '@/core/kernel/_2_infrastructure/primary/page.ts';
+import {emptyState} from '@/core/kernel/_2_infrastructure/primary/ui/empty-state.ts';
+import type {Page} from '@/core/kernel/_2_infrastructure/primary/page.ts';
 
 export type PageId =
   | 'accounts'

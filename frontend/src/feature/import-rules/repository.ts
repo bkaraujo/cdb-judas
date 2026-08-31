@@ -1,6 +1,6 @@
 /** HTTP adapter for /accounts/transaction/rules. */
-import type { ImportRule, ImportRuleRequest } from '@/api/types.ts';
-import type { HttpClient } from '@/core/kernel/_2_infrastructure/secondary/http-client.ts';
+import type {ImportRule, ImportRuleRequest} from '@/api/types.ts';
+import type {HttpClient} from '@/core/kernel/_2_infrastructure/secondary/http-client.ts';
 
 export interface ImportRuleRepository {
   list(): Promise<ImportRule[] | null>;

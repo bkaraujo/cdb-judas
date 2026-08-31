@@ -1,12 +1,12 @@
 package br.cdb.feature.f003._1_application.cache;
 
-import br.cdb.core.cache.SessionScopedCache;
 import br.cdb.core.security.SessionEvents;
 import br.cdb.feature.f002._1_application.service.AccountService;
 import br.cdb.feature.f003._0_domain.event.CreditCardEvents;
 import br.cdb.feature.f003._0_domain.model.CreditCard;
 import br.cdb.feature.f003._1_application.service.CreditCardService;
 import br.commons.Result;
+import br.commons.cache.AbstractCache;
 import br.commons.framework.cdi.Context;
 import br.commons.framework.message.MessageListener;
 import br.commons.framework.message.MessageResult;
@@ -14,31 +14,41 @@ import lombok.val;
 import org.jspecify.annotations.NullMarked;
 
 import java.lang.foreign.MemorySegment;
-import java.util.List;
-import java.util.UUID;
-import java.util.function.Consumer;
 
 @NullMarked
-public class CreditCardCache {
-    private final SessionScopedCache<CreditCard> store = new SessionScopedCache<>(
-            CreditCardLayout.PREFIX,
-            personId -> {
-                val service = Context.tryGet(CreditCardService.class);
-                return service != null ? service.findAllByPerson(personId) : List.of();
-            },
-            CreditCard::id,
-            m -> CreditCardLayout.SIZE,
-            CreditCardLayout::write);
+public class CreditCardCache extends AbstractCache<CreditCard> {
+
+    public CreditCardCache() {
+        super(
+                CreditCardLayout.PREFIX,
+                personId -> {
+                    val service = Context.tryGet(CreditCardService.class);
+                    return service.findAllByPerson(personId);
+                },
+                CreditCard::id,
+                    _ -> CreditCardLayout.SIZE,
+                CreditCardLayout::write
+        );
+    }
+
+    @Override
+    protected CreditCard mapToDomain(MemorySegment segment) {
+        val view = new CreditCardLayout.View().bind(segment);
+        return new CreditCard(
+                view.id(), view.last4(), view.accountId(), view.active(),
+                view.createdAt(), view.updatedAt()
+        );
+    }
 
     @MessageListener
     public MessageResult onLogin(SessionEvents.Login e) {
-        store.onLogin(e.personId());
+        onLogin(e.personId().toString());
         return MessageResult.CONSUMED;
     }
 
     @MessageListener
     public MessageResult onLogout(SessionEvents.Logout e) {
-        store.onLogout(e.personId());
+        onLogout(e.personId().toString());
         return MessageResult.CONSUMED;
     }
 
@@ -48,7 +58,7 @@ public class CreditCardCache {
         val accountService = Context.tryGet(AccountService.class);
         val result = accountService.findById(card.accountId());
         if (result instanceof Result.Success(var account)) {
-            store.upsert(account.personId().toString(), card);
+            upsert(account.personId().toString(), card);
         }
         return MessageResult.CONSUMED;
     }
@@ -59,28 +69,14 @@ public class CreditCardCache {
         val accountService = Context.tryGet(AccountService.class);
         val result = accountService.findById(card.accountId());
         if (result instanceof Result.Success(var account)) {
-            store.upsert(account.personId().toString(), card);
+            upsert(account.personId().toString(), card);
         }
         return MessageResult.CONSUMED;
     }
 
     @MessageListener
     public MessageResult onDeleted(CreditCardEvents.Deleted e) {
-        store.evictEverywhere(e.id());
+        evictEverywhere(e.id());
         return MessageResult.CONSUMED;
-    }
-
-    public Result<Void, String> forEach(UUID personId, Consumer<CreditCardLayout.View> consumer) {
-        val view = new CreditCardLayout.View();
-        return store.forEach(personId.toString(), seg -> {
-            consumer.accept(view.bind(seg));
-        });
-    }
-
-    public Result<Boolean, String> find(UUID personId, UUID id, Consumer<CreditCardLayout.View> consumer) {
-        val view = new CreditCardLayout.View();
-        return store.find(personId.toString(), id, seg -> {
-            consumer.accept(view.bind(seg));
-        });
     }
 }

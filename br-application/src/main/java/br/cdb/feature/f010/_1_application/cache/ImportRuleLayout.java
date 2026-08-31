@@ -1,7 +1,7 @@
 package br.cdb.feature.f010._1_application.cache;
 
-import br.commons.platform.NativeCache;
 import br.cdb.feature.f010._0_domain.model.ImportRule;
+import br.commons.platform.NativeCache;
 import lombok.val;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
@@ -10,8 +10,6 @@ import java.lang.foreign.MemoryLayout;
 import java.lang.foreign.MemorySegment;
 import java.lang.foreign.ValueLayout;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.UUID;
 
 @NullMarked

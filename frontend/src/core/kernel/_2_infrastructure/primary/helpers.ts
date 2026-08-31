@@ -3,13 +3,13 @@
  * `_0_domain/format.ts` (esc) to factor out patterns that were copy-pasted in nearly every page.
  */
 import $ from 'jquery';
-import { esc } from '@/core/kernel/_0_domain/format.ts';
-import { btn } from '@/core/kernel/_2_infrastructure/primary/ui/button.ts';
-import type { Modal } from '@/core/kernel/_2_infrastructure/primary/ui/modal.ts';
-import { modal } from '@/core/kernel/_2_infrastructure/primary/ui/modal.ts';
-import { periodNav } from '@/core/kernel/_2_infrastructure/primary/ui/period-nav.ts';
-import { toast } from '@/core/kernel/_2_infrastructure/primary/ui/toast.ts';
-import { bindRecordActions } from '@/core/kernel/_2_infrastructure/primary/record-actions.ts';
+import {esc} from '@/core/kernel/_0_domain/format.ts';
+import {btn} from '@/core/kernel/_2_infrastructure/primary/ui/button.ts';
+import type {Modal} from '@/core/kernel/_2_infrastructure/primary/ui/modal.ts';
+import {modal} from '@/core/kernel/_2_infrastructure/primary/ui/modal.ts';
+import {periodNav} from '@/core/kernel/_2_infrastructure/primary/ui/period-nav.ts';
+import {toast} from '@/core/kernel/_2_infrastructure/primary/ui/toast.ts';
+import {bindRecordActions} from '@/core/kernel/_2_infrastructure/primary/record-actions.ts';
 
 export { bindRecordActions };
 

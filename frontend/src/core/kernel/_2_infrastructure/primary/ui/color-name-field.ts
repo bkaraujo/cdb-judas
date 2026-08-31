@@ -1,5 +1,5 @@
-import { esc } from '@/core/kernel/_0_domain/format.ts';
-import { swatchesHtml } from '@/core/kernel/_2_infrastructure/primary/helpers.ts';
+import {esc} from '@/core/kernel/_0_domain/format.ts';
+import {swatchesHtml} from '@/core/kernel/_2_infrastructure/primary/helpers.ts';
 
 export interface ColorNameFieldOptions {
   colorId: string;

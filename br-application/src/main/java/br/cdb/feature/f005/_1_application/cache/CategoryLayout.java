@@ -1,8 +1,8 @@
 package br.cdb.feature.f005._1_application.cache;
 
-import br.commons.platform.NativeCache;
 import br.cdb.feature.f005._0_domain.model.Category;
 import br.cdb.feature.f005._0_domain.model.Nature;
+import br.commons.platform.NativeCache;
 import lombok.val;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;

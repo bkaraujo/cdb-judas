@@ -1,5 +1,5 @@
-import type { SelfResponse, UpdateMeRequest } from '@/api/types.ts';
-import type { HttpClient } from '@/core/kernel/_2_infrastructure/secondary/http-client.ts';
+import type {SelfResponse, UpdateMeRequest} from '@/api/types.ts';
+import type {HttpClient} from '@/core/kernel/_2_infrastructure/secondary/http-client.ts';
 
 /** HTTP adapter for the self resource (/api/me). Uses the global (no user-prefix) namespace:
  * identity comes from the authenticated context. */

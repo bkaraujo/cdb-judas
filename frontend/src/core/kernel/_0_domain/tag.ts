@@ -1,4 +1,4 @@
-import type { Tag as TagWire } from '@/api/types.ts';
+import type {Tag as TagWire} from '@/api/types.ts';
 
 /** Tag entity. Pure. */
 export interface Tag {

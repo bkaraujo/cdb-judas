@@ -1,7 +1,7 @@
 /** HTTP adapter for /categories. */
-import type { CategoryResponse, CreateRequest, UpdateRequest } from '@/api/types.ts';
-import type { DeletionQueryOptions, HttpClient } from '@/core/kernel/_2_infrastructure/secondary/http-client.ts';
-import { deletionQuery } from '@/core/kernel/_2_infrastructure/secondary/http-client.ts';
+import type {CategoryResponse, CreateRequest, UpdateRequest} from '@/api/types.ts';
+import type {DeletionQueryOptions, HttpClient} from '@/core/kernel/_2_infrastructure/secondary/http-client.ts';
+import {deletionQuery} from '@/core/kernel/_2_infrastructure/secondary/http-client.ts';
 
 export interface CategoryRepository {
   list(): Promise<CategoryResponse[] | null>;

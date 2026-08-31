@@ -1,12 +1,12 @@
 /** Category use cases. Sem domain própria — Domain.Category é kernel
  * (core/kernel/_0_domain/category.ts), usado pelos widgets genéricos de picker. */
-import type { CategoryResponse, CreateRequest, UpdateRequest } from '@/api/types.ts';
+import type {CategoryResponse, CreateRequest, UpdateRequest} from '@/api/types.ts';
+import type {Category} from '@/core/kernel/_0_domain/category.ts';
 import * as CategoryDomain from '@/core/kernel/_0_domain/category.ts';
-import type { Category } from '@/core/kernel/_0_domain/category.ts';
-import type { CacheStore } from '@/core/kernel/_1_application/cache-store.ts';
-import type { CbdChangeDetail } from '@/core/kernel/_1_application/event-bus.ts';
-import type { DeletionQueryOptions } from '@/core/kernel/_2_infrastructure/secondary/http-client.ts';
-import type { CategoryRepository } from '@/feature/categories/repository.ts';
+import type {CacheStore} from '@/core/kernel/_1_application/cache-store.ts';
+import type {CbdChangeDetail} from '@/core/kernel/_1_application/event-bus.ts';
+import type {DeletionQueryOptions} from '@/core/kernel/_2_infrastructure/secondary/http-client.ts';
+import type {CategoryRepository} from '@/feature/categories/repository.ts';
 
 export interface CategoryServiceDeps {
   repo: CategoryRepository;

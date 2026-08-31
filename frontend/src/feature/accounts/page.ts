@@ -6,23 +6,34 @@
  * sempre visível).
  */
 import $ from 'jquery';
-import type { Account } from '@/core/kernel/_0_domain/account.ts';
-import type { Card as CardWire } from '@/api/types.ts';
+import type {Account} from '@/core/kernel/_0_domain/account.ts';
 import * as AccountDomain from '@/core/kernel/_0_domain/account.ts';
-import { esc, fmt, maskCurrency, parseCurrency, sortByName, valueColor } from '@/core/kernel/_0_domain/format.ts';
-import { bindCurrencyMask, bindRecordActions, bindSwatches, byId, formModal, modalText, runMutation } from '@/core/kernel/_2_infrastructure/primary/helpers.ts';
-import { deleteWithLinkedFallback, linkedDeleteDialog, pluralTransactions } from '@/core/kernel/_2_infrastructure/primary/delete-dialog.ts';
-import { icon } from '@/core/kernel/_2_infrastructure/primary/icons.ts';
-import { cachePage } from '@/core/kernel/_2_infrastructure/primary/page.ts';
-import type { Page, PageState } from '@/core/kernel/_2_infrastructure/primary/page.ts';
-import { PALETTE } from '@/core/kernel/_2_infrastructure/primary/pickers.ts';
-import { rowActionBtn } from '@/core/kernel/_2_infrastructure/primary/ui/button.ts';
-import { btn } from '@/core/kernel/_2_infrastructure/primary/ui/button.ts';
-import { colorNameFieldHtml } from '@/core/kernel/_2_infrastructure/primary/ui/color-name-field.ts';
-import { emptyState } from '@/core/kernel/_2_infrastructure/primary/ui/empty-state.ts';
-import { pageHeader } from '@/core/kernel/_2_infrastructure/primary/ui/page-header.ts';
-import { toast } from '@/core/kernel/_2_infrastructure/primary/ui/toast.ts';
-import type { AccountService } from '@/feature/accounts/service.ts';
+import type {Card as CardWire} from '@/api/types.ts';
+import {esc, fmt, maskCurrency, parseCurrency, sortByName, valueColor} from '@/core/kernel/_0_domain/format.ts';
+import {
+    bindCurrencyMask,
+    bindRecordActions,
+    bindSwatches,
+    byId,
+    formModal,
+    modalText,
+    runMutation
+} from '@/core/kernel/_2_infrastructure/primary/helpers.ts';
+import {
+    deleteWithLinkedFallback,
+    linkedDeleteDialog,
+    pluralTransactions
+} from '@/core/kernel/_2_infrastructure/primary/delete-dialog.ts';
+import {icon} from '@/core/kernel/_2_infrastructure/primary/icons.ts';
+import type {Page, PageState} from '@/core/kernel/_2_infrastructure/primary/page.ts';
+import {cachePage} from '@/core/kernel/_2_infrastructure/primary/page.ts';
+import {PALETTE} from '@/core/kernel/_2_infrastructure/primary/pickers.ts';
+import {btn, rowActionBtn} from '@/core/kernel/_2_infrastructure/primary/ui/button.ts';
+import {colorNameFieldHtml} from '@/core/kernel/_2_infrastructure/primary/ui/color-name-field.ts';
+import {emptyState} from '@/core/kernel/_2_infrastructure/primary/ui/empty-state.ts';
+import {pageHeader} from '@/core/kernel/_2_infrastructure/primary/ui/page-header.ts';
+import {toast} from '@/core/kernel/_2_infrastructure/primary/ui/toast.ts';
+import type {AccountService} from '@/feature/accounts/service.ts';
 
 const TYPE_LABELS: Record<string, string> = {
   CHECKING: 'Conta Corrente',

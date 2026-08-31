@@ -1,6 +1,6 @@
-import { describe, expect, it } from 'vitest';
+import {describe, expect, it} from 'vitest';
 import $ from 'jquery';
-import { bindRecordActions } from '@/core/kernel/_2_infrastructure/primary/record-actions.ts';
+import {bindRecordActions} from '@/core/kernel/_2_infrastructure/primary/record-actions.ts';
 
 const RECS = [{ id: '1', name: 'um' }, { id: '2', name: 'dois' }];
 const find = (id: string) => RECS.find((r) => r.id === id) || null;

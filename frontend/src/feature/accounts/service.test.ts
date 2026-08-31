@@ -1,8 +1,8 @@
-import { describe, expect, it } from 'vitest';
-import type { CacheStore } from '@/core/kernel/_1_application/cache-store.ts';
-import { fakeCache, fakeCrudRepo } from '@/test-support/fakes.ts';
-import { createAccountService } from '@/feature/accounts/service.ts';
-import type { AccountRepository } from '@/feature/accounts/repository.ts';
+import {describe, expect, it} from 'vitest';
+import type {CacheStore} from '@/core/kernel/_1_application/cache-store.ts';
+import {fakeCache, fakeCrudRepo} from '@/test-support/fakes.ts';
+import {createAccountService} from '@/feature/accounts/service.ts';
+import type {AccountRepository} from '@/feature/accounts/repository.ts';
 
 function fakeRepo(): AccountRepository {
   return fakeCrudRepo([{ id: '1', name: 'Conta' }] as any, {

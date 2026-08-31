@@ -1,4 +1,4 @@
-import type { AccountResponse, Card as CardWire } from '@/api/types.ts';
+import type {AccountResponse, Card as CardWire} from '@/api/types.ts';
 
 export const ACCOUNT_TYPES = {
   CHECKING: 'CHECKING',

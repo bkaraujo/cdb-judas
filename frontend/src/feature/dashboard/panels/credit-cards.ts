@@ -1,8 +1,8 @@
 /** Painel: Cartões de Crédito. */
 import * as Period from '@/core/kernel/_0_domain/period.ts';
-import { emptyState } from '@/core/kernel/_2_infrastructure/primary/ui/empty-state.ts';
-import { progressBarHtml } from '@/core/kernel/_2_infrastructure/primary/ui/progress-bar.ts';
-import type { PanelRenderer } from '@/feature/dashboard/panels/types.ts';
+import {emptyState} from '@/core/kernel/_2_infrastructure/primary/ui/empty-state.ts';
+import {progressBarHtml} from '@/core/kernel/_2_infrastructure/primary/ui/progress-bar.ts';
+import type {PanelRenderer} from '@/feature/dashboard/panels/types.ts';
 
 export const creditCards: PanelRenderer = (p, ctx) => {
   const accounts = ctx.creditCards(); // contas com ao menos um cartão

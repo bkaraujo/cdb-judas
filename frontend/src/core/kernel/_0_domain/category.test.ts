@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import {describe, expect, it} from 'vitest';
 import * as Category from '@/core/kernel/_0_domain/category.ts';
 
 const CATS: Category.Category[] = [

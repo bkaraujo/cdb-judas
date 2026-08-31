@@ -1,7 +1,7 @@
-import { beforeEach, describe, expect, it } from 'vitest';
-import type { CacheStore } from '@/core/kernel/_1_application/cache-store.ts';
-import { fakeCache, fakeCrudRepo } from '@/test-support/fakes.ts';
-import { createImportRuleService } from '@/feature/import-rules/service.ts';
+import {beforeEach, describe, expect, it} from 'vitest';
+import type {CacheStore} from '@/core/kernel/_1_application/cache-store.ts';
+import {fakeCache, fakeCrudRepo} from '@/test-support/fakes.ts';
+import {createImportRuleService} from '@/feature/import-rules/service.ts';
 
 describe('feature:import-rules — service (repo/cache fakes)', () => {
   let service: ReturnType<typeof createImportRuleService>;

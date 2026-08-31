@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import {describe, expect, it} from 'vitest';
 import * as Period from '@/core/kernel/_0_domain/period.ts';
 
 describe('kernel:period', () => {

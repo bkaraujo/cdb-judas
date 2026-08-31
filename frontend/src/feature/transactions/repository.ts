@@ -1,7 +1,7 @@
 /** HTTP adapter for transactions under the accounts namespace: /api/{uuid}/accounts/... */
-import type { ImportPreview, PatchStatusRequest, TransactionRequest, TransactionResponse } from '@/api/overrides.ts';
-import type { TransferRequest } from '@/api/types.ts';
-import type { HttpClient } from '@/core/kernel/_2_infrastructure/secondary/http-client.ts';
+import type {ImportPreview, PatchStatusRequest, TransactionRequest, TransactionResponse} from '@/api/overrides.ts';
+import type {TransferRequest} from '@/api/types.ts';
+import type {HttpClient} from '@/core/kernel/_2_infrastructure/secondary/http-client.ts';
 
 export interface TransactionRepository {
   list(params?: string): Promise<TransactionResponse[] | null>;

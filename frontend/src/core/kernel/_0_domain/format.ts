@@ -7,9 +7,9 @@
  * Fase 5. As demais funções abaixo que liam `window.App.CacheStore`/`window.Domain.*` viram
  * puras: recebem a coleção como parâmetro em vez de ler estado global (transformação 1 do plano).
  */
-import type { Account } from '@/core/kernel/_0_domain/account.ts';
+import type {Account} from '@/core/kernel/_0_domain/account.ts';
+import type {Category as CategoryEntity} from '@/core/kernel/_0_domain/category.ts';
 import * as Category from '@/core/kernel/_0_domain/category.ts';
-import type { Category as CategoryEntity } from '@/core/kernel/_0_domain/category.ts';
 import * as Period from '@/core/kernel/_0_domain/period.ts';
 
 export function pad2(n: number): string {

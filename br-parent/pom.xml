@@ -270,6 +270,7 @@
                          quase idêntica (superfície da própria API JDBC), não é cópia-cola real. -->
                     <excludes>
                         <exclude>**/jdbc/primitives/*.java</exclude>
+                        <exclude>**/cache/*Layout.java</exclude>
                     </excludes>
                 </configuration>
                 <executions>

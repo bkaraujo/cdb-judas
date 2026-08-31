@@ -1,9 +1,9 @@
-import { beforeEach, describe, expect, it } from 'vitest';
-import type { CacheStore } from '@/core/kernel/_1_application/cache-store.ts';
+import {beforeEach, describe, expect, it} from 'vitest';
+import type {CacheStore} from '@/core/kernel/_1_application/cache-store.ts';
+import type {Category} from '@/core/kernel/_0_domain/category.ts';
 import * as CategoryDomain from '@/core/kernel/_0_domain/category.ts';
-import type { Category } from '@/core/kernel/_0_domain/category.ts';
-import { fakeCache, fakeCrudRepo } from '@/test-support/fakes.ts';
-import { createCategoryService } from '@/feature/categories/service.ts';
+import {fakeCache, fakeCrudRepo} from '@/test-support/fakes.ts';
+import {createCategoryService} from '@/feature/categories/service.ts';
 
 const CATS: Category[] = [
   { id: '1', name: 'Moradia', nature: 'EXPENSE', parentId: null, isSystem: false, active: true },

@@ -1,9 +1,9 @@
 /** pages/reports — índice de relatórios disponíveis. */
 import $ from 'jquery';
-import { icon } from '@/core/kernel/_2_infrastructure/primary/icons.ts';
-import { createPage } from '@/core/kernel/_2_infrastructure/primary/page.ts';
-import type { Page, PageState } from '@/core/kernel/_2_infrastructure/primary/page.ts';
-import { pageHeader } from '@/core/kernel/_2_infrastructure/primary/ui/page-header.ts';
+import {icon} from '@/core/kernel/_2_infrastructure/primary/icons.ts';
+import type {Page, PageState} from '@/core/kernel/_2_infrastructure/primary/page.ts';
+import {createPage} from '@/core/kernel/_2_infrastructure/primary/page.ts';
+import {pageHeader} from '@/core/kernel/_2_infrastructure/primary/ui/page-header.ts';
 
 type ReportsPageState = PageState;
 

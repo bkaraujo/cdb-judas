@@ -1,7 +1,7 @@
-import { describe, expect, it } from 'vitest';
-import type { TransactionResponse } from '@/api/overrides.ts';
-import { createDashboardService } from '@/feature/dashboard/service.ts';
-import type { DashboardRepository } from '@/feature/dashboard/repository.ts';
+import {describe, expect, it} from 'vitest';
+import type {TransactionResponse} from '@/api/overrides.ts';
+import {createDashboardService} from '@/feature/dashboard/service.ts';
+import type {DashboardRepository} from '@/feature/dashboard/repository.ts';
 
 describe('feature:dashboard — service (repo fake)', () => {
   const fakeRepo: DashboardRepository = {

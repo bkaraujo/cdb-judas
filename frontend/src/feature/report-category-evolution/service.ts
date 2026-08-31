@@ -1,8 +1,8 @@
 /** Orchestração de busca + montagem da matriz de evolução. Sem domain própria: lê transações via
  * porta (injetada), categorias/contas do CacheStore. Agregação dele para domain. */
-import { fetchWindow } from '@/core/kernel/_0_domain/invoice.ts';
+import {fetchWindow} from '@/core/kernel/_0_domain/invoice.ts';
 import * as Period from '@/core/kernel/_0_domain/period.ts';
-import type { CacheStore } from '@/core/kernel/_1_application/cache-store.ts';
+import type {CacheStore} from '@/core/kernel/_1_application/cache-store.ts';
 import * as Domain from './domain.ts';
 
 export interface EvolutionTxPort {

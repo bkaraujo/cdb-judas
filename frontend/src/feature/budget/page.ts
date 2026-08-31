@@ -1,23 +1,32 @@
 /** pages/budget — Metas / Orçamento (lista de metas + CRUD modal). */
 import $ from 'jquery';
-import { esc, fmt, maskCurrency, parseCurrency } from '@/core/kernel/_0_domain/format.ts';
+import {esc, fmt, maskCurrency, parseCurrency} from '@/core/kernel/_0_domain/format.ts';
 import * as Period from '@/core/kernel/_0_domain/period.ts';
-import type { CacheStore } from '@/core/kernel/_1_application/cache-store.ts';
-import { bindCurrencyMask, bindRecordActions, byId, confirmModal, formModal, modalText, periodNavFor, runMutation } from '@/core/kernel/_2_infrastructure/primary/helpers.ts';
-import { icon, ICONS } from '@/core/kernel/_2_infrastructure/primary/icons.ts';
-import { createPage } from '@/core/kernel/_2_infrastructure/primary/page.ts';
-import type { Page, PageState } from '@/core/kernel/_2_infrastructure/primary/page.ts';
-import { categoryPickerHtml, PALETTE } from '@/core/kernel/_2_infrastructure/primary/pickers.ts';
-import { badge } from '@/core/kernel/_2_infrastructure/primary/ui/badge.ts';
-import { statCardHtml } from '@/core/kernel/_2_infrastructure/primary/ui/card.ts';
-import { emptyState } from '@/core/kernel/_2_infrastructure/primary/ui/empty-state.ts';
-import { pageHeader } from '@/core/kernel/_2_infrastructure/primary/ui/page-header.ts';
-import { progressBarHtml } from '@/core/kernel/_2_infrastructure/primary/ui/progress-bar.ts';
-import { btn, rowActionBtn } from '@/core/kernel/_2_infrastructure/primary/ui/button.ts';
-import { toast } from '@/core/kernel/_2_infrastructure/primary/ui/toast.ts';
+import type {CacheStore} from '@/core/kernel/_1_application/cache-store.ts';
+import {
+    bindCurrencyMask,
+    bindRecordActions,
+    byId,
+    confirmModal,
+    formModal,
+    modalText,
+    periodNavFor,
+    runMutation
+} from '@/core/kernel/_2_infrastructure/primary/helpers.ts';
+import {icon, ICONS} from '@/core/kernel/_2_infrastructure/primary/icons.ts';
+import type {Page, PageState} from '@/core/kernel/_2_infrastructure/primary/page.ts';
+import {createPage} from '@/core/kernel/_2_infrastructure/primary/page.ts';
+import {categoryPickerHtml, PALETTE} from '@/core/kernel/_2_infrastructure/primary/pickers.ts';
+import {badge} from '@/core/kernel/_2_infrastructure/primary/ui/badge.ts';
+import {statCardHtml} from '@/core/kernel/_2_infrastructure/primary/ui/card.ts';
+import {emptyState} from '@/core/kernel/_2_infrastructure/primary/ui/empty-state.ts';
+import {pageHeader} from '@/core/kernel/_2_infrastructure/primary/ui/page-header.ts';
+import {progressBarHtml} from '@/core/kernel/_2_infrastructure/primary/ui/progress-bar.ts';
+import {btn, rowActionBtn} from '@/core/kernel/_2_infrastructure/primary/ui/button.ts';
+import {toast} from '@/core/kernel/_2_infrastructure/primary/ui/toast.ts';
 import * as BudgetDomain from '@/feature/budget/domain.ts';
-import type { BudgetService } from '@/feature/budget/service.ts';
-import type { BudgetResponse } from '@/feature/budget/types.ts';
+import type {BudgetService} from '@/feature/budget/service.ts';
+import type {BudgetResponse} from '@/feature/budget/types.ts';
 
 const ICON_CHOICES = [
   'list', 'tag', 'creditCard', 'building', 'briefcase',

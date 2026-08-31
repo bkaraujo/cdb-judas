@@ -1,9 +1,9 @@
 /** DOM-ready entry point. Monta app, chrome (shell + sidebar) e decide entre login e boot direto
  * da sessão já autenticada — equivalente a `web/core/composition-root/bootstrap.js`. */
 import $ from 'jquery';
-import { createApp } from '@/core/composition-root/composition-root.ts';
-import { createLoginModal } from '@/core/composition-root/login-modal.ts';
-import { createShell } from '@/core/composition-root/shell.ts';
+import {createApp} from '@/core/composition-root/composition-root.ts';
+import {createLoginModal} from '@/core/composition-root/login-modal.ts';
+import {createShell} from '@/core/composition-root/shell.ts';
 
 export function bootstrap(): void {
   const app = createApp();

@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import {describe, expect, it} from 'vitest';
 import * as BudgetDomain from '@/feature/budget/domain.ts';
 
 describe('feature:budget — domain', () => {

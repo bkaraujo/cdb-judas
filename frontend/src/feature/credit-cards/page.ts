@@ -18,19 +18,19 @@
  * "Novo Cartão" → redireciona para #/accounts (cartões são geridos no modal de edição da conta).
  */
 import $ from 'jquery';
-import type { Account } from '@/core/kernel/_0_domain/account.ts';
-import { esc, fmt, sortByName } from '@/core/kernel/_0_domain/format.ts';
+import type {Account} from '@/core/kernel/_0_domain/account.ts';
+import {esc, fmt, sortByName} from '@/core/kernel/_0_domain/format.ts';
 import * as Period from '@/core/kernel/_0_domain/period.ts';
-import { periodNavFor } from '@/core/kernel/_2_infrastructure/primary/helpers.ts';
-import { icon } from '@/core/kernel/_2_infrastructure/primary/icons.ts';
-import { cachePage } from '@/core/kernel/_2_infrastructure/primary/page.ts';
-import type { Page, PageState } from '@/core/kernel/_2_infrastructure/primary/page.ts';
-import { emptyState } from '@/core/kernel/_2_infrastructure/primary/ui/empty-state.ts';
-import { pageHeader } from '@/core/kernel/_2_infrastructure/primary/ui/page-header.ts';
-import { progressBarHtml } from '@/core/kernel/_2_infrastructure/primary/ui/progress-bar.ts';
+import {periodNavFor} from '@/core/kernel/_2_infrastructure/primary/helpers.ts';
+import {icon} from '@/core/kernel/_2_infrastructure/primary/icons.ts';
+import type {Page, PageState} from '@/core/kernel/_2_infrastructure/primary/page.ts';
+import {cachePage} from '@/core/kernel/_2_infrastructure/primary/page.ts';
+import {emptyState} from '@/core/kernel/_2_infrastructure/primary/ui/empty-state.ts';
+import {pageHeader} from '@/core/kernel/_2_infrastructure/primary/ui/page-header.ts';
+import {progressBarHtml} from '@/core/kernel/_2_infrastructure/primary/ui/progress-bar.ts';
+import type {InvoiceTx} from '@/feature/credit-cards/domain.ts';
 import * as CreditCardDomain from '@/feature/credit-cards/domain.ts';
-import type { InvoiceTx } from '@/feature/credit-cards/domain.ts';
-import type { CreditCardService, CreditCardWithAccount } from '@/feature/credit-cards/service.ts';
+import type {CreditCardService, CreditCardWithAccount} from '@/feature/credit-cards/service.ts';
 
 interface CardGroup {
   account: Account;

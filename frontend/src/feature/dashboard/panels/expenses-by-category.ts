@@ -1,5 +1,5 @@
 /** Painel: Despesas por Categoria. */
-import type { PanelRenderer } from '@/feature/dashboard/panels/types.ts';
+import type {PanelRenderer} from '@/feature/dashboard/panels/types.ts';
 
 export const expensesByCategory: PanelRenderer = (p, ctx) => {
   const data = ctx.expenseByCategory().slice(0, 5);

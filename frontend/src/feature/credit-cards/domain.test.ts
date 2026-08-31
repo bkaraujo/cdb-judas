@@ -1,5 +1,5 @@
-import { describe, expect, it } from 'vitest';
-import type { Account } from '@/core/kernel/_0_domain/account.ts';
+import {describe, expect, it} from 'vitest';
+import type {Account} from '@/core/kernel/_0_domain/account.ts';
 import * as Period from '@/core/kernel/_0_domain/period.ts';
 import * as CreditCardDomain from '@/feature/credit-cards/domain.ts';
 

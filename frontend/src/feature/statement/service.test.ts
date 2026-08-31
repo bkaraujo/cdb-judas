@@ -1,10 +1,10 @@
-import { beforeEach, describe, expect, it } from 'vitest';
-import type { Account } from '@/core/kernel/_0_domain/account.ts';
+import {beforeEach, describe, expect, it} from 'vitest';
+import type {Account} from '@/core/kernel/_0_domain/account.ts';
 import * as Period from '@/core/kernel/_0_domain/period.ts';
-import type { CacheStore } from '@/core/kernel/_1_application/cache-store.ts';
-import { fakeCache } from '@/test-support/fakes.ts';
-import { createStatementService } from '@/feature/statement/service.ts';
-import type { StatementBalancePort, StatementTxPort } from '@/feature/statement/service.ts';
+import type {CacheStore} from '@/core/kernel/_1_application/cache-store.ts';
+import {fakeCache} from '@/test-support/fakes.ts';
+import type {StatementBalancePort, StatementTxPort} from '@/feature/statement/service.ts';
+import {createStatementService} from '@/feature/statement/service.ts';
 
 const ACCOUNT = { id: '1', name: 'Conta', balance: 999, cards: [] } as unknown as Account;
 

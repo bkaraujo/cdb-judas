@@ -1,7 +1,7 @@
 /** HTTP adapter for /tags. */
-import type { Tag as TagWire, TagRequest } from '@/api/types.ts';
-import type { DeletionQueryOptions, HttpClient } from '@/core/kernel/_2_infrastructure/secondary/http-client.ts';
-import { deletionQuery } from '@/core/kernel/_2_infrastructure/secondary/http-client.ts';
+import type {Tag as TagWire, TagRequest} from '@/api/types.ts';
+import type {DeletionQueryOptions, HttpClient} from '@/core/kernel/_2_infrastructure/secondary/http-client.ts';
+import {deletionQuery} from '@/core/kernel/_2_infrastructure/secondary/http-client.ts';
 
 export interface TagRepository {
   list(): Promise<TagWire[] | null>;

@@ -1,9 +1,13 @@
-import { describe, expect, it } from 'vitest';
-import type { Account } from '@/core/kernel/_0_domain/account.ts';
-import type { Category } from '@/core/kernel/_0_domain/category.ts';
-import type { Tag } from '@/core/kernel/_0_domain/tag.ts';
-import { rowCountLabel, statementColumns, statementRowHtml } from '@/core/kernel/_2_infrastructure/primary/statement-row.ts';
-import type { StatementRowLike } from '@/core/kernel/_2_infrastructure/primary/statement-row.ts';
+import {describe, expect, it} from 'vitest';
+import type {Account} from '@/core/kernel/_0_domain/account.ts';
+import type {Category} from '@/core/kernel/_0_domain/category.ts';
+import type {Tag} from '@/core/kernel/_0_domain/tag.ts';
+import type {StatementRowLike} from '@/core/kernel/_2_infrastructure/primary/statement-row.ts';
+import {
+    rowCountLabel,
+    statementColumns,
+    statementRowHtml
+} from '@/core/kernel/_2_infrastructure/primary/statement-row.ts';
 
 function cat(id: string, name: string): Category {
   return { id, name, nature: 'EXPENSE', parentId: null, isSystem: false, active: true };

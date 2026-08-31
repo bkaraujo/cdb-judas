@@ -19,23 +19,27 @@
  * de totalInstallments > 1.
  */
 import $ from 'jquery';
-import { categoryById, categoryLabel, esc, fmt, flatCategories, valueColor } from '@/core/kernel/_0_domain/format.ts';
+import {categoryById, categoryLabel, esc, flatCategories, fmt, valueColor} from '@/core/kernel/_0_domain/format.ts';
 import * as Period from '@/core/kernel/_0_domain/period.ts';
 import * as Transaction from '@/core/kernel/_0_domain/transaction.ts';
-import type { CacheStore } from '@/core/kernel/_1_application/cache-store.ts';
-import { bindRecordActions, byId, periodNavFor } from '@/core/kernel/_2_infrastructure/primary/helpers.ts';
-import { createPage } from '@/core/kernel/_2_infrastructure/primary/page.ts';
-import type { Page, PageState } from '@/core/kernel/_2_infrastructure/primary/page.ts';
-import { accountOptionsHtml, categoryPickerHtml } from '@/core/kernel/_2_infrastructure/primary/pickers.ts';
-import { rowCountFooterHtml, statementRowHtml, statementColumns } from '@/core/kernel/_2_infrastructure/primary/statement-row.ts';
-import { btn, rowActionsHtml } from '@/core/kernel/_2_infrastructure/primary/ui/button.ts';
-import { emptyState } from '@/core/kernel/_2_infrastructure/primary/ui/empty-state.ts';
-import { icon } from '@/core/kernel/_2_infrastructure/primary/icons.ts';
-import { pageHeader } from '@/core/kernel/_2_infrastructure/primary/ui/page-header.ts';
-import { statCardHtml } from '@/core/kernel/_2_infrastructure/primary/ui/card.ts';
-import { toast } from '@/core/kernel/_2_infrastructure/primary/ui/toast.ts';
-import type { TransactionActions, TxLike } from '@/feature/transactions/actions.ts';
-import type { TransactionService } from '@/feature/transactions/service.ts';
+import type {CacheStore} from '@/core/kernel/_1_application/cache-store.ts';
+import {bindRecordActions, byId, periodNavFor} from '@/core/kernel/_2_infrastructure/primary/helpers.ts';
+import type {Page, PageState} from '@/core/kernel/_2_infrastructure/primary/page.ts';
+import {createPage} from '@/core/kernel/_2_infrastructure/primary/page.ts';
+import {accountOptionsHtml, categoryPickerHtml} from '@/core/kernel/_2_infrastructure/primary/pickers.ts';
+import {
+    rowCountFooterHtml,
+    statementColumns,
+    statementRowHtml
+} from '@/core/kernel/_2_infrastructure/primary/statement-row.ts';
+import {btn, rowActionsHtml} from '@/core/kernel/_2_infrastructure/primary/ui/button.ts';
+import {emptyState} from '@/core/kernel/_2_infrastructure/primary/ui/empty-state.ts';
+import {icon} from '@/core/kernel/_2_infrastructure/primary/icons.ts';
+import {pageHeader} from '@/core/kernel/_2_infrastructure/primary/ui/page-header.ts';
+import {statCardHtml} from '@/core/kernel/_2_infrastructure/primary/ui/card.ts';
+import {toast} from '@/core/kernel/_2_infrastructure/primary/ui/toast.ts';
+import type {TransactionActions, TxLike} from '@/feature/transactions/actions.ts';
+import type {TransactionService} from '@/feature/transactions/service.ts';
 
 export interface TxRow extends TxLike {
   date?: string | null;

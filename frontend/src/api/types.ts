@@ -1,4 +1,4 @@
-import type { components } from '@/api/schema.d.ts';
+import type {components} from '@/api/schema.d.ts';
 
 export type AccountRequest = components['schemas']['AccountRequest'];
 export type AccountResponse = components['schemas']['AccountResponse'];

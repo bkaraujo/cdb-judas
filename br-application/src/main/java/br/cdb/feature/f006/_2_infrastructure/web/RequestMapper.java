@@ -1,13 +1,13 @@
 package br.cdb.feature.f006._2_infrastructure.web;
 
-import br.cdb.feature.f005._0_domain.model.Nature;
 import br.cdb.feature.f005.F005Api;
+import br.cdb.feature.f005._0_domain.model.Nature;
 import br.cdb.feature.f006.F006Api;
 import br.cdb.feature.f006._0_domain.model.Transaction;
 import br.cdb.feature.f006._1_application.usecase.TransactionCommand;
-import br.commons.framework.cdi.Context;
 import br.cdb.feature.f006._1_application.usecase.TransactionScope;
 import br.cdb.feature.f006._2_infrastructure.web.request.TransactionRequest;
+import br.commons.framework.cdi.Context;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 

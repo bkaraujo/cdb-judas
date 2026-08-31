@@ -1,6 +1,6 @@
-import { describe, expect, it } from 'vitest';
-import type { Category } from '@/core/kernel/_0_domain/category.ts';
-import { isTransfer } from '@/feature/transactions/actions.ts';
+import {describe, expect, it} from 'vitest';
+import type {Category} from '@/core/kernel/_0_domain/category.ts';
+import {isTransfer} from '@/feature/transactions/actions.ts';
 
 const CATEGORIES: Category[] = [
   { id: '1', name: 'Mercado', nature: 'EXPENSE', parentId: null, isSystem: false, active: true },

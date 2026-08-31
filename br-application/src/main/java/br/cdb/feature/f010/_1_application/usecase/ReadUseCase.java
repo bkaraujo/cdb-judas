@@ -2,7 +2,6 @@ package br.cdb.feature.f010._1_application.usecase;
 
 import br.cdb.feature.f010._0_domain.model.ImportRule;
 import br.cdb.feature.f010._1_application.cache.ImportRuleCache;
-import br.cdb.feature.f010._1_application.cache.ImportRuleLayout;
 import br.cdb.feature.f010._1_application.service.ImportRuleService;
 import br.commons.Result;
 import br.commons.business.BusinessError;
@@ -34,32 +33,19 @@ public class ReadUseCase {
     private final ImportRuleService service = Context.tryGet(ImportRuleService.class);
 
     public List<ImportRule> rules(UUID personId) {
-        val result = new ArrayList<ImportRule>();
-        cache.forEach(personId, v -> {
-            val triggers = new ArrayList<String>();
-            for (int i = 0; i < v.triggerCount(); i++) {
-                val t = v.trigger(i);
-                if (t != null) triggers.add(t);
-            }
-            result.add(new ImportRule(v.id(), v.personId(), v.name(), triggers, v.accountId(), v.categoryId(), v.planned(), v.createdAt()));
-        });
-        return result;
+        val result = cache.list(personId.toString());
+        if (result.isFailure()) {
+            return List.of();
+        }
+        return new ArrayList<>(result.get());
     }
 
     /** Guarda implícita: {@code NotFound} quando a regra existe mas é de outra pessoa. */
     public Result<ImportRule, BusinessError> rule(UUID personId, UUID id) {
-        val result = new ImportRule[1];
-        return cache.find(personId, id, v -> {
-                    val triggers = new ArrayList<String>();
-                    for (int i = 0; i < v.triggerCount(); i++) {
-                        val t = v.trigger(i);
-                        if (t != null) triggers.add(t);
-                    }
-                    result[0] = new ImportRule(v.id(), v.personId(), v.name(), triggers, v.accountId(), v.categoryId(), v.planned(), v.createdAt());
-                })
+        return cache.find(personId.toString(), id)
                 .mapFailure(error -> (BusinessError) new BusinessError.BusinessRule("core.cache.unavailable"))
-                .flatMap(found -> found
-                        ? Result.success(result[0])
+                .flatMap(rule -> rule != null
+                        ? Result.success(rule)
                         : Result.failure(new BusinessError.NotFound("error.rule.not-found", id)));
     }
 }
