@@ -4,9 +4,11 @@ import br.cdb.core.persistence.Database;
 import br.cdb.core.persistence.migration.F010ImportRuleTriggerMigration;
 import br.cdb.feature.f010._0_domain.repository.ImportRuleRepository;
 import br.cdb.feature.f010._0_domain.repository.ImportRuleTriggerRepository;
+import br.cdb.feature.f010._1_application.cache.ImportRuleCache;
 import br.cdb.feature.f010._2_infrastructure.persistence.ImportRuleJDBCRepository;
 import br.cdb.feature.f010._2_infrastructure.persistence.ImportRuleTriggerJDBCRepository;
 import br.commons.Logger;
+import br.commons.MessageBus;
 import br.commons.Result;
 import br.commons.annotation.Lifecycle;
 import br.commons.framework.cdi.Context;
@@ -55,6 +57,9 @@ public class F010Module implements Lifecycle {
 
         Context.set(ImportRuleRepository.class, ImportRuleJDBCRepository::new);
         Context.set(ImportRuleTriggerRepository.class, ImportRuleTriggerJDBCRepository::new);
+        Context.set(ImportRuleCache.class, ImportRuleCache::new);
+
+        MessageBus.subscribe(Context.get(ImportRuleCache.class));
 
         return Result.success();
     }
