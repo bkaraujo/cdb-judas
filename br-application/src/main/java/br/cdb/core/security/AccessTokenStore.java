@@ -153,11 +153,14 @@ public class AccessTokenStore {
      * {@link #purgeExpired} da próxima emissão a recolhe. O {@code userId} é sintético
      * ({@value #INTERNAL_USER_PREFIX} + personId) para nunca colidir com o {@code SYS_USER.ID} de um
      * login real no índice {@code byUser}.
+     *
+     * <p>Emite {@link SessionEvents.Login} para trigger cache populate (D1-a).
      */
     private HTTPSession openInternal(String personId) {
         val session = HTTPSession.opened(INTERNAL_USER_PREFIX + personId, personId, "internal",
                 generate(), expiryFrom(EPHEMERAL_TTL_MILLIS));
         index(session);
+        br.commons.MessageBus.submit(new SessionEvents.Login(personId));
         return session;
     }
 
@@ -178,7 +181,7 @@ public class AccessTokenStore {
         val session = byToken.get(token);
         if (session == null) return null;
         if (session.isExpired(System.currentTimeMillis())) {
-            unindex(session);
+            forget(session);
             return null;
         }
         return session;
@@ -189,6 +192,14 @@ public class AccessTokenStore {
         unindex(current);
         index(updated);
         return updated;
+    }
+
+    /** Remove a sessão e emite {@link SessionEvents.Logout} se ninguém da pessoa está vivo. */
+    private void forget(HTTPSession session) {
+        unindex(session);
+        if (!byPerson.containsKey(session.personId())) {
+            br.commons.MessageBus.submit(new SessionEvents.Logout(session.personId()));
+        }
     }
 
     private void index(HTTPSession session) {
@@ -215,7 +226,7 @@ public class AccessTokenStore {
         val now = System.currentTimeMillis();
         for (val session : new ArrayList<>(byToken.values())) {
             if (session.isExpired(now)) {
-                unindex(session);
+                forget(session);
                 continue;
             }
             val cleaned = session.withoutExpiredEphemerals(now);
