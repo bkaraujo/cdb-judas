@@ -84,6 +84,18 @@ public sealed interface Result<T, E> permits Result.Success, Result.Failure {
         };
     }
 
+    /**
+     * Traduz o erro sem tocar no sucesso — o par de {@link #map} do lado da falha. É o que fecha a
+     * fronteira entre camadas: infra que falha em {@code String} vira {@code BusinessError} na
+     * borda do use case, sem cada chamador reabrir o {@code Result} na mão.
+     */
+    default <F> Result<T, F> mapFailure(Function<? super E, ? extends F> mapper) {
+        return switch (this) {
+            case Success<T, E>(T v) -> Result.success(v);
+            case Failure<T, E>(E e) -> new Failure<>(mapper.apply(e));
+        };
+    }
+
     default Result<T, E> recover(Function<? super E, ? extends T> recovery) {
         return switch (this) {
             case Success<T, E> s -> s;

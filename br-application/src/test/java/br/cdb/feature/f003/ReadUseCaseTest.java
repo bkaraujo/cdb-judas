@@ -64,7 +64,10 @@ class ReadUseCaseTest extends AbstractUseCaseTest {
     }
 
     private CreditCard seedCard(UUID accountId, String last4) {
-        return cardRepository().save(new CreditCard(UUID.randomUUID(), last4, accountId, true));
+        val card = cardRepository().save(new CreditCard(UUID.randomUUID(), last4, accountId, true));
+        // Gravar no repositório não emite evento: o cache off-heap só enxerga o que o populate leu.
+        populateCacheFor(UUID.fromString(PERSON_ID));
+        return card;
     }
 
     private void seedTransaction(UUID accountId, UUID cardId) {

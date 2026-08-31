@@ -48,18 +48,18 @@ public class ReadUseCase {
 
     /** Guarda implícita: {@code NotFound} quando a regra existe mas é de outra pessoa. */
     public Result<ImportRule, BusinessError> rule(UUID personId, UUID id) {
-        val found = new boolean[1];
         val result = new ImportRule[1];
-        cache.find(personId, id, v -> {
-            val triggers = new ArrayList<String>();
-            for (int i = 0; i < v.triggerCount(); i++) {
-                val t = v.trigger(i);
-                if (t != null) triggers.add(t);
-            }
-            result[0] = new ImportRule(v.id(), v.personId(), v.name(), triggers, v.accountId(), v.categoryId(), v.planned(), v.createdAt());
-            found[0] = true;
-        });
-        if (found[0]) return Result.success(result[0]);
-        return Result.failure(new BusinessError.NotFound("error.rule.not-found", id));
+        return cache.find(personId, id, v -> {
+                    val triggers = new ArrayList<String>();
+                    for (int i = 0; i < v.triggerCount(); i++) {
+                        val t = v.trigger(i);
+                        if (t != null) triggers.add(t);
+                    }
+                    result[0] = new ImportRule(v.id(), v.personId(), v.name(), triggers, v.accountId(), v.categoryId(), v.planned(), v.createdAt());
+                })
+                .mapFailure(error -> (BusinessError) new BusinessError.BusinessRule("core.cache.unavailable"))
+                .flatMap(found -> found
+                        ? Result.success(result[0])
+                        : Result.failure(new BusinessError.NotFound("error.rule.not-found", id)));
     }
 }

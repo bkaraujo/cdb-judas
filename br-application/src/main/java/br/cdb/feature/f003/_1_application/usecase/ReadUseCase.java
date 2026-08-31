@@ -56,10 +56,11 @@ public class ReadUseCase {
 
     public Result<List<CreditCard>, BusinessError> list(String personId) {
         val result = new ArrayList<CreditCard>();
-        cache.forEach(UUID.fromString(personId), v -> {
-            result.add(new CreditCard(v.id(), v.last4(), v.accountId(), v.active(), v.createdAt(), v.updatedAt()));
-        });
-        return Result.success(result);
+        return cache.forEach(UUID.fromString(personId), v -> {
+                    result.add(new CreditCard(v.id(), v.last4(), v.accountId(), v.active(), v.createdAt(), v.updatedAt()));
+                })
+                .mapFailure(error -> (BusinessError) new BusinessError.BusinessRule("core.cache.unavailable"))
+                .map(ignored -> result);
     }
 
     public Result<List<CreditCard>, BusinessError> list(UUID accountId, String personId) {

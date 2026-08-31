@@ -40,6 +40,8 @@ class WriteUseCaseTest extends AbstractUseCaseTest {
         val ruleId = UUID.randomUUID();
         val rule = importRuleRepository().save(new ImportRule(ruleId, personId, name, List.of(), null, null, null, null));
         importRuleTriggerRepository().replaceTriggers(ruleId, personId, triggers);
+        // Gravar no repositório não emite evento: o cache off-heap só enxerga o que o populate leu.
+        populateCacheFor(PERSON_ID);
         return rule;
     }
 

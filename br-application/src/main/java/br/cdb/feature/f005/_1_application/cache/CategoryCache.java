@@ -4,7 +4,8 @@ import br.cdb.core.cache.SessionScopedCache;
 import br.cdb.core.security.SessionEvents;
 import br.cdb.feature.f005._0_domain.event.CategoryEvents;
 import br.cdb.feature.f005._0_domain.model.Category;
-import br.cdb.feature.f005._0_domain.repository.CategoryRepository;
+import br.cdb.feature.f005._1_application.service.UserCategoryService;
+import br.commons.Result;
 import br.commons.framework.cdi.Context;
 import br.commons.framework.message.MessageListener;
 import br.commons.framework.message.MessageResult;
@@ -20,9 +21,11 @@ import java.util.function.Consumer;
 public class CategoryCache {
     private final SessionScopedCache<Category> store = new SessionScopedCache<>(
             CategoryLayout.PREFIX,
+            // findAll, não findAllByPerson: as duas globais de transferência pertencem ao
+            // SYSTEM_PERSON_ID e precisam entrar no cache de toda pessoa (ver UserCategoryService).
             personId -> {
-                val repo = Context.tryGet(CategoryRepository.class);
-                return repo != null ? repo.findAllByPerson(UUID.fromString(personId)) : List.of();
+                val service = Context.tryGet(UserCategoryService.class);
+                return service != null ? service.findAll(UUID.fromString(personId)) : List.of();
             },
             Category::id,
             m -> CategoryLayout.SIZE,
@@ -58,14 +61,14 @@ public class CategoryCache {
         return MessageResult.CONSUMED;
     }
 
-    public void forEach(UUID personId, Consumer<CategoryLayout.View> consumer) {
+    public Result<Void, String> forEach(UUID personId, Consumer<CategoryLayout.View> consumer) {
         val view = new CategoryLayout.View();
-        store.forEach(personId.toString(), seg -> {
+        return store.forEach(personId.toString(), seg -> {
             consumer.accept(view.bind(seg));
         });
     }
 
-    public boolean find(UUID personId, UUID id, Consumer<CategoryLayout.View> consumer) {
+    public Result<Boolean, String> find(UUID personId, UUID id, Consumer<CategoryLayout.View> consumer) {
         val view = new CategoryLayout.View();
         return store.find(personId.toString(), id, seg -> {
             consumer.accept(view.bind(seg));

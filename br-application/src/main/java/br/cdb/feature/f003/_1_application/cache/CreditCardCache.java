@@ -6,6 +6,7 @@ import br.cdb.feature.f002._1_application.service.AccountService;
 import br.cdb.feature.f003._0_domain.event.CreditCardEvents;
 import br.cdb.feature.f003._0_domain.model.CreditCard;
 import br.cdb.feature.f003._1_application.service.CreditCardService;
+import br.commons.Result;
 import br.commons.framework.cdi.Context;
 import br.commons.framework.message.MessageListener;
 import br.commons.framework.message.MessageResult;
@@ -46,7 +47,7 @@ public class CreditCardCache {
         val card = e.creditCard();
         val accountService = Context.tryGet(AccountService.class);
         val result = accountService.findById(card.accountId());
-        if (result instanceof br.commons.Result.Success(var account)) {
+        if (result instanceof Result.Success(var account)) {
             store.upsert(account.personId().toString(), card);
         }
         return MessageResult.CONSUMED;
@@ -57,7 +58,7 @@ public class CreditCardCache {
         val card = e.creditCard();
         val accountService = Context.tryGet(AccountService.class);
         val result = accountService.findById(card.accountId());
-        if (result instanceof br.commons.Result.Success(var account)) {
+        if (result instanceof Result.Success(var account)) {
             store.upsert(account.personId().toString(), card);
         }
         return MessageResult.CONSUMED;
@@ -69,14 +70,14 @@ public class CreditCardCache {
         return MessageResult.CONSUMED;
     }
 
-    public void forEach(UUID personId, Consumer<CreditCardLayout.View> consumer) {
+    public Result<Void, String> forEach(UUID personId, Consumer<CreditCardLayout.View> consumer) {
         val view = new CreditCardLayout.View();
-        store.forEach(personId.toString(), seg -> {
+        return store.forEach(personId.toString(), seg -> {
             consumer.accept(view.bind(seg));
         });
     }
 
-    public boolean find(UUID personId, UUID id, Consumer<CreditCardLayout.View> consumer) {
+    public Result<Boolean, String> find(UUID personId, UUID id, Consumer<CreditCardLayout.View> consumer) {
         val view = new CreditCardLayout.View();
         return store.find(personId.toString(), id, seg -> {
             consumer.accept(view.bind(seg));

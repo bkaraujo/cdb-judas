@@ -5,6 +5,7 @@ import br.cdb.core.security.SessionEvents;
 import br.cdb.feature.f004._0_domain.event.TagEvents;
 import br.cdb.feature.f004._0_domain.model.Tag;
 import br.cdb.feature.f004._0_domain.repository.TagRepository;
+import br.commons.Result;
 import br.commons.framework.cdi.Context;
 import br.commons.framework.message.MessageListener;
 import br.commons.framework.message.MessageResult;
@@ -58,14 +59,14 @@ public class TagCache {
         return MessageResult.CONSUMED;
     }
 
-    public void forEach(UUID personId, Consumer<TagLayout.View> consumer) {
+    public Result<Void, String> forEach(UUID personId, Consumer<TagLayout.View> consumer) {
         val view = new TagLayout.View();
-        store.forEach(personId.toString(), seg -> {
+        return store.forEach(personId.toString(), seg -> {
             consumer.accept(view.bind(seg));
         });
     }
 
-    public boolean find(UUID personId, UUID id, Consumer<TagLayout.View> consumer) {
+    public Result<Boolean, String> find(UUID personId, UUID id, Consumer<TagLayout.View> consumer) {
         val view = new TagLayout.View();
         return store.find(personId.toString(), id, seg -> {
             consumer.accept(view.bind(seg));

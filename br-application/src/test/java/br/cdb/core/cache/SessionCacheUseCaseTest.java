@@ -23,7 +23,7 @@ class SessionCacheUseCaseTest {
 
     @Test
     @DisplayName("popula cache no login e limpa no logout")
-    void populatesOnLoginClearsOnLogout() throws InterruptedException, java.util.concurrent.TimeoutException, java.util.concurrent.ExecutionException {
+    void populatesOnLoginClearsOnLogout() {
         val cache = new SessionScopedCache<String>(
                 "TEST:",
                 personId -> List.of("item1", "item2", "item3"),
@@ -32,18 +32,20 @@ class SessionCacheUseCaseTest {
                 (seg, model) -> NativeCache.writeString(seg, 0, 100, model)
         );
 
-        cache.onLogin("person-1");
-        CacheWorker.waitForPending();
+        val populate = cache.onLogin("person-1");
+        assertTrue(CacheWorker.waitForPending().isSuccess(), "worker deveria drenar as tarefas");
+        assertTrue(populate.join().isSuccess(), "populate deveria terminar sem erro");
 
         val items = new java.util.ArrayList<String>();
-        cache.forEach("person-1", seg -> items.add(NativeCache.readString(seg, 0)));
+        assertTrue(cache.forEach("person-1", seg -> items.add(NativeCache.readString(seg, 0))).isSuccess());
 
         assertTrue(items.size() == 3, "cache deveria ter 3 items");
 
-        cache.onLogout("person-1");
+        assertTrue(cache.onLogout("person-1").join().isSuccess());
         val itemsAfter = new java.util.ArrayList<String>();
-        cache.forEach("person-1", seg -> itemsAfter.add(NativeCache.readString(seg, 0)));
+        val afterLogout = cache.forEach("person-1", seg -> itemsAfter.add(NativeCache.readString(seg, 0)));
 
+        assertTrue(afterLogout.isSuccess(), "sem sessão é miss (sucesso vazio), não falha");
         assertTrue(itemsAfter.isEmpty(), "cache deveria estar vazio após logout");
     }
 

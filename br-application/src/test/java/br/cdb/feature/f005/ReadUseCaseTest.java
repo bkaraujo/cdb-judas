@@ -40,7 +40,10 @@ class ReadUseCaseTest extends AbstractUseCaseTest {
     }
 
     private Category seedCategory(UUID personId, String name, Nature nature, UUID parentId) {
-        return categoryRepository().save(new Category(UUID.randomUUID(), personId, nature, name, parentId));
+        val category = categoryRepository().save(new Category(UUID.randomUUID(), personId, nature, name, parentId));
+        // Gravar no repositório não emite evento: o cache off-heap só enxerga o que o populate leu.
+        populateCacheFor(PERSON_ID);
+        return category;
     }
 
     @Test
@@ -60,6 +63,8 @@ class ReadUseCaseTest extends AbstractUseCaseTest {
     void listsIncludeGlobalTransferCategory() {
         seedCategory(PERSON_ID, "Moradia", Nature.EXPENSE, null);
         val transfer = reads.transferCategory(PERSON_ID, Nature.EXPENSE);
+        // A global nasce sob SYSTEM_PERSON_ID: entra no cache desta pessoa pelo populate, não pelo evento.
+        populateCacheFor(PERSON_ID);
 
         val ids = reads.categories(PERSON_ID).stream().map(Category::id).toList();
 

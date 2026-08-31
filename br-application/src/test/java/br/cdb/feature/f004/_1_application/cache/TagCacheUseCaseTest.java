@@ -15,7 +15,7 @@ class TagCacheUseCaseTest {
     @Test
     void testRoundTrip() {
         try (val cache = new NativeCache()) {
-            val seg = cache.put("test", TagLayout.SIZE);
+            val seg = cache.put("test", TagLayout.SIZE).get();
 
             val id = UUID.randomUUID();
             val personId = UUID.randomUUID();
@@ -36,7 +36,7 @@ class TagCacheUseCaseTest {
     @Test
     void testNullCreatedAt() {
         try (val cache = new NativeCache()) {
-            val seg = cache.put("test", TagLayout.SIZE);
+            val seg = cache.put("test", TagLayout.SIZE).get();
 
             val id = UUID.randomUUID();
             val personId = UUID.randomUUID();
@@ -52,7 +52,7 @@ class TagCacheUseCaseTest {
     @Test
     void testZeroAllocAccess() {
         try (val cache = new NativeCache()) {
-            val seg = cache.put("test", TagLayout.SIZE);
+            val seg = cache.put("test", TagLayout.SIZE).get();
             val id = UUID.randomUUID();
 
             TagLayout.write(seg, new Tag(id, UUID.randomUUID(), "test", "#000", null));

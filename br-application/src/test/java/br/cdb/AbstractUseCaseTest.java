@@ -119,11 +119,9 @@ public abstract class AbstractUseCaseTest {
     /** Popula o cache off-heap para uma pessoa (disparando SessionEvents.Login sincronamente). */
     protected void populateCacheFor(java.util.UUID personId) {
         MessageBus.submit(new SessionEvents.Login(personId.toString()));
-        try {
-            CacheWorker.waitForPending();
-        } catch (InterruptedException | java.util.concurrent.TimeoutException | java.util.concurrent.ExecutionException e) {
-            throw new RuntimeException(e);
-        }
+        CacheWorker.waitForPending().ifFailure(error -> {
+            throw new IllegalStateException("cache não populou para " + personId + ": " + error);
+        });
     }
 
 }

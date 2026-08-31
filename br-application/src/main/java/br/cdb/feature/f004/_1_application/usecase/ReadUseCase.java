@@ -43,13 +43,13 @@ public class ReadUseCase {
 
     /** Guarda implícita: {@code NotFound} quando a tag existe mas é de outra pessoa. */
     public Result<Tag, BusinessError> tag(UUID personId, UUID tagId) {
-        val found = new boolean[1];
         val result = new Tag[1];
-        cache.find(personId, tagId, v -> {
-            result[0] = new Tag(v.id(), v.personId(), v.name(), v.color(), v.createdAt());
-            found[0] = true;
-        });
-        if (found[0]) return Result.success(result[0]);
-        return Result.failure(new BusinessError.NotFound("error.tag.not-found", tagId));
+        return cache.find(personId, tagId, v -> {
+                    result[0] = new Tag(v.id(), v.personId(), v.name(), v.color(), v.createdAt());
+                })
+                .mapFailure(error -> (BusinessError) new BusinessError.BusinessRule("core.cache.unavailable"))
+                .flatMap(found -> found
+                        ? Result.success(result[0])
+                        : Result.failure(new BusinessError.NotFound("error.tag.not-found", tagId)));
     }
 }

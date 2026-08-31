@@ -61,7 +61,10 @@ class WriteUseCaseTest extends AbstractUseCaseTest {
     }
 
     private Tag seedTag(UUID personId, String name) {
-        return tagRepository().save(new Tag(UUID.randomUUID(), personId, name, "#ff0000", null));
+        val tag = tagRepository().save(new Tag(UUID.randomUUID(), personId, name, "#ff0000", null));
+        // Gravar no repositório não emite evento: o cache off-heap só enxerga o que o populate leu.
+        populateCacheFor(PERSON_ID);
+        return tag;
     }
 
     private TagEvents.@Nullable Deleted lastDeleted() {

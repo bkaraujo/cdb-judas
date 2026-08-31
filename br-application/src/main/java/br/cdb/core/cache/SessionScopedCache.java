@@ -1,30 +1,38 @@
 package br.cdb.core.cache;
 
+import br.commons.Logger;
+import br.commons.Result;
 import br.commons.platform.NativeCache;
 import lombok.val;
 import org.jspecify.annotations.NullMarked;
 
 import java.lang.foreign.MemorySegment;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.ToLongFunction;
-import java.util.logging.Logger;
 
 /**
  * Registry genérico por pessoa, parametrizado por lambdas. Armazena cache off-heap
  * sincronizando com eventos de sessão: populate no login, close no logout.
  * Miss = lista vazia (D1). Populate é assíncrono mas o future é registrado na thread
  * chamadora para D1-b (corrida de login).
+ *
+ * <p>API pública em {@link Result}: <b>ausência de sessão não é falha</b> (é o miss do D1, que
+ * devolve sucesso vazio) — falha é o cache indisponível de verdade: timeout do populate, worker
+ * recusando tarefa, arena já fechada. As mutações devolvem o {@code Result} dentro de um
+ * {@link CompletableFuture} (o veredito nasce na thread do worker, ver {@link CacheWorker});
+ * as leituras, que já bloqueiam no populate, devolvem o {@code Result} direto.
  */
 @NullMarked
 public class SessionScopedCache<T> {
-    private static final Logger log = Logger.getLogger(SessionScopedCache.class.getName());
     private static final long POPULATE_TIMEOUT_SECONDS = 2;
 
     private final String prefix;
@@ -46,136 +54,127 @@ public class SessionScopedCache<T> {
         this.writer = writer;
     }
 
-    public void onLogin(String personId) {
+    public CompletableFuture<Result<Void, String>> onLogin(String personId) {
         val future = new CompletableFuture<NativeCache>();
         registry.put(personId, future);
 
-        CacheWorker.submit(() -> {
+        return CacheWorker.submitResult(() -> {
+            val cache = new NativeCache();
+            val errors = new ArrayList<String>();
             try {
-                val cache = new NativeCache();
-                val models = loader.apply(personId);
-                for (val model : models) {
-                    val id = keyer.apply(model);
-                    val key = prefix + id;
-                    val size = sizer.applyAsLong(model);
-                    val seg = cache.put(key, size);
-                    writer.accept(seg, model);
+                for (val model : loader.apply(personId)) {
+                    store(cache, model).ifFailure(errors::add);
                 }
+            } finally {
+                // Completa sempre: o que carregou vale mais que uma sessão sem cache nenhum.
                 future.complete(cache);
-            } catch (Exception e) {
-                log.warning("Cache populate failed for " + personId + ": " + e.getMessage());
-                future.complete(new NativeCache());
             }
+            return errors.isEmpty()
+                    ? Result.success()
+                    : Result.failure("cache populate incomplete for " + personId + ": " + errors);
         });
     }
 
-    public void onLogout(String personId) {
+    public CompletableFuture<Result<Void, String>> onLogout(String personId) {
         val future = registry.remove(personId);
-        if (future != null) {
-            future.thenAccept(cache -> {
-                try {
-                    cache.close();
-                } catch (Exception e) {
-                    log.warning("Cache close failed: " + e.getMessage());
-                }
-            });
-        }
-    }
+        if (future == null) return CompletableFuture.completedFuture(Result.success());
 
-    public void upsert(String personId, T model) {
-        val future = registry.get(personId);
-        if (future == null) return;
-
-        CacheWorker.submit(() -> {
+        return future.handle((cache, thrown) -> {
+            if (thrown != null) return Result.failure(thrown.toString());
             try {
-                val cache = future.getNow(null);
-                if (cache == null || cache.isClosed()) return;
-                val id = keyer.apply(model);
-                val key = prefix + id;
-                val size = sizer.applyAsLong(model);
-                val seg = cache.put(key, size);
-                writer.accept(seg, model);
+                cache.close();
+                return Result.success();
             } catch (Exception e) {
-                log.warning("Cache upsert failed for " + personId + ": " + e.getMessage());
+                Logger.warn("Cache close failed: %s", e.toString());
+                return Result.failure(e.toString());
             }
         });
     }
 
-    public void evict(String personId, UUID id) {
-        val future = registry.get(personId);
-        if (future == null) return;
+    public CompletableFuture<Result<Void, String>> upsert(String personId, T model) {
+        return onCache(personId, cache -> store(cache, model));
+    }
 
-        CacheWorker.submit(() -> {
-            try {
-                val cache = future.getNow(null);
-                if (cache == null || cache.isClosed()) return;
-                val key = prefix + id;
-                cache.remove(key);
-            } catch (Exception e) {
-                log.warning("Cache evict failed for " + personId + ": " + e.getMessage());
-            }
+    public CompletableFuture<Result<Void, String>> evict(String personId, UUID id) {
+        return onCache(personId, cache -> cache.remove(prefix + id));
+    }
+
+    public CompletableFuture<Result<Void, String>> evictEverywhere(UUID id) {
+        val pending = registry.keySet().stream()
+                .map(personId -> onCache(personId, cache -> cache.remove(prefix + id)))
+                .toList();
+
+        return CompletableFuture.allOf(pending.toArray(CompletableFuture[]::new))
+                .thenApply(ignored -> pending.stream()
+                        .map(CompletableFuture::join)
+                        .filter(Result::isFailure)
+                        .findFirst()
+                        .orElse(Result.success()));
+    }
+
+    /**
+     * Percorre os registros da pessoa. Sem sessão é sucesso vazio (D1). Bloqueia até 2s no populate
+     * (D1-b) e falha se estourar.
+     */
+    public Result<Void, String> forEach(String personId, Consumer<MemorySegment> consumer) {
+        return read(personId, Result.success(), cache -> cache.forEach(prefix, (key, seg) -> consumer.accept(seg)));
+    }
+
+    /** Sucesso com {@code true} se achou (o consumer recebeu o segmento); falha só se o cache não respondeu. */
+    public Result<Boolean, String> find(String personId, UUID id, Consumer<MemorySegment> consumer) {
+        return read(personId, Result.success(false), cache -> {
+            val segment = cache.get(prefix + id);
+            if (segment.isFailure()) return Result.success(false);
+
+            consumer.accept(segment.get());
+            return Result.success(true);
         });
     }
 
-    public void evictEverywhere(UUID id) {
-        for (val future : registry.values()) {
-            CacheWorker.submit(() -> {
-                try {
-                    val cache = future.getNow(null);
-                    if (cache == null || cache.isClosed()) return;
-                    val key = prefix + id;
-                    cache.remove(key);
-                } catch (Exception e) {
-                    log.warning("Cache evict-everywhere failed: " + e.getMessage());
-                }
-            });
-        }
+    /**
+     * Roda {@code action} na thread do worker, sobre o cache já populado da pessoa. Sem sessão, ou
+     * com a arena fechada (corrida com o logout), é no-op bem-sucedido — não há o que manter.
+     */
+    private CompletableFuture<Result<Void, String>> onCache(String personId, Function<NativeCache, Result<Void, String>> action) {
+        val future = registry.get(personId);
+        if (future == null) return CompletableFuture.completedFuture(Result.success());
+
+        return CacheWorker.submitResult(() -> {
+            val cache = future.getNow(null);
+            if (cache == null || cache.isClosed()) return Result.success();
+            return action.apply(cache);
+        });
     }
 
-    /** Percorre os registros da pessoa. Vazio se não há sessão (D1). Bloqueia até 2s no populate (D1-b). */
-    public void forEach(String personId, Consumer<MemorySegment> consumer) {
+    /**
+     * Espera o populate e entrega o cache a {@code body}. Concentra a semântica de leitura: sem
+     * sessão (ou arena fechada) devolve {@code onMiss}; só o cache que não respondeu vira falha.
+     */
+    private <R> Result<R, String> read(String personId, Result<R, String> onMiss, Function<NativeCache, Result<R, String>> body) {
         val future = registry.get(personId);
-        if (future == null) return;
+        if (future == null) return onMiss;
 
         try {
             val cache = future.get(POPULATE_TIMEOUT_SECONDS, TimeUnit.SECONDS);
-            if (cache.isClosed()) return;
-
-            for (val key : cache.keys(prefix)) {
-                val seg = cache.get(key);
-                if (seg != null) {
-                    consumer.accept(seg);
-                }
-            }
-        } catch (java.util.concurrent.TimeoutException e) {
-            log.fine("Cache populate timeout for " + personId);
+            return cache.isClosed() ? onMiss : body.apply(cache);
+        } catch (TimeoutException e) {
+            Logger.debug("Cache populate timeout for %s", personId);
+            return Result.failure("cache populate timeout for " + personId);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            return Result.failure("interrupted reading cache for " + personId);
         } catch (Exception e) {
-            log.warning("Cache forEach failed: " + e.getMessage());
+            Logger.warn("Cache read failed for %s: %s", personId, e.toString());
+            return Result.failure(e.toString());
         }
     }
 
-    /** true se achou; o consumer recebe o segmento. */
-    public boolean find(String personId, UUID id, Consumer<MemorySegment> consumer) {
-        val future = registry.get(personId);
-        if (future == null) return false;
-
-        try {
-            val cache = future.get(POPULATE_TIMEOUT_SECONDS, TimeUnit.SECONDS);
-            if (cache.isClosed()) return false;
-
-            val key = prefix + id;
-            val seg = cache.get(key);
-            if (seg != null) {
-                consumer.accept(seg);
-                return true;
-            }
-            return false;
-        } catch (java.util.concurrent.TimeoutException e) {
-            log.fine("Cache populate timeout for " + personId);
-            return false;
-        } catch (Exception e) {
-            log.warning("Cache find failed: " + e.getMessage());
-            return false;
-        }
+    /** Aloca o segmento do modelo e escreve nele — o único ponto que conhece prefix/keyer/sizer/writer. */
+    private Result<Void, String> store(NativeCache cache, T model) {
+        return cache.put(prefix + keyer.apply(model), sizer.applyAsLong(model))
+                .flatMap(segment -> {
+                    writer.accept(segment, model);
+                    return Result.success();
+                });
     }
 }
