@@ -59,9 +59,19 @@ public class BalanceService {
         repository.markDirty(accountId);
     }
 
-    /** Recomputa toda conta com pelo menos um snapshot sujo — consumido pelo job de reconciliação (f999). */
+    /**
+     * Recomputa toda conta com pelo menos um snapshot sujo — consumido pelo job de reconciliação
+     * (f999) e pela varredura de boot ({@link #recomputeAll}). Falha de uma conta (ex.: loopback HTTP
+     * de {@link #readTransactions} indisponível) não pode abortar as demais — cada conta roda isolada.
+     */
     public void recomputeDirty() {
-        repository.findDirtyAccountIds().forEach(this::recalculate);
+        repository.findDirtyAccountIds().forEach(accountId -> {
+            try {
+                recalculate(accountId);
+            } catch (RuntimeException e) {
+                Logger.warn("Falha ao recalcular saldo da conta %s: %s", accountId, e.toString());
+            }
+        });
     }
 
     /**

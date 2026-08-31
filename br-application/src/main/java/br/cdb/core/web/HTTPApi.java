@@ -47,6 +47,8 @@ public class HTTPApi {
 
     private static final int DEFAULT_HTTP_PORT = 80;
 
+    private static final int DEFAULT_HTTPS_PORT = 443;
+
     private static final long CONNECT_PROBE_INTERVAL_MILLIS = 100;
 
     /**
@@ -59,7 +61,8 @@ public class HTTPApi {
      */
     public boolean awaitAvailable(Duration timeout) {
         val uri = URI.create(baseUrl);
-        val port = uri.getPort() > 0 ? uri.getPort() : DEFAULT_HTTP_PORT;
+        val defaultPort = "https".equalsIgnoreCase(uri.getScheme()) ? DEFAULT_HTTPS_PORT : DEFAULT_HTTP_PORT;
+        val port = uri.getPort() > 0 ? uri.getPort() : defaultPort;
         val deadline = System.nanoTime() + timeout.toNanos();
 
         while (System.nanoTime() < deadline) {
