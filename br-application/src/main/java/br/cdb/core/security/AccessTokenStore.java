@@ -63,8 +63,6 @@ public class AccessTokenStore {
     /** Prefixo do {@code userId} sintético das sessões internas — ver {@link #openInternal}. */
     private static final String INTERNAL_USER_PREFIX = "internal:";
 
-    private static final String INTERNAL_USERNAME = "internal";
-
     /** Caminho quente: toda requisição autenticada chega por aqui. */
     private final Map<String, HTTPSession> byToken = new HashMap<>();
 
@@ -143,7 +141,7 @@ public class AccessTokenStore {
      * login real no índice {@code byUser}.
      */
     private HTTPSession openInternal(String personId) {
-        val session = HTTPSession.opened(INTERNAL_USER_PREFIX + personId, personId, INTERNAL_USERNAME,
+        val session = HTTPSession.opened(INTERNAL_USER_PREFIX + personId, personId, "internal",
                 generate(), expiryFrom(EPHEMERAL_TTL_MILLIS));
         index(session);
         return session;

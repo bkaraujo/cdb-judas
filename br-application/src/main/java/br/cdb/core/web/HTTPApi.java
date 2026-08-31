@@ -2,6 +2,7 @@ package br.cdb.core.web;
 
 import br.cdb.core.CoreModule;
 import br.cdb.core.security.AccessTokenStore;
+import br.commons.Platform;
 import br.commons.tools.Threads;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.inject.Inject;
@@ -12,8 +13,6 @@ import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 
 import java.io.IOException;
-import java.net.InetSocketAddress;
-import java.net.Socket;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
@@ -48,15 +47,15 @@ public class HTTPApi {
 
     private static final int DEFAULT_HTTP_PORT = 80;
 
-    private static final int CONNECT_PROBE_TIMEOUT_MILLIS = 250;
-
     private static final long CONNECT_PROBE_INTERVAL_MILLIS = 100;
 
     /**
      * Espera o servidor HTTP desta JVM começar a aceitar conexões, no máximo {@code timeout}.
      * Existe porque o {@code StartupEvent} roda <b>antes</b> de a porta abrir: qualquer
      * {@code FNNNApi} chamado no boot bate em {@link java.net.ConnectException} — foi o que
-     * derrubava a aplicação no recálculo de saldos de {@code FeatureBootstrap}.
+     * derrubava a aplicação no recálculo de saldos de {@code FeatureBootstrap}. Sonda com
+     * {@link Platform#isPortInUse} (bind local) em vez de abrir socket próprio — mesmo mecanismo
+     * já usado noutro lugar do projeto para "a porta X já está ocupada?".
      */
     public boolean awaitAvailable(Duration timeout) {
         val uri = URI.create(baseUrl);
@@ -64,12 +63,8 @@ public class HTTPApi {
         val deadline = System.nanoTime() + timeout.toNanos();
 
         while (System.nanoTime() < deadline) {
-            try (val socket = new Socket()) {
-                socket.connect(new InetSocketAddress(uri.getHost(), port), CONNECT_PROBE_TIMEOUT_MILLIS);
-                return true;
-            } catch (IOException notYet) {
-                Threads.sleep(CONNECT_PROBE_INTERVAL_MILLIS);
-            }
+            if (Platform.isPortInUse(port)) return true;
+            Threads.sleep(CONNECT_PROBE_INTERVAL_MILLIS);
         }
         return false;
     }
