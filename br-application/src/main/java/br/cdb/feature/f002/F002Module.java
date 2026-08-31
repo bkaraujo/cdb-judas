@@ -5,12 +5,14 @@ import br.cdb.core.persistence.repository.AccountTypeMapper;
 import br.cdb.feature.f002._0_domain.repository.AccountRepository;
 import br.cdb.feature.f002._0_domain.repository.BalanceRepository;
 import br.cdb.feature.f002._0_domain.repository.ClosingRepository;
+import br.cdb.feature.f002._1_application.cache.AccountCache;
 import br.cdb.feature.f002._1_application.service.ClosingService;
 import br.cdb.feature.f002._2_infrastructure.F002ApiImpl;
 import br.cdb.feature.f002._2_infrastructure.persistence.AccountJDBCRepository;
 import br.cdb.feature.f002._2_infrastructure.persistence.ClosingJDBCRepository;
 import br.cdb.feature.f002._2_infrastructure.persistence.UserAccountBalanceJDBCRepository;
 import br.commons.Logger;
+import br.commons.MessageBus;
 import br.commons.Result;
 import br.commons.annotation.Lifecycle;
 import br.commons.framework.cdi.Context;
@@ -75,6 +77,10 @@ public class F002Module implements Lifecycle {
         Context.set(ClosingRepository.class, ClosingJDBCRepository::new);
         Context.set(ClosingService.class, () -> new ClosingService(Context.get(ClosingRepository.class)));
         Context.set(F002Api.class, F002ApiImpl::new);
+        Context.set(AccountCache.class, AccountCache::new);
+
+        MessageBus.subscribe(Context.get(AccountCache.class));
+
         return Result.success();
     }
 }
