@@ -12,6 +12,8 @@ import jakarta.ws.rs.Path;
 import jakarta.ws.rs.core.Response;
 import lombok.val;
 import org.jspecify.annotations.NullMarked;
+import br.commons.MessageBus;
+import br.cdb.core.security.SessionEvents;
 
 import static br.cdb.core.web.HTTPRequest.TOKEN_HEADER;
 
@@ -50,6 +52,7 @@ public class LoginResource {
         // para ir de uma à outra — a sessão carrega as duas.
         val session = tokenStore.open(user.id(), personId, user.username());
         Logger.debug("LOGIN => '%s' (person %s) issued token", request.username(), personId);
+        MessageBus.submit(new SessionEvents.Login(personId));
         return Response.ok()
                 .header(TOKEN_HEADER, session.token())
                 .header(USER_ID_HEADER, personId)

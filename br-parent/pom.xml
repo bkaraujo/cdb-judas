@@ -261,7 +261,7 @@
                     <rulesets>
                         <ruleset>${maven.multiModuleProjectDirectory}/config/pmd/ruleset.xml</ruleset>
                     </rulesets>
-                    <targetJdk>21</targetJdk>
+                    <targetJdk>${maven.compiler.target}</targetJdk>
                     <includeTests>false</includeTests>
                     <printFailingErrors>true</printFailingErrors>
                     <failOnViolation>true</failOnViolation>
