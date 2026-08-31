@@ -44,6 +44,7 @@ class ReadUseCaseTest extends AbstractUseCaseTest {
         Context.remove(ReadUseCases.class);
         guards(true);
         reads = new ReadUseCase();
+        populateCacheFor(UUID.fromString(PERSON_ID));
     }
 
     /** Dublê de {@link UserGuards}: bean {@code @RequestScoped} resolvido por chamada pelo use case. */
@@ -59,7 +60,7 @@ class ReadUseCaseTest extends AbstractUseCaseTest {
     }
 
     private Account seedAccount() {
-        return accountRepository().save(new Account(UUID.randomUUID(), "Banco", Account.Type.CHECKING, true));
+        return accountRepository().save(new Account(UUID.randomUUID(), "Banco", Account.Type.CHECKING, true, PERSON_ID, null, null, null, null, null, null, null));
     }
 
     private CreditCard seedCard(UUID accountId, String last4) {

@@ -31,6 +31,7 @@ import static org.junit.jupiter.api.Assertions.*;
  */
 class WriteUseCaseTest extends AbstractUseCaseTest {
 
+    private static final String PERSON_ID = UUID.randomUUID().toString();
     private WriteUseCase useCase;
 
     @BeforeEach
@@ -40,15 +41,16 @@ class WriteUseCaseTest extends AbstractUseCaseTest {
         Context.remove(ReadUseCase.class);
         Context.remove(ReadUseCases.class);
         useCase = new WriteUseCase();
+        populateCacheFor(UUID.fromString(PERSON_ID));
     }
 
     private Account seedChecking() {
-        val acc = new Account(UUID.randomUUID(), "Banco", Account.Type.CHECKING, true);
+        val acc = new Account(UUID.randomUUID(), "Banco", Account.Type.CHECKING, true, PERSON_ID, null, null, null, null, null, null, null);
         return accountRepository().save(acc);
     }
 
     private Account seedInactive() {
-        val acc = new Account(UUID.randomUUID(), "Banco Inativo", Account.Type.CHECKING, false);
+        val acc = new Account(UUID.randomUUID(), "Banco Inativo", Account.Type.CHECKING, false, PERSON_ID, null, null, null, null, null, null, null);
         return accountRepository().save(acc);
     }
 
