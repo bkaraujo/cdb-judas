@@ -23,6 +23,13 @@ import br.cdb.feature.f010._0_domain.repository.ImportRuleTriggerRepository;
 import br.cdb.feature.f010._1_application.service.ImportRuleService;
 import br.commons.MessageBus;
 import br.commons.framework.cdi.Context;
+import br.cdb.core.cache.CacheWorker;
+import br.cdb.core.security.SessionEvents;
+import br.cdb.feature.f003._1_application.cache.CreditCardCache;
+import br.cdb.feature.f004._1_application.cache.TagCache;
+import br.cdb.feature.f005._1_application.cache.CategoryCache;
+import br.cdb.feature.f010._1_application.cache.ImportRuleCache;
+import br.cdb.feature.f002._1_application.cache.AccountCache;
 import org.jspecify.annotations.NullMarked;
 import org.junit.jupiter.api.BeforeEach;
 
@@ -95,6 +102,28 @@ public abstract class AbstractUseCaseTest {
         // O par de f000 guarda os dois services acima em campo: precisa cair junto com eles.
         Context.remove(br.cdb.feature.f000._1_application.usecase.ReadUseCase.class);
         Context.remove(br.cdb.feature.f000._1_application.usecase.WriteUseCase.class);
+
+        // Registra os caches e inscreve no MessageBus para que possam ser preenchidos nos testes de UseCase.
+        Context.set(TagCache.class, TagCache::new);
+        MessageBus.subscribe(Context.get(TagCache.class));
+        Context.set(CategoryCache.class, CategoryCache::new);
+        MessageBus.subscribe(Context.get(CategoryCache.class));
+        Context.set(ImportRuleCache.class, ImportRuleCache::new);
+        MessageBus.subscribe(Context.get(ImportRuleCache.class));
+        Context.set(CreditCardCache.class, CreditCardCache::new);
+        MessageBus.subscribe(Context.get(CreditCardCache.class));
+        Context.set(AccountCache.class, AccountCache::new);
+        MessageBus.subscribe(Context.get(AccountCache.class));
+    }
+
+    /** Popula o cache off-heap para uma pessoa (disparando SessionEvents.Login sincronamente). */
+    protected void populateCacheFor(java.util.UUID personId) {
+        MessageBus.submit(new SessionEvents.Login(personId.toString()));
+        try {
+            CacheWorker.waitForPending();
+        } catch (InterruptedException | java.util.concurrent.TimeoutException | java.util.concurrent.ExecutionException e) {
+            throw new RuntimeException(e);
+        }
     }
 
 }

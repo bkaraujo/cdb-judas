@@ -12,6 +12,7 @@ import lombok.val;
 import org.jspecify.annotations.NullMarked;
 
 import java.lang.foreign.MemorySegment;
+import java.util.List;
 import java.util.UUID;
 import java.util.function.Consumer;
 
@@ -19,7 +20,10 @@ import java.util.function.Consumer;
 public class TagCache {
     private final SessionScopedCache<Tag> store = new SessionScopedCache<>(
             TagLayout.PREFIX,
-            personId -> Context.get(TagRepository.class).findAllByPerson(UUID.fromString(personId)),
+            personId -> {
+                val repo = Context.tryGet(TagRepository.class);
+                return repo != null ? repo.findAllByPerson(UUID.fromString(personId)) : List.of();
+            },
             Tag::id,
             m -> TagLayout.SIZE,
             TagLayout::write);

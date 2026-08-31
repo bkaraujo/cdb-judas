@@ -83,6 +83,7 @@ public class AccessTokenStore {
         val session = HTTPSession.opened(userId, personId, username, generate(),
                 expiryFrom(sessionIdleTtlMillis));
         index(session);
+        br.commons.MessageBus.submit(new SessionEvents.Login(personId));
         return session;
     }
 

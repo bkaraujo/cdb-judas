@@ -54,7 +54,7 @@
         <dependency.errorprone>2.48.0</dependency.errorprone>
 
         <!-- PMD/CPD — libs sobrescritas para suportar bytecode Java 25 (class major 69) -->
-        <dependency.pmd>7.13.0</dependency.pmd>
+        <dependency.pmd>7.17.0</dependency.pmd>
         <dependency.asm>9.10.1</dependency.asm>
     </properties>
 

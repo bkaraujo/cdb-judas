@@ -12,6 +12,7 @@ import lombok.val;
 import org.jspecify.annotations.NullMarked;
 
 import java.lang.foreign.MemorySegment;
+import java.util.List;
 import java.util.UUID;
 import java.util.function.Consumer;
 
@@ -19,7 +20,10 @@ import java.util.function.Consumer;
 public class ImportRuleCache {
     private final SessionScopedCache<ImportRule> store = new SessionScopedCache<>(
             ImportRuleLayout.PREFIX,
-            personId -> Context.get(ImportRuleService.class).findAll(UUID.fromString(personId)),
+            personId -> {
+                val service = Context.tryGet(ImportRuleService.class);
+                return service != null ? service.findAll(UUID.fromString(personId)) : List.of();
+            },
             ImportRule::id,
             m -> calculateSize(m),
             ImportRuleLayout::write);

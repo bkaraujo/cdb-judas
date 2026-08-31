@@ -36,6 +36,7 @@ class ReadUseCaseTest extends AbstractUseCaseTest {
         Context.remove(ReadUseCase.class);
         Context.remove(WriteUseCase.class);
         reads = new ReadUseCase();
+        populateCacheFor(PERSON_ID);
     }
 
     private Tag seedTag(UUID personId, String name) {

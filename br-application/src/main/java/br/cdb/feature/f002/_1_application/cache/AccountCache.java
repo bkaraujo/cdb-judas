@@ -12,6 +12,7 @@ import lombok.val;
 import org.jspecify.annotations.NullMarked;
 
 import java.lang.foreign.MemorySegment;
+import java.util.List;
 import java.util.UUID;
 import java.util.function.Consumer;
 
@@ -19,7 +20,10 @@ import java.util.function.Consumer;
 public class AccountCache {
     private final SessionScopedCache<Account> store = new SessionScopedCache<>(
             AccountLayout.PREFIX,
-            personId -> Context.get(AccountService.class).findAllByPerson(personId),
+            personId -> {
+                val service = Context.tryGet(AccountService.class);
+                return service != null ? service.findAllByPerson(personId) : List.of();
+            },
             Account::id,
             m -> AccountLayout.SIZE,
             AccountLayout::write);

@@ -13,6 +13,7 @@ import lombok.val;
 import org.jspecify.annotations.NullMarked;
 
 import java.lang.foreign.MemorySegment;
+import java.util.List;
 import java.util.UUID;
 import java.util.function.Consumer;
 
@@ -20,7 +21,10 @@ import java.util.function.Consumer;
 public class CreditCardCache {
     private final SessionScopedCache<CreditCard> store = new SessionScopedCache<>(
             CreditCardLayout.PREFIX,
-            personId -> Context.get(CreditCardService.class).findAllByPerson(personId),
+            personId -> {
+                val service = Context.tryGet(CreditCardService.class);
+                return service != null ? service.findAllByPerson(personId) : List.of();
+            },
             CreditCard::id,
             m -> CreditCardLayout.SIZE,
             CreditCardLayout::write);

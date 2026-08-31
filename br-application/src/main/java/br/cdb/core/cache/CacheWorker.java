@@ -39,10 +39,19 @@ public final class CacheWorker {
         }, WORKER);
     }
 
-    static void awaitIdle() throws InterruptedException {
+    public static void awaitIdle() throws InterruptedException {
         WORKER.shutdown();
         if (!WORKER.awaitTermination(10, java.util.concurrent.TimeUnit.SECONDS)) {
             WORKER.shutdownNow();
         }
+    }
+
+    /** Espera todas as tarefas pending terminarem SEM desligar o worker (para testes). */
+    public static void waitForPending() throws InterruptedException, java.util.concurrent.ExecutionException, java.util.concurrent.TimeoutException {
+        // Submete uma tarefa marcadora que retorna quando executada. Quando obtiver o resultado,
+        // todas as tarefas anteriores já completaram (FIFO do executor).
+        CompletableFuture<Void> marker = new CompletableFuture<>();
+        submit(() -> marker.complete(null));
+        marker.get(10, java.util.concurrent.TimeUnit.SECONDS);
     }
 }
