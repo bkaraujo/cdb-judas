@@ -2,12 +2,16 @@ package br.cdb.feature.f005._1_application.usecase;
 
 import br.cdb.feature.f005._0_domain.model.Category;
 import br.cdb.feature.f005._0_domain.model.Nature;
+import br.cdb.feature.f005._1_application.cache.CategoryCache;
+import br.cdb.feature.f005._1_application.cache.CategoryLayout;
 import br.cdb.feature.f005._1_application.service.UserCategoryService;
 import br.commons.Result;
 import br.commons.business.BusinessError;
 import br.commons.framework.cdi.Context;
+import lombok.val;
 import org.jspecify.annotations.NullMarked;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
@@ -24,15 +28,22 @@ import java.util.UUID;
  *
  * <p>Nota: o nome simples coincide com o {@code ReadUseCase} de {@code f002}/{@code f003}/{@code f004}
  * — quem precisa de mais de um referencia os demais pelo nome completo.
+ *
+ * <p>Lê do cache off-heap; nunca do banco (ver .claude/plan.md, D1).
  */
 @NullMarked
 public class ReadUseCase {
 
+    private final CategoryCache cache = Context.tryGet(CategoryCache.class);
     private final UserCategoryService service = Context.tryGet(UserCategoryService.class);
 
     /** Categorias da pessoa + as duas globais de transferência. */
     public List<Category> categories(UUID personId) {
-        return service.findAll(personId);
+        val result = new ArrayList<Category>();
+        cache.forEach(personId, v -> {
+            result.add(new Category(v.id(), v.personId(), v.nature(), v.name(), v.parentId(), v.isSystem(), v.active(), v.createdAt(), v.updatedAt()));
+        });
+        return result;
     }
 
     /**

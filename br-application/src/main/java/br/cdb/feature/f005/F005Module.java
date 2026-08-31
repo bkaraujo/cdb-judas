@@ -6,6 +6,7 @@ import br.cdb.feature.f000._0_domain.event.UserEvents;
 import br.cdb.feature.f005._0_domain.model.Category;
 import br.cdb.feature.f005._0_domain.model.Nature;
 import br.cdb.feature.f005._0_domain.repository.CategoryRepository;
+import br.cdb.feature.f005._1_application.cache.CategoryCache;
 import br.cdb.feature.f005._1_application.service.UserCategoryService;
 import br.cdb.feature.f005._2_infrastructure.F005ApiImpl;
 import br.cdb.feature.f005._2_infrastructure.persistence.CategoryJDBCRepository;
@@ -68,7 +69,9 @@ public class F005Module implements Lifecycle {
 
         Context.set(CategoryRepository.class, CategoryJDBCRepository::new);
         Context.set(F005Api.class, F005ApiImpl::new);
+        Context.set(CategoryCache.class, CategoryCache::new);
 
+        MessageBus.subscribe(Context.get(CategoryCache.class));
         MessageBus.subscribe(new Object(){
             @MessageListener
             public MessageResult on(UserEvents.Created event) {
