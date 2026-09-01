@@ -58,8 +58,9 @@ public class ReadUseCase {
         return service.findOrCreateTransferCategory(nature);
     }
 
-    public Result<Category, BusinessError> category(UUID id) {
-        return service.findById(id);
+    public Result<Category, BusinessError> category(UUID personId, UUID id) {
+        val result = cache.find(personId.toString(), id);
+        return result.isSuccess() ? Result.success(result.get()) : service.findById(id);
     }
 
     /** Ids da categoria + toda a subárvore; falha se a categoria não é da pessoa ou é de sistema. */

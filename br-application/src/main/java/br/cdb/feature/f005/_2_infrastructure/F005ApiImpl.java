@@ -5,10 +5,14 @@ import br.cdb.core.web.HTTPApi;
 import br.cdb.core.web.HTTPRequest;
 import br.cdb.feature.f005.F005Api;
 import br.cdb.feature.f005._0_domain.model.Nature;
+import br.cdb.feature.f005._1_application.usecase.ReadUseCase;
 import br.cdb.feature.f005._2_infrastructure.web.CategoryResource;
+import br.commons.Result;
+import br.commons.business.BusinessException;
+import br.commons.framework.cdi.Context;
+import lombok.val;
 import org.jspecify.annotations.NullMarked;
 
-import java.util.Map;
 import java.util.UUID;
 
 /**
@@ -57,13 +61,10 @@ public class F005ApiImpl extends AbstractApiClient implements F005Api {
      */
     @Override
     public Nature natureOf(UUID categoryId) {
-        final Map<UUID, Nature> cache = HTTPRequest.cache(NATURE_CACHE);
-        if (cache == null) return fetchNature(categoryId);
-
-        return cache.computeIfAbsent(categoryId, this::fetchNature);
-    }
-
-    private Nature fetchNature(UUID categoryId) {
-        return get("/categories/" + categoryId + "/nature", CategoryNatureDto.class).nature();
+        val reads = Context.tryGet(ReadUseCase.class);
+        return switch (reads.category(UUID.fromString(HTTPRequest.personId()), categoryId)) {
+            case Result.Success(var category) -> category.nature();
+            case Result.Failure(var error) -> throw new BusinessException(error);
+        };
     }
 }

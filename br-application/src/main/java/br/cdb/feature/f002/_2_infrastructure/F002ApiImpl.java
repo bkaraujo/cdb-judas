@@ -4,9 +4,11 @@ import br.cdb.core.web.AbstractApiClient;
 import br.cdb.core.web.HTTPApi;
 import br.cdb.feature.f000._0_domain.ClosedPeriod;
 import br.cdb.feature.f002.F002Api;
+import br.cdb.feature.f002._1_application.usecase.ReadUseCase;
 import br.cdb.feature.f002._2_infrastructure.web.AccountBalanceResource;
 import br.cdb.feature.f002._2_infrastructure.web.AccountResource;
 import br.cdb.feature.f002._2_infrastructure.web.ClosingResource;
+import br.commons.framework.cdi.Context;
 import lombok.val;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
@@ -36,16 +38,23 @@ import java.util.UUID;
 @NullMarked
 public class F002ApiImpl extends AbstractApiClient implements F002Api {
 
+    /** Bean CDI resolvido a cada chamada: nunca guardado em campo. */
+    private static ReadUseCase reads() {
+        return Context.tryGet(ReadUseCase.class);
+    }
+
     // ── Contas ──────────────────────────────────────────────────────
 
     @Override
     public List<AccountView> accounts() {
-        return list("/accounts", AccountView[].class);
+        return unwrap(reads().accounts(), views -> views.stream()
+                .map(v -> AccountView.from(v.account(), v.cards(), v.transactions()))
+                .toList());
     }
 
     @Override
     public AccountView account(UUID id) {
-        return get("/accounts/" + id, AccountView.class);
+        return unwrap(reads().account(id), v -> AccountView.from(v.account(), v.cards(), v.transactions()));
     }
 
     @Override
@@ -70,17 +79,17 @@ public class F002ApiImpl extends AbstractApiClient implements F002Api {
     /** Saldo do período para todas as contas da pessoa numa só chamada. */
     @Override
     public List<BalanceView> balances(YearMonth period) {
-        return list("/accounts/balance?period=" + periodQs(period), BalanceView[].class);
+        return unwrap(reads().balances(period), balances -> balances.stream().map(BalanceView::of).toList());
     }
 
     @Override
     public BalanceView monthlyBalance(UUID accountId, YearMonth period) {
-        return get("/accounts/" + accountId + "/balance?period=" + periodQs(period), BalanceView.class);
+        return unwrap(reads().monthlyBalance(accountId, period), BalanceView::of);
     }
 
     @Override
     public List<BalanceView> yearBalances(UUID accountId, int year) {
-        return list("/accounts/" + accountId + "/balance?year=" + year, BalanceView[].class);
+        return unwrap(reads().yearBalances(accountId, year), balances -> balances.stream().map(BalanceView::of).toList());
     }
 
     // ── Fechamento ─────────────────────────────────────────────────
@@ -95,8 +104,7 @@ public class F002ApiImpl extends AbstractApiClient implements F002Api {
     /** Período de fechamento contábil vigente ({@code yyyy-MM}) ou {@code null} quando não há. */
     @Override
     public ClosedPeriod closingPeriod() {
-        val result = get("/accounts/closing", ClosingDto.class).period();
-        return ClosedPeriod.of(result);
+        return new ClosedPeriod(reads().closingPeriod().orElse(null));
     }
 
     @Override

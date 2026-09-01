@@ -2,7 +2,6 @@ package br.cdb.feature.f010._1_application.usecase;
 
 import br.cdb.feature.f010._0_domain.model.ImportRule;
 import br.cdb.feature.f010._1_application.cache.ImportRuleCache;
-import br.cdb.feature.f010._1_application.service.ImportRuleService;
 import br.commons.Result;
 import br.commons.business.BusinessError;
 import br.commons.framework.cdi.Context;
@@ -30,7 +29,6 @@ import java.util.UUID;
 public class ReadUseCase {
 
     private final ImportRuleCache cache = Context.tryGet(ImportRuleCache.class);
-    private final ImportRuleService service = Context.tryGet(ImportRuleService.class);
 
     public List<ImportRule> rules(UUID personId) {
         val result = cache.list(personId.toString());
@@ -40,12 +38,10 @@ public class ReadUseCase {
         return new ArrayList<>(result.get());
     }
 
-    /** Guarda implícita: {@code NotFound} quando a regra existe mas é de outra pessoa. */
+    /** Guarda implícita: {@code NotFound} quando a regra existe mas é de outra pessoa (ou o cache
+     *  não tem entrada nenhuma pra ela). */
     public Result<ImportRule, BusinessError> rule(UUID personId, UUID id) {
         return cache.find(personId.toString(), id)
-                .mapFailure(error -> (BusinessError) new BusinessError.BusinessRule("core.cache.unavailable"))
-                .flatMap(rule -> rule != null
-                        ? Result.success(rule)
-                        : Result.failure(new BusinessError.NotFound("error.rule.not-found", id)));
+                .mapFailure(error -> (BusinessError) new BusinessError.NotFound("error.rule.not-found", id));
     }
 }

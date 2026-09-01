@@ -3,7 +3,10 @@ package br.cdb.feature.f003._2_infrastructure;
 import br.cdb.core.web.AbstractApiClient;
 import br.cdb.core.web.HTTPApi;
 import br.cdb.feature.f003.F003Api;
+import br.cdb.feature.f003._1_application.usecase.ReadUseCase;
 import br.cdb.feature.f003._2_infrastructure.web.AccountCardResource;
+import br.commons.framework.cdi.Context;
+import lombok.val;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 
@@ -31,7 +34,8 @@ public class F003ApiImpl extends AbstractApiClient implements F003Api {
 
     @Override
     public List<CardView> cards(UUID accountId) {
-        return list("/accounts/" + accountId + "/cards", CardView[].class);
+        val reads = Context.tryGet(ReadUseCase.class);
+        return unwrap(reads.cards(accountId), cards -> cards.stream().map(CardView::from).toList());
     }
 
     @Override

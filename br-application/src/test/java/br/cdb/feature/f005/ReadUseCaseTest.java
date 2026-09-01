@@ -86,7 +86,7 @@ class ReadUseCaseTest extends AbstractUseCaseTest {
     @Test
     @DisplayName("category inexistente → NotFound")
     void findUnknownCategory() {
-        val r = reads.category(UUID.randomUUID());
+        val r = reads.category(PERSON_ID, UUID.randomUUID());
         assertTrue(r.isFailure());
         assertInstanceOf(BusinessError.NotFound.class, ((Result.Failure<Category, BusinessError>) r).error());
     }

@@ -40,12 +40,10 @@ public class ReadUseCase {
         return new ArrayList<>(result.get());
     }
 
-    /** Guarda implícita: {@code NotFound} quando a tag existe mas é de outra pessoa. */
+    /** Guarda implícita: {@code NotFound} quando a tag existe mas é de outra pessoa (ou o cache não
+     *  tem entrada nenhuma pra ela). */
     public Result<Tag, BusinessError> tag(UUID personId, UUID tagId) {
         return cache.find(personId.toString(), tagId)
-                .mapFailure(error -> (BusinessError) new BusinessError.BusinessRule("core.cache.unavailable"))
-                .flatMap(tag -> tag != null
-                        ? Result.success(tag)
-                        : Result.failure(new BusinessError.NotFound("error.tag.not-found", tagId)));
+                .mapFailure(error -> (BusinessError) new BusinessError.NotFound("error.tag.not-found", tagId));
     }
 }

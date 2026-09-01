@@ -60,7 +60,7 @@ public class CategoryResource {
     @GET
     @Path("/{id}/nature")
     public CategoryNatureResponse nature(@PathParam("uuid") UUID uuid, @PathParam("id") UUID id) {
-        return switch (reads.category(id)) {
+        return switch (reads.category(uuid, id)) {
             case Result.Success(var category) -> new CategoryNatureResponse(category.nature());
             case Result.Failure(var error) -> throw new BusinessException(error);
         };

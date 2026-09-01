@@ -64,7 +64,10 @@ class ReadUseCaseTest extends AbstractUseCaseTest {
     }
 
     private Account seedAccount(String name) {
-        return accountRepository().save(new Account(UUID.randomUUID(), name, Account.Type.CHECKING, true));
+        val account = accountRepository().save(new Account(UUID.randomUUID(), name, Account.Type.CHECKING, true));
+        // Gravar no repositório não emite evento: o cache off-heap só enxerga o que o populate leu.
+        populateCacheFor(UUID.fromString(PERSON_ID));
+        return account;
     }
 
     private void seedBalance(Account account, YearMonth period, String value) {

@@ -5,7 +5,6 @@ import br.cdb.feature.f000._1_application.service.UserGuards;
 import br.cdb.feature.f002._1_application.service.AccountService;
 import br.cdb.feature.f003._0_domain.model.CreditCard;
 import br.cdb.feature.f003._1_application.cache.CreditCardCache;
-import br.cdb.feature.f003._1_application.service.CreditCardService;
 import br.cdb.feature.f006._1_application.usecase.ReadUseCases;
 import br.commons.Result;
 import br.commons.business.BusinessError;
@@ -35,7 +34,6 @@ import java.util.UUID;
 public class ReadUseCase {
 
     private final CreditCardCache cache = Context.tryGet(CreditCardCache.class);
-    private final CreditCardService service = Context.tryGet(CreditCardService.class);
     private final AccountService accountService = Context.tryGet(AccountService.class);
     private final ReadUseCases transactions = Context.tryGet(ReadUseCases.class);
 
@@ -60,7 +58,8 @@ public class ReadUseCase {
 
     public Result<List<CreditCard>, BusinessError> list(UUID accountId, String personId) {
         return accountService.findByIdAndPerson(accountId, personId)
-                .map(ignored -> service.findByAccountAndPerson(accountId, personId));
+                .flatMap(ignored -> list(personId))
+                .map(cards -> cards.stream().filter(c -> accountId.equals(c.accountId())).toList());
     }
 
     // ── Leituras auxiliares do lado de escrita ─────────────────────

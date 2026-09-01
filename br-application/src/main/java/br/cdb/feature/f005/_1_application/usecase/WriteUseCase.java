@@ -47,7 +47,7 @@ public class WriteUseCase {
     }
 
     public Result<Category, BusinessError> updateCategory(UUID personId, UUID id, String name, @Nullable UUID parentId, @Nullable Boolean active) {
-        return reads.category(id).flatMap(existing -> {
+        return reads.category(personId, id).flatMap(existing -> {
             if (existing.isSystem()) {
                 return Result.failure(new BusinessError.BusinessRule("f005.category.systemCannotBeModified"));
             }

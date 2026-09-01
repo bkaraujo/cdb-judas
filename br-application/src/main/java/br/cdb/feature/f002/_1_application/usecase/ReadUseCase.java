@@ -4,6 +4,7 @@ import br.cdb.core.web.HTTPRequest;
 import br.cdb.feature.f000._1_application.service.UserGuards;
 import br.cdb.feature.f002._0_domain.model.Account;
 import br.cdb.feature.f002._0_domain.model.Balance;
+import br.cdb.feature.f002._1_application.cache.AccountCache;
 import br.cdb.feature.f002._1_application.service.AccountService;
 import br.cdb.feature.f002._1_application.service.BalanceService;
 import br.cdb.feature.f002._1_application.service.ClosingService;
@@ -45,6 +46,7 @@ import java.util.UUID;
 public class ReadUseCase {
 
     private final AccountService service = Context.tryGet(AccountService.class);
+    private final AccountCache accountCache = Context.tryGet(AccountCache.class);
     private final BalanceService balanceService = Context.tryGet(BalanceService.class);
     private final CreditCardService creditCardService = Context.tryGet(CreditCardService.class);
     private final F006Api f006Api = Context.tryGet(F006Api.class);
@@ -102,11 +104,16 @@ public class ReadUseCase {
     // ── Contas (engine — guarda implícita por COD_PERSON) ──────────
 
     public Result<List<Account>, BusinessError> listAccounts(String personId) {
-        return Result.success(service.findAllByPerson(personId));
+        val result = accountCache.list(personId);
+        if (result.isFailure()) {
+            return Result.success(service.findAllByPerson(personId));
+        }
+        return Result.success(new ArrayList<>(result.get()));
     }
 
     public Result<Account, BusinessError> findAccount(UUID id, String personId) {
-        return service.findByIdAndPerson(id, personId);
+        val result = accountCache.find(personId, id);
+        return result.isSuccess() ? Result.success(result.get()) : service.findByIdAndPerson(id, personId);
     }
 
     // ── Saldos ─────────────────────────────────────────────────────

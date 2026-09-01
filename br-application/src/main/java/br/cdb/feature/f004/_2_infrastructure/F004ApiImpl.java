@@ -2,10 +2,13 @@ package br.cdb.feature.f004._2_infrastructure;
 
 import br.cdb.core.web.AbstractApiClient;
 import br.cdb.core.web.HTTPApi;
+import br.cdb.core.web.HTTPRequest;
 import br.cdb.feature.f004.F004Api;
+import br.cdb.feature.f004._1_application.usecase.ReadUseCase;
 import br.cdb.feature.f004._2_infrastructure.web.TagResource;
 import br.commons.Result;
 import br.commons.business.BusinessError;
+import br.commons.framework.cdi.Context;
 import lombok.val;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
@@ -36,7 +39,9 @@ public class F004ApiImpl extends AbstractApiClient implements F004Api {
 
     @Override
     public List<TagView> tags() {
-        return list("/tags", TagView[].class);
+        val reads = Context.tryGet(ReadUseCase.class);
+        val personId = UUID.fromString(HTTPRequest.personId());
+        return reads.tags(personId).stream().map(TagView::from).toList();
     }
 
     @Override

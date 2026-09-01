@@ -2,10 +2,10 @@ package br.commons.cache;
 
 import br.commons.Logger;
 import br.commons.Result;
+import br.commons.debug.Execution;
 import br.commons.platform.NativeCache;
 import lombok.val;
 import org.jspecify.annotations.NullMarked;
-import org.jspecify.annotations.Nullable;
 
 import java.lang.foreign.MemorySegment;
 import java.util.ArrayList;
@@ -47,76 +47,92 @@ public abstract class AbstractCache<T> {
     protected abstract T mapToDomain(MemorySegment segment);
 
     public CompletableFuture<Result<Void, String>> onLogin(String personId) {
-        val future = new CompletableFuture<NativeCache>();
-        registry.put(personId, future);
+        return Execution.nanos(() -> {
+            val future = new CompletableFuture<NativeCache>();
+            registry.put(personId, future);
 
-        return CacheWorker.submitResult(() -> {
-            val cache = new NativeCache();
-            val errors = new ArrayList<String>();
-            try {
-                for (val model : loader.apply(personId)) {
-                    store(cache, model).ifFailure(errors::add);
+            return CacheWorker.submitResult(() -> {
+                val cache = new NativeCache();
+                val errors = new ArrayList<String>();
+                try {
+                    for (val model : loader.apply(personId)) {
+                        store(cache, model).ifFailure(errors::add);
+                    }
+                } finally {
+                    future.complete(cache);
                 }
-            } finally {
-                future.complete(cache);
-            }
-            return errors.isEmpty()
-                    ? Result.success()
-                    : Result.failure("cache populate incomplete for " + personId + ": " + errors);
+                return errors.isEmpty()
+                        ? Result.success()
+                        : Result.failure("cache populate incomplete for " + personId + ": " + errors);
+            });
         });
     }
 
     public CompletableFuture<Result<Void, String>> onLogout(String personId) {
-        val future = registry.remove(personId);
-        if (future == null) return CompletableFuture.completedFuture(Result.success());
+        return Execution.nanos(() -> {
+            val future = registry.remove(personId);
+            if (future == null) return CompletableFuture.completedFuture(Result.success());
 
-        return future.handle((cache, thrown) -> {
-            if (thrown != null) return Result.failure(thrown.toString());
-            try {
-                cache.close();
-                return Result.success();
-            } catch (Exception e) {
-                Logger.warn("Cache close failed: %s", e.toString());
-                return Result.failure(e.toString());
-            }
+            return future.handle((cache, thrown) -> {
+                if (thrown != null) return Result.failure(thrown.toString());
+                try {
+                    cache.close();
+                    return Result.success();
+                } catch (Exception e) {
+                    Logger.warn("Cache close failed: %s", e.toString());
+                    return Result.failure(e.toString());
+                }
+            });
         });
     }
 
     public CompletableFuture<Result<Void, String>> upsert(String personId, T model) {
-        return onCache(personId, cache -> store(cache, model));
-    }
-
-    public CompletableFuture<Result<Void, String>> evict(String personId, UUID id) {
-        return onCache(personId, cache -> cache.remove(prefix + id));
-    }
-
-    public CompletableFuture<Result<Void, String>> evictEverywhere(UUID id) {
-        val pending = registry.keySet().stream()
-                .map(personId -> onCache(personId, cache -> cache.remove(prefix + id)))
-                .toList();
-
-        return CompletableFuture.allOf(pending.toArray(CompletableFuture[]::new))
-                .thenApply(ignored -> pending.stream()
-                        .map(CompletableFuture::join)
-                        .filter(Result::isFailure)
-                        .findFirst()
-                        .orElse(Result.success()));
-    }
-
-    public Result<Set<T>, String> list(String personId) {
-        return read(personId, Result.<Set<T>, String>success(Set.of()), cache -> {
-            val set = new java.util.LinkedHashSet<T>();
-            val traversal = cache.forEach(prefix, (key, seg) -> set.add(mapToDomain(seg)));
-            if (traversal instanceof Result.Failure<Void, String> f) return Result.failure(f.error());
-            return Result.success(set);
+        return Execution.nanos(() -> {
+            return onCache(personId, cache -> store(cache, model));
         });
     }
 
-    public Result<@Nullable T, String> find(String personId, UUID id) {
-        return read(personId, Result.success(null), cache -> {
-            val segment = cache.get(prefix + id);
-            if (segment.isFailure()) return Result.success(null);
-            return Result.success(mapToDomain(segment.get()));
+    public CompletableFuture<Result<Void, String>> evict(String personId, UUID id) {
+        return Execution.nanos(() -> {
+            return onCache(personId, cache -> cache.remove(prefix + id));
+        });
+    }
+
+    public CompletableFuture<Result<Void, String>> evictEverywhere(UUID id) {
+        return Execution.nanos(() -> {
+            val pending = registry.keySet().stream()
+                    .map(personId -> onCache(personId, cache -> cache.remove(prefix + id)))
+                    .toList();
+
+            return CompletableFuture.allOf(pending.toArray(CompletableFuture[]::new))
+                    .thenApply(ignored -> pending.stream()
+                            .map(CompletableFuture::join)
+                            .filter(Result::isFailure)
+                            .findFirst()
+                            .orElse(Result.success()));
+        });
+    }
+
+    public Result<Set<T>, String> list(String personId) {
+        return Execution.nanos(() -> {
+            return read(personId, Result.<Set<T>, String>success(Set.of()), cache -> {
+                val set = new java.util.LinkedHashSet<T>();
+                val traversal = cache.forEach(prefix, (key, seg) -> set.add(mapToDomain(seg)));
+                if (traversal instanceof Result.Failure<Void, String> f) return Result.failure(f.error());
+                return Result.success(set);
+            });
+        });
+    }
+
+    /** Nunca guarda/devolve {@code null}: ausência (cache não populado pra {@code personId} ou
+     *  chave sem entrada) é sempre {@link Result.Failure}, nunca {@code Result.success(null)}. */
+    public Result<T, String> find(String personId, UUID id) {
+        return Execution.nanos(() -> {
+            val notFound = Result.<T>failure("not found: " + prefix + id);
+            return read(personId, notFound, cache -> {
+                val segment = cache.get(prefix + id);
+                return segment.isFailure() ? notFound : Result.success(mapToDomain(segment.get()));
+            });
         });
     }
 

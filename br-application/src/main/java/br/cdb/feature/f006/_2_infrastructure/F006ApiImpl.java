@@ -2,21 +2,27 @@ package br.cdb.feature.f006._2_infrastructure;
 
 import br.cdb.core.web.AbstractApiClient;
 import br.cdb.core.web.HTTPApi;
+import br.cdb.core.web.HTTPRequest;
+import br.cdb.feature.f005.F005Api;
+import br.cdb.feature.f005._0_domain.model.Nature;
 import br.cdb.feature.f006.F006Api;
 import br.cdb.feature.f006._0_domain.model.Status;
+import br.cdb.feature.f006._0_domain.model.Transaction;
+import br.cdb.feature.f006._1_application.usecase.ReadUseCases;
 import br.cdb.feature.f006._2_infrastructure.web.TransactionResource;
 import br.cdb.feature.f006._2_infrastructure.web.TransferResource;
+import br.commons.framework.cdi.Context;
 import lombok.val;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
-import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
-import java.util.stream.Collectors;
 
 /**
  * Cliente tipado da própria API pública de {@code f006}, para consumo cross-slice: publicado pela
@@ -56,19 +62,47 @@ public class F006ApiImpl extends AbstractApiClient implements F006Api {
 
     @Override
     public List<TransactionView> transactions(@Nullable String status, @Nullable LocalDate dateFrom, @Nullable LocalDate dateTo) {
-        return list("/accounts/transactions" + query(status, dateFrom, dateTo), TransactionView[].class);
+        return queryTransactions(null, status, dateFrom, dateTo);
     }
 
     @Override
     public List<TransactionView> transactionsByAccount(UUID accountId, @Nullable String status, @Nullable LocalDate dateFrom, @Nullable LocalDate dateTo) {
-        return list("/accounts/" + accountId + "/transactions" + query(status, dateFrom, dateTo), TransactionView[].class);
+        return queryTransactions(accountId, status, dateFrom, dateTo);
     }
 
     @Override
     public List<UUID> transactionIdsByCategories(Collection<UUID> categoryIds) {
         if (categoryIds.isEmpty()) return List.of();
-        val qs = categoryIds.stream().map(UUID::toString).collect(Collectors.joining(","));
-        return list("/accounts/transactions/by-category?categoryIds=" + qs, UUID[].class);
+        val reads = Context.tryGet(ReadUseCases.class);
+        val personId = UUID.fromString(HTTPRequest.personId());
+        return reads.transactionIdsByCategories(personId, categoryIds);
+    }
+
+    /** Mesma consulta usada por {@code TransactionResource} — {@link ReadUseCases#transactions(UUID,
+     *  ReadUseCases.TransactionFilter)} já resolve categoria/tags por transação. */
+    private static List<TransactionView> queryTransactions(
+            @Nullable UUID accountId, @Nullable String status, @Nullable LocalDate dateFrom, @Nullable LocalDate dateTo) {
+        val reads = Context.tryGet(ReadUseCases.class);
+        val personId = UUID.fromString(HTTPRequest.personId());
+        val filter = new ReadUseCases.TransactionFilter(accountId, null, dateFrom, dateTo, status, null);
+        val natureCache = new HashMap<UUID, Nature>();
+        return unwrap(reads.transactions(personId, filter),
+                transactions -> transactions.stream().map(t -> toView(t, natureCache)).toList());
+    }
+
+    /** Espelha {@code RequestMapper.toDto}: sinal do valor e {@code type} vêm da natureza efetiva
+     *  (pós-estorno), não da natureza crua da categoria. {@code natureCache} evita um lookup de
+     *  categoria por transação — mesmo memo por chamada que {@code ReadUseCases.filtered} já usa. */
+    private static TransactionView toView(Transaction t, Map<UUID, Nature> natureCache) {
+        val categoryId = t.categoryId();
+        val categoryNature = categoryId == null
+                ? Nature.EXPENSE
+                : natureCache.computeIfAbsent(categoryId, id -> Context.get(F005Api.class).natureOf(id));
+        int signal = t.calculateSignal(categoryNature);
+        Nature effectiveNature = signal > 0 ? Nature.INCOME : Nature.EXPENSE;
+        return new TransactionView(t.id(), t.accountId(), t.description(),
+                BigDecimal.valueOf(signal).multiply(t.amount()), t.date(), t.status(), effectiveNature,
+                t.groupId(), t.cardId());
     }
 
     // ── Escrita ────────────────────────────────────────────────────
@@ -101,13 +135,4 @@ public class F006ApiImpl extends AbstractApiClient implements F006Api {
                 new TransferBody(fromAccountId, toAccountId, date, amount), TransactionDto.class);
     }
 
-    // ── Helpers ────────────────────────────────────────────────────
-
-    private static String query(@Nullable String status, @Nullable LocalDate dateFrom, @Nullable LocalDate dateTo) {
-        val params = new ArrayList<String>();
-        if (status != null) params.add("status=" + status);
-        if (dateFrom != null) params.add("dateFrom=" + dateFrom);
-        if (dateTo != null) params.add("dateTo=" + dateTo);
-        return params.isEmpty() ? "" : "?" + String.join("&", params);
-    }
 }
