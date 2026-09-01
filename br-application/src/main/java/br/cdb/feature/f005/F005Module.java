@@ -1,8 +1,8 @@
 package br.cdb.feature.f005;
 
 import br.cdb.core.persistence.Database;
-import br.cdb.feature.f000._0_domain.event.CategoryDeleted;
 import br.cdb.feature.f000._0_domain.event.UserEvents;
+import br.cdb.feature.f005._0_domain.event.CategoryEvents;
 import br.cdb.feature.f005._0_domain.model.Category;
 import br.cdb.feature.f005._0_domain.model.Nature;
 import br.cdb.feature.f005._0_domain.repository.CategoryRepository;
@@ -152,11 +152,10 @@ public class F005Module implements Lifecycle {
                 }
             }
         });
-
-                MessageBus.subscribe(new Object() {
-                    @MessageListener
-                    public MessageResult on(CategoryDeleted event) {
-                Context.tryGet(UserCategoryService.class).deletePlain(event.categoryIds(), event.personId());
+        MessageBus.subscribe(new Object() {
+            @MessageListener
+            public MessageResult on(CategoryEvents.Deleted event) {
+                Context.tryGet(UserCategoryService.class).deletePlain(event.categoryIds());
                 return MessageResult.CONSUMED;
             }
         });

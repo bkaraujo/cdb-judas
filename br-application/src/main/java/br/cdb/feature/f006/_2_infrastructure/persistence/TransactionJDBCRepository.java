@@ -23,7 +23,7 @@ import java.util.*;
  * {@code paymentDate}/{@code groupId}/{@code notes} são opcionais. {@code COD_PERSON} é derivado da
  * conta ({@link AccountOwnerLookup}) — o comando de criação não carrega personId.
  *
- * <p>{@code Transaction.categoryId}/{@code tagIds} moram em tabelas à parte
+ * <p>{@code Transaction.categoryIds}/{@code tagIds} moram em tabelas à parte
  * ({@code F006_TRANSACTION_CATEGORY}/{@code F006_TRANSACTION_TAG}), cada uma com porta e adaptador
  * próprios ({@link TransactionCategoryJDBCRepository}/{@link TransactionTagJDBCRepository}):
  * {@link #map} devolve sempre {@code null}/vazio nesses componentes e {@link #values} não os grava.

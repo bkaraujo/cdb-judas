@@ -11,7 +11,7 @@ import java.util.List;
 import java.util.UUID;
 
 /**
- * Lançamento. {@code categoryId} veio do antigo overlay {@code UserTransaction}: mora na tabela
+ * Lançamento. {@code categoryIds} veio do antigo overlay {@code UserTransaction}: mora na tabela
  * {@code F006_TRANSACTION_CATEGORY} (PK {@code (COD_TRANSACTION, COD_PERSON)}), não em
  * {@code F006_TRANSACTION} — {@code TransactionJDBCRepository#save} não o grava junto; a escrita do
  * vínculo é porta própria, {@code TransactionCategoryRepository}. Nas leituras da engine vem

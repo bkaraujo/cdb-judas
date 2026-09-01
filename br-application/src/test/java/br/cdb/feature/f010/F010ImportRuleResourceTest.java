@@ -36,7 +36,7 @@ public class F010ImportRuleResourceTest extends BaseHttpTest {
                 .body("triggers.size()", is(1))
                 .body("triggers[0]", is("Companhia de Saneamento"))
                 .body("accountId", is((Object) null))
-                .body("categoryId", is((Object) null))
+                .body("categoryIds", is((Object) null))
                 .body("planned", is(nullValue()))
                 .extract().jsonPath().getString("id");
 

@@ -12,7 +12,7 @@ import java.util.*;
  */
 @NullMarked
 public interface TransactionCategoryRepository {
-    /** Upsert do vínculo; {@code categoryId} nulo apaga a linha (a coluna é NOT NULL). */
+    /** Upsert do vínculo; {@code categoryIds} nulo apaga a linha (a coluna é NOT NULL). */
     void saveCategory(UUID transactionId, UUID personId, @Nullable UUID categoryId);
 
     /** Categoria da transação, se houver vínculo para {@code personId}. */

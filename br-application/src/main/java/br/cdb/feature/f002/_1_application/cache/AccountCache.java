@@ -66,7 +66,7 @@ public class AccountCache extends AbstractCache<Account> {
 
     @MessageListener
     public MessageResult onDeleted(AccountEvents.Deleted e) {
-        evictEverywhere(e.id());
+        evict(e.personId(), e.id());
         return MessageResult.CONSUMED;
     }
 }

@@ -4,6 +4,8 @@ import br.cdb.core.web.InternalCall;
 import br.cdb.feature.f000._0_domain.SSE;
 import br.cdb.feature.f000._0_domain.event.AccountStreamEvents;
 import br.cdb.feature.f002.F002Api;
+import br.cdb.feature.f002._0_domain.event.AccountEvents;
+import br.cdb.feature.f003._0_domain.event.CreditCardEvents;
 import br.commons.MessageBus;
 import br.commons.framework.cdi.Context;
 import br.commons.framework.message.MessageListener;
@@ -18,10 +20,12 @@ import java.util.Map;
 import java.util.UUID;
 
 /**
- * Único dono do dispatch SSE de conta — reage ao vocabulário {@link AccountStreamEvents}, publicado
- * pelas fatias (f002/f004/f005/f006) só depois da mutação já persistida.
- * {@code personId} vem sempre do evento, nunca de {@code HTTPRequest.personId()} — best-effort, nunca
- * propaga falha para quem publicou.
+ * Único dono do dispatch SSE de conta — reage direto aos eventos CRUD que {@code f002} ({@link
+ * AccountEvents}) e {@code f003} ({@link CreditCardEvents}) já publicam pós-mutação, mais o fan-in
+ * residual de {@link AccountStreamEvents.Refresh} (contas afetadas indiretamente por f005/f006/f007
+ * e pelo alvo do MOVE de conta — ver {@code f002.WriteUseCase#deleteAccount}). {@code personId} vem
+ * sempre do evento, nunca de {@code HTTPRequest.personId()} — best-effort, nunca propaga falha para
+ * quem publicou.
  *
  * <p>Payload é o mesmo {@code F002Api.AccountView} de {@code GET /accounts/{id}} — já traz saldo e
  * cartões calculados pela fatia dona ({@code f002}); este listener não recalcula nada nem toca
@@ -41,13 +45,37 @@ public class AccountStreamListener {
     }
 
     @MessageListener
-    public MessageResult onCreated(AccountStreamEvents.Created event) {
-        dispatchUpsert(event.accountId(), event.personId());
+    public MessageResult onAccountCreated(AccountEvents.Created event) {
+        dispatchUpsert(event.account().id(), event.account().personId());
         return MessageResult.CONSUMED;
     }
 
     @MessageListener
-    public MessageResult onUpdated(AccountStreamEvents.Updated event) {
+    public MessageResult onAccountUpdated(AccountEvents.Updated event) {
+        dispatchUpsert(event.account().id(), event.account().personId());
+        return MessageResult.CONSUMED;
+    }
+
+    @MessageListener
+    public MessageResult onAccountDeleted(AccountEvents.Deleted event) {
+        dispatchDelete(event.id(), event.personId());
+        return MessageResult.CONSUMED;
+    }
+
+    @MessageListener
+    public MessageResult onCardCreated(CreditCardEvents.Created event) {
+        dispatchUpsert(event.creditCard().accountId(), event.personId());
+        return MessageResult.CONSUMED;
+    }
+
+    @MessageListener
+    public MessageResult onCardUpdated(CreditCardEvents.Updated event) {
+        dispatchUpsert(event.creditCard().accountId(), event.personId());
+        return MessageResult.CONSUMED;
+    }
+
+    @MessageListener
+    public MessageResult onCardDeleted(CreditCardEvents.Deleted event) {
         dispatchUpsert(event.accountId(), event.personId());
         return MessageResult.CONSUMED;
     }
@@ -55,12 +83,6 @@ public class AccountStreamListener {
     @MessageListener
     public MessageResult onRefresh(AccountStreamEvents.Refresh event) {
         dispatchUpsert(event.accountId(), event.personId());
-        return MessageResult.CONSUMED;
-    }
-
-    @MessageListener
-    public MessageResult onDeleted(AccountStreamEvents.Deleted event) {
-        dispatchDelete(event.accountId(), event.personId());
         return MessageResult.CONSUMED;
     }
 

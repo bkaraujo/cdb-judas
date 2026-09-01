@@ -1,11 +1,9 @@
 package br.cdb.feature.f003._1_application.cache;
 
 import br.cdb.core.security.SessionEvents;
-import br.cdb.feature.f002._1_application.service.AccountService;
 import br.cdb.feature.f003._0_domain.event.CreditCardEvents;
 import br.cdb.feature.f003._0_domain.model.CreditCard;
 import br.cdb.feature.f003._1_application.service.CreditCardService;
-import br.commons.Result;
 import br.commons.cache.AbstractCache;
 import br.commons.framework.cdi.Context;
 import br.commons.framework.message.MessageListener;
@@ -54,29 +52,19 @@ public class CreditCardCache extends AbstractCache<CreditCard> {
 
     @MessageListener
     public MessageResult onCreated(CreditCardEvents.Created e) {
-        val card = e.creditCard();
-        val accountService = Context.tryGet(AccountService.class);
-        val result = accountService.findById(card.accountId());
-        if (result instanceof Result.Success(var account)) {
-            upsert(account.personId().toString(), card);
-        }
+        upsert(e.personId(), e.creditCard());
         return MessageResult.CONSUMED;
     }
 
     @MessageListener
     public MessageResult onUpdated(CreditCardEvents.Updated e) {
-        val card = e.creditCard();
-        val accountService = Context.tryGet(AccountService.class);
-        val result = accountService.findById(card.accountId());
-        if (result instanceof Result.Success(var account)) {
-            upsert(account.personId().toString(), card);
-        }
+        upsert(e.personId(), e.creditCard());
         return MessageResult.CONSUMED;
     }
 
     @MessageListener
     public MessageResult onDeleted(CreditCardEvents.Deleted e) {
-        evictEverywhere(e.id());
+        evict(e.personId(), e.id());
         return MessageResult.CONSUMED;
     }
 }

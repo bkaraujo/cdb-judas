@@ -4,7 +4,6 @@ import br.cdb.core.web.HTTPRequest;
 import br.cdb.feature.f000._0_domain.DeletionOutcome;
 import br.cdb.feature.f000._0_domain.DeletionStrategy;
 import br.cdb.feature.f000._0_domain.TransactionPolicy;
-import br.cdb.feature.f000._0_domain.event.AccountDeleted;
 import br.cdb.feature.f000._0_domain.event.AccountStreamEvents;
 import br.cdb.feature.f000._0_domain.event.TransactionsDeleted;
 import br.cdb.feature.f000._1_application.Deletions;
@@ -36,29 +35,6 @@ import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
 
-/**
- * Toda a mutação da fatia {@code f002} (contas, saldos e período de fechamento) — o par de
- * {@link ReadUseCase}, mesmo arranjo CQRS de {@code f006}. Context-wired como as demais classes
- * ex-contexto ({@code Context.tryGet(WriteUseCase.class)}, nunca {@code @Inject}); os
- * {@code *Resource} da fatia escrevem <b>só</b> por aqui.
- *
- * <p>As duas camadas convivem no mesmo tipo: métodos de <b>entrada</b> ({@link #createAccount},
- * {@link #updateAccount}, {@link #deleteAccount}) aplicam a política de usuário — guarda de
- * propriedade via {@link UserGuards}, bean CDI resolvido <b>por chamada</b> ({@code @RequestScoped},
- * nunca guardado em campo) —, publicam SSE ({@link AccountStreamEvents}, despachado por {@code f999})
- * e disparam a cascata de exclusão; métodos de <b>engine</b> ({@link #upsert}, {@link #delete})
- * aceitam qualquer comando bem-formado e só publicam o evento de domínio da fatia
- * ({@link AccountEvents}).
- *
- * <p>{@link #deleteAccount} não reatribui nada imperativamente no MOVE: o re-key das transações é
- * feito por {@link #delete} ({@code deleteMove}) ao apagar a conta. Como não há FK entre tabelas de
- * dados, a raiz (linha única, dono+cor inclusos) é apagada antes de {@link AccountDeleted}/
- * {@link TransactionsDeleted} serem publicados — o evento só resta pros listeners de outras fatias
- * (overlay de tags/categoria das transações apagadas). Cada evento também vira uma linha em
- * {@code F999_DELETION_QUEUE} (via {@link DeletionQueue}) — rede de segurança pro job de f999
- * reprocessar se o listener best-effort falhar ou o processo cair no meio da cascata. No MOVE, a
- * conta de destino é marcada suja ({@link BalanceService#markDirty}) — o próprio job recomputa.
- */
 @NullMarked
 public class WriteUseCase {
 
@@ -89,19 +65,15 @@ public class WriteUseCase {
 
     public Result<ReadUseCase.AccountAndTransactionsView, BusinessError> createAccount(AccountCommand.Create cmd, String color) {
         val personId = HTTPRequest.personId();
-        return upsert(cmd, personId, color).map(account -> {
-            MessageBus.submit(new AccountStreamEvents.Created(account.id(), personId));
-            return new ReadUseCase.AccountAndTransactionsView(account, List.of(), List.of());
-        });
+        return upsert(cmd, personId, color).map(account ->
+                new ReadUseCase.AccountAndTransactionsView(account, List.of(), List.of()));
     }
 
     public Result<ReadUseCase.AccountAndTransactionsView, BusinessError> updateAccount(AccountCommand.Update cmd, String color) {
         return guards().ownsAccount(cmd.id()).flatMap(ignored -> {
             val personId = HTTPRequest.personId();
-            return upsert(cmd, personId, color).map(account -> {
-                MessageBus.submit(new AccountStreamEvents.Updated(account.id(), personId));
-                return new ReadUseCase.AccountAndTransactionsView(account, reads.cards(account.id(), personId), List.of());
-            });
+            return upsert(cmd, personId, color).map(account ->
+                    new ReadUseCase.AccountAndTransactionsView(account, reads.cards(account.id(), personId), List.of()));
         });
     }
 
@@ -128,7 +100,7 @@ public class WriteUseCase {
         }
 
         return delete(new AccountCommand.Delete(id, Deletions.toPolicy(strategy, targetId))).map(ids -> {
-            MessageBus.submit(new AccountDeleted(id, personId));
+            MessageBus.submit(new AccountEvents.Deleted(id, personId.toString()));
             deletionQueue().enqueueAccountDeleted(id, personId);
 
             if (strategy != DeletionStrategy.MOVE) {
@@ -136,7 +108,6 @@ public class WriteUseCase {
                 ids.forEach(txId -> deletionQueue().enqueueTransactionDeleted(txId, personId));
             }
 
-            MessageBus.submit(new AccountStreamEvents.Deleted(id, personId.toString()));
             if (strategy == DeletionStrategy.MOVE) {
                 val target = Objects.requireNonNull(targetId);
                 balanceService.markDirty(target);
@@ -186,13 +157,16 @@ public class WriteUseCase {
 
     /** Ids das transações movidas/apagadas (vazio para {@link TransactionPolicy.Block}). */
     public Result<List<UUID>, BusinessError> delete(AccountCommand.Delete command) {
-        return service.findById(command.id()).flatMap(account -> switch (command.policy()) {
-            case TransactionPolicy.Block ignored -> deleteBlock(account);
-            case TransactionPolicy.Move(var targetId) -> deleteMove(account, targetId);
-            case TransactionPolicy.Purge ignored -> deletePurge(account);
-        }).ifSuccess(
-                _ -> MessageBus.submit(new AccountEvents.Deleted(command.id()))
-        );
+        return service.findById(command.id()).flatMap(account -> {
+            Result<List<UUID>, BusinessError> result = switch (command.policy()) {
+                case TransactionPolicy.Block ignored -> deleteBlock(account);
+                case TransactionPolicy.Move(var targetId) -> deleteMove(account, targetId);
+                case TransactionPolicy.Purge ignored -> deletePurge(account);
+            };
+            return result.ifSuccess(
+                    _ -> MessageBus.submit(new AccountEvents.Deleted(command.id(), account.personId()))
+            );
+        });
     }
 
     private Result<List<UUID>, BusinessError> deleteBlock(Account account) {

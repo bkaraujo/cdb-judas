@@ -45,8 +45,8 @@ public final class ImportRuleLayout {
                     MemoryLayout.sequenceLayout(NAME_CAPACITY, ValueLayout.JAVA_BYTE),  // name data
                     ValueLayout.JAVA_LONG_UNALIGNED,  // accountId MSB
                     ValueLayout.JAVA_LONG_UNALIGNED,  // accountId LSB
-                    ValueLayout.JAVA_LONG_UNALIGNED,  // categoryId MSB
-                    ValueLayout.JAVA_LONG_UNALIGNED,  // categoryId LSB
+                    ValueLayout.JAVA_LONG_UNALIGNED,  // categoryIds MSB
+                    ValueLayout.JAVA_LONG_UNALIGNED,  // categoryIds LSB
                     ValueLayout.JAVA_BYTE,            // planned (-1=null, 0=false, 1=true)
                     ValueLayout.JAVA_LONG_UNALIGNED,  // createdAt millis
                     ValueLayout.JAVA_INT_UNALIGNED    // trigger count

@@ -6,8 +6,12 @@
  * <p>Consolida:
  * <ul>
  *   <li><b>stream/SSE</b> — {@code SSE}/{@code SseService}/{@code SseResource}
- *       ({@code GET /api/{uuid}/stream}); as fatias publicam eventos de domínio pós-mutação e nunca
- *       chamam {@code SSE.dispatch} direto — {@code f999} é o único dono do dispatch</li>
+ *       ({@code GET /api/{uuid}/stream}); as fatias publicam eventos de domínio pós-mutação (ex.:
+ *       {@code f002.AccountEvents}, {@code f003.CreditCardEvents}, {@code f004.TagEvents}) e nunca
+ *       chamam {@code SSE.dispatch} direto — {@code f999} é o único dono do dispatch, reagindo direto
+ *       ao evento CRUD de cada fatia. {@code AccountStreamEvents} (aqui, {@code _0_domain.event})
+ *       sobra só com {@code Refresh}: pedido de reemissão para conta afetada indiretamente, sem
+ *       evento CRUD próprio (perna irmã de transferência, cascata de categoria/tag, alvo do MOVE)</li>
  *   <li><b>deletion</b> — vocabulário {@code DeletionStrategy}/{@code DeletionOutcome}/{@code Deletions},
  *       contrato uniforme de exclusão (accounts, cards, categories, tags); evento cross-feature
  *       {@code TransactionsDeleted} ({@code _0_domain.event}), publicado por quem apaga transações

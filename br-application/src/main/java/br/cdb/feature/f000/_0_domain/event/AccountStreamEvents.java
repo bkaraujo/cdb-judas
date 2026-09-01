@@ -6,29 +6,18 @@ import org.jspecify.annotations.NullMarked;
 import java.util.UUID;
 
 /**
- * Vocabulário de SSE de conta: publicado pela fatia após a mutação já persistida (contexto +
- * overlay); reagido só por {@code f999} (único dono do dispatch SSE) — nenhuma fatia chama
- * {@code SSE.dispatch} direto. Mora em {@code f000} (não em f002, que a publica) para que qualquer
- * fatia de negócio possa publicá-lo sem depender de f002 — ver regra
- * {@code feature_slices_must_not_depend_on_sibling_slices}.
+ * Pedido de reemissão do snapshot SSE para uma conta afetada <b>indiretamente</b> — a mutação
+ * aconteceu em outra fatia/entidade (perna irmã de transferência, conta anterior de uma transação
+ * editada, alvo do MOVE de conta, cascata de categoria/tag, importação deduplicada por conta) e não
+ * tem um evento CRUD próprio de conta para carregar o fan-out. Onde a conta sofre mutação direta
+ * (criar/editar/apagar conta ou cartão), o listener de {@code f999} reage direto ao evento de domínio
+ * da fatia dona ({@code f002.AccountEvents}/{@code f003.CreditCardEvents}) — ver
+ * {@code f999.AccountStreamListener}, único dono do dispatch SSE. Mora em {@code f000} (fatia-base)
+ * para que qualquer fatia de negócio possa publicá-lo sem depender de f002.
  */
 @NullMarked
 public interface AccountStreamEvents extends BusinessEvent {
 
-    /** Marcador semântico — o {@code MessageBus} despacha por record concreto, não por interface. */
     @NullMarked
-    interface Upsert extends AccountStreamEvents {}
-
-    @NullMarked
-    record Created(UUID accountId, String personId) implements Upsert {}
-
-    @NullMarked
-    record Updated(UUID accountId, String personId) implements Upsert {}
-
-    /** "conta mudou, reemita o snapshot" — publicado por f002 (cards)/f004/f005/f006. */
-    @NullMarked
-    record Refresh(UUID accountId, String personId) implements Upsert {}
-
-    @NullMarked
-    record Deleted(UUID accountId, String personId) implements AccountStreamEvents {}
+    record Refresh(UUID accountId, String personId) implements AccountStreamEvents {}
 }

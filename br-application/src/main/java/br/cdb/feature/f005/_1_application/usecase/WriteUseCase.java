@@ -4,9 +4,9 @@ import br.cdb.core.web.HTTPRequest;
 import br.cdb.feature.f000._0_domain.DeletionOutcome;
 import br.cdb.feature.f000._0_domain.DeletionStrategy;
 import br.cdb.feature.f000._0_domain.event.AccountStreamEvents;
-import br.cdb.feature.f000._0_domain.event.CategoryDeleted;
 import br.cdb.feature.f000._0_domain.event.CategoryReassigned;
 import br.cdb.feature.f000._0_domain.event.TransactionsDeleted;
+import br.cdb.feature.f005._0_domain.event.CategoryEvents;
 import br.cdb.feature.f005._0_domain.model.Category;
 import br.cdb.feature.f005._0_domain.model.Nature;
 import br.cdb.feature.f005._1_application.service.UserCategoryService;
@@ -28,25 +28,6 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
-/**
- * Toda a mutação de categoria da fatia {@code f005} — o par de {@link ReadUseCase}, mesmo arranjo
- * CQRS de {@code f002}/{@code f003}/{@code f004}/{@code f006}. Context-wired
- * ({@code Context.tryGet(WriteUseCase.class)}, nunca {@code @Inject}); o {@code CategoryResource}
- * escreve <b>só</b> por aqui.
- *
- * <p>{@code deleteCategory(DELETE)} publica {@link AccountStreamEvents.Refresh} (SSE de conta —
- * dispatch é responsabilidade única de {@code f999}). A remoção das linhas {@code F005_CATEGORY} da
- * subárvore publica {@link CategoryDeleted} (reagido por {@code CategoryDeletedListener}, na própria
- * fatia); a limpeza do vínculo das transações apagadas em cascata publica
- * {@link TransactionsDeleted} em vez de chamar o vínculo de categoria (f006) ou de tag (f004)
- * diretamente (best-effort, reagido por f006/f004).
- *
- * <p>A leitura cross-slice das transações vinculadas é HTTP real contra o endpoint público de f006,
- * via {@link F006Api} — o cliente tipado que a fatia dona publica sobre {@code f000.InternalApi}.
- *
- * <p>Nota: o nome simples coincide com o {@code WriteUseCase} de {@code f002}/{@code f003}/{@code f004}
- * — quem precisa de mais de um referencia os demais pelo nome completo.
- */
 @NullMarked
 public class WriteUseCase {
 
@@ -81,7 +62,7 @@ public class WriteUseCase {
             if (strategy == null) {
                 val count = transactionIdsByCategories(subtree).size();
                 if (count > 0) return Result.success(new DeletionOutcome.Linked(count));
-                MessageBus.submit(new CategoryDeleted(subtree, personId));
+                MessageBus.submit(new CategoryEvents.Deleted(subtree, personId));
                 return Result.success(new DeletionOutcome.Completed());
             }
 
@@ -96,7 +77,7 @@ public class WriteUseCase {
     private Result<Void, BusinessError> moveCategorySubtree(UUID id, UUID targetId, UUID personId) {
         return service.validateMoveTarget(id, targetId, personId).flatMap(subtree -> {
             MessageBus.submit(new CategoryReassigned(subtree, targetId, personId));
-            MessageBus.submit(new CategoryDeleted(subtree, personId));
+            MessageBus.submit(new CategoryEvents.Deleted(subtree, personId));
             return Result.success();
         });
     }
@@ -104,7 +85,7 @@ public class WriteUseCase {
     /** Apaga as transações vinculadas à subárvore inteira e depois a subárvore. */
     private Result<Void, BusinessError> deleteCategoryWithTransactions(List<UUID> subtreeIds, UUID personId) {
         val txIds = transactionIdsByCategories(subtreeIds);
-        return deleteLinkedTransactions(txIds, () -> MessageBus.submit(new CategoryDeleted(subtreeIds, personId)));
+        return deleteLinkedTransactions(txIds, () -> MessageBus.submit(new CategoryEvents.Deleted(subtreeIds, personId)));
     }
 
     /** IDs das transações da pessoa vinculadas a qualquer categoria de {@code categoryIds} —

@@ -14,7 +14,7 @@ public interface F005Api {
 
     /** Natureza da categoria — dedicada porque Transaction não guarda mais a própria Nature (agora é
      *  atributo só de Category); consumido por f006.RequestMapper#toDto ao montar a resposta HTTP de
-     *  uma transação já com categoryId resolvido. */
+     *  uma transação já com categoryIds resolvido. */
     Nature natureOf(UUID categoryId);
 
 }

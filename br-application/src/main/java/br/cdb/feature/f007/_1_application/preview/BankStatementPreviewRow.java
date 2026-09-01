@@ -13,7 +13,7 @@ import java.util.UUID;
  * positive) and {@code nature} is derived from that sign ({@code EXPENSE}/{@code INCOME}).
  * {@code state} reflects the row against the chosen account (see {@link RowState}); when it is
  * {@link RowState#RECONCILE}, {@code reconcileDescription} carries the matched manual transaction's
- * description so the UI can show what it will confirm. {@code categoryId} and {@code planned}
+ * description so the UI can show what it will confirm. {@code categoryIds} and {@code planned}
  * may be null/default — slots the UI fills in when the user (or a matched import rule,
  * api-side) picks them for the row before confirming.
  */

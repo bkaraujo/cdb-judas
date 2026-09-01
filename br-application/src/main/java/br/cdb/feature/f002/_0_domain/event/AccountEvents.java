@@ -15,6 +15,8 @@ public interface AccountEvents extends BusinessEvent {
     @NullMarked
     record Updated(Account account) implements AccountEvents {}
 
+    /** {@code personId} viaja aqui porque a linha já foi apagada quando o consumidor (SSE de f999)
+     *  reage — não há mais o que consultar. */
     @NullMarked
-    record Deleted(UUID id) implements AccountEvents {}
+    record Deleted(UUID id, String personId) implements AccountEvents {}
 }

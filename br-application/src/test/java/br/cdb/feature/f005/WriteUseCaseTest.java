@@ -2,8 +2,8 @@ package br.cdb.feature.f005;
 
 import br.cdb.AbstractUseCaseTest;
 import br.cdb.feature.f000._0_domain.DeletionStrategy;
-import br.cdb.feature.f000._0_domain.event.CategoryDeleted;
 import br.cdb.feature.f000._0_domain.event.CategoryReassigned;
+import br.cdb.feature.f005._0_domain.event.CategoryEvents;
 import br.cdb.feature.f005._0_domain.model.Category;
 import br.cdb.feature.f005._0_domain.model.Nature;
 import br.cdb.feature.f005._1_application.usecase.ReadUseCase;
@@ -42,7 +42,7 @@ class WriteUseCaseTest extends AbstractUseCaseTest {
     /** Captura a cascata de exclusão — o efeito do MOVE só é observável pelos eventos. */
     static class Events {
         final List<CategoryReassigned> reassigned = new ArrayList<>();
-        final List<CategoryDeleted> deleted = new ArrayList<>();
+        final List<CategoryEvents.Deleted> deleted = new ArrayList<>();
 
         @MessageListener
         public MessageResult onReassigned(CategoryReassigned event) {
@@ -51,7 +51,7 @@ class WriteUseCaseTest extends AbstractUseCaseTest {
         }
 
         @MessageListener
-        public MessageResult onDeleted(CategoryDeleted event) {
+        public MessageResult onDeleted(CategoryEvents.Deleted event) {
             deleted.add(event);
             return MessageResult.CONSUMED;
         }

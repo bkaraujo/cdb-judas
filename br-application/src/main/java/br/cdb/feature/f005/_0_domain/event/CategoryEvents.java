@@ -4,6 +4,7 @@ import br.cdb.feature.f005._0_domain.model.Category;
 import br.commons.business.BusinessEvent;
 import org.jspecify.annotations.NullMarked;
 
+import java.util.List;
 import java.util.UUID;
 
 /** Vocabulário de SSE de categoria — reagido só por {@code f999} (único dono do dispatch SSE). */
@@ -17,5 +18,6 @@ public interface CategoryEvents extends BusinessEvent {
     record Updated(Category category) implements CategoryEvents {}
 
     @NullMarked
-    record Deleted(UUID categoryId, UUID personId) implements CategoryEvents {}
+    record Deleted(List<UUID> categoryIds, UUID personId) implements CategoryEvents {}
+
 }

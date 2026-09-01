@@ -457,9 +457,9 @@ public class WriteUseCases {
     }
 
     // ── Vínculo transação↔categoria (F006_TRANSACTION_CATEGORY) ────────────────
-    // Tabela à parte de F006_TRANSACTION: Transaction.categoryId não entra no save(Transaction).
+    // Tabela à parte de F006_TRANSACTION: Transaction.categoryIds não entra no save(Transaction).
 
-    /** Upsert do vínculo; {@code categoryId} nulo apaga a linha. */
+    /** Upsert do vínculo; {@code categoryIds} nulo apaga a linha. */
     public void saveCategory(UUID transactionId, UUID personId, @Nullable UUID categoryId) {
         categoryService.saveCategory(transactionId, personId, categoryId);
     }
@@ -483,7 +483,7 @@ public class WriteUseCases {
         tagService.deleteTagsByTransaction(transactionId);
     }
 
-    /** Aplica {@code categoryId} às demais parcelas do grupo de {@code first} (no-op fora de grupo). */
+    /** Aplica {@code categoryIds} às demais parcelas do grupo de {@code first} (no-op fora de grupo). */
     public void saveCategoryForGroup(Transaction first, UUID personId, @Nullable UUID categoryId) {
         val groupId = first.groupId();
         if (groupId == null) return;

@@ -80,7 +80,7 @@ public class UserCategoryService {
         val optional = repo.findByNature(personId, Nature.valueOf(nature)).stream()
                 .filter(c -> c.name().equalsIgnoreCase(name))
                 .filter(c -> Objects.equals(c.parentId(), parentId))
-                .filter(c -> excludeId == null || !c.id().equals(excludeId))
+                .filter(c -> !c.id().equals(excludeId))
                 .findFirst();
 
         if (optional.isPresent()) {
@@ -175,19 +175,12 @@ public class UserCategoryService {
     }
 
     /** Subárvore sem nenhum vínculo (ou já desvinculada por quem chama): apaga direto. */
-    public void deletePlain(List<UUID> subtreeIds, UUID personId) {
-        deleteSubtreeRows(subtreeIds, personId);
+    public void deletePlain(List<UUID> subtreeIds) {
+        subtreeIds.forEach(repo::deleteById);
     }
 
     private void collectSubtree(UUID id, List<Category> all, List<UUID> acc) {
         acc.add(id);
         all.stream().filter(c -> id.equals(c.parentId())).forEach(c -> collectSubtree(c.id(), all, acc));
-    }
-
-    private void deleteSubtreeRows(List<UUID> ids, UUID personId) {
-        for (val nodeId : ids) {
-            repo.deleteById(nodeId);
-            MessageBus.submit(new CategoryEvents.Deleted(nodeId, personId));
-        }
     }
 }

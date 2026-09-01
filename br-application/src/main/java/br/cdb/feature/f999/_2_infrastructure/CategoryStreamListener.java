@@ -43,7 +43,7 @@ public class CategoryStreamListener {
 
     @MessageListener
     public MessageResult onDeleted(CategoryEvents.Deleted event) {
-        dispatchDelete(event.personId(), event.categoryId());
+        event.categoryIds().forEach(categoryId -> dispatchDelete(event.personId(), categoryId));
         return MessageResult.CONSUMED;
     }
 

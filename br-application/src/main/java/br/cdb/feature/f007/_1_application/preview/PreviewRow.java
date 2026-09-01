@@ -8,7 +8,7 @@ import java.util.UUID;
 
 /**
  * A preview/confirm row: an expanded {@link TransactionDraft} plus preview-only fields. {@code
- * duplicate} flags a draft already present for the suggested card; {@code categoryId} and
+ * duplicate} flags a draft already present for the suggested card; {@code categoryIds} and
  * {@code planned} may be null/default — slots the UI fills in when the user (or a matched
  * import rule, api-side) picks them for the row before confirming. {@code suggestedCardId} is the
  * card whose {@code last4} uniquely matched this charge — the per-row pre-selection the user can

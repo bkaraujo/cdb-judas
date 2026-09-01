@@ -137,7 +137,7 @@ public class StatementImportProcessor {
         }
     }
 
-    /** {@code categoryId} e {@code planned} saem sempre nulos/padrão: quem escolhe cada linha é o
+    /** {@code categoryIds} e {@code planned} saem sempre nulos/padrão: quem escolhe cada linha é o
      *  usuário (ou uma regra de nomenclatura casada api-side), na tela. */
     private BankStatementPreviewRow bankRow(MonetaryDocumentEntry line, Classification cls) {
         val type = line.amount().signum() < 0 ? Nature.EXPENSE : Nature.INCOME;

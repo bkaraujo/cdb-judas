@@ -58,7 +58,10 @@ class WriteUseCaseTest extends AbstractUseCaseTest {
 
     private Account seedChecking(String name, boolean active) {
         val id = UUID.randomUUID();
-        val acc = new Account(id, name, Account.Type.CHECKING, active);
+        // personId real (não o construtor de 4 args, que zera): AccountEvents.Deleted agora carrega
+        // account.personId() para o cache/SSE evictarem/despacharem por dono, como em produção
+        // (sempre populado via HTTPRequest.personId()).
+        val acc = new Account(id, name, Account.Type.CHECKING, active, PERSON_ID, COLOR, null, null, null, null, null, null);
         return accountRepository().save(acc);
     }
 

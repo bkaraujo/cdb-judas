@@ -4,7 +4,6 @@ import br.cdb.core.web.HTTPRequest;
 import br.cdb.feature.f000._0_domain.DeletionOutcome;
 import br.cdb.feature.f000._0_domain.DeletionStrategy;
 import br.cdb.feature.f000._0_domain.TransactionPolicy;
-import br.cdb.feature.f000._0_domain.event.AccountStreamEvents;
 import br.cdb.feature.f000._0_domain.event.TransactionsDeleted;
 import br.cdb.feature.f000._1_application.Deletions;
 import br.cdb.feature.f000._1_application.service.UserGuards;
@@ -37,11 +36,11 @@ import java.util.regex.Pattern;
  *
  * <p>As duas camadas convivem no mesmo tipo: métodos de <b>entrada</b> ({@link #createCard},
  * {@link #deleteCard}, {@link #setCardActive}) aplicam a política de usuário ({@link UserGuards},
- * bean CDI resolvido <b>por chamada</b> — {@code @RequestScoped}, nunca guardado em campo) e
- * publicam SSE ({@link AccountStreamEvents#Refresh}, despachado por {@code f999}) e a cascata de
- * exclusão ({@link TransactionsDeleted}); os de <b>engine</b> ({@link #upsert}, {@link #delete})
- * aceitam qualquer comando bem-formado e só publicam o evento de domínio da fatia
- * ({@link CreditCardEvents}).
+ * bean CDI resolvido <b>por chamada</b> — {@code @RequestScoped}, nunca guardado em campo) e disparam
+ * a cascata de exclusão ({@link TransactionsDeleted}); os de <b>engine</b> ({@link #upsert},
+ * {@link #delete}) aceitam qualquer comando bem-formado e publicam o evento de domínio da fatia
+ * ({@link CreditCardEvents}), que {@code f999.AccountStreamListener} reage direto para o SSE de conta
+ * — não há mais publicação de SSE nesta fatia.
  *
  * <p>Nota: o nome simples coincide com o {@code WriteUseCase} de {@code f002} — quem precisa dos dois
  * referencia um deles pelo nome completo.
@@ -65,8 +64,7 @@ public class WriteUseCase {
     // ── Cartões (entrada HTTP) ─────────────────────────────────────
 
     public Result<CreditCard, BusinessError> createCard(CreditCardCommand.Create cmd) {
-        return guards().ownsAccount(cmd.accountId()).flatMap(ignored -> upsert(cmd))
-                .ifSuccess(ignored -> MessageBus.submit(new AccountStreamEvents.Refresh(cmd.accountId(), HTTPRequest.personId())));
+        return guards().ownsAccount(cmd.accountId()).flatMap(ignored -> upsert(cmd));
     }
 
     public Result<DeletionOutcome, BusinessError> deleteCard(
@@ -82,7 +80,6 @@ public class WriteUseCase {
                 if (strategy != DeletionStrategy.MOVE) {
                     MessageBus.submit(new TransactionsDeleted(ids));
                 }
-                MessageBus.submit(new AccountStreamEvents.Refresh(accountId, HTTPRequest.personId()));
                 return new DeletionOutcome.Completed();
             });
         });
@@ -90,8 +87,7 @@ public class WriteUseCase {
 
     public Result<CreditCard, BusinessError> setCardActive(UUID accountId, UUID cardId, boolean active) {
         return guards().ownsCard(accountId, cardId)
-                .flatMap(ignored -> upsert(new CreditCardCommand.Update(cardId, active)))
-                .ifSuccess(ignored -> MessageBus.submit(new AccountStreamEvents.Refresh(accountId, HTTPRequest.personId())));
+                .flatMap(ignored -> upsert(new CreditCardCommand.Update(cardId, active)));
     }
 
     // ── Cartões (engine — sem política de usuário) ─────────────────
@@ -110,8 +106,8 @@ public class WriteUseCase {
 
         return accountService
                 .findById(accountId)
-                .flatMap(account -> createCardFor(last4, account))
-                .ifSuccess(account -> MessageBus.submit(new CreditCardEvents.Created(account)));
+                .flatMap(account -> createCardFor(last4, account)
+                        .ifSuccess(card -> MessageBus.submit(new CreditCardEvents.Created(card, account.personId()))));
     }
 
     private Result<CreditCard, BusinessError> createCardFor(String last4, Account account) {
@@ -131,12 +127,18 @@ public class WriteUseCase {
 
     /** Ids das transações movidas/apagadas (vazio para {@link TransactionPolicy.Block}). */
     public Result<List<UUID>, BusinessError> delete(CreditCardCommand.Delete command) {
-        return service.findById(command.id()).flatMap(card -> switch (command.policy()) {
-            case TransactionPolicy.Block ignored -> deleteBlock(card);
-            case TransactionPolicy.Move(var targetId) -> deleteMove(card, targetId);
-            case TransactionPolicy.Purge ignored -> deletePurge(card);
-        })
-                .ifSuccess(_ -> MessageBus.submit(new CreditCardEvents.Deleted(command.id())));
+        return service.findById(command.id()).flatMap(card ->
+                // Dono resolvido uma vez aqui (card.accountId() não muda em nenhuma política) — o
+                // Purge reaproveita via deletePurge(card, account) em vez de buscar de novo.
+                accountService.findById(card.accountId()).flatMap(account -> {
+                    Result<List<UUID>, BusinessError> result = switch (command.policy()) {
+                        case TransactionPolicy.Block ignored -> deleteBlock(card);
+                        case TransactionPolicy.Move(var targetId) -> deleteMove(card, targetId);
+                        case TransactionPolicy.Purge ignored -> deletePurge(card, account);
+                    };
+                    return result.ifSuccess(_ -> MessageBus.submit(
+                            new CreditCardEvents.Deleted(command.id(), card.accountId(), account.personId())));
+                }));
     }
 
     private Result<List<UUID>, BusinessError> deleteBlock(CreditCard creditCard) {
@@ -169,20 +171,19 @@ public class WriteUseCase {
         });
     }
 
-    private Result<List<UUID>, BusinessError> deletePurge(CreditCard creditCard) {
+    private Result<List<UUID>, BusinessError> deletePurge(CreditCard creditCard, Account account) {
         val ids = transactionService.findByCard(creditCard.id()).stream().map(Transaction::id).toList();
         ids.forEach(transactionService::deleteById);
         service.deleteById(creditCard.id());
 
-        return accountService.findById(creditCard.accountId()).map(account -> {
-            balanceService.recalculate(account.id());
-            return ids;
-        });
+        balanceService.recalculate(account.id());
+        return Result.success(ids);
     }
 
     private Result<CreditCard, BusinessError> setActive(UUID id, boolean active) {
         return service.findById(id)
                 .map(card -> service.save(new CreditCard(card.id(), card.last4(), card.accountId(), active)))
-                .ifSuccess(account -> MessageBus.submit(new CreditCardEvents.Updated(account)));
+                .ifSuccess(card -> accountService.findById(card.accountId())
+                        .ifSuccess(account -> MessageBus.submit(new CreditCardEvents.Updated(card, account.personId()))));
     }
 }

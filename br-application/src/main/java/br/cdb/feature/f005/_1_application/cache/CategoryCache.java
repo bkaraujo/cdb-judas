@@ -68,7 +68,7 @@ public class CategoryCache extends AbstractCache<Category> {
 
     @MessageListener
     public MessageResult onDeleted(CategoryEvents.Deleted e) {
-        evict(e.personId().toString(), e.categoryId());
+        e.categoryIds().forEach(categoryId -> evict(e.personId().toString(), categoryId));
         return MessageResult.CONSUMED;
     }
 }

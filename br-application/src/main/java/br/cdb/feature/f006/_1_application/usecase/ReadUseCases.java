@@ -172,7 +172,7 @@ public class ReadUseCases {
     }
 
     // ── Vínculo transação↔categoria (F006_TRANSACTION_CATEGORY) ────────────────
-    // Tabela à parte de F006_TRANSACTION: Transaction.categoryId não vem do save/read da engine.
+    // Tabela à parte de F006_TRANSACTION: Transaction.categoryIds não vem do save/read da engine.
 
     /** {@code tx} com o vínculo de categoria já resolvido — {@code null} quando não há vínculo. */
     public Transaction withCategory(Transaction tx, UUID personId) {

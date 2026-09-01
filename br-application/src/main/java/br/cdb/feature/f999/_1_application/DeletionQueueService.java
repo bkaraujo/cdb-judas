@@ -1,7 +1,7 @@
 package br.cdb.feature.f999._1_application;
 
-import br.cdb.feature.f000._0_domain.event.AccountDeleted;
 import br.cdb.feature.f000._0_domain.event.TransactionsDeleted;
+import br.cdb.feature.f002._0_domain.event.AccountEvents;
 import br.cdb.feature.f002._1_application.service.BalanceService;
 import br.cdb.feature.f999._0_domain.DeletionQueueEntry;
 import br.cdb.feature.f999._0_domain.DeletionQueueRepository;
@@ -62,7 +62,7 @@ public class DeletionQueueService {
 
     private void republish(DeletionQueueEntry entry) {
         switch (entry.type()) {
-            case TYPE_ACCOUNT_DELETED -> MessageBus.submit(new AccountDeleted(entry.targetId(), entry.personId()));
+            case TYPE_ACCOUNT_DELETED -> MessageBus.submit(new AccountEvents.Deleted(entry.targetId(), entry.personId().toString()));
             case TYPE_TRANSACTION_DELETED -> MessageBus.submit(new TransactionsDeleted(List.of(entry.targetId())));
             default -> throw new IllegalStateException("Tipo desconhecido na fila de exclusão: " + entry.type());
         }
