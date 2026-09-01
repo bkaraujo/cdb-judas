@@ -108,7 +108,7 @@ public class ReadUseCase {
         if (result.isFailure()) {
             return Result.success(service.findAllByPerson(personId));
         }
-        return Result.success(new ArrayList<>(result.get()));
+        return Result.success(result.get());
     }
 
     public Result<Account, BusinessError> findAccount(UUID id, String personId) {

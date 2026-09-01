@@ -7,6 +7,8 @@ import org.junit.jupiter.api.Test;
 import java.lang.foreign.ValueLayout;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -15,7 +17,7 @@ class NativeCacheTest {
 
     @Test
     void testPutGetRemove() {
-        try (val cache = new NativeCache()) {
+        try (val cache = new NativeCache<String>()) {
             val seg = cache.put("test:1", 64).get();
             assertNotNull(seg);
             assertEquals(seg, cache.get("test:1").get());
@@ -27,7 +29,7 @@ class NativeCacheTest {
 
     @Test
     void testPutAlwaysReallocates() {
-        try (val cache = new NativeCache()) {
+        try (val cache = new NativeCache<String>()) {
             val seg1 = cache.put("key", 64).get();
             val seg2 = cache.put("key", 64).get();
             assertNotEquals(seg1, seg2);
@@ -36,7 +38,7 @@ class NativeCacheTest {
 
     @Test
     void testPutIsZeroed() {
-        try (val cache = new NativeCache()) {
+        try (val cache = new NativeCache<String>()) {
             val seg = cache.put("test", 64).get();
             for (long i = 0; i < 64; i++) {
                 assertEquals(0, seg.get(ValueLayout.JAVA_BYTE, i));
@@ -45,35 +47,71 @@ class NativeCacheTest {
     }
 
     @Test
-    void testKeys() {
-        try (val cache = new NativeCache()) {
-            cache.put("TAG:1", 64);
-            cache.put("TAG:2", 64);
-            cache.put("CAT:1", 64);
+    void testKeysKeepsInsertionOrder() {
+        try (val cache = new NativeCache<String>()) {
+            cache.put("b", 64);
+            cache.put("a", 64);
+            cache.put("c", 64);
 
-            val keys = cache.keys("TAG:").get();
-            assertEquals(2, keys.size());
-            assertTrue(keys.contains("TAG:1") && keys.contains("TAG:2"));
+            assertEquals(List.of("b", "a", "c"), cache.keys().get());
 
-            val all = cache.keys("TAG").get();
-            assertEquals(2, all.size());
+            cache.remove("a");
+            assertEquals(List.of("b", "c"), cache.keys().get());
         }
+    }
+
+    @Test
+    void testForEachVisitsEveryEntryInOrder() {
+        try (val cache = new NativeCache<String>()) {
+            cache.put("b", 64);
+            cache.put("a", 64);
+
+            val visited = new ArrayList<String>();
+            assertTrue(cache.forEach((key, segment) -> {
+                assertNotNull(segment);
+                visited.add(key);
+            }).isSuccess());
+
+            assertEquals(List.of("b", "a"), visited);
+        }
+    }
+
+    @Test
+    void testSegmentIsNullOnMissAndAfterClose() {
+        val cache = new NativeCache<String>();
+        val seg = cache.put("test", 64).get();
+
+        assertEquals(seg, cache.segment("test"));
+        assertNull(cache.segment("absent"));
+
+        cache.close();
+        assertNull(cache.segment("test"));
     }
 
     @Test
     void testSize() {
-        try (val cache = new NativeCache()) {
+        try (val cache = new NativeCache<String>()) {
             assertEquals(0, cache.size().get());
+            assertEquals(0, cache.count());
             cache.put("a", 64);
             assertEquals(1, cache.size().get());
             cache.put("b", 64);
             assertEquals(2, cache.size().get());
+            assertEquals(2, cache.count());
         }
     }
 
     @Test
+    void testCountIsZeroAfterClose() {
+        val cache = new NativeCache<String>();
+        cache.put("a", 64);
+        cache.close();
+        assertEquals(0, cache.count());
+    }
+
+    @Test
     void testCloseIdempotent() {
-        val cache = new NativeCache();
+        val cache = new NativeCache<String>();
         assertFalse(cache.isClosed());
         cache.close();
         assertTrue(cache.isClosed());
@@ -83,18 +121,19 @@ class NativeCacheTest {
 
     @Test
     void testAccessAfterCloseFails() {
-        val cache = new NativeCache();
+        val cache = new NativeCache<String>();
         cache.close();
         assertEquals(NativeCache.ERROR_CLOSED, failureOf(cache.put("test", 64)));
         assertEquals(NativeCache.ERROR_CLOSED, failureOf(cache.get("test")));
         assertEquals(NativeCache.ERROR_CLOSED, failureOf(cache.remove("test")));
-        assertEquals(NativeCache.ERROR_CLOSED, failureOf(cache.keys("")));
+        assertEquals(NativeCache.ERROR_CLOSED, failureOf(cache.keys()));
+        assertEquals(NativeCache.ERROR_CLOSED, failureOf(cache.forEach((_, _) -> fail("cache fechado não visita nada"))));
         assertEquals(NativeCache.ERROR_CLOSED, failureOf(cache.size()));
     }
 
     @Test
     void testGetMissFails() {
-        try (val cache = new NativeCache()) {
+        try (val cache = new NativeCache<String>()) {
             val miss = cache.get("absent");
             assertTrue(miss.isFailure());
             assertEquals(NativeCache.ERROR_MISS, failureOf(miss));
@@ -110,7 +149,7 @@ class NativeCacheTest {
 
     @Test
     void testUuidCodec() {
-        try (val cache = new NativeCache()) {
+        try (val cache = new NativeCache<String>()) {
             val seg = cache.put("test", 64).get();
             val id = UUID.randomUUID();
 
@@ -122,7 +161,7 @@ class NativeCacheTest {
 
     @Test
     void testUuidNull() {
-        try (val cache = new NativeCache()) {
+        try (val cache = new NativeCache<String>()) {
             val seg = cache.put("test", 64).get();
             NativeCache.writeUuid(seg, 0, null);
             assertNull(NativeCache.readUuid(seg, 0));
@@ -131,7 +170,7 @@ class NativeCacheTest {
 
     @Test
     void testUuidComponents() {
-        try (val cache = new NativeCache()) {
+        try (val cache = new NativeCache<String>()) {
             val seg = cache.put("test", 64).get();
             val id = UUID.randomUUID();
             NativeCache.writeUuid(seg, 0, id);
@@ -143,7 +182,7 @@ class NativeCacheTest {
 
     @Test
     void testStringCodec() {
-        try (val cache = new NativeCache()) {
+        try (val cache = new NativeCache<String>()) {
             val seg = cache.put("test", 256).get();
             val str = "hello world";
 
@@ -155,7 +194,7 @@ class NativeCacheTest {
 
     @Test
     void testStringNull() {
-        try (val cache = new NativeCache()) {
+        try (val cache = new NativeCache<String>()) {
             val seg = cache.put("test", 64).get();
             NativeCache.writeString(seg, 0, 64, null);
             assertNull(NativeCache.readString(seg, 0));
@@ -164,7 +203,7 @@ class NativeCacheTest {
 
     @Test
     void testStringEmpty() {
-        try (val cache = new NativeCache()) {
+        try (val cache = new NativeCache<String>()) {
             val seg = cache.put("test", 64).get();
             NativeCache.writeString(seg, 0, 64, "");
             assertEquals("", NativeCache.readString(seg, 0));
@@ -173,7 +212,7 @@ class NativeCacheTest {
 
     @Test
     void testStringUtf8() {
-        try (val cache = new NativeCache()) {
+        try (val cache = new NativeCache<String>()) {
             val seg = cache.put("test", 256).get();
             val str = "olá mundo àáâã";
 
@@ -185,7 +224,7 @@ class NativeCacheTest {
 
     @Test
     void testStringTruncated() {
-        try (val cache = new NativeCache()) {
+        try (val cache = new NativeCache<String>()) {
             val seg = cache.put("test", 100).get();
             val str = "this is a very long string that should definitely be truncated because we only have twenty bytes of capacity";
 
@@ -199,7 +238,7 @@ class NativeCacheTest {
 
     @Test
     void testBooleanCodec() {
-        try (val cache = new NativeCache()) {
+        try (val cache = new NativeCache<String>()) {
             val seg = cache.put("test", 64).get();
 
             NativeCache.writeBoolean(seg, 0, true);
@@ -212,7 +251,7 @@ class NativeCacheTest {
 
     @Test
     void testMoneyCodec() {
-        try (val cache = new NativeCache()) {
+        try (val cache = new NativeCache<String>()) {
             val seg = cache.put("test", 64).get();
             val amount = new BigDecimal("123.45");
 
@@ -224,7 +263,7 @@ class NativeCacheTest {
 
     @Test
     void testMoneyNull() {
-        try (val cache = new NativeCache()) {
+        try (val cache = new NativeCache<String>()) {
             val seg = cache.put("test", 64).get();
             NativeCache.writeMoney(seg, 0, null);
             assertEquals(NativeCache.NULL_LONG, NativeCache.readMoneyCents(seg, 0));
@@ -233,7 +272,7 @@ class NativeCacheTest {
 
     @Test
     void testMoneyRounding() {
-        try (val cache = new NativeCache()) {
+        try (val cache = new NativeCache<String>()) {
             val seg = cache.put("test", 64).get();
             val amount = new BigDecimal("123.456");
 
@@ -245,7 +284,7 @@ class NativeCacheTest {
 
     @Test
     void testTimestampCodec() {
-        try (val cache = new NativeCache()) {
+        try (val cache = new NativeCache<String>()) {
             val seg = cache.put("test", 64).get();
             val ts = LocalDateTime.of(2023, 1, 15, 10, 30, 45);
 
@@ -257,7 +296,7 @@ class NativeCacheTest {
 
     @Test
     void testTimestampNull() {
-        try (val cache = new NativeCache()) {
+        try (val cache = new NativeCache<String>()) {
             val seg = cache.put("test", 64).get();
             NativeCache.writeTimestamp(seg, 0, null);
             assertEquals(NativeCache.NULL_LONG, NativeCache.readTimestampMillis(seg, 0));

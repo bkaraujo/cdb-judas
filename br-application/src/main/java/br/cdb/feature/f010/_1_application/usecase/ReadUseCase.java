@@ -8,7 +8,6 @@ import br.commons.framework.cdi.Context;
 import lombok.val;
 import org.jspecify.annotations.NullMarked;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
@@ -35,7 +34,7 @@ public class ReadUseCase {
         if (result.isFailure()) {
             return List.of();
         }
-        return new ArrayList<>(result.get());
+        return result.get();
     }
 
     /** Guarda implícita: {@code NotFound} quando a regra existe mas é de outra pessoa (ou o cache

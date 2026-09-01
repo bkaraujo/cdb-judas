@@ -22,12 +22,17 @@ import java.util.function.BiConsumer;
 /**
  * Arena off-heap indexada por chave. Toda operação que pode falhar — cache já fechado, chave
  * ausente — devolve {@link Result}: a API pública não lança nem entrega {@code null} para o
- * chamador decidir o que fazer. Os codecs estáticos ficam fora dessa regra de propósito: são
- * primitivas de serialização puras, com perda definida (trunca/satura + log), consumidas pelos
- * {@code Layout.write} através de um {@code BiConsumer}.
+ * chamador decidir o que fazer. A exceção é {@link #segment}, o acesso de caminho quente, onde um
+ * {@code Result} por leitura seria uma alocação por linha lida. Os codecs estáticos também ficam
+ * fora dessa regra de propósito: são primitivas de serialização puras, com perda definida
+ * (trunca/satura + log), consumidas pelos {@code Layout.write} através de um {@code BiConsumer}.
+ *
+ * <p>Genérico na chave: uma instância guarda um tipo só de registro, então a chave natural é o id
+ * do registro ({@code UUID}), não uma String com prefixo de tipo. Filtrar por prefixo aqui dentro
+ * era um {@code startsWith} por registro que nunca descartava nada.
  */
 @NullMarked
-public class NativeCache implements AutoCloseable {
+public class NativeCache<K> implements AutoCloseable {
     private static final LocalDateTime EPOCH_UTC = LocalDateTime.of(1970, 1, 1, 0, 0);
 
     /** Erro devolvido por qualquer operação depois do {@link #close()}. */
@@ -40,9 +45,9 @@ public class NativeCache implements AutoCloseable {
     public static final int  NULL_INT  = Integer.MIN_VALUE;
 
     private final Arena arena;
-    private final Map<String, MemorySegment> index = new ConcurrentHashMap<>();
+    private final Map<K, MemorySegment> index = new ConcurrentHashMap<>();
     /** Ordem de inserção das chaves — o índice é hash, e listagem sem ordem estável é listagem instável. */
-    private final Queue<String> order = new ConcurrentLinkedQueue<>();
+    private final Queue<K> order = new ConcurrentLinkedQueue<>();
     private volatile boolean closed = false;
 
     public NativeCache() {
@@ -50,7 +55,7 @@ public class NativeCache implements AutoCloseable {
     }
 
     /** Aloca (sempre um segmento novo, zerado) e indexa em {@code key}. */
-    public Result<MemorySegment, String> put(String key, long size) {
+    public Result<MemorySegment, String> put(K key, long size) {
         if (closed) return Result.failure(ERROR_CLOSED);
         val segment = arena.allocate(size);
         MemorySegment.copy(MemorySegment.ofArray(new byte[(int) size]), 0, segment, 0, size);
@@ -60,7 +65,7 @@ public class NativeCache implements AutoCloseable {
     }
 
     /** Falha em miss: ausência de chave é resultado normal, mas nunca um segmento utilizável. */
-    public Result<MemorySegment, String> get(String key) {
+    public Result<MemorySegment, String> get(K key) {
         if (closed) return Result.failure(ERROR_CLOSED);
         val segment = index.get(key);
         if (segment == null) return Result.failure(ERROR_MISS);
@@ -68,31 +73,41 @@ public class NativeCache implements AutoCloseable {
     }
 
     /**
-     * Visita cada segmento cuja chave começa em {@code prefix}. Um {@code Result} para a travessia
+     * Acesso de caminho quente: o segmento, ou {@code null} se a chave não está aqui (ou o cache já
+     * fechou). Mesma leitura de {@link #get}, sem o {@link Result} — que numa listagem ou num find
+     * por linha vira uma alocação por leitura, sem nada a informar além da própria ausência.
+     */
+    public @Nullable MemorySegment segment(K key) {
+        if (closed) return null;
+        return index.get(key);
+    }
+
+    /**
+     * Visita cada segmento indexado, na ordem de inserção. Um {@code Result} para a travessia
      * inteira, não um por registro: este é o caminho de leitura zero-alloc dos flyweights
      * ({@code Layout.View}), onde embrulhar registro a registro anularia o ganho.
      */
-    public Result<Void, String> forEach(String prefix, BiConsumer<String, MemorySegment> visitor) {
+    public Result<Void, String> forEach(BiConsumer<K, MemorySegment> visitor) {
         if (closed) return Result.failure(ERROR_CLOSED);
         for (val key : order) {
-            if (!key.startsWith(prefix)) continue;
             val segment = index.get(key);
             if (segment != null) visitor.accept(key, segment);
         }
         return Result.success();
     }
 
-    public Result<Void, String> remove(String key) {
+    public Result<Void, String> remove(K key) {
         if (closed) return Result.failure(ERROR_CLOSED);
         if (index.remove(key) != null) order.remove(key);
         return Result.success();
     }
 
-    public Result<List<String>, String> keys(String prefix) {
+    /** Chaves indexadas, na ordem de inserção. */
+    public Result<List<K>, String> keys() {
         if (closed) return Result.failure(ERROR_CLOSED);
-        val result = new ArrayList<String>();
+        val result = new ArrayList<K>();
         for (val key : order) {
-            if (key.startsWith(prefix) && index.containsKey(key)) {
+            if (index.containsKey(key)) {
                 result.add(key);
             }
         }
@@ -102,6 +117,12 @@ public class NativeCache implements AutoCloseable {
     public Result<Integer, String> size() {
         if (closed) return Result.failure(ERROR_CLOSED);
         return Result.success(index.size());
+    }
+
+    /** Quantidade de registros indexados; {@code 0} depois do {@link #close()}. Sem {@link Result}
+     *  porque existe para dimensionar a coleção de destino antes de uma travessia. */
+    public int count() {
+        return closed ? 0 : index.size();
     }
 
     public boolean isClosed() {
