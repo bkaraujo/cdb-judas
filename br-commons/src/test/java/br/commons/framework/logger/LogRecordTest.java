@@ -26,7 +26,7 @@ class LogRecordTest {
 
     @Test
     void fullConstructor_setsCallerClass() {
-        var frame = new br.commons.tools.meta.StackFrame("br.Example", 42);
+        var frame = new br.commons.tools.meta.StackFrame("br.Example", "method", 42);
         LogRecord record = new LogRecord(0L, LogLevel.WARN, "main", () -> "msg", frame);
 
         assertEquals("main", record.threadName());

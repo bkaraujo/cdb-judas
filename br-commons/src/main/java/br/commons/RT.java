@@ -42,7 +42,8 @@ public abstract class RT {
                     "sun.",
                     "br.commons.framework.logger.",
                     "br.commons.Logger",
-                    "br.commons.tools.Meta"
+                    "br.commons.tools.Meta",
+                    "br.commons.debug.Execution"
             )
     );
 }

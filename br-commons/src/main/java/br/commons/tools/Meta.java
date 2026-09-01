@@ -71,8 +71,24 @@ public abstract class Meta {
         System.exit(code);
     }
 
+    /** Pra classe sintética (lambda/method reference, sem nome útil de {@code getTypeName()}), resolve
+     *  o método chamador real via {@link #stackFrame(int)} — {@code Execution} está listado em
+     *  {@link br.commons.RT#packages} justamente pra esse frame não ser o próprio {@code Execution}. */
     public static String fqn(Object type) {
-        return fqn(type.getClass());
+        if (!type.getClass().isSynthetic()) {
+            return fqn(type.getClass());
+        }
+        val frame = stackFrame(0);
+        return frame.className() + "." + frame.methodName();
+    }
+
+    public static String method(Object type) {
+        if (!type.getClass().isSynthetic()) {
+            return fqn(type.getClass());
+        }
+
+        val frame = stackFrame(0);
+        return frame.methodName();
     }
 
     public static String fqn(Class<?> type) {
@@ -126,7 +142,7 @@ public abstract class Meta {
         return Collections.unmodifiableList(STACK_WALKER
                 .walk(stream -> stream
                         .filter(frame -> !isStackFrameExcluded(frame.getClassName()))
-                        .map(frame -> new StackFrame(frame.getClassName(), frame.getLineNumber()))
+                        .map(frame -> new StackFrame(frame.getClassName(), frame.getMethodName(), frame.getLineNumber()))
                         .toList()
                 ));
     }
@@ -135,7 +151,7 @@ public abstract class Meta {
         val frames = stackFrame();
         return skipFrames < frames.size()
                 ? frames.get(skipFrames)
-                : new StackFrame("Unknown", 0);
+                : new StackFrame("Unknown", "unknown", 0);
     }
 
     public static @Nullable Field field(Object container, String name) {

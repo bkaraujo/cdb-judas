@@ -74,7 +74,7 @@ public sealed class FatalForwarder implements LogForwarder permits ErrorForwarde
 
     private StackFrame resolveStackFrame(LogRecord record) {
         val external = Logger.externalCaller();
-        if (external != null) { return new StackFrame(external, 0); }
+        if (external != null) { return new StackFrame(external, "", 0); }
 
         val fromRecord = record.callerClass();
         if (fromRecord != null) { return fromRecord; }
