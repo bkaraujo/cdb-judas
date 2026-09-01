@@ -6,10 +6,22 @@ Gestor de finanças pessoais. Backend **Java 25 + Quarkus** (JVM mode); frontend
 
 ## Onde encontrar o quê
 
+> **Reorganizada em 2026-09-01**: as páginas monolíticas `backend`/`frontend` viraram **hubs** (só conteúdo transversal); endpoints/modelo/eventos/regras/telas de cada fatia migraram para uma **página por feature** em `secular/profissao/bkraujo/judas/feature/*`, que traz backend e frontend da mesma feature juntos. `br.cdb.core`/`br-commons` migraram para a página `core`.
+
 | Assunto | Página na wiki |
 |---|---|
-| Arquitetura backend (VSA+Hexagonal, módulos Maven, fatias `fNNN` f000–f999, Result, Lombok, Null-Safety, JDBC/H2, qualidade & build, testes, diagramas de pacote/classe/atividade, schema do banco) | `secular/profissao/bkraujo/judas/backend` |
-| Arquitetura frontend (padrões 001–010, fatias físicas `frontend/src/feature/*`, contratos de API request/response JSON, seleção de categoria/tag, testes Vitest + gates `typecheck`/`check:arch`, diagramas) | `secular/profissao/bkraujo/judas/frontend` |
+| Hub backend (VSA+Hexagonal, módulos Maven, Result, Lombok, Null-Safety, JDBC/H2, qualidade & build, testes, cache off-heap por sessão, schema do banco, diagramas gerais) | `secular/profissao/bkraujo/judas/backend` |
+| Hub frontend (padrões 001–010, contratos de API genéricos, seleção de categoria/tag, testes Vitest + gates `typecheck`/`check:arch`, diagramas gerais) | `secular/profissao/bkraujo/judas/frontend` |
+| `br.cdb.core` (`event`/`persistence`/`security`/`web`) e `br-commons` | `secular/profissao/bkraujo/judas/core` |
+| Feature Configurações — `f001` + `frontend/src/feature/settings` | `secular/profissao/bkraujo/judas/feature/settings` |
+| Feature Contas & Cartões de Crédito — `f002`+`f003` + `accounts`+`credit-cards` | `secular/profissao/bkraujo/judas/feature/accounts-credit-cards` |
+| Feature Tags — `f004` + `tags` | `secular/profissao/bkraujo/judas/feature/tags` |
+| Feature Categorias — `f005` + `categories` | `secular/profissao/bkraujo/judas/feature/categories` |
+| Feature Lançamentos & Extrato — `f006` + `transactions`+`statement`+`accounts-payable` | `secular/profissao/bkraujo/judas/feature/transactions` |
+| Feature Importação de Extrato/Fatura — `f007` + `import-statement` | `secular/profissao/bkraujo/judas/feature/import-statement` |
+| Feature Regras de Importação — `f010` + `import-rules` | `secular/profissao/bkraujo/judas/feature/import-rules` |
+| Feature Dashboard — `f009` + `dashboard`+`budget` (assimetria: `budget` sem endpoint no backend) | `secular/profissao/bkraujo/judas/feature/dashboard` |
+| Feature Relatórios — sem fatia backend própria; `reports`+`report-category-evolution` | `secular/profissao/bkraujo/judas/feature/reports` |
 | Regras de negócio (funcionalidades, contas, cartões, ciclo de fatura, transações, categorização, importação de extrato/fatura, fechamento de período) | `secular/profissao/bkraujo/judas/regras-negocio` |
 | Casos de uso — **página única**: tabela tela × endpoint (UI-001…UI-095 com diagrama de atividade cada; UC-001…UC-090 com objetivo, exceções, regras, endpoint/classe) | `secular/profissao/bkraujo/judas/casos-de-uso` |
 | Índice/overview do projeto | `secular/profissao/bkraujo/judas` |
