@@ -197,6 +197,8 @@ public abstract class Logger {
      * {@link LogFilter#getEffectiveLevel} memoiza o nível por nome de classe.
      */
     public static boolean enabled(LogLevel messageLevel, String callerClass) {
+        if (Strings.isEmpty(callerClass)) return enabled(messageLevel);
+
         if (!filter.hasPackageFilters()) {
             return reaches(filter.level(), messageLevel);
         }

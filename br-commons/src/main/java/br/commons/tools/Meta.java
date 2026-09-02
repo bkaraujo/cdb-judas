@@ -71,9 +71,6 @@ public abstract class Meta {
         System.exit(code);
     }
 
-    /** Pra classe sintética (lambda/method reference, sem nome útil de {@code getTypeName()}), resolve
-     *  o método chamador real via {@link #stackFrame(int)} — {@code Execution} está listado em
-     *  {@link br.commons.RT#packages} justamente pra esse frame não ser o próprio {@code Execution}. */
     public static String fqn(Object type) {
         if (!type.getClass().isSynthetic()) {
             return fqn(type.getClass());

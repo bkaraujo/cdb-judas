@@ -6,6 +6,7 @@ import br.commons.chrono.Time;
 import br.commons.debug.Execution;
 import br.commons.framework.logger.LogLevel;
 import br.commons.platform.NativeCache;
+import br.commons.tools.Meta;
 import lombok.val;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
@@ -34,7 +35,7 @@ public abstract class AbstractCache<T> {
 
     /** Classe do gate de log: constante, para o {@link Logger#enabled(LogLevel, String)} não ter
      *  de varrer a pilha atrás do chamador a cada consulta. */
-    private static final String CALLER = AbstractCache.class.getName();
+    private static final String CALLER = Meta.fqn(AbstractCache.class);
 
     private final String prefix;
     private final Function<String, List<T>> loader;
@@ -99,15 +100,11 @@ public abstract class AbstractCache<T> {
     }
 
     public CompletableFuture<Result<Void, String>> upsert(String personId, T model) {
-        return Execution.nanos(CALLER, () -> {
-            return onCache(personId, cache -> store(cache, model));
-        });
+        return Execution.nanos(CALLER, () -> onCache(personId, cache -> store(cache, model)));
     }
 
     public CompletableFuture<Result<Void, String>> evict(String personId, UUID id) {
-        return Execution.nanos(CALLER, () -> {
-            return onCache(personId, cache -> cache.remove(id));
-        });
+        return Execution.nanos(CALLER, () -> onCache(personId, cache -> cache.remove(id)));
     }
 
     public CompletableFuture<Result<Void, String>> evictEverywhere(UUID id) {
@@ -125,12 +122,6 @@ public abstract class AbstractCache<T> {
         });
     }
 
-    /**
-     * Lista na ordem de inserção do cache. Devolve {@code List} — e não {@code Set} — porque a
-     * unicidade já vem da chave: um {@code LinkedHashSet} aqui hasheava cada record de domínio
-     * inteiro para deduplicar o que não duplica, e todo chamador copiava o resultado para um
-     * {@code ArrayList} logo em seguida. A lista é nova a cada chamada, e do chamador.
-     */
     public Result<List<T>, String> list(String personId) {
         if (!Logger.enabled(LogLevel.DEBUG, CALLER)) return doList(personId);
 
@@ -142,8 +133,6 @@ public abstract class AbstractCache<T> {
         }
     }
 
-    /** Nunca guarda/devolve {@code null}: ausência (cache não populado pra {@code personId} ou
-     *  chave sem entrada) é sempre {@link Result.Failure}, nunca {@code Result.success(null)}. */
     public Result<T, String> find(String personId, UUID id) {
         if (!Logger.enabled(LogLevel.DEBUG, CALLER)) return doFind(personId, id);
 
@@ -187,7 +176,7 @@ public abstract class AbstractCache<T> {
     private Result<List<T>, String> collect(NativeCache<UUID> cache) {
         val models = new ArrayList<T>(cache.count());
         val traversal = cache.forEach((_, segment) -> models.add(mapToDomain(segment)));
-        if (traversal instanceof Result.Failure<Void, String> f) return Result.failure(f.error());
+        if (traversal instanceof Result.Failure<Void, String>(String error)) return Result.failure(error);
         return Result.success(models);
     }
 
