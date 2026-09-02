@@ -163,21 +163,46 @@ public abstract class Logger {
         return Meta.stackFrame(0).className();
     }
 
+    /** Guard compartilhado pelos métodos de log — a negação de {@link #enabled(LogLevel)}. */
+    private static boolean blocked(LogLevel messageLevel) {
+        return !enabled(messageLevel);
+    }
+
     /**
-     * Guard compartilhado pelos métodos de log. O nível efetivo (override por pacote, ou o nível
-     * global como fallback) é a única autoridade sobre emitir/ignorar — totalmente independente do
-     * rootlogger quando há override de pacote para o caller.
+     * Decide se uma mensagem deste nível seria emitida. O nível efetivo (override por pacote, ou o
+     * nível global como fallback) é a única autoridade — totalmente independente do rootlogger
+     * quando há override de pacote para o caller.
      *
      * <p>Sem filtros por pacote o gate usa apenas o nível global e evita o StackWalker (caro). Com
      * filtros ativos resolve o caller e usa {@link LogFilter#getEffectiveLevel}. Como
      * {@code resolveCallerClass} pula os frames de infraestrutura
      * ({@link br.commons.tools.Meta#stackFrame}), chamá-lo daqui não altera o caller resolvido.
+     *
+     * <p>É público porque o gate dentro de {@link #debug(String, Object...)} chega tarde para quem
+     * paga caro pelo argumento: em {@code Logger.debug(fmt, caro())} o {@code caro()} é avaliado ao
+     * empilhar o varargs, antes de a chamada sequer começar. Cronômetro, stack walk e formatação
+     * pesada perguntam aqui primeiro.
      */
-    private static boolean blocked(LogLevel messageLevel) {
+    public static boolean enabled(LogLevel messageLevel) {
         if (!filter.hasPackageFilters()) {
-            return !enabled(filter.level(), messageLevel);
+            return reaches(filter.level(), messageLevel);
         }
-        return !enabled(filter.getEffectiveLevel(resolveCallerClass()), messageLevel);
+        return reaches(filter.getEffectiveLevel(resolveCallerClass()), messageLevel);
+    }
+
+    /**
+     * Como {@link #enabled(LogLevel)}, mas sem StackWalker: o chamador informa a própria classe, que
+     * do lado dele é constante. É o que torna o gate viável em caminho quente — com filtro por
+     * pacote ativo, resolver o caller sozinho custa uma varredura da pilha inteira, e
+     * {@link LogFilter#getEffectiveLevel} memoiza o nível por nome de classe.
+     */
+    public static boolean enabled(LogLevel messageLevel, String callerClass) {
+        if (Strings.isEmpty(callerClass)) return enabled(messageLevel);
+
+        if (!filter.hasPackageFilters()) {
+            return reaches(filter.level(), messageLevel);
+        }
+        return reaches(filter.getEffectiveLevel(callerClass), messageLevel);
     }
 
     /**
@@ -185,7 +210,7 @@ public abstract class Logger {
      * significa silêncio total — precisa de tratamento explícito, pois a comparação por ordinal
      * sozinha aceitaria tudo.
      */
-    private static boolean enabled(LogLevel threshold, LogLevel messageLevel) {
+    private static boolean reaches(LogLevel threshold, LogLevel messageLevel) {
         return threshold != LogLevel.OFF && messageLevel.ordinal >= threshold.ordinal;
     }
 

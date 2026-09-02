@@ -11,7 +11,6 @@ import br.commons.business.BusinessError;
 import br.commons.framework.cdi.Context;
 import org.jspecify.annotations.NullMarked;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
@@ -52,8 +51,7 @@ public class ReadUseCase {
 
     public Result<List<CreditCard>, BusinessError> list(String personId) {
         return cache.list(personId)
-                .mapFailure(error -> (BusinessError) new BusinessError.BusinessRule("core.cache.unavailable"))
-                .map(set -> new ArrayList<>(set));
+                .mapFailure(error -> (BusinessError) new BusinessError.BusinessRule("core.cache.unavailable"));
     }
 
     public Result<List<CreditCard>, BusinessError> list(UUID accountId, String personId) {

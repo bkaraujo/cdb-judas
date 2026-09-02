@@ -51,20 +51,31 @@ public class F005ApiImpl extends AbstractApiClient implements F005Api {
 
     /**
      * Cacheado pela requisição corrente: os consumidores chamam isto <b>por transação</b> da lista
-     * ({@code f006.RequestMapper#toDto}, {@code f999.AccountStreamListener}), e cada chamada é um
-     * loopback HTTP completo — um extrato com 300 transações de 5 categorias fazia 300 requisições
-     * onde 5 bastam. Categoria não muda de natureza no meio de uma requisição, e o mapa morre com
-     * ela ({@code MDCLoggingFilter} chama {@link HTTPRequest#clear}).
+     * ({@code f006.RequestMapper#toDto}, {@code f999.AccountStreamListener}) — um extrato com 300
+     * transações de 5 categorias faz 300 leituras onde 5 bastam. A fonte hoje é o cache off-heap e
+     * não mais um loopback HTTP, mas cada leitura ainda materializa a {@code Category} inteira, mais
+     * o vai-e-volta {@code UUID.fromString}/{@code toString} do {@code personId}. Categoria não muda
+     * de natureza no meio de uma requisição, e o mapa morre com ela ({@code MDCLoggingFilter} chama
+     * {@link HTTPRequest#clear}).
      *
      * <p>Fora de uma requisição (boot, job, listener do {@code MessageBus}) não há escopo para
      * cachear e cada chamada vai à fonte, como antes.
      */
     @Override
     public Nature natureOf(UUID categoryId) {
+        val memo = HTTPRequest.<UUID, Nature>cache(NATURE_CACHE);
+        if (memo != null) {
+            val known = memo.get(categoryId);
+            if (known != null) return known;
+        }
+
         val reads = Context.tryGet(ReadUseCase.class);
-        return switch (reads.category(UUID.fromString(HTTPRequest.personId()), categoryId)) {
+        val nature = switch (reads.category(UUID.fromString(HTTPRequest.personId()), categoryId)) {
             case Result.Success(var category) -> category.nature();
             case Result.Failure(var error) -> throw new BusinessException(error);
         };
+
+        if (memo != null) memo.put(categoryId, nature);
+        return nature;
     }
 }
